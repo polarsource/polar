@@ -12,3 +12,21 @@ services:
       - ./polar/:/polar/
     ports:
       - 8002:8000
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:15.1-bullseye
+    restart: always
+    environment:
+      - POSTGRES_USER=${POLAR_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POLAR_POSTGRES_PWD}
+      - POSTGRES_DB=${POLAR_POSTGRES_DB}
+      - POSTGRES_PORT=${POLAR_POSTGRES_PORT}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - "${POLAR_POSTGRES_HOST}:${POLAR_POSTGRES_PORT}:${POLAR_POSTGRES_PORT}"
+
+volumes:
+  postgres_data:

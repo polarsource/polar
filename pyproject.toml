@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "polar"
+version = "0.1.0"
+description = ""
+authors = ["Birk Jernström <birkjernstrom@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.89.1"
+uvicorn = {extras = ["standard"], version = "^0.20.0"}
+
+[tool.poetry.group.dev.dependencies]
+black = "^22.12.0"
+flake8 = "^6.0.0"
+isort = "^5.11.4"
+pre-commit = "^2.21.0"
+pyproject-flake8 = "^6.0.0.post1"
+mypy = "^0.991"
+pytest = "^7.2.1"
+httpx = "^0.23.3"
+pytest-sugar = "^0.9.6"
+
+[tool.flake8]
+max-line-length = 88
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+ignore_missing_imports = true
+strict = true
+plugins = ["pydantic.mypy"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

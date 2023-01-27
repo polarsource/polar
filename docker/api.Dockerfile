@@ -54,6 +54,7 @@ RUN bash -c "if [ $POLAR_DOCKER_DEV == 'true' ] ; then poetry install --no-root 
 ###############################################
 FROM python-base as production
 
+COPY --from=builder-base $POETRY_HOME $POETRY_HOME
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 
 COPY ./polar /polar

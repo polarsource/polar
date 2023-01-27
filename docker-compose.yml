@@ -6,18 +6,21 @@ services:
       context: ./
       dockerfile: ./docker/api.Dockerfile
       args:
-        POLAR_DOCKER_DEV: ${POLAR_DOCKER_DEV-false}
+        POLAR_DOCKER_DEV: ${POLAR_DOCKER_DEV-true}
     command: uvicorn polar.app:app --reload --workers 1 --host 0.0.0.0 --port 8000
-    volumes:
-      - ./polar/:/polar/
+    env_file:
+      - .env
     ports:
-      - 8002:8000
+      - 8000:8000
     depends_on:
-      - postgres
-
-  postgres:
-    image: postgres:15.1-bullseye
+      db:
+        condition: service_healthy
     restart: always
+    networks:
+      - practice
+
+  db:
+    image: postgres:15.1-bullseye
     environment:
       - POSTGRES_USER=${POLAR_POSTGRES_USER}
       - POSTGRES_PASSWORD=${POLAR_POSTGRES_PWD}
@@ -26,7 +29,20 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     ports:
-      - "${POLAR_POSTGRES_HOST}:${POLAR_POSTGRES_PORT}:${POLAR_POSTGRES_PORT}"
+      - "${POLAR_POSTGRES_PORT}:${POLAR_POSTGRES_PORT}"
+    expose:
+      - ${POLAR_POSTGRES_PORT}
+    restart: always
+    networks:
+      - practice
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "${POLAR_POSTGRES_DB}", "-U", "${POLAR_POSTGRES_USER}" ]
+      timeout: 40s
+      interval: 2s
+      retries: 20
 
 volumes:
   postgres_data:
+
+networks:
+  practice:

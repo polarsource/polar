@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from functools import cache
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from sqlalchemy import Column
+from sqlalchemy.sql.selectable import FromClause
 
 from polar.postgres import AsyncSession, sql
 from polar.schema.base import Schema
@@ -18,7 +19,7 @@ SchemaType = TypeVar("SchemaType", bound=Schema)
 # Active Record-ish
 class ActiveRecordMixin:
     __mutables__: set[Column[Any]] | set[str] | None = None
-    __table__: Table
+    __table__: ClassVar[FromClause]
 
     @classmethod
     @cache

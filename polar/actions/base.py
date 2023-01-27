@@ -49,6 +49,7 @@ class Action(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             session, **create_schema.dict(), autocommit=autocommit
         )
 
+    # TODO: Investigate new bulk methods in SQLALchemy 2.0 for upsert_many
     async def upsert_many(
         self,
         session: AsyncSession,

@@ -1,20 +1,12 @@
-from typing import Any, Union
-
 from fastapi import FastAPI
 
-app = FastAPI()
+from polar.api import router
 
 
-@app.get("/")
-def read_root() -> dict[str, str]:
-    return {"Hello": "World"}
+def create_app() -> FastAPI:
+    app = FastAPI()
+    app.include_router(router)
+    return app
 
 
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None) -> dict[str, Any]:
-    return {"item_id": item_id, "q": q}
-
-
-@app.get("/ping")
-def pong() -> dict[str, str]:
-    return {"ping": "pong!"}
+app = create_app()

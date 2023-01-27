@@ -3,6 +3,8 @@
 ###############################################
 FROM python:3.11.1-slim-bullseye as python-base
 
+ENV POLAR_HOME="/code"
+
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -57,6 +59,8 @@ FROM python-base as production
 COPY --from=builder-base $POETRY_HOME $POETRY_HOME
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 
-COPY ./polar /polar
-COPY ./migrations /migrations
-COPY ./alembic.ini /alembic.ini
+COPY ./polar $POLAR_HOME/polar
+COPY ./migrations $POLAR_HOME/migrations
+COPY ./alembic.ini $POLAR_HOME/alembic.ini
+
+COPY ./tests $POLAR_HOME/tests

@@ -31,5 +31,9 @@
     "**/.mypy_cache": true,
     "**/.venv": true,
     "**/__pycache__": true,
+  },
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    ".env": ".gitignore, .pre-commit-config.yaml, .python-version, Brewfile, pyproject.toml, poetry.lock, alembic.ini, docker-compose.yml",
   }
 }

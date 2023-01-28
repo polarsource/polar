@@ -7,7 +7,6 @@ services:
       dockerfile: ./docker/api.Dockerfile
       args:
         POLAR_DOCKER_DEV: ${POLAR_DOCKER_DEV-true}
-    command: uvicorn polar.app:app --reload --workers 1 --host 0.0.0.0 --port 8000
     env_file:
       - .env
     ports:

@@ -64,3 +64,5 @@ COPY ./migrations $POLAR_HOME/migrations
 COPY ./alembic.ini $POLAR_HOME/alembic.ini
 
 COPY ./tests $POLAR_HOME/tests
+
+WORKDIR $POLAR_HOME

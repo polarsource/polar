@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "DEBUG"
     TESTING: bool = False
 
+    SECRET: str = "super secret jwt secret"
+
     # Postgres
     POSTGRES_SCHEME: str = "postgresql+asyncpg"
     POSTGRES_USER: str = "polar"

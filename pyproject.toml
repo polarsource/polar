@@ -10,9 +10,10 @@ python = "^3.11"
 fastapi = "^0.89.1"
 uvicorn = {extras = ["standard"], version = "^0.20.0"}
 python-dotenv = "^0.21.1"
-sqlalchemy = "^2.0.0"
 asyncpg = "^0.27.0"
 alembic = "^1.9.2"
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.0"}
+greenlet = "^2.0.2"  # Need to be explicit, M1 Mac issue (https://github.com/python-poetry/poetry/issues/5429)
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.12.0"

@@ -1,4 +1,5 @@
 import enum
+import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime
@@ -26,7 +27,7 @@ class TimestampedModel(Model):
 class RecordModel(TimestampedModel):
     __abstract__ = True
 
-    id: Mapped[GUID] = mapped_column(GUID, primary_key=True, default=GUID.generate)
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=GUID.generate)
 
 
 class StatusFlag(enum.Enum):

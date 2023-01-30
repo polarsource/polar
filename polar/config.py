@@ -31,9 +31,6 @@ class Settings(BaseSettings):
     GITHUB_APP_PRIVATE_KEY: str = ""
     GITHUB_CLIENT_ID: str = ""
     GITHUB_CLIENT_SECRET: str = ""
-    GITHUB_API_BASE_URL: str = "https://api.github.com/"
-    GITHUB_ACCESS_TOKEN_URL: str = "https://github.com/login/oauth/access_token"
-    GITHUB_AUTHORIZE_URL: str = "https://github.com/login/oauth/authorize"
 
     class Config:
         env_prefix = "polar_"

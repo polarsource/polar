@@ -11,6 +11,7 @@ from fastapi_users.authentication import (
 )
 from httpx_oauth.clients.github import GitHubOAuth2
 
+from polar.actions import github_user
 from polar.config import settings
 from polar.models import User
 
@@ -22,7 +23,34 @@ github_oauth_client = GitHubOAuth2(
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
+    async def oauth_callback(
+        self: "BaseUserManager[models.UOAP, models.ID]",
+        oauth_name: str,
+        access_token: str,
+        account_id: str,
+        account_email: str,
+        expires_at: Optional[int] = None,
+        refresh_token: Optional[str] = None,
+        request: Optional[Request] = None,
+        *,
+        associate_by_email: bool = False
+    ) -> User:
+        user = await super().oauth_callback(
+            oauth_name,
+            access_token,
+            account_id,
+            account_email,
+            expires_at,
+            refresh_token,
+            request,
+            associate_by_email=associate_by_email,
+        )
+        return await github_user.update_profile(
+            self.user_db.session, user, access_token
+        )
+
     async def on_after_register(self, user: User, request: Optional[Request] = None):
+        # TODO: Send welcome email here?
         log.info("user.registered", user_id=user.id)
 
 

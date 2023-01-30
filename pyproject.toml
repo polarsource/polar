@@ -16,6 +16,7 @@ sqlalchemy = {extras = ["asyncio"], version = "^2.0.0"}
 greenlet = "^2.0.2"  # Need to be explicit, M1 Mac issue (https://github.com/python-poetry/poetry/issues/5429)
 structlog = "^22.3.0"
 fastapi-users = {extras = ["oauth", "sqlalchemy"], version = "^10.3.0"}
+githubkit = {extras = ["auth-app"], version = "^0.9.4"}
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.12.0"

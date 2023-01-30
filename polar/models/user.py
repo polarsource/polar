@@ -45,7 +45,9 @@ class User(RecordModel):
     is_superuser: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-    oauth_accounts: Mapped[OAuthAccount] = relationship(OAuthAccount, lazy="joined")
+    oauth_accounts: Mapped[list[OAuthAccount]] = relationship(
+        OAuthAccount, lazy="joined"
+    )
 
     __mutables__ = {
         # username,
@@ -58,3 +60,6 @@ class User(RecordModel):
         # hireable,
         # public_email,
     }
+
+    def get_primary_oauth_account(self) -> OAuthAccount:
+        return self.oauth_accounts[0]

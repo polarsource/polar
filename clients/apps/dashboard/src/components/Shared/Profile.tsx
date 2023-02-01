@@ -131,8 +131,9 @@ const Profile = () => {
 
                 <Menu.Item key="foobar">
                   {({ active }) => (
+                    // TODO: Update this to be a variable instead of hardcoded link
                     <a
-                      href="https://github.com/apps/HubbenCo/installations/new"
+                      href="https://github.com/apps/polar-code/installations/new"
                       className={classNames(
                         active ? 'bg-gray-100 text-gray-900' : 'text-gray-500',
                         'group flex items-center px-4 py-2 text-xs',

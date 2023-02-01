@@ -1,7 +1,7 @@
 import os
 from enum import Enum
 
-from pydantic import BaseSettings, PostgresDsn
+from pydantic import AnyHttpUrl, BaseSettings, PostgresDsn
 
 
 class Environment(Enum):
@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     TESTING: bool = False
 
     SECRET: str = "super secret jwt secret"
+
+    # JSON list of accepted CORS origins
+    CORS_ORIGINS: list[AnyHttpUrl] = []
 
     # Postgres
     POSTGRES_SCHEME: str = "postgresql+asyncpg"

@@ -1,23 +1,6 @@
 version: '3.8'
 
 services:
-  api:
-    build:
-      context: ./
-      dockerfile: ./docker/api.Dockerfile
-      args:
-        POLAR_DOCKER_DEV: ${POLAR_DOCKER_DEV-true}
-    env_file:
-      - .env
-    ports:
-      - 8000:8000
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: always
-    networks:
-      - practice
-
   db:
     image: postgres:15.1-bullseye
     environment:
@@ -32,8 +15,6 @@ services:
     expose:
       - ${POLAR_POSTGRES_PORT}
     restart: always
-    networks:
-      - practice
     healthcheck:
       test: [ "CMD", "pg_isready", "-q", "-d", "${POLAR_POSTGRES_DB}", "-U", "${POLAR_POSTGRES_USER}" ]
       timeout: 40s
@@ -42,6 +23,3 @@ services:
 
 volumes:
   postgres_data:
-
-networks:
-  practice:

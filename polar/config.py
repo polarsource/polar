@@ -30,6 +30,16 @@ class Settings(BaseSettings):
     POSTGRES_PORT: int = 5432
     POSTGRES_DB: str = "polar_development"
 
+    # Redis
+    REDIS_HOST: str = "127.0.0.1"
+    REDIS_PORT: int = 6379
+
+    # Celery
+    CELERY_BROKER_URL: str = "redis://127.0.0.1:6379"
+    CELERY_BACKEND_URL: str = "redis://127.0.0.1:6379"
+    # Once True (testing) all Celery tasks are run synchronously
+    CELERY_TASK_ALWAYS_EAGER: bool = False
+
     # Github App
     GITHUB_APP_IDENTIFIER: str = ""
     GITHUB_APP_WEBHOOK_SECRET: str = ""

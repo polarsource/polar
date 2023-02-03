@@ -14,4 +14,5 @@ AsyncSessionLocal = sessionmaker(
     class_=AsyncSession,
 )
 
+
 __all__ = ["sql", "engine", "AsyncSessionLocal", "AsyncSession"]

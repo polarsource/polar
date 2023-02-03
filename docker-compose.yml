@@ -1,6 +1,11 @@
 version: '3.8'
 
 services:
+  redis:
+    image: redislabs/redismod
+    ports:
+      - "${POLAR_REDIS_PORT}:${POLAR_REDIS_PORT}"
+
   db:
     image: postgres:15.1-bullseye
     environment:

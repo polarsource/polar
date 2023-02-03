@@ -3,9 +3,12 @@ from githubkit import (
     AppInstallationAuthStrategy,
     GitHub,
     TokenAuthStrategy,
+    webhooks,
 )
 
 from polar.config import settings
+
+WebhookEvent = webhooks.types.WebhookEvent
 
 
 def get_client(access_token: str) -> GitHub[TokenAuthStrategy]:
@@ -35,3 +38,12 @@ def get_app_installation_client(
             client_secret=settings.GITHUB_CLIENT_SECRET,
         )
     )
+
+
+__all__ = [
+    "get_client",
+    "get_app_client",
+    "get_app_installation_client",
+    "WebhookEvent",
+    "webhooks",
+]

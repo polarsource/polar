@@ -94,13 +94,150 @@ def drop_oauth_accounts() -> None:
     op.drop_index("oauth_accounts_oauth_account_idx")
 
 
+def create_organizations() -> None:
+    op.create_table(
+        "organizations",
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("modified_at", sa.DateTime(), nullable=True),
+        sa.Column("id", GUID(), nullable=False, primary_key=True),
+        sa.Column("platform", sa.String(32), nullable=False),
+        sa.Column("name", sa.String(50), nullable=False, unique=True),
+        sa.Column("external_id", sa.Integer, nullable=False, unique=True),
+        sa.Column("avatar_url", sa.String, nullable=True),
+        sa.Column("is_personal", sa.Boolean, nullable=False),
+        sa.Column("is_site_admin", sa.Boolean, nullable=False),
+        sa.Column("installation_id", sa.Integer, nullable=False, unique=True),
+        sa.Column(
+            "installation_created_at", sa.TIMESTAMP(timezone=True), nullable=False
+        ),
+        sa.Column(
+            "installation_updated_at", sa.TIMESTAMP(timezone=True), nullable=True
+        ),
+        sa.Column(
+            "installation_suspended_at", sa.TIMESTAMP(timezone=True), nullable=True
+        ),
+        sa.Column("installation_suspended_by", sa.Integer, nullable=True),
+        sa.Column("installation_suspender", GUID(), nullable=True),
+        sa.Column("status", sa.String(20), nullable=False, server_default="inactive"),
+        sa.UniqueConstraint("name"),
+        sa.UniqueConstraint("external_id"),
+        sa.UniqueConstraint("installation_id"),
+        sa.PrimaryKeyConstraint("id"),
+    )
+
+
+def drop_organizations() -> None:
+    op.drop_table("organizations")
+
+
+def create_developer_organizations() -> None:
+    op.create_table(
+        "user_organizations",
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("modified_at", sa.DateTime(), nullable=True),
+        sa.Column("user_id", GUID(), nullable=False),
+        sa.Column("organization_id", GUID(), nullable=False),
+        sa.Column("status", sa.Integer, nullable=False, default=0),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
+        sa.ForeignKeyConstraint(
+            ["organization_id"], ["organizations.id"], ondelete="CASCADE"
+        ),
+        sa.PrimaryKeyConstraint("user_id", "organization_id"),
+    )
+
+
+def drop_developer_organizations() -> None:
+    op.drop_table("user_organizations")
+
+
+def create_accounts() -> None:
+    op.create_table(
+        "accounts",
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("modified_at", sa.DateTime(), nullable=True),
+        sa.Column("id", GUID(), nullable=False, primary_key=True),
+        sa.Column("organization_id", GUID(), unique=True),
+        sa.Column("user_id", GUID(), unique=True),
+        sa.Column("stripe_id", sa.String(100), nullable=False, unique=True),
+        sa.Column("is_personal", sa.Boolean, nullable=False),
+        sa.Column("email", sa.String(254), unique=True),
+        sa.Column("country", sa.String(2), nullable=True),
+        sa.Column("currency", sa.String(3), nullable=True),
+        sa.Column("is_details_submitted", sa.Boolean, nullable=False),
+        sa.Column("is_charges_enabled", sa.Boolean, nullable=False),
+        sa.Column("is_payouts_enabled", sa.Boolean, nullable=False),
+        sa.Column("type", sa.String(10), nullable=False),
+        sa.Column("status", sa.String(20), nullable=False, server_default="created"),
+        sa.Column("data", postgresql.JSONB(), nullable=False),
+        sa.PrimaryKeyConstraint("id"),
+        sa.ForeignKeyConstraint(["organization_id"], ["organizations.id"]),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
+        sa.UniqueConstraint("email"),
+        sa.UniqueConstraint("organization_id"),
+        sa.UniqueConstraint("user_id"),
+        sa.UniqueConstraint("stripe_id"),
+    )
+
+
+def drop_accounts() -> None:
+    op.drop_table("accounts")
+
+
+def create_repositories() -> None:
+    op.create_table(
+        "repositories",
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("modified_at", sa.DateTime(), nullable=True),
+        sa.Column("id", GUID(), nullable=False, primary_key=True),
+        sa.Column("platform", sa.String(32), nullable=False),
+        sa.Column("external_id", sa.Integer, nullable=False, unique=True),
+        sa.Column("organization_id", GUID(), nullable=True),
+        sa.Column("organization_name", sa.String, nullable=False),
+        sa.Column("name", sa.String, nullable=False),
+        sa.Column("description", sa.String(256), nullable=True),
+        sa.Column("open_issues", sa.Integer, nullable=True),
+        sa.Column("forks", sa.Integer, nullable=True),
+        sa.Column("stars", sa.Integer, nullable=True),
+        sa.Column("watchers", sa.Integer, nullable=True),
+        sa.Column("main_branch", sa.String, nullable=True),
+        sa.Column("topics", postgresql.JSONB(), nullable=True),
+        sa.Column("license", sa.String(50), nullable=True),
+        sa.Column("repository_pushed_at", sa.TIMESTAMP(timezone=True), nullable=True),
+        sa.Column("repository_created_at", sa.TIMESTAMP(timezone=True), nullable=True),
+        sa.Column("repository_modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
+        sa.Column("is_private", sa.Boolean, nullable=False),
+        sa.Column("is_fork", sa.Boolean, nullable=True),
+        sa.Column("is_issues_enabled", sa.Boolean, nullable=True),
+        sa.Column("is_projects_enabled", sa.Boolean, nullable=True),
+        sa.Column("is_wiki_enabled", sa.Boolean, nullable=True),
+        sa.Column("is_pages_enabled", sa.Boolean, nullable=True),
+        sa.Column("is_downloads_enabled", sa.Boolean, nullable=True),
+        sa.Column("is_archived", sa.Boolean, nullable=True),
+        sa.Column("is_disabled", sa.Boolean, nullable=True),
+        sa.PrimaryKeyConstraint("id"),
+        sa.ForeignKeyConstraint(["organization_id"], ["organizations.id"]),
+        sa.UniqueConstraint("external_id"),
+        sa.UniqueConstraint("organization_name", "name"),
+    )
+
+
+def drop_repositories() -> None:
+    op.drop_table("repositories")
+
+
 def upgrade() -> None:
     create_demo()
     create_users()
     create_oauth_accounts()
+    create_organizations()
+    create_accounts()
+    create_repositories()
 
 
 def downgrade() -> None:
     drop_demo()
     drop_users()
     drop_oauth_accounts()
+    drop_organizations()
+    drop_accounts()
+    drop_repositories()

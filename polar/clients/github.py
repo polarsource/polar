@@ -1,14 +1,25 @@
+from typing import Any
+
 from githubkit import (
     AppAuthStrategy,
     AppInstallationAuthStrategy,
     GitHub,
     TokenAuthStrategy,
+    utils,
     webhooks,
 )
 
 from polar.config import settings
 
 WebhookEvent = webhooks.types.WebhookEvent
+
+
+def patch_unset(field: str, payload: dict[str, Any]) -> dict[str, Any]:
+    # TODO: Remove this once the following issue is resolved:
+    # https://github.com/yanyongyu/githubkit/issues/14
+    if payload.get(field) is None:
+        payload[field] = utils.UNSET
+    return payload
 
 
 def get_client(access_token: str) -> GitHub[TokenAuthStrategy]:
@@ -44,6 +55,7 @@ __all__ = [
     "get_client",
     "get_app_client",
     "get_app_installation_client",
+    "patch_unset",
     "WebhookEvent",
     "webhooks",
 ]

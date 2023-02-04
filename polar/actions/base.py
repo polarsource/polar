@@ -59,7 +59,7 @@ class Action(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         if index_elements is None:
             index_elements = self.default_upsert_index_elements
 
-        return self.model.upsert_many(
+        return await self.model.upsert_many(
             session, create_schemas, index_elements=index_elements
         )
 
@@ -72,7 +72,9 @@ class Action(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         if index_elements is None:
             index_elements = self.default_upsert_index_elements
 
-        return self.model.upsert(session, create_schema, index_elements=index_elements)
+        return await self.model.upsert(
+            session, create_schema, index_elements=index_elements
+        )
 
     async def update(
         self,

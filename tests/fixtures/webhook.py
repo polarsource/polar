@@ -1,0 +1,63 @@
+from __future__ import annotations
+
+import json
+from typing import Any
+
+from httpx import Response
+from starlette.testclient import TestClient
+
+from polar.clients import github
+from polar.config import settings
+
+
+class TestWebhook:
+    def __init__(
+        self,
+        headers: dict[str, Any],
+        data: bytes,
+        json: dict[str, Any],
+        client: TestClient,
+    ) -> None:
+        self.headers = headers
+        self.data = data
+        self.json = json
+        self.client = client
+
+    async def send(self) -> Response:
+        response = await self.client.post(
+            "/api/v1/integrations/github/webhook",
+            json=self.json,
+            headers=self.headers,
+        )
+        return response
+
+    def __getitem__(self, key: str) -> Any:
+        return self.json[key]
+
+
+class TestWebhookFactory:
+    def __init__(self, client: TestClient):
+        self.client = client
+
+    def generate_cassette(self, name: str) -> dict[str, Any]:
+        filename = f"tests/fixtures/cassettes/webhooks/github/{name}.json"
+        with open(filename, "r") as fp:
+            cassette: dict[str, Any] = json.loads(fp.read())
+
+        data = json.dumps(cassette["body"]).encode()
+        signature = github.webhooks.sign(
+            settings.GITHUB_APP_WEBHOOK_SECRET, data, method="sha256"
+        )
+
+        cassette["data"] = data
+        cassette["headers"]["X-Hub-Signature-256"] = signature
+        return cassette
+
+    def create(self, name: str) -> TestWebhook:
+        cassette = self.generate_cassette(name)
+        return TestWebhook(
+            cassette["headers"],
+            cassette["data"],
+            cassette["body"],
+            self.client,
+        )

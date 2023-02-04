@@ -1,11 +1,15 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.ext.sqlalchemy import GUID
 from polar.models.base import RecordModel
+
+if TYPE_CHECKING:  # pragma: no cover
+    from polar.models.organization import Organization
 
 
 class OAuthAccount(RecordModel):
@@ -25,16 +29,6 @@ class OAuthAccount(RecordModel):
         )
 
 
-# username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
-# avatar_url: Mapped[str] = mapped_column(String(255), nullable=False)
-# company: Mapped[str] = mapped_column(String(255))
-# location: Mapped[str] = mapped_column(String(255))
-# bio: Mapped[str] = mapped_column(String(255))
-# twitter: Mapped[str] = mapped_column(String(20))
-# hireable: Mapped[str] = mapped_column(Boolean)
-# public_email: Mapped[str] = mapped_column(Boolean)
-
-
 class User(RecordModel):
     __tablename__ = "users"
 
@@ -49,17 +43,16 @@ class User(RecordModel):
         OAuthAccount, lazy="joined"
     )
 
-    __mutables__ = {
-        # username,
-        email,
-        # avatar_url,
-        # company,
-        # location,
-        # bio,
-        # twitter,
-        # hireable,
-        # public_email,
-    }
+    organization_associations: "Mapped[Organization]" = relationship(
+        "UserOrganization",
+        back_populates="user",
+        cascade="delete-orphan",
+        lazy="select",
+    )
+
+    organizations = association_proxy("organization_associations", "organization")
+
+    __mutables__ = {email, profile}
 
     def get_primary_oauth_account(self) -> OAuthAccount:
         return self.oauth_accounts[0]

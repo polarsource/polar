@@ -1,15 +1,10 @@
 import os
-from typing import Generator
 
-import pytest
-from starlette.testclient import TestClient
+import nest_asyncio
+
+# Since we're calling alembic upgrade which is also creating an asyncio loop
+nest_asyncio.apply()
 
 os.environ["POLAR_ENV"] = "testing"
 
-from polar.app import app  # noqa: E402
-
-
-@pytest.fixture(scope="module")
-def client() -> Generator[TestClient, None, None]:
-    client = TestClient(app)
-    yield client
+from tests.fixtures import *  # noqa

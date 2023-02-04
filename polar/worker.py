@@ -23,6 +23,15 @@ ReturnValue = TypeVar("ReturnValue")
 def asyncify_task(
     with_session: bool = False,
 ) -> Callable[[Callable[Params, ReturnValue]], Callable[Params, ReturnValue]]:
+    def a2s(
+        f: Callable[Params, Awaitable[ReturnValue]]
+    ) -> Callable[Params, Awaitable[ReturnValue]]:
+        # Since we're running Celery in eager mode during test, we're in
+        # an asyncio event loop and can skip the async_to_sync wrapper.
+        if not settings.is_testing():
+            return async_to_sync(f)  # type: ignore
+        return f
+
     async def inject_session(
         f: Callable[Params, Awaitable[ReturnValue]],
         *args: Params.args,
@@ -35,8 +44,8 @@ def asyncify_task(
         @functools.wraps(f)
         def wrapper(*args: Params.args, **kwargs: Params.kwargs) -> ReturnValue:
             if not with_session:
-                return async_to_sync(f)(*args, **kwargs)  # type: ignore
-            return async_to_sync(inject_session)(f, *args, **kwargs)  # type: ignore
+                return a2s(f)(*args, **kwargs)  # type: ignore
+            return a2s(inject_session)(f, *args, **kwargs)  # type: ignore
 
         return wrapper
 

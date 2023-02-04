@@ -4,6 +4,7 @@ from functools import cache
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from sqlalchemy import Column
+from sqlalchemy.orm.properties import MappedColumn
 from sqlalchemy.sql.selectable import FromClause
 
 from polar.postgres import AsyncSession, sql
@@ -24,8 +25,8 @@ class ActiveRecordMixin:
     @classmethod
     @cache
     def get_mutable_keys(cls: type[ModelType]) -> set[str]:
-        def name(c: str | Column[Any]) -> str:
-            if isinstance(c, Column):
+        def name(c: str | MappedColumn[Any] | Column[Any]) -> str:
+            if hasattr(c, "name"):
                 return c.name
             return c
 
@@ -136,7 +137,7 @@ class ActiveRecordMixin:
         obj: SchemaType,
         index_elements: list[Column[Any]],
     ) -> ModelType:
-        upserted: list[ModelType] = cls.upsert_many(
+        upserted: list[ModelType] = await cls.upsert_many(
             session, [obj], index_elements=index_elements
         )
         return upserted[0]

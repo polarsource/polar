@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, AsyncGenerator
 
+import pytest
 from httpx import AsyncClient, Response
 
 from polar.clients import github
@@ -60,3 +61,11 @@ class TestWebhookFactory:
             cassette["body"],
             self.client,
         )
+
+
+@pytest.fixture()
+async def github_webhook(
+    client: AsyncClient,
+) -> AsyncGenerator[TestWebhookFactory, None]:
+    factory = TestWebhookFactory(client)
+    yield factory

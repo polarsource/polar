@@ -1,5 +1,5 @@
 from polar.models.account import Account
-from polar.models.base import Model, TimestampedModel
+from polar.models.base import Model, StatusMixin, TimestampedModel
 from polar.models.demo import Demo
 from polar.models.issue import Issue
 from polar.models.organization import Organization
@@ -11,6 +11,7 @@ from polar.models.user_organization import UserOrganization
 __all__ = [
     "Model",
     "TimestampedModel",
+    "StatusMixin",
     "Demo",
     "User",
     "OAuthAccount",

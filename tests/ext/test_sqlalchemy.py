@@ -3,25 +3,13 @@ from typing import Any, AsyncGenerator
 
 import pytest
 from pytest_mock import MockerFixture
-from sqlalchemy import Integer, String, text
+from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import dialect as postgresql
-from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.ext.sqlalchemy import GUID, IntEnum
-from polar.models.base import Model, StatusFlag, StatusMixin
+from polar.models.base import StatusFlag
 from polar.postgres import AsyncSession, engine, sql
-
-
-class TestModel(StatusMixin, Model):
-    __tablename__ = "test_model"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    guid: Mapped[uuid.UUID] = mapped_column(GUID, default=GUID.generate)
-    int_column: Mapped[int | None] = mapped_column(Integer)
-    str_column: Mapped[str | None] = mapped_column(String)
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.testing_ctx: dict[str, Any] = {}
+from tests.fixtures.database import TestModel
 
 
 @pytest.fixture(scope="module")

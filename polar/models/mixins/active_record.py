@@ -36,12 +36,12 @@ class ActiveRecordMixin:
         return columns - pks
 
     @classmethod
-    def find(
+    async def find(
         cls: type[ModelType], session: AsyncSession, id: Any, key: str = "id"
     ) -> ModelType | None:
         params = {}
         params[key] = id
-        return cls.find_by(session, **params)
+        return await cls.find_by(session, **params)
 
     @classmethod
     async def find_by(

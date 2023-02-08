@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import cache
-from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
+from typing import Any, ClassVar, TypeVar
 
 from sqlalchemy import Column
 from sqlalchemy.orm.properties import MappedColumn
@@ -9,9 +9,6 @@ from sqlalchemy.sql.selectable import FromClause
 
 from polar.postgres import AsyncSession, sql
 from polar.schema.base import Schema
-
-if TYPE_CHECKING:  # pragma: no cover
-    from sqlalchemy import Table
 
 ModelType = TypeVar("ModelType", bound="ActiveRecordMixin")
 SchemaType = TypeVar("SchemaType", bound=Schema)

@@ -1,5 +1,6 @@
 from typing import Any
 
+from fastapi.encoders import jsonable_encoder
 from githubkit import (
     AppAuthStrategy,
     AppInstallationAuthStrategy,
@@ -12,6 +13,31 @@ from githubkit import (
 from polar.config import settings
 
 WebhookEvent = webhooks.types.WebhookEvent
+
+
+# TODO: Investigate improvement from githubkit - this is not ergonomic or pretty..
+
+
+def is_set(obj: object, name: str) -> bool:
+    attr = getattr(obj, name, None)
+    if attr is None:
+        return False
+    return not isinstance(attr, utils.Unset)
+
+
+def jsonify(obj: Any) -> list[dict[str, Any]] | dict[str, Any] | None:
+    if not obj:
+        return None
+
+    if isinstance(obj, list):
+        return [jsonable_encoder(utils.exclude_unset(o.dict())) for o in obj]
+    return jsonable_encoder(utils.exclude_unset(obj.dict()))
+
+
+def attr(obj: object, attr: str) -> Any:
+    if is_set(obj, attr):
+        return getattr(obj, attr)
+    return None
 
 
 def patch_unset(field: str, payload: dict[str, Any]) -> dict[str, Any]:

@@ -2,7 +2,7 @@ import uuid
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Boolean, Column, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -38,8 +38,8 @@ class Account(RecordModel):
 
     email: Mapped[str] = mapped_column(String(254), unique=True)
 
-    country: Mapped[str] = mapped_column(String(2))
-    currency: Mapped[str] = mapped_column(String(3))
+    country: Mapped[str | None] = mapped_column(String(2))
+    currency: Mapped[str | None] = mapped_column(String(3))
 
     is_details_submitted: Mapped[bool] = mapped_column(Boolean, nullable=False)
     is_charges_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)

@@ -36,9 +36,8 @@ sqlalchemy-utils = {git = "git@github.com:birkjernstrom/sqlalchemy-utils.git"}
 psycopg2-binary = "^2.9.5"
 coverage = "^7.1.0"
 pytest-mock = "^3.10.0"
-anyio = "^3.6.2"
-pytest-asyncio = "^0.20.3"
 nest-asyncio = "^1.5.6"
+anyio = "^3.6.2"
 
 [tool.flake8]
 max-line-length = 88

@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import TIMESTAMP, Boolean, DateTime, Integer, String, UniqueConstraint
+from sqlalchemy import TIMESTAMP, Boolean, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.ext.sqlalchemy import GUID, StringEnum
@@ -31,22 +31,22 @@ class Organization(RecordModel):
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
     name: Mapped[str] = mapped_column(String(length=50), nullable=False, unique=True)
     external_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
-    avatar_url: Mapped[str] = mapped_column(String)
+    avatar_url: Mapped[str | None] = mapped_column(String)
     is_personal: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
     # TODO: Investigate what to do best with site_admin, i.e Github Enterprise
     is_site_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     installation_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
-    installation_created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False
-    )
-    installation_updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
-    installation_suspended_at: Mapped[datetime] = mapped_column(
+    installation_created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
+    installation_updated_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True)
     )
-    installation_suspended_by: Mapped[int] = mapped_column(Integer)
-    installation_suspender: Mapped[uuid.UUID] = mapped_column(GUID)
+    installation_suspended_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True)
+    )
+    installation_suspended_by: Mapped[int | None] = mapped_column(Integer)
+    installation_suspender: Mapped[uuid.UUID | None] = mapped_column(GUID)
 
     status: Mapped[Status] = mapped_column(
         StringEnum(Status), nullable=False, default=Status.INACTIVE

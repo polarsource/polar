@@ -1,85 +1,94 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-from unittest.mock import MagicMock
+from typing import Any
 
 import pytest
-from pytest_mock import MockerFixture
+from httpx import Response
 
 from polar import actions
-from polar.api.v1.github import queue
-from polar.config import settings
-from polar.postgres import AsyncSession
-from polar.tasks.github import webhook
-from tests.fixtures.webhook import TestWebhookFactory
-
-if TYPE_CHECKING:  # pragma: no cover
-    from polar.models.organization import Organization
+from polar.clients import github
+from polar.models.organization import Organization
+from polar.platforms import Platforms
+from polar.postgres import AsyncSession, AsyncSessionLocal
+from polar.schema.organization import CreateOrganization
+from tests.fixtures.webhook import TestWebhook, TestWebhookFactory
 
 
-def ensure_dispatched_task(
-    github_webhook: TestWebhookFactory,
-    event: str,
-    handler: MagicMock,
+async def assert_repository_deleted(
+    session: AsyncSession, repo: dict[str, Any]
 ) -> None:
-    hook = github_webhook.create(event)
-    with hook.request_context():
-        webhook_dispatch()
-
-    handler.assert_called_once()
-    handler.assert_called_with(hook.id, hook.event, hook.json)
-
-
-def assert_repository_deleted(repo: dict[str, Any]) -> None:
-    record = actions.github_repository.get_by_external_id(repo["id"])
+    record = await actions.github_repository.get_by_external_id(session, repo["id"])
     assert record is None
 
 
-def assert_repository_exists(repo: dict[str, Any]) -> None:
+async def assert_repository_exists(session: AsyncSession, repo: dict[str, Any]) -> None:
     repo_id = repo["id"]
-    record = actions.github_repository.get_by_external_id(repo_id)
+    record = await actions.github_repository.get_by_external_id(session, repo_id)
     assert record is not None
     assert record.name == repo["name"]
     assert repo["full_name"] == f"{record.organization_name}/{record.name}"
     assert record.is_private == repo["private"]
 
 
-def get_asserted_org(**clauses: Any) -> Organization:
-    org = actions.github_organization.get_by(**clauses)
+async def get_asserted_org(session: AsyncSession, **clauses: Any) -> Organization:
+    org = await actions.github_organization.get_by(session, **clauses)
     assert org
     return org
 
 
-# def test_dispatch_installation_created(
-#     github_webhook: GithubWebhookFactory, mocker: MockerFixture
-# ) -> None:
-#     patch = mocker.patch.object
-#     mapper = {
-#         "installation.created": patch(webhook, "installation_created"),
-#         # "installation.suspend": patch(webhook.installation_suspend, "delay"),
-#         # "installation.unsuspend": patch(webhook.installation_unsuspend, "delay"),
-#         # "installation_repositories.added": patch(webhook.repositories_added, "delay"),
-#         # "installation_repositories.removed": patch(
-#         #     webhook.repositories_removed, "delay"
-#         # ),
-#         # "issues.opened": patch(webhook.issue_opened, "delay"),
-#         # "issues.labeled": patch(webhook.issue_labeled, "delay"),
-#         # "issues.closed": patch(webhook.issue_closed, "delay"),
-#         # "pull_request.opened": patch(webhook.pull_request_opened, "delay"),
-#         # "pull_request.synchronize": patch(webhook.pull_request_synchronize, "delay"),
-#     }
-#     for event, handler in mapper.items():
-#         ensure_dispatched_task(github_webhook, event, handler)
-
-
-@pytest.mark.anyio
-async def test_installation_created(
-    session: AsyncSession, github_webhook: TestWebhookFactory
-) -> None:
-    from polar.tasks.github.webhook import installation_created
-
+async def create_org(
+    github_webhook: TestWebhookFactory,
+    status: Organization.Status = Organization.Status.ACTIVE,
+) -> Organization:
     hook = github_webhook.create("installation.created")
-    res = await installation_created("installation", "created", hook.json)
+    hook = github.patch_unset("requester", hook.json)
+    event = github.webhooks.parse_obj("installation", hook)
+
+    # TODO: Move this into its own schema helper
+    account = event.installation.account
+    is_personal = account.type.lower() == "user"
+    create_schema = CreateOrganization(
+        platform=Platforms.github,
+        name=account.login,
+        external_id=account.id,
+        avatar_url=account.avatar_url,
+        is_personal=is_personal,
+        is_site_admin=account.site_admin,
+        installation_id=event.installation.id,
+        installation_created_at=event.installation.created_at,
+        installation_modified_at=event.installation.updated_at,
+        installation_suspended_at=event.installation.suspended_at,
+    )
+    async with AsyncSessionLocal() as session:
+        org = await actions.github_organization.upsert(session, create_schema)
+        org.status = status
+        session.add(org)
+        await session.commit()
+        return org
+
+
+async def create_repositories(github_webhook: TestWebhookFactory) -> TestWebhook:
+    await create_org(github_webhook, status=Organization.Status.ACTIVE)
+    hook = github_webhook.create("installation_repositories.added")
+    response = await hook.send()
+    assert response.status_code == 200
+    return hook
+
+
+async def create_issue(github_webhook: TestWebhookFactory) -> TestWebhook:
+    await create_repositories(github_webhook)
+    hook = github_webhook.create("issues.opened")
+    response = await hook.send()
+    assert response.status_code == 200
+    return hook
+
+
+async def create_pr(github_webhook: TestWebhookFactory) -> TestWebhook:
+    await create_repositories(github_webhook)
+    hook = github_webhook.create("pull_request.opened")
+    response = await hook.send()
+    assert response.status_code == 200
+    return hook
 
 
 @pytest.mark.anyio
@@ -99,59 +108,167 @@ async def test_webhook_installation_created(
     assert org.external_id == account["id"]
     assert org.name == account["login"]
 
-    # map(assert_repository_exists, hook["repositories"])
+    for repo in hook["repositories"]:
+        await assert_repository_exists(session, repo)
 
 
-# def test_webhook_installation_suspend(github_webhook: GithubWebhookFactory) -> None:
-#     hook = github_webhook.create("installation.suspend")
-#     org_id = hook["installation"]["account"]["id"]
+@pytest.mark.anyio
+async def test_webhook_installation_suspend(github_webhook: TestWebhookFactory) -> None:
+    org = await create_org(github_webhook, status=Organization.Status.INACTIVE)
 
-#     org = get_asserted_org(external_id=org_id)
-#     # TODO: Fix me. Should be ACTIVE by default upon installation
-#     assert org.status == org.Status.INACTIVE
+    hook = github_webhook.create("installation.suspend")
+    org_id = hook["installation"]["account"]["id"]
+    response = await hook.send()
+    assert response.status_code == 200
 
-#     response = hook.send()
-#     assert response.status_code == 200
-
-#     org = get_asserted_org(external_id=org_id)
-#     assert org.status == org.Status.SUSPENDED
-
-
-# def test_webhook_installation_unsuspend(github_webhook: GithubWebhookFactory) -> None:
-#     hook = github_webhook.create("installation.unsuspend")
-#     org_id = hook["installation"]["account"]["id"]
-
-#     org = get_asserted_org(external_id=org_id)
-#     assert org.status == org.Status.SUSPENDED
-
-#     response = hook.send()
-#     assert response.status_code == 200
-
-#     org = get_asserted_org(external_id=org_id)
-#     assert org.status == org.Status.ACTIVE
+    async with AsyncSessionLocal() as session:
+        org = await get_asserted_org(session, external_id=org_id)
+        assert org.status == org.Status.SUSPENDED
 
 
-# def test_webhook_repositories_added(github_webhook: GithubWebhookFactory) -> None:
-#     hook = github_webhook.create("installation_repositories.added")
-#     new_repo = hook["repositories_added"][0]
+@pytest.mark.anyio
+async def test_webhook_installation_unsuspend(
+    github_webhook: TestWebhookFactory,
+) -> None:
+    org = await create_org(github_webhook, status=Organization.Status.SUSPENDED)
 
-#     repo = actions.github_repository.get_by_external_id(new_repo["id"])
-#     assert repo is None
+    hook = github_webhook.create("installation.unsuspend")
+    org_id = hook["installation"]["account"]["id"]
+    response = await hook.send()
+    assert response.status_code == 200
 
-#     response = hook.send()
-#     assert response.status_code == 200
-#     assert_repository_exists(new_repo)
+    async with AsyncSessionLocal() as session:
+        org = await get_asserted_org(session, external_id=org_id)
+        assert org.status == org.Status.ACTIVE
 
 
-# def test_webhook_repositories_removed(github_webhook: GithubWebhookFactory) -> None:
-#     hook = github_webhook.create("installation_repositories.removed")
-#     delete_repo = hook["repositories_removed"][0]
+@pytest.mark.anyio
+async def test_webhook_installation_delete(github_webhook: TestWebhookFactory) -> None:
+    hook = github_webhook.create("installation.deleted")
+    org_id = hook["installation"]["account"]["id"]
 
-#     # Created at installation
-#     assert_repository_exists(delete_repo)
+    org = await create_org(github_webhook, status=Organization.Status.ACTIVE)
+    assert org
+    assert org.external_id == org_id
 
-#     response = hook.send()
-#     assert response.status_code == 200
+    response = await hook.send()
+    assert response.status_code == 200
 
-#     repo = actions.github_repository.get_by_external_id(delete_repo["id"])
-#     assert repo is None
+    async with AsyncSessionLocal() as session:
+        fetched = await actions.github_organization.get_by(session, external_id=org_id)
+        assert fetched is None
+
+
+@pytest.mark.anyio
+async def test_webhook_repositories_added(
+    session: AsyncSession, github_webhook: TestWebhookFactory
+) -> None:
+    hook = github_webhook.create("installation_repositories.added")
+    new_repo = hook["repositories_added"][0]
+
+    repo = await actions.github_repository.get_by_external_id(session, new_repo["id"])
+    assert repo is None
+
+    await create_repositories(github_webhook)
+    await assert_repository_exists(session, new_repo)
+
+
+@pytest.mark.anyio
+async def test_webhook_repositories_removed(
+    session: AsyncSession, github_webhook: TestWebhookFactory
+) -> None:
+    hook = github_webhook.create("installation_repositories.removed")
+    delete_repo = hook["repositories_removed"][0]
+
+    await create_repositories(github_webhook)
+    await assert_repository_exists(session, delete_repo)
+
+    response = await hook.send()
+    assert response.status_code == 200
+
+    repo = await actions.github_repository.get_by_external_id(
+        session, delete_repo["id"]
+    )
+    assert repo is None
+
+
+@pytest.mark.anyio
+async def test_webhook_issues_opened(
+    session: AsyncSession, github_webhook: TestWebhookFactory
+) -> None:
+    await create_repositories(github_webhook)
+    hook = github_webhook.create("issues.opened")
+    issue_id = hook["issue"]["id"]
+
+    issue = await actions.github_issue.get_by_external_id(session, issue_id)
+    assert issue is None
+
+    response = await hook.send()
+    assert response.status_code == 200
+
+    issue = await actions.github_issue.get_by_external_id(session, issue_id)
+    assert issue is not None
+
+
+@pytest.mark.anyio
+async def test_webhook_issues_closed(
+    session: AsyncSession, github_webhook: TestWebhookFactory
+) -> None:
+    hook = github_webhook.create("issues.closed")
+    response = await hook.send()
+    assert response.status_code == 200
+
+
+@pytest.mark.anyio
+async def test_webhook_issues_labeled(github_webhook: TestWebhookFactory) -> None:
+    await create_repositories(github_webhook)
+    hook = await create_issue(github_webhook)
+
+    issue_id = hook["issue"]["id"]
+    async with AsyncSessionLocal() as session:
+        issue = await actions.github_issue.get_by_external_id(session, issue_id)
+        assert issue is not None
+        assert issue.labels is None
+
+    hook = github_webhook.create("issues.labeled")
+    response = await hook.send()
+    assert response.status_code == 200
+
+    async with AsyncSessionLocal() as session:
+        issue = await actions.github_issue.get_by_external_id(session, issue_id)
+        assert issue.labels[0]["name"] == hook["issue"]["labels"][0]["name"]
+
+
+@pytest.mark.anyio
+async def test_webhook_pull_request_opened(
+    session: AsyncSession, github_webhook: TestWebhookFactory
+) -> None:
+    hook = github_webhook.create("pull_request.opened")
+    pr_id = hook["pull_request"]["id"]
+
+    pr = await actions.github_pull_request.get_by_external_id(session, pr_id)
+    assert pr is None
+
+    await create_pr(github_webhook)
+
+    pr = await actions.github_pull_request.get_by_external_id(session, pr_id)
+    assert pr is not None
+
+
+@pytest.mark.anyio
+async def test_webhook_pull_request_synchronize(
+    github_webhook: TestWebhookFactory,
+) -> None:
+    await create_pr(github_webhook)
+    hook = github_webhook.create("pull_request.synchronize")
+    pr_id = hook["pull_request"]["id"]
+
+    async with AsyncSessionLocal() as session:
+        pr = await actions.github_pull_request.get_by_external_id(session, pr_id)
+        assert pr.merge_commit_sha is None
+
+    await hook.send()
+
+    async with AsyncSessionLocal() as session:
+        pr = await actions.github_pull_request.get_by_external_id(session, pr_id)
+        assert pr.merge_commit_sha is not None

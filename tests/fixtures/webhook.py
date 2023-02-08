@@ -3,8 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from httpx import Response
-from starlette.testclient import TestClient
+from httpx import AsyncClient, Response
 
 from polar.clients import github
 from polar.config import settings
@@ -16,7 +15,7 @@ class TestWebhook:
         headers: dict[str, Any],
         data: bytes,
         json: dict[str, Any],
-        client: TestClient,
+        client: AsyncClient,
     ) -> None:
         self.headers = headers
         self.data = data
@@ -36,7 +35,7 @@ class TestWebhook:
 
 
 class TestWebhookFactory:
-    def __init__(self, client: TestClient):
+    def __init__(self, client: AsyncClient):
         self.client = client
 
     def generate_cassette(self, name: str) -> dict[str, Any]:

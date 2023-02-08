@@ -17,8 +17,8 @@ class OAuthAccount(RecordModel):
 
     oauth_name: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
     access_token: Mapped[str] = mapped_column(String(1024), nullable=False)
-    expires_at: Mapped[int] = mapped_column(Integer)
-    refresh_token: Mapped[str] = mapped_column(String(1024))
+    expires_at: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    refresh_token: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     account_id: Mapped[str] = mapped_column(String(320), index=True, nullable=False)
     account_email: Mapped[str] = mapped_column(String(320), nullable=False)
 
@@ -34,7 +34,9 @@ class User(RecordModel):
 
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(1024), nullable=False)
-    profile: Mapped[dict[str, Any]] = mapped_column(JSONB, default={})
+    profile: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB, default={}, nullable=True
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_superuser: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

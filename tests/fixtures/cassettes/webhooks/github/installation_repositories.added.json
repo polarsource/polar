@@ -4,8 +4,8 @@
         "User-Agent": "GitHub-Hookshot/c02375a",
         "X-GitHub-Delivery": "<delivery_code>",
         "X-GitHub-Event": "installation_repositories",
-        "X-GitHub-Hook-ID": 1337,
-        "X-GitHub-Hook-Installation-Target-ID": 1000,
+        "X-GitHub-Hook-ID": "1337",
+        "X-GitHub-Hook-Installation-Target-ID": "1000",
         "X-GitHub-Hook-Installation-Target-Type": "integration"
     },
     "body": {

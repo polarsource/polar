@@ -33,13 +33,24 @@ async def queue(request: Request) -> WebhookResponse:
 
     task_mapping = {
         "installation.created": hooks.installation_created,
-        "issues.opened": hooks.issues_opened,
+        "installation.deleted": hooks.installation_delete,
+        "installation.suspend": hooks.installation_suspend,
+        "installation.unsuspend": hooks.installation_unsuspend,
+        "installation_repositories.added": hooks.repositories_added,
+        "installation_repositories.removed": hooks.repositories_removed,
+        "issues.opened": hooks.issue_opened,
+        "issues.closed": hooks.issue_closed,
+        "issues.labeled": hooks.issue_labeled,
+        "pull_request.opened": hooks.pull_request_opened,
+        "pull_request.synchronize": hooks.pull_request_synchronize,
     }
     task = task_mapping.get(event_name)
     if not task:
         return not_implemented(event_scope, event_action, json_body)
 
     queued = task.delay(event_scope, event_action, json_body)
+    if settings.is_testing() and settings.CELERY_TASK_ALWAYS_EAGER:
+        await queued.result
     log.info("github.webhook.queued", event_name=event_name)
     return WebhookResponse(success=True, task_id=queued.id)
 

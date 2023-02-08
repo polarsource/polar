@@ -37,30 +37,30 @@ class Repository(RecordModel):
 
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
     external_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
-    organization_id: Mapped[uuid.UUID] = mapped_column(
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(
         GUID, ForeignKey("organizations.id"), nullable=True
     )
     organization_name: Mapped[str] = mapped_column(String, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
-    description: Mapped[str] = mapped_column(String(256), nullable=True)
+    description: Mapped[str | None] = mapped_column(String(256), nullable=True)
 
-    open_issues: Mapped[int] = mapped_column(Integer, nullable=True)
-    forks: Mapped[int] = mapped_column(Integer, nullable=True)
-    stars: Mapped[int] = mapped_column(Integer, nullable=True)
-    watchers: Mapped[int] = mapped_column(Integer, nullable=True)
+    open_issues: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    forks: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    stars: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    watchers: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    main_branch: Mapped[str] = mapped_column(String, nullable=True)
+    main_branch: Mapped[str | None] = mapped_column(String, nullable=True)
     topics: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=list)
 
-    license: Mapped[str] = mapped_column(String(50), nullable=True)
+    license: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
-    repository_pushed_at: Mapped[datetime] = mapped_column(
+    repository_pushed_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
-    repository_created_at: Mapped[datetime] = mapped_column(
+    repository_created_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
-    repository_modified_at: Mapped[datetime] = mapped_column(
+    repository_modified_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
 
@@ -69,16 +69,16 @@ class Repository(RecordModel):
     ###############################################################################
 
     is_private: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    is_fork: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_fork: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
-    is_issues_enabled: Mapped[bool] = mapped_column(Boolean, nullable=True)
-    is_projects_enabled: Mapped[bool] = mapped_column(Boolean, nullable=True)
-    is_wiki_enabled: Mapped[bool] = mapped_column(Boolean, nullable=True)
-    is_pages_enabled: Mapped[bool] = mapped_column(Boolean, nullable=True)
-    is_downloads_enabled: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_issues_enabled: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    is_projects_enabled: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    is_wiki_enabled: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    is_pages_enabled: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    is_downloads_enabled: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
-    is_archived: Mapped[bool] = mapped_column(Boolean, nullable=True)
-    is_disabled: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_archived: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    is_disabled: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
     @hybrid_property
     def visibility(self) -> Visibility:

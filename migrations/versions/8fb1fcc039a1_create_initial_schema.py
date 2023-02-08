@@ -225,6 +225,93 @@ def drop_repositories() -> None:
     op.drop_table("repositories")
 
 
+def get_base_issue_columns() -> list[sa.Column]:
+    columns = [
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("modified_at", sa.DateTime(), nullable=True),
+        sa.Column("id", GUID, nullable=False, primary_key=True),
+        sa.Column("platform", sa.String(32), nullable=False),
+        sa.Column("external_id", sa.Integer, nullable=False),
+        sa.Column("organization_id", GUID, nullable=True),
+        sa.Column("organization_name", sa.String, nullable=False),
+        sa.Column("repository_id", GUID, nullable=True),
+        sa.Column("repository_name", sa.String, nullable=False),
+        sa.Column("number", sa.Integer, nullable=False),
+        sa.Column("title", sa.String, nullable=False),
+        sa.Column("body", sa.Text, nullable=True),
+        sa.Column("comments", sa.Integer, nullable=True),
+        sa.Column("author", postgresql.JSONB, nullable=True),
+        sa.Column("author_association", sa.String, nullable=True),
+        sa.Column("labels", postgresql.JSONB, nullable=True),
+        sa.Column("assignee", postgresql.JSONB, nullable=True),
+        sa.Column("assignees", postgresql.JSONB, nullable=True),
+        sa.Column("milestone", postgresql.JSONB, nullable=True),
+        sa.Column("closed_by", postgresql.JSONB, nullable=True),
+        sa.Column("reactions", postgresql.JSONB, nullable=True),
+        sa.Column("state", sa.String(30), nullable=False),
+        sa.Column("state_reason", sa.String, nullable=True),
+        sa.Column("is_locked", sa.Boolean, nullable=False),
+        sa.Column("lock_reason", sa.String, nullable=True),
+        sa.Column("issue_closed_at", sa.TIMESTAMP(timezone=True), nullable=True),
+        sa.Column("issue_created_at", sa.TIMESTAMP(timezone=True), nullable=False),
+        sa.Column("issue_modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
+    ]
+    return columns
+
+
+def create_issues() -> None:
+    op.create_table(
+        "issues",
+        *get_base_issue_columns(),
+        sa.Column("token", sa.String, nullable=False, unique=True),
+        sa.PrimaryKeyConstraint("id"),
+        sa.ForeignKeyConstraint(["organization_id"], ["organizations.id"]),
+        sa.ForeignKeyConstraint(["repository_id"], ["repositories.id"]),
+        sa.UniqueConstraint("external_id"),
+        sa.UniqueConstraint("organization_name", "repository_name", "number"),
+        sa.UniqueConstraint("token"),
+    )
+
+
+def drop_issues() -> None:
+    op.drop_table("issues")
+
+
+def create_pull_requests() -> None:
+    op.create_table(
+        "pull_requests",
+        *get_base_issue_columns(),
+        sa.Column("commits", sa.Integer, nullable=True),
+        sa.Column("additions", sa.Integer, nullable=True),
+        sa.Column("deletions", sa.Integer, nullable=True),
+        sa.Column("changed_files", sa.Integer, nullable=True),
+        sa.Column("requested_reviewers", postgresql.JSONB, nullable=True),
+        sa.Column("requested_teams", postgresql.JSONB, nullable=True),
+        sa.Column("is_draft", sa.Boolean, nullable=False),
+        sa.Column("is_rebaseable", sa.Boolean, nullable=True),
+        sa.Column("review_comments", sa.Integer, nullable=True),
+        sa.Column("maintainer_can_modify", sa.Boolean, nullable=True),
+        sa.Column("is_mergeable", sa.Boolean, nullable=True),
+        sa.Column("mergeable_state", sa.String, nullable=True),
+        sa.Column("auto_merge", sa.String, nullable=True),
+        sa.Column("is_merged", sa.Boolean, nullable=True),
+        sa.Column("merged_by", postgresql.JSONB, nullable=True),
+        sa.Column("merged_at", sa.DateTime, nullable=True),
+        sa.Column("merge_commit_sha", sa.String, nullable=True),
+        sa.Column("head", postgresql.JSONB, nullable=True),
+        sa.Column("base", postgresql.JSONB, nullable=True),
+        sa.PrimaryKeyConstraint("id"),
+        sa.ForeignKeyConstraint(["organization_id"], ["organizations.id"]),
+        sa.ForeignKeyConstraint(["repository_id"], ["repositories.id"]),
+        sa.UniqueConstraint("external_id"),
+        sa.UniqueConstraint("organization_name", "repository_name", "number"),
+    )
+
+
+def drop_pull_requests() -> None:
+    op.drop_table("pull_requests")
+
+
 def upgrade() -> None:
     create_demo()
     create_users()
@@ -232,6 +319,8 @@ def upgrade() -> None:
     create_organizations()
     create_accounts()
     create_repositories()
+    create_issues()
+    create_pull_requests()
 
 
 def downgrade() -> None:
@@ -241,3 +330,5 @@ def downgrade() -> None:
     drop_organizations()
     drop_accounts()
     drop_repositories()
+    drop_issues()
+    drop_pull_requests()

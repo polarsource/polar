@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     POSTGRES_PWD: str = "polar"
     POSTGRES_HOST: str = "0.0.0.0"
     POSTGRES_PORT: int = 5432
-    POSTGRES_DB: str = "polar_development"
+    POSTGRES_DATABASE: str = "polar_development"
 
     # Redis
     REDIS_HOST: str = "127.0.0.1"
@@ -67,7 +67,7 @@ class Settings(BaseSettings):
             password=self.POSTGRES_PWD,
             host=self.POSTGRES_HOST,
             port=str(self.POSTGRES_PORT),
-            path=f"/{self.POSTGRES_DB}",
+            path=f"/{self.POSTGRES_DATABASE}",
         )
         return PostgresDsn(uri, scheme=self.POSTGRES_SCHEME)  # type: ignore
 

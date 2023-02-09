@@ -14,6 +14,6 @@
     "eslint-config-custom": "workspace:*",
     "react": "^17.0.2",
     "tsconfig": "workspace:*",
-    "typescript": "^4.5.2"
+    "typescript": "^4.5.3"
   }
 }

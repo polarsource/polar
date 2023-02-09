@@ -1,0 +1,912 @@
+{
+    "openapi": "3.0.2",
+    "info": {
+        "title": "FastAPI",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/api/v1/demo/": {
+            "get": {
+                "tags": [
+                    "Demo"
+                ],
+                "summary": "Get All",
+                "operationId": "get_all",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "title": "Response Demo:Get All",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/DemoSchema"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Demo"
+                ],
+                "summary": "Create",
+                "operationId": "create",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateDemo"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DemoSchema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/demo/{demo_id}": {
+            "get": {
+                "tags": [
+                    "Demo"
+                ],
+                "summary": "Get",
+                "operationId": "get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Demo Id",
+                            "type": "string"
+                        },
+                        "name": "demo_id",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DemoSchema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Demo"
+                ],
+                "summary": "Update",
+                "operationId": "update",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Demo Id",
+                            "type": "string"
+                        },
+                        "name": "demo_id",
+                        "in": "path"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateDemo"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DemoSchema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Demo"
+                ],
+                "summary": "Delete",
+                "operationId": "delete",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Demo Id",
+                            "type": "string"
+                        },
+                        "name": "demo_id",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successful Response"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Users:Current User",
+                "operationId": "get_authenticated",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing token or inactive user."
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Users:Patch Current User",
+                "operationId": "update_authenticated",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserUpdate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserRead"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "UPDATE_USER_EMAIL_ALREADY_EXISTS": {
+                                        "summary": "A user with this email already exists.",
+                                        "value": {
+                                            "detail": "UPDATE_USER_EMAIL_ALREADY_EXISTS"
+                                        }
+                                    },
+                                    "UPDATE_USER_INVALID_PASSWORD": {
+                                        "summary": "Password validation failed.",
+                                        "value": {
+                                            "detail": {
+                                                "code": "UPDATE_USER_INVALID_PASSWORD",
+                                                "reason": "Password should beat least 3 characters"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing token or inactive user."
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/users/{id}": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Users:User",
+                "operationId": "get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Id"
+                        },
+                        "name": "id",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing token or inactive user."
+                    },
+                    "403": {
+                        "description": "Not a superuser."
+                    },
+                    "404": {
+                        "description": "The user does not exist."
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Users:Delete User",
+                "operationId": "delete",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Id"
+                        },
+                        "name": "id",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successful Response"
+                    },
+                    "401": {
+                        "description": "Missing token or inactive user."
+                    },
+                    "403": {
+                        "description": "Not a superuser."
+                    },
+                    "404": {
+                        "description": "The user does not exist."
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Users:Patch User",
+                "operationId": "update",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Id"
+                        },
+                        "name": "id",
+                        "in": "path"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserUpdate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserRead"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "UPDATE_USER_EMAIL_ALREADY_EXISTS": {
+                                        "summary": "A user with this email already exists.",
+                                        "value": {
+                                            "detail": "UPDATE_USER_EMAIL_ALREADY_EXISTS"
+                                        }
+                                    },
+                                    "UPDATE_USER_INVALID_PASSWORD": {
+                                        "summary": "Password validation failed.",
+                                        "value": {
+                                            "detail": {
+                                                "code": "UPDATE_USER_INVALID_PASSWORD",
+                                                "reason": "Password should beat least 3 characters"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing token or inactive user."
+                    },
+                    "403": {
+                        "description": "Not a superuser."
+                    },
+                    "404": {
+                        "description": "The user does not exist."
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/users/authenticated-route": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Authenticated Route",
+                "operationId": "authenticated_route",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/integrations/github/authorize": {
+            "get": {
+                "tags": [
+                    "integrations"
+                ],
+                "summary": "Oauth:Github.Jwt.Authorize",
+                "operationId": "github_authorize",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Scopes",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "name": "scopes",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OAuth2AuthorizeResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/integrations/github/callback": {
+            "get": {
+                "tags": [
+                    "integrations"
+                ],
+                "summary": "Oauth:Github.Jwt.Callback",
+                "description": "The response varies based on the authentication backend used.",
+                "operationId": "github_callback",
+                "parameters": [
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Code",
+                            "type": "string"
+                        },
+                        "name": "code",
+                        "in": "query"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Code Verifier",
+                            "type": "string"
+                        },
+                        "name": "code_verifier",
+                        "in": "query"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "State",
+                            "type": "string"
+                        },
+                        "name": "state",
+                        "in": "query"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Error",
+                            "type": "string"
+                        },
+                        "name": "error",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "INVALID_STATE_TOKEN": {
+                                        "summary": "Invalid state token."
+                                    },
+                                    "LOGIN_BAD_CREDENTIALS": {
+                                        "summary": "User is inactive.",
+                                        "value": {
+                                            "detail": "LOGIN_BAD_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/integrations/github/webhook": {
+            "post": {
+                "tags": [
+                    "integrations"
+                ],
+                "summary": "Webhook",
+                "operationId": "webhook",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WebhookResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "CreateDemo": {
+                "title": "CreateDemo",
+                "required": [
+                    "testing"
+                ],
+                "type": "object",
+                "properties": {
+                    "testing": {
+                        "title": "Testing",
+                        "type": "string"
+                    }
+                }
+            },
+            "DemoSchema": {
+                "title": "DemoSchema",
+                "required": [
+                    "id",
+                    "created_at",
+                    "testing"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "title": "Id",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "title": "Created At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "title": "Updated At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "testing": {
+                        "title": "Testing",
+                        "type": "string"
+                    }
+                }
+            },
+            "ErrorModel": {
+                "title": "ErrorModel",
+                "required": [
+                    "detail"
+                ],
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "title": "Detail",
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "string"
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            "HTTPValidationError": {
+                "title": "HTTPValidationError",
+                "type": "object",
+                "properties": {
+                    "detail": {
+                        "title": "Detail",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        }
+                    }
+                }
+            },
+            "OAuth2AuthorizeResponse": {
+                "title": "OAuth2AuthorizeResponse",
+                "required": [
+                    "authorization_url"
+                ],
+                "type": "object",
+                "properties": {
+                    "authorization_url": {
+                        "title": "Authorization Url",
+                        "type": "string"
+                    }
+                }
+            },
+            "UpdateDemo": {
+                "title": "UpdateDemo",
+                "required": [
+                    "testing"
+                ],
+                "type": "object",
+                "properties": {
+                    "testing": {
+                        "title": "Testing",
+                        "type": "string"
+                    }
+                }
+            },
+            "UserRead": {
+                "title": "UserRead",
+                "required": [
+                    "profile",
+                    "email"
+                ],
+                "type": "object",
+                "properties": {
+                    "profile": {
+                        "title": "Profile",
+                        "type": "object"
+                    },
+                    "id": {
+                        "title": "Id"
+                    },
+                    "email": {
+                        "title": "Email",
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "is_active": {
+                        "title": "Is Active",
+                        "type": "boolean",
+                        "default": true
+                    },
+                    "is_superuser": {
+                        "title": "Is Superuser",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "is_verified": {
+                        "title": "Is Verified",
+                        "type": "boolean",
+                        "default": false
+                    }
+                },
+                "description": "Base User model."
+            },
+            "UserUpdate": {
+                "title": "UserUpdate",
+                "required": [
+                    "profile"
+                ],
+                "type": "object",
+                "properties": {
+                    "profile": {
+                        "title": "Profile",
+                        "type": "object"
+                    },
+                    "password": {
+                        "title": "Password",
+                        "type": "string"
+                    },
+                    "email": {
+                        "title": "Email",
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "is_active": {
+                        "title": "Is Active",
+                        "type": "boolean"
+                    },
+                    "is_superuser": {
+                        "title": "Is Superuser",
+                        "type": "boolean"
+                    },
+                    "is_verified": {
+                        "title": "Is Verified",
+                        "type": "boolean"
+                    }
+                }
+            },
+            "ValidationError": {
+                "title": "ValidationError",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "type": "object",
+                "properties": {
+                    "loc": {
+                        "title": "Location",
+                        "type": "array",
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        }
+                    },
+                    "msg": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "type": {
+                        "title": "Error Type",
+                        "type": "string"
+                    }
+                }
+            },
+            "WebhookResponse": {
+                "title": "WebhookResponse",
+                "required": [
+                    "success"
+                ],
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "title": "Success",
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "task_id": {
+                        "title": "Task Id",
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "APIKeyCookie": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "polar"
+            }
+        }
+    }
+}

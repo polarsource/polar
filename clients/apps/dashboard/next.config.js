@@ -11,6 +11,8 @@ const nextConfig = {
       },
     ]
   },
+
+  transpilePackages: ['polar-api'],
 }
 
 module.exports = nextConfig

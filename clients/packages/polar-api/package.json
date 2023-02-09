@@ -1,0 +1,20 @@
+{
+    "name": "polar-api",
+    "version": "0.0.0",
+    "main": "./index.ts",
+    "types": "./index.ts",
+    "license": "MIT",
+    "scripts": {
+        "lint": "TIMING=1 eslint \"**/*.ts*\"",
+        "generate": "node scripts/generate-schema.js http://127.0.0.1:8000/openapi.json openapi/source.json openapi/updated.json && openapi --input openapi/updated.json --output client --client axios --name PolarAPI --indent 2 --exportSchemas true"
+    },
+    "devDependencies": {
+        "axios": "^0.27.2",
+        "eslint": "^7.32.0",
+        "eslint-config-custom": "workspace:*",
+        "form-data": "^4.0.0",
+        "openapi-typescript-codegen": "^0.23.0",
+        "tsconfig": "workspace:*",
+        "typescript": "^4.5.3"
+    }
+}

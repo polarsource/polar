@@ -1,5 +1,6 @@
 import structlog
 from fastapi import FastAPI
+from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
 
 from polar.api import router
@@ -22,8 +23,12 @@ def configure_cors(app: FastAPI) -> None:
     )
 
 
+def generate_unique_openapi_id(route: APIRoute) -> str:
+    return f"{route.tags[0]}:{route.name}"
+
+
 def create_app() -> FastAPI:
-    app = FastAPI()
+    app = FastAPI(generate_unique_id_function=generate_unique_openapi_id)
     configure_cors(app)
     app.include_router(router)
     return app

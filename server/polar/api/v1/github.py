@@ -4,6 +4,8 @@ import structlog
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from polar.api.auth import auth_backend, github_oauth_client
+from polar.api.deps import fastapi_users
 from polar.clients import github
 from polar.config import settings
 from polar.tasks.github import webhook as hooks
@@ -11,6 +13,22 @@ from polar.tasks.github import webhook as hooks
 log = structlog.get_logger()
 
 router = APIRouter(prefix="/integrations/github", tags=["integrations"])
+
+
+###############################################################################
+# ACCOUNT
+###############################################################################
+
+router.include_router(
+    fastapi_users.get_oauth_router(
+        github_oauth_client, auth_backend, settings.SECRET, associate_by_email=True
+    ),
+)
+
+
+###############################################################################
+# WEBHOOK
+###############################################################################
 
 
 class WebhookResponse(BaseModel):

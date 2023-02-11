@@ -7,6 +7,7 @@ import {
 import { Transition, Menu } from '@headlessui/react'
 import { Fragment } from 'react'
 import { useAuth } from 'context/auth'
+import { client } from 'lib/api'
 import { classNames } from 'utils/dom'
 
 const Profile = () => {
@@ -14,6 +15,15 @@ const Profile = () => {
 
   const githubSigninUrl =
     process.env.NEXT_PUBLIC_API_URL + '/apps/github/signin'
+
+  const signin = async () => {
+    await client.integrations.githubAuthorize().then((res) => {
+      console.log(res.authorization_url)
+      if (res.authorization_url) {
+        window.location.href = res.authorization_url
+      }
+    })
+  }
 
   if (!session.authenticated) {
     if (session.fetching) {
@@ -38,7 +48,11 @@ const Profile = () => {
 
     return (
       <a
-        href={githubSigninUrl}
+        href="#"
+        onClick={(e) => {
+          e.preventDefault()
+          signin()
+        }}
         className="group transition duration-300 ease-in-out inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-slate-700"
       >
         <svg

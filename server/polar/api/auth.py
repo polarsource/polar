@@ -1,8 +1,8 @@
 import uuid
-from typing import Optional
+from typing import Any
 
 import structlog
-from fastapi import Request
+from fastapi import Request, Response
 from fastapi_users import BaseUserManager, UUIDIDMixin
 from fastapi_users.authentication import (
     AuthenticationBackend,
@@ -29,9 +29,9 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         access_token: str,
         account_id: str,
         account_email: str,
-        expires_at: Optional[int] = None,
-        refresh_token: Optional[str] = None,
-        request: Optional[Request] = None,
+        expires_at: int | None = None,
+        refresh_token: str | None = None,
+        request: Request | None = None,
         *,
         associate_by_email: bool = False
     ) -> User:
@@ -49,18 +49,24 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
             self.user_db.session, user, access_token
         )
 
-    async def on_after_register(self, user: User, request: Optional[Request] = None):
+    async def on_after_register(
+        self, user: User, request: Request | None = None
+    ) -> None:
         # TODO: Send welcome email here?
         log.info("user.registered", user_id=user.id)
 
 
-cookie_transport = CookieTransport(cookie_name="polar")
+class PolarAuthCookie(CookieTransport):
+    async def get_login_response(self, token: str, response: Response) -> Any:
+        await super().get_login_response(token, response)
+        return dict(authenticated=True, token=token)
 
 
 def get_jwt_strategy() -> JWTStrategy:
     return JWTStrategy(secret=settings.SECRET, lifetime_seconds=3600)
 
 
+cookie_transport = PolarAuthCookie(cookie_name="polar")
 auth_backend = AuthenticationBackend(
     name="jwt",
     transport=cookie_transport,

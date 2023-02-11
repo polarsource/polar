@@ -21,7 +21,11 @@ router = APIRouter(prefix="/integrations/github", tags=["integrations"])
 
 router.include_router(
     fastapi_users.get_oauth_router(
-        github_oauth_client, auth_backend, settings.SECRET, associate_by_email=True
+        github_oauth_client,
+        auth_backend,
+        settings.SECRET,
+        redirect_url=settings.GITHUB_REDIRECT_URL,
+        associate_by_email=True,
     ),
 )
 

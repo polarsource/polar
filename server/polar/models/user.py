@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any
 
+from fastapi_users.db import SQLAlchemyUserDatabase
 from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -7,6 +8,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.ext.sqlalchemy import GUID
 from polar.models.base import RecordModel
+from polar.postgres import sql
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.organization import Organization
@@ -42,14 +44,14 @@ class User(RecordModel):
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     oauth_accounts: Mapped[list[OAuthAccount]] = relationship(
-        OAuthAccount, lazy="joined"
+        OAuthAccount, cascade="delete-orphan", lazy="joined"
     )
 
     organization_associations: "Mapped[Organization]" = relationship(
         "UserOrganization",
         back_populates="user",
         cascade="delete-orphan",
-        lazy="select",
+        lazy="selectin",
     )
 
     organizations = association_proxy("organization_associations", "organization")
@@ -58,3 +60,8 @@ class User(RecordModel):
 
     def get_primary_oauth_account(self) -> OAuthAccount:
         return self.oauth_accounts[0]
+
+
+# Used by fastapi-users as a model manager for User & OAuthAccount
+class UserDatabase(SQLAlchemyUserDatabase):
+    ...

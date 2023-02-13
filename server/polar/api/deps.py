@@ -3,11 +3,10 @@ from typing import AsyncGenerator
 
 from fastapi import Depends
 from fastapi_users import FastAPIUsers
-from fastapi_users.db import SQLAlchemyUserDatabase
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.api.auth import UserManager, auth_backend
-from polar.models import OAuthAccount, User
+from polar.models import OAuthAccount, User, UserDatabase
 from polar.postgres import AsyncSessionLocal
 
 
@@ -18,11 +17,13 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 
 async def get_user_db(
     session: AsyncSession = Depends(get_db_session),
-):
-    yield SQLAlchemyUserDatabase(session, User, OAuthAccount)
+) -> AsyncGenerator[UserDatabase, None]:
+    yield UserDatabase(session, User, OAuthAccount)
 
 
-async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db)):
+async def get_user_manager(
+    user_db: UserDatabase = Depends(get_user_db),
+) -> AsyncGenerator[UserManager, None]:
     yield UserManager(user_db)
 
 

@@ -53,11 +53,14 @@ class Organization(RecordModel):
     )
 
     users: "Mapped[User]" = relationship(
-        "UserOrganization", back_populates="organization", cascade="delete-orphan"
+        "UserOrganization",
+        back_populates="organization",
+        cascade="delete-orphan",
+        lazy="raise_on_sql",
     )
 
     account: "Mapped[Account]" = relationship(
-        "Account", back_populates="organization", uselist=False
+        "Account", back_populates="organization", uselist=False, lazy="raise_on_sql"
     )
 
     __mutables__ = {

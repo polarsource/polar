@@ -6,7 +6,7 @@
     "license": "MIT",
     "scripts": {
         "lint": "TIMING=1 eslint \"**/*.ts*\"",
-        "generate": "node scripts/generate-schema.js http://127.0.0.1:8000/openapi.json openapi/source.json openapi/updated.json && openapi --input openapi/updated.json --output client --client axios --name PolarAPI --indent 2 --exportSchemas true"
+        "generate": "node scripts/generate-schema.js http://127.0.0.1:8000/openapi.json openapi/source.json openapi/updated.json && openapi --input openapi/updated.json --output client --client axios --name PolarAPI --useOptions --indent 2 --exportSchemas true"
     },
     "devDependencies": {
         "axios": "^0.27.2",

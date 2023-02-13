@@ -6,6 +6,7 @@ from githubkit import (
     AppInstallationAuthStrategy,
     GitHub,
     TokenAuthStrategy,
+    rest,
     utils,
     webhooks,
 )
@@ -84,4 +85,5 @@ __all__ = [
     "patch_unset",
     "WebhookEvent",
     "webhooks",
+    "rest",
 ]

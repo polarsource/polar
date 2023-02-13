@@ -1,13 +1,17 @@
-from typing import Any
+from typing import Any, Literal
 
 import structlog
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
+from polar.actions import github_organization
 from polar.api.auth import auth_backend, github_oauth_client
-from polar.api.deps import fastapi_users
+from polar.api.deps import current_active_user, fastapi_users, get_db_session
 from polar.clients import github
 from polar.config import settings
+from polar.models import Organization, User
+from polar.postgres import AsyncSession
+from polar.schema.organization import OrganizationSchema
 from polar.tasks.github import webhook as hooks
 
 log = structlog.get_logger()
@@ -28,6 +32,28 @@ router.include_router(
         associate_by_email=True,
     ),
 )
+
+###############################################################################
+# INSTALLATIONS
+###############################################################################
+
+
+class InstallationCreate(BaseModel):
+    platform: Literal["github"]
+    external_id: int
+
+
+@router.post("/installations", response_model=OrganizationSchema)
+async def install(
+    installation: InstallationCreate,
+    session: AsyncSession = Depends(get_db_session),
+    user: User = Depends(current_active_user),
+) -> Organization | None:
+    organization = await github_organization.install(
+        session, user, installation_id=installation.external_id
+    )
+
+    return organization
 
 
 ###############################################################################

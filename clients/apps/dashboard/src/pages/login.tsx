@@ -6,13 +6,16 @@ const LoginPage: NextPage = ({ query }) => {
   useEffect(() => {
     if (
       typeof window !== undefined &&
-      query.callback === 'github' &&
+      query.provider === 'github' &&
       query.code &&
       query.state
     ) {
       console.log('Called login')
       client.integrations
-        .githubCallback(query.code, null, query.state)
+        .githubCallback({
+          code: query.code,
+          state: query.state,
+        })
         .then((res) => {
           if (res.authenticated) {
             window.location.replace('/dashboard')

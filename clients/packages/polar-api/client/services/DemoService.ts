@@ -26,13 +26,14 @@ export class DemoService {
 
   /**
    * Create
-   * @param requestBody
    * @returns DemoSchema Successful Response
    * @throws ApiError
    */
-  public create(
+  public create({
+    requestBody,
+  }: {
     requestBody: CreateDemo,
-  ): CancelablePromise<DemoSchema> {
+  }): CancelablePromise<DemoSchema> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/demo/',
@@ -46,13 +47,14 @@ export class DemoService {
 
   /**
    * Get
-   * @param demoId
    * @returns DemoSchema Successful Response
    * @throws ApiError
    */
-  public get(
+  public get({
+    demoId,
+  }: {
     demoId: string,
-  ): CancelablePromise<DemoSchema> {
+  }): CancelablePromise<DemoSchema> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/demo/{demo_id}',
@@ -67,15 +69,16 @@ export class DemoService {
 
   /**
    * Update
-   * @param demoId
-   * @param requestBody
    * @returns DemoSchema Successful Response
    * @throws ApiError
    */
-  public update(
+  public update({
+    demoId,
+    requestBody,
+  }: {
     demoId: string,
     requestBody: UpdateDemo,
-  ): CancelablePromise<DemoSchema> {
+  }): CancelablePromise<DemoSchema> {
     return this.httpRequest.request({
       method: 'PUT',
       url: '/api/v1/demo/{demo_id}',
@@ -92,13 +95,14 @@ export class DemoService {
 
   /**
    * Delete
-   * @param demoId
    * @returns void
    * @throws ApiError
    */
-  public delete(
+  public delete({
+    demoId,
+  }: {
     demoId: string,
-  ): CancelablePromise<void> {
+  }): CancelablePromise<void> {
     return this.httpRequest.request({
       method: 'DELETE',
       url: '/api/v1/demo/{demo_id}',

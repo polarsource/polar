@@ -28,13 +28,14 @@ export class UsersService {
 
   /**
    * Users:Patch Current User
-   * @param requestBody
    * @returns UserRead Successful Response
    * @throws ApiError
    */
-  public updateAuthenticated(
+  public updateAuthenticated({
+    requestBody,
+  }: {
     requestBody: UserUpdate,
-  ): CancelablePromise<UserRead> {
+  }): CancelablePromise<UserRead> {
     return this.httpRequest.request({
       method: 'PATCH',
       url: '/api/v1/users/me',
@@ -50,13 +51,14 @@ export class UsersService {
 
   /**
    * Users:User
-   * @param id
    * @returns UserRead Successful Response
    * @throws ApiError
    */
-  public get(
+  public get({
+    id,
+  }: {
     id: any,
-  ): CancelablePromise<UserRead> {
+  }): CancelablePromise<UserRead> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/users/{id}',
@@ -74,13 +76,14 @@ export class UsersService {
 
   /**
    * Users:Delete User
-   * @param id
    * @returns void
    * @throws ApiError
    */
-  public delete(
+  public delete({
+    id,
+  }: {
     id: any,
-  ): CancelablePromise<void> {
+  }): CancelablePromise<void> {
     return this.httpRequest.request({
       method: 'DELETE',
       url: '/api/v1/users/{id}',
@@ -98,15 +101,16 @@ export class UsersService {
 
   /**
    * Users:Patch User
-   * @param id
-   * @param requestBody
    * @returns UserRead Successful Response
    * @throws ApiError
    */
-  public update(
+  public update({
+    id,
+    requestBody,
+  }: {
     id: any,
     requestBody: UserUpdate,
-  ): CancelablePromise<UserRead> {
+  }): CancelablePromise<UserRead> {
     return this.httpRequest.request({
       method: 'PATCH',
       url: '/api/v1/users/{id}',

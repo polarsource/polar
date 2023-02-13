@@ -13,13 +13,14 @@ export class IntegrationsService {
 
   /**
    * Oauth:Github.Jwt.Authorize
-   * @param scopes
    * @returns OAuth2AuthorizeResponse Successful Response
    * @throws ApiError
    */
-  public githubAuthorize(
+  public githubAuthorize({
+    scopes,
+  }: {
     scopes?: Array<string>,
-  ): CancelablePromise<OAuth2AuthorizeResponse> {
+  }): CancelablePromise<OAuth2AuthorizeResponse> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/integrations/github/authorize',
@@ -35,19 +36,20 @@ export class IntegrationsService {
   /**
    * Oauth:Github.Jwt.Callback
    * The response varies based on the authentication backend used.
-   * @param code
-   * @param codeVerifier
-   * @param state
-   * @param error
    * @returns any Successful Response
    * @throws ApiError
    */
-  public githubCallback(
+  public githubCallback({
+    code,
+    codeVerifier,
+    state,
+    error,
+  }: {
     code?: string,
     codeVerifier?: string,
     state?: string,
     error?: string,
-  ): CancelablePromise<any> {
+  }): CancelablePromise<any> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/integrations/github/callback',

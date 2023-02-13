@@ -17,8 +17,7 @@ const Profile = () => {
     process.env.NEXT_PUBLIC_API_URL + '/apps/github/signin'
 
   const signin = async () => {
-    await client.integrations.githubAuthorize().then((res) => {
-      console.log(res.authorization_url)
+    await client.integrations.githubAuthorize({ scopes: null }).then((res) => {
       if (res.authorization_url) {
         window.location.href = res.authorization_url
       }
@@ -89,7 +88,6 @@ const Profile = () => {
     )
   }
 
-  console.log(session)
   return (
     <>
       <div className="flex items-center">

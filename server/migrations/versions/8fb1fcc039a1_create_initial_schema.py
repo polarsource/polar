@@ -130,7 +130,7 @@ def drop_organizations() -> None:
     op.drop_table("organizations")
 
 
-def create_developer_organizations() -> None:
+def create_user_organizations() -> None:
     op.create_table(
         "user_organizations",
         sa.Column("created_at", sa.DateTime(), nullable=False),
@@ -146,7 +146,7 @@ def create_developer_organizations() -> None:
     )
 
 
-def drop_developer_organizations() -> None:
+def drop_user_organizations() -> None:
     op.drop_table("user_organizations")
 
 
@@ -317,6 +317,7 @@ def upgrade() -> None:
     create_users()
     create_oauth_accounts()
     create_organizations()
+    create_user_organizations()
     create_accounts()
     create_repositories()
     create_issues()
@@ -327,6 +328,7 @@ def downgrade() -> None:
     drop_demo()
     drop_users()
     drop_oauth_accounts()
+    drop_user_organizations()
     drop_organizations()
     drop_accounts()
     drop_repositories()

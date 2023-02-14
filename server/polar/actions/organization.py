@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Sequence
+from uuid import UUID
 
 import structlog
 from sqlalchemy import Column
@@ -9,7 +10,7 @@ from polar.actions.base import Action
 from polar.clients import github
 from polar.models import Organization, User, UserOrganization
 from polar.platforms import Platforms
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncSession, sql
 from polar.schema.organization import CreateOrganization, UpdateOrganization
 
 log = structlog.get_logger()
@@ -29,6 +30,18 @@ class OrganizationActions(Action[Organization, CreateOrganization, UpdateOrganiz
         self, session: AsyncSession, name: str
     ) -> Organization | None:
         return await self.get_by(session, name=name)
+
+    async def get_all_by_user_id(
+        self, session: AsyncSession, user_id: UUID
+    ) -> Sequence[Organization]:
+        statement = (
+            sql.select(Organization)
+            .join(UserOrganization)
+            .where(UserOrganization.user_id == user_id)
+        )
+        res = await session.execute(statement)
+        orgs = res.scalars().all()
+        return orgs
 
     async def add_user(
         self, session: AsyncSession, organization: Organization, user: User

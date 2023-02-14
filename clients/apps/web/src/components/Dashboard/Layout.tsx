@@ -1,6 +1,5 @@
 import Header from 'components/Shared/Header'
 import Container from 'components/Shared/Container'
-import Sidebar from 'components/Dashboard/Sidebar'
 import Navigation from 'components/Dashboard/Navigation'
 
 const Layout = ({ children }) => {
@@ -11,8 +10,6 @@ const Layout = ({ children }) => {
       </Header>
 
       <Container wide={true} className="mt-4 text-center items-start">
-        <Sidebar />
-
         <div className="grow">{children}</div>
       </Container>
     </>

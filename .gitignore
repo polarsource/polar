@@ -124,3 +124,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Playground file
+playground.py

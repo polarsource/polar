@@ -97,19 +97,24 @@ importers:
 
   packages/polar-react-kit:
     specifiers:
+      '@tanstack/react-query': ^4.24.6
       '@types/react': ^17.0.37
       '@types/react-dom': ^17.0.11
       eslint: ^7.32.0
       eslint-config-custom: workspace:*
+      polar-api: workspace:*
       react: ^17.0.2
       tsconfig: workspace:*
       typescript: ^4.5.3
+    dependencies:
+      '@tanstack/react-query': 4.24.6_react@17.0.2
+      polar-api: link:../polar-api
+      react: 17.0.2
     devDependencies:
       '@types/react': 17.0.52
       '@types/react-dom': 17.0.18
       eslint: 7.32.0
       eslint-config-custom: link:../eslint-config-custom
-      react: 17.0.2
       tsconfig: link:../tsconfig
       typescript: 4.8.3
 
@@ -439,6 +444,27 @@ packages:
     resolution: {integrity: sha512-4C7nX/dvpzB7za4Ql9K81xK3HPxCpHMgwTZVyf+9JQ6VUbn9jjZVN7/Nkdz/Ugzs2CSjqnL/UPXroiVBVHUWUw==}
     dependencies:
       tslib: 2.4.1
+    dev: false
+
+  /@tanstack/query-core/4.24.6:
+    resolution: {integrity: sha512-Tfru6YTDTCpX7dKVwHp/sosw/dNjEdzrncduUjIkQxn7n7u+74HT2ZrGtwwrU6Orws4x7zp3FKRqBPWVVhpx9w==}
+    dev: false
+
+  /@tanstack/react-query/4.24.6_react@17.0.2:
+    resolution: {integrity: sha512-pbJUVZCS4pcXS0kZiY+mVJ01ude0GrH5OXT2g9whcqSveRG/YVup/XdA9NdRpSMGkP2HxDRxxRNsTXkniWeIIA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-native: '*'
+    peerDependenciesMeta:
+      react-dom:
+        optional: true
+      react-native:
+        optional: true
+    dependencies:
+      '@tanstack/query-core': 4.24.6
+      react: 17.0.2
+      use-sync-external-store: 1.2.0_react@17.0.2
     dev: false
 
   /@types/history/4.7.11:
@@ -2562,7 +2588,7 @@ packages:
     dependencies:
       loose-envify: 1.4.0
       object-assign: 4.1.1
-    dev: true
+    dev: false
 
   /react/18.2.0:
     resolution: {integrity: sha512-/3IjMdb2L9QbBdWiW5e3P2/npwMBaU9mHCSCUzNln0ZCYbcfTsGbTJrU/kGemdH2IWmB2ioZ+zkxtmq6g09fGQ==}
@@ -3015,6 +3041,14 @@ packages:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
     dependencies:
       punycode: 2.1.1
+
+  /use-sync-external-store/1.2.0_react@17.0.2:
+    resolution: {integrity: sha512-eEgnFxGQ1Ife9bzYs6VLi8/4X6CObHMw9Qr9tPY43iKwsPw8xE8+EFsf/2cFZ5S3esXgpWgtSCtLNS41F+sKPA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      react: 17.0.2
+    dev: false
 
   /util-deprecate/1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}

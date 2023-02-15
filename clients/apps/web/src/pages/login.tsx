@@ -2,7 +2,7 @@ import type { NextPage } from 'next'
 import { useEffect } from 'react'
 import { client } from 'lib/api'
 
-import { Button } from 'polar-react-kit'
+import { QueryDemo } from 'polar-react-kit'
 
 const LoginPage: NextPage = ({ query }) => {
   useEffect(() => {
@@ -29,7 +29,7 @@ const LoginPage: NextPage = ({ query }) => {
     <>
       <h1 className="text-3xl font-bold underline mt-10">Signin</h1>
       <p>{JSON.stringify(query)}</p>
-      <Button />
+      <QueryDemo />
     </>
   )
 }

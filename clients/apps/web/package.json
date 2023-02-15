@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "polar-api": "workspace:*",
+    "polar-react-kit": "workspace:*",
     "@headlessui/react": "^1.7.0",
     "@heroicons/react": "^2.0.10",
     "@stripe/react-stripe-js": "^1.12.0",

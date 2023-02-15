@@ -1,5 +1,5 @@
 {
-  "name": "ui",
+  "name": "polar-react-kit",
   "version": "0.0.0",
   "main": "./index.tsx",
   "types": "./index.tsx",

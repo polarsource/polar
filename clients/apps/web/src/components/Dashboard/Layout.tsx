@@ -1,6 +1,5 @@
 import Header from 'components/Shared/Header'
 import Container from 'components/Shared/Container'
-import Navigation from 'components/Dashboard/Navigation'
 
 const Layout = ({ children }) => {
   return (

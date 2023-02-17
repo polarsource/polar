@@ -91,9 +91,6 @@ const Profile = () => {
   return (
     <>
       <div className="flex items-center">
-        <span className="inline-flex rounded-full font-medium text-xs mr-4 text-yellow-800 px-2.5 py-1 bg-yellow-100">
-          3 invites
-        </span>
         <Menu as="div" className="relative inline-block text-left">
           <Menu.Button className="flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2">
             <span className="sr-only">Open user menu</span>

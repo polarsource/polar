@@ -50,7 +50,6 @@ export class Session {
       if (user?.profile) {
         this.user = user
         this.authenticated = true
-        window['user'] = user
       }
     } catch (error) {}
     this.fetching = false

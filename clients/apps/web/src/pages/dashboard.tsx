@@ -8,22 +8,10 @@ const Dashboard = dynamic(() => import('../dashboard'), {
   ssr: false,
 })
 
-const SafeHydration = ({ children }) => {
-  return (
-    <div suppressHydrationWarning>
-      {typeof document === 'undefined' ? null : children}
-    </div>
-  )
-}
-
 const DashboardSPA: NextPageWithLayout = () => {
-  const { developer } = requireAuth()
+  requireAuth()
 
-  return (
-    <SafeHydration>
-      <Dashboard />
-    </SafeHydration>
-  )
+  return <Dashboard />
 }
 
 DashboardSPA.getLayout = (page: ReactElement) => {

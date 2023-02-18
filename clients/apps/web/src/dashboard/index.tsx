@@ -1,6 +1,8 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import Organization from './organization'
 import Onboarding from './Onboarding'
+import { requireAuth } from 'context/auth'
+import { useUserOrganizations } from 'polar-react-kit/hooks'
 
 const Root = () => {
   return <h1 className="text-3xl font-bold underline mt-10">Dashboard 1337</h1>
@@ -22,6 +24,23 @@ const router = createBrowserRouter([
 ])
 
 const Dashboard = () => {
+  const { session } = requireAuth()
+
+  if (!session.user) {
+    return <div>Not authenticated</div>
+  }
+
+  const userOrgQuery = useUserOrganizations(session.user.id)
+
+  if (userOrgQuery.isLoading) return <div>Loading...</div>
+
+  if (!userOrgQuery.isSuccess) return <div>Error</div>
+
+  const organizations = userOrgQuery.data
+  if (!organizations.length) {
+    window.location.href =
+      'https://github.com/apps/polar-code/installations/new'
+  }
   return <RouterProvider router={router} />
 }
 

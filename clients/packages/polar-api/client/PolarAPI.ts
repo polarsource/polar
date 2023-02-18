@@ -7,6 +7,7 @@ import { AxiosHttpRequest } from './core/AxiosHttpRequest';
 
 import { DemoService } from './services/DemoService';
 import { IntegrationsService } from './services/IntegrationsService';
+import { UserOrganizationsService } from './services/UserOrganizationsService';
 import { UsersService } from './services/UsersService';
 
 type HttpRequestConstructor = new (config: OpenAPIConfig) => BaseHttpRequest;
@@ -15,6 +16,7 @@ export class PolarAPI {
 
   public readonly demo: DemoService;
   public readonly integrations: IntegrationsService;
+  public readonly userOrganizations: UserOrganizationsService;
   public readonly users: UsersService;
 
   public readonly request: BaseHttpRequest;
@@ -34,6 +36,7 @@ export class PolarAPI {
 
     this.demo = new DemoService(this.request);
     this.integrations = new IntegrationsService(this.request);
+    this.userOrganizations = new UserOrganizationsService(this.request);
     this.users = new UsersService(this.request);
   }
 }

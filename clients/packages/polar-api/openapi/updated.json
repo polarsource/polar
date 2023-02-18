@@ -512,6 +512,36 @@
                 ]
             }
         },
+        "/api/v1/user/organizations": {
+            "get": {
+                "tags": [
+                    "user.organizations"
+                ],
+                "summary": "Get User Organizations",
+                "operationId": "get_user_organizations",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "title": "Response User.Organizations:Get User Organizations",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/OrganizationSchema"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
+        },
         "/api/v1/integrations/github/authorize": {
             "get": {
                 "tags": [
@@ -646,6 +676,52 @@
                 }
             }
         },
+        "/api/v1/integrations/github/installations": {
+            "post": {
+                "tags": [
+                    "integrations"
+                ],
+                "summary": "Install",
+                "operationId": "install",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InstallationCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrganizationSchema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
+        },
         "/api/v1/integrations/github/webhook": {
             "post": {
                 "tags": [
@@ -748,6 +824,27 @@
                     }
                 }
             },
+            "InstallationCreate": {
+                "title": "InstallationCreate",
+                "required": [
+                    "platform",
+                    "external_id"
+                ],
+                "type": "object",
+                "properties": {
+                    "platform": {
+                        "title": "Platform",
+                        "enum": [
+                            "github"
+                        ],
+                        "type": "string"
+                    },
+                    "external_id": {
+                        "title": "External Id",
+                        "type": "integer"
+                    }
+                }
+            },
             "OAuth2AuthorizeResponse": {
                 "title": "OAuth2AuthorizeResponse",
                 "required": [
@@ -760,6 +857,101 @@
                         "type": "string"
                     }
                 }
+            },
+            "OrganizationSchema": {
+                "title": "OrganizationSchema",
+                "required": [
+                    "platform",
+                    "name",
+                    "external_id",
+                    "avatar_url",
+                    "is_personal",
+                    "is_site_admin",
+                    "installation_id",
+                    "installation_created_at",
+                    "id",
+                    "status",
+                    "created_at"
+                ],
+                "type": "object",
+                "properties": {
+                    "platform": {
+                        "$ref": "#/components/schemas/Platforms"
+                    },
+                    "name": {
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "external_id": {
+                        "title": "External Id",
+                        "type": "integer"
+                    },
+                    "avatar_url": {
+                        "title": "Avatar Url",
+                        "type": "string"
+                    },
+                    "is_personal": {
+                        "title": "Is Personal",
+                        "type": "boolean"
+                    },
+                    "is_site_admin": {
+                        "title": "Is Site Admin",
+                        "type": "boolean"
+                    },
+                    "installation_id": {
+                        "title": "Installation Id",
+                        "type": "integer"
+                    },
+                    "installation_created_at": {
+                        "title": "Installation Created At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "installation_updated_at": {
+                        "title": "Installation Updated At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "installation_suspended_at": {
+                        "title": "Installation Suspended At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "id": {
+                        "title": "Id",
+                        "type": "string"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/Status"
+                    },
+                    "created_at": {
+                        "title": "Created At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "modified_at": {
+                        "title": "Modified At",
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "Platforms": {
+                "title": "Platforms",
+                "enum": [
+                    "github"
+                ],
+                "type": "string",
+                "description": "An enumeration."
+            },
+            "Status": {
+                "title": "Status",
+                "enum": [
+                    "inactive",
+                    "active",
+                    "suspended"
+                ],
+                "description": "An enumeration."
             },
             "UpdateDemo": {
                 "title": "UpdateDemo",

@@ -1,7 +1,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { InstallationCreate } from '../models/InstallationCreate';
 import type { OAuth2AuthorizeResponse } from '../models/OAuth2AuthorizeResponse';
+import type { OrganizationSchema } from '../models/OrganizationSchema';
 import type { WebhookResponse } from '../models/WebhookResponse';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
@@ -61,6 +63,27 @@ export class IntegrationsService {
       },
       errors: {
         400: `Bad Request`,
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Install
+   * @returns OrganizationSchema Successful Response
+   * @throws ApiError
+   */
+  public install({
+    requestBody,
+  }: {
+    requestBody: InstallationCreate,
+  }): CancelablePromise<OrganizationSchema> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/integrations/github/installations',
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
         422: `Validation Error`,
       },
     });

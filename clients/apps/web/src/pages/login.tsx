@@ -1,34 +1,11 @@
 import type { NextPage } from 'next'
-import { useEffect } from 'react'
-import { client } from 'lib/api'
 
 import { QueryDemo } from 'polar-react-kit'
 
 const LoginPage: NextPage = ({ query }) => {
-  useEffect(() => {
-    if (
-      typeof window !== undefined &&
-      query.provider === 'github' &&
-      query.code &&
-      query.state
-    ) {
-      console.log('Called login')
-      client.integrations
-        .githubCallback({
-          code: query.code,
-          state: query.state,
-        })
-        .then((res) => {
-          if (res.authenticated) {
-            window.location.replace('/dashboard')
-          }
-        })
-    }
-  }, [])
   return (
     <>
       <h1 className="text-3xl font-bold underline mt-10">Signin</h1>
-      <p>{JSON.stringify(query)}</p>
       <QueryDemo />
     </>
   )

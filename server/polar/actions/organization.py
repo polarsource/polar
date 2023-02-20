@@ -46,6 +46,7 @@ class OrganizationActions(Action[Organization, CreateOrganization, UpdateOrganiz
     async def add_user(
         self, session: AsyncSession, organization: Organization, user: User
     ) -> None:
+        nested = await session.begin_nested()
         try:
             relation = UserOrganization(
                 user_id=user.id, organization_id=organization.id
@@ -66,6 +67,7 @@ class OrganizationActions(Action[Organization, CreateOrganization, UpdateOrganiz
                 organization_id=organization.id,
                 user_id=user.id,
             )
+            await nested.rollback()
 
 
 class GithubOrganization(OrganizationActions):

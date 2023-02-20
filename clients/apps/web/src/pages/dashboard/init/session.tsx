@@ -36,6 +36,9 @@ const InitSessionPage: NextPageWithLayout = ({ query }) => {
             window.location.replace('/dashboard')
           }
         })
+        .catch((error) => {
+          console.log('error', error)
+        })
     }
     createSession()
   }, [])

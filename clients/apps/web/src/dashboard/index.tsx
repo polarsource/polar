@@ -5,7 +5,7 @@ import { requireAuth } from 'context/auth'
 import { useUserOrganizations } from 'polar-react-kit/hooks'
 
 const Root = () => {
-  return <h1 className="text-3xl font-bold underline mt-10">Dashboard 1337</h1>
+  return <h3 className="text-xl mt-10">Welcome</h3>
 }
 
 const router = createBrowserRouter([

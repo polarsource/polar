@@ -1,6 +1,6 @@
 {
   "python.analysis.typeCheckingMode": "off",
-  "python.defaultInterpreterPath": "${workspaceFolder}/.venv",
+  "python.defaultInterpreterPath": "${workspaceFolder}/server/.venv",
   "python.terminal.activateEnvironment": true,
   "python.terminal.activateEnvInCurrentTerminal": true,
   "python.linting.pylintEnabled": false,

@@ -87,6 +87,7 @@ async def queue(request: Request) -> WebhookResponse:
         "installation_repositories.added": hooks.repositories_added,
         "installation_repositories.removed": hooks.repositories_removed,
         "issues.opened": hooks.issue_opened,
+        "issues.edited": hooks.issue_edited,
         "issues.closed": hooks.issue_closed,
         "issues.labeled": hooks.issue_labeled,
         "pull_request.opened": hooks.pull_request_opened,

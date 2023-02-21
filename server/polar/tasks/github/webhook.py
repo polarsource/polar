@@ -205,9 +205,7 @@ async def repositories_removed(
 # ------------------------------------------------------------------------------
 
 
-@task(name="github.webhook.issue.created")
-@asyncify_task(with_session=True)
-async def issue_opened(
+async def handle_issue(
     session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
     event = get_event(scope, action, payload)
@@ -220,6 +218,22 @@ async def issue_opened(
     # actions.github_issue.add_actions(installation["id"], issue)
     schema = IssueSchema.from_orm(issue)
     return dict(success=True, issue=schema.dict())
+
+
+@task(name="github.webhook.issue.created")
+@asyncify_task(with_session=True)
+async def issue_opened(
+    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+) -> dict[str, Any]:
+    return await handle_issue(session, scope, action, payload)
+
+
+@task(name="github.webhook.issue.edited")
+@asyncify_task(with_session=True)
+async def issue_edited(
+    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+) -> dict[str, Any]:
+    return await handle_issue(session, scope, action, payload)
 
 
 @task(name="github.webhook.issue.closed")

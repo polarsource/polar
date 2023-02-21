@@ -7,6 +7,9 @@
         {
             "name": "Polar API",
             "type": "python",
+            "env": {
+                "PYDEVD_DISABLE_FILE_VALIDATION": "1"
+            },
             "request": "launch",
             "module": "uvicorn",
             "args": [

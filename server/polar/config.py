@@ -1,7 +1,7 @@
 import os
 from enum import Enum
 
-from pydantic import AnyHttpUrl, BaseSettings, PostgresDsn
+from pydantic import AnyHttpUrl, BaseSettings, PostgresDsn, validator
 
 
 class Environment(Enum):
@@ -54,6 +54,15 @@ class Settings(BaseSettings):
         env_prefix = "polar_"
         env_file_encoding = "utf-8"
         case_sensitive = False
+
+    @validator("GITHUB_APP_PRIVATE_KEY", pre=True)
+    def validate_github_rsa_key(cls, v: str) -> str:
+        if not (
+            v.startswith("-----BEGIN RSA PRIVATE KEY")
+            or v.endswith("END RSA PRIVATE KEY-----")
+        ):
+            raise ValueError("GITHUB_APP_PRIVATE_KEY must be a valid RSA key")
+        return v
 
     @property
     def postgres_dsn(self) -> PostgresDsn:

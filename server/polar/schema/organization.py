@@ -8,6 +8,7 @@ from polar.models.organization import Organization
 from polar.platforms import Platforms
 from polar.schema.account import AccountSchema
 from polar.schema.base import Schema
+from polar.schema.repository import RepositorySchema
 
 
 class Base(Schema):
@@ -55,6 +56,8 @@ class OrganizationSchema(Base):
     status: Organization.Status
     created_at: datetime
     modified_at: datetime | None
+
+    repositories: list[RepositorySchema] | None
 
     class Config:
         orm_mode = True

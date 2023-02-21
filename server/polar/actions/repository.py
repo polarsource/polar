@@ -50,7 +50,9 @@ class GithubRepositoryActions(RepositoryActions):
         repo: github.rest.Repository,
     ) -> Repository:
         create = CreateRepository.from_github(organization, repo)
-        return await self.upsert(session, create)
+        instance = await self.upsert(session, create)
+        # TODO: Schedule a task to sync issues
+        return instance
 
 
 repository = RepositoryActions(Repository)

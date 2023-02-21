@@ -39,8 +39,4 @@
     "**/node_modules": true,
     "**/.next": true,
   },
-  "explorer.fileNesting.enabled": true,
-  "explorer.fileNesting.patterns": {
-    ".env": ".gitignore, .pre-commit-config.yaml, .python-version, Brewfile, pyproject.toml, poetry.lock, alembic.ini, docker-compose.yml .coverage .env.testing",
-  }
 }

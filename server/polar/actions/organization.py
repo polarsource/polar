@@ -7,6 +7,7 @@ from sqlalchemy import Column
 from sqlalchemy.exc import IntegrityError
 
 from polar.actions.base import Action
+from polar.actions.repository import github_repository
 from polar.clients import github
 from polar.models import Organization, User, UserOrganization
 from polar.platforms import Platforms
@@ -88,10 +89,7 @@ class GithubOrganization(OrganizationActions):
         response = (
             await client.rest.apps.async_list_installations_for_authenticated_user()
         )
-        if response.status_code != 200:
-            log.warning("github.installations.fetch.failed", user_id=user.id)
-            # TODO Raise
-            return
+        github.ensure_expected_response(response)
 
         installations = response.parsed_data.installations
         log.debug(
@@ -119,13 +117,16 @@ class GithubOrganization(OrganizationActions):
         if not filtered:
             return None
 
-        normalized = filtered.pop()
-        organization = await self.upsert(session, normalized)
+        to_create = filtered.pop()
+        organization = await self.upsert(session, to_create)
         if not organization:
             return None
 
         # TODO: Better error handling?
         await self.add_user(session, organization, user)
+        await github_repository.install_for_organization(
+            session, organization, installation_id
+        )
         return organization
 
     async def suspend(

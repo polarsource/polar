@@ -4,7 +4,8 @@ import structlog
 from sqlalchemy import Column
 
 from polar.actions.base import Action
-from polar.models.repository import Repository
+from polar.clients import github
+from polar.models import Organization, Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
 from polar.schema.repository import CreateRepository, UpdateRepository
@@ -25,6 +26,31 @@ class GithubRepositoryActions(RepositoryActions):
         return await self.get_by(
             session, platform=Platforms.github, external_id=external_id
         )
+
+    async def install_for_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        installation_id: int,
+    ) -> list[Repository] | None:
+        client = github.get_app_installation_client(installation_id)
+        response = await client.rest.apps.async_list_repos_accessible_to_installation()
+        github.ensure_expected_response(response)
+
+        installed = []
+        for repo in response.parsed_data.repositories:
+            created = await self.install(session, organization, repo)
+            installed.append(created)
+        return installed
+
+    async def install(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        repo: github.rest.Repository,
+    ) -> Repository:
+        create = CreateRepository.from_github(organization, repo)
+        return await self.upsert(session, create)
 
 
 repository = RepositoryActions(Repository)

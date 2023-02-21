@@ -33,17 +33,19 @@ class GithubUserActions(UserActions):
             return user
 
         client = github.get_client(oauth.access_token)
-        request = await client.rest.users.async_get_authenticated()
-        if request.status_code != 200:
+        response = await client.rest.users.async_get_authenticated()
+        try:
+            github.ensure_expected_response(response)
+        except github.UnexpectedStatusCode:
             log.warning(
                 "user.update_profile",
                 error="github.http.error",
                 user_id=user.id,
-                status_code=request.status_code,
+                status_code=response.status_code,
             )
             return user
 
-        data = request.json()
+        data = response.json()
         user.profile = {
             "username": data["login"],
             "platform": "github",

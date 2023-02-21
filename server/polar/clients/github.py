@@ -1,10 +1,12 @@
 from typing import Any
 
+import structlog
 from fastapi.encoders import jsonable_encoder
 from githubkit import (
     AppAuthStrategy,
     AppInstallationAuthStrategy,
     GitHub,
+    Response,
     TokenAuthStrategy,
     rest,
     utils,
@@ -13,10 +15,27 @@ from githubkit import (
 
 from polar.config import settings
 
+log = structlog.get_logger()
+
 WebhookEvent = webhooks.types.WebhookEvent
 
 
+class UnexpectedStatusCode(Exception):
+    ...
+
+
+class AuthenticationRequired(UnexpectedStatusCode):
+    ...
+
+
+class Forbidden(UnexpectedStatusCode):
+    ...
+
+
+###############################################################################
+# GITHUBKIT WORKAROUNDS
 # TODO: Investigate improvement from githubkit - this is not ergonomic or pretty..
+###############################################################################
 
 
 def is_set(obj: object, name: str) -> bool:
@@ -47,6 +66,32 @@ def patch_unset(field: str, payload: dict[str, Any]) -> dict[str, Any]:
     if payload.get(field) is None:
         payload[field] = utils.UNSET
     return payload
+
+
+###############################################################################
+# GITHUB API HELPERS
+###############################################################################
+
+
+def ensure_expected_response(
+    response: Response, accepted: set[int] = {200, 304}
+) -> bool:
+    status_code = response.status_code
+    if status_code in accepted:
+        return True
+
+    if status_code == 401:
+        raise AuthenticationRequired()
+
+    if status_code == 403:
+        raise Forbidden()
+
+    raise UnexpectedStatusCode()
+
+
+###############################################################################
+# GITHUB API CLIENTS
+###############################################################################
 
 
 def get_client(access_token: str) -> GitHub[TokenAuthStrategy]:

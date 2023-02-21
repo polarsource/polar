@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from polar.models.repository import Repository
+from polar.clients import github
+from polar.models import Organization, Repository
 from polar.platforms import Platforms
 from polar.schema.base import Schema
 
@@ -33,6 +34,36 @@ class CreateRepository(Schema):
     is_downloads_enabled: bool | None
     is_archived: bool | None
     is_disabled: bool | None
+
+    @classmethod
+    def from_github(cls, organization: Organization, repo: github.Repository):
+        return cls(
+            platform=Platforms.github,
+            external_id=repo.id,
+            organization_id=organization.id,
+            organization_name=organization.name,
+            name=repo.name,
+            description=repo.description,
+            open_issues=repo.open_issues,
+            forks=repo.forks,
+            stars=repo.stargazers_count,
+            watchers=repo.watchers_count,
+            main_branch=repo.default_branch,
+            topics=repo.topics,
+            license=repo.license_,
+            repository_pushed_at=repo.pushed_at,
+            repository_created_at=repo.created_at,
+            repository_modified_at=repo.updated_at,
+            is_private=repo.private,
+            is_fork=repo.fork,
+            is_issues_enabled=repo.has_issues,
+            is_projects_enabled=repo.has_projects,
+            is_wiki_enabled=repo.has_wiki,
+            is_pages_enabled=repo.has_pages,
+            is_downloads_enabled=repo.has_downloads,
+            is_archived=repo.archived,
+            is_disabled=repo.disabled,
+        )
 
 
 class UpdateRepository(CreateRepository):

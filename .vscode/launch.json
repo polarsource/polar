@@ -5,8 +5,8 @@
     "version": "0.2.0",
     "compounds": [
         {
-            "name": "API + Worker",
-            "configurations": ["API", "Worker"],
+            "name": "Polar",
+            "configurations": ["API", "Worker", "Client"],
             "stopAll": true
         }
     ],
@@ -45,6 +45,17 @@
                 "worker",
             ],
             "justMyCode": false,
+        },
+        {
+            "name": "Client",
+            "type": "node",
+            "envFile": "${workspaceFolder}/client/.env",
+            "request": "launch",
+            "runtimeExecutable": "yarn",
+            "runtimeArgs": [
+                "run",
+                "dev"
+            ],
         }
     ]
 }

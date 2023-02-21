@@ -25,12 +25,19 @@
       "source.organizeImports": true
     },
   },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+  },
   "files.exclude": {
     "**/.git": true,
     "**/.pytest_cache": true,
     "**/.mypy_cache": true,
     "**/.venv": true,
     "**/__pycache__": true,
+    "**/node_modules": true,
+    "**/.next": true,
   },
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.patterns": {

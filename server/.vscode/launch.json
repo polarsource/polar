@@ -3,9 +3,16 @@
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
+    "compounds": [
+        {
+            "name": "API + Worker",
+            "configurations": ["API", "Worker"],
+            "stopAll": true
+        }
+    ],
     "configurations": [
         {
-            "name": "Polar API",
+            "name": "API",
             "type": "python",
             "env": {
                 "PYDEVD_DISABLE_FILE_VALIDATION": "1"
@@ -22,6 +29,19 @@
                 "127.0.0.1",
                 "--port",
                 "8000"
+            ],
+            "justMyCode": false,
+        },
+        {
+            "name": "Worker",
+            "type": "python",
+            "envFile": "${workspaceFolder}/server/.env",
+            "request": "launch",
+            "module": "celery",
+            "args": [
+                "-A",
+                "run_worker:app",
+                "worker",
             ],
             "justMyCode": false,
         }

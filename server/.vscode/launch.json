@@ -38,6 +38,7 @@
             "envFile": "${workspaceFolder}/server/.env",
             "request": "launch",
             "module": "celery",
+            "preLaunchTask": "ngrok tunnel",
             "args": [
                 "-A",
                 "run_worker:app",

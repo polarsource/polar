@@ -32,6 +32,21 @@ class Forbidden(UnexpectedStatusCode):
     ...
 
 
+class NotFound(UnexpectedStatusCode):
+    ...
+
+
+class ValidationFailed(UnexpectedStatusCode):
+    ...
+
+
+HTTP_EXCEPTIONS = {
+    401: AuthenticationRequired,
+    403: Forbidden,
+    404: NotFound,
+    422: ValidationFailed,
+}
+
 ###############################################################################
 # GITHUBKIT WORKAROUNDS
 # TODO: Investigate improvement from githubkit - this is not ergonomic or pretty..
@@ -80,13 +95,8 @@ def ensure_expected_response(
     if status_code in accepted:
         return True
 
-    if status_code == 401:
-        raise AuthenticationRequired()
-
-    if status_code == 403:
-        raise Forbidden()
-
-    raise UnexpectedStatusCode()
+    http_exception = HTTP_EXCEPTIONS.get(status_code, UnexpectedStatusCode)
+    raise http_exception()
 
 
 ###############################################################################

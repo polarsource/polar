@@ -52,7 +52,7 @@ class GithubIssueActions(IssueActions):
         session: AsyncSession,
         organization_name: str,
         repository_name: str,
-        data: github.webhooks.IssuesOpenedPropIssue,
+        data: github.rest.Issue | github.webhooks.IssuesOpenedPropIssue,
         organization_id: str | None = None,
         repository_id: str | None = None,
     ) -> Issue:
@@ -71,11 +71,13 @@ class GithubIssueActions(IssueActions):
         session: AsyncSession,
         organization_name: str,
         repository_name: str,
-        data: list[github.webhooks.IssuesOpenedPropIssue],
+        data: list[github.rest.Issue | github.webhooks.IssuesOpenedPropIssue],
         organization_id: str | None = None,
         repository_id: str | None = None,
     ) -> list[Issue]:
-        def parse(issue: github.webhooks.IssuesOpenedPropIssue) -> CreateIssue:
+        def parse(
+            issue: github.rest.Issue | github.webhooks.IssuesOpenedPropIssue,
+        ) -> CreateIssue:
             return CreateIssue.from_github(
                 organization_name,
                 repository_name,

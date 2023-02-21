@@ -12,8 +12,10 @@ from polar.platforms import Platforms
 from polar.schema.base import Schema
 from polar.typing import JSONDict, JSONList
 
+# TODO: Ugly. Fix how to deal with githubkit typing at times.
 TIssueData = (
-    github.webhooks.IssuesOpenedPropIssue
+    github.rest.Issue
+    | github.webhooks.IssuesOpenedPropIssue
     | github.webhooks.PullRequestOpenedPropPullRequest
 )
 

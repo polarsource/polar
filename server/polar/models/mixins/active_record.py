@@ -95,44 +95,6 @@ class ActiveRecordMixin:
         await created.on_created()
         return created
 
-    def fill(
-        self: ModelType,
-        include: set[str] | None = None,
-        exclude: set[str] | None = None,
-        **values: Any,
-    ) -> ModelType:
-        exclude = exclude if exclude else set()
-        for column, value in values.items():
-            if isinstance(include, set) and column not in include:
-                continue
-
-            if column not in exclude:
-                setattr(self, column, value)
-        return self
-
-    async def save(
-        self: ModelType, session: AsyncSession, autocommit: bool = True
-    ) -> ModelType:
-        session.add(self)
-        if autocommit:
-            await session.commit()
-        return self
-
-    async def update(
-        self: ModelType,
-        session: AsyncSession,
-        autocommit: bool = True,
-        include: set[str] | None = None,
-        exclude: set[str] | None = None,
-        **values: Any,
-    ) -> ModelType:
-        if not include:
-            include = self.get_mutable_keys()
-        updated = self.fill(include=include, exclude=exclude, **values)
-        res = await updated.save(session, autocommit=autocommit)
-        await self.on_updated()
-        return res
-
     @classmethod
     async def upsert_many(
         cls: type[ModelType],
@@ -186,6 +148,44 @@ class ActiveRecordMixin:
                 await instance.on_created()
             elif instance.xmax != 0:
                 await instance.on_updated()
+
+    def fill(
+        self: ModelType,
+        include: set[str] | None = None,
+        exclude: set[str] | None = None,
+        **values: Any,
+    ) -> ModelType:
+        exclude = exclude if exclude else set()
+        for column, value in values.items():
+            if isinstance(include, set) and column not in include:
+                continue
+
+            if column not in exclude:
+                setattr(self, column, value)
+        return self
+
+    async def save(
+        self: ModelType, session: AsyncSession, autocommit: bool = True
+    ) -> ModelType:
+        session.add(self)
+        if autocommit:
+            await session.commit()
+        return self
+
+    async def update(
+        self: ModelType,
+        session: AsyncSession,
+        autocommit: bool = True,
+        include: set[str] | None = None,
+        exclude: set[str] | None = None,
+        **values: Any,
+    ) -> ModelType:
+        if not include:
+            include = self.get_mutable_keys()
+        updated = self.fill(include=include, exclude=exclude, **values)
+        res = await updated.save(session, autocommit=autocommit)
+        await self.on_updated()
+        return res
 
     async def delete(self: ModelType, session: AsyncSession) -> None:
         # TODO: Can we get an affected rows or similar to verify delete?

@@ -28,24 +28,6 @@ class RecordModel(TimestampedModel):
 
     id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=GUID.generate)
 
-    # We use upserts frequently, but would still like to know when a record was
-    # created vs. updated.
-    #
-    # Postgres has `xmax` as a system column containing the row lock in case of updates.
-    # For inserts no lock is needed so it's zero (0).
-    #
-    # https://www.cybertec-postgresql.com/en/whats-in-an-xmax/
-    # https://stackoverflow.com/questions/59579151/how-do-i-select-a-postgresql-system-column-using-sqlalchemy
-    _xmax: Mapped[str] = mapped_column("xmax", TEXT, system=True)
-
-    @property
-    def was_inserted(self) -> bool:
-        return self._xmax == 0
-
-    @property
-    def was_updated(self) -> bool:
-        return self._xmax != 0
-
 
 class StatusFlag(enum.Enum):
     DISABLED = 0

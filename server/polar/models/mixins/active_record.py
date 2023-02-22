@@ -3,12 +3,12 @@ from __future__ import annotations
 from functools import cache
 from typing import Any, ClassVar, TypeVar
 
-from sqlalchemy import Column
-from sqlalchemy.orm.properties import MappedColumn
-from sqlalchemy.sql.selectable import FromClause
-
 from polar.postgres import AsyncSession, sql
 from polar.schema.base import Schema
+from sqlalchemy import TEXT, Column
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm.properties import MappedColumn
+from sqlalchemy.sql.selectable import FromClause
 
 ModelType = TypeVar("ModelType", bound="ActiveRecordMixin")
 SchemaType = TypeVar("SchemaType", bound=Schema)
@@ -18,6 +18,24 @@ SchemaType = TypeVar("SchemaType", bound=Schema)
 class ActiveRecordMixin:
     __mutables__: set[Column[Any]] | set[str] | None = None
     __table__: ClassVar[FromClause]
+
+    # We use upserts frequently, but would still like to know when a record was
+    # created vs. updated.
+    #
+    # Postgres has `xmax` as a system column containing the row lock in case of updates.
+    # For inserts no lock is needed so it's zero (0).
+    #
+    # https://www.cybertec-postgresql.com/en/whats-in-an-xmax/
+    # https://stackoverflow.com/questions/59579151/how-do-i-select-a-postgresql-system-column-using-sqlalchemy
+    _xmax: Mapped[int] = mapped_column("xmax", TEXT, system=True)
+
+    @property
+    def was_inserted(self) -> bool:
+        return self._xmax == 0
+
+    @property
+    def was_updated(self) -> bool:
+        return self._xmax != 0
 
     @classmethod
     @cache

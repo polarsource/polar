@@ -5,8 +5,8 @@ from typing import Any, ClassVar, TypeVar
 
 from polar.postgres import AsyncSession, sql
 from polar.schema.base import Schema
-from sqlalchemy import TEXT, Column
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Column, column
+from sqlalchemy.orm import Mapped, declared_attr, query_expression, with_expression
 from sqlalchemy.orm.properties import MappedColumn
 from sqlalchemy.sql.selectable import FromClause
 
@@ -27,15 +27,26 @@ class ActiveRecordMixin:
     #
     # https://www.cybertec-postgresql.com/en/whats-in-an-xmax/
     # https://stackoverflow.com/questions/59579151/how-do-i-select-a-postgresql-system-column-using-sqlalchemy
-    _xmax: Mapped[int] = mapped_column("xmax", TEXT, system=True)
+    @declared_attr
+    @classmethod
+    def xmax(cls) -> Mapped[int]:
+        return query_expression()
 
     @property
-    def was_inserted(self) -> bool:
-        return self._xmax == 0
+    def was_created(self) -> bool:
+        return getattr(self, "_was_created", False)
+
+    @was_created.setter
+    def was_created(self, value: bool) -> None:
+        self._was_created = value
 
     @property
     def was_updated(self) -> bool:
-        return self._xmax != 0
+        return getattr(self, "_was_updated", False)
+
+    @was_updated.setter
+    def was_updated(self, value: bool) -> None:
+        self._was_updated = value
 
     @classmethod
     @cache
@@ -80,7 +91,9 @@ class ActiveRecordMixin:
     ) -> ModelType:
         instance = cls()
         instance.fill(**values)
-        return await instance.save(session, autocommit=autocommit)
+        created = await instance.save(session, autocommit=autocommit)
+        await created.on_created()
+        return created
 
     def fill(
         self: ModelType,
@@ -116,7 +129,9 @@ class ActiveRecordMixin:
         if not include:
             include = self.get_mutable_keys()
         updated = self.fill(include=include, exclude=exclude, **values)
-        return await updated.save(session, autocommit=autocommit)
+        res = await updated.save(session, autocommit=autocommit)
+        await self.on_updated()
+        return res
 
     @classmethod
     async def upsert_many(
@@ -129,20 +144,24 @@ class ActiveRecordMixin:
         if not values:
             raise ValueError("Zero values provided")
 
+        xmax = column("xmax", is_literal=True, _selectable=cls.__table__)
+
         insert_stmt = sql.insert(cls).values(values)
         mutable_keys = cls.get_mutable_keys()
         upsert_stmt = insert_stmt.on_conflict_do_update(
             index_elements=index_elements,
             set_={k: getattr(insert_stmt.excluded, k) for k in mutable_keys},
-        ).returning(cls)
+        ).returning(cls, xmax)
         orm_stmt = (
-            sql.select(cls)
+            sql.select(cls, xmax)
             .from_statement(upsert_stmt)
+            .options(with_expression(cls.xmax, xmax))
             .execution_options(populate_existing=True)
         )
         res = await session.execute(orm_stmt)
         instances = res.scalars().all()
         await session.commit()
+        await cls.on_upserted(instances)
         return instances
 
     @classmethod
@@ -157,7 +176,28 @@ class ActiveRecordMixin:
         )
         return upserted[0]
 
+    @classmethod
+    async def on_upserted(cls, instances: list[ModelType]) -> None:
+        for instance in instances:
+            if not isinstance(instance.xmax, int):
+                continue
+
+            if instance.xmax == 0:
+                await instance.on_created()
+            elif instance.xmax != 0:
+                await instance.on_updated()
+
     async def delete(self: ModelType, session: AsyncSession) -> None:
         # TODO: Can we get an affected rows or similar to verify delete?
         await session.delete(self)
         await session.commit()
+        await self.on_deleted()
+
+    async def on_updated(self) -> None:
+        self.was_updated = True
+
+    async def on_created(self) -> None:
+        self.was_created = True
+
+    async def on_deleted(self) -> None:
+        ...

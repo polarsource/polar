@@ -30,7 +30,7 @@ async def subscribe(redis: Redis, channels: list[str]):
 
 @router.get("/events/{organization_id}")
 async def listen(
-    organization_id: uuid.UUID,
+    organization_id: str,
     user: User = Depends(current_active_user),
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:

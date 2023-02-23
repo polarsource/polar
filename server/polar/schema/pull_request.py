@@ -3,10 +3,11 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from polar.clients import github
 from polar.platforms import Platforms
 from polar.schema.issue import Base, CreateIssue
 from polar.typing import JSONDict, JSONList
+
+from polar.clients import github
 
 
 # Since we cannot use mixins with Pydantic, we have to redefine
@@ -59,11 +60,12 @@ class CreatePullRequest(Base):
         cls,
         organization_name: str,
         repository_name: str,
-        data: github.webhooks.PullRequestOpened,
+        pr: github.rest.PullRequest
+        | github.rest.PullRequestSimple
+        | github.webhooks.PullRequestOpenedPropPullRequest,
         organization_id: str | None = None,
         repository_id: str | None = None,
     ) -> dict[str, Any]:
-        pr = data.pull_request
         normalized = CreateIssue.get_normalized_github_issue(
             organization_name,
             repository_name,
@@ -71,22 +73,26 @@ class CreatePullRequest(Base):
             organization_id,
             repository_id,
         )
+        merged_by = None
+        if hasattr(pr, "merged_by"):
+            merged_by = github.jsonify(pr.merged_by)
+
         normalized.update(
             dict(
-                commits=pr.commits,
-                additions=pr.additions,
-                deletions=pr.deletions,
-                changed_files=pr.changed_files,
+                commits=getattr(pr, "commits", None),
+                additions=getattr(pr, "additions", None),
+                deletions=getattr(pr, "deletions", None),
+                changed_files=getattr(pr, "changed_files", None),
                 requested_reviewers=github.jsonify(pr.requested_reviewers),
                 requested_teams=github.jsonify(pr.requested_teams),
                 is_draft=pr.draft,
-                is_rebaseable=pr.rebaseable,
-                review_comments=pr.review_comments,
-                maintainer_can_modify=pr.maintainer_can_modify,
-                is_mergeable=pr.mergeable,
-                mergeable_state=pr.mergeable_state,
+                is_rebaseable=getattr(pr, "rebaseable", None),
+                review_comments=getattr(pr, "review_comments", None),
+                maintainer_can_modify=getattr(pr, "maintainer_can_modify", None),
+                is_mergeable=getattr(pr, "mergeable", None),
+                mergeable_state=getattr(pr, "mergeable_state", None),
                 auto_merge=pr.auto_merge,
-                merged_by=github.jsonify(pr.merged_by),
+                merged_by=merged_by,
                 merged_at=pr.merged_at,
                 merge_commit_sha=pr.merge_commit_sha,
                 head=github.jsonify(pr.head),

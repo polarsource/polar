@@ -1,12 +1,13 @@
 from datetime import datetime
 
+from polar.models.base import RecordModel
+from polar.models.issue import IssueFields
+from polar.typing import JSONDict, JSONList
 from sqlalchemy import TIMESTAMP, Boolean, Integer, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-from polar.models.base import RecordModel
-from polar.models.issue import IssueFields
-from polar.typing import JSONDict, JSONList
+from polar import signals
 
 
 class PullRequest(IssueFields, RecordModel):
@@ -15,6 +16,9 @@ class PullRequest(IssueFields, RecordModel):
         UniqueConstraint("external_id"),
         UniqueConstraint("organization_name", "repository_name", "number"),
     )
+
+    on_created_signal = signals.pull_request_created
+    on_updated_signal = signals.pull_request_updated
 
     # Pull Requests
     commits: Mapped[int | None] = mapped_column(Integer, nullable=True)

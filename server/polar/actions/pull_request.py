@@ -1,12 +1,19 @@
 from typing import Any
 
-from sqlalchemy.orm import MappedColumn
-
 from polar.actions.base import Action
 from polar.models.pull_request import PullRequest
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
 from polar.schema.pull_request import CreatePullRequest, UpdatePullRequest
+from sqlalchemy.orm import MappedColumn
+
+from polar.clients import github
+
+TGithubPR = (
+    github.rest.PullRequest
+    | github.rest.PullRequestSimple
+    | github.webhooks.PullRequestOpenedPropPullRequest
+)
 
 
 class PullRequestAction(Action[PullRequest, CreatePullRequest, UpdatePullRequest]):
@@ -31,11 +38,11 @@ class GithubPullRequestActions(PullRequestAction):
         session: AsyncSession,
         organization_name: str,
         repository_name: str,
-        data: list[dict[str, Any]],
+        data: list[TGithubPR],
         organization_id: str | None = None,
         repository_id: str | None = None,
     ) -> list[PullRequest]:
-        def parse(pr: dict[str, Any]) -> CreatePullRequest:
+        def parse(pr: TGithubPR) -> CreatePullRequest:
             return CreatePullRequest.from_github(
                 organization_name,
                 repository_name,

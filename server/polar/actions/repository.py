@@ -1,15 +1,15 @@
 from typing import Any
 
 import structlog
-from sqlalchemy import Column
-
 from polar.actions.base import Action
-from polar.clients import github
 from polar.models import Organization, Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
 from polar.schema.repository import CreateRepository, UpdateRepository
 from polar.tasks.github.repo import sync_repository
+from sqlalchemy import Column
+
+from polar.clients import github
 
 log = structlog.get_logger()
 
@@ -40,6 +40,26 @@ class GithubRepositoryActions(RepositoryActions):
             state="open",
             sort="updated",
             direction="desc",
+        )
+        github.ensure_expected_response(response)
+        return response.parsed_data
+
+    async def fetch_pull_requests(
+        self,
+        organization: Organization,
+        repository: Repository,
+        per_page: int = 30,
+        page: int = 1,
+    ) -> list[github.rest.PullRequest]:
+        client = github.get_app_installation_client(organization.installation_id)
+        response = await client.rest.pulls.async_list(
+            owner=organization.name,
+            repo=repository.name,
+            state="open",
+            sort="updated",
+            direction="desc",
+            per_page=per_page,
+            page=page,
         )
         github.ensure_expected_response(response)
         return response.parsed_data

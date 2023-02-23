@@ -4,18 +4,21 @@ from datetime import datetime
 from typing import Any
 
 from githubkit.utils import Unset, exclude_unset
-
-from polar.clients import github
 from polar.exceptions import ExpectedIssueGotPullRequest
 from polar.models.issue import Issue
 from polar.platforms import Platforms
 from polar.schema.base import Schema
 from polar.typing import JSONDict, JSONList
 
+from polar.clients import github
+
 # TODO: Ugly. Fix how to deal with githubkit typing at times.
 TIssueData = (
     github.rest.Issue
     | github.webhooks.IssuesOpenedPropIssue
+    | github.webhooks.PullRequestOpenedPropPullRequest
+    | github.rest.PullRequest
+    | github.rest.PullRequestSimple
     | github.webhooks.PullRequestOpenedPropPullRequest
 )
 
@@ -78,7 +81,7 @@ class CreateIssue(Base):
             number=number,
             title=data.title,
             body=data.body,
-            comments=data.comments,
+            comments=getattr(data, "comments", None),
             author=github.jsonify(data.user),
             author_association=data.author_association,
             labels=github.jsonify(data.labels),

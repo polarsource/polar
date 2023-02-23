@@ -1,11 +1,13 @@
+import structlog
 from fastapi import APIRouter, Depends, HTTPException
-
 from polar.actions import demo
 from polar.api.deps import get_db_session
 from polar.postgres import AsyncSession
 from polar.schema.demo import CreateDemo, DemoSchema, UpdateDemo
 
 router = APIRouter(prefix="/demo", tags=["Demo"])
+
+log = structlog.get_logger()
 
 
 @router.get("/", response_model=list[DemoSchema])

@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import cache
 from typing import Any, ClassVar, TypeVar
 
+from blinker import Signal
 from polar.postgres import AsyncSession, sql
 from polar.schema.base import Schema
 from sqlalchemy import Column, column
@@ -18,6 +19,10 @@ SchemaType = TypeVar("SchemaType", bound=Schema)
 class ActiveRecordMixin:
     __mutables__: set[Column[Any]] | set[str] | None = None
     __table__: ClassVar[FromClause]
+
+    on_created_signal: Signal | None = None
+    on_updated_signal: Signal | None = None
+    on_deleted_signal: Signal | None = None
 
     # We use upserts frequently, but would still like to know when a record was
     # created vs. updated.
@@ -193,11 +198,18 @@ class ActiveRecordMixin:
         await session.commit()
         await self.on_deleted()
 
+    async def signal_state_change(self, state: str) -> None:
+        signal = getattr(self, f"on_{state}_signal", None)
+        if signal:
+            await signal.send_async(self)
+
     async def on_updated(self) -> None:
         self.was_updated = True
+        await self.signal_state_change("updated")
 
     async def on_created(self) -> None:
         self.was_created = True
+        await self.signal_state_change("created")
 
     async def on_deleted(self) -> None:
-        ...
+        await self.signal_state_change("deleted")

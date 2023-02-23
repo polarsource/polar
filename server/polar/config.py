@@ -65,6 +65,10 @@ class Settings(BaseSettings):
         return v
 
     @property
+    def redis_url(self) -> str:
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}"
+
+    @property
     def postgres_dsn(self) -> PostgresDsn:
         dsn = self.__dict__.get("postgres_dsn")
         if dsn is None:

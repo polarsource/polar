@@ -1,6 +1,11 @@
 import enum
 from datetime import datetime
 
+import structlog
+from polar.ext.sqlalchemy import GUID, StringEnum
+from polar.models.base import RecordModel
+from polar.platforms import Platforms
+from polar.typing import JSONDict, JSONList
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
@@ -13,10 +18,9 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, MappedColumn, declared_attr, mapped_column
 
-from polar.ext.sqlalchemy import GUID, StringEnum
-from polar.models.base import RecordModel
-from polar.platforms import Platforms
-from polar.typing import JSONDict, JSONList
+from polar import signals
+
+log = structlog.get_logger()
 
 
 class Platform(enum.Enum):
@@ -110,6 +114,9 @@ class Issue(IssueFields, RecordModel):
         UniqueConstraint("organization_name", "repository_name", "number"),
         UniqueConstraint("token"),
     )
+
+    on_created_signal = signals.issue_created
+    on_updated_signal = signals.issue_updated
 
     # TODO: Generate automatically OR remove
     token: Mapped[str] = mapped_column(String, nullable=False, unique=True)

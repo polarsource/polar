@@ -234,6 +234,22 @@ jupyter = ["ipython (>=7.8.0)", "tokenize-rt (>=3.2.0)"]
 uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
+name = "blinker"
+version = "1.5"
+description = "Fast, simple object-to-object and broadcast signaling"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = []
+develop = false
+
+[package.source]
+type = "git"
+url = "ssh://github.com/pallets-eco/blinker.git"
+reference = "HEAD"
+resolved_reference = "5ed9c956aaf68a8e2defa9722109aa2c7bcf7ae1"
+
+[[package]]
 name = "celery"
 version = "5.2.7"
 description = "Distributed Task Queue."
@@ -1886,6 +1902,21 @@ timezone = ["python-dateutil"]
 url = ["furl (>=0.4.1)"]
 
 [[package]]
+name = "sse-starlette"
+version = "1.2.1"
+description = "\"SSE plugin for Starlette\""
+category = "main"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "sse-starlette-1.2.1.tar.gz", hash = "sha256:52760a16ed6380be53a2acca9173de17442f4165716f93679182e82ddd5c8a01"},
+    {file = "sse_starlette-1.2.1-py3-none-any.whl", hash = "sha256:22116035906cb332ed3c5cb2d495af58fd55350de20866ecdc247db7fd69f2ef"},
+]
+
+[package.dependencies]
+starlette = "*"
+
+[[package]]
 name = "starlette"
 version = "0.22.0"
 description = "The little ASGI library that shines."
@@ -2198,4 +2229,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "f1b530576c3f479a9be32fa7b2e50ce0e01887737d703e6dbb9108df3aa47857"
+content-hash = "86e0d6c73f9b7cd867848d7658d767666340f8dc7c19b02a2f4a58ffdfd9ef0b"

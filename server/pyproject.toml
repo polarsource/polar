@@ -20,6 +20,8 @@ githubkit = {extras = ["auth-app"], version = "^0.9.4"}
 redis = "^4.4.2"
 celery = {extras = ["redis"], version = "^5.2.7"}
 asgiref = "^3.6.0"
+sse-starlette = "^1.2.1"
+blinker = {git = "ssh://github.com/pallets-eco/blinker.git"}
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.12.0"

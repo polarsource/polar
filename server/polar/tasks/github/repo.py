@@ -1,9 +1,9 @@
 import structlog
-
-from polar import actions
 from polar.models import Organization, Repository
 from polar.postgres import AsyncSession
 from polar.worker import asyncify_task, task
+
+from polar import actions
 
 log = structlog.get_logger()
 
@@ -53,6 +53,33 @@ async def sync_repository_issues(
     )
 
 
+@task(name="github.repo.sync.pull_requests")
+@asyncify_task(with_session=True)
+async def sync_repository_pull_requests(
+    session: AsyncSession,
+    organization_id: str,
+    organization_name: str,
+    repository_id: str,
+    repository_name: str,
+    per_page: int = 30,
+    page: int = 1,
+) -> None:
+    organization, repository = await get_organization_and_repo(
+        session, organization_id, repository_id
+    )
+    prs = await actions.github_repository.fetch_pull_requests(organization, repository)
+
+    # TODO: Handle pagination via new task
+    await actions.github_pull_request.store_many(
+        session,
+        organization_name,
+        repository_name,
+        prs,
+        organization_id=organization_id,
+        repository_id=repository_id,
+    )
+
+
 @task(name="github.repo.sync")
 @asyncify_task(with_session=True)
 async def sync_repository(
@@ -62,6 +89,11 @@ async def sync_repository(
     repository_id: str,
     repository_name: str,
 ) -> None:
+    # TODO: A bit silly to call a task scheduling... tasks.
+    # Should the invocation of this function skip .delay?
     sync_repository_issues.delay(
+        organization_id, organization_name, repository_id, repository_name
+    )
+    sync_repository_pull_requests.delay(
         organization_id, organization_name, repository_id, repository_name
     )

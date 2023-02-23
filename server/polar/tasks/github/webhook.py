@@ -139,7 +139,7 @@ async def upsert_pull_request(
     create_schema = CreatePullRequest.from_github(
         organization.name,
         repository.name,
-        event,
+        event.pull_request,
         organization_id=organization.id,
         repository_id=repository.id,
     )

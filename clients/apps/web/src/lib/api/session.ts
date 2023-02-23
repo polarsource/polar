@@ -1,5 +1,5 @@
 import { api } from '.'
-import { UserRead } from 'polar-react-kit/api'
+import { UserRead } from 'polarkit/api'
 
 type Organization = {
   id: string

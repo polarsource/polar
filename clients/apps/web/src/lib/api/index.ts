@@ -1,1 +1,1 @@
-export { api } from 'polar-react-kit'
+export { api } from 'polarkit'

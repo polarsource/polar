@@ -4,7 +4,7 @@ import type { NextPageWithLayout } from 'utils/next'
 import type { AppProps } from 'next/app'
 import AuthProvider from 'context/auth'
 import Layout from 'components/Website/Layout'
-import { QueryClient, QueryClientProvider } from 'polar-react-kit'
+import { QueryClient, QueryClientProvider } from 'polarkit'
 
 type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout

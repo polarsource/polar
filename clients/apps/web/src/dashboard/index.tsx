@@ -2,7 +2,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import Organization from './organization'
 import Onboarding from './Onboarding'
 import { requireAuth } from 'context/auth'
-import { useUserOrganizations } from 'polar-react-kit/hooks'
+import { useUserOrganizations } from 'polarkit/hooks'
 
 const Root = () => {
   return <h3 className="text-xl mt-10">Welcome</h3>

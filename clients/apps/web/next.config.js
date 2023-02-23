@@ -12,7 +12,7 @@ const nextConfig = {
     ]
   },
 
-  transpilePackages: ['polar-react-kit'],
+  transpilePackages: ['polarkit'],
 }
 
 module.exports = nextConfig

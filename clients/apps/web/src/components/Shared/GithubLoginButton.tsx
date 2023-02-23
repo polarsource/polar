@@ -1,11 +1,11 @@
-import { client } from 'lib/api'
+import { api } from 'lib/api'
 
 const GithubLoginButton = () => {
   const githubSigninUrl =
     process.env.NEXT_PUBLIC_API_URL + '/apps/github/signin'
 
   const signin = async () => {
-    await client.integrations.githubAuthorize({ scopes: null }).then((res) => {
+    await api.integrations.githubAuthorize({ scopes: null }).then((res) => {
       if (res.authorization_url) {
         window.location.href = res.authorization_url
       }

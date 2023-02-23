@@ -1,5 +1,5 @@
-import { client } from '.'
-import { UserRead } from 'polar-api/client'
+import { api } from '.'
+import { UserRead } from 'polar-react-kit/api'
 
 type Organization = {
   id: string
@@ -46,7 +46,7 @@ export class Session {
 
     try {
       this.fetching = true
-      const user = await client.users.getAuthenticated()
+      const user = await api.users.getAuthenticated()
       if (user?.profile) {
         this.user = user
         this.authenticated = true
@@ -57,18 +57,7 @@ export class Session {
   }
 
   async signout() {
-    if (!this.authenticated) return
-
-    try {
-      this.fetching = true
-      const response = await client.post('/apps/github/signout')
-      if (response.data !== null) {
-        this.user = null
-        this.authenticated = false
-      }
-    } catch (error) {}
-    this.fetching = false
-    this.triggerChangeListeners()
+    throw new Error('Not implemented')
   }
 
   onAuthChange(callback: (data: object) => void) {

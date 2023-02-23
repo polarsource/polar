@@ -1,9 +1,9 @@
-import { client } from 'polar-api'
+import { api } from '../api'
 import { useQuery } from '@tanstack/react-query'
 
-export const useDemos = () => useQuery(['demo'], () => client.demo.getAll())
+export const useDemos = () => useQuery(['demo'], () => api.demo.getAll())
 
 export const useUserOrganizations = (userId) =>
   useQuery(['user', 'organizations', userId], () =>
-    client.userOrganizations.getUserOrganizations(),
+    api.userOrganizations.getUserOrganizations(),
   )

@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react'
 import type { NextPage } from 'next'
 import { useEffect, useState } from 'react'
-import { client } from 'lib/api'
+import { api } from 'lib/api'
 import { useAuth } from 'context/auth'
 import InitLayout from 'components/Dashboard/InitLayout'
 
@@ -14,7 +14,7 @@ const InitInstallationPage: NextPage = ({ query }) => {
   const [installed, setInstalled] = useState(false)
 
   const install = async (query) => {
-    return await client.integrations
+    return await api.integrations
       .install({
         requestBody: {
           platform: query.provider,

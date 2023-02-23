@@ -1,1 +1,1 @@
-export { client } from 'polar-api'
+export { api } from 'polar-react-kit'

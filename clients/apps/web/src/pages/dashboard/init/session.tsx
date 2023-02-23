@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 import type { NextPageWithLayout } from 'utils/next'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
-import { client } from 'lib/api'
+import { api } from 'lib/api'
 import { useAuth } from 'context/auth'
 import InitLayout from 'components/Dashboard/InitLayout'
 
@@ -26,7 +26,7 @@ const InitSessionPage: NextPageWithLayout = ({ query }) => {
     }
 
     const createSession = async () => {
-      return await client.integrations
+      return await api.integrations
         .githubCallback({
           code: query.code,
           state: query.state,

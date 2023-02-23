@@ -1,5 +1,5 @@
 import type { NextPage } from 'next'
-import { client } from 'lib/api'
+import { api } from 'lib/api'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { useEffect, useState } from 'react'
 import {
@@ -117,7 +117,7 @@ const CheckoutDetailsForm = ({ issueId, setCheckout }) => {
   }
 
   const createCheckout = async () => {
-    const res = await client.post('/api/checkouts', {
+    const res = await api.post('/api/checkouts', {
       issue_id: issueId,
       amount: amount * 100,
       currency: currency,
@@ -201,7 +201,7 @@ export const getServerSideProps = async (context) => {
   const { organization, repo, number } = context.params
   const query = context.query
 
-  const res = await client.get(
+  const res = await api.get(
     `/api/organizations/${organization}/repos/${repo}/issues/${number}`,
   )
   const data = await res.data

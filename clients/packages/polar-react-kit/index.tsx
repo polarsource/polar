@@ -1,4 +1,5 @@
 import * as React from 'react'
+export { api } from './api'
 export {
   QueryClient,
   QueryClientProvider,

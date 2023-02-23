@@ -1,10 +1,10 @@
 import { requireAuth } from 'context/auth'
 import { useParams } from 'react-router-dom'
-import { client } from 'lib/api'
+import { api } from 'lib/api'
 
 const StripeAccountLink = ({ organization, stripeId }) => {
   const redirect = async () => {
-    const response = await client
+    const response = await api
       .get(
         `/api/organizations/${organization}/account/${stripeId}/stripe_login`,
       )
@@ -31,7 +31,7 @@ const StripeAccountLink = ({ organization, stripeId }) => {
 }
 
 const createLinks = async (organization_name: string, stripe_id: string) => {
-  const response = await client
+  const response = await api
     .post(
       '/api/organizations/' +
         organization_name +
@@ -47,7 +47,7 @@ const createLinks = async (organization_name: string, stripe_id: string) => {
 }
 
 const createAccount = async (organization_name: string) => {
-  const response = await client
+  const response = await api
     .post('/api/organizations/' + organization_name + '/account')
     .then((res) => {
       if (res.status == 200 && res.data?.stripe_id) {

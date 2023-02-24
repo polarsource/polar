@@ -1,4 +1,5 @@
 import uuid
+from ast import List
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -13,6 +14,7 @@ from polar import signals
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.account import Account
+    from polar.models.repository import Repository
     from polar.models.user import User
 
 
@@ -65,6 +67,12 @@ class Organization(RecordModel):
 
     account: "Mapped[Account]" = relationship(
         "Account", back_populates="organization", uselist=False, lazy="raise_on_sql"
+    )
+
+    repos: "Mapped[list[Repository]]" = relationship(
+        "Repository",
+        back_populates="organization",
+        lazy="joined",
     )
 
     __mutables__ = {

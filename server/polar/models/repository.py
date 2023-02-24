@@ -1,8 +1,11 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+from polar.ext.sqlalchemy import GUID, StringEnum
+from polar.models.base import RecordModel
+from polar.platforms import Platforms
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
@@ -14,11 +17,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from polar.ext.sqlalchemy import GUID, StringEnum
-from polar.models.base import RecordModel
-from polar.platforms import Platforms
+if TYPE_CHECKING:  # pragma: no cover
+    from polar.models.organization import Organization
 
 
 class Repository(RecordModel):
@@ -41,6 +43,12 @@ class Repository(RecordModel):
         GUID, ForeignKey("organizations.id"), nullable=True
     )
     organization_name: Mapped[str] = mapped_column(String, nullable=False)
+    organization: "Mapped[Organization]" = relationship(
+        "Organization",
+        back_populates="repos",
+        lazy="joined",
+    )
+
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str | None] = mapped_column(String(256), nullable=True)
 

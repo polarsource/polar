@@ -2,12 +2,11 @@ import uuid
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
+from polar.ext.sqlalchemy import GUID, StringEnum
+from polar.models.base import RecordModel
 from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from polar.ext.sqlalchemy import GUID, StringEnum
-from polar.models.base import RecordModel
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.organization import Organization

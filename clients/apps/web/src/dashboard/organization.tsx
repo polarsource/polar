@@ -1,6 +1,6 @@
-import { requireAuth } from 'context/auth'
+import { requireAuth } from 'polarkit/context/auth'
 import { useParams } from 'react-router-dom'
-import { api } from 'lib/api'
+import { api } from 'polarkit'
 
 const StripeAccountLink = ({ organization, stripeId }) => {
   const redirect = async () => {

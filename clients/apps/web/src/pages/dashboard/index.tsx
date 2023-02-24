@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 import type { NextPageWithLayout } from 'utils/next'
 import dynamic from 'next/dynamic'
 import Layout from 'components/Dashboard/Layout'
-import { requireAuth } from 'context/auth'
+import { requireAuth } from 'polarkit/context/auth'
 
 const Dashboard = dynamic(() => import('../../dashboard'), {
   ssr: false,

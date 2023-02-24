@@ -2,8 +2,8 @@ import type { ReactElement } from 'react'
 import type { NextPageWithLayout } from 'utils/next'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
-import { api } from 'lib/api'
-import { useAuth } from 'context/auth'
+import { api } from 'polarkit'
+import { useAuth } from 'polarkit/context/auth'
 import InitLayout from 'components/Dashboard/InitLayout'
 
 const isGithubCallback = (query) => {

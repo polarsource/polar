@@ -2,7 +2,7 @@ import '../styles/globals.css'
 import type { ReactElement } from 'react'
 import type { NextPageWithLayout } from 'utils/next'
 import type { AppProps } from 'next/app'
-import AuthProvider from 'context/auth'
+import AuthProvider from 'polarkit/context/auth'
 import Layout from 'components/Website/Layout'
 import { QueryClient, QueryClientProvider } from 'polarkit'
 

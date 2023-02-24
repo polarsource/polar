@@ -1,6 +1,6 @@
-import { requireAuth } from 'context/auth'
+import { requireAuth } from 'polarkit/context/auth'
 import { useParams } from 'react-router-dom'
-import { client } from 'lib/api'
+import { api } from 'polarkit'
 
 const Organization = () => {
   const { user } = requireAuth()

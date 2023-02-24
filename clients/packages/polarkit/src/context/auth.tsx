@@ -1,6 +1,6 @@
 import { createContext, useState, useEffect, useContext } from 'react'
 import { useRouter } from 'next/router'
-import { Session, session } from 'lib/api/session'
+import { Session, session } from '../hooks/session'
 
 const authContext = createContext()
 

@@ -1,5 +1,5 @@
-import { api } from '.'
-import { UserRead } from 'polarkit/api'
+import { api } from '../api'
+import { UserRead } from '../api/client'
 
 type Organization = {
   id: string

@@ -1,5 +1,5 @@
 import type { NextPage } from 'next'
-import { api } from 'lib/api'
+import { api } from 'polarkit'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { useEffect, useState } from 'react'
 import {

@@ -50,7 +50,7 @@ class CreateRepository(Schema):
             watchers=repo.watchers_count,
             main_branch=repo.default_branch,
             topics=repo.topics,
-            license=repo.license_,
+            license=None, # TODO: Store repo.license?
             repository_pushed_at=repo.pushed_at,
             repository_created_at=repo.created_at,
             repository_modified_at=repo.updated_at,

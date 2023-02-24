@@ -3,7 +3,7 @@ import type { NextPageWithLayout } from 'utils/next'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import { api } from 'polarkit'
-import { useAuth } from 'polarkit/context/auth'
+import { useAuth } from 'polarkit/hooks'
 import InitLayout from 'components/Dashboard/InitLayout'
 
 const isGithubCallback = (query) => {

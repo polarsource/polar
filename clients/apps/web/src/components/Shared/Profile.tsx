@@ -1,4 +1,4 @@
-import { useAuth } from 'polarkit/context/auth'
+import { useAuth } from 'polarkit/hooks'
 
 const Profile = () => {
   const { session } = useAuth()

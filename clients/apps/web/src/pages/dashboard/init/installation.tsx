@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 import type { NextPage } from 'next'
 import { useEffect, useState } from 'react'
 import { api } from 'polarkit'
-import { useAuth } from 'polarkit/context/auth'
+import { useAuth } from 'polarkit/hooks'
 import InitLayout from 'components/Dashboard/InitLayout'
 
 const isInstallationCallback = (query) => {

@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import Organization from './organization'
 import Onboarding from './Onboarding'
-import { requireAuth } from 'polarkit/context/auth'
+import { requireAuth } from 'polarkit/hooks'
 import { useUserOrganizations } from 'polarkit/hooks'
 
 const Root = () => {

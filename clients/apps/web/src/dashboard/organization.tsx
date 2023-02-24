@@ -1,4 +1,4 @@
-import { requireAuth } from 'polarkit/context/auth'
+import { requireAuth } from 'polarkit/hooks'
 import { useParams } from 'react-router-dom'
 import { api } from 'polarkit'
 

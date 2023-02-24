@@ -245,7 +245,7 @@ develop = false
 
 [package.source]
 type = "git"
-url = "ssh://github.com/pallets-eco/blinker.git"
+url = "https://github.com/pallets-eco/blinker.git"
 reference = "HEAD"
 resolved_reference = "5ed9c956aaf68a8e2defa9722109aa2c7bcf7ae1"
 
@@ -2229,4 +2229,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "86e0d6c73f9b7cd867848d7658d767666340f8dc7c19b02a2f4a58ffdfd9ef0b"
+content-hash = "8d33245c4d74e670931b16ae898a1f9fb93debde9ad993606309a31291f8dc3e"

@@ -1,49 +1,25 @@
 import type { ReactElement } from 'react'
 import type { NextPageWithLayout } from 'utils/next'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
-import { api } from 'polarkit'
-import { useAuth } from 'polarkit/hooks'
+import { useOAuthExchange } from 'polarkit/hooks'
 import InitLayout from 'components/Dashboard/InitLayout'
 
-const isGithubCallback = (query) => {
-  return query.provider === 'github' && query.code && query.state
-}
-
-const InitSessionPage: NextPageWithLayout = ({ query }) => {
+const InitSessionPage: NextPageWithLayout = ({
+  query,
+}: {
+  query: {
+    provider: string
+    code: string
+    state: string
+  }
+}) => {
   const router = useRouter()
-  const { session } = useAuth()
+  const { session, error } = useOAuthExchange(query.code, query.state)
+  if (session?.authenticated) {
+    return router.push('/dashboard')
+  }
 
-  useEffect(() => {
-    if (session.authenticated) {
-      router.push('/dashboard')
-      return
-    }
-
-    if (!isGithubCallback(query)) {
-      router.push('/')
-      return
-    }
-
-    const createSession = async () => {
-      return await api.integrations
-        .githubCallback({
-          code: query.code,
-          state: query.state,
-        })
-        .then((res) => {
-          if (res.authenticated) {
-            window.location.replace('/dashboard')
-          }
-        })
-        .catch((error) => {
-          console.log('error', error)
-        })
-    }
-    createSession()
-  }, [])
-
-  return <h1>Authenticating...</h1>
+  return <h1>Authenticating</h1>
 }
 
 InitSessionPage.getLayout = (page: ReactElement) => {

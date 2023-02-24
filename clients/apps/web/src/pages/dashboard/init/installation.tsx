@@ -10,7 +10,7 @@ const isInstallationCallback = (query) => {
 }
 
 const InitInstallationPage: NextPage = ({ query }) => {
-  const { session } = useAuth()
+  const { authenticated } = useAuth()
   const [installed, setInstalled] = useState(false)
 
   const install = async (query) => {

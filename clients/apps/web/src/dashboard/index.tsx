@@ -24,13 +24,9 @@ const router = createBrowserRouter([
 ])
 
 const Dashboard = () => {
-  const { session } = requireAuth()
+  const { user } = requireAuth()
 
-  if (!session.user) {
-    return <div>Not authenticated</div>
-  }
-
-  const userOrgQuery = useUserOrganizations(session.user.id)
+  const userOrgQuery = useUserOrganizations(user?.id)
 
   if (userOrgQuery.isLoading) return <div>Loading...</div>
 

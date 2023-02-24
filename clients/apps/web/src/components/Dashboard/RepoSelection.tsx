@@ -30,7 +30,6 @@ const RepoSelection = () => {
 
   useEffect(() => {
     if (userOrgQuery.isSuccess) {
-
       const r = organizations.map((org) => {
         return org.repositories.map((repo) => {
           return {
@@ -42,18 +41,18 @@ const RepoSelection = () => {
         })
       }).flat()
 
-
       setRepos(r)
 
       // Set first repo as default
       setSelected(r[0])
     }
-  }, [organizations])
+  }, [organizations, userOrgQuery.isSuccess])
 
   if (!session.user) {
     return <div>Not authenticated</div>
   }
 
+  // TODO: Add loading indicator to the Listbox instead
   if (userOrgQuery.isLoading) return <div>Loading...</div>
 
   if (!userOrgQuery.isSuccess) return <div>Error</div>

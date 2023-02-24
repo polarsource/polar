@@ -61,5 +61,11 @@ export const $OrganizationSchema = {
       type: 'string',
       format: 'date-time',
     },
+    repositories: {
+      type: 'array',
+      contains: {
+        type: 'RepositorySchema',
+      },
+    },
   },
 } as const;

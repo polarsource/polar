@@ -3,6 +3,7 @@
 /* eslint-disable */
 
 import type { Platforms } from './Platforms';
+import type { RepositorySchema } from './RepositorySchema';
 import type { Status } from './Status';
 
 export type OrganizationSchema = {
@@ -20,5 +21,6 @@ export type OrganizationSchema = {
   status: Status;
   created_at: string;
   modified_at?: string;
+  repositories?: Array<RepositorySchema>;
 };
 

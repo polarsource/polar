@@ -742,6 +742,51 @@
                     }
                 }
             }
+        },
+        "/api/v1/stream/events/{organization_id}": {
+            "get": {
+                "tags": [
+                    "stream"
+                ],
+                "summary": "Listen",
+                "operationId": "stream:listen",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Organization Id",
+                            "type": "string"
+                        },
+                        "name": "organization_id",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -933,6 +978,13 @@
                         "title": "Modified At",
                         "type": "string",
                         "format": "date-time"
+                    },
+                    "repositories": {
+                        "title": "Repositories",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RepositorySchema"
+                        }
                     }
                 }
             },
@@ -943,6 +995,133 @@
                 ],
                 "type": "string",
                 "description": "An enumeration."
+            },
+            "RepositorySchema": {
+                "title": "RepositorySchema",
+                "required": [
+                    "platform",
+                    "external_id",
+                    "organization_name",
+                    "name",
+                    "is_private",
+                    "id",
+                    "visibility"
+                ],
+                "type": "object",
+                "properties": {
+                    "platform": {
+                        "$ref": "#/components/schemas/Platforms"
+                    },
+                    "external_id": {
+                        "title": "External Id",
+                        "type": "integer"
+                    },
+                    "organization_id": {
+                        "title": "Organization Id",
+                        "type": "string"
+                    },
+                    "organization_name": {
+                        "title": "Organization Name",
+                        "type": "string"
+                    },
+                    "name": {
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "description": {
+                        "title": "Description",
+                        "type": "string"
+                    },
+                    "open_issues": {
+                        "title": "Open Issues",
+                        "type": "integer"
+                    },
+                    "forks": {
+                        "title": "Forks",
+                        "type": "integer"
+                    },
+                    "stars": {
+                        "title": "Stars",
+                        "type": "integer"
+                    },
+                    "watchers": {
+                        "title": "Watchers",
+                        "type": "integer"
+                    },
+                    "main_branch": {
+                        "title": "Main Branch",
+                        "type": "string"
+                    },
+                    "topics": {
+                        "title": "Topics",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "license": {
+                        "title": "License",
+                        "type": "string"
+                    },
+                    "repository_pushed_at": {
+                        "title": "Repository Pushed At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "repository_created_at": {
+                        "title": "Repository Created At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "repository_modified_at": {
+                        "title": "Repository Modified At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "is_private": {
+                        "title": "Is Private",
+                        "type": "boolean"
+                    },
+                    "is_fork": {
+                        "title": "Is Fork",
+                        "type": "boolean"
+                    },
+                    "is_issues_enabled": {
+                        "title": "Is Issues Enabled",
+                        "type": "boolean"
+                    },
+                    "is_projects_enabled": {
+                        "title": "Is Projects Enabled",
+                        "type": "boolean"
+                    },
+                    "is_wiki_enabled": {
+                        "title": "Is Wiki Enabled",
+                        "type": "boolean"
+                    },
+                    "is_pages_enabled": {
+                        "title": "Is Pages Enabled",
+                        "type": "boolean"
+                    },
+                    "is_downloads_enabled": {
+                        "title": "Is Downloads Enabled",
+                        "type": "boolean"
+                    },
+                    "is_archived": {
+                        "title": "Is Archived",
+                        "type": "boolean"
+                    },
+                    "is_disabled": {
+                        "title": "Is Disabled",
+                        "type": "boolean"
+                    },
+                    "id": {
+                        "title": "Id",
+                        "type": "string"
+                    },
+                    "visibility": {
+                        "$ref": "#/components/schemas/Visibility"
+                    }
+                }
             },
             "Status": {
                 "title": "Status",
@@ -1070,6 +1249,14 @@
                         "type": "string"
                     }
                 }
+            },
+            "Visibility": {
+                "title": "Visibility",
+                "enum": [
+                    "public",
+                    "private"
+                ],
+                "description": "An enumeration."
             },
             "WebhookResponse": {
                 "title": "WebhookResponse",

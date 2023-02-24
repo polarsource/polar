@@ -5,9 +5,13 @@ import { useHasHydrated } from './hydration'
 
 export const useDemos = () => useQuery(['demo'], () => api.demo.getAll())
 
-export const useUserOrganizations = (userId: number) =>
-  useQuery(['user', 'organizations', userId], () =>
-    api.userOrganizations.getUserOrganizations(),
+export const useUserOrganizations = (userId: string) =>
+  useQuery(
+    ['user', 'organizations', userId],
+    () => api.userOrganizations.getUserOrganizations(),
+    {
+      enabled: !!userId,
+    },
   )
 
 export { useAuth, requireAuth, useOAuthExchange, useHasHydrated }

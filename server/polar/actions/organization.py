@@ -3,16 +3,17 @@ from typing import Any, Sequence
 from uuid import UUID
 
 import structlog
-from sqlalchemy import Column
-from sqlalchemy.exc import IntegrityError
-
 from polar.actions.base import Action
 from polar.actions.repository import github_repository
-from polar.clients import github
 from polar.models import Organization, User, UserOrganization
+from polar.models.repository import Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
 from polar.schema.organization import CreateOrganization, UpdateOrganization
+from sqlalchemy import Column
+from sqlalchemy.exc import IntegrityError
+
+from polar.clients import github
 
 log = structlog.get_logger()
 
@@ -42,6 +43,19 @@ class OrganizationActions(Action[Organization, CreateOrganization, UpdateOrganiz
         )
         res = await session.execute(statement)
         orgs = res.scalars().all()
+        return orgs
+
+    async def get_all_org_repos_by_user_id(
+        self, session: AsyncSession, user_id: UUID
+    ) -> Sequence[Organization]:
+        statement = (
+            sql.select(Organization)
+            .join(UserOrganization)
+            .join(Organization.repos)
+            .where(UserOrganization.user_id == user_id)
+        )
+        res = await session.execute(statement)
+        orgs = res.scalars().unique().all()
         return orgs
 
     async def add_user(

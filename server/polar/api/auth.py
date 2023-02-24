@@ -10,7 +10,6 @@ from fastapi_users.authentication import (
     JWTStrategy,
 )
 from httpx_oauth.clients.github import GitHubOAuth2
-
 from polar.actions import github_user
 from polar.config import settings
 from polar.models import User
@@ -63,10 +62,16 @@ class PolarAuthCookie(CookieTransport):
 
 
 def get_jwt_strategy() -> JWTStrategy:
-    return JWTStrategy(secret=settings.SECRET, lifetime_seconds=3600)
+    return JWTStrategy(
+        secret=settings.SECRET,
+        lifetime_seconds=60 * 60 * 24 * 31,  # 31 days
+    )
 
 
-cookie_transport = PolarAuthCookie(cookie_name="polar")
+cookie_transport = PolarAuthCookie(
+    cookie_name="polar",
+    cookie_max_age=60 * 60 * 24 * 31,  # 31 days
+)
 auth_backend = AuthenticationBackend(
     name="jwt",
     transport=cookie_transport,

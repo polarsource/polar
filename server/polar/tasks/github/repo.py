@@ -42,6 +42,10 @@ async def sync_repository_issues(
     )
     issues = await actions.github_repository.fetch_issues(organization, repository)
 
+    if not issues:
+        log.warning("no issues found", organization_name=organization_name, repository_name=repository_name)
+        return
+
     # TODO: Handle pagination via new task
     await actions.github_issue.store_many(
         session,
@@ -68,6 +72,10 @@ async def sync_repository_pull_requests(
         session, organization_id, repository_id
     )
     prs = await actions.github_repository.fetch_pull_requests(organization, repository)
+
+    if not prs:
+        log.warning("no pull requests found", organization_name=organization_name, repository_name=repository_name)
+        return
 
     # TODO: Handle pagination via new task
     await actions.github_pull_request.store_many(

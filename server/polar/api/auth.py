@@ -68,7 +68,10 @@ def get_jwt_strategy() -> JWTStrategy:
     )
 
 
-cookie_transport = PolarAuthCookie(cookie_name="polar")
+cookie_transport = PolarAuthCookie(
+    cookie_name="polar",
+    cookie_max_age=60 * 60 * 24 * 31,  # 31 days
+)
 auth_backend = AuthenticationBackend(
     name="jwt",
     transport=cookie_transport,

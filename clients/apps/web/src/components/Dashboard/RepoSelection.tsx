@@ -1,25 +1,62 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Listbox, Transition } from '@headlessui/react'
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid'
 import { classNames } from 'utils/dom'
+import { useUserOrganizations } from 'polarkit/hooks'
+import { requireAuth } from 'context/auth'
 
-const repos = [
-  {
-    id: 1,
-    organization: 'birkjernstrom',
-    repo: 'dotfiles',
-    avatar: null,
-  },
-  {
-    id: 2,
-    organization: 'polarsource',
-    repo: 'polar',
-    avatar: null,
-  },
-]
+type Repo = {
+  id: string
+  organization: string
+  repo: string
+  avatar: string
+}
 
 const RepoSelection = () => {
-  const [selected, setSelected] = useState(repos[1])
+  const [repos, setRepos] = useState<Repo[]>([]);
+
+  const [selected, setSelected] = useState<Repo>({
+    id: 'TODO',
+    organization: 'Loading...',
+    repo: 'Loading...',
+    avatar: 'TODO',
+  })
+
+  const { session } = requireAuth()
+
+  const userOrgQuery = useUserOrganizations(session?.user?.id)
+
+  const organizations = userOrgQuery.data
+
+  useEffect(() => {
+    if (userOrgQuery.isSuccess) {
+
+      const r = organizations.map((org) => {
+        return org.repositories.map((repo) => {
+          return {
+            id: repo.id,
+            organization: org.name,
+            repo: repo.name,
+            avatar: org.avatar_url,
+          }
+        })
+      }).flat()
+
+
+      setRepos(r)
+
+      // Set first repo as default
+      setSelected(r[0])
+    }
+  }, [organizations])
+
+  if (!session.user) {
+    return <div>Not authenticated</div>
+  }
+
+  if (userOrgQuery.isLoading) return <div>Loading...</div>
+
+  if (!userOrgQuery.isSuccess) return <div>Error</div>
 
   return (
     <Listbox value={selected} onChange={setSelected}>
@@ -100,8 +137,9 @@ const RepoSelection = () => {
             </Transition>
           </div>
         </>
-      )}
-    </Listbox>
+      )
+      }
+    </Listbox >
   )
 }
 

@@ -3,7 +3,7 @@ import { Listbox, Transition } from '@headlessui/react'
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid'
 import { classNames } from 'utils/dom'
 import { useUserOrganizations } from 'polarkit/hooks'
-import { requireAuth } from 'context/auth'
+import { requireAuth } from 'polarkit/hooks'
 
 type Repo = {
   id: string
@@ -13,7 +13,7 @@ type Repo = {
 }
 
 const RepoSelection = () => {
-  const [repos, setRepos] = useState<Repo[]>([]);
+  const [repos, setRepos] = useState<Repo[]>([])
 
   const [selected, setSelected] = useState<Repo>({
     id: 'TODO',
@@ -22,24 +22,26 @@ const RepoSelection = () => {
     avatar: 'TODO',
   })
 
-  const { session } = requireAuth()
+  const { user } = requireAuth()
 
-  const userOrgQuery = useUserOrganizations(session?.user?.id)
+  const userOrgQuery = useUserOrganizations(user?.id)
 
   const organizations = userOrgQuery.data
 
   useEffect(() => {
     if (userOrgQuery.isSuccess) {
-      const r = organizations.map((org) => {
-        return org.repositories.map((repo) => {
-          return {
-            id: repo.id,
-            organization: org.name,
-            repo: repo.name,
-            avatar: org.avatar_url,
-          }
+      const r = organizations
+        .map((org) => {
+          return org.repositories.map((repo) => {
+            return {
+              id: repo.id,
+              organization: org.name,
+              repo: repo.name,
+              avatar: org.avatar_url,
+            }
+          })
         })
-      }).flat()
+        .flat()
 
       setRepos(r)
 
@@ -48,7 +50,7 @@ const RepoSelection = () => {
     }
   }, [organizations, userOrgQuery.isSuccess])
 
-  if (!session.user) {
+  if (!user) {
     return <div>Not authenticated</div>
   }
 
@@ -136,9 +138,8 @@ const RepoSelection = () => {
             </Transition>
           </div>
         </>
-      )
-      }
-    </Listbox >
+      )}
+    </Listbox>
   )
 }
 

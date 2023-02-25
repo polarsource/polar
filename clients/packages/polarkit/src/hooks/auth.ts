@@ -26,7 +26,7 @@ export const useAuth = (): AuthSlice => {
         request.cancel()
       }
     }
-  }, [])
+  }, [authenticated, hasChecked])
 
   /*
    * We're not supporting serverside authentication/session via NextJS.

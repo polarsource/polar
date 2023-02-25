@@ -47,13 +47,13 @@ export const useAuth = (): AuthSlice => {
 export const requireAuth = (redirectTo: string = '/'): AuthSlice => {
   // TODO: Change this to be given by the app. Currently forcing next router
   const router = useRouter()
-
   const session = useAuth()
+
   useEffect(() => {
     if (!session.authenticated && session.hasChecked) {
       router.push(redirectTo)
     }
-  }, [session.hasChecked])
+  }, [session.authenticated, session.hasChecked])
   return session
 }
 

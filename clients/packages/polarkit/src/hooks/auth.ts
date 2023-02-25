@@ -49,11 +49,9 @@ export const requireAuth = (redirectTo: string = '/'): AuthSlice => {
   const router = useRouter()
   const session = useAuth()
 
-  useEffect(() => {
-    if (!session.authenticated && session.hasChecked) {
-      router.push(redirectTo)
-    }
-  }, [session.authenticated, session.hasChecked])
+  if (!session.authenticated && session.hasChecked) {
+    router.push(redirectTo)
+  }
   return session
 }
 

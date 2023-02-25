@@ -1,21 +1,21 @@
 import { StateCreator } from 'zustand'
 import { UserRead } from '../api/client'
-import { api } from '../api'
+import { api, CancelablePromise } from '../api'
 
 export interface AuthSlice {
   hasChecked: boolean
   authenticated: boolean
   user: UserRead | null
-  login: (callback?: () => void) => void
+  login: (callback?: () => void) => CancelablePromise<UserRead>
 }
 
 export const createAuthSlice: StateCreator<AuthSlice> = (set) => ({
   hasChecked: false,
   authenticated: false,
   user: null,
-  login: (callback?: () => void) => {
-    api.users
-      .getAuthenticated()
+  login: (callback?: () => void): CancelablePromise<UserRead> => {
+    const request = api.users.getAuthenticated()
+    request
       .then((user) => {
         set({ authenticated: true, user })
       })
@@ -28,5 +28,6 @@ export const createAuthSlice: StateCreator<AuthSlice> = (set) => ({
           callback()
         }
       })
+    return request
   },
 })

@@ -1,4 +1,5 @@
-import { api } from 'polarkit'
+import { api } from 'polarkit/api'
+import { CancelablePromise, UserRead } from 'polarkit/api/client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { useHasHydrated } from './hydration'
@@ -12,22 +13,35 @@ export const useAuth = (): AuthSlice => {
   const login = useStore((state) => state.login)
 
   useEffect(() => {
+    let request: CancelablePromise<UserRead>
     if (authenticated) {
       useStore.setState({ hasChecked: true })
     } else if (!hasChecked) {
-      login()
+      request = login()
+    }
+
+    // Cleanup
+    return () => {
+      if (request) {
+        request.cancel()
+      }
     }
   }, [])
 
-  if (hasHydrated) {
-    return { authenticated, user, hasChecked, login }
+  /*
+   * We're not supporting serverside authentication/session via NextJS.
+   * So unless we've hydrated and are on the clientside, we need to always
+   * return an empty session to avoid hydration errors.
+   */
+  if (!hasHydrated) {
+    return {
+      authenticated: false,
+      user: null,
+      hasChecked: false,
+      login,
+    }
   }
-  return {
-    authenticated: false,
-    user: null,
-    hasChecked: false,
-    login,
-  }
+  return { authenticated, user, hasChecked, login }
 }
 
 export const requireAuth = (redirectTo: string = '/'): AuthSlice => {

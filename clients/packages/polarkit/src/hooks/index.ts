@@ -1,6 +1,7 @@
 import { api } from '../api'
 import { useQuery } from '@tanstack/react-query'
-import { useAuth, requireAuth, useOAuthExchange } from './auth'
+import { useAuth, requireAuth } from './auth'
+import { useGithubOAuthCallback } from './github'
 import { useHasHydrated } from './hydration'
 
 export const useDemos = () => useQuery(['demo'], () => api.demo.getAll())
@@ -14,4 +15,4 @@ export const useUserOrganizations = (userId: string) =>
     },
   )
 
-export { useAuth, requireAuth, useOAuthExchange, useHasHydrated }
+export { useAuth, requireAuth, useGithubOAuthCallback, useHasHydrated }

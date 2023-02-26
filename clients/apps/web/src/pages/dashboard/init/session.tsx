@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react'
 import type { NextPageWithLayout } from 'utils/next'
 import { useRouter } from 'next/router'
-import { useOAuthExchange } from 'polarkit/hooks'
 import InitLayout from 'components/Dashboard/InitLayout'
+import { useGithubOAuthCallback } from 'polarkit/hooks'
 
 const InitSessionPage: NextPageWithLayout = ({
   query,
@@ -14,7 +14,7 @@ const InitSessionPage: NextPageWithLayout = ({
   }
 }) => {
   const router = useRouter()
-  const { success, error } = useOAuthExchange(query.code, query.state)
+  const { success, error } = useGithubOAuthCallback(query.code, query.state)
   if (success) {
     router.push('/dashboard')
     return

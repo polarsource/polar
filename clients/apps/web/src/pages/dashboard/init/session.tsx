@@ -14,10 +14,13 @@ const InitSessionPage: NextPageWithLayout = ({
   }
 }) => {
   const router = useRouter()
-  const { session, error } = useOAuthExchange(query.code, query.state)
-  if (session?.authenticated) {
-    return router.push('/dashboard')
+  const { success, error } = useOAuthExchange(query.code, query.state)
+  if (success) {
+    router.push('/dashboard')
+    return
   }
+
+  if (error) return <p>Error: {error}</p>
 
   return <h1>Authenticating</h1>
 }

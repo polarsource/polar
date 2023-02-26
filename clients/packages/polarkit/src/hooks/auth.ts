@@ -55,57 +55,62 @@ export const requireAuth = (redirectTo: string = '/'): AuthSlice => {
   return session
 }
 
-const exchangeOAuthCode = async (
+export const useOAuthExchange = (
   code: string,
   state: string,
-  onSuccess?: () => void,
-  onError?: (error: any) => void,
-) => {
-  return await api.integrations
-    .githubCallback({
-      code: code,
-      state: state,
-    })
-    .then((res: { authenticated: boolean }) => {
-      if (res.authenticated && onSuccess) {
-        onSuccess()
-      }
-    })
-    .catch((error: any) => {
-      if (onError) {
-        onError(error)
-      }
-    })
-}
-
-export const useOAuthExchange = async (
-  code: string,
-  state: string,
-): Promise<{
-  exchanged: boolean
-  session: AuthSlice
+): {
+  success: boolean
   error: string | null
-}> => {
-  const router = useRouter()
+} => {
   const session = useAuth()
-  const hasHydrated = useHasHydrated()
-  const [exchanged, setExchanged] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<boolean>(false)
 
-  if (!code || !state) {
-    return {
-      exchanged: false,
-      session: session,
-      error: 'Need a Github OAuth Code & State',
-    }
-  }
-
-  if (hasHydrated && !exchanged) {
-    exchangeOAuthCode(code, state, () => {
-      session.login(() => {
-        router.push('/dashboard')
-      })
+  const login = async () => {
+    session.login((authenticated: boolean) => {
+      if (authenticated) {
+        setSuccess(true)
+      } else {
+        setError('Something went wrong logging in')
+      }
     })
-    setExchanged(true)
   }
-  return { exchanged, session: session, error: null }
+
+  useEffect(() => {
+    let cancelled = false
+    let request = CancelablePromise<any>
+    if (!code || !state) {
+      setError('We need both an OAuth code and state')
+      return
+    }
+
+    const exchange = async () => {
+      try {
+        request = api.integrations.githubCallback({
+          code: code,
+          state: state,
+        })
+        const response = await request
+        const { authenticated } = response
+        if (authenticated && !cancelled) {
+          await login()
+          return
+        }
+        setError('Invalid response')
+      } catch (err) {
+        if (err.isCancelled) return
+        setError('Something went wrong exchanging the OAuth code for a cookie')
+      }
+    }
+
+    exchange()
+    return () => {
+      if (request) {
+        request.cancel()
+        cancelled = true
+      }
+    }
+  }, [code, state])
+
+  return { success, error }
 }

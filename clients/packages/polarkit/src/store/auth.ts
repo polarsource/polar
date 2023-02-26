@@ -6,14 +6,18 @@ export interface AuthSlice {
   hasChecked: boolean
   authenticated: boolean
   user: UserRead | null
-  login: (callback?: () => void) => CancelablePromise<UserRead>
+  login: (
+    callback?: (authenticated: boolean) => void,
+  ) => CancelablePromise<UserRead>
 }
 
-export const createAuthSlice: StateCreator<AuthSlice> = (set) => ({
+export const createAuthSlice: StateCreator<AuthSlice> = (set, get) => ({
   hasChecked: false,
   authenticated: false,
   user: null,
-  login: (callback?: () => void): CancelablePromise<UserRead> => {
+  login: (
+    callback?: (authenticated: boolean) => void,
+  ): CancelablePromise<UserRead> => {
     const request = api.users.getAuthenticated()
     request
       .then((user) => {
@@ -25,7 +29,7 @@ export const createAuthSlice: StateCreator<AuthSlice> = (set) => ({
       .finally(() => {
         set({ hasChecked: true })
         if (callback) {
-          callback()
+          callback(get().authenticated)
         }
       })
     return request

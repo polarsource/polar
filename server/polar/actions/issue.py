@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Sequence
 
 import structlog
-from sqlalchemy.orm import MappedColumn
-
 from polar.actions.base import Action
-from polar.clients import github
 from polar.exceptions import ExpectedIssueGotPullRequest
 from polar.models.issue import Issue
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
 from polar.schema.issue import CreateIssue, UpdateIssue
+from sqlalchemy.orm import MappedColumn
+
+from polar.clients import github
 
 log = structlog.get_logger()
 
@@ -25,6 +25,14 @@ class IssueActions(Action[Issue, CreateIssue, UpdateIssue]):
         self, session: AsyncSession, platform: Platforms, external_id: int
     ) -> Issue | None:
         return await self.get_by(session, platform=platform, external_id=external_id)
+
+    async def list_by_repository(
+        self, session: AsyncSession, repository_id: str
+    ) -> Sequence[Issue]:
+        statement = sql.select(Issue).where(Issue.repository_id == repository_id)
+        res = await session.execute(statement)
+        issues = res.scalars().unique().all()
+        return issues
 
     async def get_by_url(
         self, session: AsyncSession, organization_name: str, repo_name: str, number: int

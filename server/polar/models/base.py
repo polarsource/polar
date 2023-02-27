@@ -1,11 +1,15 @@
 import enum
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from polar.ext.sqlalchemy import GUID, IntEnum
 from polar.models.mixins import ActiveRecordMixin, SerializeMixin
-from sqlalchemy import TEXT, DateTime
+from sqlalchemy import TIMESTAMP
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class Model(DeclarativeBase, ActiveRecordMixin, SerializeMixin):
@@ -16,10 +20,10 @@ class TimestampedModel(Model):
     __abstract__ = True
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
+        TIMESTAMP(timezone=True), nullable=False, default=utc_now
     )
     modified_at: Mapped[datetime | None] = mapped_column(
-        DateTime, onupdate=datetime.utcnow
+        TIMESTAMP(timezone=True), onupdate=utc_now
     )
 
 

@@ -21,9 +21,8 @@ https://stackoverflow.com/questions/4107915/postgresql-default-constraint-names/
 """
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
-
 from polar.ext.sqlalchemy import GUID
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "8fb1fcc039a1"
@@ -35,8 +34,8 @@ depends_on: str | None = None
 def create_demo() -> None:
     op.create_table(
         "demo",
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("modified_at", sa.DateTime(), nullable=True),
+        sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
+        sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("id", sa.UUID, nullable=False, primary_key=True),
         sa.Column("testing", sa.String(length=255), nullable=False),
         sa.PrimaryKeyConstraint("id"),
@@ -50,8 +49,8 @@ def drop_demo() -> None:
 def create_users() -> None:
     op.create_table(
         "users",
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("modified_at", sa.DateTime(), nullable=True),
+        sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
+        sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("id", GUID(), nullable=False, primary_key=True),
         sa.Column("email", sa.String(length=320), nullable=False, unique=True),
         sa.Column("hashed_password", sa.String(length=1024), nullable=False),
@@ -70,8 +69,8 @@ def drop_users() -> None:
 def create_oauth_accounts() -> None:
     op.create_table(
         "oauth_accounts",
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("modified_at", sa.DateTime(), nullable=True),
+        sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
+        sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("id", GUID(), nullable=False, primary_key=True),
         sa.Column("user_id", GUID(), nullable=False),
         sa.Column("oauth_name", sa.String(length=100), nullable=False),
@@ -97,8 +96,8 @@ def drop_oauth_accounts() -> None:
 def create_organizations() -> None:
     op.create_table(
         "organizations",
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("modified_at", sa.DateTime(), nullable=True),
+        sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
+        sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("id", GUID(), nullable=False, primary_key=True),
         sa.Column("platform", sa.String(32), nullable=False),
         sa.Column("name", sa.String(50), nullable=False, unique=True),
@@ -133,8 +132,8 @@ def drop_organizations() -> None:
 def create_user_organizations() -> None:
     op.create_table(
         "user_organizations",
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("modified_at", sa.DateTime(), nullable=True),
+        sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
+        sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("user_id", GUID(), nullable=False),
         sa.Column("organization_id", GUID(), nullable=False),
         sa.Column("status", sa.Integer, nullable=False, default=0),
@@ -153,8 +152,8 @@ def drop_user_organizations() -> None:
 def create_accounts() -> None:
     op.create_table(
         "accounts",
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("modified_at", sa.DateTime(), nullable=True),
+        sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
+        sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("id", GUID(), nullable=False, primary_key=True),
         sa.Column("organization_id", GUID(), unique=True),
         sa.Column("user_id", GUID(), unique=True),
@@ -186,8 +185,8 @@ def drop_accounts() -> None:
 def create_repositories() -> None:
     op.create_table(
         "repositories",
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("modified_at", sa.DateTime(), nullable=True),
+        sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
+        sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("id", GUID(), nullable=False, primary_key=True),
         sa.Column("platform", sa.String(32), nullable=False),
         sa.Column("external_id", sa.Integer, nullable=False, unique=True),
@@ -227,8 +226,8 @@ def drop_repositories() -> None:
 
 def get_base_issue_columns() -> list[sa.Column]:
     columns = [
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("modified_at", sa.DateTime(), nullable=True),
+        sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
+        sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("id", GUID, nullable=False, primary_key=True),
         sa.Column("platform", sa.String(32), nullable=False),
         sa.Column("external_id", sa.Integer, nullable=False),
@@ -296,7 +295,7 @@ def create_pull_requests() -> None:
         sa.Column("auto_merge", sa.String, nullable=True),
         sa.Column("is_merged", sa.Boolean, nullable=True),
         sa.Column("merged_by", postgresql.JSONB, nullable=True),
-        sa.Column("merged_at", sa.DateTime, nullable=True),
+        sa.Column("merged_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("merge_commit_sha", sa.String, nullable=True),
         sa.Column("head", postgresql.JSONB, nullable=True),
         sa.Column("base", postgresql.JSONB, nullable=True),

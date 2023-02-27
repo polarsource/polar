@@ -21,7 +21,7 @@ const DashboardSPA: NextPageWithLayout = () => {
 }
 
 DashboardSPA.getLayout = (page: ReactElement) => {
-  return <Layout>{page}</Layout>
+  return <div>{page}</div>
 }
 
 export default DashboardSPA

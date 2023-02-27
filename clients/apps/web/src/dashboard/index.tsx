@@ -3,6 +3,7 @@ import Organization from './organization'
 import Onboarding from './Onboarding'
 import { requireAuth } from 'polarkit/hooks'
 import { useUserOrganizations } from 'polarkit/hooks'
+import Layout from 'components/Dashboard/Layout'
 
 const Root = () => {
   return <h3 className="text-xl mt-10">Welcome</h3>
@@ -11,15 +12,35 @@ const Root = () => {
 const router = createBrowserRouter([
   {
     path: '/dashboard',
-    element: <Root />,
+    element: (
+      <Layout>
+        <Root />
+      </Layout>
+    ),
   },
   {
     path: '/dashboard/onboarding/init',
-    element: <Onboarding />,
+    element: (
+      <Layout>
+        <Onboarding />
+      </Layout>
+    ),
   },
   {
-    path: '/dashboard/:slug',
-    element: <Organization />,
+    path: '/dashboard/:orgSlug',
+    element: (
+      <Layout>
+        <Organization />
+      </Layout>
+    ),
+  },
+  {
+    path: '/dashboard/:orgSlug/:repoSlug',
+    element: (
+      <Layout>
+        <Organization />
+      </Layout>
+    ),
   },
 ])
 

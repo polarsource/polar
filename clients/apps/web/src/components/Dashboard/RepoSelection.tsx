@@ -4,6 +4,7 @@ import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid'
 import { classNames } from 'utils/dom'
 import { useUserOrganizations } from 'polarkit/hooks'
 import { requireAuth } from 'polarkit/hooks'
+import { useNavigate } from 'react-router-dom'
 
 type Repo = {
   id: string
@@ -13,6 +14,8 @@ type Repo = {
 }
 
 const RepoSelection = () => {
+  const navigate = useNavigate()
+
   const [repos, setRepos] = useState<Repo[]>([])
 
   const [selected, setSelected] = useState<Repo>({
@@ -59,8 +62,13 @@ const RepoSelection = () => {
 
   if (!userOrgQuery.isSuccess) return <div>Error</div>
 
+  const onChanged = (repo: Repo) => {
+    setSelected(repo)
+    navigate(`/dashboard/${repo.organization}/${repo.repo}`)
+  }
+
   return (
-    <Listbox value={selected} onChange={setSelected}>
+    <Listbox value={selected} onChange={onChanged}>
       {({ open }) => (
         <>
           <div className="relative mt-1 w-full">

@@ -58,7 +58,13 @@ const createAccount = async (organization_name: string) => {
 
 const Organization = () => {
   const { developer } = requireAuth()
-  const { slug } = useParams()
+  const { orgSlug, repoSlug } = useParams()
+
+  return (
+    <div>
+      {orgSlug} / {repoSlug}
+    </div>
+  )
 
   const organization = developer.getOrganizationBySlug(slug)
 

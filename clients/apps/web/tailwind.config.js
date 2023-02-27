@@ -3,7 +3,10 @@
 const defaultTheme = require('tailwindcss/defaultTheme')
 
 module.exports = {
-  content: ['./src/**/*.{ts,tsx}'],
+  content: [
+    './src/**/*.{ts,tsx}',
+    '../../packages/polarkit/src/**/*.{ts,tsx}',
+  ],
   theme: {
     extend: {
       fontFamily: {

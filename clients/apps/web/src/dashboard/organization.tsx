@@ -1,6 +1,7 @@
 import { requireAuth } from 'polarkit/hooks'
 import { useParams } from 'react-router-dom'
 import { api } from 'polarkit'
+import { IssueList } from 'polarkit/components'
 
 const StripeAccountLink = ({ organization, stripeId }) => {
   const redirect = async () => {
@@ -34,10 +35,10 @@ const createLinks = async (organization_name: string, stripe_id: string) => {
   const response = await api
     .post(
       '/api/organizations/' +
-        organization_name +
-        '/account/' +
-        stripe_id +
-        '/links',
+      organization_name +
+      '/account/' +
+      stripe_id +
+      '/links',
     )
     .then((res) => {
       if (res.status == 200 && res.data.url) {
@@ -63,6 +64,7 @@ const Organization = () => {
   return (
     <div>
       {orgSlug} / {repoSlug}
+      <IssueList />
     </div>
   )
 

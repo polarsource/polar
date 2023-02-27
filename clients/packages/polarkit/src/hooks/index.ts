@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuth, requireAuth } from './auth'
 import { useGithubOAuthCallback } from './github'
 import { useHasHydrated } from './hydration'
+import { Platforms } from 'polarkit/api/client'
 
 export const useDemos = () => useQuery(['demo'], () => api.demo.getAll())
 
@@ -19,9 +20,9 @@ export const useRepositoryIssues = (repoOwner: string, repoName: string) =>
   useQuery(
     ['issues', 'repo', repoOwner, repoName],
     () => api.issues.getRepositoryIssues({
-      provider: 'github',
-      repoOwner,
-      repoName,
+      platform: Platforms.GITHUB,
+      organizationName: repoOwner,
+      name: repoName,
     }),
     {
       enabled: !!repoOwner && !!repoName,

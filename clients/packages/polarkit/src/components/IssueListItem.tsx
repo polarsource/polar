@@ -1,6 +1,6 @@
 import IconCounter from "./IconCounter"
 import Label from "./Label"
-import { type IssueSchema } from "polarkit/api/client/IssueSchema"
+import { type IssueSchema } from "polarkit/api/client"
 
 const IssueListItem = (props: { issue: IssueSchema }) => {
     const { title, number, organization_name, repository_name } = props.issue

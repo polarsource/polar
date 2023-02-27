@@ -1,5 +1,5 @@
 import IssueListItem from "./IssueListItem"
-import { type IssueSchema } from "polarkit/api/client/IssueSchema"
+import { type IssueSchema } from "polarkit/api/client"
 
 const IssueList = (props: { issues: IssueSchema[] }) => {
     const issues = props.issues
@@ -9,7 +9,7 @@ const IssueList = (props: { issues: IssueSchema[] }) => {
     return (
         <div className="space-y-2 divide-y divide-gray-200">
             {props.issues.map((issue) => {
-                return <IssueListItem issue={issue} />
+                return <IssueListItem issue={issue} key={issue.id} />
             })}
         </div>
     )

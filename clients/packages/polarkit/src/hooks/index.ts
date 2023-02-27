@@ -15,4 +15,17 @@ export const useUserOrganizations = (userId: string) =>
     },
   )
 
+export const useRepositoryIssues = (repoOwner: string, repoName: string) =>
+  useQuery(
+    ['issues', 'repo', repoOwner, repoName],
+    () => api.issues.getRepositoryIssues({
+      provider: 'github',
+      repoOwner,
+      repoName,
+    }),
+    {
+      enabled: !!repoOwner && !!repoName,
+    },
+  )
+
 export { useAuth, requireAuth, useGithubOAuthCallback, useHasHydrated }

@@ -66,9 +66,11 @@ const Organization = () => {
 
   const issues = repositoryIssuesQuery.data
 
+
   return (
     <div>
       {orgSlug} / {repoSlug}
+
       <IssueList issues={issues} />
     </div>
   )

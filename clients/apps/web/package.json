@@ -9,16 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "polarkit": "workspace:*",
     "@headlessui/react": "^1.7.0",
     "@heroicons/react": "^2.0.10",
     "@stripe/react-stripe-js": "^1.12.0",
     "@stripe/stripe-js": "^1.38.1",
     "axios": "^0.27.2",
+    "javascript-time-ago": "^2.5.9",
     "next": "latest",
+    "polarkit": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.4.1"
+    "react-router-dom": "^6.4.1",
+    "react-time-ago": "^7.2.1"
   },
   "devDependencies": {
     "@types/node": "18.7.16",
@@ -27,11 +29,11 @@
     "@types/react-router-dom": "^5.3.3",
     "autoprefixer": "^10.4.8",
     "eslint": "8.23.0",
+    "eslint-config-custom": "workspace:*",
     "eslint-config-next": "12.2.5",
     "postcss": "^8.4.16",
     "tailwindcss": "^3.1.8",
-    "typescript": "4.8.3",
-    "eslint-config-custom": "workspace:*",
-    "tsconfig": "workspace:*"
+    "tsconfig": "workspace:*",
+    "typescript": "4.8.3"
   }
 }

@@ -70,7 +70,7 @@ const RepoSelection = () => {
         setSelected(r[0])
       }
     }
-  }, [organizations, userOrgQuery.isSuccess])
+  }, [organizations, params, userOrgQuery.isSuccess])
 
   if (!user) {
     return <div>Not authenticated</div>

@@ -49,4 +49,4 @@ jobs:
           poetry-version: ${{ matrix.poetry-version }}
       - name: Run Tests
         working-directory: ./server
-        run: poetry install && poetry shell && pytest
+        run: poetry install && poetry run pytest

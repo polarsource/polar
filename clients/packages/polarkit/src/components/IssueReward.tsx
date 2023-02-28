@@ -2,7 +2,7 @@ import IssuePullRequest from "./IssuePullRequest"
 
 const IssueReward = () => {
     return (<>
-        <div className="bg-white shadow-xl rounded-xl p-4 mb-8 flex flex-col gap-2">
+        <div className="bg-white shadow-lg rounded-xl p-4 mb-8 flex flex-col gap-2">
             <div className="flex items-center justify-between ">
                 <div className="flex gap-2 items-center">
                     <span className="space-x-1 rounded-xl bg-[#FFE794] text-[#574814] px-1.5 py-0.5">

@@ -1,32 +1,14 @@
-import { queryClient } from '../api'
 import { useEffect } from 'react'
-import { useStore } from '../store'
-import { getServerURL } from '../utils'
+import { getServerURL } from '../../utils'
+import { onIssueUpdated } from './issues'
 
-const onIssueUpdated = (payload) => {
-  const cacheKey = [
-    'issues',
-    'repo',
-    payload.organization_name,
-    payload.repository_name,
-  ]
-  queryClient.invalidateQueries(cacheKey)
+const ACTIONS: {
+  [key: string]: (payload: any) => void
+} = {
+  'issue.updated': onIssueUpdated,
 }
 
-const dispatch = (event) => {
-  const data = JSON.parse(event.data)
-  switch (data.key) {
-    case 'issue.updated':
-      onIssueUpdated(data.payload)
-    default:
-      return
-  }
-}
-
-export const useEventStream = (
-  organizationId?: string,
-  repositoryId?: string,
-) => {
+export const useSSE = (organizationId?: string, repositoryId?: string) => {
   const params: {
     organization_id?: string
     repository_id?: string
@@ -54,7 +36,11 @@ export const useEventStream = (
     // TODO: Add types for event. Just want to get the structure
     // up and running first before getting stuck in protocol land.
     connection.onmessage = (event) => {
-      dispatch(event)
+      const data = JSON.parse(event.data)
+      const handler = ACTIONS[data.key]
+      if (handler) {
+        handler(data.payload)
+      }
     }
     connection.onerror = (event) => connection.close
     return () => {

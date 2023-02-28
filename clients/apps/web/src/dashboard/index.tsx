@@ -4,7 +4,7 @@ import Onboarding from './Onboarding'
 import { requireAuth } from 'polarkit/hooks'
 import { useUserOrganizations } from 'polarkit/hooks'
 import Layout from 'components/Dashboard/Layout'
-import { useEventStream } from 'polarkit/hooks'
+import { useSSE } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { CONFIG } from 'polarkit'
 
@@ -54,7 +54,7 @@ const Dashboard = () => {
   const currentRepo = useStore((state) => state.currentRepo)
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
   // TODO: Unless we're sending user-only events we should probably delay SSE
-  useEventStream(currentOrg?.id, currentRepo?.id)
+  useSSE(currentOrg?.id, currentRepo?.id)
 
   if (userOrgQuery.isLoading) return <div>Loading...</div>
 

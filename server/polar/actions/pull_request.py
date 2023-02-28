@@ -1,9 +1,10 @@
-from typing import Any
+from typing import Any, Sequence
 
 from polar.actions.base import Action
+from polar.ext.sqlalchemy.types import GUID
 from polar.models.pull_request import PullRequest
 from polar.platforms import Platforms
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncSession, sql
 from polar.schema.pull_request import CreatePullRequest, UpdatePullRequest
 from sqlalchemy.orm import MappedColumn
 
@@ -25,6 +26,16 @@ class PullRequestAction(Action[PullRequest, CreatePullRequest, UpdatePullRequest
         self, session: AsyncSession, platform: Platforms, external_id: int
     ) -> PullRequest | None:
         return await self.get_by(session, platform=platform, external_id=external_id)
+
+    async def list_by_repository(
+        self, session: AsyncSession, repository_id: GUID
+    ) -> Sequence[PullRequest]:
+        statement = sql.select(PullRequest).where(
+            PullRequest.repository_id == repository_id
+        )
+        res = await session.execute(statement)
+        issues = res.scalars().unique().all()
+        return issues
 
 
 class GithubPullRequestActions(PullRequestAction):

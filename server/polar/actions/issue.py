@@ -5,6 +5,7 @@ from typing import Any, Sequence
 import structlog
 from polar.actions.base import Action
 from polar.exceptions import ExpectedIssueGotPullRequest
+from polar.ext.sqlalchemy.types import GUID
 from polar.models.issue import Issue
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
@@ -27,7 +28,7 @@ class IssueActions(Action[Issue, CreateIssue, UpdateIssue]):
         return await self.get_by(session, platform=platform, external_id=external_id)
 
     async def list_by_repository(
-        self, session: AsyncSession, repository_id: str
+        self, session: AsyncSession, repository_id: GUID
     ) -> Sequence[Issue]:
         statement = sql.select(Issue).where(Issue.repository_id == repository_id)
         res = await session.execute(statement)
@@ -61,8 +62,8 @@ class GithubIssueActions(IssueActions):
         organization_name: str,
         repository_name: str,
         data: github.rest.Issue | github.webhooks.IssuesOpenedPropIssue,
-        organization_id: str | None = None,
-        repository_id: str | None = None,
+        organization_id: GUID | None = None,
+        repository_id: GUID | None = None,
     ) -> Issue:
         records = await self.store_many(
             session,
@@ -80,8 +81,8 @@ class GithubIssueActions(IssueActions):
         organization_name: str,
         repository_name: str,
         data: list[github.rest.Issue | github.webhooks.IssuesOpenedPropIssue],
-        organization_id: str | None = None,
-        repository_id: str | None = None,
+        organization_id: GUID | None = None,
+        repository_id: GUID | None = None,
     ) -> list[Issue]:
         def parse(
             issue: github.rest.Issue | github.webhooks.IssuesOpenedPropIssue,

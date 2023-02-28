@@ -5,6 +5,7 @@ from typing import Any
 
 from githubkit.utils import Unset, exclude_unset
 from polar.exceptions import ExpectedIssueGotPullRequest
+from polar.ext.sqlalchemy.types import GUID
 from polar.models.issue import Issue
 from polar.platforms import Platforms
 from polar.schema.base import Schema
@@ -66,8 +67,8 @@ class CreateIssue(Base):
         organization_name: str,
         repository_name: str,
         data: TIssueData,
-        organization_id: str | None = None,
-        repository_id: str | None = None,
+        organization_id: GUID | None = None,
+        repository_id: GUID | None = None,
     ) -> dict[str, Any]:
         number = data.number
 

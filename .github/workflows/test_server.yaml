@@ -29,6 +29,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 5432:5432
 
       redis:
         image: redislabs/redismod
@@ -37,6 +39,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
       - uses: actions/checkout@v3
@@ -51,10 +55,4 @@ jobs:
         run: poetry install --no-root
       - name: 🐍 Run tests
         working-directory: ./server
-        env:
-          POLAR_POSTGRES_HOST: postgres
-          POLAR_REDIS_HOST: redis
-          POLAR_CELERY_BROKER_URL: "redis://redis:6379"
-          POLAR_CELERY_BACKEND_URL: "redis://redis:6379"
-
         run: poetry run pytest

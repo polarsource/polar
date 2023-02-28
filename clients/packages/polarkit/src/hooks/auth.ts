@@ -2,9 +2,9 @@ import { CancelablePromise, UserRead } from 'polarkit/api/client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { useHasHydrated } from './hydration'
-import { AuthSlice, useStore } from '../store'
+import { UserState, useStore } from '../store'
 
-export const useAuth = (): AuthSlice & {
+export const useAuth = (): UserState & {
   hasChecked: boolean
   isChecking: boolean
 } => {
@@ -54,7 +54,7 @@ export const useAuth = (): AuthSlice & {
   return { authenticated, user, hasChecked, isChecking, login, logout }
 }
 
-export const requireAuth = (redirectTo: string = '/'): AuthSlice => {
+export const requireAuth = (redirectTo: string = '/'): UserState => {
   // TODO: Change this to be given by the app. Currently forcing next router
   const router = useRouter()
   const session = useAuth()

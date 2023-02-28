@@ -1,15 +1,18 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import { AuthSlice, createAuthSlice } from './auth'
-import { ContextSlice, createContextSlice } from './context'
+import {
+  UserState,
+  ContextState,
+  UserContextState,
+  createUserContextSlice,
+} from './userContext'
 
 // https://docs.pmnd.rs/zustand/guides/typescript#slices-pattern
-const useStore = create<AuthSlice & ContextSlice>()(
+const useStore = create<UserContextState>()(
   devtools(
     persist(
       (...a) => ({
-        ...createAuthSlice(...a),
-        ...createContextSlice(...a),
+        ...createUserContextSlice(...a),
       }),
       {
         name: 'polar',
@@ -19,4 +22,4 @@ const useStore = create<AuthSlice & ContextSlice>()(
 )
 
 export { useStore }
-export type { AuthSlice }
+export type { UserState, ContextState, UserContextState }

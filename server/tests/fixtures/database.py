@@ -11,6 +11,8 @@ from polar.postgres import AsyncEngineLocal, AsyncSession, AsyncSessionLocal
 
 
 class TestModel(StatusMixin, Model):
+    __test__ = False  # This is a base class, not a test
+
     __tablename__ = "test_model"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     guid: Mapped[uuid.UUID] = mapped_column(GUID, default=GUID.generate)

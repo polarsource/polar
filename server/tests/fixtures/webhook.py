@@ -11,6 +11,8 @@ from polar.config import settings
 
 
 class TestWebhook:
+    __test__ = False  # This is a base class, not a test
+
     def __init__(
         self,
         headers: dict[str, Any],
@@ -37,6 +39,8 @@ class TestWebhook:
 
 
 class TestWebhookFactory:
+    __test__ = False  # This is a base class, not a test
+
     def __init__(self, client: AsyncClient):
         self.client = client
 

@@ -488,6 +488,96 @@
                 ]
             }
         },
+        "/api/v1/users/login": {
+            "post": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Auth:Jwt.Login",
+                "operationId": "jwt.login",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_users_auth_jwt.login"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "LOGIN_BAD_CREDENTIALS": {
+                                        "summary": "Bad credentials or the user is inactive.",
+                                        "value": {
+                                            "detail": "LOGIN_BAD_CREDENTIALS"
+                                        }
+                                    },
+                                    "LOGIN_USER_NOT_VERIFIED": {
+                                        "summary": "The user is not verified.",
+                                        "value": {
+                                            "detail": "LOGIN_USER_NOT_VERIFIED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/logout": {
+            "post": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Auth:Jwt.Logout",
+                "operationId": "logout",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing token or inactive user."
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
+        },
         "/api/v1/users/authenticated-route": {
             "get": {
                 "tags": [
@@ -859,6 +949,42 @@
     },
     "components": {
         "schemas": {
+            "Body_users_auth_jwt.login": {
+                "title": "Body_users:auth:jwt.login",
+                "required": [
+                    "username",
+                    "password"
+                ],
+                "type": "object",
+                "properties": {
+                    "grant_type": {
+                        "title": "Grant Type",
+                        "pattern": "password",
+                        "type": "string"
+                    },
+                    "username": {
+                        "title": "Username",
+                        "type": "string"
+                    },
+                    "password": {
+                        "title": "Password",
+                        "type": "string"
+                    },
+                    "scope": {
+                        "title": "Scope",
+                        "type": "string",
+                        "default": ""
+                    },
+                    "client_id": {
+                        "title": "Client Id",
+                        "type": "string"
+                    },
+                    "client_secret": {
+                        "title": "Client Secret",
+                        "type": "string"
+                    }
+                }
+            },
             "CreateDemo": {
                 "title": "CreateDemo",
                 "required": [

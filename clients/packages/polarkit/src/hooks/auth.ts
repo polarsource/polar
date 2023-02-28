@@ -10,6 +10,7 @@ export const useAuth = (): AuthSlice => {
   const authenticated = useStore((state) => state.authenticated)
   const user = useStore((state) => state.user)
   const login = useStore((state) => state.login)
+  const logout = useStore((state) => state.logout)
 
   useEffect(() => {
     let request: CancelablePromise<UserRead>
@@ -38,9 +39,10 @@ export const useAuth = (): AuthSlice => {
       user: null,
       hasChecked: false,
       login,
+      logout,
     }
   }
-  return { authenticated, user, hasChecked, login }
+  return { authenticated, user, hasChecked, login, logout }
 }
 
 export const requireAuth = (redirectTo: string = '/'): AuthSlice => {

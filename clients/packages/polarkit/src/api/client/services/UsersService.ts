@@ -1,14 +1,14 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { UserRead } from '../models/UserRead';
-import type { UserUpdate } from '../models/UserUpdate';
+import type { Body_users_auth_jwt_login } from '../models/Body_users_auth_jwt_login'
+import type { UserRead } from '../models/UserRead'
+import type { UserUpdate } from '../models/UserUpdate'
 
-import type { CancelablePromise } from '../core/CancelablePromise';
-import type { BaseHttpRequest } from '../core/BaseHttpRequest';
+import type { CancelablePromise } from '../core/CancelablePromise'
+import type { BaseHttpRequest } from '../core/BaseHttpRequest'
 
 export class UsersService {
-
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
@@ -23,7 +23,7 @@ export class UsersService {
       errors: {
         401: `Missing token or inactive user.`,
       },
-    });
+    })
   }
 
   /**
@@ -34,7 +34,7 @@ export class UsersService {
   public updateAuthenticated({
     requestBody,
   }: {
-    requestBody: UserUpdate,
+    requestBody: UserUpdate
   }): CancelablePromise<UserRead> {
     return this.httpRequest.request({
       method: 'PATCH',
@@ -46,7 +46,7 @@ export class UsersService {
         401: `Missing token or inactive user.`,
         422: `Validation Error`,
       },
-    });
+    })
   }
 
   /**
@@ -54,16 +54,12 @@ export class UsersService {
    * @returns UserRead Successful Response
    * @throws ApiError
    */
-  public get({
-    id,
-  }: {
-    id: any,
-  }): CancelablePromise<UserRead> {
+  public get({ id }: { id: any }): CancelablePromise<UserRead> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/users/{id}',
       path: {
-        'id': id,
+        id: id,
       },
       errors: {
         401: `Missing token or inactive user.`,
@@ -71,7 +67,7 @@ export class UsersService {
         404: `The user does not exist.`,
         422: `Validation Error`,
       },
-    });
+    })
   }
 
   /**
@@ -79,16 +75,12 @@ export class UsersService {
    * @returns void
    * @throws ApiError
    */
-  public delete({
-    id,
-  }: {
-    id: any,
-  }): CancelablePromise<void> {
+  public delete({ id }: { id: any }): CancelablePromise<void> {
     return this.httpRequest.request({
       method: 'DELETE',
       url: '/api/v1/users/{id}',
       path: {
-        'id': id,
+        id: id,
       },
       errors: {
         401: `Missing token or inactive user.`,
@@ -96,7 +88,7 @@ export class UsersService {
         404: `The user does not exist.`,
         422: `Validation Error`,
       },
-    });
+    })
   }
 
   /**
@@ -108,14 +100,14 @@ export class UsersService {
     id,
     requestBody,
   }: {
-    id: any,
-    requestBody: UserUpdate,
+    id: any
+    requestBody: UserUpdate
   }): CancelablePromise<UserRead> {
     return this.httpRequest.request({
       method: 'PATCH',
       url: '/api/v1/users/{id}',
       path: {
-        'id': id,
+        id: id,
       },
       body: requestBody,
       mediaType: 'application/json',
@@ -126,7 +118,44 @@ export class UsersService {
         404: `The user does not exist.`,
         422: `Validation Error`,
       },
-    });
+    })
+  }
+
+  /**
+   * Auth:Jwt.Login
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public jwtLogin({
+    formData,
+  }: {
+    formData: Body_users_auth_jwt_login
+  }): CancelablePromise<any> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/users/login',
+      formData: formData,
+      mediaType: 'application/x-www-form-urlencoded',
+      errors: {
+        400: `Bad Request`,
+        422: `Validation Error`,
+      },
+    })
+  }
+
+  /**
+   * Auth:Jwt.Logout
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public logout(): CancelablePromise<any> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/users/logout',
+      errors: {
+        401: `Missing token or inactive user.`,
+      },
+    })
   }
 
   /**
@@ -138,7 +167,6 @@ export class UsersService {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/users/authenticated-route',
-    });
+    })
   }
-
 }

@@ -39,8 +39,7 @@ export const useGithubOAuthCallback = (
           state: state,
         })
         const response = await request
-        const { authenticated } = response
-        if (authenticated && !cancelled) {
+        if (response.success && !cancelled) {
           await login()
           return
         }

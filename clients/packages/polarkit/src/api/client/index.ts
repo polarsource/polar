@@ -9,6 +9,7 @@ export { CancelablePromise, CancelError } from './core/CancelablePromise';
 export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
+export type { Body_users_auth_jwt_login } from './models/Body_users_auth_jwt_login';
 export type { CreateDemo } from './models/CreateDemo';
 export type { DemoSchema } from './models/DemoSchema';
 export type { ErrorModel } from './models/ErrorModel';
@@ -28,6 +29,7 @@ export type { ValidationError } from './models/ValidationError';
 export { Visibility } from './models/Visibility';
 export type { WebhookResponse } from './models/WebhookResponse';
 
+export { $Body_users_auth_jwt_login } from './schemas/$Body_users_auth_jwt_login';
 export { $CreateDemo } from './schemas/$CreateDemo';
 export { $DemoSchema } from './schemas/$DemoSchema';
 export { $ErrorModel } from './schemas/$ErrorModel';

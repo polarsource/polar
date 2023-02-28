@@ -1,5 +1,5 @@
 import uuid
-from typing import Any
+from typing import Any, Literal
 
 import structlog
 from fastapi import Request, Response
@@ -13,6 +13,7 @@ from httpx_oauth.clients.github import GitHubOAuth2
 from polar.actions import github_user
 from polar.config import settings
 from polar.models import User
+from pydantic import BaseModel
 
 log = structlog.get_logger()
 
@@ -55,10 +56,21 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         log.info("user.registered", user_id=user.id)
 
 
+class AuthCookieResponse(BaseModel):
+    action: Literal["login", "logout"]
+    success: bool
+
+
 class PolarAuthCookie(CookieTransport):
-    async def get_login_response(self, token: str, response: Response) -> Any:
+    async def get_login_response(
+        self, token: str, response: Response
+    ) -> AuthCookieResponse:
         await super().get_login_response(token, response)
-        return dict(authenticated=True, token=token)
+        return AuthCookieResponse(action="login", success=True)
+
+    async def get_logout_response(self, response: Response) -> AuthCookieResponse:
+        await super().get_logout_response(response)
+        return AuthCookieResponse(action="logout", success=True)
 
 
 def get_jwt_strategy() -> JWTStrategy:

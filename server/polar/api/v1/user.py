@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Depends
-
-from polar.api.deps import current_active_user, fastapi_users
-from polar.models import User
+from fastapi import APIRouter
+from polar.api.auth import auth_backend
+from polar.api.deps import fastapi_users
 from polar.schema.user import UserRead, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -10,7 +9,9 @@ router.include_router(
     fastapi_users.get_users_router(UserRead, UserUpdate),
 )
 
-
-@router.get("/authenticated-route")
-async def authenticated_route(user: User = Depends(current_active_user)):
-    return {"message": f"Hello {user.email}!"}
+# TODO: Contribute to or patch fastapi-users to accept which routers to return.
+# We want to skip returning the login (password form) endpoint here since we're
+# solely using OAuth2.
+router.include_router(
+    fastapi_users.get_auth_router(auth_backend),
+)

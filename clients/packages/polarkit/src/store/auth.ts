@@ -9,6 +9,9 @@ export interface AuthSlice {
   login: (
     callback?: (authenticated: boolean) => void,
   ) => CancelablePromise<UserRead>
+  logout: (
+    callback?: (authenticated: boolean) => void,
+  ) => CancelablePromise<any>
 }
 
 export const createAuthSlice: StateCreator<AuthSlice> = (set, get) => ({
@@ -32,6 +35,13 @@ export const createAuthSlice: StateCreator<AuthSlice> = (set, get) => ({
           callback(get().authenticated)
         }
       })
+    return request
+  },
+  logout: (): CancelablePromise<any> => {
+    const request = api.users.logout()
+    request.finally(() => {
+      set({ authenticated: false, user: null, hasChecked: true })
+    })
     return request
   },
 })

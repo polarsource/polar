@@ -7,6 +7,7 @@ const OVERRIDE_MAPPING = {
     'users:users:user': 'get',
     'users:users:delete_user': 'delete',
     'users:users:patch_user': 'update',
+    'users:auth:jwt.logout': 'logout',
     'integrations:oauth:github.jwt.authorize': 'github_authorize',
     'integrations:oauth:github.jwt.callback': 'github_callback',
 }

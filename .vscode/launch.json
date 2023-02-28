@@ -38,7 +38,7 @@
             "request": "launch",
             "module": "celery",
             "cwd": "${workspaceFolder}/server",
-            "preLaunchTask": "ngrok tunnel",
+            "_preLaunchTask": "ngrok tunnel",
             "args": [
                 "-A",
                 "run_worker:app",

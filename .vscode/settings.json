@@ -9,16 +9,14 @@
   "python.linting.enabled": true,
   "python.formatting.provider": "black",
   "editor.formatOnSave": true,
-  "python.linting.flake8Args": [
-    "--max-line-length=88"
-  ],
-  "python.testing.pytestArgs": [
-    "tests"
-  ],
+  "python.testing.pytestArgs": ["tests"],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "isort.args": [
-    "--profile", "black"
+    "--profile",
+    "black",
+    "--project",
+    "polar"
   ],
   "[python]": {
     "editor.codeActionsOnSave": {
@@ -28,7 +26,7 @@
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
-    "editor.tabSize": 2,
+    "editor.tabSize": 2
   },
   "files.exclude": {
     "**/.git": true,
@@ -37,6 +35,9 @@
     "**/.venv": true,
     "**/__pycache__": true,
     "**/node_modules": true,
-    "**/.next": true,
+    "**/.next": true
   },
+  "editor.rulers": [
+    120,
+  ],
 }

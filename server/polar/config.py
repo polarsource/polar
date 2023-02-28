@@ -102,12 +102,6 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         return self.is_environment(Environment.production)
 
-    def generate_external_url(self, path: str) -> str:
-        return f"{self.EXTERNAL_HOST}{path}"
-
-    def generate_client_url(self, path: str) -> str:
-        return f"{self.CLIENT_HOST}{path}"
-
 
 env = Environment(os.getenv("POLAR_ENV", Environment.development))
 env_file = ".env"

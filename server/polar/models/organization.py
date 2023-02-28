@@ -1,5 +1,4 @@
 import uuid
-from ast import List
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING

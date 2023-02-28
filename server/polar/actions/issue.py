@@ -3,16 +3,16 @@ from __future__ import annotations
 from typing import Any, Sequence
 
 import structlog
+from sqlalchemy.orm import MappedColumn
+
 from polar.actions.base import Action
+from polar.clients import github
 from polar.exceptions import ExpectedIssueGotPullRequest
 from polar.ext.sqlalchemy.types import GUID
 from polar.models.issue import Issue
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
 from polar.schema.issue import CreateIssue, UpdateIssue
-from sqlalchemy.orm import MappedColumn
-
-from polar.clients import github
 
 log = structlog.get_logger()
 

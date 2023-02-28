@@ -4,6 +4,7 @@ from typing import Any, Generic, TypeVar
 
 from sqlalchemy import Column
 
+from polar.ext.sqlalchemy.types import GUID
 from polar.models.base import RecordModel
 from polar.postgres import AsyncSession, sql
 from polar.schema.base import Schema
@@ -25,7 +26,7 @@ class Action(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def default_upsert_index_elements(self) -> list[Column[Any]]:
         return [self.model.id]
 
-    async def get(self, session: AsyncSession, id: str) -> ModelType | None:
+    async def get(self, session: AsyncSession, id: GUID) -> ModelType | None:
         query = sql.select(self.model).where(self.model.id == id)
         return await self.get_by_query(session, query)
 

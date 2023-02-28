@@ -1,8 +1,8 @@
 import structlog
-from polar.event import publish
-from polar.models import Issue, PullRequest
 
 from polar import signals
+from polar.event import publish
+from polar.models import Issue, PullRequest
 
 log = structlog.get_logger()
 

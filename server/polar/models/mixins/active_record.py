@@ -4,12 +4,13 @@ from functools import cache
 from typing import Any, ClassVar, TypeVar
 
 from blinker import Signal
-from polar.postgres import AsyncSession, sql
-from polar.schema.base import Schema
 from sqlalchemy import Column, column
 from sqlalchemy.orm import Mapped, declared_attr, query_expression, with_expression
 from sqlalchemy.orm.properties import MappedColumn
 from sqlalchemy.sql.selectable import FromClause
+
+from polar.postgres import AsyncSession, sql
+from polar.schema.base import Schema
 
 ModelType = TypeVar("ModelType", bound="ActiveRecordMixin")
 SchemaType = TypeVar("SchemaType", bound=Schema)
@@ -65,9 +66,9 @@ class ActiveRecordMixin:
         if columns is not None:
             return set(name(column) for column in columns)
 
-        columns = {c.name for c in cls.__table__.c}
+        columnNames = {c.name for c in cls.__table__.c}
         pks = {pk.name for pk in cls.__table__.primary_key}
-        return columns - pks
+        return columnNames - pks
 
     @classmethod
     async def find(
@@ -166,12 +167,12 @@ class ActiveRecordMixin:
         **values: Any,
     ) -> ModelType:
         exclude = exclude if exclude else set()
-        for column, value in values.items():
-            if isinstance(include, set) and column not in include:
+        for col, value in values.items():
+            if isinstance(include, set) and col not in include:
                 continue
 
-            if column not in exclude:
-                setattr(self, column, value)
+            if col not in exclude:
+                setattr(self, col, value)
         return self
 
     async def save(

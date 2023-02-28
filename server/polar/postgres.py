@@ -1,8 +1,9 @@
-from polar.config import settings
-from polar.ext.sqlalchemy import sql
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
+
+from polar.config import settings
+from polar.ext.sqlalchemy import sql
 
 
 def create_sessionmaker(is_celery: bool = False) -> sessionmaker:

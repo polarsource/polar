@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import TIMESTAMP
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, MappedColumn, mapped_column
 
 from polar.ext.sqlalchemy import GUID, IntEnum
 from polar.models.mixins import ActiveRecordMixin, SerializeMixin
@@ -31,7 +31,9 @@ class TimestampedModel(Model):
 class RecordModel(TimestampedModel):
     __abstract__ = True
 
-    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=GUID.generate)
+    id: MappedColumn[uuid.UUID] = mapped_column(
+        GUID, primary_key=True, default=GUID.generate
+    )
 
 
 class StatusFlag(enum.Enum):

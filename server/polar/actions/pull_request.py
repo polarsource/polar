@@ -49,7 +49,7 @@ class GithubPullRequestActions(PullRequestAction):
         session: AsyncSession,
         organization_name: str,
         repository_name: str,
-        data: list[TGithubPR],
+        data: Sequence[TGithubPR],
         organization_id: GUID | None = None,
         repository_id: GUID | None = None,
     ) -> list[PullRequest]:

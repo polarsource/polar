@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from typing import Any, Generic, TypeVar
 
+from sqlalchemy import Column
+
 from polar.models.base import RecordModel
 from polar.postgres import AsyncSession, sql
 from polar.schema.base import Schema
-from sqlalchemy import Column
 
 ModelType = TypeVar("ModelType", bound=RecordModel)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=Schema)

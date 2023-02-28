@@ -1,6 +1,9 @@
 from typing import Any
 
 import structlog
+
+from polar import actions
+from polar.clients import github
 from polar.models import Issue, Organization, PullRequest, Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
@@ -9,9 +12,6 @@ from polar.schema.organization import CreateOrganization
 from polar.schema.pull_request import CreatePullRequest, PullRequestSchema
 from polar.schema.repository import CreateRepository
 from polar.worker import asyncify_task, task
-
-from polar import actions
-from polar.clients import github
 
 log = structlog.get_logger()
 

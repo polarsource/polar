@@ -28,15 +28,27 @@ class CreateOrganization(Base):
         cls, installation: github.rest.Installation
     ) -> CreateOrganization:
         account = installation.account
-        is_personal = account.type.lower() == "user"
+
+        if isinstance(account, github.rest.SimpleUser):
+            is_personal = account.type.lower() == "user"
+            name = account.login
+            avatar_url = account.avatar_url
+            external_id = account.id
+            is_site_admin = account.site_admin
+        else:
+            # TODO: Better support for GitHub Enterprise
+            is_personal = False
+            name = None
+            avatar_url = None
+            is_site_admin = False
 
         return cls(
             platform=Platforms.github,
-            name=account.login,
-            external_id=account.id,
-            avatar_url=account.avatar_url,
+            name=name,
+            external_id=external_id,
+            avatar_url=avatar_url,
             is_personal=is_personal,
-            is_site_admin=account.site_admin,
+            is_site_admin=is_site_admin,
             installation_id=installation.id,
             installation_created_at=installation.created_at,
             installation_modified_at=installation.updated_at,

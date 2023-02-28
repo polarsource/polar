@@ -106,7 +106,9 @@ class CreatePullRequest(Base):
         cls,
         organization_name: str,
         repository_name: str,
-        data: github.webhooks.PullRequestOpened,
+        data: github.rest.PullRequest
+        | github.rest.PullRequestSimple
+        | github.webhooks.PullRequestOpenedPropPullRequest,
         organization_id: GUID | None = None,
         repository_id: GUID | None = None,
     ) -> CreatePullRequest:

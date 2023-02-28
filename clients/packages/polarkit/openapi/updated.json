@@ -5,195 +5,6 @@
         "version": "0.1.0"
     },
     "paths": {
-        "/api/v1/demo/": {
-            "get": {
-                "tags": [
-                    "Demo"
-                ],
-                "summary": "Get All",
-                "operationId": "get_all",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "title": "Response Demo:Get All",
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/DemoSchema"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": [
-                    "Demo"
-                ],
-                "summary": "Create",
-                "operationId": "create",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/CreateDemo"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/DemoSchema"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/demo/{demo_id}": {
-            "get": {
-                "tags": [
-                    "Demo"
-                ],
-                "summary": "Get",
-                "operationId": "get",
-                "parameters": [
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Demo Id",
-                            "type": "string"
-                        },
-                        "name": "demo_id",
-                        "in": "path"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/DemoSchema"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "put": {
-                "tags": [
-                    "Demo"
-                ],
-                "summary": "Update",
-                "operationId": "update",
-                "parameters": [
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Demo Id",
-                            "type": "string"
-                        },
-                        "name": "demo_id",
-                        "in": "path"
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/UpdateDemo"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/DemoSchema"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "tags": [
-                    "Demo"
-                ],
-                "summary": "Delete",
-                "operationId": "delete",
-                "parameters": [
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Demo Id",
-                            "type": "string"
-                        },
-                        "name": "demo_id",
-                        "in": "path"
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Successful Response"
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/users/me": {
             "get": {
                 "tags": [
@@ -809,7 +620,7 @@
                 }
             }
         },
-        "/api/v1/stream/events/{organization_id}": {
+        "/api/v1/stream": {
             "get": {
                 "tags": [
                     "stream"
@@ -824,7 +635,16 @@
                             "type": "string"
                         },
                         "name": "organization_id",
-                        "in": "path"
+                        "in": "query"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Repository Id",
+                            "type": "string"
+                        },
+                        "name": "repository_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1025,48 +845,6 @@
                     },
                     "client_secret": {
                         "title": "Client Secret",
-                        "type": "string"
-                    }
-                }
-            },
-            "CreateDemo": {
-                "title": "CreateDemo",
-                "required": [
-                    "testing"
-                ],
-                "type": "object",
-                "properties": {
-                    "testing": {
-                        "title": "Testing",
-                        "type": "string"
-                    }
-                }
-            },
-            "DemoSchema": {
-                "title": "DemoSchema",
-                "required": [
-                    "id",
-                    "created_at",
-                    "testing"
-                ],
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "title": "Id",
-                        "type": "string"
-                    },
-                    "created_at": {
-                        "title": "Created At",
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "updated_at": {
-                        "title": "Updated At",
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "testing": {
-                        "title": "Testing",
                         "type": "string"
                     }
                 }
@@ -1735,19 +1513,6 @@
                     "suspended"
                 ],
                 "description": "An enumeration."
-            },
-            "UpdateDemo": {
-                "title": "UpdateDemo",
-                "required": [
-                    "testing"
-                ],
-                "type": "object",
-                "properties": {
-                    "testing": {
-                        "title": "Testing",
-                        "type": "string"
-                    }
-                }
             },
             "UserRead": {
                 "title": "UserRead",

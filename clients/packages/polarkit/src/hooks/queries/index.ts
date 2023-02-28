@@ -3,8 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import { RepositorySchema, OrganizationSchema } from 'polarkit/api/client'
 import { Platforms } from '../../api/client'
 
-export const useDemos = () => useQuery(['demo'], () => api.demo.getAll())
-
 export type RepoListItem = RepositorySchema & {
   organization: OrganizationSchema
 }

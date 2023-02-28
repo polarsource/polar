@@ -31,21 +31,6 @@ branch_labels: str | None = None
 depends_on: str | None = None
 
 
-def create_demo() -> None:
-    op.create_table(
-        "demo",
-        sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
-        sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
-        sa.Column("id", sa.UUID, nullable=False, primary_key=True),
-        sa.Column("testing", sa.String(length=255), nullable=False),
-        sa.PrimaryKeyConstraint("id"),
-    )
-
-
-def drop_demo() -> None:
-    op.drop_table("demo")
-
-
 def create_users() -> None:
     op.create_table(
         "users",
@@ -312,7 +297,6 @@ def drop_pull_requests() -> None:
 
 
 def upgrade() -> None:
-    create_demo()
     create_users()
     create_oauth_accounts()
     create_organizations()
@@ -324,7 +308,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    drop_demo()
     drop_users()
     drop_oauth_accounts()
     drop_user_organizations()

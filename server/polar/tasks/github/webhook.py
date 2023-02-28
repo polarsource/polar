@@ -272,9 +272,7 @@ async def issue_labeled(
 # ------------------------------------------------------------------------------
 
 
-@task(name="github.webhook.pull_request.created")
-@asyncify_task(with_session=True)
-async def pull_request_opened(
+async def handle_pull_request(
     session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
     event = get_event(scope, action, payload)
@@ -284,6 +282,38 @@ async def pull_request_opened(
 
     schema = PullRequestSchema.from_orm(pr)
     return dict(success=True, pull_request=schema.dict())
+
+
+@task(name="github.webhook.pull_request.created")
+@asyncify_task(with_session=True)
+async def pull_request_opened(
+    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+) -> dict[str, Any]:
+    return await handle_pull_request(session, scope, action, payload)
+
+
+@task(name="github.webhook.pull_request.edited")
+@asyncify_task(with_session=True)
+async def pull_request_edited(
+    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+) -> dict[str, Any]:
+    return await handle_pull_request(session, scope, action, payload)
+
+
+@task(name="github.webhook.pull_request.closed")
+@asyncify_task(with_session=True)
+async def pull_request_closed(
+    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+) -> dict[str, Any]:
+    return await handle_pull_request(session, scope, action, payload)
+
+
+@task(name="github.webhook.pull_request.reopened")
+@asyncify_task(with_session=True)
+async def pull_request_reopened(
+    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+) -> dict[str, Any]:
+    return await handle_pull_request(session, scope, action, payload)
 
 
 @task(name="github.webhook.pull_request.synchronize")

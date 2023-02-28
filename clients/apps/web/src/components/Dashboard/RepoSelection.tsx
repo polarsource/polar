@@ -4,7 +4,7 @@ import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid'
 import { classNames } from 'utils/dom'
 import { useUserOrganizations } from 'polarkit/hooks'
 import { requireAuth } from 'polarkit/hooks'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 type Repo = {
   id: string
@@ -15,6 +15,7 @@ type Repo = {
 
 const RepoSelection = () => {
   const navigate = useNavigate()
+  const params = useParams()
 
   const [repos, setRepos] = useState<Repo[]>([])
 
@@ -48,8 +49,26 @@ const RepoSelection = () => {
 
       setRepos(r)
 
-      // Set first repo as default
-      setSelected(r[0])
+      // Try to select repo from URL
+      let didSetSelected = false
+      if (params && params.orgSlug && params.repoSlug) {
+        const repo = r.find(
+          (r) =>
+            r.organization.toLowerCase() === params.orgSlug.toLowerCase() &&
+            r.repo.toLowerCase() === params.repoSlug.toLowerCase(),
+        )
+
+        if (repo) {
+          setSelected(repo)
+          didSetSelected = true
+          return
+        }
+      }
+
+      // Fallback to select first repo in list
+      if (!didSetSelected) {
+        setSelected(r[0])
+      }
     }
   }, [organizations, userOrgQuery.isSuccess])
 

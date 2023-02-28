@@ -32,7 +32,7 @@ def asyncify_task(
     ) -> Callable[Params, Awaitable[ReturnValue]]:
         # Since we're running Celery in eager mode during test, we're in
         # an asyncio event loop and can skip the async_to_sync wrapper.
-        if settings.is_testing():
+        if settings.CELERY_TASK_ALWAYS_EAGER:
             return f
         return async_to_sync(f)  # type: ignore
 

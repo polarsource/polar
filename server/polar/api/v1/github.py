@@ -2,17 +2,17 @@ from typing import Any, Literal
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
+
 from polar.actions import github_organization
 from polar.api.auth import auth_backend, github_oauth_client
 from polar.api.deps import current_active_user, fastapi_users, get_db_session
+from polar.clients import github
 from polar.config import settings
 from polar.models import Organization, User
 from polar.postgres import AsyncSession
 from polar.schema.organization import OrganizationSchema
 from polar.tasks.github import webhook as hooks
-from pydantic import BaseModel
-
-from polar.clients import github
 
 log = structlog.get_logger()
 
@@ -101,8 +101,9 @@ async def queue(request: Request) -> WebhookResponse:
         return not_implemented(event_scope, event_action, json_body)
 
     queued = task.delay(event_scope, event_action, json_body)
-    if settings.is_testing() and settings.CELERY_TASK_ALWAYS_EAGER:
+    if settings.CELERY_TASK_ALWAYS_EAGER:
         await queued.result
+
     log.info("github.webhook.queued", event_name=event_name)
     return WebhookResponse(success=True, task_id=queued.id)
 

@@ -28,14 +28,18 @@ export interface ContextState {
 
 export interface UserContextState extends UserState, ContextState {}
 
-export const createUserContextSlice: StateCreator<UserContextState> = (
-  set,
-  get,
-) => ({
+const emptyState = {
   authenticated: false,
   currentUser: undefined,
   currentOrg: undefined,
   currentRepo: undefined,
+}
+
+export const createUserContextSlice: StateCreator<UserContextState> = (
+  set,
+  get,
+) => ({
+  ...emptyState,
   login: (
     callback?: (authenticated: boolean) => void,
   ): CancelablePromise<UserRead> => {
@@ -57,7 +61,7 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
   logout: (): CancelablePromise<any> => {
     const request = api.users.logout()
     request.finally(() => {
-      set({ authenticated: false, currentUser: undefined })
+      set({ ...emptyState })
     })
     return request
   },

@@ -1,24 +1,32 @@
 import { CancelablePromise, UserRead } from 'polarkit/api/client'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { useHasHydrated } from './hydration'
 import { AuthSlice, useStore } from '../store'
 
-export const useAuth = (): AuthSlice => {
+export const useAuth = (): AuthSlice & {
+  hasChecked: boolean
+  isChecking: boolean
+} => {
   const hasHydrated = useHasHydrated()
-  const hasChecked = useStore((state) => state.hasChecked)
   const authenticated = useStore((state) => state.authenticated)
   const user = useStore((state) => state.user)
   const login = useStore((state) => state.login)
   const logout = useStore((state) => state.logout)
 
+  const [hasChecked, setHasChecked] = useState(authenticated)
+  const [isChecking, setIsChecking] = useState(false)
+
   useEffect(() => {
-    let request: CancelablePromise<UserRead>
-    if (authenticated) {
-      useStore.setState({ hasChecked: true })
-    } else if (!hasChecked) {
-      request = login()
+    if (hasChecked || authenticated) {
+      return
     }
+
+    setIsChecking(true)
+    let request: CancelablePromise<UserRead> = login(() => {
+      setIsChecking(false)
+      setHasChecked(true)
+    })
 
     // Cleanup
     return () => {
@@ -26,7 +34,7 @@ export const useAuth = (): AuthSlice => {
         request.cancel()
       }
     }
-  }, [authenticated, hasChecked])
+  }, [authenticated, hasChecked, login])
 
   /*
    * We're not supporting serverside authentication/session via NextJS.
@@ -38,11 +46,12 @@ export const useAuth = (): AuthSlice => {
       authenticated: false,
       user: null,
       hasChecked: false,
+      isChecking: false,
       login,
       logout,
     }
   }
-  return { authenticated, user, hasChecked, login, logout }
+  return { authenticated, user, hasChecked, isChecking, login, logout }
 }
 
 export const requireAuth = (redirectTo: string = '/'): AuthSlice => {

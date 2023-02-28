@@ -3,7 +3,6 @@ import { UserRead } from '../api/client'
 import { api, CancelablePromise } from '../api'
 
 export interface AuthSlice {
-  hasChecked: boolean
   authenticated: boolean
   user: UserRead | null
   login: (
@@ -15,7 +14,6 @@ export interface AuthSlice {
 }
 
 export const createAuthSlice: StateCreator<AuthSlice> = (set, get) => ({
-  hasChecked: false,
   authenticated: false,
   user: null,
   login: (
@@ -30,7 +28,6 @@ export const createAuthSlice: StateCreator<AuthSlice> = (set, get) => ({
         set({ authenticated: false, user: null })
       })
       .finally(() => {
-        set({ hasChecked: true })
         if (callback) {
           callback(get().authenticated)
         }
@@ -40,7 +37,7 @@ export const createAuthSlice: StateCreator<AuthSlice> = (set, get) => ({
   logout: (): CancelablePromise<any> => {
     const request = api.users.logout()
     request.finally(() => {
-      set({ authenticated: false, user: null, hasChecked: true })
+      set({ authenticated: false, user: null })
     })
     return request
   },

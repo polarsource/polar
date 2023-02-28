@@ -11,9 +11,9 @@ const Dashboard = dynamic(() => import('../../dashboard'), {
 
 const DashboardSPA: NextPageWithLayout = () => {
   const router = useRouter()
-  const { authenticated, isLoading } = requireAuth()
+  const { authenticated, isChecking } = requireAuth()
 
-  if (isLoading) return <p>Loading...</p>
+  if (isChecking) return <p>Loading...</p>
 
   if (!authenticated) return <p>Not authenticated. Fix me (TODO).</p>
 

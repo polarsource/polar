@@ -43,10 +43,12 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Run image
-        uses: abatilo/actions-poetry@v2
+      - uses: abatilo/actions-poetry@v2
         with:
           poetry-version: ${{ matrix.poetry-version }}
-      - name: Run Tests
+      - name: 🔧 poetry install
         working-directory: ./server
-        run: poetry install && poetry run pytest
+        run: poetry install
+      - name: 🐍 Run tests
+        working-directory: ./server
+        run: poetry run pytest

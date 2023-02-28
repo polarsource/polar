@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     POSTGRES_SCHEME: str = "postgresql+asyncpg"
     POSTGRES_USER: str = "polar"
     POSTGRES_PWD: str = "polar"
-    POSTGRES_HOST: str = "0.0.0.0"
+    POSTGRES_HOST: str = "127.0.0.1"
     POSTGRES_PORT: int = 5432
     POSTGRES_DATABASE: str = "polar_development"
 

@@ -5,22 +5,28 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import dialect as postgresql
+from tests.fixtures.database import TestModel
 
 from polar.ext.sqlalchemy import GUID, IntEnum
 from polar.models.base import StatusFlag
-from polar.postgres import AsyncSession, engine, sql
-from tests.fixtures.database import TestModel
+from polar.postgres import AsyncEngineLocal, AsyncSession, sql
 
 
 @pytest.fixture(scope="module")
 async def record(session: AsyncSession) -> AsyncGenerator[TestModel, None]:
-    async with engine.begin() as conn:
+    async with AsyncEngineLocal.begin() as conn:
         await conn.run_sync(TestModel.metadata.create_all)
 
     _uuid = uuid.uuid4()
     hex = _uuid.hex
     input = dict(guid=_uuid, status=StatusFlag.ACTIVE)
-    instance = TestModel(guid=input["guid"], status=input["status"])
+
+    print("zegl", _uuid, hex, input)
+
+    instance = TestModel(
+        guid=input["guid"],
+        status=input["status"],
+    )
 
     query = sql.select(TestModel).where(TestModel.guid == hex).limit(1)
     raw_sql = text("SELECT guid, status FROM test_model WHERE guid = :hex")

@@ -1,21 +1,36 @@
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from typing import Any
+
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.pool import NullPool
 
 from polar.config import settings
 from polar.ext.sqlalchemy import sql
 
 
-def create_sessionmaker(is_celery: bool = False) -> sessionmaker:
-    engine_options = dict(echo=settings.DEBUG)
+def create_engine(is_celery: bool = False) -> AsyncEngine:
+    engine_options: dict[str, Any] = dict(echo=settings.DEBUG)
     if is_celery:
         # TODO: Change pooling strategy for celery workers.
         # In the meantime, we're using NullPool to avoid
         # issues with asyncio in Celery.
+        print("ZEGL", "Using NullPool for Celery workers")
         engine_options.update(dict(poolclass=NullPool))
 
-    engine = create_async_engine(settings.postgres_dsn, **engine_options)
-    return sessionmaker(
+    return create_async_engine(settings.postgres_dsn, **engine_options)
+
+
+AsyncEngineLocal = create_engine()
+
+
+def create_sessionmaker(
+    engine: AsyncEngine = AsyncEngineLocal,
+) -> async_sessionmaker[AsyncSession]:
+    return async_sessionmaker(
         engine,
         autocommit=False,
         autoflush=False,
@@ -27,4 +42,4 @@ def create_sessionmaker(is_celery: bool = False) -> sessionmaker:
 AsyncSessionLocal = create_sessionmaker()
 
 
-__all__ = ["sql", "AsyncSessionLocal", "AsyncSession"]
+__all__ = ["sql", "AsyncSessionLocal", "AsyncSession", "AsyncEngineLocal"]

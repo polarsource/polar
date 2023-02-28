@@ -3,11 +3,11 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from polar.clients import github
+from polar.ext.sqlalchemy.types import GUID
 from polar.platforms import Platforms
 from polar.schema.issue import Base, CreateIssue
 from polar.typing import JSONDict, JSONList
-
-from polar.clients import github
 
 
 # Since we cannot use mixins with Pydantic, we have to redefine
@@ -63,8 +63,8 @@ class CreatePullRequest(Base):
         pr: github.rest.PullRequest
         | github.rest.PullRequestSimple
         | github.webhooks.PullRequestOpenedPropPullRequest,
-        organization_id: str | None = None,
-        repository_id: str | None = None,
+        organization_id: GUID | None = None,
+        repository_id: GUID | None = None,
     ) -> dict[str, Any]:
         normalized = CreateIssue.get_normalized_github_issue(
             organization_name,
@@ -107,8 +107,8 @@ class CreatePullRequest(Base):
         organization_name: str,
         repository_name: str,
         data: github.wehooks.PullRequestOpened,
-        organization_id: str | None = None,
-        repository_id: str | None = None,
+        organization_id: GUID | None = None,
+        repository_id: GUID | None = None,
     ) -> CreatePullRequest:
         normalized = cls.get_normalized_github_issue(
             organization_name,

@@ -3,10 +3,10 @@ from typing import Awaitable, Callable, ParamSpec, TypeVar
 
 from asgiref.sync import async_to_sync
 from celery import Celery
-from polar.config import settings
-from polar.postgres import create_sessionmaker
 
 from polar import receivers  # noqa
+from polar.config import settings
+from polar.postgres import create_sessionmaker
 
 app = Celery(
     "polar", backend=settings.CELERY_BACKEND_URL, broker=settings.CELERY_BROKER_URL

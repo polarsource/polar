@@ -3,15 +3,13 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from githubkit.utils import Unset, exclude_unset
+from polar.clients import github
 from polar.exceptions import ExpectedIssueGotPullRequest
 from polar.ext.sqlalchemy.types import GUID
 from polar.models.issue import Issue
 from polar.platforms import Platforms
 from polar.schema.base import Schema
 from polar.typing import JSONDict, JSONList
-
-from polar.clients import github
 
 # TODO: Ugly. Fix how to deal with githubkit typing at times.
 TIssueData = (

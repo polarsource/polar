@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
 from polar.clients import github
 from polar.models.organization import Organization
 from polar.platforms import Platforms
-from polar.schema.account import AccountSchema
 from polar.schema.base import Schema
 from polar.schema.repository import RepositorySchema
 

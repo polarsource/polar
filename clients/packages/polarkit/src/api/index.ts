@@ -1,4 +1,4 @@
-import { PolarAPI } from './client'
+import { PolarAPI, CancelablePromise } from './client'
 import { getServerURL } from '../utils'
 import { QueryClient } from '@tanstack/react-query'
 export {
@@ -13,3 +13,5 @@ export const api = new PolarAPI({
   BASE: getServerURL(),
   WITH_CREDENTIALS: true,
 })
+
+export { CancelablePromise }

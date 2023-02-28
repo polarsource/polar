@@ -4,13 +4,13 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from polar.ext.sqlalchemy import GUID, StringEnum
-from polar.models.base import RecordModel
-from polar.platforms import Platforms
 from sqlalchemy import TIMESTAMP, Boolean, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar import signals
+from polar.ext.sqlalchemy import GUID, StringEnum
+from polar.models.base import RecordModel
+from polar.platforms import Platforms
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.account import Account

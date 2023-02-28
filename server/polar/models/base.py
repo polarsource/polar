@@ -2,10 +2,11 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
-from polar.ext.sqlalchemy import GUID, IntEnum
-from polar.models.mixins import ActiveRecordMixin, SerializeMixin
 from sqlalchemy import TIMESTAMP
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+from polar.ext.sqlalchemy import GUID, IntEnum
+from polar.models.mixins import ActiveRecordMixin, SerializeMixin
 
 
 def utc_now() -> datetime:

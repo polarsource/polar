@@ -1,13 +1,13 @@
 from datetime import datetime
 
-from polar.models.base import RecordModel
-from polar.models.issue import IssueFields
-from polar.typing import JSONDict, JSONList
 from sqlalchemy import TIMESTAMP, Boolean, Integer, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar import signals
+from polar.models.base import RecordModel
+from polar.models.issue import IssueFields
+from polar.typing import JSONDict, JSONList
 
 
 class PullRequest(IssueFields, RecordModel):

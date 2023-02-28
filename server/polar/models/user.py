@@ -3,18 +3,11 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
-from sqlalchemy.orm import (
-    Mapped,
-    declared_attr,
-    mapped_column,
-    relationship,
-    subqueryload,
-)
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.ext.sqlalchemy import GUID
 from polar.models.base import RecordModel
 from polar.platforms import Platforms
-from polar.postgres import sql
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.organization import Organization

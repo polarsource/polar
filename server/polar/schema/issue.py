@@ -106,8 +106,8 @@ class CreateIssue(Base):
         organization_name: str,
         repository_name: str,
         data: TIssueData,
-        organization_id: str | None = None,
-        repository_id: str | None = None,
+        organization_id: GUID | None = None,
+        repository_id: GUID | None = None,
     ) -> CreateIssue:
         if github.is_set(data, "pull_request"):
             raise ExpectedIssueGotPullRequest()

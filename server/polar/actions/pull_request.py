@@ -1,14 +1,14 @@
 from typing import Any, Sequence
 
+from sqlalchemy.orm import MappedColumn
+
 from polar.actions.base import Action
+from polar.clients import github
 from polar.ext.sqlalchemy.types import GUID
 from polar.models.pull_request import PullRequest
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
 from polar.schema.pull_request import CreatePullRequest, UpdatePullRequest
-from sqlalchemy.orm import MappedColumn
-
-from polar.clients import github
 
 TGithubPR = (
     github.rest.PullRequest
@@ -50,8 +50,8 @@ class GithubPullRequestActions(PullRequestAction):
         organization_name: str,
         repository_name: str,
         data: list[TGithubPR],
-        organization_id: str | None = None,
-        repository_id: str | None = None,
+        organization_id: GUID | None = None,
+        repository_id: GUID | None = None,
     ) -> list[PullRequest]:
         def parse(pr: TGithubPR) -> CreatePullRequest:
             return CreatePullRequest.from_github(

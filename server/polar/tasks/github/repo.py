@@ -1,17 +1,18 @@
 import structlog
+
+from polar import actions
+from polar.ext.sqlalchemy.types import GUID
 from polar.models import Organization, Repository
 from polar.postgres import AsyncSession
 from polar.worker import asyncify_task, task
-
-from polar import actions
 
 log = structlog.get_logger()
 
 
 async def get_organization_and_repo(
     session: AsyncSession,
-    organization_id: str,
-    repository_id: str,
+    organization_id: GUID,
+    repository_id: GUID,
 ) -> tuple[Organization, Repository]:
     organization = await actions.github_organization.get(session, organization_id)
     if not organization:
@@ -30,9 +31,9 @@ async def get_organization_and_repo(
 @asyncify_task(with_session=True)
 async def sync_repository_issues(
     session: AsyncSession,
-    organization_id: str,
+    organization_id: GUID,
     organization_name: str,
-    repository_id: str,
+    repository_id: GUID,
     repository_name: str,
     per_page: int = 30,
     page: int = 1,
@@ -43,7 +44,11 @@ async def sync_repository_issues(
     issues = await actions.github_repository.fetch_issues(organization, repository)
 
     if not issues:
-        log.warning("no issues found", organization_name=organization_name, repository_name=repository_name)
+        log.warning(
+            "no issues found",
+            organization_name=organization_name,
+            repository_name=repository_name,
+        )
         return
 
     # TODO: Handle pagination via new task
@@ -61,9 +66,9 @@ async def sync_repository_issues(
 @asyncify_task(with_session=True)
 async def sync_repository_pull_requests(
     session: AsyncSession,
-    organization_id: str,
+    organization_id: GUID,
     organization_name: str,
-    repository_id: str,
+    repository_id: GUID,
     repository_name: str,
     per_page: int = 30,
     page: int = 1,
@@ -74,7 +79,11 @@ async def sync_repository_pull_requests(
     prs = await actions.github_repository.fetch_pull_requests(organization, repository)
 
     if not prs:
-        log.warning("no pull requests found", organization_name=organization_name, repository_name=repository_name)
+        log.warning(
+            "no pull requests found",
+            organization_name=organization_name,
+            repository_name=repository_name,
+        )
         return
 
     # TODO: Handle pagination via new task
@@ -92,9 +101,9 @@ async def sync_repository_pull_requests(
 @asyncify_task(with_session=True)
 async def sync_repository(
     session: AsyncSession,
-    organization_id: str,
+    organization_id: GUID,
     organization_name: str,
-    repository_id: str,
+    repository_id: GUID,
     repository_name: str,
 ) -> None:
     # TODO: A bit silly to call a task scheduling... tasks.

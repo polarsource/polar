@@ -2,10 +2,6 @@ import enum
 from datetime import datetime
 
 import structlog
-from polar.ext.sqlalchemy import GUID, StringEnum
-from polar.models.base import RecordModel
-from polar.platforms import Platforms
-from polar.typing import JSONDict, JSONList
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
@@ -19,6 +15,10 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, MappedColumn, declared_attr, mapped_column
 
 from polar import signals
+from polar.ext.sqlalchemy import GUID, StringEnum
+from polar.models.base import RecordModel
+from polar.platforms import Platforms
+from polar.typing import JSONDict, JSONList
 
 log = structlog.get_logger()
 

@@ -3,9 +3,6 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
-from polar.ext.sqlalchemy import GUID, StringEnum
-from polar.models.base import RecordModel
-from polar.platforms import Platforms
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
@@ -18,6 +15,10 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from polar.ext.sqlalchemy import GUID, StringEnum
+from polar.models.base import RecordModel
+from polar.platforms import Platforms
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.organization import Organization

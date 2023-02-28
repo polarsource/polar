@@ -1,6 +1,7 @@
+import { ReactNode } from "react"
 import IssuePullRequest from "./IssuePullRequest"
 
-const IssueReward = () => {
+const IssueReward = (props: { children: ReactNode }) => {
     return (<>
         <div className="bg-white shadow-lg rounded-xl p-4 mb-8 flex flex-col gap-2">
             <div className="flex items-center justify-between ">
@@ -14,10 +15,7 @@ const IssueReward = () => {
                 <a href="#" className="text-gray-500 text-sm">Reward Details &rsaquo;</a>
             </div>
 
-
-            <IssuePullRequest pullRequestState="open" issueState="open" />
-            <IssuePullRequest pullRequestState="merged" issueState="closed" />
-
+            {props.children}
         </div>
     </>
     )

@@ -19,11 +19,29 @@ export const useUserOrganizations = (userId: string) =>
 export const useRepositoryIssues = (repoOwner: string, repoName: string) =>
   useQuery(
     ['issues', 'repo', repoOwner, repoName],
-    () => api.issues.getRepositoryIssues({
-      platform: Platforms.GITHUB,
-      organizationName: repoOwner,
-      name: repoName,
-    }),
+    () =>
+      api.issues.getRepositoryIssues({
+        platform: Platforms.GITHUB,
+        organizationName: repoOwner,
+        name: repoName,
+      }),
+    {
+      enabled: !!repoOwner && !!repoName,
+    },
+  )
+
+export const useRepositoryPullRequests = (
+  repoOwner: string,
+  repoName: string,
+) =>
+  useQuery(
+    ['pull_requests', 'repo', repoOwner, repoName],
+    () =>
+      api.pullRequests.getRepositoryPullRequests({
+        platform: Platforms.GITHUB,
+        organizationName: repoOwner,
+        name: repoName,
+      }),
     {
       enabled: !!repoOwner && !!repoName,
     },

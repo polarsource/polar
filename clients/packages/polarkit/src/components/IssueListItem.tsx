@@ -6,10 +6,16 @@ import ReactTimeAgo from 'react-time-ago'
 import TimeAgo from 'javascript-time-ago'
 import en from 'javascript-time-ago/locale/en.json'
 import IssueReward from "./IssueReward"
+import { PullRequestSchema } from "api/client"
+import IssuePullRequest from "./IssuePullRequest"
 
 TimeAgo.addDefaultLocale(en)
 
-const IssueListItem = (props: { issue: IssueSchema }) => {
+export type Issue = IssueSchema & {
+    pullRequests: PullRequestSchema[],
+}
+
+const IssueListItem = (props: { issue: Issue }) => {
     const { title, number, organization_name, repository_name, state, issue_created_at, issue_closed_at, reactions, comments } = props.issue
     const href = `https://github.com/${organization_name}/${repository_name}/issues/${number}`
     const createdAt = new Date(issue_created_at)
@@ -39,7 +45,11 @@ const IssueListItem = (props: { issue: IssueSchema }) => {
                 </div>
             </div>
 
-            <IssueReward />
+            <IssueReward>
+                {props.issue.pullRequests.map((pr) => {
+                    return <IssuePullRequest issue={props.issue} pullRequest={pr} key={pr.number} />
+                })}
+            </IssueReward>
         </div>
     )
 }

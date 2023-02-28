@@ -40,15 +40,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - name: Install poetry
+        run: pipx install poetry
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: abatilo/actions-poetry@v2
-        with:
-          poetry-version: ${{ matrix.poetry-version }}
+          cache: "poetry"
       - name: 🔧 poetry install
         working-directory: ./server
-        run: poetry install
+        run: poetry install --no-root
       - name: 🐍 Run tests
         working-directory: ./server
         run: poetry run pytest

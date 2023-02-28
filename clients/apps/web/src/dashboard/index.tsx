@@ -48,8 +48,8 @@ const router = createBrowserRouter([
 ])
 
 const Dashboard = () => {
-  const { user } = requireAuth()
-  const userOrgQuery = useUserOrganizations(user?.id)
+  const { currentUser } = requireAuth()
+  const userOrgQuery = useUserOrganizations(currentUser?.id)
   const currentOrg = useStore((state) => state.currentOrg)
   const currentRepo = useStore((state) => state.currentRepo)
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)

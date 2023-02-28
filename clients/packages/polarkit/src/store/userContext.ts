@@ -9,7 +9,7 @@ import {
 
 export interface UserState {
   authenticated: boolean
-  user: UserRead | null
+  currentUser: UserRead | undefined
   login: (
     callback?: (authenticated: boolean) => void,
   ) => CancelablePromise<UserRead>
@@ -33,7 +33,7 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
   get,
 ) => ({
   authenticated: false,
-  user: null,
+  currentUser: undefined,
   currentOrg: undefined,
   currentRepo: undefined,
   login: (
@@ -42,10 +42,10 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
     const request = api.users.getAuthenticated()
     request
       .then((user) => {
-        set({ authenticated: true, user })
+        set({ authenticated: true, currentUser: user })
       })
       .catch((err) => {
-        set({ authenticated: false, user: null })
+        set({ authenticated: false, currentUser: undefined })
       })
       .finally(() => {
         if (callback) {
@@ -57,7 +57,7 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
   logout: (): CancelablePromise<any> => {
     const request = api.users.logout()
     request.finally(() => {
-      set({ authenticated: false, user: null })
+      set({ authenticated: false, currentUser: undefined })
     })
     return request
   },

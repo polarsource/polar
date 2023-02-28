@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { api } from 'polarkit'
 
 const Organization = () => {
-  const { user } = requireAuth()
+  const { currentUser } = requireAuth()
   const { slug } = useParams()
 
   //   const organization = developer.getOrganizationBySlug(slug)

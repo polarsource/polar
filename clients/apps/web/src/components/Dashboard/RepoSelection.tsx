@@ -9,14 +9,14 @@ import { useNavigate } from 'react-router-dom'
 
 const RepoSelection = () => {
   const navigate = useNavigate()
-  const { user } = requireAuth()
-  const userOrgQuery = useUserOrganizations(user?.id)
+  const { currentUser } = requireAuth()
+  const userOrgQuery = useUserOrganizations(currentUser?.id)
 
   const currentOrg = useStore((state) => state.currentOrg)
   const currentRepo = useStore((state) => state.currentRepo)
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
 
-  if (!user) {
+  if (!currentUser) {
     return <div>Not authenticated</div>
   }
 

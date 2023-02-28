@@ -10,7 +10,7 @@ export const useAuth = (): UserState & {
 } => {
   const hasHydrated = useHasHydrated()
   const authenticated = useStore((state) => state.authenticated)
-  const user = useStore((state) => state.user)
+  const currentUser = useStore((state) => state.currentUser)
   const login = useStore((state) => state.login)
   const logout = useStore((state) => state.logout)
 
@@ -44,14 +44,14 @@ export const useAuth = (): UserState & {
   if (!hasHydrated) {
     return {
       authenticated: false,
-      user: null,
+      currentUser: undefined,
       hasChecked: false,
       isChecking: false,
       login,
       logout,
     }
   }
-  return { authenticated, user, hasChecked, isChecking, login, logout }
+  return { authenticated, currentUser, hasChecked, isChecking, login, logout }
 }
 
 export const requireAuth = (redirectTo: string = '/'): UserState => {

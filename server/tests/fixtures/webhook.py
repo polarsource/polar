@@ -29,6 +29,7 @@ class TestWebhook:
             json=self.json,
             headers=self.headers,
         )
+        print("zegl, response", response.status_code, response.json())
         return response
 
     def __getitem__(self, key: str) -> Any:

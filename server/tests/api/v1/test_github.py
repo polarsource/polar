@@ -4,6 +4,7 @@ from typing import Any
 
 import pytest
 from httpx import Response
+from tests.fixtures.webhook import TestWebhook, TestWebhookFactory
 
 from polar import actions
 from polar.clients import github
@@ -11,7 +12,6 @@ from polar.models.organization import Organization
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, AsyncSessionLocal
 from polar.schema.organization import CreateOrganization
-from tests.fixtures.webhook import TestWebhook, TestWebhookFactory
 
 
 async def assert_repository_deleted(
@@ -104,6 +104,9 @@ async def test_webhook_installation_created(
     org = await actions.github_organization.get_by(
         session, installation_id=installation_id
     )
+
+    print("zegl", org)
+
     assert org is not None
     assert org.external_id == account["id"]
     assert org.name == account["login"]

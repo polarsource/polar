@@ -6,7 +6,7 @@ from celery import Celery
 
 from polar import receivers  # noqa
 from polar.config import settings
-from polar.postgres import create_sessionmaker
+from polar.postgres import create_engine, create_sessionmaker
 
 app = Celery(
     "polar", backend=settings.CELERY_BACKEND_URL, broker=settings.CELERY_BROKER_URL
@@ -21,7 +21,7 @@ Params = ParamSpec("Params")
 ReturnValue = TypeVar("ReturnValue")
 
 
-AsyncSessionLocal = create_sessionmaker(is_celery=True)
+AsyncSessionLocal = create_sessionmaker(engine=create_engine(is_celery=True))
 
 
 def asyncify_task(

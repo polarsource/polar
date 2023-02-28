@@ -51,4 +51,10 @@ jobs:
         run: poetry install --no-root
       - name: 🐍 Run tests
         working-directory: ./server
+        env:
+          POLAR_POSTGRES_HOST: postgres
+          POLAR_REDIS_HOST: redis
+          POLAR_CELERY_BROKER_URL: "redis://redis:6379"
+          POLAR_CELERY_BACKEND_URL: "redis://redis:6379"
+
         run: poetry run pytest

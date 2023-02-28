@@ -23,29 +23,25 @@ const dispatch = (event) => {
   }
 }
 
-export const useEventStream = () => {
-  const currentOrganization = useStore((state) => state.currentOrganization)
-  const currentRepository = useStore((state) => state.currentRepository)
+export const useEventStream = (
+  organizationId?: string,
+  repositoryId?: string,
+) => {
+  const params: {
+    organization_id?: string
+    repository_id?: string
+  } = {}
 
-  const getStreamURL = () => {
-    const params: {
-      organization_id?: string
-      repository_id?: string
-    } = {}
-
-    if (currentOrganization) {
-      params.organization_id = currentOrganization.id
-    }
-    if (currentRepository) {
-      params.repository_id = currentRepository.id
-    }
-
-    const base = getServerURL('/api/v1/stream')
-    const query = new URLSearchParams(params)
-    return `${base}?${query.toString()}`
+  if (organizationId) {
+    params.organization_id = organizationId
+  }
+  if (repositoryId) {
+    params.repository_id = repositoryId
   }
 
-  const streamURL = getStreamURL()
+  const base = getServerURL('/api/v1/stream')
+  const query = new URLSearchParams(params)
+  const streamURL = `${base}?${query.toString()}`
 
   useEffect(() => {
     if (!streamURL) {

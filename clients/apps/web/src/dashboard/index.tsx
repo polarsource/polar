@@ -5,6 +5,7 @@ import { requireAuth } from 'polarkit/hooks'
 import { useUserOrganizations } from 'polarkit/hooks'
 import Layout from 'components/Dashboard/Layout'
 import { useEventStream } from 'polarkit/hooks'
+import { useStore } from 'polarkit/store'
 
 const Root = () => {
   return <h3 className="text-xl mt-10">Welcome</h3>
@@ -48,7 +49,12 @@ const router = createBrowserRouter([
 const Dashboard = () => {
   const { user } = requireAuth()
   const userOrgQuery = useUserOrganizations(user?.id)
-  useEventStream()
+  const currentOrganization = useStore((state) => state.currentOrganization)
+  const currentRepository = useStore((state) => state.currentRepository)
+  const setCurrentOrganizationAndRepository = useStore(
+    (state) => state.setCurrentOrganizationAndRepository,
+  )
+  useEventStream(currentOrganization?.id, currentRepository?.id)
 
   if (userOrgQuery.isLoading) return <div>Loading...</div>
 

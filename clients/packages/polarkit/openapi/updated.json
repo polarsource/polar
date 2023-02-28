@@ -578,30 +578,6 @@
                 ]
             }
         },
-        "/api/v1/users/authenticated-route": {
-            "get": {
-                "tags": [
-                    "users"
-                ],
-                "summary": "Authenticated Route",
-                "operationId": "authenticated_route",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {}
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
-            }
-        },
         "/api/v1/user/organizations": {
             "get": {
                 "tags": [
@@ -923,6 +899,74 @@
                                     "type": "array",
                                     "items": {
                                         "$ref": "#/components/schemas/IssueSchema"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/pull_requests/{platform}/{organization_name}/{name}": {
+            "get": {
+                "tags": [
+                    "pull_requests"
+                ],
+                "summary": "Get Repository Pull Requests",
+                "operationId": "get_repository_pull_requests",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Organization Name",
+                            "type": "string"
+                        },
+                        "name": "organization_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Name",
+                            "type": "string"
+                        },
+                        "name": "name",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "title": "Response Pull Requests:Get Repository Pull Requests",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PullRequestSchema"
                                     }
                                 }
                             }
@@ -1330,6 +1374,222 @@
                 ],
                 "type": "string",
                 "description": "An enumeration."
+            },
+            "PullRequestSchema": {
+                "title": "PullRequestSchema",
+                "required": [
+                    "platform",
+                    "external_id",
+                    "organization_name",
+                    "repository_name",
+                    "number",
+                    "title",
+                    "state",
+                    "is_locked",
+                    "issue_created_at",
+                    "is_draft",
+                    "id",
+                    "created_at"
+                ],
+                "type": "object",
+                "properties": {
+                    "platform": {
+                        "$ref": "#/components/schemas/Platforms"
+                    },
+                    "external_id": {
+                        "title": "External Id",
+                        "type": "integer"
+                    },
+                    "organization_id": {
+                        "title": "Organization Id",
+                        "type": "string"
+                    },
+                    "organization_name": {
+                        "title": "Organization Name",
+                        "type": "string"
+                    },
+                    "repository_id": {
+                        "title": "Repository Id",
+                        "type": "string"
+                    },
+                    "repository_name": {
+                        "title": "Repository Name",
+                        "type": "string"
+                    },
+                    "number": {
+                        "title": "Number",
+                        "type": "integer"
+                    },
+                    "title": {
+                        "title": "Title",
+                        "type": "string"
+                    },
+                    "body": {
+                        "title": "Body",
+                        "type": "string"
+                    },
+                    "comments": {
+                        "title": "Comments",
+                        "type": "integer"
+                    },
+                    "author": {
+                        "title": "Author",
+                        "type": "object"
+                    },
+                    "author_association": {
+                        "title": "Author Association",
+                        "type": "string"
+                    },
+                    "labels": {
+                        "title": "Labels",
+                        "type": "array",
+                        "items": {}
+                    },
+                    "assignee": {
+                        "title": "Assignee",
+                        "type": "object"
+                    },
+                    "assignees": {
+                        "title": "Assignees",
+                        "type": "array",
+                        "items": {}
+                    },
+                    "milestone": {
+                        "title": "Milestone",
+                        "type": "object"
+                    },
+                    "closed_by": {
+                        "title": "Closed By",
+                        "type": "object"
+                    },
+                    "reactions": {
+                        "title": "Reactions",
+                        "type": "object"
+                    },
+                    "state": {
+                        "$ref": "#/components/schemas/State"
+                    },
+                    "state_reason": {
+                        "title": "State Reason",
+                        "type": "string"
+                    },
+                    "is_locked": {
+                        "title": "Is Locked",
+                        "type": "boolean"
+                    },
+                    "lock_reason": {
+                        "title": "Lock Reason",
+                        "type": "string"
+                    },
+                    "issue_closed_at": {
+                        "title": "Issue Closed At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "issue_modified_at": {
+                        "title": "Issue Modified At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "issue_created_at": {
+                        "title": "Issue Created At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "commits": {
+                        "title": "Commits",
+                        "type": "integer"
+                    },
+                    "additions": {
+                        "title": "Additions",
+                        "type": "integer"
+                    },
+                    "deletions": {
+                        "title": "Deletions",
+                        "type": "integer"
+                    },
+                    "changed_files": {
+                        "title": "Changed Files",
+                        "type": "integer"
+                    },
+                    "requested_reviewers": {
+                        "title": "Requested Reviewers",
+                        "type": "array",
+                        "items": {}
+                    },
+                    "requested_teams": {
+                        "title": "Requested Teams",
+                        "type": "array",
+                        "items": {}
+                    },
+                    "is_draft": {
+                        "title": "Is Draft",
+                        "type": "boolean"
+                    },
+                    "is_rebaseable": {
+                        "title": "Is Rebaseable",
+                        "type": "boolean"
+                    },
+                    "review_comments": {
+                        "title": "Review Comments",
+                        "type": "integer"
+                    },
+                    "maintainer_can_modify": {
+                        "title": "Maintainer Can Modify",
+                        "type": "boolean"
+                    },
+                    "is_mergeable": {
+                        "title": "Is Mergeable",
+                        "type": "boolean"
+                    },
+                    "mergeable_state": {
+                        "title": "Mergeable State",
+                        "type": "string"
+                    },
+                    "auto_merge": {
+                        "title": "Auto Merge",
+                        "type": "string"
+                    },
+                    "is_merged": {
+                        "title": "Is Merged",
+                        "type": "boolean"
+                    },
+                    "merged_by": {
+                        "title": "Merged By",
+                        "type": "object"
+                    },
+                    "merged_at": {
+                        "title": "Merged At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "merge_commit_sha": {
+                        "title": "Merge Commit Sha",
+                        "type": "string"
+                    },
+                    "head": {
+                        "title": "Head",
+                        "type": "object"
+                    },
+                    "base": {
+                        "title": "Base",
+                        "type": "object"
+                    },
+                    "id": {
+                        "title": "Id",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "title": "Created At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "modified_at": {
+                        "title": "Modified At",
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
             },
             "RepositorySchema": {
                 "title": "RepositorySchema",

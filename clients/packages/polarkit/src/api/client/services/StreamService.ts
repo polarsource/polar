@@ -15,14 +15,17 @@ export class StreamService {
    */
   public listen({
     organizationId,
+    repositoryId,
   }: {
     organizationId: string,
+    repositoryId: string,
   }): CancelablePromise<any> {
     return this.httpRequest.request({
       method: 'GET',
-      url: '/api/v1/stream/events/{organization_id}',
-      path: {
+      url: '/api/v1/stream',
+      query: {
         'organization_id': organizationId,
+        'repository_id': repositoryId,
       },
       errors: {
         422: `Validation Error`,

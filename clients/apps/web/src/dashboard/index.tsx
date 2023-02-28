@@ -6,6 +6,7 @@ import { useUserOrganizations } from 'polarkit/hooks'
 import Layout from 'components/Dashboard/Layout'
 import { useEventStream } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
+import { CONFIG } from 'polarkit'
 
 const Root = () => {
   return <h3 className="text-xl mt-10">Welcome</h3>
@@ -61,8 +62,7 @@ const Dashboard = () => {
 
   const organizations = userOrgQuery.data
   if (!organizations.length) {
-    window.location.href =
-      'https://github.com/apps/polar-code/installations/new'
+    window.location.replace(CONFIG.GITHUB_INSTALLATION_URL)
   }
 
   if (!currentOrg || !currentRepo) {

@@ -2,7 +2,9 @@ name: Test Server 🐍
 
 on:
   pull_request: {}
-  push: {}
+  push:
+    branches:
+      - main
 
 jobs:
   test:

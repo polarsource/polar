@@ -12,11 +12,9 @@ const RepoSelection = () => {
   const { user } = requireAuth()
   const userOrgQuery = useUserOrganizations(user?.id)
 
-  const currentOrganization = useStore((state) => state.currentOrganization)
-  const currentRepository = useStore((state) => state.currentRepository)
-  const setCurrentOrganizationAndRepository = useStore(
-    (state) => state.setCurrentOrganizationAndRepository,
-  )
+  const currentOrg = useStore((state) => state.currentOrg)
+  const currentRepo = useStore((state) => state.currentRepo)
+  const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
 
   if (!user) {
     return <div>Not authenticated</div>
@@ -32,7 +30,7 @@ const RepoSelection = () => {
 
   const setSelected = (repo: RepoListItem) => {
     const { organization, ...repoWithoutOrg } = repo
-    setCurrentOrganizationAndRepository(organization, repoWithoutOrg)
+    setCurrentOrgRepo(organization, repoWithoutOrg)
   }
 
   const onChanged = (repo: RepoListItem) => {
@@ -41,19 +39,19 @@ const RepoSelection = () => {
   }
 
   return (
-    <Listbox value={currentRepository} onChange={onChanged}>
+    <Listbox value={currentRepo} onChange={onChanged}>
       {({ open }) => (
         <>
           <div className="relative mt-1 w-full">
             <Listbox.Button className="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm">
               <span className="flex items-center">
                 <img
-                  src={currentOrganization.avatar_url}
+                  src={currentOrg.avatar_url}
                   alt=""
                   className="h-6 w-6 flex-shrink-0 rounded-full"
                 />
                 <span className="ml-3 block truncate">
-                  {currentOrganization.name} / {currentRepository.name}
+                  {currentOrg.name} / {currentRepo.name}
                 </span>
               </span>
               <span className="pointer-events-none absolute inset-y-0 right-0 ml-3 flex items-center pr-2">

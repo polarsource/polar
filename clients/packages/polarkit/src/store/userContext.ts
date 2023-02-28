@@ -19,14 +19,11 @@ export interface UserState {
 }
 
 export interface ContextState {
-  currentOrganization: OrganizationSchema | undefined
-  currentRepository: RepositorySchema | undefined
-  setCurrentOrganization: (organization: OrganizationSchema) => void
-  setCurrentRepository: (repository: RepositorySchema) => void
-  setCurrentOrganizationAndRepository: (
-    organization: OrganizationSchema,
-    repository: RepositorySchema,
-  ) => void
+  currentOrg: OrganizationSchema | undefined
+  currentRepo: RepositorySchema | undefined
+  setCurrentOrg: (org: OrganizationSchema) => void
+  setCurrentRepo: (repo: RepositorySchema) => void
+  setCurrentOrgRepo: (org: OrganizationSchema, repo: RepositorySchema) => void
 }
 
 export interface UserContextState extends UserState, ContextState {}
@@ -37,8 +34,8 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
 ) => ({
   authenticated: false,
   user: null,
-  currentOrganization: undefined,
-  currentRepository: undefined,
+  currentOrg: undefined,
+  currentRepo: undefined,
   login: (
     callback?: (authenticated: boolean) => void,
   ): CancelablePromise<UserRead> => {
@@ -64,16 +61,13 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
     })
     return request
   },
-  setCurrentOrganization: (organization: OrganizationSchema) => {
-    set({ currentOrganization: organization })
+  setCurrentOrg: (org: OrganizationSchema) => {
+    set({ currentOrg: org })
   },
-  setCurrentRepository: (repository: RepositorySchema) => {
-    set({ currentRepository: repository })
+  setCurrentRepo: (repo: RepositorySchema) => {
+    set({ currentRepo: repo })
   },
-  setCurrentOrganizationAndRepository: (
-    organization: OrganizationSchema,
-    repository: RepositorySchema,
-  ) => {
-    set({ currentOrganization: organization, currentRepository: repository })
+  setCurrentOrgRepo: (org: OrganizationSchema, repo: RepositorySchema) => {
+    set({ currentOrg: org, currentRepo: repo })
   },
 })

@@ -49,13 +49,11 @@ const router = createBrowserRouter([
 const Dashboard = () => {
   const { user } = requireAuth()
   const userOrgQuery = useUserOrganizations(user?.id)
-  const currentOrganization = useStore((state) => state.currentOrganization)
-  const currentRepository = useStore((state) => state.currentRepository)
-  const setCurrentOrganizationAndRepository = useStore(
-    (state) => state.setCurrentOrganizationAndRepository,
-  )
+  const currentOrg = useStore((state) => state.currentOrg)
+  const currentRepo = useStore((state) => state.currentRepo)
+  const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
   // TODO: Unless we're sending user-only events we should probably delay SSE
-  useEventStream(currentOrganization?.id, currentRepository?.id)
+  useEventStream(currentOrg?.id, currentRepo?.id)
 
   if (userOrgQuery.isLoading) return <div>Loading...</div>
 
@@ -67,12 +65,9 @@ const Dashboard = () => {
       'https://github.com/apps/polar-code/installations/new'
   }
 
-  if (!currentOrganization || !currentRepository) {
+  if (!currentOrg || !currentRepo) {
     const defaultSelected = organizations[0]
-    setCurrentOrganizationAndRepository(
-      defaultSelected,
-      defaultSelected.repositories[0],
-    )
+    setCurrentOrgRepo(defaultSelected, defaultSelected.repositories[0])
   }
 
   return (

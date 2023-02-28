@@ -6,6 +6,7 @@ import {
   UserContextState,
   createUserContextSlice,
 } from './userContext'
+import { CONFIG } from '../config'
 
 // https://docs.pmnd.rs/zustand/guides/typescript#slices-pattern
 const useStore = create<UserContextState>()(
@@ -15,7 +16,8 @@ const useStore = create<UserContextState>()(
         ...createUserContextSlice(...a),
       }),
       {
-        name: 'polar',
+        name: CONFIG.LOCALSTORAGE_PERSIST_KEY,
+        version: CONFIG.LOCALSTORAGE_PERSIST_VERSION,
       },
     ),
   ),

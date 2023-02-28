@@ -46,6 +46,7 @@ max-line-length = 88
 
 [tool.isort]
 profile = "black"
+known_first_party = ["polar"]
 
 [tool.mypy]
 ignore_missing_imports = true

@@ -39,13 +39,16 @@ class IssueFields:
     def organization_id(cls) -> MappedColumn[GUID | None]:
         return mapped_column(GUID, ForeignKey("organizations.id"), nullable=True)
 
+    # TODO: Delete? Lookups should be done by organization_id
     organization_name: Mapped[str] = mapped_column(String, nullable=False)
 
     @declared_attr
     def repository_id(cls) -> MappedColumn[GUID | None]:
         return mapped_column(GUID, ForeignKey("repositories.id"), nullable=True)
 
+    # TODO: Delete? Lookups should be done by repository_id
     repository_name: Mapped[str] = mapped_column(String, nullable=False)
+
     number: Mapped[int] = mapped_column(Integer, nullable=False)
 
     title: Mapped[str] = mapped_column(String, nullable=False)

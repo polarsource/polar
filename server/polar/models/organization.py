@@ -60,7 +60,6 @@ class Organization(RecordModel):
     users: "Mapped[User]" = relationship(
         "UserOrganization",
         back_populates="organization",
-        cascade="delete-orphan",
         lazy="raise_on_sql",
     )
 

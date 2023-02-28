@@ -35,6 +35,8 @@ class Repository(RecordModel):
     organization_id: Mapped[uuid.UUID | None] = mapped_column(
         GUID, ForeignKey("organizations.id"), nullable=True
     )
+
+    # TODO: Delete? Lookups should be done by organization_id
     organization_name: Mapped[str] = mapped_column(String, nullable=False)
     organization: "Mapped[Organization]" = relationship(
         "Organization",

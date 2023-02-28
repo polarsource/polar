@@ -44,13 +44,12 @@ class User(RecordModel):
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     oauth_accounts: Mapped[list[OAuthAccount]] = relationship(
-        OAuthAccount, cascade="delete-orphan", lazy="joined"
+        OAuthAccount, lazy="joined"
     )
 
     organization_associations: "Mapped[list[UserOrganization]]" = relationship(
         "UserOrganization",
         back_populates="user",
-        cascade="delete-orphan",
         lazy="raise_on_sql",
     )
 

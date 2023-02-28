@@ -4,6 +4,7 @@ import Onboarding from './Onboarding'
 import { requireAuth } from 'polarkit/hooks'
 import { useUserOrganizations } from 'polarkit/hooks'
 import Layout from 'components/Dashboard/Layout'
+import { useEventStream } from 'polarkit/hooks'
 
 const Root = () => {
   return <h3 className="text-xl mt-10">Welcome</h3>
@@ -46,8 +47,8 @@ const router = createBrowserRouter([
 
 const Dashboard = () => {
   const { user } = requireAuth()
-
   const userOrgQuery = useUserOrganizations(user?.id)
+  useEventStream()
 
   if (userOrgQuery.isLoading) return <div>Loading...</div>
 
@@ -58,7 +59,12 @@ const Dashboard = () => {
     window.location.href =
       'https://github.com/apps/polar-code/installations/new'
   }
-  return <RouterProvider router={router} />
+
+  return (
+    <>
+      <RouterProvider router={router} />
+    </>
+  )
 }
 
 export default Dashboard

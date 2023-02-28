@@ -1,5 +1,4 @@
 import asyncio
-import uuid
 
 import structlog
 from fastapi import APIRouter, Depends
@@ -28,12 +27,15 @@ async def subscribe(redis: Redis, channels: list[str]):
             await asyncio.sleep(1)
 
 
-@router.get("/events/{organization_id}")
+@router.get("")
 async def listen(
-    organization_id: str,
+    organization_id: str | None,
+    repository_id: str | None,
     user: User = Depends(current_active_user),
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:
-    # TODO: Improve how we capture the organization_id and repo_id etc
-    receivers = Receivers(user_id=user.id, organization_id=organization_id)
+    # TODO(Security): Validate user & org+repo relationships here!
+    receivers = Receivers(
+        user_id=user.id, organization_id=organization_id, repository_id=repository_id
+    )
     return EventSourceResponse(subscribe(redis, receivers.get_channels()))

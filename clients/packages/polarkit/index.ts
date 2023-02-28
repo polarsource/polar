@@ -1,8 +1,3 @@
-export { api } from './src/api'
-export {
-  QueryClient,
-  QueryClientProvider,
-  useQuery,
-} from '@tanstack/react-query'
+export { api, queryClient } from './src/api'
 
 export * from './src/QueryDemo'

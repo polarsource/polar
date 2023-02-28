@@ -25,7 +25,13 @@ async def on_issue_created(issue: Issue) -> None:
 async def on_issue_updated(issue: Issue) -> None:
     await publish(
         "issue.updated",
-        {"issue": issue.id},
+        {
+            "issue_id": issue.id,
+            "organization_id": issue.organization_id,
+            "organization_name": issue.organization_name,
+            "repository_id": issue.repository_id,
+            "repository_name": issue.repository_name,
+        },
         repository_id=issue.repository_id,
         organization_id=issue.organization_id,
     )

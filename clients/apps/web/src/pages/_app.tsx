@@ -3,19 +3,18 @@ import type { ReactElement } from 'react'
 import type { NextPageWithLayout } from 'utils/next'
 import type { AppProps } from 'next/app'
 import Layout from 'components/Website/Layout'
-import { QueryClient, QueryClientProvider } from 'polarkit'
+import { QueryClientProvider, queryClient } from 'polarkit/api'
 
 type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout
 }
-
-const queryClient = new QueryClient()
 
 const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
   let getLayout = Component.getLayout
   if (!Component.getLayout) {
     getLayout = (page: ReactElement) => <Layout>{page}</Layout>
   }
+
   return (
     <QueryClientProvider client={queryClient}>
       {getLayout(<Component {...pageProps} />)}

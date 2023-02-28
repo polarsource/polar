@@ -1,76 +1,22 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment } from 'react'
 import { Listbox, Transition } from '@headlessui/react'
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid'
 import { classNames } from 'utils/dom'
-import { useUserOrganizations } from 'polarkit/hooks'
+import { useUserOrganizations, RepoListItem } from 'polarkit/hooks'
 import { requireAuth } from 'polarkit/hooks'
-import { useNavigate, useParams } from 'react-router-dom'
-
-type Repo = {
-  id: string
-  organization: string
-  repo: string
-  avatar: string
-}
+import { useStore } from 'polarkit/store'
+import { useNavigate } from 'react-router-dom'
 
 const RepoSelection = () => {
   const navigate = useNavigate()
-  const params = useParams()
-
-  const [repos, setRepos] = useState<Repo[]>([])
-
-  const [selected, setSelected] = useState<Repo>({
-    id: 'TODO',
-    organization: 'Loading...',
-    repo: 'Loading...',
-    avatar: 'TODO',
-  })
-
   const { user } = requireAuth()
-
   const userOrgQuery = useUserOrganizations(user?.id)
 
-  const organizations = userOrgQuery.data
-
-  useEffect(() => {
-    if (userOrgQuery.isSuccess) {
-      const r = organizations
-        .map((org) => {
-          return org.repositories.map((repo) => {
-            return {
-              id: repo.id,
-              organization: org.name,
-              repo: repo.name,
-              avatar: org.avatar_url,
-            }
-          })
-        })
-        .flat()
-
-      setRepos(r)
-
-      // Try to select repo from URL
-      let didSetSelected = false
-      if (params && params.orgSlug && params.repoSlug) {
-        const repo = r.find(
-          (r) =>
-            r.organization.toLowerCase() === params.orgSlug.toLowerCase() &&
-            r.repo.toLowerCase() === params.repoSlug.toLowerCase(),
-        )
-
-        if (repo) {
-          setSelected(repo)
-          didSetSelected = true
-          return
-        }
-      }
-
-      // Fallback to select first repo in list
-      if (!didSetSelected) {
-        setSelected(r[0])
-      }
-    }
-  }, [organizations, params, userOrgQuery.isSuccess])
+  const currentOrganization = useStore((state) => state.currentOrganization)
+  const currentRepository = useStore((state) => state.currentRepository)
+  const setCurrentOrganizationAndRepository = useStore(
+    (state) => state.setCurrentOrganizationAndRepository,
+  )
 
   if (!user) {
     return <div>Not authenticated</div>
@@ -81,25 +27,33 @@ const RepoSelection = () => {
 
   if (!userOrgQuery.isSuccess) return <div>Error</div>
 
-  const onChanged = (repo: Repo) => {
+  const organizations = userOrgQuery.data
+  const repositories = userOrgQuery.repositories
+
+  const setSelected = (repo: RepoListItem) => {
+    const { organization, ...repoWithoutOrg } = repo
+    setCurrentOrganizationAndRepository(organization, repoWithoutOrg)
+  }
+
+  const onChanged = (repo: RepoListItem) => {
     setSelected(repo)
-    navigate(`/dashboard/${repo.organization}/${repo.repo}`)
+    navigate(`/dashboard/${repo.organization.name}/${repo.name}`)
   }
 
   return (
-    <Listbox value={selected} onChange={onChanged}>
+    <Listbox value={currentRepository} onChange={onChanged}>
       {({ open }) => (
         <>
           <div className="relative mt-1 w-full">
             <Listbox.Button className="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm">
               <span className="flex items-center">
                 <img
-                  src={selected.avatar}
+                  src={currentOrganization.avatar_url}
                   alt=""
                   className="h-6 w-6 flex-shrink-0 rounded-full"
                 />
                 <span className="ml-3 block truncate">
-                  {selected.organization} / {selected.repo}
+                  {currentOrganization.name} / {currentRepository.name}
                 </span>
               </span>
               <span className="pointer-events-none absolute inset-y-0 right-0 ml-3 flex items-center pr-2">
@@ -118,7 +72,7 @@ const RepoSelection = () => {
               leaveTo="opacity-0"
             >
               <Listbox.Options className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                {repos.map((repo) => (
+                {repositories.map((repo) => (
                   <Listbox.Option
                     key={repo.id}
                     className={({ active }) =>
@@ -133,7 +87,7 @@ const RepoSelection = () => {
                       <>
                         <div className="flex items-center">
                           <img
-                            src={repo.avatar}
+                            src={repo.organization.avatar_url}
                             alt=""
                             className="h-6 w-6 flex-shrink-0 rounded-full"
                           />
@@ -143,7 +97,7 @@ const RepoSelection = () => {
                               'ml-3 block truncate',
                             )}
                           >
-                            {repo.organization} / {repo.repo}
+                            {repo.organization.name} / {repo.name}
                           </span>
                         </div>
 

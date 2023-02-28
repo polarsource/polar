@@ -54,6 +54,7 @@ const Dashboard = () => {
   const setCurrentOrganizationAndRepository = useStore(
     (state) => state.setCurrentOrganizationAndRepository,
   )
+  // TODO: Unless we're sending user-only events we should probably delay SSE
   useEventStream(currentOrganization?.id, currentRepository?.id)
 
   if (userOrgQuery.isLoading) return <div>Loading...</div>
@@ -64,6 +65,14 @@ const Dashboard = () => {
   if (!organizations.length) {
     window.location.href =
       'https://github.com/apps/polar-code/installations/new'
+  }
+
+  if (!currentOrganization || !currentRepository) {
+    const defaultSelected = organizations[0]
+    setCurrentOrganizationAndRepository(
+      defaultSelected,
+      defaultSelected.repositories[0],
+    )
   }
 
   return (

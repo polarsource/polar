@@ -23,12 +23,9 @@ class OAuthAccount(RecordModel):
     refresh_token: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     account_id: Mapped[str] = mapped_column(String(320), index=True, nullable=False)
     account_email: Mapped[str] = mapped_column(String(320), nullable=False)
-
-    @declared_attr
-    def user_id(cls) -> Mapped[GUID]:
-        return mapped_column(
-            GUID, ForeignKey("users.id", ondelete="cascade"), nullable=False
-        )
+    user_id: Mapped[GUID] = mapped_column(
+        GUID, ForeignKey("users.id", ondelete="cascade"), nullable=False
+    )
 
 
 class User(RecordModel):

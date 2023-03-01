@@ -4,6 +4,7 @@ from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
+from polar.models.reward import Reward
 from polar.models.user import OAuthAccount, User
 from polar.models.user_organization import UserOrganization
 
@@ -19,4 +20,5 @@ __all__ = [
     "Repository",
     "Issue",
     "PullRequest",
+    "Reward",
 ]

@@ -11,7 +11,7 @@ class CreateReward(Base):
     amount: Decimal
 
 
-class UpdateRewardSchema(CreateReward):
+class UpdateReward(CreateReward):
     ...
 
 

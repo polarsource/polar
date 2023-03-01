@@ -1,5 +1,7 @@
 from blinker import signal  # type: ignore[import]
 
+repository_issue_synced = signal("repository.issue.synced")
+
 issue_created = signal("issue.created")
 issue_updated = signal("issue.updated")
 

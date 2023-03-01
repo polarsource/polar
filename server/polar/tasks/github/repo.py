@@ -1,6 +1,6 @@
 import structlog
 
-from polar import actions
+from polar import actions, signals
 from polar.ext.sqlalchemy.types import GUID
 from polar.models import Organization, Repository
 from polar.postgres import AsyncSession
@@ -47,6 +47,12 @@ async def sync_repository_issues(
             updated=issue.was_updated,
             issue=issue.id,
             title=issue.title,
+        )
+
+        await signals.repository_issue_synced.send_async(
+            repository,
+            organization=organization,
+            issue=issue,
         )
 
 

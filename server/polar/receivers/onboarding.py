@@ -2,9 +2,29 @@ import structlog
 
 from polar import signals
 from polar.event import publish
-from polar.models import Issue, PullRequest
+from polar.models import Issue, Organization, PullRequest, Repository
 
 log = structlog.get_logger()
+
+
+@signals.repository_issue_synced.connect
+async def on_repository_issue_synced(
+    sender: Repository, organization: Organization, issue: Issue
+) -> None:
+    log.info("repository.issue.synced", issue=issue.id, title=issue.title)
+    await publish(
+        "issue.synced",
+        {
+            "issue": {
+                "id": issue.id,
+                "title": issue.title,
+            },
+            "open_issues": sender.open_issues,
+            "repository_id": sender.id,
+        },
+        organization_id=organization.id,
+    )
+
 
 ###############################################################################
 # Just a dummy implementation for now.

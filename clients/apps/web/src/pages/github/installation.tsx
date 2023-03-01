@@ -19,26 +19,35 @@ const GithubInstallationPage: NextPage = ({ query }) => {
   const { authenticated } = useAuth()
   const [installed, setInstalled] = useState(false)
 
-  const install = async (query) => {
-    return await api.integrations
-      .install({
-        requestBody: {
-          platform: InstallationCreate.platform.GITHUB,
-          external_id: parseInt(query.installation_id),
-        },
-      })
+  const install = (query) => {
+    const request = api.integrations.install({
+      requestBody: {
+        platform: InstallationCreate.platform.GITHUB,
+        external_id: parseInt(query.installation_id),
+      },
+    })
+
+    request
       .then((res) => {
         setInstalled(true)
       })
       .catch((err) => {
         setInstalled(true)
       })
+    return request
   }
 
   useEffect(() => {
-    if (isInstallationCallback(query)) {
-      install(query)
+    if (!isInstallationCallback(query)) {
       return
+    }
+
+    const request = install(query)
+
+    return () => {
+      if (request) {
+        request.cancel()
+      }
     }
   }, [])
 

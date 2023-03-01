@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from polar.actions import pull_request, repository
 from polar.api.deps import current_active_user, get_db_session
-from polar.auth.repository import RepositoryAuth
+from polar.auth.repository import repository_auth
 from polar.models import User
 from polar.models.pull_request import PullRequest
 from polar.platforms import Platforms
@@ -39,7 +39,7 @@ async def get_repository_pull_requests(
         )
 
     # Validate that the user has access to the repository
-    if not await RepositoryAuth.can_write(session, user, repo):
+    if not await repository_auth.can_write(session, user, repo):
         raise HTTPException(
             status_code=403,
             detail="User does not have access to this repository",

@@ -42,7 +42,7 @@ class OrganizationActions(Action[Organization, CreateOrganization, UpdateOrganiz
             .where(UserOrganization.user_id == user_id)
         )
         res = await session.execute(statement)
-        orgs = res.scalars().all()
+        orgs = res.scalars().unique().all()
         return orgs
 
     async def get_all_org_repos_by_user_id(

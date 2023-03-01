@@ -6,13 +6,15 @@ import ReactTimeAgo from 'react-time-ago'
 import TimeAgo from 'javascript-time-ago'
 import en from 'javascript-time-ago/locale/en.json'
 import IssueReward from "./IssueReward"
-import { PullRequestSchema } from "api/client"
+import { type PullRequestSchema, type RewardSchema } from "api/client"
 import IssuePullRequest from "./IssuePullRequest"
+import IssueActivityBox from "./IssueActivityBox"
 
 TimeAgo.addDefaultLocale(en)
 
 export type Issue = IssueSchema & {
     pullRequests: PullRequestSchema[],
+    rewards: RewardSchema[],
 }
 
 const IssueListItem = (props: { issue: Issue }) => {
@@ -45,11 +47,15 @@ const IssueListItem = (props: { issue: Issue }) => {
                 </div>
             </div>
 
-            <IssueReward>
-                {props.issue.pullRequests.map((pr) => {
+            <IssueActivityBox>
+                {props.issue.rewards.map((reward: RewardSchema) => {
+                    return <IssueReward reward={reward} key={reward.id} />
+                })}
+
+                {props.issue.pullRequests.map((pr: PullRequestSchema) => {
                     return <IssuePullRequest issue={props.issue} pullRequest={pr} key={pr.number} />
                 })}
-            </IssueReward>
+            </IssueActivityBox>
         </div>
     )
 }

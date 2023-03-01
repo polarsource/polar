@@ -46,6 +46,7 @@ async def record(session: AsyncSession) -> AsyncGenerator[TestModel, None]:
     yield record
 
 
+@pytest.mark.anyio
 def test_uuid_generator(mocker: MockerFixture) -> None:
     guid = uuid.uuid4()
     uuid4_mock = mocker.patch.object(uuid, "uuid4")
@@ -55,6 +56,7 @@ def test_uuid_generator(mocker: MockerFixture) -> None:
     assert generated == guid.hex
 
 
+@pytest.mark.anyio
 def test_uuid_processing() -> None:
     instance = GUID()
 

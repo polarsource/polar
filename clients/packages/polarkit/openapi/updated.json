@@ -810,6 +810,52 @@
                 ]
             }
         },
+        "/api/v1/rewards": {
+            "post": {
+                "tags": [
+                    "rewards"
+                ],
+                "summary": "Create Rewawrd",
+                "operationId": "create_rewawrd",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateReward"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RewardSchema"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
+        },
         "/api/v1/rewards/{platform}/{organization_name}/{name}": {
             "get": {
                 "tags": [
@@ -914,6 +960,24 @@
                     "client_secret": {
                         "title": "Client Secret",
                         "type": "string"
+                    }
+                }
+            },
+            "CreateReward": {
+                "title": "CreateReward",
+                "required": [
+                    "issue_id",
+                    "amount"
+                ],
+                "type": "object",
+                "properties": {
+                    "issue_id": {
+                        "title": "Issue Id",
+                        "type": "string"
+                    },
+                    "amount": {
+                        "title": "Amount",
+                        "type": "number"
                     }
                 }
             },
@@ -1567,125 +1631,15 @@
             "RewardSchema": {
                 "title": "RewardSchema",
                 "required": [
-                    "platform",
-                    "external_id",
-                    "organization_name",
-                    "repository_name",
-                    "number",
-                    "title",
-                    "state",
-                    "is_locked",
-                    "issue_created_at",
                     "issue_id",
                     "amount",
                     "id",
-                    "created_at"
+                    "created_at",
+                    "repository_id",
+                    "organization_id"
                 ],
                 "type": "object",
                 "properties": {
-                    "platform": {
-                        "$ref": "#/components/schemas/Platforms"
-                    },
-                    "external_id": {
-                        "title": "External Id",
-                        "type": "integer"
-                    },
-                    "organization_id": {
-                        "title": "Organization Id",
-                        "type": "string"
-                    },
-                    "organization_name": {
-                        "title": "Organization Name",
-                        "type": "string"
-                    },
-                    "repository_id": {
-                        "title": "Repository Id",
-                        "type": "string"
-                    },
-                    "repository_name": {
-                        "title": "Repository Name",
-                        "type": "string"
-                    },
-                    "number": {
-                        "title": "Number",
-                        "type": "integer"
-                    },
-                    "title": {
-                        "title": "Title",
-                        "type": "string"
-                    },
-                    "body": {
-                        "title": "Body",
-                        "type": "string"
-                    },
-                    "comments": {
-                        "title": "Comments",
-                        "type": "integer"
-                    },
-                    "author": {
-                        "title": "Author",
-                        "type": "object"
-                    },
-                    "author_association": {
-                        "title": "Author Association",
-                        "type": "string"
-                    },
-                    "labels": {
-                        "title": "Labels",
-                        "type": "array",
-                        "items": {}
-                    },
-                    "assignee": {
-                        "title": "Assignee",
-                        "type": "object"
-                    },
-                    "assignees": {
-                        "title": "Assignees",
-                        "type": "array",
-                        "items": {}
-                    },
-                    "milestone": {
-                        "title": "Milestone",
-                        "type": "object"
-                    },
-                    "closed_by": {
-                        "title": "Closed By",
-                        "type": "object"
-                    },
-                    "reactions": {
-                        "title": "Reactions",
-                        "type": "object"
-                    },
-                    "state": {
-                        "$ref": "#/components/schemas/State"
-                    },
-                    "state_reason": {
-                        "title": "State Reason",
-                        "type": "string"
-                    },
-                    "is_locked": {
-                        "title": "Is Locked",
-                        "type": "boolean"
-                    },
-                    "lock_reason": {
-                        "title": "Lock Reason",
-                        "type": "string"
-                    },
-                    "issue_closed_at": {
-                        "title": "Issue Closed At",
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "issue_modified_at": {
-                        "title": "Issue Modified At",
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "issue_created_at": {
-                        "title": "Issue Created At",
-                        "type": "string",
-                        "format": "date-time"
-                    },
                     "issue_id": {
                         "title": "Issue Id",
                         "type": "string"
@@ -1702,6 +1656,14 @@
                         "title": "Created At",
                         "type": "string",
                         "format": "date-time"
+                    },
+                    "repository_id": {
+                        "title": "Repository Id",
+                        "type": "string"
+                    },
+                    "organization_id": {
+                        "title": "Organization Id",
+                        "type": "string"
                     }
                 }
             },

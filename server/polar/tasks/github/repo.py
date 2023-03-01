@@ -4,7 +4,7 @@ from polar import actions, signals
 from polar.ext.sqlalchemy.types import GUID
 from polar.models import Organization, Repository
 from polar.postgres import AsyncSession
-from polar.worker import asyncify_task, task
+from polar.worker import get_db_session, sync_worker, task
 
 log = structlog.get_logger()
 
@@ -28,26 +28,26 @@ async def get_organization_and_repo(
 
 
 @task(name="github.repo.sync.issues")
-@asyncify_task(with_session=True)
+@sync_worker()
 async def sync_repository_issues(
-    session: AsyncSession,
     organization_id: GUID,
     repository_id: GUID,
 ) -> None:
-    organization, repository = await get_organization_and_repo(
-        session, organization_id, repository_id
-    )
-    async for issue in actions.github_repository.sync_issues(
-        session, organization, repository
-    ):
-        log.info(
-            "github.repo.sync.issues",
-            state="synced",
-            created=issue.was_created,
-            updated=issue.was_updated,
-            issue=issue.id,
-            title=issue.title,
+    async with get_db_session() as session:
+        organization, repository = await get_organization_and_repo(
+            session, organization_id, repository_id
         )
+        async for issue in actions.github_repository.sync_issues(
+            session, organization, repository
+        ):
+            log.info(
+                "github.repo.sync.issues",
+                state="synced",
+                created=issue.was_created,
+                updated=issue.was_updated,
+                issue=issue.id,
+                title=issue.title,
+            )
 
         await signals.repository_issue_synced.send_async(
             repository,
@@ -57,32 +57,31 @@ async def sync_repository_issues(
 
 
 @task(name="github.repo.sync.pull_requests")
-@asyncify_task(with_session=True)
+@sync_worker()
 async def sync_repository_pull_requests(
-    session: AsyncSession,
     organization_id: GUID,
     repository_id: GUID,
 ) -> None:
-    organization, repository = await get_organization_and_repo(
-        session, organization_id, repository_id
-    )
-    async for pull in actions.github_repository.sync_pull_requests(
-        session, organization, repository
-    ):
-        log.info(
-            "github.repo.sync.pull_requests",
-            state="synced",
-            created=pull.was_created,
-            updated=pull.was_updated,
-            issue=pull.id,
-            title=pull.title,
+    async with get_db_session() as session:
+        organization, repository = await get_organization_and_repo(
+            session, organization_id, repository_id
         )
+        async for pull in actions.github_repository.sync_pull_requests(
+            session, organization, repository
+        ):
+            log.info(
+                "github.repo.sync.pull_requests",
+                state="synced",
+                created=pull.was_created,
+                updated=pull.was_updated,
+                issue=pull.id,
+                title=pull.title,
+            )
 
 
 @task(name="github.repo.sync")
-@asyncify_task(with_session=True)
+@sync_worker()
 async def sync_repository(
-    session: AsyncSession,
     organization_id: GUID,
     repository_id: GUID,
 ) -> None:

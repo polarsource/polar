@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { CreateReward } from '../models/CreateReward';
 import type { Platforms } from '../models/Platforms';
 import type { RewardSchema } from '../models/RewardSchema';
 
@@ -10,6 +11,27 @@ import type { BaseHttpRequest } from '../core/BaseHttpRequest';
 export class RewardsService {
 
   constructor(public readonly httpRequest: BaseHttpRequest) {}
+
+  /**
+   * Create Rewawrd
+   * @returns RewardSchema Successful Response
+   * @throws ApiError
+   */
+  public createRewawrd({
+    requestBody,
+  }: {
+    requestBody: CreateReward,
+  }): CancelablePromise<RewardSchema> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/rewards',
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
 
   /**
    * Get Repository Rewards

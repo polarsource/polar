@@ -10,6 +10,7 @@ export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
 export type { Body_users_auth_jwt_login } from './models/Body_users_auth_jwt_login';
+export type { CreateReward } from './models/CreateReward';
 export type { ErrorModel } from './models/ErrorModel';
 export type { HTTPValidationError } from './models/HTTPValidationError';
 export { InstallationCreate } from './models/InstallationCreate';
@@ -29,6 +30,7 @@ export { Visibility } from './models/Visibility';
 export type { WebhookResponse } from './models/WebhookResponse';
 
 export { $Body_users_auth_jwt_login } from './schemas/$Body_users_auth_jwt_login';
+export { $CreateReward } from './schemas/$CreateReward';
 export { $ErrorModel } from './schemas/$ErrorModel';
 export { $HTTPValidationError } from './schemas/$HTTPValidationError';
 export { $InstallationCreate } from './schemas/$InstallationCreate';

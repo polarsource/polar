@@ -73,7 +73,9 @@ class GithubIssueActions(IssueActions):
             organization_id=organization_id,
             repository_id=repository_id,
         )
-        return records[0]
+        if records:
+            return records[0]
+        return []
 
     async def store_many(
         self,
@@ -104,6 +106,15 @@ class GithubIssueActions(IssueActions):
                 continue
 
             schemas.append(create_schema)
+
+        if not schemas:
+            log.warning(
+                "github.issue",
+                error="no issues to store",
+                organization_id=organization_id,
+                repository_id=repository_id,
+            )
+            return []
 
         return await self.upsert_many(
             session, schemas, index_elements=[Issue.external_id]

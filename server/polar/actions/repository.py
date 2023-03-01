@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, AsyncGenerator
 
 import structlog
 from sqlalchemy import Column
@@ -7,7 +7,7 @@ from polar.actions.base import Action
 from polar.actions.issue import github_issue
 from polar.actions.pull_request import github_pull_request
 from polar.clients import github
-from polar.models import Organization, Repository
+from polar.models import Issue, Organization, PullRequest, Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
 from polar.schema.repository import CreateRepository, UpdateRepository
@@ -39,7 +39,7 @@ class GithubRepositoryActions(RepositoryActions):
         sort: str = "updated",
         direction: str = "desc",
         per_page: int = 30,
-    ) -> list[github.rest.Issue]:
+    ) -> AsyncGenerator[Issue, None]:
         client = github.get_app_installation_client(organization.installation_id)
         async for gh_issue in client.paginate(
             client.rest.issues.async_list_for_repo,
@@ -53,7 +53,7 @@ class GithubRepositoryActions(RepositoryActions):
             if not gh_issue:
                 break
 
-            await github_issue.store(
+            record = await github_issue.store(
                 session,
                 organization.name,
                 repository.name,
@@ -61,6 +61,8 @@ class GithubRepositoryActions(RepositoryActions):
                 organization_id=organization.id,
                 repository_id=repository.id,
             )
+            if record:
+                yield record
 
     async def sync_pull_requests(
         self,
@@ -71,7 +73,7 @@ class GithubRepositoryActions(RepositoryActions):
         sort: str = "updated",
         direction: str = "desc",
         per_page: int = 30,
-    ) -> list[github.rest.PullRequest]:
+    ) -> AsyncGenerator[PullRequest, None]:
         client = github.get_app_installation_client(organization.installation_id)
         async for gh_pull in client.paginate(
             client.rest.pulls.async_list,
@@ -85,7 +87,7 @@ class GithubRepositoryActions(RepositoryActions):
             if not gh_pull:
                 break
 
-            await github_pull_request.store(
+            record = await github_pull_request.store(
                 session,
                 organization.name,
                 repository.name,
@@ -93,6 +95,8 @@ class GithubRepositoryActions(RepositoryActions):
                 organization_id=organization.id,
                 repository_id=repository.id,
             )
+            if record:
+                yield record
 
     async def upsert_many(
         self,

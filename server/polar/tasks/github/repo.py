@@ -37,7 +37,17 @@ async def sync_repository_issues(
     organization, repository = await get_organization_and_repo(
         session, organization_id, repository_id
     )
-    await actions.github_repository.sync_issues(session, organization, repository)
+    async for issue in actions.github_repository.sync_issues(
+        session, organization, repository
+    ):
+        log.info(
+            "github.repo.sync.issues",
+            state="synced",
+            created=issue.was_created,
+            updated=issue.was_updated,
+            issue=issue.id,
+            title=issue.title,
+        )
 
 
 @task(name="github.repo.sync.pull_requests")
@@ -50,9 +60,17 @@ async def sync_repository_pull_requests(
     organization, repository = await get_organization_and_repo(
         session, organization_id, repository_id
     )
-    await actions.github_repository.sync_pull_requests(
+    async for pull in actions.github_repository.sync_pull_requests(
         session, organization, repository
-    )
+    ):
+        log.info(
+            "github.repo.sync.pull_requests",
+            state="synced",
+            created=pull.was_created,
+            updated=pull.was_updated,
+            issue=pull.id,
+            title=pull.title,
+        )
 
 
 @task(name="github.repo.sync")

@@ -1,5 +1,6 @@
 from typing import Any, Sequence
 
+import structlog
 from sqlalchemy.orm import MappedColumn
 
 from polar.actions.base import Action
@@ -9,6 +10,8 @@ from polar.models.pull_request import PullRequest
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
 from polar.schema.pull_request import CreatePullRequest, UpdatePullRequest
+
+log = structlog.get_logger()
 
 TGithubPR = (
     github.rest.PullRequest
@@ -61,7 +64,9 @@ class GithubPullRequestActions(PullRequestAction):
             organization_id=organization_id,
             repository_id=repository_id,
         )
-        return records[0]
+        if records:
+            return records[0]
+        return []
 
     async def store_many(
         self,
@@ -82,6 +87,15 @@ class GithubPullRequestActions(PullRequestAction):
             )
 
         create_schemas = [parse(pr) for pr in data]
+        if not create_schemas:
+            log.warning(
+                "github.pull_request",
+                error="no pull requests to store",
+                organization_id=organization_id,
+                repository_id=repository_id,
+            )
+            return []
+
         return await self.upsert_many(
             session, create_schemas, index_elements=[PullRequest.external_id]
         )

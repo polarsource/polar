@@ -5,6 +5,7 @@ import { api } from 'polarkit'
 import { useAuth } from 'polarkit/hooks'
 import { useSSE } from 'polarkit/hooks'
 import InitLayout from 'components/Dashboard/InitLayout'
+import { InstallationCreate } from 'polarkit/api/client'
 
 const isInstallationCallback = (query) => {
   return query.installation_id !== undefined
@@ -22,7 +23,7 @@ const GithubInstallationPage: NextPage = ({ query }) => {
     return await api.integrations
       .install({
         requestBody: {
-          platform: query.provider,
+          platform: InstallationCreate.platform.GITHUB,
           external_id: parseInt(query.installation_id),
         },
       })

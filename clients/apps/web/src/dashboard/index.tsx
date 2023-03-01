@@ -22,7 +22,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: '/dashboard/onboarding/init',
+    path: '/dashboard/initialize/:orgSlug',
     element: (
       <Layout>
         <Onboarding />

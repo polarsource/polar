@@ -3,21 +3,15 @@ import type { NextPage } from 'next'
 import { useEffect, useState } from 'react'
 import { api } from 'polarkit'
 import { useAuth } from 'polarkit/hooks'
-import { useSSE } from 'polarkit/hooks'
-import { InstallationCreate } from 'polarkit/api/client'
+import { useRouter } from 'next/router'
+import { InstallationCreate, OrganizationSchema } from 'polarkit/api/client'
 import Layout from 'components/Layout/GithubCallback'
 
-const isInstallationCallback = (query) => {
-  return query.installation_id !== undefined
-}
-
-const SyncRepo = () => {
-  return <h1>Syncing repo</h1>
-}
-
 const GithubInstallationPage: NextPage = ({ query }) => {
+  const router = useRouter()
   const { authenticated } = useAuth()
-  const [installed, setInstalled] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [installed, setInstalled] = useState<OrganizationSchema | null>(null)
 
   const install = (query) => {
     const request = api.integrations.install({
@@ -28,31 +22,34 @@ const GithubInstallationPage: NextPage = ({ query }) => {
     })
 
     request
-      .then((res) => {
-        setInstalled(true)
+      .then((organization) => {
+        setInstalled(organization)
       })
       .catch((err) => {
-        setInstalled(true)
+        if (err.isCancelled) return
+        setError('Error installing organization')
       })
     return request
   }
 
   useEffect(() => {
-    if (!isInstallationCallback(query)) {
+    if (!query.installation_id) {
       return
     }
 
     const request = install(query)
-
     return () => {
       if (request) {
         request.cancel()
       }
     }
-  }, [])
+  }, [query])
+
+  if (error) return <p>Error: {error}</p>
 
   if (installed) {
-    return <SyncRepo />
+    router.replace(`/dashboard/initialize/${installed.name}`)
+    return
   }
   return <h1>Installing...</h1>
 }

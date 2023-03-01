@@ -2,17 +2,16 @@ import { requireAuth } from 'polarkit/hooks'
 import { useParams } from 'react-router-dom'
 import { api } from 'polarkit'
 
-const Organization = () => {
+const Onboarding = () => {
   const { currentUser } = requireAuth()
-  const { slug } = useParams()
-
-  //   const organization = developer.getOrganizationBySlug(slug)
+  const { orgSlug } = useParams()
 
   return (
     <>
       <h1>Onboarding</h1>
+      <p>Let's create some magic: {orgSlug}</p>
     </>
   )
 }
 
-export default Organization
+export default Onboarding

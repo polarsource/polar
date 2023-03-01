@@ -10,7 +10,7 @@ from polar.models.issue import Issue
 from polar.models.reward import Reward
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
-from polar.schema.reward import CreateReward, RewardSchema
+from polar.schema.reward import CreateReward, RewardSchema, State
 
 router = APIRouter(prefix="/rewards", tags=["rewards"])
 
@@ -60,6 +60,7 @@ async def create_rewawrd(
         repository_id=repo.id,
         organization_id=repo.organization_id,
         amount=reward.amount,
+        state=State.created,
     )
 
     return created

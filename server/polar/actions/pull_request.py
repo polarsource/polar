@@ -44,6 +44,25 @@ class GithubPullRequestActions(PullRequestAction):
     ) -> PullRequest | None:
         return await self.get_by_platform(session, Platforms.github, external_id)
 
+    async def store(
+        self,
+        session: AsyncSession,
+        organization_name: str,
+        repository_name: str,
+        data: TGithubPR,
+        organization_id: GUID | None = None,
+        repository_id: GUID | None = None,
+    ) -> PullRequest:
+        records = await self.store_many(
+            session,
+            organization_name,
+            repository_name,
+            [data],
+            organization_id=organization_id,
+            repository_id=repository_id,
+        )
+        return records[0]
+
     async def store_many(
         self,
         session: AsyncSession,

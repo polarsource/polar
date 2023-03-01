@@ -21,8 +21,9 @@ https://stackoverflow.com/questions/4107915/postgresql-default-constraint-names/
 """
 import sqlalchemy as sa
 from alembic import op
-from polar.ext.sqlalchemy import GUID
 from sqlalchemy.dialects import postgresql
+
+from polar.ext.sqlalchemy import GUID
 
 # revision identifiers, used by Alembic.
 revision: str = "8fb1fcc039a1"

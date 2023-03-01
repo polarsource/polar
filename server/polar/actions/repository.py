@@ -1,15 +1,17 @@
 from typing import Any
 
 import structlog
+from sqlalchemy import Column
+
 from polar.actions.base import Action
+from polar.actions.issue import github_issue
+from polar.actions.pull_request import github_pull_request
+from polar.clients import github
 from polar.models import Organization, Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
 from polar.schema.repository import CreateRepository, UpdateRepository
 from polar.tasks.github.repo import sync_repository
-from sqlalchemy import Column
-
-from polar.clients import github
 
 log = structlog.get_logger()
 
@@ -28,41 +30,69 @@ class GithubRepositoryActions(RepositoryActions):
             session, platform=Platforms.github, external_id=external_id
         )
 
-    async def fetch_issues(
+    async def sync_issues(
         self,
+        session: AsyncSession,
         organization: Organization,
         repository: Repository,
+        state: str = "open",
+        sort: str = "updated",
+        direction: str = "desc",
+        per_page: int = 30,
     ) -> list[github.rest.Issue]:
         client = github.get_app_installation_client(organization.installation_id)
-        response = await client.rest.issues.async_list_for_repo(
+        async for gh_issue in client.paginate(
+            client.rest.issues.async_list_for_repo,
             owner=organization.name,
             repo=repository.name,
-            state="open",
-            sort="updated",
-            direction="desc",
-        )
-        github.ensure_expected_response(response)
-        return response.parsed_data
+            state=state,
+            sort=sort,
+            direction=direction,
+            per_page=per_page,
+        ):
+            if not gh_issue:
+                break
 
-    async def fetch_pull_requests(
+            await github_issue.store(
+                session,
+                organization.name,
+                repository.name,
+                gh_issue,
+                organization_id=organization.id,
+                repository_id=repository.id,
+            )
+
+    async def sync_pull_requests(
         self,
+        session: AsyncSession,
         organization: Organization,
         repository: Repository,
+        state: str = "open",
+        sort: str = "updated",
+        direction: str = "desc",
         per_page: int = 30,
-        page: int = 1,
     ) -> list[github.rest.PullRequest]:
         client = github.get_app_installation_client(organization.installation_id)
-        response = await client.rest.pulls.async_list(
+        async for gh_pull in client.paginate(
+            client.rest.pulls.async_list,
             owner=organization.name,
             repo=repository.name,
-            state="open",
-            sort="updated",
-            direction="desc",
+            state=state,
+            sort=sort,
+            direction=direction,
             per_page=per_page,
-            page=page,
-        )
-        github.ensure_expected_response(response)
-        return response.parsed_data
+        ):
+            if not gh_pull:
+                break
+
+            await github_pull_request.store(
+                session,
+                organization.name,
+                repository.name,
+                gh_pull,
+                organization_id=organization.id,
+                repository_id=repository.id,
+            )
 
     async def upsert_many(
         self,
@@ -76,9 +106,7 @@ class GithubRepositoryActions(RepositoryActions):
         for instance in instances:
             sync_repository.delay(
                 instance.organization_id,
-                instance.organization_name,
                 instance.id,
-                instance.name,
             )
         return instances
 

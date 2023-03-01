@@ -32,34 +32,12 @@ async def get_organization_and_repo(
 async def sync_repository_issues(
     session: AsyncSession,
     organization_id: GUID,
-    organization_name: str,
     repository_id: GUID,
-    repository_name: str,
-    per_page: int = 30,
-    page: int = 1,
 ) -> None:
     organization, repository = await get_organization_and_repo(
         session, organization_id, repository_id
     )
-    issues = await actions.github_repository.fetch_issues(organization, repository)
-
-    if not issues:
-        log.warning(
-            "no issues found",
-            organization_name=organization_name,
-            repository_name=repository_name,
-        )
-        return
-
-    # TODO: Handle pagination via new task
-    await actions.github_issue.store_many(
-        session,
-        organization_name,
-        repository_name,
-        issues,
-        organization_id=organization_id,
-        repository_id=repository_id,
-    )
+    await actions.github_repository.sync_issues(session, organization, repository)
 
 
 @task(name="github.repo.sync.pull_requests")
@@ -67,33 +45,13 @@ async def sync_repository_issues(
 async def sync_repository_pull_requests(
     session: AsyncSession,
     organization_id: GUID,
-    organization_name: str,
     repository_id: GUID,
-    repository_name: str,
-    per_page: int = 30,
-    page: int = 1,
 ) -> None:
     organization, repository = await get_organization_and_repo(
         session, organization_id, repository_id
     )
-    prs = await actions.github_repository.fetch_pull_requests(organization, repository)
-
-    if not prs:
-        log.warning(
-            "no pull requests found",
-            organization_name=organization_name,
-            repository_name=repository_name,
-        )
-        return
-
-    # TODO: Handle pagination via new task
-    await actions.github_pull_request.store_many(
-        session,
-        organization_name,
-        repository_name,
-        prs,
-        organization_id=organization_id,
-        repository_id=repository_id,
+    await actions.github_repository.sync_pull_requests(
+        session, organization, repository
     )
 
 
@@ -102,15 +60,9 @@ async def sync_repository_pull_requests(
 async def sync_repository(
     session: AsyncSession,
     organization_id: GUID,
-    organization_name: str,
     repository_id: GUID,
-    repository_name: str,
 ) -> None:
     # TODO: A bit silly to call a task scheduling... tasks.
     # Should the invocation of this function skip .delay?
-    sync_repository_issues.delay(
-        organization_id, organization_name, repository_id, repository_name
-    )
-    sync_repository_pull_requests.delay(
-        organization_id, organization_name, repository_id, repository_name
-    )
+    sync_repository_issues.delay(organization_id, repository_id)
+    sync_repository_pull_requests.delay(organization_id, repository_id)

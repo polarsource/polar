@@ -105,8 +105,6 @@ async def test_webhook_installation_created(
         session, installation_id=installation_id
     )
 
-    print("zegl", org)
-
     assert org is not None
     assert org.external_id == account["id"]
     assert org.name == account["login"]
@@ -256,6 +254,9 @@ async def test_webhook_pull_request_opened(
 
     pr = await actions.github_pull_request.get_by_external_id(session, pr_id)
     assert pr is not None
+
+    assert pr.additions == 3
+    assert pr.deletions == 1
 
 
 @pytest.mark.anyio

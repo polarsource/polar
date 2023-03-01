@@ -55,7 +55,7 @@ class GithubPullRequestActions(PullRequestAction):
         data: TGithubPR,
         organization_id: GUID | None = None,
         repository_id: GUID | None = None,
-    ) -> PullRequest:
+    ) -> PullRequest | None:
         records = await self.store_many(
             session,
             organization_name,
@@ -66,7 +66,7 @@ class GithubPullRequestActions(PullRequestAction):
         )
         if records:
             return records[0]
-        return []
+        return None
 
     async def store_many(
         self,

@@ -1,3 +1,4 @@
+import contextlib
 import functools
 from typing import Awaitable, Callable, ParamSpec, TypeVar
 
@@ -20,13 +21,12 @@ task = app.task
 Params = ParamSpec("Params")
 ReturnValue = TypeVar("ReturnValue")
 
-
 AsyncSessionLocal = create_sessionmaker(engine=create_engine(is_celery=True))
 
 
-def asyncify_task(
-    with_session: bool = False,
-) -> Callable[[Callable[Params, ReturnValue]], Callable[Params, ReturnValue]]:
+def sync_worker() -> Callable[
+    [Callable[Params, ReturnValue]], Callable[Params, ReturnValue]
+]:
     def a2s(
         f: Callable[Params, Awaitable[ReturnValue]]
     ) -> Callable[Params, Awaitable[ReturnValue]]:
@@ -34,23 +34,24 @@ def asyncify_task(
         # an asyncio event loop and can skip the async_to_sync wrapper.
         if settings.CELERY_TASK_ALWAYS_EAGER:
             return f
-        return async_to_sync(f)  # type: ignore
-
-    async def inject_session(
-        f: Callable[Params, Awaitable[ReturnValue]],
-        *args: Params.args,
-        **kwargs: Params.kwargs
-    ) -> ReturnValue:
-        async with AsyncSessionLocal() as session:
-            return await f(session, *args, **kwargs)
+        return async_to_sync(f)
 
     def decorator(f: Callable[Params, ReturnValue]) -> Callable[Params, ReturnValue]:
         @functools.wraps(f)
         def wrapper(*args: Params.args, **kwargs: Params.kwargs) -> ReturnValue:
-            if not with_session:
-                return a2s(f)(*args, **kwargs)  # type: ignore
-            return a2s(inject_session)(f, *args, **kwargs)  # type: ignore
+            return a2s(f)(*args, **kwargs)
 
         return wrapper
 
     return decorator
+
+
+@contextlib.asynccontextmanager
+async def get_db_session():
+    try:
+        engine = create_engine(is_celery=True)
+        db = create_sessionmaker(engine=engine)()
+        yield db
+    finally:
+        await db.close()
+        await engine.dispose()

@@ -11,7 +11,7 @@ from polar.schema.issue import IssueSchema
 from polar.schema.organization import CreateOrganization
 from polar.schema.pull_request import CreatePullRequest, PullRequestSchema
 from polar.schema.repository import CreateRepository
-from polar.worker import asyncify_task, task
+from polar.worker import get_db_session, sync_worker, task
 
 log = structlog.get_logger()
 
@@ -153,51 +153,51 @@ async def upsert_pull_request(
 
 
 async def repositories_changed(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    event = get_event(scope, action, payload)
-    # TODO: Verify that this works even for personal Github accounts?
-    organization = await actions.github_organization.get_by_external_id(
-        session, event.installation.account.id
-    )
-    if not organization:
-        log.critical(
-            "suspicuous github webhook!",
-            webhook_id=event.id,
-            github_event=f"{scope}.{action}",
-            organization=event.installation.account.login,
+    async with get_db_session() as session:
+        event = get_event(scope, action, payload)
+        # TODO: Verify that this works even for personal Github accounts?
+        organization = await actions.github_organization.get_by_external_id(
+            session, event.installation.account.id
         )
-        return dict(success=False)
+        if not organization:
+            log.critical(
+                "suspicuous github webhook!",
+                webhook_id=event.id,
+                github_event=f"{scope}.{action}",
+                organization=event.installation.account.login,
+            )
+            return dict(success=False)
 
-    added, deleted = 0, 0
-    if event.repositories_added:
-        instances = await add_repositories(
-            session, organization, event.repositories_added
-        )
-        added = len(instances)
+        added, deleted = 0, 0
+        if event.repositories_added:
+            instances = await add_repositories(
+                session, organization, event.repositories_added
+            )
+            added = len(instances)
 
-    if event.repositories_removed:
-        deleted = await remove_repositories(
-            session, organization, event.repositories_removed
-        )
+        if event.repositories_removed:
+            deleted = await remove_repositories(
+                session, organization, event.repositories_removed
+            )
 
-    return dict(success=True, added=added, removed=deleted)
+        return dict(success=True, added=added, removed=deleted)
 
 
 @task(name="github.webhook.repository.added")
-@asyncify_task(with_session=True)
+@sync_worker()
 async def repositories_added(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await repositories_changed(session, scope, action, payload)
+    return await repositories_changed(scope, action, payload)
 
 
 @task(name="github.webhook.repository.removed")
-@asyncify_task(with_session=True)
 async def repositories_removed(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await repositories_changed(session, scope, action, payload)
+    return await repositories_changed(scope, action, payload)
 
 
 # ------------------------------------------------------------------------------
@@ -206,128 +206,133 @@ async def repositories_removed(
 
 
 async def handle_issue(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    event = get_event(scope, action, payload)
-    issue = await upsert_issue(session, event)
-    if not issue:
-        # TODO: Handle better
-        return dict(success=False, reason="Could not save issue")
+    async with get_db_session() as session:
+        event = get_event(scope, action, payload)
+        issue = await upsert_issue(session, event)
+        if not issue:
+            # TODO: Handle better
+            return dict(success=False, reason="Could not save issue")
 
-    # TODO: Comment instead? Via event trigger too?
-    # actions.github_issue.add_actions(installation["id"], issue)
-    schema = IssueSchema.from_orm(issue)
-    return dict(success=True, issue=schema.dict())
+        # TODO: Comment instead? Via event trigger too?
+        # actions.github_issue.add_actions(installation["id"], issue)
+        schema = IssueSchema.from_orm(issue)
+        return dict(success=True, issue=schema.dict())
 
 
 @task(name="github.webhook.issue.created")
-@asyncify_task(with_session=True)
-async def issue_opened(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
-) -> dict[str, Any]:
-    return await handle_issue(session, scope, action, payload)
+@sync_worker()
+async def issue_opened(scope: str, action: str, payload: dict[str, Any]) -> dict[str, Any]:
+    return await handle_issue(scope, action, payload)
 
 
 @task(name="github.webhook.issue.edited")
-@asyncify_task(with_session=True)
+@sync_worker()
 async def issue_edited(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await handle_issue(session, scope, action, payload)
+    return await handle_issue(scope, action, payload)
 
 
 @task(name="github.webhook.issue.closed")
-@asyncify_task(with_session=True)
-async def issue_closed(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
-) -> dict[str, Any]:
-    event = get_event(scope, action, payload)
-
-    # TODO: Handle me
-
-    return dict(success=True)
+@sync_worker()
+async def issue_closed(scope: str, action: str, payload: dict[str, Any]) -> dict[str, Any]:
+    return await handle_issue(scope, action, payload)
 
 
 @task(name="github.webhook.issue.labeled")
-@asyncify_task(with_session=True)
-async def issue_labeled(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
-) -> dict[str, Any]:
-    # TODO: Change from upsert here?
-    # Potentially not since we might have race conditions between
-    # webhooks for installations and our own historical syncing vs.
-    # new issues coming in via other events in the meantime.
-    event = get_event(scope, action, payload)
-    issue = await upsert_issue(session, event)
-    if not issue:
-        # TODO: Handle better
-        return dict(success=False, reason="Could not save issue")
+@sync_worker()
+async def issue_labeled(scope: str, action: str, payload: dict[str, Any]) -> dict[str, Any]:
+    return await issue_labeled_async(scope, action, payload)
 
-    schema = IssueSchema.from_orm(issue)
-    return dict(success=True, issue=schema.dict())
+
+async def issue_labeled_async(
+    scope: str, action: str, payload: dict[str, Any]
+) -> dict[str, Any]:
+    async with get_db_session() as session:
+        # TODO: Change from upsert here?
+        # Potentially not since we might have race conditions between
+        # webhooks for installations and our own historical syncing vs.
+        # new issues coming in via other events in the meantime.
+        event = get_event(scope, action, payload)
+        issue = await upsert_issue(session, event)
+        if not issue:
+            # TODO: Handle better
+            return dict(success=False, reason="Could not save issue")
+
+        schema = IssueSchema.from_orm(issue)
+        return dict(success=True, issue=schema.dict())
 
 
 # ------------------------------------------------------------------------------
 # PULL REQUESTS
 # ------------------------------------------------------------------------------
 
-
 async def handle_pull_request(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    event = get_event(scope, action, payload)
-    pr = await upsert_pull_request(session, event)
-    if not pr:
-        return dict(success=False, reason="Could not save PR")
+    async with get_db_session() as session:
+        event = get_event(scope, action, payload)
+        pr = await upsert_pull_request(session, event)
+        if not pr:
+            return dict(success=False, reason="Could not save PR")
 
-    schema = PullRequestSchema.from_orm(pr)
-    return dict(success=True, pull_request=schema.dict())
+        schema = PullRequestSchema.from_orm(pr)
+        return dict(success=True, pull_request=schema.dict())
 
 
 @task(name="github.webhook.pull_request.created")
-@asyncify_task(with_session=True)
+@sync_worker()
 async def pull_request_opened(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await handle_pull_request(session, scope, action, payload)
+    return await handle_pull_request(scope, action, payload)
 
 
 @task(name="github.webhook.pull_request.edited")
-@asyncify_task(with_session=True)
+@sync_worker()
 async def pull_request_edited(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await handle_pull_request(session, scope, action, payload)
+    return await handle_pull_request(scope, action, payload)
 
 
 @task(name="github.webhook.pull_request.closed")
-@asyncify_task(with_session=True)
+@sync_worker()
 async def pull_request_closed(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await handle_pull_request(session, scope, action, payload)
+    return await handle_pull_request(scope, action, payload)
 
 
 @task(name="github.webhook.pull_request.reopened")
-@asyncify_task(with_session=True)
+@sync_worker()
 async def pull_request_reopened(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await handle_pull_request(session, scope, action, payload)
+    return await handle_pull_request(scope, action, payload)
 
 
 @task(name="github.webhook.pull_request.synchronize")
-@asyncify_task(with_session=True)
+@sync_worker()
 async def pull_request_synchronize(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    event = get_event(scope, action, payload)
-    pr = await upsert_pull_request(session, event)
-    if not pr:
-        return dict(success=False, reason="Could not sync PR")
+    return await pull_request_synchronize_async(scope, action, payload)
 
-    schema = PullRequestSchema.from_orm(pr)
-    return dict(success=True, pull_request=schema.dict())
+
+async def pull_request_synchronize_async(
+    scope: str, action: str, payload: dict[str, Any]
+) -> dict[str, Any]:
+    async with get_db_session() as session:
+        event = get_event(scope, action, payload)
+        pr = await upsert_pull_request(session, event)
+        if not pr:
+            return dict(success=False, reason="Could not sync PR")
+
+        schema = PullRequestSchema.from_orm(pr)
+        return dict(success=True, pull_request=schema.dict())
 
 
 # ------------------------------------------------------------------------------
@@ -336,68 +341,73 @@ async def pull_request_synchronize(
 
 
 @task(name="github.webhook.installation.created")
-@asyncify_task(with_session=True)
+@sync_worker()
 async def installation_created(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
     # TODO: Handle user permission?
 
-    payload = github.patch_unset("requester", payload)
-    event = get_event(scope, action, payload)
+    async with get_db_session() as session:
 
-    # TODO: Move this into its own schema helper
-    account = event.installation.account
-    is_personal = account.type.lower() == "user"
-    create_schema = CreateOrganization(
-        platform=Platforms.github,
-        name=account.login,
-        external_id=account.id,
-        avatar_url=account.avatar_url,
-        is_personal=is_personal,
-        is_site_admin=account.site_admin,
-        installation_id=event.installation.id,
-        installation_created_at=event.installation.created_at,
-        installation_modified_at=event.installation.updated_at,
-        installation_suspended_at=event.installation.suspended_at,
-    )
-    organization = await actions.github_organization.upsert(session, create_schema)
-    await add_repositories(session, organization, event.repositories)
-    return dict(success=True)
+        payload = github.patch_unset("requester", payload)
+        event = get_event(scope, action, payload)
+
+        # TODO: Move this into its own schema helper
+        account = event.installation.account
+        is_personal = account.type.lower() == "user"
+        create_schema = CreateOrganization(
+            platform=Platforms.github,
+            name=account.login,
+            external_id=account.id,
+            avatar_url=account.avatar_url,
+            is_personal=is_personal,
+            is_site_admin=account.site_admin,
+            installation_id=event.installation.id,
+            installation_created_at=event.installation.created_at,
+            installation_modified_at=event.installation.updated_at,
+            installation_suspended_at=event.installation.suspended_at,
+        )
+        organization = await actions.github_organization.upsert(session, create_schema)
+        await add_repositories(session, organization, event.repositories)
+        return dict(success=True)
 
 
 @task(name="github.webhook.installation.deleted")
-@asyncify_task(with_session=True)
+@sync_worker()
 async def installation_delete(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    event = get_event(scope, action, payload)
-    await actions.github_organization.remove(session, event.installation.id)
-    return dict(success=True)
+    async with get_db_session() as session:
+        event = get_event(scope, action, payload)
+        await actions.github_organization.remove(session, event.installation.id)
+        return dict(success=True)
 
 
 @task(name="github.webhook.installation.suspended")
-@asyncify_task(with_session=True)
+@sync_worker()
 async def installation_suspend(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    event = get_event(scope, action, payload)
+    async with get_db_session() as session:
+        event = get_event(scope, action, payload)
 
-    await actions.github_organization.suspend(
-        session,
-        event.installation.id,
-        event.installation.suspended_by,
-        event.installation.suspended_at,
-        event.sender.id,
-    )
-    return dict(success=True)
+        await actions.github_organization.suspend(
+            session,
+            event.installation.id,
+            event.installation.suspended_by,
+            event.installation.suspended_at,
+            event.sender.id,
+        )
+        return dict(success=True)
 
 
 @task(name="github.webhook.installation.unsuspended")
-@asyncify_task(with_session=True)
+@sync_worker()
 async def installation_unsuspend(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    event = get_event(scope, action, payload)
+    async with get_db_session() as session:
+        event = get_event(scope, action, payload)
 
-    await actions.github_organization.unsuspend(session, event.installation.id)
-    return dict(success=True)
+        await actions.github_organization.unsuspend(session, event.installation.id)
+        return dict(success=True)

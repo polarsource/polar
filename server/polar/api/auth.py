@@ -3,17 +3,19 @@ from typing import Any, Literal
 
 import structlog
 from fastapi import Request, Response
-from fastapi_users import BaseUserManager, UUIDIDMixin
+from fastapi_users import BaseUserManager, UUIDIDMixin, models
 from fastapi_users.authentication import (
     AuthenticationBackend,
     CookieTransport,
     JWTStrategy,
+    Strategy,
 )
 from httpx_oauth.clients.github import GitHubOAuth2
+from pydantic import BaseModel
+
 from polar.actions import github_user
 from polar.config import settings
 from polar.models import User
-from pydantic import BaseModel
 
 log = structlog.get_logger()
 
@@ -59,18 +61,35 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
 class AuthCookieResponse(BaseModel):
     action: Literal["login", "logout"]
     success: bool
+    has_organizations: bool | None = False
 
 
 class PolarAuthCookie(CookieTransport):
     async def get_login_response(
-        self, token: str, response: Response
+        self, token: str, user: User, response: Response
     ) -> AuthCookieResponse:
         await super().get_login_response(token, response)
-        return AuthCookieResponse(action="login", success=True)
+        has_organizations = bool(user.organizations)
+        return AuthCookieResponse(
+            action="login", success=True, has_organizations=has_organizations
+        )
 
     async def get_logout_response(self, response: Response) -> AuthCookieResponse:
         await super().get_logout_response(response)
-        return AuthCookieResponse(action="logout", success=True)
+        return AuthCookieResponse(action="logout", success=True, has_organizations=None)
+
+
+class PolarAuthBackend(AuthenticationBackend):
+    transport: PolarAuthCookie
+
+    async def login(
+        self,
+        strategy: Strategy[models.UP, models.ID],
+        user: User,
+        response: Response,
+    ) -> Any:
+        token = await strategy.write_token(user)  # type: ignore
+        return await self.transport.get_login_response(token, user, response)
 
 
 def get_jwt_strategy() -> JWTStrategy:
@@ -84,7 +103,7 @@ cookie_transport = PolarAuthCookie(
     cookie_name="polar",
     cookie_max_age=60 * 60 * 24 * 31,  # 31 days
 )
-auth_backend = AuthenticationBackend(
+auth_backend = PolarAuthBackend(
     name="jwt",
     transport=cookie_transport,
     get_strategy=get_jwt_strategy,

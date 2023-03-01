@@ -12,42 +12,7 @@ const Root = () => {
   return <h3 className="text-xl mt-10">Welcome</h3>
 }
 
-const router = createBrowserRouter([
-  {
-    path: '/dashboard',
-    element: (
-      <Layout>
-        <Root />
-      </Layout>
-    ),
-  },
-  {
-    path: '/dashboard/initialize/:orgSlug',
-    element: (
-      <Layout>
-        <Onboarding />
-      </Layout>
-    ),
-  },
-  {
-    path: '/dashboard/:orgSlug',
-    element: (
-      <Layout>
-        <Organization />
-      </Layout>
-    ),
-  },
-  {
-    path: '/dashboard/:orgSlug/:repoSlug',
-    element: (
-      <Layout>
-        <Organization />
-      </Layout>
-    ),
-  },
-])
-
-const Dashboard = () => {
+const DashboardEnvironment = ({ children }) => {
   const { currentUser } = requireAuth()
   const userOrgQuery = useUserOrganizations(currentUser?.id)
   const currentOrg = useStore((state) => state.currentOrg)
@@ -71,6 +36,47 @@ const Dashboard = () => {
       setCurrentOrgRepo(defaultSelected, defaultSelected.repositories[0])
     }
   }
+
+  return (
+    <>
+      <Layout>{children}</Layout>
+    </>
+  )
+}
+
+const router = createBrowserRouter([
+  {
+    path: '/dashboard',
+    element: (
+      <DashboardEnvironment>
+        <Root />
+      </DashboardEnvironment>
+    ),
+  },
+  {
+    path: '/dashboard/initialize/:orgSlug',
+    element: <Onboarding />,
+  },
+  {
+    path: '/dashboard/:orgSlug',
+    element: (
+      <DashboardEnvironment>
+        <Organization />
+      </DashboardEnvironment>
+    ),
+  },
+  {
+    path: '/dashboard/:orgSlug/:repoSlug',
+    element: (
+      <DashboardEnvironment>
+        <Organization />
+      </DashboardEnvironment>
+    ),
+  },
+])
+
+const Dashboard = () => {
+  const { currentUser } = requireAuth()
 
   return (
     <>

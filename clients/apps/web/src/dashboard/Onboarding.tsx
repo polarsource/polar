@@ -1,10 +1,19 @@
 import { requireAuth } from 'polarkit/hooks'
+import { useUserOrganizations } from 'polarkit/hooks'
 import { useParams } from 'react-router-dom'
-import { api } from 'polarkit'
+import { useSSE } from 'polarkit/hooks'
+import { useStore } from 'polarkit/store'
 
 const Onboarding = () => {
-  const { currentUser } = requireAuth()
   const { orgSlug } = useParams()
+  const { currentUser } = requireAuth()
+  const userOrgQuery = useUserOrganizations(currentUser?.id)
+  const currentOrg = useStore((state) => state.currentOrg)
+  useSSE(currentOrg?.id)
+
+  if (userOrgQuery.isLoading) return <div>Loading...</div>
+
+  if (!userOrgQuery.isSuccess) return <div>Error</div>
 
   return (
     <>

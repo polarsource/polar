@@ -2,11 +2,12 @@ import asyncio
 
 import structlog
 from fastapi import APIRouter, Depends
+from sse_starlette.sse import EventSourceResponse
+
 from polar.api.deps import current_active_user, get_redis
 from polar.event import Receivers
 from polar.models import User
 from polar.redis import Redis
-from sse_starlette.sse import EventSourceResponse
 
 router = APIRouter(prefix="/stream", tags=["stream"])
 
@@ -30,7 +31,7 @@ async def subscribe(redis: Redis, channels: list[str]):
 @router.get("")
 async def listen(
     organization_id: str | None,
-    repository_id: str | None,
+    repository_id: str | None = None,
     user: User = Depends(current_active_user),
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:

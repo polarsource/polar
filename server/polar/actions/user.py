@@ -1,12 +1,11 @@
 import structlog
 from fastapi_users.db import SQLAlchemyUserDatabase
-from sqlalchemy.orm import joinedload
 
 from polar.actions.base import Action
 from polar.clients import github
-from polar.models import OAuthAccount, User
+from polar.models import User
 from polar.models.user import User
-from polar.postgres import AsyncSession, sql
+from polar.postgres import AsyncSession
 from polar.schema.user import UserCreate, UserUpdate
 
 log = structlog.get_logger()
@@ -15,16 +14,7 @@ log = structlog.get_logger()
 # Subclass of the database manager for FastAPI-Users
 # since we are likely going to override a few methods.
 class UserDatabase(SQLAlchemyUserDatabase):
-    async def get_by_oauth_account(self, oauth: str, account_id: str) -> User | None:
-        statement = (
-            sql.select(User)
-            .join(User.oauth_accounts)
-            .join(User.organization_associations)
-            .options(joinedload(User.organization_associations))
-            .where(OAuthAccount.oauth_name == oauth)
-            .where(OAuthAccount.account_id == account_id)
-        )
-        return await self._get_user(statement)
+    ...
 
 
 class UserActions(Action[User, UserCreate, UserUpdate]):

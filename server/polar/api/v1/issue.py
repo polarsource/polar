@@ -1,6 +1,7 @@
 from typing import Sequence
 
 from fastapi import APIRouter, Depends, HTTPException
+
 from polar.actions import issue, repository
 from polar.api.deps import current_active_user, get_db_session
 from polar.auth.repository import RepositoryAuth
@@ -35,7 +36,7 @@ async def get_repository_issues(
         )
 
     # Validate that the user has access to the repository
-    if not RepositoryAuth.can_write(session, user, repo):
+    if not await RepositoryAuth.can_write(session, user, repo):
         raise HTTPException(
             status_code=403,
             detail="User does not have access to this repository",

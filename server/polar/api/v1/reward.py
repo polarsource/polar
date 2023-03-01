@@ -37,7 +37,7 @@ async def get_repository_rewards(
         )
 
     # Validate that the user has access to the repository
-    if not RepositoryAuth.can_write(session, user, repo):
+    if not await RepositoryAuth.can_write(session, user, repo):
         raise HTTPException(
             status_code=403,
             detail="User does not have access to this repository",

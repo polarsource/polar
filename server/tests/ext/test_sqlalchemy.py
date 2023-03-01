@@ -21,8 +21,6 @@ async def record(session: AsyncSession) -> AsyncGenerator[TestModel, None]:
     hex = _uuid.hex
     input = dict(guid=_uuid, status=StatusFlag.ACTIVE)
 
-    print("zegl", _uuid, hex, input)
-
     instance = TestModel(
         guid=input["guid"],
         status=input["status"],

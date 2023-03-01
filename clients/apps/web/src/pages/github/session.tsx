@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import InitLayout from 'components/Dashboard/InitLayout'
 import { useGithubOAuthCallback } from 'polarkit/hooks'
 
-const InitSessionPage: NextPageWithLayout = ({
+const GithubAuthPage: NextPageWithLayout = ({
   query,
 }: {
   query: {
@@ -25,7 +25,7 @@ const InitSessionPage: NextPageWithLayout = ({
   return <h1>Authenticating</h1>
 }
 
-InitSessionPage.getLayout = (page: ReactElement) => {
+GithubAuthPage.getLayout = (page: ReactElement) => {
   return <InitLayout>{page}</InitLayout>
 }
 
@@ -35,4 +35,4 @@ export const getServerSideProps = async (context) => {
   return { props: { query } }
 }
 
-export default InitSessionPage
+export default GithubAuthPage

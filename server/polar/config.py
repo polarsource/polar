@@ -46,9 +46,7 @@ class Settings(BaseSettings):
     GITHUB_APP_PRIVATE_KEY: str = ""
     GITHUB_CLIENT_ID: str = ""
     GITHUB_CLIENT_SECRET: str = ""
-    GITHUB_REDIRECT_URL: str = (
-        "http://127.0.0.1:3000/dashboard/init/session?provider=github"
-    )
+    GITHUB_REDIRECT_URL: str = "http://127.0.0.1:3000/github/session"
 
     class Config:
         env_prefix = "polar_"

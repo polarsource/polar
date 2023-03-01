@@ -3,13 +3,18 @@ import type { NextPage } from 'next'
 import { useEffect, useState } from 'react'
 import { api } from 'polarkit'
 import { useAuth } from 'polarkit/hooks'
+import { useSSE } from 'polarkit/hooks'
 import InitLayout from 'components/Dashboard/InitLayout'
 
 const isInstallationCallback = (query) => {
-  return query.provider === 'github' && query.installation_id
+  return query.installation_id !== undefined
 }
 
-const InitInstallationPage: NextPage = ({ query }) => {
+const SyncRepo = () => {
+  return <h1>Syncing repo</h1>
+}
+
+const GithubInstallationPage: NextPage = ({ query }) => {
   const { authenticated } = useAuth()
   const [installed, setInstalled] = useState(false)
 
@@ -37,12 +42,12 @@ const InitInstallationPage: NextPage = ({ query }) => {
   }, [])
 
   if (installed) {
-    return <h1>Time to install repos</h1>
+    return <SyncRepo />
   }
   return <h1>Installing...</h1>
 }
 
-InitInstallationPage.getLayout = (page: ReactElement) => {
+GithubInstallationPage.getLayout = (page: ReactElement) => {
   return <InitLayout>{page}</InitLayout>
 }
 
@@ -52,4 +57,4 @@ export const getServerSideProps = async (context) => {
   return { props: { query } }
 }
 
-export default InitInstallationPage
+export default GithubInstallationPage

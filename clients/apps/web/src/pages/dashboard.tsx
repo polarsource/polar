@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic'
 import { requireAuth } from 'polarkit/hooks'
 import { useRouter } from 'next/router'
 
-const Dashboard = dynamic(() => import('../../dashboard'), {
+const Dashboard = dynamic(() => import('../dashboard'), {
   ssr: false,
 })
 

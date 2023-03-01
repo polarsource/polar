@@ -1,5 +1,5 @@
 import { default as IssueListItem, type Issue } from "./IssueListItem"
-import { type IssueSchema, type PullRequestSchema } from "polarkit/api/client"
+import { type IssueSchema, type PullRequestSchema, type RewardSchema } from "polarkit/api/client"
 
 const lastTimestamp = (issue: IssueSchema) => {
     const timestamps = [
@@ -27,11 +27,16 @@ const pullRequestsForIssue = (issue: IssueSchema, pullRequests: PullRequestSchem
     return filtered
 };
 
-const IssueList = (props: { issues: IssueSchema[], pullRequests: PullRequestSchema[] }) => {
-    const { issues, pullRequests } = props
+const IssueList = (props: {
+    issues: IssueSchema[],
+    pullRequests: PullRequestSchema[],
+    rewards: RewardSchema[],
+}) => {
+    const { issues, pullRequests, rewards } = props
 
-    if (!issues) return <div>Loading...</div>
-    if (!pullRequests) return <div>Loading...</div>
+    if (!issues) return <div>Loading issues...</div>
+    if (!pullRequests) return <div>Loading pull requests...</div>
+    if (!rewards) return <div>Loading rewards...</div>
 
     const sortByActivity = (a: IssueSchema, b: IssueSchema) => {
         const aDate = lastTimestamp(a)
@@ -43,6 +48,7 @@ const IssueList = (props: { issues: IssueSchema[], pullRequests: PullRequestSche
         return {
             ...issue,
             pullRequests: pullRequestsForIssue(issue, pullRequests),
+            rewards: rewards.filter((reward) => reward.issue_id === issue.id),
         }
     })
 

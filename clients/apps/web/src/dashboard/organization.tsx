@@ -2,7 +2,7 @@ import { requireAuth } from 'polarkit/hooks'
 import { useParams } from 'react-router-dom'
 import { api } from 'polarkit'
 import { IssueList } from 'polarkit/components'
-import { useRepositoryIssues, useRepositoryPullRequests } from 'polarkit/hooks'
+import { useRepositoryIssues, useRepositoryPullRequests, useRepositoryRewards } from 'polarkit/hooks'
 
 const StripeAccountLink = ({ organization, stripeId }) => {
   const redirect = async () => {
@@ -68,12 +68,12 @@ const Organization = () => {
   const repositoryPullRequestQuery = useRepositoryPullRequests(orgSlug, repoSlug)
   const pullRequests = repositoryPullRequestQuery.data
 
+  const repositoryRewardsQuery = useRepositoryRewards(orgSlug, repoSlug)
+  const repositoryRewards = repositoryRewardsQuery.data
 
   return (
     <div>
-      {orgSlug} / {repoSlug}
-
-      <IssueList issues={issues} pullRequests={pullRequests} />
+      <IssueList issues={issues} pullRequests={pullRequests} rewards={repositoryRewards} />
     </div>
   )
 

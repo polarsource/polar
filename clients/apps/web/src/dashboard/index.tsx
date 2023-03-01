@@ -67,7 +67,9 @@ const Dashboard = () => {
 
   if (!currentOrg || !currentRepo) {
     const defaultSelected = organizations[0]
-    setCurrentOrgRepo(defaultSelected, defaultSelected.repositories[0])
+    if (defaultSelected) {
+      setCurrentOrgRepo(defaultSelected, defaultSelected.repositories[0])
+    }
   }
 
   return (

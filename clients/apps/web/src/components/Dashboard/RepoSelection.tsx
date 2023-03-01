@@ -38,6 +38,10 @@ const RepoSelection = () => {
     navigate(`/dashboard/${repo.organization.name}/${repo.name}`)
   }
 
+  if (!currentOrg || !currentRepo) {
+    return null
+  }
+
   return (
     <Listbox value={currentRepo} onChange={onChanged}>
       {({ open }) => (

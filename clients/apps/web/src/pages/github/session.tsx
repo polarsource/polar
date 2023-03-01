@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react'
 import type { NextPageWithLayout } from 'utils/next'
 import { useRouter } from 'next/router'
-import InitLayout from 'components/Dashboard/InitLayout'
+import Layout from 'components/Layout/GithubCallback'
 import { useGithubOAuthCallback } from 'polarkit/hooks'
 
 const GithubAuthPage: NextPageWithLayout = ({
@@ -26,7 +26,7 @@ const GithubAuthPage: NextPageWithLayout = ({
 }
 
 GithubAuthPage.getLayout = (page: ReactElement) => {
-  return <InitLayout>{page}</InitLayout>
+  return <Layout>{page}</Layout>
 }
 
 export const getServerSideProps = async (context) => {

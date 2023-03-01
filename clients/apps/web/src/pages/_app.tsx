@@ -2,7 +2,7 @@ import '../styles/globals.css'
 import type { ReactElement } from 'react'
 import type { NextPageWithLayout } from 'utils/next'
 import type { AppProps } from 'next/app'
-import Layout from 'components/Website/Layout'
+import Layout from 'components/Layout/Website'
 import { QueryClientProvider, queryClient } from 'polarkit/api'
 
 type AppPropsWithLayout = AppProps & {

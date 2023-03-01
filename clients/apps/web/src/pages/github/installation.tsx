@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 import { api } from 'polarkit'
 import { useAuth } from 'polarkit/hooks'
 import { useSSE } from 'polarkit/hooks'
-import InitLayout from 'components/Dashboard/InitLayout'
 import { InstallationCreate } from 'polarkit/api/client'
+import Layout from 'components/Layout/GithubCallback'
 
 const isInstallationCallback = (query) => {
   return query.installation_id !== undefined
@@ -49,7 +49,7 @@ const GithubInstallationPage: NextPage = ({ query }) => {
 }
 
 GithubInstallationPage.getLayout = (page: ReactElement) => {
-  return <InitLayout>{page}</InitLayout>
+  return <Layout>{page}</Layout>
 }
 
 export const getServerSideProps = async (context) => {

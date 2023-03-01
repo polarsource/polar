@@ -6,12 +6,63 @@ from polar.actions import repository, reward
 from polar.api.deps import current_active_user, get_db_session
 from polar.auth.repository import repository_auth
 from polar.models import User
+from polar.models.issue import Issue
 from polar.models.reward import Reward
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
-from polar.schema.reward import RewardSchema
+from polar.schema.reward import CreateReward, RewardSchema
 
 router = APIRouter(prefix="/rewards", tags=["rewards"])
+
+
+@router.post("", response_model=RewardSchema)
+async def create_rewawrd(
+    reward: CreateReward,
+    user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> Reward:
+    issue = await Issue.find(session=session, id=reward.issue_id)
+
+    if not issue:
+        raise HTTPException(
+            status_code=404,
+            detail="Issue not found",
+        )
+
+    if not issue.repository_id:
+        raise HTTPException(
+            status_code=404,
+            detail="Issue does not belong to a repository",
+        )
+
+    repo = await repository.get(
+        session=session,
+        id=issue.repository_id,
+    )
+
+    if not repo:
+        raise HTTPException(
+            status_code=404,
+            detail="Repository not found",
+        )
+
+    # Validate that the user has access to the repository
+    if not await repository_auth.can_write(session, user, repo):
+        raise HTTPException(
+            status_code=403,
+            detail="User does not have access to this repository",
+        )
+
+    # Create the reward
+    created = await Reward.create(
+        session=session,
+        issue_id=issue.id,
+        repository_id=repo.id,
+        organization_id=repo.organization_id,
+        amount=reward.amount,
+    )
+
+    return created
 
 
 @router.get("/{platform}/{organization_name}/{name}", response_model=list[RewardSchema])

@@ -18,7 +18,6 @@ def create_engine(is_celery: bool = False) -> AsyncEngine:
         # TODO: Change pooling strategy for celery workers.
         # In the meantime, we're using NullPool to avoid
         # issues with asyncio in Celery.
-        print("ZEGL", "Using NullPool for Celery workers")
         engine_options.update(dict(poolclass=NullPool))
 
     return create_async_engine(settings.postgres_dsn, **engine_options)

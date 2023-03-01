@@ -75,3 +75,17 @@ export const useRepositoryPullRequests = (
       enabled: !!repoOwner && !!repoName,
     },
   )
+
+export const useRepositoryRewards = (repoOwner: string, repoName: string) =>
+  useQuery(
+    ['rewards', 'repo', repoOwner, repoName],
+    () =>
+      api.rewards.getRepositoryRewards({
+        platform: Platforms.GITHUB,
+        organizationName: repoOwner,
+        name: repoName,
+      }),
+    {
+      enabled: !!repoOwner && !!repoName,
+    },
+  )

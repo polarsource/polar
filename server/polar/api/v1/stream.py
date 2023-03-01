@@ -25,7 +25,7 @@ async def subscribe(redis: Redis, channels: list[str]):
                 yield message["data"]
 
             # TODO: Move this to a configuration setting
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.1)
 
 
 @router.get("")

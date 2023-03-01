@@ -87,6 +87,7 @@ importers:
       axios: ^0.27.2
       eslint: ^7.32.0
       eslint-config-custom: workspace:*
+      eventemitter3: ^5.0.0
       form-data: ^4.0.0
       openapi-typescript-codegen: ^0.23.0
       react: ^17.0.2
@@ -97,6 +98,7 @@ importers:
     dependencies:
       '@tanstack/react-query': 4.24.10_6l5554ty5ajsajah6yazvrjhoe
       axios: 0.27.2
+      eventemitter3: 5.0.0
       react: 17.0.2
       react-time-ago: 7.2.1_gviu3oa3rgogzcgmsccpdnt6hi
       zustand: 4.3.3_react@17.0.2
@@ -1707,6 +1709,10 @@ packages:
   /esutils/2.0.3:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
     engines: {node: '>=0.10.0'}
+
+  /eventemitter3/5.0.0:
+    resolution: {integrity: sha512-riuVbElZZNXLeLEoprfNYoDSwTBRR44X3mnhdI1YcnENpWTCsTTVZ2zFuqQcpoyqPQIUXdiPEU0ECAq0KQRaHg==}
+    dev: false
 
   /fast-deep-equal/3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}

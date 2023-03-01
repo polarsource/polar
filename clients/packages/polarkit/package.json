@@ -18,6 +18,7 @@
   "dependencies": {
     "@tanstack/react-query": "^4.24.6",
     "axios": "^0.27.2",
+    "eventemitter3": "^5.0.0",
     "react": "^17.0.2",
     "react-time-ago": "^7.2.1",
     "zustand": "^4.3.3"

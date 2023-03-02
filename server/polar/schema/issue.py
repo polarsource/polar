@@ -31,8 +31,8 @@ class Base(Schema):
     platform: Platforms
     external_id: int
 
-    organization_id: str
-    repository_id: str
+    organization_id: uuid.UUID
+    repository_id: uuid.UUID
     number: int
 
     title: str

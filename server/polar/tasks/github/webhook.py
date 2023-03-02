@@ -39,7 +39,6 @@ async def add_repositories(
             platform=Platforms.github,
             external_id=repo.id,
             organization_id=organization.id,
-            organization_name=organization.name,
             name=repo.name,
             is_private=repo.private,
         )

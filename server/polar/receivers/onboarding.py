@@ -9,7 +9,10 @@ log = structlog.get_logger()
 
 @signals.issue_synced.connect
 async def on_issue_synced(
-    sender: Repository, organization: Organization, issue: Issue
+    sender: Repository,
+    organization: Organization,
+    issue: Issue,
+    synced: int
 ) -> None:
     log.info("issue.synced", issue=issue.id, title=issue.title)
     await publish(
@@ -19,8 +22,26 @@ async def on_issue_synced(
                 "id": issue.id,
                 "title": issue.title,
             },
-            "open_issues": sender.open_issues,
+            "expected": sender.open_issues,
+            "synced": synced,
             "repository_id": sender.id,
+        },
+        organization_id=organization.id,
+    )
+
+
+@signals.issue_sync_completed.connect
+async def on_issue_sync_completed(
+    sender: Repository,
+    organization: Organization,
+    synced: int
+) -> None:
+    log.info("issue.sync.completed", repository=sender.id, synced=synced)
+    await publish(
+        "issue.sync.completed",
+        {
+            "expected": sender.open_issues,
+            "synced": synced,
         },
         organization_id=organization.id,
     )

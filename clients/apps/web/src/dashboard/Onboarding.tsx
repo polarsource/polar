@@ -19,11 +19,17 @@ const Onboarding = () => {
     setEvents((events) => [...events, data])
   }
 
+  const onIssueSyncCompleted = (data) => {
+    console.log('onIssueSyncCompleted', data)
+  }
+
   useEffect(() => {
     emitter.on('issue.synced', onIssueSynced)
+    emitter.on('issue.sync.completed', onIssueSyncCompleted)
 
     return () => {
       emitter.off('issue.synced', onIssueSynced)
+      emitter.off('issue.sync.completed', onIssueSyncCompleted)
     }
   }, [])
 

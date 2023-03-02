@@ -37,12 +37,14 @@ async def sync_repository_issues(
         organization, repository = await get_organization_and_repo(
             session, organization_id, repository_id
         )
+        synced = 0
         async for issue in actions.github_repository.sync_issues(
             session, organization, repository
         ):
             if not issue:
                 break
 
+            synced += 1
             log.info(
                 "github.repo.sync.issues",
                 state="synced",
@@ -55,7 +57,12 @@ async def sync_repository_issues(
                 repository,
                 organization=organization,
                 issue=issue,
+                synced=synced,
             )
+
+        await signals.issue_sync_completed.send_async(
+            repository, organization=organization, synced=synced,
+        )
 
 
 @task(name="github.repo.sync.pull_requests")

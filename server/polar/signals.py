@@ -4,6 +4,7 @@ issue_created = signal("issue.created")
 issue_updated = signal("issue.updated")
 # Specific event for a synced issue during onboarding/installation
 issue_synced = signal("issue.synced")
+issue_sync_completed = signal("issue.sync.completed")
 
 pull_request_created = signal("pull_request.created")
 pull_request_updated = signal("pull_request.updated")

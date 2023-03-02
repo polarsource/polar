@@ -1,5 +1,5 @@
 import { classNames } from 'polarkit/utils/dom'
-import { RepoSyncState } from './types'
+import { type RepoSyncState } from './types'
 
 const ProgressBar = ({
   progress,

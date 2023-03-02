@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSSE } from 'polarkit/hooks'
 import { OrganizationSchema } from 'polarkit/api/client'
-import { SyncEvent, RepoSyncState } from './types'
+import { type SyncEvent, type RepoSyncState } from './types'
 
 import { SynchronizeRepository } from './SynchronizeRepository'
 

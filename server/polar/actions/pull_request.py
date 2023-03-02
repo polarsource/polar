@@ -9,18 +9,18 @@ from polar.ext.sqlalchemy.types import GUID
 from polar.models.pull_request import PullRequest
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
-from polar.schema.pull_request import CreatePullRequest, UpdatePullRequest
+from polar.schema.pull_request import (
+    CreateFullPullRequest,
+    CreateMinimalPullRequest,
+    UpdatePullRequest,
+)
 
 log = structlog.get_logger()
 
-TGithubPR = (
-    github.rest.PullRequest
-    | github.rest.PullRequestSimple
-    | github.webhooks.PullRequestOpenedPropPullRequest
-)
 
-
-class PullRequestAction(Action[PullRequest, CreatePullRequest, UpdatePullRequest]):
+class PullRequestAction(
+    Action[PullRequest, CreateMinimalPullRequest, UpdatePullRequest]
+):
     @property
     def default_upsert_index_elements(self) -> list[MappedColumn[Any]]:
         return [self.model.external_id]
@@ -47,40 +47,32 @@ class GithubPullRequestActions(PullRequestAction):
     ) -> PullRequest | None:
         return await self.get_by_platform(session, Platforms.github, external_id)
 
-    async def store(
+    async def store_simple(
         self,
         session: AsyncSession,
-        organization_name: str,
-        repository_name: str,
-        data: TGithubPR,
-        organization_id: GUID | None = None,
-        repository_id: GUID | None = None,
-    ) -> PullRequest | None:
-        records = await self.store_many(
+        data: github.rest.PullRequestSimple,
+        organization_id: GUID,
+        repository_id: GUID,
+    ) -> PullRequest:
+        records = await self.store_many_simple(
             session,
-            organization_name,
-            repository_name,
             [data],
             organization_id=organization_id,
             repository_id=repository_id,
         )
         if records:
             return records[0]
-        return None
+        raise RuntimeError("failed to store pull request")
 
-    async def store_many(
+    async def store_many_simple(
         self,
         session: AsyncSession,
-        organization_name: str,
-        repository_name: str,
-        data: Sequence[TGithubPR],
-        organization_id: GUID | None = None,
-        repository_id: GUID | None = None,
+        data: Sequence[github.rest.PullRequestSimple],
+        organization_id: GUID,
+        repository_id: GUID,
     ) -> list[PullRequest]:
-        def parse(pr: TGithubPR) -> CreatePullRequest:
-            return CreatePullRequest.from_github(
-                organization_name,
-                repository_name,
+        def parse(pr: github.rest.PullRequestSimple) -> CreateMinimalPullRequest:
+            return CreateMinimalPullRequest.minimal_pull_request_from_github(
                 pr,
                 organization_id=organization_id,
                 repository_id=repository_id,
@@ -97,7 +89,62 @@ class GithubPullRequestActions(PullRequestAction):
             return []
 
         return await self.upsert_many(
-            session, create_schemas, index_elements=[PullRequest.external_id]
+            session,
+            create_schemas,
+            index_elements=[PullRequest.external_id],
+        )
+
+    async def store_full(
+        self,
+        session: AsyncSession,
+        data: github.rest.PullRequest
+        | github.webhooks.PullRequestOpenedPropPullRequest,
+        organization_id: GUID,
+        repository_id: GUID,
+    ) -> PullRequest:
+        records = await self.store_many_full(
+            session,
+            [data],
+            organization_id=organization_id,
+            repository_id=repository_id,
+        )
+        if records:
+            return records[0]
+        raise RuntimeError("failed to store pull request")
+
+    async def store_many_full(
+        self,
+        session: AsyncSession,
+        data: Sequence[
+            github.rest.PullRequest | github.webhooks.PullRequestOpenedPropPullRequest
+        ],
+        organization_id: GUID,
+        repository_id: GUID,
+    ) -> list[PullRequest]:
+        def parse(
+            pr: github.rest.PullRequest
+            | github.webhooks.PullRequestOpenedPropPullRequest,
+        ) -> CreateMinimalPullRequest:
+            return CreateFullPullRequest.full_pull_request_from_github(
+                pr,
+                organization_id=organization_id,
+                repository_id=repository_id,
+            )
+
+        create_schemas = [parse(pr) for pr in data]
+        if not create_schemas:
+            log.warning(
+                "github.pull_request",
+                error="no pull requests to store",
+                organization_id=organization_id,
+                repository_id=repository_id,
+            )
+            return []
+
+        return await self.upsert_many(
+            session,
+            create_schemas,
+            index_elements=[PullRequest.external_id],
         )
 
 

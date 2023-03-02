@@ -39,15 +39,9 @@ class IssueFields:
     def organization_id(cls) -> MappedColumn[GUID | None]:
         return mapped_column(GUID, ForeignKey("organizations.id"), nullable=True)
 
-    # TODO: Delete? Lookups should be done by organization_id
-    organization_name: Mapped[str] = mapped_column(String, nullable=False)
-
     @declared_attr
     def repository_id(cls) -> MappedColumn[GUID | None]:
         return mapped_column(GUID, ForeignKey("repositories.id"), nullable=True)
-
-    # TODO: Delete? Lookups should be done by repository_id
-    repository_name: Mapped[str] = mapped_column(String, nullable=False)
 
     number: Mapped[int] = mapped_column(Integer, nullable=False)
 
@@ -76,8 +70,6 @@ class IssueFields:
 
     state: Mapped[str] = mapped_column(StringEnum(State), nullable=False)
     state_reason: Mapped[str | None] = mapped_column(String, nullable=True)
-    is_locked: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    lock_reason: Mapped[str | None] = mapped_column(String, nullable=True)
 
     issue_closed_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
@@ -103,8 +95,8 @@ class IssueFields:
         "reactions",
         "state",
         "state_reason",
-        "is_locked",
-        "lock_reason",
+        # "is_locked",
+        # "lock_reason",
         "issue_closed_at",
         "issue_modified_at",
     }
@@ -114,12 +106,8 @@ class Issue(IssueFields, RecordModel):
     __tablename__ = "issues"
     __table_args__ = (
         UniqueConstraint("external_id"),
-        UniqueConstraint("organization_name", "repository_name", "number"),
-        UniqueConstraint("token"),
+        UniqueConstraint("organization_id", "repository_id", "number"),
     )
 
     on_created_signal = signals.issue_created
     on_updated_signal = signals.issue_updated
-
-    # TODO: Generate automatically OR remove
-    token: Mapped[str] = mapped_column(String, nullable=False, unique=True)

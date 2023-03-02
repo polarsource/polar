@@ -59,16 +59,12 @@ class GithubIssueActions(IssueActions):
     async def store(
         self,
         session: AsyncSession,
-        organization_name: str,
-        repository_name: str,
         data: github.rest.Issue | github.webhooks.IssuesOpenedPropIssue,
-        organization_id: GUID | None = None,
-        repository_id: GUID | None = None,
+        organization_id: GUID,
+        repository_id: GUID,
     ) -> Issue:
         records = await self.store_many(
             session,
-            organization_name,
-            repository_name,
             [data],
             organization_id=organization_id,
             repository_id=repository_id,
@@ -80,18 +76,14 @@ class GithubIssueActions(IssueActions):
     async def store_many(
         self,
         session: AsyncSession,
-        organization_name: str,
-        repository_name: str,
         data: list[github.rest.Issue | github.webhooks.IssuesOpenedPropIssue],
-        organization_id: GUID | None = None,
-        repository_id: GUID | None = None,
+        organization_id: GUID,
+        repository_id: GUID,
     ) -> list[Issue]:
         def parse(
             issue: github.rest.Issue | github.webhooks.IssuesOpenedPropIssue,
         ) -> CreateIssue:
             return CreateIssue.from_github(
-                organization_name,
-                repository_name,
                 issue,
                 organization_id=organization_id,
                 repository_id=repository_id,

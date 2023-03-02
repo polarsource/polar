@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
-from typing import Any
+from typing import Self, Type
+
+import structlog
 
 from polar.clients import github
 from polar.exceptions import ExpectedIssueGotPullRequest
@@ -9,7 +12,7 @@ from polar.ext.sqlalchemy.types import GUID
 from polar.models.issue import Issue
 from polar.platforms import Platforms
 from polar.schema.base import Schema
-from polar.typing import JSONDict, JSONList
+from polar.typing import JSONAny
 
 # TODO: Ugly. Fix how to deal with githubkit typing at times.
 TIssueData = (
@@ -22,33 +25,34 @@ TIssueData = (
 )
 
 
+log = structlog.get_logger()
+
+
 class Base(Schema):
     platform: Platforms
     external_id: int
 
-    organization_id: str | None
-    organization_name: str
-    repository_id: str | None
-    repository_name: str
+    organization_id: str
+    repository_id: str
     number: int
 
     title: str
     body: str | None
     comments: int | None
 
-    author: JSONDict | None
+    author: JSONAny
     author_association: str | None
-    labels: JSONList | None
-    assignee: JSONDict | None
-    assignees: JSONList | None
-    milestone: JSONDict | None
-    closed_by: JSONDict | None
-    reactions: JSONDict | None
+    labels: JSONAny
+    assignee: JSONAny
+    assignees: JSONAny
+    milestone: JSONAny
+    closed_by: JSONAny
+    reactions: JSONAny
 
     state: Issue.State
     state_reason: str | None
-    is_locked: bool
-    lock_reason: str | None
+    # is_locked: bool
+    # lock_reason: str | None
 
     issue_closed_at: datetime | None
     issue_modified_at: datetime | None
@@ -56,30 +60,27 @@ class Base(Schema):
 
 
 class CreateIssue(Base):
-    # TODO: Merge with BaseSchema once we've gotten rid of token
-    token: str
-
     @classmethod
     def get_normalized_github_issue(
-        cls,
-        organization_name: str,
-        repository_name: str,
+        cls: Type[Self],
         data: TIssueData,
-        organization_id: GUID | None = None,
-        repository_id: GUID | None = None,
-    ) -> dict[str, Any]:
-        number = data.number
+        organization_id: uuid.UUID,
+        repository_id: uuid.UUID,
+    ) -> Self:
 
-        return dict(
+        log.debug(
+            "zegl create.issue",
+            organization_id=organization_id,
+            ty=type(organization_id),
+        )
+
+        ret = cls(
             platform=Platforms.github,
             external_id=data.id,
-            organization_id=organization_id,
-            organization_name=organization_name,
-            repository_id=repository_id,
-            repository_name=repository_name,
-            number=number,
+            organization_id=organization_id.hex,
+            repository_id=repository_id.hex,
+            number=data.number,
             title=data.title,
-            body=data.body,
             comments=getattr(data, "comments", None),
             author=github.jsonify(data.user),
             author_association=data.author_association,
@@ -90,36 +91,36 @@ class CreateIssue(Base):
             # TODO: Verify this
             closed_by=github.jsonify(github.attr(data, "closed_by")),
             reactions=github.jsonify(github.attr(data, "reactions")),
-            state=data.state,
+            state=Issue.State(data.state),
             state_reason=github.attr(data, "state_reason"),
-            is_locked=data.locked,
-            lock_reason=data.active_lock_reason,
+            # TODO:
+            # cls.is_locked = data.locked
+            # cls.lock_reason = data.active_lock_reason
             issue_closed_at=data.closed_at,
             issue_created_at=data.created_at,
             issue_modified_at=data.updated_at,
-            token=f"{organization_name}-{repository_name}-{number}",
         )
+
+        if data.body:
+            cls.body = data.body
+
+        return ret
 
     @classmethod
     def from_github(
         cls,
-        organization_name: str,
-        repository_name: str,
         data: TIssueData,
-        organization_id: GUID | None = None,
-        repository_id: GUID | None = None,
-    ) -> CreateIssue:
+        organization_id: GUID,
+        repository_id: GUID,
+    ) -> Self:
         if github.is_set(data, "pull_request"):
             raise ExpectedIssueGotPullRequest()
 
-        normalized = cls.get_normalized_github_issue(
-            organization_name,
-            repository_name,
+        return cls.get_normalized_github_issue(
             data,
             organization_id=organization_id,
             repository_id=repository_id,
         )
-        return cls(**normalized)
 
 
 class UpdateIssue(CreateIssue):
@@ -134,14 +135,13 @@ class IssueSchema(CreateIssue):
     class Config:
         orm_mode = True
 
-    def get_url(self) -> str:
-        if not self.platform == "github":
-            raise NotImplementedError(
-                f"No implementation for platform: {self.platform}"
-            )
-
-        path = f"{self.organization_name}/{self.repository_name}/issues/{self.number}"
-        return f"https://github.com/{path}"
+    # def get_url(self) -> str:
+    #    if not self.platform == "github":
+    #        raise NotImplementedError(
+    #            f"No implementation for platform: {self.platform}"
+    #        )
+    #    path = f"{self.organization_name}/{self.repository_name}/issues/{self.number}"
+    #    return f"https://github.com/{path}"
 
 
 class GetIssuePath(Schema):

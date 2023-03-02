@@ -1,15 +1,17 @@
+import uuid
 from typing import Any
 
 import structlog
 
 from polar import actions
 from polar.clients import github
+from polar.ext.sqlalchemy.types import GUID
 from polar.models import Issue, Organization, PullRequest, Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
 from polar.schema.issue import IssueSchema
 from polar.schema.organization import CreateOrganization
-from polar.schema.pull_request import CreatePullRequest, PullRequestSchema
+from polar.schema.pull_request import CreateFullPullRequest, PullRequestSchema
 from polar.schema.repository import CreateRepository
 from polar.worker import get_db_session, sync_worker, task
 
@@ -97,11 +99,9 @@ async def upsert_issue(
 
     record = await actions.github_issue.store(
         session,
-        organization.name,
-        repository.name,
         event.issue,
-        organization_id=organization.id,
-        repository_id=repository.id,
+        organization_id=uuid.UUID(organization.id),  # TODO: cast should not be needed
+        repository_id=uuid.UUID(repository.id),
     )
     return record
 
@@ -136,12 +136,12 @@ async def upsert_pull_request(
         )
         return None
 
-    create_schema = CreatePullRequest.from_github(
-        organization.name,
-        repository.name,
+    create_schema = CreateFullPullRequest.full_pull_request_from_github(
         event.pull_request,
-        organization_id=organization.id,
-        repository_id=repository.id,
+        organization_id=uuid.UUID(
+            organization.id
+        ),  # TODO: Fix! For some reason get_by_external_id returns the id as a str!
+        repository_id=uuid.UUID(repository.id),
     )
     record = await actions.github_pull_request.upsert(session, create_schema)
     return record
@@ -223,7 +223,9 @@ async def handle_issue(
 
 @task(name="github.webhook.issue.created")
 @sync_worker()
-async def issue_opened(scope: str, action: str, payload: dict[str, Any]) -> dict[str, Any]:
+async def issue_opened(
+    scope: str, action: str, payload: dict[str, Any]
+) -> dict[str, Any]:
     return await handle_issue(scope, action, payload)
 
 
@@ -237,13 +239,17 @@ async def issue_edited(
 
 @task(name="github.webhook.issue.closed")
 @sync_worker()
-async def issue_closed(scope: str, action: str, payload: dict[str, Any]) -> dict[str, Any]:
+async def issue_closed(
+    scope: str, action: str, payload: dict[str, Any]
+) -> dict[str, Any]:
     return await handle_issue(scope, action, payload)
 
 
 @task(name="github.webhook.issue.labeled")
 @sync_worker()
-async def issue_labeled(scope: str, action: str, payload: dict[str, Any]) -> dict[str, Any]:
+async def issue_labeled(
+    scope: str, action: str, payload: dict[str, Any]
+) -> dict[str, Any]:
     return await issue_labeled_async(scope, action, payload)
 
 
@@ -268,6 +274,7 @@ async def issue_labeled_async(
 # ------------------------------------------------------------------------------
 # PULL REQUESTS
 # ------------------------------------------------------------------------------
+
 
 async def handle_pull_request(
     scope: str, action: str, payload: dict[str, Any]

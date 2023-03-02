@@ -14,7 +14,7 @@ class PullRequest(IssueFields, RecordModel):
     __tablename__ = "pull_requests"
     __table_args__ = (
         UniqueConstraint("external_id"),
-        UniqueConstraint("organization_name", "repository_name", "number"),
+        UniqueConstraint("organization_id", "repository_id", "number"),
     )
 
     on_created_signal = signals.pull_request_created
@@ -32,8 +32,9 @@ class PullRequest(IssueFields, RecordModel):
     requested_teams: Mapped[JSONList | None] = mapped_column(
         JSONB, nullable=True, default=list
     )
-    is_draft: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
+    # Part of Full Pull Request object, must be nullable
+    is_draft: Mapped[bool] = mapped_column(Boolean, nullable=True)
     is_rebaseable: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
     review_comments: Mapped[int | None] = mapped_column(Integer, nullable=True)

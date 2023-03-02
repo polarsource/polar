@@ -10,7 +10,6 @@ from polar.actions.base import Action
 from polar.actions.repository import github_repository
 from polar.clients import github
 from polar.models import Organization, User, UserOrganization
-from polar.models.repository import Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
 from polar.schema.organization import CreateOrganization, UpdateOrganization

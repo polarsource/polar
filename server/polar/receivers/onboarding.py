@@ -28,9 +28,7 @@ async def on_issue_updated(issue: Issue) -> None:
         {
             "issue_id": issue.id,
             "organization_id": issue.organization_id,
-            "organization_name": issue.organization_name,
             "repository_id": issue.repository_id,
-            "repository_name": issue.repository_name,
         },
         repository_id=issue.repository_id,
         organization_id=issue.organization_id,

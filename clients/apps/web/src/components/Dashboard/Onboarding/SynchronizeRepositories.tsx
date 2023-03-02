@@ -26,7 +26,13 @@ export const SynchronizeRepositories = ({
     [id: string]: RepoSyncState
   }>(initialSyncStates)
 
-  const onIssueSyncCompleted = (data: SyncEvent) => {
+  const sync = ({
+    data,
+    completed = false,
+  }: {
+    data: SyncEvent
+    completed?: boolean
+  }) => {
     setSyncingRepos((prev) => {
       const repo = prev[data.repository_id]
       return {
@@ -35,25 +41,18 @@ export const SynchronizeRepositories = ({
           ...repo,
           synced: data.synced,
           expected: data.expected,
-          completed: true,
+          completed: completed,
         },
       }
     })
   }
 
+  const onIssueSyncCompleted = (data: SyncEvent) => {
+    sync({ data, completed: true })
+  }
+
   const onIssueSynced = (data: SyncEvent) => {
-    setSyncingRepos((prev) => {
-      const repo = prev[data.repository_id]
-      return {
-        ...prev,
-        [data.repository_id]: {
-          ...repo,
-          synced: data.synced,
-          expected: data.expected,
-          completed: data.synced === data.expected,
-        },
-      }
-    })
+    sync({ data, completed: data.synced === data.expected })
   }
 
   useEffect(() => {

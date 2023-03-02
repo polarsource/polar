@@ -1,3 +1,4 @@
+import { OrganizationSchema } from 'polarkit/api/client'
 import { useState, useEffect } from 'react'
 import { classNames } from 'polarkit/utils/dom'
 import { requireAuth } from 'polarkit/hooks'
@@ -6,12 +7,15 @@ import { useParams } from 'react-router-dom'
 import { useSSE } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 
-interface RepoSyncState {
+interface SyncEvent {
+  synced: number
+  expected: number
+  repository_id: string
+}
+interface RepoSyncState extends SyncEvent {
   id: string
   avatar_url: string
   name: string
-  synced: number
-  expected: number
   completed: boolean
 }
 
@@ -99,7 +103,7 @@ const SyncingRepo = ({ repo }: { repo: RepoSyncState }) => {
   )
 }
 
-const SyncingRepositories = ({ org }) => {
+const SyncingRepositories = ({ org }: { org: OrganizationSchema }) => {
   let initialSyncStates = {}
   for (let repo of org.repositories) {
     initialSyncStates[repo.id] = {
@@ -116,7 +120,7 @@ const SyncingRepositories = ({ org }) => {
     [id: string]: RepoSyncState
   }>(initialSyncStates)
 
-  const onIssueSyncCompleted = (data) => {
+  const onIssueSyncCompleted = (data: SyncEvent) => {
     setSyncingRepos((prev) => {
       const repo = prev[data.repository_id]
       return {
@@ -131,7 +135,7 @@ const SyncingRepositories = ({ org }) => {
     })
   }
 
-  const onIssueSynced = (data) => {
+  const onIssueSynced = (data: SyncEvent) => {
     setSyncingRepos((prev) => {
       const repo = prev[data.repository_id]
       return {
@@ -183,7 +187,9 @@ const Onboarding = () => {
   if (!userOrgQuery.isSuccess) return <div>Error</div>
 
   if (!currentOrg || currentOrg.name !== orgSlug) {
-    const org = userOrgQuery.data.find((org) => org.name === orgSlug)
+    const org = userOrgQuery.data.find(
+      (org: OrganizationSchema) => org.name === orgSlug,
+    )
     setCurrentOrg(org)
   }
 

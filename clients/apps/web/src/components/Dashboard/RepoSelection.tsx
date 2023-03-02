@@ -1,7 +1,7 @@
 import { Fragment } from 'react'
 import { Listbox, Transition } from '@headlessui/react'
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid'
-import { classNames } from 'utils/dom'
+import { classNames } from 'polarkit/utils/dom'
 import { useUserOrganizations, RepoListItem } from 'polarkit/hooks'
 import { requireAuth } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'

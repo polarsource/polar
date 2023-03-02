@@ -1,4 +1,4 @@
-import { classNames } from 'utils/dom'
+import { classNames } from 'polarkit/utils/dom'
 
 const Container = (props) => {
   let maxWidthClass = 'sm:max-w-5xl'

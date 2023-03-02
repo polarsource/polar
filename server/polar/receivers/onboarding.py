@@ -42,6 +42,7 @@ async def on_issue_sync_completed(
         {
             "expected": sender.open_issues,
             "synced": synced,
+            "repository_id": sender.id,
         },
         organization_id=organization.id,
     )

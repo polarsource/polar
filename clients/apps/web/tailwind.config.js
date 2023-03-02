@@ -3,6 +3,7 @@
 const defaultTheme = require('tailwindcss/defaultTheme')
 
 module.exports = {
+  mode: 'jit',
   content: [
     './src/**/*.{ts,tsx}',
     '../../packages/polarkit/src/**/*.{ts,tsx}',

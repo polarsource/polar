@@ -107,6 +107,8 @@ class ActiveRecordMixin:
         session: AsyncSession,
         objects: list[SchemaType],
         index_elements: list[Column[Any]],
+        # Defaults to the mutable keys as defined by on the Model
+        mutable_keys: set[str] | None = None,
     ) -> list[ModelType]:
         values = [obj.dict() for obj in objects]
         if not values:
@@ -116,8 +118,11 @@ class ActiveRecordMixin:
         xmax = column("xmax", is_literal=True, _selectable=cls.__table__)
 
         insert_stmt = sql.insert(cls).values(values)
+
         # Custom method to only get columns we've flagged as mutable on updates
-        mutable_keys = cls.get_mutable_keys()
+        if mutable_keys is None:
+            mutable_keys = cls.get_mutable_keys()
+
         # Update the insert statement with what to update on conflict, i.e mutable keys.
         upsert_stmt = insert_stmt.on_conflict_do_update(
             index_elements=index_elements,
@@ -143,9 +148,13 @@ class ActiveRecordMixin:
         session: AsyncSession,
         obj: SchemaType,
         index_elements: list[Column[Any]],
+        mutable_keys: set[str] | None = None,
     ) -> ModelType:
         upserted: list[ModelType] = await cls.upsert_many(
-            session, [obj], index_elements=index_elements
+            session,
+            [obj],
+            index_elements=index_elements,
+            mutable_keys=mutable_keys,
         )
         return upserted[0]
 

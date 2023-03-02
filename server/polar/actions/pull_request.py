@@ -1,3 +1,4 @@
+import uuid
 from typing import Any, Sequence
 
 import structlog
@@ -51,8 +52,8 @@ class GithubPullRequestActions(PullRequestAction):
         self,
         session: AsyncSession,
         data: github.rest.PullRequestSimple,
-        organization_id: GUID,
-        repository_id: GUID,
+        organization_id: uuid.UUID,
+        repository_id: uuid.UUID,
     ) -> PullRequest:
         records = await self.store_many_simple(
             session,
@@ -68,8 +69,8 @@ class GithubPullRequestActions(PullRequestAction):
         self,
         session: AsyncSession,
         data: Sequence[github.rest.PullRequestSimple],
-        organization_id: GUID,
-        repository_id: GUID,
+        organization_id: uuid.UUID,
+        repository_id: uuid.UUID,
     ) -> list[PullRequest]:
         def parse(pr: github.rest.PullRequestSimple) -> CreateMinimalPullRequest:
             return CreateMinimalPullRequest.minimal_pull_request_from_github(
@@ -92,6 +93,7 @@ class GithubPullRequestActions(PullRequestAction):
             session,
             create_schemas,
             index_elements=[PullRequest.external_id],
+            mutable_keys=CreateMinimalPullRequest.__mutable_keys__,
         )
 
     async def store_full(
@@ -99,8 +101,8 @@ class GithubPullRequestActions(PullRequestAction):
         session: AsyncSession,
         data: github.rest.PullRequest
         | github.webhooks.PullRequestOpenedPropPullRequest,
-        organization_id: GUID,
-        repository_id: GUID,
+        organization_id: uuid.UUID,
+        repository_id: uuid.UUID,
     ) -> PullRequest:
         records = await self.store_many_full(
             session,
@@ -118,13 +120,13 @@ class GithubPullRequestActions(PullRequestAction):
         data: Sequence[
             github.rest.PullRequest | github.webhooks.PullRequestOpenedPropPullRequest
         ],
-        organization_id: GUID,
-        repository_id: GUID,
+        organization_id: uuid.UUID,
+        repository_id: uuid.UUID,
     ) -> list[PullRequest]:
         def parse(
             pr: github.rest.PullRequest
             | github.webhooks.PullRequestOpenedPropPullRequest,
-        ) -> CreateMinimalPullRequest:
+        ) -> CreateFullPullRequest:
             return CreateFullPullRequest.full_pull_request_from_github(
                 pr,
                 organization_id=organization_id,
@@ -145,6 +147,7 @@ class GithubPullRequestActions(PullRequestAction):
             session,
             create_schemas,
             index_elements=[PullRequest.external_id],
+            mutable_keys=CreateFullPullRequest.__mutable_keys__,
         )
 
 

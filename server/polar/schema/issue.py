@@ -55,6 +55,25 @@ class Base(Schema):
     issue_modified_at: datetime | None
     issue_created_at: datetime
 
+    __mutable_keys__ = {
+        "title",
+        "body",
+        "comments",
+        "author",
+        "author_association",
+        "labels",
+        "assignee",
+        "assignees",
+        "milestone",
+        "closed_by",
+        "reactions",
+        "state",
+        "state_reason",
+        "issue_closed_at",
+        "issue_modified_at",
+        "issue_created_at",
+    }
+
 
 class CreateIssue(Base):
     @classmethod
@@ -67,10 +86,11 @@ class CreateIssue(Base):
         ret = cls(
             platform=Platforms.github,
             external_id=data.id,
-            organization_id=organization_id.hex,
-            repository_id=repository_id.hex,
+            organization_id=organization_id,
+            repository_id=repository_id,
             number=data.number,
             title=data.title,
+            body=data.body,
             comments=getattr(data, "comments", None),
             author=github.jsonify(data.user),
             author_association=data.author_association,
@@ -87,10 +107,6 @@ class CreateIssue(Base):
             issue_created_at=data.created_at,
             issue_modified_at=data.updated_at,
         )
-
-        # TODO!
-        if data.body:
-            cls.body = data.body
 
         return ret
 

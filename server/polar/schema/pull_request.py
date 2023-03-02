@@ -35,6 +35,17 @@ class CreateMinimalPullRequest(CreateIssue):
     # and avoiding overriding our internal ones
     issue_created_at: datetime
 
+    __mutable_keys__ = CreateIssue.__mutable_keys__ | {
+        "requested_reviewers",
+        "requested_teams",
+        "is_merged",
+        "merged_at",
+        "merge_commit_sha",
+        "head",
+        "base",
+        "issue_created_at",
+    }
+
     @classmethod
     def minimal_pull_request_from_github(
         cls,
@@ -72,6 +83,18 @@ class CreateFullPullRequest(CreateMinimalPullRequest):
     mergeable_state: str | None
 
     merged_by: JSONAny
+
+    __mutable_keys__ = CreateMinimalPullRequest.__mutable_keys__ | {
+        "commits",
+        "additions",
+        "deletions",
+        "changed_files",
+        "review_comments",
+        "maintainer_can_modify",
+        "is_mergeable",
+        "mergeable_state",
+        "merged_by",
+    }
 
     @classmethod
     def full_pull_request_from_github(

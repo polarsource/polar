@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from httpx import Response
 from tests.fixtures.webhook import TestWebhook, TestWebhookFactory
 
 from polar import actions

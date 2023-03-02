@@ -9,6 +9,8 @@ const ACTIONS: {
   'issue.updated': onIssueUpdated,
 }
 
+const emitter = new EventEmitter()
+
 export const useSSE = (
   organizationId?: string,
   repositoryId?: string,
@@ -31,8 +33,6 @@ export const useSSE = (
     streamURL = `${base}?${query.toString()}`
   }
 
-  const emitter = new EventEmitter()
-
   useEffect(() => {
     if (!streamURL) {
       return
@@ -44,7 +44,6 @@ export const useSSE = (
 
     const cleanup = () => {
       connection.close()
-      emitter.removeAllListeners()
     }
     // TODO: Add types for event. Just want to get the structure
     // up and running first before getting stuck in protocol land.

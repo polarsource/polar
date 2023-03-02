@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { requireAuth } from 'polarkit/hooks'
 import { useUserOrganizations } from 'polarkit/hooks'
 import { useParams } from 'react-router-dom'
@@ -15,6 +15,18 @@ const Onboarding = () => {
 
   const [events, setEvents] = useState([])
 
+  const onIssueSynced = (data) => {
+    setEvents((events) => [...events, data])
+  }
+
+  useEffect(() => {
+    emitter.on('issue.synced', onIssueSynced)
+
+    return () => {
+      emitter.off('issue.synced', onIssueSynced)
+    }
+  }, [])
+
   if (userOrgQuery.isLoading) return <div>Loading...</div>
 
   if (!userOrgQuery.isSuccess) return <div>Error</div>
@@ -24,17 +36,13 @@ const Onboarding = () => {
     setCurrentOrg(org)
   }
 
-  emitter.on('issue.synced', (data) => {
-    setEvents((events) => [...events, data])
-  })
-
   return (
     <>
       <h1>Onboarding</h1>
       <p>Let's create some magic: {orgSlug}</p>
       <ul>
-        {events.map((event) => (
-          <li>{JSON.stringify(event)}</li>
+        {events.map((e) => (
+          <li>{JSON.stringify(e)}</li>
         ))}
       </ul>
     </>

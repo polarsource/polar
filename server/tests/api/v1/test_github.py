@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from httpx import Response
 from tests.fixtures.webhook import TestWebhook, TestWebhookFactory
 
 from polar import actions
@@ -26,7 +25,6 @@ async def assert_repository_exists(session: AsyncSession, repo: dict[str, Any]) 
     record = await actions.github_repository.get_by_external_id(session, repo_id)
     assert record is not None
     assert record.name == repo["name"]
-    assert repo["full_name"] == f"{record.organization_name}/{record.name}"
     assert record.is_private == repo["private"]
 
 

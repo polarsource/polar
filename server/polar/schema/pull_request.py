@@ -1,132 +1,132 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
-from typing import Any
+from typing import Self
+
+import structlog
 
 from polar.clients import github
-from polar.ext.sqlalchemy.types import GUID
-from polar.platforms import Platforms
-from polar.schema.issue import Base, CreateIssue
-from polar.typing import JSONDict, JSONList
+from polar.schema.issue import CreateIssue
+from polar.typing import JSONAny
 
+log = structlog.get_logger()
 
 # Since we cannot use mixins with Pydantic, we have to redefine
 # some of the fields shared between CreateIssue + CreatePullRequest.
 # However, we leverage the CreateIssue.get_normalized_github_issue
 # method to reduce the amount of reduction to stay DRY-ish.
-class CreatePullRequest(Base):
-    commits: int | None
-    additions: int | None
-    deletions: int | None
-    changed_files: int | None
 
-    requested_reviewers: JSONList | None
-    requested_teams: JSONList | None
-    is_draft: bool
 
-    is_rebaseable: bool | None
+class CreateMinimalPullRequest(CreateIssue):
+    requested_reviewers: JSONAny
+    requested_teams: JSONAny
 
-    review_comments: int | None
-    maintainer_can_modify: bool | None
-
-    is_mergeable: bool | None
-    mergeable_state: str | None
-    auto_merge: str | None
-    # TODO: Function of merged_at instead?
-    # Thereby supporting webhooks + REST API the same despite data differences
     is_merged: bool | None
-    merged_by: JSONDict | None
+
     merged_at: datetime | None
     merge_commit_sha: str | None
 
-    head: JSONDict | None
-    base: JSONDict | None
-    platform: Platforms
-    external_id: int
-
-    organization_id: str | None
-    organization_name: str
-    repository_id: str | None
-    repository_name: str
-    number: int
+    head: JSONAny
+    base: JSONAny
 
     # TODO: Rename to something like source_created_at
     # So it's the same across the board reflecting the platform source fields
     # and avoiding overriding our internal ones
     issue_created_at: datetime
 
+    __mutable_keys__ = CreateIssue.__mutable_keys__ | {
+        "requested_reviewers",
+        "requested_teams",
+        "is_merged",
+        "merged_at",
+        "merge_commit_sha",
+        "head",
+        "base",
+        "issue_created_at",
+    }
+
     @classmethod
-    def get_normalized_github_issue(
+    def minimal_pull_request_from_github(
         cls,
-        organization_name: str,
-        repository_name: str,
-        pr: github.rest.PullRequest
-        | github.rest.PullRequestSimple
+        pr: github.rest.PullRequestSimple
+        | github.rest.PullRequest
         | github.webhooks.PullRequestOpenedPropPullRequest,
-        organization_id: GUID | None = None,
-        repository_id: GUID | None = None,
-    ) -> dict[str, Any]:
-        normalized = CreateIssue.get_normalized_github_issue(
-            organization_name,
-            repository_name,
+        organization_id: uuid.UUID,
+        repository_id: uuid.UUID,
+    ) -> Self:
+        create = cls.get_normalized_github_issue(
             pr,
             organization_id,
             repository_id,
         )
-        merged_by = None
-        if hasattr(pr, "merged_by"):
-            merged_by = github.jsonify(pr.merged_by)
 
-        normalized.update(
-            dict(
-                commits=getattr(pr, "commits", None),
-                additions=getattr(pr, "additions", None),
-                deletions=getattr(pr, "deletions", None),
-                changed_files=getattr(pr, "changed_files", None),
-                requested_reviewers=github.jsonify(pr.requested_reviewers),
-                requested_teams=github.jsonify(pr.requested_teams),
-                is_draft=pr.draft,
-                is_rebaseable=getattr(pr, "rebaseable", None),
-                review_comments=getattr(pr, "review_comments", None),
-                maintainer_can_modify=getattr(pr, "maintainer_can_modify", None),
-                is_mergeable=getattr(pr, "mergeable", None),
-                mergeable_state=getattr(pr, "mergeable_state", None),
-                auto_merge=pr.auto_merge,
-                merged_by=merged_by,
-                merged_at=pr.merged_at,
-                merge_commit_sha=pr.merge_commit_sha,
-                head=github.jsonify(pr.head),
-                base=github.jsonify(pr.base),
-            )
-        )
-        return normalized
+        create.requested_reviewers = github.jsonify(pr.requested_reviewers)
+        create.requested_teams = github.jsonify(pr.requested_teams)
+        create.merged_at = pr.merged_at
+        create.merge_commit_sha = pr.merge_commit_sha
+        create.head = github.jsonify(pr.head)
+        create.base = github.jsonify(pr.base)
+
+        return create
+
+
+class CreateFullPullRequest(CreateMinimalPullRequest):
+    commits: int | None
+    additions: int | None
+    deletions: int | None
+    changed_files: int | None
+
+    review_comments: int | None
+    maintainer_can_modify: bool | None
+    is_mergeable: bool | None
+    mergeable_state: str | None
+
+    merged_by: JSONAny
+
+    __mutable_keys__ = CreateMinimalPullRequest.__mutable_keys__ | {
+        "commits",
+        "additions",
+        "deletions",
+        "changed_files",
+        "review_comments",
+        "maintainer_can_modify",
+        "is_mergeable",
+        "mergeable_state",
+        "merged_by",
+    }
 
     @classmethod
-    def from_github(
+    def full_pull_request_from_github(
         cls,
-        organization_name: str,
-        repository_name: str,
-        data: github.rest.PullRequest
-        | github.rest.PullRequestSimple
-        | github.webhooks.PullRequestOpenedPropPullRequest,
-        organization_id: GUID | None = None,
-        repository_id: GUID | None = None,
-    ) -> CreatePullRequest:
-        normalized = cls.get_normalized_github_issue(
-            organization_name,
-            repository_name,
-            data,
-            organization_id=organization_id,
-            repository_id=repository_id,
+        pr: github.rest.PullRequest | github.webhooks.PullRequestOpenedPropPullRequest,
+        organization_id: uuid.UUID,
+        repository_id: uuid.UUID,
+    ) -> Self:
+        create = cls.minimal_pull_request_from_github(
+            pr, organization_id, repository_id
         )
-        return cls(**normalized)
+
+        create.merged_by = github.jsonify(pr.merged_by)
+
+        create.commits = pr.commits
+        create.additions = pr.additions
+        create.deletions = pr.deletions
+        create.changed_files = pr.changed_files
+
+        create.review_comments = pr.review_comments
+        create.maintainer_can_modify = pr.maintainer_can_modify
+        create.is_mergeable = pr.mergeable
+        create.mergeable_state = pr.mergeable_state
+
+        return create
 
 
-class UpdatePullRequest(CreatePullRequest):
+class UpdatePullRequest(CreateFullPullRequest):
     ...
 
 
-class PullRequestSchema(CreatePullRequest):
+class PullRequestSchema(CreateFullPullRequest):
     id: str
     created_at: datetime
     modified_at: datetime | None

@@ -56,12 +56,16 @@ class Action(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         session: AsyncSession,
         create_schemas: list[CreateSchemaType],
         index_elements: list[Column[Any]] | None = None,
+        mutable_keys: set[str] | None = None,
     ) -> list[ModelType]:
         if index_elements is None:
             index_elements = self.default_upsert_index_elements
 
         return await self.model.upsert_many(
-            session, create_schemas, index_elements=index_elements
+            session,
+            create_schemas,
+            index_elements=index_elements,
+            mutable_keys=mutable_keys,
         )
 
     async def upsert(
@@ -69,12 +73,16 @@ class Action(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         session: AsyncSession,
         create_schema: CreateSchemaType,
         index_elements: list[Column[Any]] | None = None,
+        mutable_keys: set[str] | None = None,
     ) -> ModelType:
         if index_elements is None:
             index_elements = self.default_upsert_index_elements
 
         return await self.model.upsert(
-            session, create_schema, index_elements=index_elements
+            session,
+            create_schema,
+            index_elements=index_elements,
+            mutable_keys=mutable_keys,
         )
 
     async def update(

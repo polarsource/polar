@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from typing import Any, Sequence
 
 import structlog
@@ -35,20 +36,6 @@ class IssueActions(Action[Issue, CreateIssue, UpdateIssue]):
         issues = res.scalars().unique().all()
         return issues
 
-    async def get_by_url(
-        self, session: AsyncSession, organization_name: str, repo_name: str, number: int
-    ) -> Issue | None:
-        query = (
-            sql.select(Issue)
-            .where(
-                (Issue.organization_name == organization_name)
-                & (Issue.repository_name == repo_name)
-                & (Issue.number == number)
-            )
-            .limit(1)
-        )
-        return await self.get_by_query(session, query)
-
 
 class GithubIssueActions(IssueActions):
     async def get_by_external_id(
@@ -59,16 +46,12 @@ class GithubIssueActions(IssueActions):
     async def store(
         self,
         session: AsyncSession,
-        organization_name: str,
-        repository_name: str,
         data: github.rest.Issue | github.webhooks.IssuesOpenedPropIssue,
-        organization_id: GUID | None = None,
-        repository_id: GUID | None = None,
+        organization_id: uuid.UUID,
+        repository_id: uuid.UUID,
     ) -> Issue:
         records = await self.store_many(
             session,
-            organization_name,
-            repository_name,
             [data],
             organization_id=organization_id,
             repository_id=repository_id,
@@ -80,18 +63,14 @@ class GithubIssueActions(IssueActions):
     async def store_many(
         self,
         session: AsyncSession,
-        organization_name: str,
-        repository_name: str,
         data: list[github.rest.Issue | github.webhooks.IssuesOpenedPropIssue],
-        organization_id: GUID | None = None,
-        repository_id: GUID | None = None,
+        organization_id: uuid.UUID,
+        repository_id: uuid.UUID,
     ) -> list[Issue]:
         def parse(
             issue: github.rest.Issue | github.webhooks.IssuesOpenedPropIssue,
         ) -> CreateIssue:
             return CreateIssue.from_github(
-                organization_name,
-                repository_name,
                 issue,
                 organization_id=organization_id,
                 repository_id=repository_id,

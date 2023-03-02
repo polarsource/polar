@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSSE } from 'polarkit/hooks'
-import { OrganizationSchema } from 'polarkit/api/client'
+import { type OrganizationSchema } from 'polarkit/api/client'
 import { type SyncEvent, type RepoSyncState } from './types'
 
 import { SynchronizeRepository } from './SynchronizeRepository'
@@ -33,15 +33,25 @@ export const SynchronizeRepositories = ({
     data: SyncEvent
     completed?: boolean
   }) => {
+    let synced = data.synced
+    if (completed) {
+      /*
+       * TODO
+       * We should always do this in case of the completed event, but...
+       * Currently, it's a hack since PRs count as issues leading to more
+       * expected than we'll ever sync.
+       */
+      synced = data.expected
+    }
     setSyncingRepos((prev) => {
       const repo = prev[data.repository_id]
       return {
         ...prev,
         [data.repository_id]: {
           ...repo,
-          synced: data.synced,
+          synced,
           expected: data.expected,
-          completed: completed,
+          completed,
         },
       }
     })

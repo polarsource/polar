@@ -33,17 +33,6 @@ const ProgressBar = ({
 }
 
 export const SynchronizeRepository = ({ repo }: { repo: RepoSyncState }) => {
-  let synced = repo.synced
-  /*
-   * TODO
-   * We should always do this in case of the completed event, but...
-   * Currently, it's a hack since PRs count as issues leading to more
-   * expected than we'll ever sync.
-   */
-  if (repo.completed) {
-    synced = repo.expected
-  }
-
   return (
     <>
       <div
@@ -67,7 +56,7 @@ export const SynchronizeRepository = ({ repo }: { repo: RepoSyncState }) => {
         </div>
         <div className="basis-2/6 my-auto">
           <p className="text-xs">
-            {synced}{' '}
+            {repo.synced}{' '}
             <span className="text-gray-500">
               / {repo.expected} issues fetched
             </span>

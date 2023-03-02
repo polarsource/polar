@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSSE } from 'polarkit/hooks'
 import { type OrganizationSchema } from 'polarkit/api/client'
@@ -85,7 +85,7 @@ export const SynchronizeRepositories = ({
     sync({ data, completed: data.synced === data.expected })
   }
 
-  const onSkipClick = (event) => {
+  const onSkipClick = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault()
     const firstRepo = org.repositories[0]
     navigate(`/dashboard/${org.name}/${firstRepo.name}`)

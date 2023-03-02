@@ -1,14 +1,19 @@
 import { default as IssueListItem, type Issue } from "./IssueListItem"
-import { type IssueSchema, type PullRequestSchema, type RewardSchema } from "polarkit/api/client"
+import { type IssueSchema, type PullRequestSchema, type RewardSchema } from "../api/client"
 import { useState } from "react"
 
 const lastTimestamp = (issue: IssueSchema) => {
     const timestamps = [
         new Date(issue.issue_created_at),
-        new Date(issue.issue_closed_at),
-        new Date(issue.issue_modified_at),
         // TODO: Latest comment, commit, etc.
     ]
+
+    if (issue.issue_closed_at) {
+        timestamps.push(new Date(issue.issue_closed_at))
+    }
+    if (issue.issue_modified_at) {
+        timestamps.push(new Date(issue.issue_modified_at))
+    }
 
     const sorted = timestamps
         .filter((d) => Boolean(d))
@@ -21,7 +26,7 @@ const pullRequestsForIssue = (issue: IssueSchema, pullRequests: PullRequestSchem
     const re = new RegExp(`(Close|Closes|Closed|Fix|Fixes|Fixed|Resolve|Resolves|Resolved) #${issue.number}(?![0-9])`, 'gi')
 
     const filtered = pullRequests.filter((pr) => {
-        if (re.test(pr.body)) return true
+        if (pr.body && re.test(pr.body)) return true
         return false
     })
 

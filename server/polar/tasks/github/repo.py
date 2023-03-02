@@ -40,6 +40,9 @@ async def sync_repository_issues(
         async for issue in actions.github_repository.sync_issues(
             session, organization, repository
         ):
+            if not issue:
+                break
+
             log.info(
                 "github.repo.sync.issues",
                 state="synced",

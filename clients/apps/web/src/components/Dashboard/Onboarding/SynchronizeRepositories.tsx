@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useSSE } from 'polarkit/hooks'
 import { type OrganizationSchema } from 'polarkit/api/client'
 import { type SyncEvent, type RepoSyncState } from './types'
@@ -10,6 +11,7 @@ export const SynchronizeRepositories = ({
 }: {
   org: OrganizationSchema
 }) => {
+  let totalExpected = 0
   let initialSyncStates = {}
   for (let repo of org.repositories) {
     initialSyncStates[repo.id] = {
@@ -20,11 +22,22 @@ export const SynchronizeRepositories = ({
       expected: repo.open_issues,
       completed: false,
     }
+    totalExpected += repo.open_issues
   }
+  const navigate = useNavigate()
   const emitter = useSSE(org.id)
   const [syncingRepos, setSyncingRepos] = useState<{
     [id: string]: RepoSyncState
   }>(initialSyncStates)
+  const [progress, setProgress] = useState<{
+    synced: number
+    expected: number
+    percentage: number
+  }>({
+    synced: 0,
+    expected: totalExpected,
+    percentage: 0.0,
+  })
 
   const sync = ({
     data,
@@ -55,6 +68,13 @@ export const SynchronizeRepositories = ({
         },
       }
     })
+    setProgress((prev) => {
+      // TODO: Due to PRs in issues this can be less than 100%
+      const synced = prev.synced + 1
+      const percentage = (synced / prev.expected) * 100
+      const ret = { ...prev, synced, percentage }
+      return ret
+    })
   }
 
   const onIssueSyncCompleted = (data: SyncEvent) => {
@@ -63,6 +83,12 @@ export const SynchronizeRepositories = ({
 
   const onIssueSynced = (data: SyncEvent) => {
     sync({ data, completed: data.synced === data.expected })
+  }
+
+  const onSkipClick = (event) => {
+    event.preventDefault()
+    const firstRepo = org.repositories[0]
+    navigate(`/dashboard/${org.name}/${firstRepo.name}`)
   }
 
   useEffect(() => {
@@ -77,6 +103,9 @@ export const SynchronizeRepositories = ({
 
   return (
     <>
+      <h1 className="text-xl text-center font-normal text-gray-600 drop-shadow-md my-11">
+        Connecting repositories
+      </h1>
       <ul>
         {Object.values(syncingRepos).map((repo) => {
           return (
@@ -86,6 +115,11 @@ export const SynchronizeRepositories = ({
           )
         })}
       </ul>
+      {progress.percentage > 20 && (
+        <a href="#" className="text-center text-gray-600" onClick={onSkipClick}>
+          Continue
+        </a>
+      )}
     </>
   )
 }

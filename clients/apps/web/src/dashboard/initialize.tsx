@@ -28,9 +28,6 @@ const Initialize = () => {
     <>
       <div className="flex h-screen">
         <div className="w-[700px] m-auto">
-          <h1 className="text-xl text-center font-normal text-gray-600 drop-shadow-md my-11">
-            Connecting repositories
-          </h1>
           <SynchronizeRepositories org={currentOrg} />
         </div>
       </div>

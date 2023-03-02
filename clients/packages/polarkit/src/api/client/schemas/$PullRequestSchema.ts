@@ -36,35 +36,28 @@ export const $PullRequestSchema = {
       type: 'number',
     },
     author: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     author_association: {
       type: 'string',
     },
     labels: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     assignee: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     assignees: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     milestone: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     closed_by: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     reactions: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     state: {
       type: 'polar__models__issue__IssueFields__State',
@@ -87,12 +80,10 @@ export const $PullRequestSchema = {
       format: 'date-time',
     },
     requested_reviewers: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     requested_teams: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     is_merged: {
       type: 'boolean',
@@ -105,12 +96,10 @@ export const $PullRequestSchema = {
       type: 'string',
     },
     head: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     base: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     commits: {
       type: 'number',
@@ -137,8 +126,7 @@ export const $PullRequestSchema = {
       type: 'string',
     },
     merged_by: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     id: {
       type: 'string',

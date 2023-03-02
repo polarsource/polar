@@ -36,35 +36,28 @@ export const $IssueSchema = {
       type: 'number',
     },
     author: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     author_association: {
       type: 'string',
     },
     labels: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     assignee: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     assignees: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     milestone: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     closed_by: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     reactions: {
-      type: 'any-of',
-      contains: [],
+      type: 'any',
     },
     state: {
       type: 'polar__models__issue__IssueFields__State',

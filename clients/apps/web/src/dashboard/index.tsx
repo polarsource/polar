@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import Organization from './organization'
-import Onboarding from './Onboarding'
+import Initialize from './initialize'
 import { requireAuth } from 'polarkit/hooks'
 import { useUserOrganizations } from 'polarkit/hooks'
 import Layout from 'components/Layout/Dashboard'
@@ -55,7 +55,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/dashboard/initialize/:orgSlug',
-    element: <Onboarding />,
+    element: <Initialize />,
   },
   {
     path: '/dashboard/:orgSlug',

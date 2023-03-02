@@ -14,10 +14,6 @@ export const $RepositorySchema = {
     organization_id: {
       type: 'string',
     },
-    organization_name: {
-      type: 'string',
-      isRequired: true,
-    },
     name: {
       type: 'string',
       isRequired: true,

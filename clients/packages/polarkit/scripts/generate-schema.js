@@ -37,6 +37,7 @@ const createOperationId = (currentOperationId) => {
 }
 
 const convert = (schema) => {
+    console.log("🛠️  createOperationId")
     let newOperationId, currentOperationId
     for (const [key, value] of Object.entries(schema.paths)) {
         for (const [method, schema] of Object.entries(value)) {
@@ -47,6 +48,25 @@ const convert = (schema) => {
             schema.operationId = newOperationId
         }
     }
+    console.log()
+
+    // Hack! Replace the backends JSONAny with ts any
+    // Only done for PullRequests and Issues
+    console.log("🛠️  JSONAny -> Any")
+    for (const [key, value] of Object.entries(schema.components.schemas)) {
+        if (!['IssueSchema', 'PullRequestSchema'].includes(key)) {
+            continue
+        }
+
+        for (const [property, propVal] of Object.entries(value.properties)) {
+            if ('anyOf' in propVal) {
+                console.log(`${key}.${property}: JSONAny -> Any`)
+                propVal.type = 'any'
+                delete propVal['anyOf']
+            }
+        }
+    }
+    console.log()
 }
 
 const getOpenAPISchema = async (schemaUrl) => {

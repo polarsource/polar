@@ -1,12 +1,11 @@
 import IconCounter from "./IconCounter"
-import { type IssueSchema } from "polarkit/api/client"
 import IssueLabel from "./IssueLabel"
 import ReactTimeAgo from 'react-time-ago'
 
 import TimeAgo from 'javascript-time-ago'
 import en from 'javascript-time-ago/locale/en.json'
 import IssueReward from "./IssueReward"
-import { type PullRequestSchema, type RewardSchema } from "api/client"
+import { type PullRequestSchema, type RewardSchema, type IssueSchema } from "../api/client"
 import IssuePullRequest from "./IssuePullRequest"
 import IssueActivityBox from "./IssueActivityBox"
 
@@ -18,10 +17,12 @@ export type Issue = IssueSchema & {
 }
 
 const IssueListItem = (props: { issue: Issue }) => {
-    const { title, number, organization_name, repository_name, state, issue_created_at, issue_closed_at, reactions, comments } = props.issue
-    const href = `https://github.com/${organization_name}/${repository_name}/issues/${number}`
+    const { title, number, state, issue_created_at, reactions, comments } = props.issue
+    const href = `https://github.com/todo/todo/issues/${number}`
     const createdAt = new Date(issue_created_at)
     const closedAt = new Date(issue_created_at)
+
+    const haveRewardOrPullRequest = props.issue.rewards.length > 0 || props.issue.pullRequests.length > 0
 
     return (
         <div>
@@ -42,12 +43,12 @@ const IssueListItem = (props: { issue: Issue }) => {
                     </div>
                 </div>
                 <div className="flex items-center gap-6">
-                    {comments > 0 && <IconCounter icon="💬" count={comments} />}
+                    {comments && comments > 0 && <IconCounter icon="💬" count={comments} />}
                     {reactions.plus_one > 0 && <IconCounter icon="👍" count={reactions.plus_one} />}
                 </div>
             </div>
 
-            <IssueActivityBox>
+            {haveRewardOrPullRequest && <IssueActivityBox>
                 {props.issue.rewards.map((reward: RewardSchema) => {
                     return <IssueReward reward={reward} key={reward.id} />
                 })}
@@ -55,7 +56,7 @@ const IssueListItem = (props: { issue: Issue }) => {
                 {props.issue.pullRequests.map((pr: PullRequestSchema) => {
                     return <IssuePullRequest issue={props.issue} pullRequest={pr} key={pr.number} />
                 })}
-            </IssueActivityBox>
+            </IssueActivityBox>}
         </div>
     )
 }

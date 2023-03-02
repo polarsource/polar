@@ -13,17 +13,13 @@ export const $PullRequestSchema = {
     },
     organization_id: {
       type: 'string',
-    },
-    organization_name: {
-      type: 'string',
       isRequired: true,
+      format: 'uuid',
     },
     repository_id: {
       type: 'string',
-    },
-    repository_name: {
-      type: 'string',
       isRequired: true,
+      format: 'uuid',
     },
     number: {
       type: 'number',
@@ -40,54 +36,34 @@ export const $PullRequestSchema = {
       type: 'number',
     },
     author: {
-      properties: {
-      },
+      type: 'any',
     },
     author_association: {
       type: 'string',
     },
     labels: {
-      type: 'array',
-      contains: {
-        properties: {
-        },
-      },
+      type: 'any',
     },
     assignee: {
-      properties: {
-      },
+      type: 'any',
     },
     assignees: {
-      type: 'array',
-      contains: {
-        properties: {
-        },
-      },
+      type: 'any',
     },
     milestone: {
-      properties: {
-      },
+      type: 'any',
     },
     closed_by: {
-      properties: {
-      },
+      type: 'any',
     },
     reactions: {
-      properties: {
-      },
+      type: 'any',
     },
     state: {
-      type: 'State',
+      type: 'polar__models__issue__IssueFields__State',
       isRequired: true,
     },
     state_reason: {
-      type: 'string',
-    },
-    is_locked: {
-      type: 'boolean',
-      isRequired: true,
-    },
-    lock_reason: {
       type: 'string',
     },
     issue_closed_at: {
@@ -103,6 +79,28 @@ export const $PullRequestSchema = {
       isRequired: true,
       format: 'date-time',
     },
+    requested_reviewers: {
+      type: 'any',
+    },
+    requested_teams: {
+      type: 'any',
+    },
+    is_merged: {
+      type: 'boolean',
+    },
+    merged_at: {
+      type: 'string',
+      format: 'date-time',
+    },
+    merge_commit_sha: {
+      type: 'string',
+    },
+    head: {
+      type: 'any',
+    },
+    base: {
+      type: 'any',
+    },
     commits: {
       type: 'number',
     },
@@ -114,27 +112,6 @@ export const $PullRequestSchema = {
     },
     changed_files: {
       type: 'number',
-    },
-    requested_reviewers: {
-      type: 'array',
-      contains: {
-        properties: {
-        },
-      },
-    },
-    requested_teams: {
-      type: 'array',
-      contains: {
-        properties: {
-        },
-      },
-    },
-    is_draft: {
-      type: 'boolean',
-      isRequired: true,
-    },
-    is_rebaseable: {
-      type: 'boolean',
     },
     review_comments: {
       type: 'number',
@@ -148,30 +125,8 @@ export const $PullRequestSchema = {
     mergeable_state: {
       type: 'string',
     },
-    auto_merge: {
-      type: 'string',
-    },
-    is_merged: {
-      type: 'boolean',
-    },
     merged_by: {
-      properties: {
-      },
-    },
-    merged_at: {
-      type: 'string',
-      format: 'date-time',
-    },
-    merge_commit_sha: {
-      type: 'string',
-    },
-    head: {
-      properties: {
-      },
-    },
-    base: {
-      properties: {
-      },
+      type: 'any',
     },
     id: {
       type: 'string',

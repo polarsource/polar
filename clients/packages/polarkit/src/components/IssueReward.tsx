@@ -1,4 +1,4 @@
-import { type PullRequestSchema, type RewardSchema } from "api/client"
+import { type RewardSchema } from "../api/client"
 
 const IssueReward = (props: { reward: RewardSchema }) => {
     const { reward } = props

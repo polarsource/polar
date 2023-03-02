@@ -3,35 +3,30 @@
 /* eslint-disable */
 
 import type { Platforms } from './Platforms';
-import type { State } from './State';
+import type { polar__models__issue__IssueFields__State } from './polar__models__issue__IssueFields__State';
 
 export type IssueSchema = {
   platform: Platforms;
   external_id: number;
-  organization_id?: string;
-  organization_name: string;
-  repository_id?: string;
-  repository_name: string;
+  organization_id: string;
+  repository_id: string;
   number: number;
   title: string;
   body?: string;
   comments?: number;
   author?: any;
   author_association?: string;
-  labels?: Array<any>;
+  labels?: any;
   assignee?: any;
-  assignees?: Array<any>;
+  assignees?: any;
   milestone?: any;
   closed_by?: any;
   reactions?: any;
-  state: State;
+  state: polar__models__issue__IssueFields__State;
   state_reason?: string;
-  is_locked: boolean;
-  lock_reason?: string;
   issue_closed_at?: string;
   issue_modified_at?: string;
   issue_created_at: string;
-  token: string;
   id: string;
   created_at: string;
   modified_at?: string;

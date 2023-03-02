@@ -1043,14 +1043,12 @@
                 "required": [
                     "platform",
                     "external_id",
-                    "organization_name",
-                    "repository_name",
+                    "organization_id",
+                    "repository_id",
                     "number",
                     "title",
                     "state",
-                    "is_locked",
                     "issue_created_at",
-                    "token",
                     "id",
                     "created_at"
                 ],
@@ -1065,19 +1063,13 @@
                     },
                     "organization_id": {
                         "title": "Organization Id",
-                        "type": "string"
-                    },
-                    "organization_name": {
-                        "title": "Organization Name",
-                        "type": "string"
+                        "type": "string",
+                        "format": "uuid"
                     },
                     "repository_id": {
                         "title": "Repository Id",
-                        "type": "string"
-                    },
-                    "repository_name": {
-                        "title": "Repository Name",
-                        "type": "string"
+                        "type": "string",
+                        "format": "uuid"
                     },
                     "number": {
                         "title": "Number",
@@ -1097,7 +1089,7 @@
                     },
                     "author": {
                         "title": "Author",
-                        "type": "object"
+                        "type": "any"
                     },
                     "author_association": {
                         "title": "Author Association",
@@ -1105,43 +1097,33 @@
                     },
                     "labels": {
                         "title": "Labels",
-                        "type": "array",
-                        "items": {}
+                        "type": "any"
                     },
                     "assignee": {
                         "title": "Assignee",
-                        "type": "object"
+                        "type": "any"
                     },
                     "assignees": {
                         "title": "Assignees",
-                        "type": "array",
-                        "items": {}
+                        "type": "any"
                     },
                     "milestone": {
                         "title": "Milestone",
-                        "type": "object"
+                        "type": "any"
                     },
                     "closed_by": {
                         "title": "Closed By",
-                        "type": "object"
+                        "type": "any"
                     },
                     "reactions": {
                         "title": "Reactions",
-                        "type": "object"
+                        "type": "any"
                     },
                     "state": {
-                        "$ref": "#/components/schemas/State"
+                        "$ref": "#/components/schemas/polar__models__issue__IssueFields__State"
                     },
                     "state_reason": {
                         "title": "State Reason",
-                        "type": "string"
-                    },
-                    "is_locked": {
-                        "title": "Is Locked",
-                        "type": "boolean"
-                    },
-                    "lock_reason": {
-                        "title": "Lock Reason",
                         "type": "string"
                     },
                     "issue_closed_at": {
@@ -1158,10 +1140,6 @@
                         "title": "Issue Created At",
                         "type": "string",
                         "format": "date-time"
-                    },
-                    "token": {
-                        "title": "Token",
-                        "type": "string"
                     },
                     "id": {
                         "title": "Id",
@@ -1290,14 +1268,12 @@
                 "required": [
                     "platform",
                     "external_id",
-                    "organization_name",
-                    "repository_name",
+                    "organization_id",
+                    "repository_id",
                     "number",
                     "title",
                     "state",
-                    "is_locked",
                     "issue_created_at",
-                    "is_draft",
                     "id",
                     "created_at"
                 ],
@@ -1312,19 +1288,13 @@
                     },
                     "organization_id": {
                         "title": "Organization Id",
-                        "type": "string"
-                    },
-                    "organization_name": {
-                        "title": "Organization Name",
-                        "type": "string"
+                        "type": "string",
+                        "format": "uuid"
                     },
                     "repository_id": {
                         "title": "Repository Id",
-                        "type": "string"
-                    },
-                    "repository_name": {
-                        "title": "Repository Name",
-                        "type": "string"
+                        "type": "string",
+                        "format": "uuid"
                     },
                     "number": {
                         "title": "Number",
@@ -1344,7 +1314,7 @@
                     },
                     "author": {
                         "title": "Author",
-                        "type": "object"
+                        "type": "any"
                     },
                     "author_association": {
                         "title": "Author Association",
@@ -1352,43 +1322,33 @@
                     },
                     "labels": {
                         "title": "Labels",
-                        "type": "array",
-                        "items": {}
+                        "type": "any"
                     },
                     "assignee": {
                         "title": "Assignee",
-                        "type": "object"
+                        "type": "any"
                     },
                     "assignees": {
                         "title": "Assignees",
-                        "type": "array",
-                        "items": {}
+                        "type": "any"
                     },
                     "milestone": {
                         "title": "Milestone",
-                        "type": "object"
+                        "type": "any"
                     },
                     "closed_by": {
                         "title": "Closed By",
-                        "type": "object"
+                        "type": "any"
                     },
                     "reactions": {
                         "title": "Reactions",
-                        "type": "object"
+                        "type": "any"
                     },
                     "state": {
-                        "$ref": "#/components/schemas/State"
+                        "$ref": "#/components/schemas/polar__models__issue__IssueFields__State"
                     },
                     "state_reason": {
                         "title": "State Reason",
-                        "type": "string"
-                    },
-                    "is_locked": {
-                        "title": "Is Locked",
-                        "type": "boolean"
-                    },
-                    "lock_reason": {
-                        "title": "Lock Reason",
                         "type": "string"
                     },
                     "issue_closed_at": {
@@ -1406,6 +1366,35 @@
                         "type": "string",
                         "format": "date-time"
                     },
+                    "requested_reviewers": {
+                        "title": "Requested Reviewers",
+                        "type": "any"
+                    },
+                    "requested_teams": {
+                        "title": "Requested Teams",
+                        "type": "any"
+                    },
+                    "is_merged": {
+                        "title": "Is Merged",
+                        "type": "boolean"
+                    },
+                    "merged_at": {
+                        "title": "Merged At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "merge_commit_sha": {
+                        "title": "Merge Commit Sha",
+                        "type": "string"
+                    },
+                    "head": {
+                        "title": "Head",
+                        "type": "any"
+                    },
+                    "base": {
+                        "title": "Base",
+                        "type": "any"
+                    },
                     "commits": {
                         "title": "Commits",
                         "type": "integer"
@@ -1421,24 +1410,6 @@
                     "changed_files": {
                         "title": "Changed Files",
                         "type": "integer"
-                    },
-                    "requested_reviewers": {
-                        "title": "Requested Reviewers",
-                        "type": "array",
-                        "items": {}
-                    },
-                    "requested_teams": {
-                        "title": "Requested Teams",
-                        "type": "array",
-                        "items": {}
-                    },
-                    "is_draft": {
-                        "title": "Is Draft",
-                        "type": "boolean"
-                    },
-                    "is_rebaseable": {
-                        "title": "Is Rebaseable",
-                        "type": "boolean"
                     },
                     "review_comments": {
                         "title": "Review Comments",
@@ -1456,34 +1427,9 @@
                         "title": "Mergeable State",
                         "type": "string"
                     },
-                    "auto_merge": {
-                        "title": "Auto Merge",
-                        "type": "string"
-                    },
-                    "is_merged": {
-                        "title": "Is Merged",
-                        "type": "boolean"
-                    },
                     "merged_by": {
                         "title": "Merged By",
-                        "type": "object"
-                    },
-                    "merged_at": {
-                        "title": "Merged At",
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "merge_commit_sha": {
-                        "title": "Merge Commit Sha",
-                        "type": "string"
-                    },
-                    "head": {
-                        "title": "Head",
-                        "type": "object"
-                    },
-                    "base": {
-                        "title": "Base",
-                        "type": "object"
+                        "type": "any"
                     },
                     "id": {
                         "title": "Id",
@@ -1506,7 +1452,6 @@
                 "required": [
                     "platform",
                     "external_id",
-                    "organization_name",
                     "name",
                     "is_private",
                     "id",
@@ -1523,10 +1468,6 @@
                     },
                     "organization_id": {
                         "title": "Organization Id",
-                        "type": "string"
-                    },
-                    "organization_name": {
-                        "title": "Organization Name",
                         "type": "string"
                     },
                     "name": {
@@ -1636,7 +1577,8 @@
                     "id",
                     "created_at",
                     "repository_id",
-                    "organization_id"
+                    "organization_id",
+                    "state"
                 ],
                 "type": "object",
                 "properties": {
@@ -1664,17 +1606,11 @@
                     "organization_id": {
                         "title": "Organization Id",
                         "type": "string"
+                    },
+                    "state": {
+                        "$ref": "#/components/schemas/polar__schema__reward__State"
                     }
                 }
-            },
-            "State": {
-                "title": "State",
-                "enum": [
-                    "open",
-                    "closed"
-                ],
-                "type": "string",
-                "description": "An enumeration."
             },
             "Status": {
                 "title": "Status",
@@ -1818,6 +1754,25 @@
                         "type": "string"
                     }
                 }
+            },
+            "polar__models__issue__IssueFields__State": {
+                "title": "State",
+                "enum": [
+                    "open",
+                    "closed"
+                ],
+                "type": "string",
+                "description": "An enumeration."
+            },
+            "polar__schema__reward__State": {
+                "title": "State",
+                "enum": [
+                    "created",
+                    "pending",
+                    "paid"
+                ],
+                "type": "string",
+                "description": "An enumeration."
             }
         },
         "securitySchemes": {

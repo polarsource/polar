@@ -5,7 +5,7 @@
 /**
  * An enumeration.
  */
-export enum State {
+export enum polar__models__issue__IssueFields__State {
   OPEN = 'open',
   CLOSED = 'closed',
 }

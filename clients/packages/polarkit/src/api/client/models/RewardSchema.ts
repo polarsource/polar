@@ -2,6 +2,8 @@
 /* tslint:disable */
 /* eslint-disable */
 
+import type { polar__schema__reward__State } from './polar__schema__reward__State';
+
 export type RewardSchema = {
   issue_id: string;
   amount: number;
@@ -9,5 +11,6 @@ export type RewardSchema = {
   created_at: string;
   repository_id: string;
   organization_id: string;
+  state: polar__schema__reward__State;
 };
 

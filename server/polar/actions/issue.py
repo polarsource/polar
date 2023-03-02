@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from typing import Any, Sequence
 
 import structlog
@@ -35,20 +36,6 @@ class IssueActions(Action[Issue, CreateIssue, UpdateIssue]):
         issues = res.scalars().unique().all()
         return issues
 
-    async def get_by_url(
-        self, session: AsyncSession, organization_name: str, repo_name: str, number: int
-    ) -> Issue | None:
-        query = (
-            sql.select(Issue)
-            .where(
-                (Issue.organization_name == organization_name)
-                & (Issue.repository_name == repo_name)
-                & (Issue.number == number)
-            )
-            .limit(1)
-        )
-        return await self.get_by_query(session, query)
-
 
 class GithubIssueActions(IssueActions):
     async def get_by_external_id(
@@ -60,8 +47,8 @@ class GithubIssueActions(IssueActions):
         self,
         session: AsyncSession,
         data: github.rest.Issue | github.webhooks.IssuesOpenedPropIssue,
-        organization_id: GUID,
-        repository_id: GUID,
+        organization_id: uuid.UUID,
+        repository_id: uuid.UUID,
     ) -> Issue:
         records = await self.store_many(
             session,
@@ -77,8 +64,8 @@ class GithubIssueActions(IssueActions):
         self,
         session: AsyncSession,
         data: list[github.rest.Issue | github.webhooks.IssuesOpenedPropIssue],
-        organization_id: GUID,
-        repository_id: GUID,
+        organization_id: uuid.UUID,
+        repository_id: uuid.UUID,
     ) -> list[Issue]:
         def parse(
             issue: github.rest.Issue | github.webhooks.IssuesOpenedPropIssue,

@@ -8,7 +8,6 @@ import structlog
 
 from polar.clients import github
 from polar.exceptions import ExpectedIssueGotPullRequest
-from polar.ext.sqlalchemy.types import GUID
 from polar.models.issue import Issue
 from polar.platforms import Platforms
 from polar.schema.base import Schema
@@ -51,8 +50,6 @@ class Base(Schema):
 
     state: Issue.State
     state_reason: str | None
-    # is_locked: bool
-    # lock_reason: str | None
 
     issue_closed_at: datetime | None
     issue_modified_at: datetime | None
@@ -67,13 +64,6 @@ class CreateIssue(Base):
         organization_id: uuid.UUID,
         repository_id: uuid.UUID,
     ) -> Self:
-
-        log.debug(
-            "zegl create.issue",
-            organization_id=organization_id,
-            ty=type(organization_id),
-        )
-
         ret = cls(
             platform=Platforms.github,
             external_id=data.id,
@@ -93,14 +83,12 @@ class CreateIssue(Base):
             reactions=github.jsonify(github.attr(data, "reactions")),
             state=Issue.State(data.state),
             state_reason=github.attr(data, "state_reason"),
-            # TODO:
-            # cls.is_locked = data.locked
-            # cls.lock_reason = data.active_lock_reason
             issue_closed_at=data.closed_at,
             issue_created_at=data.created_at,
             issue_modified_at=data.updated_at,
         )
 
+        # TODO!
         if data.body:
             cls.body = data.body
 
@@ -110,8 +98,8 @@ class CreateIssue(Base):
     def from_github(
         cls,
         data: TIssueData,
-        organization_id: GUID,
-        repository_id: GUID,
+        organization_id: uuid.UUID,
+        repository_id: uuid.UUID,
     ) -> Self:
         if github.is_set(data, "pull_request"):
             raise ExpectedIssueGotPullRequest()
@@ -134,14 +122,6 @@ class IssueSchema(CreateIssue):
 
     class Config:
         orm_mode = True
-
-    # def get_url(self) -> str:
-    #    if not self.platform == "github":
-    #        raise NotImplementedError(
-    #            f"No implementation for platform: {self.platform}"
-    #        )
-    #    path = f"{self.organization_name}/{self.repository_name}/issues/{self.number}"
-    #    return f"https://github.com/{path}"
 
 
 class GetIssuePath(Schema):

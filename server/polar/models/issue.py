@@ -1,16 +1,7 @@
 import enum
 from datetime import datetime
 
-import structlog
-from sqlalchemy import (
-    TIMESTAMP,
-    Boolean,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-    UniqueConstraint,
-)
+from sqlalchemy import TIMESTAMP, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, MappedColumn, declared_attr, mapped_column
 
@@ -19,8 +10,6 @@ from polar.ext.sqlalchemy import GUID, StringEnum
 from polar.models.base import RecordModel
 from polar.platforms import Platforms
 from polar.typing import JSONDict, JSONList
-
-log = structlog.get_logger()
 
 
 class Platform(enum.Enum):
@@ -95,8 +84,6 @@ class IssueFields:
         "reactions",
         "state",
         "state_reason",
-        # "is_locked",
-        # "lock_reason",
         "issue_closed_at",
         "issue_modified_at",
     }

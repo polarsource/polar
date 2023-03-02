@@ -7,7 +7,6 @@ from typing import Self
 import structlog
 
 from polar.clients import github
-from polar.ext.sqlalchemy.types import GUID
 from polar.schema.issue import CreateIssue
 from polar.typing import JSONAny
 
@@ -30,12 +29,6 @@ class CreateMinimalPullRequest(CreateIssue):
 
     head: JSONAny
     base: JSONAny
-
-    # platform: Platforms
-    # external_id: int
-    # organization_id: str | None
-    # repository_id: str | None
-    # number: int
 
     # TODO: Rename to something like source_created_at
     # So it's the same across the board reflecting the platform source fields
@@ -80,9 +73,6 @@ class CreateFullPullRequest(CreateMinimalPullRequest):
 
     merged_by: JSONAny
 
-    # is_draft: bool
-    # is_rebaseable: bool | None
-
     @classmethod
     def full_pull_request_from_github(
         cls,
@@ -105,10 +95,6 @@ class CreateFullPullRequest(CreateMinimalPullRequest):
         create.maintainer_can_modify = pr.maintainer_can_modify
         create.is_mergeable = pr.mergeable
         create.mergeable_state = pr.mergeable_state
-
-        # if isinstance(pr, github.webhooks.PullRequestOpenedPropPullRequest):
-        #     create.is_draft = pr.draft
-        #     create.is_rebaseable = pr.rebaseable
 
         return create
 

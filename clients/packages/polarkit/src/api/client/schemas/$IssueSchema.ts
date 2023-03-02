@@ -13,17 +13,13 @@ export const $IssueSchema = {
     },
     organization_id: {
       type: 'string',
-    },
-    organization_name: {
-      type: 'string',
       isRequired: true,
+      format: 'uuid',
     },
     repository_id: {
       type: 'string',
-    },
-    repository_name: {
-      type: 'string',
       isRequired: true,
+      format: 'uuid',
     },
     number: {
       type: 'number',
@@ -40,54 +36,41 @@ export const $IssueSchema = {
       type: 'number',
     },
     author: {
-      properties: {
-      },
+      type: 'any-of',
+      contains: [],
     },
     author_association: {
       type: 'string',
     },
     labels: {
-      type: 'array',
-      contains: {
-        properties: {
-        },
-      },
+      type: 'any-of',
+      contains: [],
     },
     assignee: {
-      properties: {
-      },
+      type: 'any-of',
+      contains: [],
     },
     assignees: {
-      type: 'array',
-      contains: {
-        properties: {
-        },
-      },
+      type: 'any-of',
+      contains: [],
     },
     milestone: {
-      properties: {
-      },
+      type: 'any-of',
+      contains: [],
     },
     closed_by: {
-      properties: {
-      },
+      type: 'any-of',
+      contains: [],
     },
     reactions: {
-      properties: {
-      },
+      type: 'any-of',
+      contains: [],
     },
     state: {
-      type: 'State',
+      type: 'polar__models__issue__IssueFields__State',
       isRequired: true,
     },
     state_reason: {
-      type: 'string',
-    },
-    is_locked: {
-      type: 'boolean',
-      isRequired: true,
-    },
-    lock_reason: {
       type: 'string',
     },
     issue_closed_at: {
@@ -102,10 +85,6 @@ export const $IssueSchema = {
       type: 'string',
       isRequired: true,
       format: 'date-time',
-    },
-    token: {
-      type: 'string',
-      isRequired: true,
     },
     id: {
       type: 'string',

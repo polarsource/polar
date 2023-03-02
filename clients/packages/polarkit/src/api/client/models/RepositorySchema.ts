@@ -9,7 +9,6 @@ export type RepositorySchema = {
   platform: Platforms;
   external_id: number;
   organization_id?: string;
-  organization_name: string;
   name: string;
   description?: string;
   open_issues?: number;

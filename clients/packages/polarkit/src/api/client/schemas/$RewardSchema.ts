@@ -28,5 +28,9 @@ export const $RewardSchema = {
       type: 'string',
       isRequired: true,
     },
+    state: {
+      type: 'polar__schema__reward__State',
+      isRequired: true,
+    },
   },
 } as const;

@@ -2,7 +2,7 @@ from typing import Sequence
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from polar.actions import repository, reward
+from polar.actions import organization, repository, reward
 from polar.api.deps import current_active_user, get_db_session
 from polar.auth.repository import repository_auth
 from polar.models import User
@@ -75,10 +75,22 @@ async def get_repository_rewards(
     session: AsyncSession = Depends(get_db_session),
 ) -> Sequence[Reward]:
 
+    org = await organization.get_by(
+        session=session,
+        platform=platform,
+        name=organization_name,
+    )
+
+    if not org:
+        raise HTTPException(
+            status_code=404,
+            detail="Organization not found",
+        )
+
     repo = await repository.get_by(
         session=session,
         platform=platform,
-        organization_name=organization_name,
+        organization_id=org.id,
         name=name,
     )
 

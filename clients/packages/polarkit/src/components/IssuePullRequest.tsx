@@ -29,8 +29,8 @@ const IssuePullRequest = (props: {
             </div>
             <div className="flex items-center gap-4">
                 <div className="space-x-2">
-                    <span className="text-green-400 border-2 border-pink-800">+318</span>
-                    <span className="text-red-400 border-2 border-pink-800">-185</span>
+                    {pr.additions !== undefined && <span className="text-green-400">+{pr.additions}</span>}
+                    {pr.deletions !== undefined && <span className="text-red-400">-{pr.deletions}</span>}
                 </div>
                 {pr.state == 'open' && <a href="#" className="text-white bg-green-600 py-1 px-2 rounded-md text-sm">Review</a>}
                 {pr.state == 'closed' && <a href="#" className="text-white bg-purple-600 py-1 px-2 rounded-md text-sm">Reward</a>}

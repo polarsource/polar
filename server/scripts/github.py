@@ -69,7 +69,7 @@ def noop() -> None:
 
 @cli.command()
 @typer_async
-async def delete_issues(org_name: str) -> None:
+async def resync_issues(org_name: str) -> None:
     async with AsyncSessionLocal() as session:
         org = await github_organization.get_by_name(session, org_name)
         if not org:

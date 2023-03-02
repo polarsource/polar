@@ -23,6 +23,8 @@ const IssueListItem = (props: { issue: Issue }) => {
     const createdAt = new Date(issue_created_at)
     const closedAt = new Date(issue_created_at)
 
+    const haveRewardOrPullRequest = props.issue.rewards.length > 0 || props.issue.pullRequests.length > 0
+
     return (
         <div>
             <div className="py-4 flex items-center justify-between gap-4">
@@ -47,7 +49,7 @@ const IssueListItem = (props: { issue: Issue }) => {
                 </div>
             </div>
 
-            <IssueActivityBox>
+            {haveRewardOrPullRequest && <IssueActivityBox>
                 {props.issue.rewards.map((reward: RewardSchema) => {
                     return <IssueReward reward={reward} key={reward.id} />
                 })}
@@ -55,7 +57,7 @@ const IssueListItem = (props: { issue: Issue }) => {
                 {props.issue.pullRequests.map((pr: PullRequestSchema) => {
                     return <IssuePullRequest issue={props.issue} pullRequest={pr} key={pr.number} />
                 })}
-            </IssueActivityBox>
+            </IssueActivityBox>}
         </div>
     )
 }

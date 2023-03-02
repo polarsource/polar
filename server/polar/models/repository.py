@@ -27,7 +27,7 @@ class Repository(RecordModel):
     __tablename__ = "repositories"
     __table_args__ = (
         UniqueConstraint("external_id"),
-        UniqueConstraint("organization_name", "name"),
+        UniqueConstraint("organization_id", "name"),
     )
 
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
@@ -36,8 +36,6 @@ class Repository(RecordModel):
         GUID, ForeignKey("organizations.id"), nullable=True
     )
 
-    # TODO: Delete? Lookups should be done by organization_id
-    organization_name: Mapped[str] = mapped_column(String, nullable=False)
     organization: "Mapped[Organization]" = relationship(
         "Organization",
         back_populates="repos",

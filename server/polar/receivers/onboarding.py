@@ -7,11 +7,11 @@ from polar.models import Issue, Organization, PullRequest, Repository
 log = structlog.get_logger()
 
 
-@signals.repository_issue_synced.connect
-async def on_repository_issue_synced(
+@signals.issue_synced.connect
+async def on_issue_synced(
     sender: Repository, organization: Organization, issue: Issue
 ) -> None:
-    log.info("repository.issue.synced", issue=issue.id, title=issue.title)
+    log.info("issue.synced", issue=issue.id, title=issue.title)
     await publish(
         "issue.synced",
         {

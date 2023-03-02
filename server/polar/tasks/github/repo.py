@@ -51,7 +51,7 @@ async def sync_repository_issues(
                 issue=issue.id,
                 title=issue.title,
             )
-            await signals.repository_issue_synced.send_async(
+            await signals.issue_synced.send_async(
                 repository,
                 organization=organization,
                 issue=issue,

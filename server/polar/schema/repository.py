@@ -12,7 +12,6 @@ class CreateRepository(Schema):
     platform: Platforms
     external_id: int
     organization_id: str | None
-    organization_name: str
     name: str
     description: str | None
     open_issues: int | None
@@ -41,7 +40,6 @@ class CreateRepository(Schema):
             platform=Platforms.github,
             external_id=repo.id,
             organization_id=organization.id,
-            organization_name=organization.name,
             name=repo.name,
             description=repo.description,
             open_issues=repo.open_issues,

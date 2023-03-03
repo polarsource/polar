@@ -26,7 +26,10 @@ def typer_async(f):
     return wrapper
 
 
-async def get_repositories(session: AsyncSession, org: Organization) -> Sequence[Repository]:
+async def get_repositories(
+    session: AsyncSession,
+    org: Organization
+) -> Sequence[Repository]:
     query = (
         sql.select(Repository)
         .where(Repository.organization_id == org.id)

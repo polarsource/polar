@@ -1,7 +1,7 @@
 import pytest
 
 from polar.models.mixins import ActiveRecordMixin
-from polar.postgres import AsyncSession, AsyncSessionLocal
+from polar.postgres import AsyncSession
 from tests.fixtures.database import TestModel
 
 

@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, Literal
+from typing import Literal
 
 import structlog
 from fastapi import Request, Response
@@ -10,10 +10,11 @@ from fastapi_users.authentication import (
     JWTStrategy,
 )
 from httpx_oauth.clients.github import GitHubOAuth2
+from pydantic import BaseModel
+
 from polar.actions import github_user
 from polar.config import settings
 from polar.models import User
-from pydantic import BaseModel
 
 log = structlog.get_logger()
 
@@ -24,7 +25,7 @@ github_oauth_client = GitHubOAuth2(
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     async def oauth_callback(
-        self: "BaseUserManager[models.UOAP, models.ID]",
+        self: BaseUserManager[User, uuid.UUID],
         oauth_name: str,
         access_token: str,
         account_id: str,

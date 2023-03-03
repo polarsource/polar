@@ -5,7 +5,6 @@ import structlog
 
 from polar import actions
 from polar.clients import github
-from polar.ext.sqlalchemy.types import GUID
 from polar.models import Issue, Organization, PullRequest, Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession

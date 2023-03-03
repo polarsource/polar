@@ -42,7 +42,6 @@ ruff = "^0.0.253"
 [tool.ruff]
 target-version = "py311"
 
-
 [tool.mypy]
 ignore_missing_imports = true
 strict = true

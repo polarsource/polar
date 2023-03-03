@@ -9,7 +9,6 @@ import sqlalchemy as sa
 from alembic import op
 
 # Polar Custom Imports
-from polar.ext.sqlalchemy import GUID
 
 # revision identifiers, used by Alembic.
 revision = "c6af58446381"

@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, AsyncGenerator
+from typing import AsyncGenerator
 
 import pytest
 from sqlalchemy import Integer, String

@@ -1,4 +1,4 @@
-from typing import List, Sequence
+from typing import Sequence
 
 from fastapi import APIRouter, Depends
 from polar.actions import organization

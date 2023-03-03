@@ -4,7 +4,6 @@ from fastapi_users.db import SQLAlchemyUserDatabase
 from polar.actions.base import Action
 from polar.clients import github
 from polar.models import User
-from polar.models.user import User
 from polar.postgres import AsyncSession
 from polar.schema.user import UserCreate, UserUpdate
 

@@ -118,5 +118,6 @@ async def webhook(request: Request) -> WebhookResponse:
     if valid_signature:
         return await queue(request)
 
-    # Should be 403 Forbidden, but throwing unsophisticated hackers/scrapers/bots off the scent
+    # Should be 403 Forbidden, but...
+    # Throwing unsophisticated hackers/scrapers/bots off the scent
     raise HTTPException(status_code=404)

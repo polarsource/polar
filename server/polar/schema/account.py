@@ -23,21 +23,21 @@ class Base(Schema):
     status: Account.Status = Account.Status.CREATED
 
 
-class CreateAccount(Base):
+class AccountCreate(Base):
     stripe_id: str
     is_personal: bool
     type: str
     data: dict[str, Any]
 
 
-class UpdateAccount(Base):
+class AccountUpdate(Base):
     is_details_submitted: bool
     is_charges_enabled: bool
     is_payouts_enabled: bool
     data: dict[str, Any]
 
 
-class AccountSchema(CreateAccount):
+class AccountRead(AccountCreate):
     class Config:
         orm_mode = True
 

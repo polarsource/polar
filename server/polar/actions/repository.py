@@ -55,8 +55,6 @@ class GithubRepositoryActions(RepositoryActions):
 
             record = await github_issue.store(
                 session,
-                organization.name,
-                repository.name,
                 gh_issue,
                 organization_id=organization.id,
                 repository_id=repository.id,
@@ -87,10 +85,8 @@ class GithubRepositoryActions(RepositoryActions):
             if not gh_pull:
                 break
 
-            record = await github_pull_request.store(
+            record = await github_pull_request.store_simple(
                 session,
-                organization.name,
-                repository.name,
                 gh_pull,
                 organization_id=organization.id,
                 repository_id=repository.id,

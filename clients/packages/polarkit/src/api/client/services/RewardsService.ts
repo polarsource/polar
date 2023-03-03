@@ -1,9 +1,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { CreateReward } from '../models/CreateReward';
 import type { Platforms } from '../models/Platforms';
-import type { RewardSchema } from '../models/RewardSchema';
+import type { RewardCreate } from '../models/RewardCreate';
+import type { RewardRead } from '../models/RewardRead';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -14,14 +14,14 @@ export class RewardsService {
 
   /**
    * Create Rewawrd
-   * @returns RewardSchema Successful Response
+   * @returns RewardRead Successful Response
    * @throws ApiError
    */
   public createRewawrd({
     requestBody,
   }: {
-    requestBody: CreateReward,
-  }): CancelablePromise<RewardSchema> {
+    requestBody: RewardCreate,
+  }): CancelablePromise<RewardRead> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/rewards',
@@ -35,7 +35,7 @@ export class RewardsService {
 
   /**
    * Get Repository Rewards
-   * @returns RewardSchema Successful Response
+   * @returns RewardRead Successful Response
    * @throws ApiError
    */
   public getRepositoryRewards({
@@ -46,7 +46,7 @@ export class RewardsService {
     platform: Platforms,
     organizationName: string,
     name: string,
-  }): CancelablePromise<Array<RewardSchema>> {
+  }): CancelablePromise<Array<RewardRead>> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/rewards/{platform}/{organization_name}/{name}',

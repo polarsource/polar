@@ -2,7 +2,7 @@ import { default as IssueListItem, type Issue } from './IssueListItem'
 import {
   type IssueRead,
   type PullRequestRead,
-  type RewardSchema,
+  type RewardRead,
 } from '../api/client'
 import { useState } from 'react'
 
@@ -48,7 +48,7 @@ const pullRequestsForIssue = (
 const IssueList = (props: {
   issues: IssueRead[]
   pullRequests: PullRequestRead[]
-  rewards: RewardSchema[]
+  rewards: RewardRead[]
 }) => {
   const { issues, pullRequests, rewards } = props
 

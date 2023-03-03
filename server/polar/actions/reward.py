@@ -8,16 +8,12 @@ from polar.actions.base import Action
 from polar.ext.sqlalchemy.types import GUID
 from polar.models.reward import Reward
 from polar.postgres import AsyncSession, sql
-from polar.schema.reward import CreateReward, UpdateReward
+from polar.schema.reward import RewardCreate, RewardUpdate
 
 log = structlog.get_logger()
 
 
-class RewardActions(Action[Reward, CreateReward, UpdateReward]):
-    # @property
-    # def default_upsert_index_elements(self) -> list[MappedColumn[Any]]:
-    #    return [self.model.external_id]
-
+class RewardActions(Action[Reward, RewardCreate, RewardUpdate]):
     async def list_by_repository(
         self, session: AsyncSession, repository_id: GUID
     ) -> Sequence[Reward]:

@@ -2,7 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-export type CreateReward = {
+export type RewardCreate = {
   issue_id: string;
   amount: number;
 };

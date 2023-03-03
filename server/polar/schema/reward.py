@@ -16,16 +16,16 @@ class State(str, Enum):
     # In the future, we might have a "disputed", "refunded", "cancelled" states etc...
 
 
-class CreateReward(Schema):
+class RewardCreate(Schema):
     issue_id: str
     amount: Decimal
 
 
-class UpdateReward(CreateReward):
+class RewardUpdate(RewardCreate):
     ...
 
 
-class RewardSchema(CreateReward):
+class RewardRead(RewardCreate):
     id: str
     created_at: datetime
 

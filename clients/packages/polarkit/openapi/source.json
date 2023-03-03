@@ -821,7 +821,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/CreateReward"
+                                "$ref": "#/components/schemas/RewardCreate"
                             }
                         }
                     },
@@ -833,7 +833,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/RewardSchema"
+                                    "$ref": "#/components/schemas/RewardRead"
                                 }
                             }
                         }
@@ -900,7 +900,7 @@
                                     "title": "Response Rewards:Get Repository Rewards",
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/RewardSchema"
+                                        "$ref": "#/components/schemas/RewardRead"
                                     }
                                 }
                             }
@@ -960,24 +960,6 @@
                     "client_secret": {
                         "title": "Client Secret",
                         "type": "string"
-                    }
-                }
-            },
-            "CreateReward": {
-                "title": "CreateReward",
-                "required": [
-                    "issue_id",
-                    "amount"
-                ],
-                "type": "object",
-                "properties": {
-                    "issue_id": {
-                        "title": "Issue Id",
-                        "type": "string"
-                    },
-                    "amount": {
-                        "title": "Amount",
-                        "type": "number"
                     }
                 }
             },
@@ -1759,8 +1741,26 @@
                     }
                 }
             },
-            "RewardSchema": {
-                "title": "RewardSchema",
+            "RewardCreate": {
+                "title": "RewardCreate",
+                "required": [
+                    "issue_id",
+                    "amount"
+                ],
+                "type": "object",
+                "properties": {
+                    "issue_id": {
+                        "title": "Issue Id",
+                        "type": "string"
+                    },
+                    "amount": {
+                        "title": "Amount",
+                        "type": "number"
+                    }
+                }
+            },
+            "RewardRead": {
+                "title": "RewardRead",
                 "required": [
                     "issue_id",
                     "amount",

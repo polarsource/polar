@@ -10,7 +10,6 @@ export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
 export type { Body_users_auth_jwt_login } from './models/Body_users_auth_jwt_login';
-export type { CreateReward } from './models/CreateReward';
 export type { ErrorModel } from './models/ErrorModel';
 export type { HTTPValidationError } from './models/HTTPValidationError';
 export { InstallationCreate } from './models/InstallationCreate';
@@ -22,7 +21,8 @@ export { polar__models__issue__IssueFields__State } from './models/polar__models
 export { polar__schema__reward__State } from './models/polar__schema__reward__State';
 export type { PullRequestRead } from './models/PullRequestRead';
 export type { RepositoryRead } from './models/RepositoryRead';
-export type { RewardSchema } from './models/RewardSchema';
+export type { RewardCreate } from './models/RewardCreate';
+export type { RewardRead } from './models/RewardRead';
 export { Status } from './models/Status';
 export type { UserRead } from './models/UserRead';
 export type { UserUpdate } from './models/UserUpdate';

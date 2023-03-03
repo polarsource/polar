@@ -4,7 +4,7 @@
 
 import type { polar__schema__reward__State } from './polar__schema__reward__State';
 
-export type RewardSchema = {
+export type RewardRead = {
   issue_id: string;
   amount: number;
   id: string;

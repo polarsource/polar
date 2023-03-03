@@ -14,7 +14,6 @@ CreateSchemaType = TypeVar("CreateSchemaType", bound=Schema)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=Schema)
 
 
-
 class Action(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     # Ideally, actions would only contain class methods since there is
     # no state to retain. Unable to achieve this with mapping the model

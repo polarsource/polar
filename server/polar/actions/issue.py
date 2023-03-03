@@ -95,9 +95,7 @@ class GithubIssueActions(IssueActions):
             )
             return []
 
-        return await self.upsert_many(
-            session, schemas, constraints=[Issue.external_id]
-        )
+        return await self.upsert_many(session, schemas, constraints=[Issue.external_id])
 
 
 issue = IssueActions(Issue)

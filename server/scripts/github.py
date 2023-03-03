@@ -27,24 +27,15 @@ def typer_async(f):
 
 
 async def get_repositories(
-    session: AsyncSession,
-    org: Organization
+    session: AsyncSession, org: Organization
 ) -> Sequence[Repository]:
-    query = (
-        sql.select(Repository)
-        .where(Repository.organization_id == org.id)
-    )
+    query = sql.select(Repository).where(Repository.organization_id == org.id)
     res = await session.execute(query)
     return res.scalars().unique().all()
 
 
 async def do_delete_issues(session: AsyncSession, org: Organization) -> None:
-    query = (
-        sql.delete(Issue)
-        .where(
-            (Issue.organization_id == org.id)
-        )
-    )
+    query = sql.delete(Issue).where((Issue.organization_id == org.id))
     await session.execute(query)
     await session.commit()
 
@@ -59,16 +50,17 @@ async def trigger_issue_sync(session: AsyncSession, org: Organization) -> None:
         typer.echo(f"Triggered issue sync for {org.name}/{repository.name}")
 
 
-
 ###############################################################################
 # Commands
 ###############################################################################
+
 
 @cli.command()
 def noop() -> None:
     # Just to avoid Typer fallback on running the only command as main
     # We want to be explicit about our commands/actions, i.e delete
     typer.echo("Noop")
+
 
 @cli.command()
 @typer_async

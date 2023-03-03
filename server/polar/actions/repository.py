@@ -1,4 +1,4 @@
-from typing import Any, AsyncGenerator
+from typing import Any, AsyncGenerator, Literal
 
 import structlog
 from sqlalchemy import Column
@@ -35,9 +35,9 @@ class GithubRepositoryActions(RepositoryActions):
         session: AsyncSession,
         organization: Organization,
         repository: Repository,
-        state: str = "open",
-        sort: str = "updated",
-        direction: str = "desc",
+        state: Literal["open", "closed", "all"] = "open",
+        sort: Literal["created", "updated", "comments"] = "updated",
+        direction: Literal["asc", "desc"] = "desc",
         per_page: int = 30,
     ) -> AsyncGenerator[Issue, None]:
         client = github.get_app_installation_client(organization.installation_id)
@@ -67,9 +67,9 @@ class GithubRepositoryActions(RepositoryActions):
         session: AsyncSession,
         organization: Organization,
         repository: Repository,
-        state: str = "open",
-        sort: str = "updated",
-        direction: str = "desc",
+        state: Literal["open", "closed", "all"] = "open",
+        sort: Literal["created", "updated", "popularity", "long-running"] = "updated",
+        direction: Literal["asc", "desc"] = "desc",
         per_page: int = 30,
     ) -> AsyncGenerator[PullRequest, None]:
         client = github.get_app_installation_client(organization.installation_id)
@@ -95,12 +95,15 @@ class GithubRepositoryActions(RepositoryActions):
                 yield record
 
     async def upsert_many(
-        self,
+        cls,
         session: AsyncSession,
         create_schemas: list[RepositoryCreate],
         index_elements: list[Column[Any]] | None = None,
+        mutable_keys: set[str] | None = None,
     ) -> list[Repository]:
-        instances = await super().upsert_many(session, create_schemas, index_elements)
+        instances = await super().upsert_many(
+            session, create_schemas, index_elements, mutable_keys
+        )
 
         # Create tasks to sync repositories (issues, pull requests, etc.)
         for instance in instances:

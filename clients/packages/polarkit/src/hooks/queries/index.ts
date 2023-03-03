@@ -1,9 +1,9 @@
 import { api } from '../../api'
 import { useQuery } from '@tanstack/react-query'
-import { RepositorySchema, OrganizationRead } from 'polarkit/api/client'
+import { type RepositoryRead, type OrganizationRead } from 'polarkit/api/client'
 import { Platforms } from '../../api/client'
 
-export type RepoListItem = RepositorySchema & {
+export type RepoListItem = RepositoryRead & {
   organization: OrganizationRead
 }
 

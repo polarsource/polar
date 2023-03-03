@@ -13,7 +13,7 @@ from polar.models.repository import Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
 from polar.schema.organization import OrganizationCreate
-from polar.schema.repository import CreateRepository
+from polar.schema.repository import RepositoryCreate
 
 
 def simple_pull_request() -> github.rest.PullRequestSimple:
@@ -49,7 +49,7 @@ async def create_org(session: AsyncSession) -> Organization:
 
 
 async def create_repo(session: AsyncSession, org: Organization) -> Repository:
-    create_schema = CreateRepository(
+    create_schema = RepositoryCreate(
         platform=Platforms.github,
         name="testrepo",
         organization_id=org.id,

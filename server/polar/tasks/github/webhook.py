@@ -11,7 +11,7 @@ from polar.postgres import AsyncSession
 from polar.schema.issue import IssueRead
 from polar.schema.organization import OrganizationCreate
 from polar.schema.pull_request import FullPullRequestCreate, PullRequestRead
-from polar.schema.repository import CreateRepository
+from polar.schema.repository import RepositoryCreate
 from polar.worker import get_db_session, sync_worker, task
 
 log = structlog.get_logger()
@@ -34,7 +34,7 @@ async def add_repositories(
 ) -> list[Repository]:
     schemas = []
     for repo in repositories:
-        create_schema = CreateRepository(
+        create_schema = RepositoryCreate(
             platform=Platforms.github,
             external_id=repo.id,
             organization_id=organization.id,

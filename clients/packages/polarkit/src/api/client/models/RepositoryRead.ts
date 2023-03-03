@@ -5,7 +5,7 @@
 import type { Platforms } from './Platforms';
 import type { Visibility } from './Visibility';
 
-export type RepositorySchema = {
+export type RepositoryRead = {
   platform: Platforms;
   external_id: number;
   organization_id?: string;

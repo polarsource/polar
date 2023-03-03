@@ -6,7 +6,7 @@ from polar.clients import github
 from polar.models.organization import Organization
 from polar.platforms import Platforms
 from polar.schema.base import Schema
-from polar.schema.repository import RepositorySchema
+from polar.schema.repository import RepositoryRead
 
 
 class Base(Schema):
@@ -67,7 +67,7 @@ class OrganizationRead(Base):
     created_at: datetime
     modified_at: datetime | None
 
-    repositories: list[RepositorySchema] | None
+    repositories: list[RepositoryRead] | None
 
     class Config:
         orm_mode = True

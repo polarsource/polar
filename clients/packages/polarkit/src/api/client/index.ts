@@ -21,7 +21,7 @@ export { Platforms } from './models/Platforms';
 export { polar__models__issue__IssueFields__State } from './models/polar__models__issue__IssueFields__State';
 export { polar__schema__reward__State } from './models/polar__schema__reward__State';
 export type { PullRequestRead } from './models/PullRequestRead';
-export type { RepositorySchema } from './models/RepositorySchema';
+export type { RepositoryRead } from './models/RepositoryRead';
 export type { RewardSchema } from './models/RewardSchema';
 export { Status } from './models/Status';
 export type { UserRead } from './models/UserRead';

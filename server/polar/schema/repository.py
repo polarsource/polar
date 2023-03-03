@@ -8,7 +8,7 @@ from polar.platforms import Platforms
 from polar.schema.base import Schema
 
 
-class CreateRepository(Schema):
+class RepositoryCreate(Schema):
     platform: Platforms
     external_id: int
     organization_id: str | None
@@ -64,11 +64,11 @@ class CreateRepository(Schema):
         )
 
 
-class UpdateRepository(CreateRepository):
+class RepositoryUpdate(RepositoryCreate):
     ...
 
 
-class RepositorySchema(CreateRepository):
+class RepositoryRead(RepositoryCreate):
     id: str
     visibility: Repository.Visibility
 

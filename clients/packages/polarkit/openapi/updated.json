@@ -1250,7 +1250,7 @@
                         "title": "Repositories",
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/RepositorySchema"
+                            "$ref": "#/components/schemas/RepositoryRead"
                         }
                     }
                 }
@@ -1314,17 +1314,7 @@
                     },
                     "author": {
                         "title": "Author",
-                        "anyOf": [
-                            {
-                                "type": "array",
-                                "items": {
-                                    "type": "object"
-                                }
-                            },
-                            {
-                                "type": "object"
-                            }
-                        ]
+                        "type": "any"
                     },
                     "author_association": {
                         "title": "Author Association",
@@ -1332,87 +1322,27 @@
                     },
                     "labels": {
                         "title": "Labels",
-                        "anyOf": [
-                            {
-                                "type": "array",
-                                "items": {
-                                    "type": "object"
-                                }
-                            },
-                            {
-                                "type": "object"
-                            }
-                        ]
+                        "type": "any"
                     },
                     "assignee": {
                         "title": "Assignee",
-                        "anyOf": [
-                            {
-                                "type": "array",
-                                "items": {
-                                    "type": "object"
-                                }
-                            },
-                            {
-                                "type": "object"
-                            }
-                        ]
+                        "type": "any"
                     },
                     "assignees": {
                         "title": "Assignees",
-                        "anyOf": [
-                            {
-                                "type": "array",
-                                "items": {
-                                    "type": "object"
-                                }
-                            },
-                            {
-                                "type": "object"
-                            }
-                        ]
+                        "type": "any"
                     },
                     "milestone": {
                         "title": "Milestone",
-                        "anyOf": [
-                            {
-                                "type": "array",
-                                "items": {
-                                    "type": "object"
-                                }
-                            },
-                            {
-                                "type": "object"
-                            }
-                        ]
+                        "type": "any"
                     },
                     "closed_by": {
                         "title": "Closed By",
-                        "anyOf": [
-                            {
-                                "type": "array",
-                                "items": {
-                                    "type": "object"
-                                }
-                            },
-                            {
-                                "type": "object"
-                            }
-                        ]
+                        "type": "any"
                     },
                     "reactions": {
                         "title": "Reactions",
-                        "anyOf": [
-                            {
-                                "type": "array",
-                                "items": {
-                                    "type": "object"
-                                }
-                            },
-                            {
-                                "type": "object"
-                            }
-                        ]
+                        "type": "any"
                     },
                     "state": {
                         "$ref": "#/components/schemas/polar__models__issue__IssueFields__State"
@@ -1438,31 +1368,11 @@
                     },
                     "requested_reviewers": {
                         "title": "Requested Reviewers",
-                        "anyOf": [
-                            {
-                                "type": "array",
-                                "items": {
-                                    "type": "object"
-                                }
-                            },
-                            {
-                                "type": "object"
-                            }
-                        ]
+                        "type": "any"
                     },
                     "requested_teams": {
                         "title": "Requested Teams",
-                        "anyOf": [
-                            {
-                                "type": "array",
-                                "items": {
-                                    "type": "object"
-                                }
-                            },
-                            {
-                                "type": "object"
-                            }
-                        ]
+                        "type": "any"
                     },
                     "is_merged": {
                         "title": "Is Merged",
@@ -1479,31 +1389,11 @@
                     },
                     "head": {
                         "title": "Head",
-                        "anyOf": [
-                            {
-                                "type": "array",
-                                "items": {
-                                    "type": "object"
-                                }
-                            },
-                            {
-                                "type": "object"
-                            }
-                        ]
+                        "type": "any"
                     },
                     "base": {
                         "title": "Base",
-                        "anyOf": [
-                            {
-                                "type": "array",
-                                "items": {
-                                    "type": "object"
-                                }
-                            },
-                            {
-                                "type": "object"
-                            }
-                        ]
+                        "type": "any"
                     },
                     "commits": {
                         "title": "Commits",
@@ -1539,17 +1429,7 @@
                     },
                     "merged_by": {
                         "title": "Merged By",
-                        "anyOf": [
-                            {
-                                "type": "array",
-                                "items": {
-                                    "type": "object"
-                                }
-                            },
-                            {
-                                "type": "object"
-                            }
-                        ]
+                        "type": "any"
                     },
                     "id": {
                         "title": "Id",
@@ -1567,8 +1447,8 @@
                     }
                 }
             },
-            "RepositorySchema": {
-                "title": "RepositorySchema",
+            "RepositoryRead": {
+                "title": "RepositoryRead",
                 "required": [
                     "platform",
                     "external_id",

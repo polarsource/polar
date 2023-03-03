@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { Platforms } from './Platforms';
-import type { RepositorySchema } from './RepositorySchema';
+import type { RepositoryRead } from './RepositoryRead';
 import type { Status } from './Status';
 
 export type OrganizationRead = {
@@ -21,6 +21,6 @@ export type OrganizationRead = {
   status: Status;
   created_at: string;
   modified_at?: string;
-  repositories?: Array<RepositorySchema>;
+  repositories?: Array<RepositoryRead>;
 };
 

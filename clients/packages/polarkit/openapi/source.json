@@ -1320,7 +1320,7 @@
                         "title": "Repositories",
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/RepositorySchema"
+                            "$ref": "#/components/schemas/RepositoryRead"
                         }
                     }
                 }
@@ -1637,8 +1637,8 @@
                     }
                 }
             },
-            "RepositorySchema": {
-                "title": "RepositorySchema",
+            "RepositoryRead": {
+                "title": "RepositoryRead",
                 "required": [
                     "platform",
                     "external_id",

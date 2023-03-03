@@ -7,7 +7,7 @@ from polar.api.deps import current_active_user, get_db_session
 from polar.models import Organization, User
 from polar.postgres import AsyncSession
 from polar.schema.organization import OrganizationRead
-from polar.schema.repository import RepositorySchema
+from polar.schema.repository import RepositoryRead
 
 router = APIRouter(prefix="/user/organizations", tags=["user.organizations"])
 
@@ -24,7 +24,7 @@ async def get_user_organizations(
     def expand_children(org: Organization) -> OrganizationRead:
         o = OrganizationRead.from_orm(org)
         o.repositories = [
-            RepositorySchema.from_orm(repo)
+            RepositoryRead.from_orm(repo)
             for repo in org.repos
             if repo.organization_id == org.id
         ]

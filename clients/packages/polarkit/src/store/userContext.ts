@@ -2,8 +2,8 @@ import { StateCreator } from 'zustand'
 import { UserRead } from '../api/client'
 import { api } from '../api'
 import {
-  OrganizationRead,
-  RepositorySchema,
+  type OrganizationRead,
+  type RepositoryRead,
   CancelablePromise,
 } from '../api/client'
 
@@ -20,10 +20,10 @@ export interface UserState {
 
 export interface ContextState {
   currentOrg: OrganizationRead | undefined
-  currentRepo: RepositorySchema | undefined
+  currentRepo: RepositoryRead | undefined
   setCurrentOrg: (org: OrganizationRead) => void
-  setCurrentRepo: (repo: RepositorySchema) => void
-  setCurrentOrgRepo: (org: OrganizationRead, repo: RepositorySchema) => void
+  setCurrentRepo: (repo: RepositoryRead) => void
+  setCurrentOrgRepo: (org: OrganizationRead, repo: RepositoryRead) => void
 }
 
 export interface UserContextState extends UserState, ContextState {}
@@ -68,10 +68,10 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
   setCurrentOrg: (org: OrganizationRead) => {
     set({ currentOrg: org })
   },
-  setCurrentRepo: (repo: RepositorySchema) => {
+  setCurrentRepo: (repo: RepositoryRead) => {
     set({ currentRepo: repo })
   },
-  setCurrentOrgRepo: (org: OrganizationRead, repo: RepositorySchema) => {
+  setCurrentOrgRepo: (org: OrganizationRead, repo: RepositoryRead) => {
     set({ currentOrg: org, currentRepo: repo })
   },
 })

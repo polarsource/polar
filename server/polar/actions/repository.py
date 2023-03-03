@@ -10,13 +10,13 @@ from polar.clients import github
 from polar.models import Issue, Organization, PullRequest, Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
-from polar.schema.repository import CreateRepository, UpdateRepository
+from polar.schema.repository import RepositoryCreate, RepositoryUpdate
 from polar.tasks.github.repo import sync_repository
 
 log = structlog.get_logger()
 
 
-class RepositoryActions(Action[Repository, CreateRepository, UpdateRepository]):
+class RepositoryActions(Action[Repository, RepositoryCreate, RepositoryUpdate]):
     @property
     def default_upsert_index_elements(self) -> list[Column[Any]]:
         return [self.model.external_id]
@@ -97,7 +97,7 @@ class GithubRepositoryActions(RepositoryActions):
     async def upsert_many(
         self,
         session: AsyncSession,
-        create_schemas: list[CreateRepository],
+        create_schemas: list[RepositoryCreate],
         index_elements: list[Column[Any]] | None = None,
     ) -> list[Repository]:
         instances = await super().upsert_many(session, create_schemas, index_elements)
@@ -121,7 +121,7 @@ class GithubRepositoryActions(RepositoryActions):
         github.ensure_expected_response(response)
 
         repos = [
-            CreateRepository.from_github(organization, repo)
+            RepositoryCreate.from_github(organization, repo)
             for repo in response.parsed_data.repositories
         ]
         instances = await self.upsert_many(session, repos)

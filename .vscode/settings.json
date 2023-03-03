@@ -1,43 +1,12 @@
 {
-  "python.analysis.typeCheckingMode": "off",
-  "python.defaultInterpreterPath": "${workspaceFolder}/server/.venv",
-  "python.terminal.activateEnvironment": true,
-  "python.terminal.activateEnvInCurrentTerminal": true,
-  "python.linting.pylintEnabled": false,
-  "python.linting.flake8Enabled": true,
-  "python.linting.mypyEnabled": true,
-  "python.linting.enabled": true,
-  "python.formatting.provider": "black",
-  "editor.formatOnSave": true,
-  "python.testing.pytestArgs": ["tests"],
-  "python.testing.unittestEnabled": false,
-  "python.testing.pytestEnabled": true,
-  "isort.args": [
-    "--profile",
-    "black",
-    "--project",
-    "polar"
-  ],
-  "[python]": {
-    "editor.codeActionsOnSave": {
-      "source.organizeImports": true
-    },
-  },
-  "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true,
-    "editor.tabSize": 2
-  },
-  "files.exclude": {
-    "**/.git": true,
-    "**/.pytest_cache": true,
-    "**/.mypy_cache": true,
-    "**/.venv": true,
-    "**/__pycache__": true,
-    "**/node_modules": true,
-    "**/.next": true
-  },
-  "editor.rulers": [
-    120,
-  ],
+    // "python.defaultInterpreterPath": "${workspaceFolder}/server/.venv/bin/python",
+    "files.exclude": {
+        "**/.git": true,
+        /*
+         * See
+         * https://stackoverflow.com/questions/47405315/visual-studio-code-and-subfolder-specific-settings/50305853#50305853
+         */
+        "clients": true,
+        "server": true
+    }
 }

@@ -6,7 +6,7 @@
     "compounds": [
         {
             "name": "Polar",
-            "configurations": ["API", "Worker", "Client"],
+            "configurations": ["API", "Worker"],
             "stopAll": true
         }
     ],
@@ -19,7 +19,6 @@
             },
             "request": "launch",
             "module": "uvicorn",
-            "cwd": "${workspaceFolder}/server",
             "args": [
                 "polar.app:app",
                 "--reload",
@@ -37,25 +36,12 @@
             "type": "python",
             "request": "launch",
             "module": "celery",
-            "cwd": "${workspaceFolder}/server",
-            "_preLaunchTask": "ngrok tunnel",
             "args": [
                 "-A",
                 "run_worker:app",
                 "worker",
             ],
             "justMyCode": false,
-        },
-        {
-            "name": "Client",
-            "type": "node",
-            "request": "launch",
-            "cwd": "${workspaceFolder}/clients",
-            "runtimeExecutable": "yarn",
-            "runtimeArgs": [
-                "run",
-                "dev"
-            ],
         }
     ]
 }

@@ -40,7 +40,7 @@ async def create_org(
 ) -> Organization:
     hook = github_webhook.create("installation.created")
     hook = github.patch_unset("requester", hook.json)
-    event = github.webhooks.parse_obj("installation", hook)
+    event: github.webhooks.InstallationCreated = github.webhooks.parse_obj("installation", hook)
 
     # TODO: Move this into its own schema helper
     account = event.installation.account

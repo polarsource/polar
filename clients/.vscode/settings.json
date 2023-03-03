@@ -1,5 +1,10 @@
 {
   "editor.formatOnSave": true,
+  "tailwindCSS.suggestions": true,
+  "tailwindCSS.validate": true,
+  "[tailwindcss]": {
+    "editor.defaultFormatter": "bradlc.vscode-tailwindcss",
+  },
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,

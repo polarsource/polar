@@ -8,12 +8,12 @@ from polar.auth.repository import repository_auth
 from polar.models import Issue, User
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
-from polar.schema.issue import IssueSchema
+from polar.schema.issue import IssueRead
 
 router = APIRouter(prefix="/issues", tags=["issues"])
 
 
-@router.get("/{platform}/{organization_name}/{name}", response_model=list[IssueSchema])
+@router.get("/{platform}/{organization_name}/{name}", response_model=list[IssueRead])
 async def get_repository_issues(
     platform: Platforms,
     organization_name: str,

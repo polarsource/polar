@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export const $IssueSchema = {
+export const $IssueRead = {
   properties: {
     platform: {
       type: 'Platforms',

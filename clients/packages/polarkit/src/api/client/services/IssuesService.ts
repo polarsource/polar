@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { IssueSchema } from '../models/IssueSchema';
+import type { IssueRead } from '../models/IssueRead';
 import type { Platforms } from '../models/Platforms';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
@@ -13,7 +13,7 @@ export class IssuesService {
 
   /**
    * Get Repository Issues
-   * @returns IssueSchema Successful Response
+   * @returns IssueRead Successful Response
    * @throws ApiError
    */
   public getRepositoryIssues({
@@ -24,7 +24,7 @@ export class IssuesService {
     platform: Platforms,
     organizationName: string,
     name: string,
-  }): CancelablePromise<Array<IssueSchema>> {
+  }): CancelablePromise<Array<IssueRead>> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/issues/{platform}/{organization_name}/{name}',

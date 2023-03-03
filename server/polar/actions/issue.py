@@ -13,12 +13,12 @@ from polar.ext.sqlalchemy.types import GUID
 from polar.models.issue import Issue
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
-from polar.schema.issue import CreateIssue, UpdateIssue
+from polar.schema.issue import IssueCreate, IssueUpdate
 
 log = structlog.get_logger()
 
 
-class IssueActions(Action[Issue, CreateIssue, UpdateIssue]):
+class IssueActions(Action[Issue, IssueCreate, IssueUpdate]):
     @property
     def default_upsert_index_elements(self) -> list[MappedColumn[Any]]:
         return [self.model.external_id]
@@ -69,8 +69,8 @@ class GithubIssueActions(IssueActions):
     ) -> list[Issue]:
         def parse(
             issue: github.rest.Issue | github.webhooks.IssuesOpenedPropIssue,
-        ) -> CreateIssue:
-            return CreateIssue.from_github(
+        ) -> IssueCreate:
+            return IssueCreate.from_github(
                 issue,
                 organization_id=organization_id,
                 repository_id=repository_id,

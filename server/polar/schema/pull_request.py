@@ -7,18 +7,18 @@ from typing import Self
 import structlog
 
 from polar.clients import github
-from polar.schema.issue import CreateIssue
+from polar.schema.issue import IssueCreate
 from polar.typing import JSONAny
 
 log = structlog.get_logger()
 
 # Since we cannot use mixins with Pydantic, we have to redefine
-# some of the fields shared between CreateIssue + CreatePullRequest.
-# However, we leverage the CreateIssue.get_normalized_github_issue
+# some of the fields shared between IssueCreate + CreatePullRequest.
+# However, we leverage the IssueCreate.get_normalized_github_issue
 # method to reduce the amount of reduction to stay DRY-ish.
 
 
-class CreateMinimalPullRequest(CreateIssue):
+class CreateMinimalPullRequest(IssueCreate):
     requested_reviewers: JSONAny
     requested_teams: JSONAny
 
@@ -35,7 +35,7 @@ class CreateMinimalPullRequest(CreateIssue):
     # and avoiding overriding our internal ones
     issue_created_at: datetime
 
-    __mutable_keys__ = CreateIssue.__mutable_keys__ | {
+    __mutable_keys__ = IssueCreate.__mutable_keys__ | {
         "requested_reviewers",
         "requested_teams",
         "is_merged",

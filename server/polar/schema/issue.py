@@ -75,7 +75,7 @@ class Base(Schema):
     }
 
 
-class CreateIssue(Base):
+class IssueCreate(Base):
     @classmethod
     def get_normalized_github_issue(
         cls: Type[Self],
@@ -127,11 +127,11 @@ class CreateIssue(Base):
         )
 
 
-class UpdateIssue(CreateIssue):
+class IssueUpdate(IssueCreate):
     ...
 
 
-class IssueSchema(CreateIssue):
+class IssueRead(IssueCreate):
     id: str
     created_at: datetime
     modified_at: datetime | None

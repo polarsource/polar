@@ -18,7 +18,7 @@ export class StreamService {
     repositoryId,
   }: {
     organizationId: string,
-    repositoryId: string,
+    repositoryId?: string,
   }): CancelablePromise<any> {
     return this.httpRequest.request({
       method: 'GET',

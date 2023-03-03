@@ -638,7 +638,7 @@
                         "in": "query"
                     },
                     {
-                        "required": true,
+                        "required": false,
                         "schema": {
                             "title": "Repository Id",
                             "type": "string"
@@ -718,7 +718,7 @@
                                     "title": "Response Issues:Get Repository Issues",
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/IssueSchema"
+                                        "$ref": "#/components/schemas/IssueRead"
                                     }
                                 }
                             }
@@ -1038,8 +1038,8 @@
                     }
                 }
             },
-            "IssueSchema": {
-                "title": "IssueSchema",
+            "IssueRead": {
+                "title": "IssueRead",
                 "required": [
                     "platform",
                     "external_id",

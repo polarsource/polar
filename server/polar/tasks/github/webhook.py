@@ -8,7 +8,7 @@ from polar.clients import github
 from polar.models import Issue, Organization, PullRequest, Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
-from polar.schema.issue import IssueSchema
+from polar.schema.issue import IssueRead
 from polar.schema.organization import CreateOrganization
 from polar.schema.pull_request import CreateFullPullRequest, PullRequestSchema
 from polar.schema.repository import CreateRepository
@@ -215,7 +215,7 @@ async def handle_issue(
 
         # TODO: Comment instead? Via event trigger too?
         # actions.github_issue.add_actions(installation["id"], issue)
-        schema = IssueSchema.from_orm(issue)
+        schema = IssueRead.from_orm(issue)
         return dict(success=True, issue=schema.dict())
 
 
@@ -265,7 +265,7 @@ async def issue_labeled_async(
             # TODO: Handle better
             return dict(success=False, reason="Could not save issue")
 
-        schema = IssueSchema.from_orm(issue)
+        schema = IssueRead.from_orm(issue)
         return dict(success=True, issue=schema.dict())
 
 

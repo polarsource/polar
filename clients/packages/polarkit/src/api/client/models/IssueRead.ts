@@ -5,7 +5,7 @@
 import type { Platforms } from './Platforms';
 import type { polar__models__issue__IssueFields__State } from './polar__models__issue__IssueFields__State';
 
-export type IssueSchema = {
+export type IssueRead = {
   platform: Platforms;
   external_id: number;
   organization_id: string;

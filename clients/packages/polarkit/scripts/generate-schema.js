@@ -54,7 +54,7 @@ const convert = (schema) => {
     // Only done for PullRequests and Issues
     console.log("🛠️  JSONAny -> Any")
     for (const [key, value] of Object.entries(schema.components.schemas)) {
-        if (!['IssueSchema', 'PullRequestSchema'].includes(key)) {
+        if (!['IssueRead', 'PullRequestSchema'].includes(key)) {
             continue
         }
 

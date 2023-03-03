@@ -1,10 +1,10 @@
 from datetime import datetime
-from typing import Any, Sequence
+from typing import Sequence
 from uuid import UUID
 
 import structlog
-from sqlalchemy import Column
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import InstrumentedAttribute
 
 from polar.actions.base import Action
 from polar.actions.repository import github_repository
@@ -19,7 +19,7 @@ log = structlog.get_logger()
 
 class OrganizationActions(Action[Organization, OrganizationCreate, OrganizationUpdate]):
     @property
-    def default_upsert_index_elements(self) -> list[Column[Any]]:
+    def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
         return [self.model.external_id]
 
     async def get_by_platform(

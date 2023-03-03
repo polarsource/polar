@@ -1,7 +1,7 @@
-from typing import Any, AsyncGenerator, Literal
+from typing import AsyncGenerator, Literal
 
 import structlog
-from sqlalchemy import Column
+from sqlalchemy.orm import InstrumentedAttribute
 
 from polar.actions.base import Action
 from polar.actions.issue import github_issue
@@ -18,7 +18,7 @@ log = structlog.get_logger()
 
 class RepositoryActions(Action[Repository, RepositoryCreate, RepositoryUpdate]):
     @property
-    def default_upsert_index_elements(self) -> list[Column[Any]]:
+    def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
         return [self.model.external_id]
 
 
@@ -98,11 +98,11 @@ class GithubRepositoryActions(RepositoryActions):
         cls,
         session: AsyncSession,
         create_schemas: list[RepositoryCreate],
-        index_elements: list[Column[Any]] | None = None,
+        constraints: list[InstrumentedAttribute[int]] | None = None,
         mutable_keys: set[str] | None = None,
     ) -> list[Repository]:
         instances = await super().upsert_many(
-            session, create_schemas, index_elements, mutable_keys
+            session, create_schemas, constraints, mutable_keys
         )
 
         # Create tasks to sync repositories (issues, pull requests, etc.)

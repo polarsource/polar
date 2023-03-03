@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any, Sequence
+from typing import Sequence
 
 import structlog
-from sqlalchemy.orm import MappedColumn
+from sqlalchemy.orm import InstrumentedAttribute
 
 from polar.actions.base import Action
 from polar.clients import github
@@ -20,7 +20,7 @@ log = structlog.get_logger()
 
 class IssueActions(Action[Issue, IssueCreate, IssueUpdate]):
     @property
-    def default_upsert_index_elements(self) -> list[MappedColumn[Any]]:
+    def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
         return [self.model.external_id]
 
     async def get_by_platform(
@@ -96,7 +96,7 @@ class GithubIssueActions(IssueActions):
             return []
 
         return await self.upsert_many(
-            session, schemas, index_elements=[Issue.external_id]
+            session, schemas, constraints=[Issue.external_id]
         )
 
 

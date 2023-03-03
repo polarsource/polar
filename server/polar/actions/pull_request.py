@@ -1,8 +1,8 @@
 import uuid
-from typing import Any, Sequence
+from typing import Sequence
 
 import structlog
-from sqlalchemy.orm import MappedColumn
+from sqlalchemy.orm import InstrumentedAttribute
 
 from polar.actions.base import Action
 from polar.clients import github
@@ -23,7 +23,7 @@ class PullRequestAction(
     Action[PullRequest, MinimalPullRequestCreate, PullRequestUpdate]
 ):
     @property
-    def default_upsert_index_elements(self) -> list[MappedColumn[Any]]:
+    def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
         return [self.model.external_id]
 
     async def get_by_platform(
@@ -92,7 +92,7 @@ class GithubPullRequestActions(PullRequestAction):
         return await self.upsert_many(
             session,
             create_schemas,
-            index_elements=[PullRequest.external_id],
+            constraints=[PullRequest.external_id],
             mutable_keys=MinimalPullRequestCreate.__mutable_keys__,
         )
 
@@ -146,7 +146,7 @@ class GithubPullRequestActions(PullRequestAction):
         return await self.upsert_many(
             session,
             create_schemas,
-            index_elements=[PullRequest.external_id],
+            constraints=[PullRequest.external_id],
             mutable_keys=FullPullRequestCreate.__mutable_keys__,
         )
 

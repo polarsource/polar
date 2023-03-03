@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Generic, TypeVar
 
-from sqlalchemy import Column
+from sqlalchemy.orm import InstrumentedAttribute
 
 from polar.ext.sqlalchemy.types import GUID
 from polar.models.base import RecordModel
@@ -14,6 +14,7 @@ CreateSchemaType = TypeVar("CreateSchemaType", bound=Schema)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=Schema)
 
 
+
 class Action(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     # Ideally, actions would only contain class methods since there is
     # no state to retain. Unable to achieve this with mapping the model
@@ -23,7 +24,7 @@ class Action(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.model = model
 
     @property
-    def default_upsert_index_elements(self) -> list[Column[Any]]:
+    def upsert_constraints(self) -> list[InstrumentedAttribute[Any]]:
         return [self.model.id]
 
     async def get(self, session: AsyncSession, id: GUID) -> ModelType | None:
@@ -55,16 +56,16 @@ class Action(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self,
         session: AsyncSession,
         create_schemas: list[CreateSchemaType],
-        index_elements: list[Column[Any]] | None = None,
+        constraints: list[InstrumentedAttribute[Any]] | None = None,
         mutable_keys: set[str] | None = None,
     ) -> list[ModelType]:
-        if index_elements is None:
-            index_elements = self.default_upsert_index_elements
+        if constraints is None:
+            constraints = self.upsert_constraints
 
         return await self.model.upsert_many(
             session,
             create_schemas,
-            index_elements=index_elements,
+            constraints=constraints,
             mutable_keys=mutable_keys,
         )
 
@@ -72,16 +73,16 @@ class Action(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self,
         session: AsyncSession,
         create_schema: CreateSchemaType,
-        index_elements: list[Column[Any]] | None = None,
+        constraints: list[InstrumentedAttribute[Any]] | None = None,
         mutable_keys: set[str] | None = None,
     ) -> ModelType:
-        if index_elements is None:
-            index_elements = self.default_upsert_index_elements
+        if constraints is None:
+            constraints = self.upsert_constraints
 
         return await self.model.upsert(
             session,
             create_schema,
-            index_elements=index_elements,
+            constraints=constraints,
             mutable_keys=mutable_keys,
         )
 

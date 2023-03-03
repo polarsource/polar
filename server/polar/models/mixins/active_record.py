@@ -5,7 +5,13 @@ from typing import Any, ClassVar, TypeVar
 
 from blinker import Signal
 from sqlalchemy import Column, column
-from sqlalchemy.orm import Mapped, declared_attr, query_expression, with_expression
+from sqlalchemy.orm import (
+    InstrumentedAttribute,
+    Mapped,
+    declared_attr,
+    query_expression,
+    with_expression,
+)
 from sqlalchemy.orm.properties import MappedColumn
 from sqlalchemy.sql.selectable import FromClause
 
@@ -106,7 +112,7 @@ class ActiveRecordMixin:
         cls: type[ModelType],
         session: AsyncSession,
         objects: list[SchemaType],
-        index_elements: list[Column[Any]],
+        constraints: list[InstrumentedAttribute[Any]],
         # Defaults to the mutable keys as defined by on the Model
         mutable_keys: set[str] | None = None,
     ) -> list[ModelType]:
@@ -125,7 +131,7 @@ class ActiveRecordMixin:
 
         # Update the insert statement with what to update on conflict, i.e mutable keys.
         upsert_stmt = insert_stmt.on_conflict_do_update(
-            index_elements=index_elements,
+            index_elements=constraints,
             set_={k: getattr(insert_stmt.excluded, k) for k in mutable_keys},
         ).returning(cls, xmax)
         # Our Postgres upsert query with the added xmax column to detect inserts
@@ -147,13 +153,13 @@ class ActiveRecordMixin:
         cls: type[ModelType],
         session: AsyncSession,
         obj: SchemaType,
-        index_elements: list[Column[Any]],
+        constraints: list[InstrumentedAttribute[Any]],
         mutable_keys: set[str] | None = None,
     ) -> ModelType:
         upserted: list[ModelType] = await cls.upsert_many(
             session,
             [obj],
-            index_elements=index_elements,
+            constraints=constraints,
             mutable_keys=mutable_keys,
         )
         return upserted[0]

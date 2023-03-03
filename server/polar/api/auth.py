@@ -34,7 +34,8 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         refresh_token: str | None = None,
         request: Request | None = None,
         *,
-        associate_by_email: bool = False
+        associate_by_email: bool = False,
+        is_verified_by_default: bool = False
     ) -> User:
         user = await super().oauth_callback(
             oauth_name,
@@ -45,6 +46,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
             refresh_token,
             request,
             associate_by_email=associate_by_email,
+            is_verified_by_default=is_verified_by_default,
         )
         return await github_user.update_profile(
             self.user_db.session, user, access_token

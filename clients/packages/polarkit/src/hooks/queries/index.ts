@@ -1,10 +1,10 @@
 import { api } from '../../api'
 import { useQuery } from '@tanstack/react-query'
-import { RepositorySchema, OrganizationSchema } from 'polarkit/api/client'
+import { RepositorySchema, OrganizationRead } from 'polarkit/api/client'
 import { Platforms } from '../../api/client'
 
 export type RepoListItem = RepositorySchema & {
-  organization: OrganizationSchema
+  organization: OrganizationRead
 }
 
 export const useUserOrganizations = (userId: string) => {

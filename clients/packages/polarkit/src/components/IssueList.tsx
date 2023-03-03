@@ -1,7 +1,7 @@
 import { default as IssueListItem, type Issue } from './IssueListItem'
 import {
   type IssueRead,
-  type PullRequestSchema,
+  type PullRequestRead,
   type RewardSchema,
 } from '../api/client'
 import { useState } from 'react'
@@ -30,8 +30,8 @@ const lastTimestamp = (issue: IssueRead) => {
 
 const pullRequestsForIssue = (
   issue: IssueRead,
-  pullRequests: PullRequestSchema[],
-): PullRequestSchema[] => {
+  pullRequests: PullRequestRead[],
+): PullRequestRead[] => {
   const re = new RegExp(
     `(Close|Closes|Closed|Fix|Fixes|Fixed|Resolve|Resolves|Resolved) #${issue.number}(?![0-9])`,
     'gi',
@@ -47,7 +47,7 @@ const pullRequestsForIssue = (
 
 const IssueList = (props: {
   issues: IssueRead[]
-  pullRequests: PullRequestSchema[]
+  pullRequests: PullRequestRead[]
   rewards: RewardSchema[]
 }) => {
   const { issues, pullRequests, rewards } = props
@@ -66,7 +66,7 @@ const IssueList = (props: {
     return bDate.getTime() - aDate.getTime()
   }
 
-  const filterPullRequest = (pr: PullRequestSchema): boolean => {
+  const filterPullRequest = (pr: PullRequestRead): boolean => {
     const query = searchQuery.toLowerCase()
     // PR Title
     if (pr.title.toLowerCase().indexOf(query) > -1) {

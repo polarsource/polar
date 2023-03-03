@@ -405,7 +405,7 @@
                                     "title": "Response User.Organizations:Get User Organizations",
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/OrganizationSchema"
+                                        "$ref": "#/components/schemas/OrganizationRead"
                                     }
                                 }
                             }
@@ -576,7 +576,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/OrganizationSchema"
+                                    "$ref": "#/components/schemas/OrganizationRead"
                                 }
                             }
                         }
@@ -786,7 +786,7 @@
                                     "title": "Response Pull Requests:Get Repository Pull Requests",
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/PullRequestSchema"
+                                        "$ref": "#/components/schemas/PullRequestRead"
                                     }
                                 }
                             }
@@ -1240,8 +1240,8 @@
                     }
                 }
             },
-            "OrganizationSchema": {
-                "title": "OrganizationSchema",
+            "OrganizationRead": {
+                "title": "OrganizationRead",
                 "required": [
                     "platform",
                     "name",
@@ -1333,8 +1333,8 @@
                 "type": "string",
                 "description": "An enumeration."
             },
-            "PullRequestSchema": {
-                "title": "PullRequestSchema",
+            "PullRequestRead": {
+                "title": "PullRequestRead",
                 "required": [
                     "platform",
                     "external_id",

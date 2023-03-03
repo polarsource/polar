@@ -4,14 +4,14 @@ import { useEffect, useState } from 'react'
 import { api } from 'polarkit'
 import { useAuth } from 'polarkit/hooks'
 import { useRouter } from 'next/router'
-import { InstallationCreate, OrganizationSchema } from 'polarkit/api/client'
+import { InstallationCreate, OrganizationRead } from 'polarkit/api/client'
 import Layout from 'components/Layout/GithubCallback'
 
 const GithubInstallationPage: NextPage = ({ query }) => {
   const router = useRouter()
   const { authenticated } = useAuth()
   const [error, setError] = useState<string | null>(null)
-  const [installed, setInstalled] = useState<OrganizationSchema | null>(null)
+  const [installed, setInstalled] = useState<OrganizationRead | null>(null)
 
   const install = (query) => {
     const request = api.integrations.install({

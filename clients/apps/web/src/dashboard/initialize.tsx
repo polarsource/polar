@@ -1,4 +1,4 @@
-import { OrganizationSchema } from 'polarkit/api/client'
+import { OrganizationRead } from 'polarkit/api/client'
 import { requireAuth } from 'polarkit/hooks'
 import { useUserOrganizations } from 'polarkit/hooks'
 import { useParams } from 'react-router-dom'
@@ -19,7 +19,7 @@ const Initialize = () => {
 
   if (!currentOrg || currentOrg.name !== orgSlug) {
     const org = userOrgQuery.data.find(
-      (org: OrganizationSchema) => org.name === orgSlug,
+      (org: OrganizationRead) => org.name === orgSlug,
     )
     setCurrentOrg(org)
   }

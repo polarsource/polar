@@ -405,7 +405,7 @@
                                     "title": "Response User.Organizations:Get User Organizations",
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/OrganizationSchema"
+                                        "$ref": "#/components/schemas/OrganizationRead"
                                     }
                                 }
                             }
@@ -576,7 +576,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/OrganizationSchema"
+                                    "$ref": "#/components/schemas/OrganizationRead"
                                 }
                             }
                         }
@@ -786,7 +786,7 @@
                                     "title": "Response Pull Requests:Get Repository Pull Requests",
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/PullRequestSchema"
+                                        "$ref": "#/components/schemas/PullRequestRead"
                                     }
                                 }
                             }
@@ -1170,8 +1170,8 @@
                     }
                 }
             },
-            "OrganizationSchema": {
-                "title": "OrganizationSchema",
+            "OrganizationRead": {
+                "title": "OrganizationRead",
                 "required": [
                     "platform",
                     "name",
@@ -1263,8 +1263,8 @@
                 "type": "string",
                 "description": "An enumeration."
             },
-            "PullRequestSchema": {
-                "title": "PullRequestSchema",
+            "PullRequestRead": {
+                "title": "PullRequestRead",
                 "required": [
                     "platform",
                     "external_id",
@@ -1314,7 +1314,17 @@
                     },
                     "author": {
                         "title": "Author",
-                        "type": "any"
+                        "anyOf": [
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "object"
+                                }
+                            },
+                            {
+                                "type": "object"
+                            }
+                        ]
                     },
                     "author_association": {
                         "title": "Author Association",
@@ -1322,27 +1332,87 @@
                     },
                     "labels": {
                         "title": "Labels",
-                        "type": "any"
+                        "anyOf": [
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "object"
+                                }
+                            },
+                            {
+                                "type": "object"
+                            }
+                        ]
                     },
                     "assignee": {
                         "title": "Assignee",
-                        "type": "any"
+                        "anyOf": [
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "object"
+                                }
+                            },
+                            {
+                                "type": "object"
+                            }
+                        ]
                     },
                     "assignees": {
                         "title": "Assignees",
-                        "type": "any"
+                        "anyOf": [
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "object"
+                                }
+                            },
+                            {
+                                "type": "object"
+                            }
+                        ]
                     },
                     "milestone": {
                         "title": "Milestone",
-                        "type": "any"
+                        "anyOf": [
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "object"
+                                }
+                            },
+                            {
+                                "type": "object"
+                            }
+                        ]
                     },
                     "closed_by": {
                         "title": "Closed By",
-                        "type": "any"
+                        "anyOf": [
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "object"
+                                }
+                            },
+                            {
+                                "type": "object"
+                            }
+                        ]
                     },
                     "reactions": {
                         "title": "Reactions",
-                        "type": "any"
+                        "anyOf": [
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "object"
+                                }
+                            },
+                            {
+                                "type": "object"
+                            }
+                        ]
                     },
                     "state": {
                         "$ref": "#/components/schemas/polar__models__issue__IssueFields__State"
@@ -1368,11 +1438,31 @@
                     },
                     "requested_reviewers": {
                         "title": "Requested Reviewers",
-                        "type": "any"
+                        "anyOf": [
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "object"
+                                }
+                            },
+                            {
+                                "type": "object"
+                            }
+                        ]
                     },
                     "requested_teams": {
                         "title": "Requested Teams",
-                        "type": "any"
+                        "anyOf": [
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "object"
+                                }
+                            },
+                            {
+                                "type": "object"
+                            }
+                        ]
                     },
                     "is_merged": {
                         "title": "Is Merged",
@@ -1389,11 +1479,31 @@
                     },
                     "head": {
                         "title": "Head",
-                        "type": "any"
+                        "anyOf": [
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "object"
+                                }
+                            },
+                            {
+                                "type": "object"
+                            }
+                        ]
                     },
                     "base": {
                         "title": "Base",
-                        "type": "any"
+                        "anyOf": [
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "object"
+                                }
+                            },
+                            {
+                                "type": "object"
+                            }
+                        ]
                     },
                     "commits": {
                         "title": "Commits",
@@ -1429,7 +1539,17 @@
                     },
                     "merged_by": {
                         "title": "Merged By",
-                        "type": "any"
+                        "anyOf": [
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "object"
+                                }
+                            },
+                            {
+                                "type": "object"
+                            }
+                        ]
                     },
                     "id": {
                         "title": "Id",

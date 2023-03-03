@@ -6,7 +6,7 @@ import TimeAgo from 'javascript-time-ago'
 import en from 'javascript-time-ago/locale/en.json'
 import IssueReward from './IssueReward'
 import {
-  type PullRequestSchema,
+  type PullRequestRead,
   type RewardSchema,
   type IssueRead,
 } from '../api/client'
@@ -16,7 +16,7 @@ import IssueActivityBox from './IssueActivityBox'
 TimeAgo.addDefaultLocale(en)
 
 export type Issue = IssueRead & {
-  pullRequests: PullRequestSchema[]
+  pullRequests: PullRequestRead[]
   rewards: RewardSchema[]
 }
 
@@ -74,7 +74,7 @@ const IssueListItem = (props: { issue: Issue }) => {
             return <IssueReward reward={reward} key={reward.id} />
           })}
 
-          {props.issue.pullRequests.map((pr: PullRequestSchema) => {
+          {props.issue.pullRequests.map((pr: PullRequestRead) => {
             return (
               <IssuePullRequest
                 issue={props.issue}

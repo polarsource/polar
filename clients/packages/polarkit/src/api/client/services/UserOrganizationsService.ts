@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { OrganizationSchema } from '../models/OrganizationSchema';
+import type { OrganizationRead } from '../models/OrganizationRead';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -12,10 +12,10 @@ export class UserOrganizationsService {
 
   /**
    * Get User Organizations
-   * @returns OrganizationSchema Successful Response
+   * @returns OrganizationRead Successful Response
    * @throws ApiError
    */
-  public getUserOrganizations(): CancelablePromise<Array<OrganizationSchema>> {
+  public getUserOrganizations(): CancelablePromise<Array<OrganizationRead>> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/user/organizations',

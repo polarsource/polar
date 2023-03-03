@@ -12,7 +12,7 @@ from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
-from polar.schema.organization import CreateOrganization
+from polar.schema.organization import OrganizationCreate
 from polar.schema.repository import CreateRepository
 
 
@@ -29,7 +29,7 @@ def full_pull_request() -> github.rest.PullRequest:
 
 
 async def create_org(session: AsyncSession) -> Organization:
-    create_schema = CreateOrganization(
+    create_schema = OrganizationCreate(
         platform=Platforms.github,
         name="testorg",
         external_id=123,

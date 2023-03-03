@@ -11,16 +11,16 @@ from polar.models.pull_request import PullRequest
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
 from polar.schema.pull_request import (
-    CreateFullPullRequest,
-    CreateMinimalPullRequest,
-    UpdatePullRequest,
+    FullPullRequestCreate,
+    MinimalPullRequestCreate,
+    PullRequestUpdate,
 )
 
 log = structlog.get_logger()
 
 
 class PullRequestAction(
-    Action[PullRequest, CreateMinimalPullRequest, UpdatePullRequest]
+    Action[PullRequest, MinimalPullRequestCreate, PullRequestUpdate]
 ):
     @property
     def default_upsert_index_elements(self) -> list[MappedColumn[Any]]:
@@ -72,8 +72,8 @@ class GithubPullRequestActions(PullRequestAction):
         organization_id: uuid.UUID,
         repository_id: uuid.UUID,
     ) -> list[PullRequest]:
-        def parse(pr: github.rest.PullRequestSimple) -> CreateMinimalPullRequest:
-            return CreateMinimalPullRequest.minimal_pull_request_from_github(
+        def parse(pr: github.rest.PullRequestSimple) -> MinimalPullRequestCreate:
+            return MinimalPullRequestCreate.minimal_pull_request_from_github(
                 pr,
                 organization_id=organization_id,
                 repository_id=repository_id,
@@ -93,7 +93,7 @@ class GithubPullRequestActions(PullRequestAction):
             session,
             create_schemas,
             index_elements=[PullRequest.external_id],
-            mutable_keys=CreateMinimalPullRequest.__mutable_keys__,
+            mutable_keys=MinimalPullRequestCreate.__mutable_keys__,
         )
 
     async def store_full(
@@ -126,8 +126,8 @@ class GithubPullRequestActions(PullRequestAction):
         def parse(
             pr: github.rest.PullRequest
             | github.webhooks.PullRequestOpenedPropPullRequest,
-        ) -> CreateFullPullRequest:
-            return CreateFullPullRequest.full_pull_request_from_github(
+        ) -> FullPullRequestCreate:
+            return FullPullRequestCreate.full_pull_request_from_github(
                 pr,
                 organization_id=organization_id,
                 repository_id=repository_id,
@@ -147,7 +147,7 @@ class GithubPullRequestActions(PullRequestAction):
             session,
             create_schemas,
             index_elements=[PullRequest.external_id],
-            mutable_keys=CreateFullPullRequest.__mutable_keys__,
+            mutable_keys=FullPullRequestCreate.__mutable_keys__,
         )
 
 

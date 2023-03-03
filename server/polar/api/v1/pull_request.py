@@ -9,13 +9,13 @@ from polar.models import User
 from polar.models.pull_request import PullRequest
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
-from polar.schema.pull_request import PullRequestSchema
+from polar.schema.pull_request import PullRequestRead
 
 router = APIRouter(prefix="/pull_requests", tags=["pull_requests"])
 
 
 @router.get(
-    "/{platform}/{organization_name}/{name}", response_model=list[PullRequestSchema]
+    "/{platform}/{organization_name}/{name}", response_model=list[PullRequestRead]
 )
 async def get_repository_pull_requests(
     platform: Platforms,

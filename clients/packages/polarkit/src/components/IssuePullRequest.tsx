@@ -1,9 +1,9 @@
-import { type IssueRead, type PullRequestSchema } from '../api/client'
+import { type IssueRead, type PullRequestRead } from '../api/client'
 import ReactTimeAgo from 'react-time-ago'
 
 const IssuePullRequest = (props: {
   issue: IssueRead
-  pullRequest: PullRequestSchema
+  pullRequest: PullRequestRead
 }) => {
   const pr = props.pullRequest
 

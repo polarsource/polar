@@ -1,16 +1,12 @@
 import { useState, useEffect, type MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSSE } from 'polarkit/hooks'
-import { type OrganizationSchema } from 'polarkit/api/client'
+import { type OrganizationRead } from 'polarkit/api/client'
 import { type SyncEvent, type RepoSyncState } from './types'
 
 import { SynchronizeRepository } from './SynchronizeRepository'
 
-export const SynchronizeRepositories = ({
-  org,
-}: {
-  org: OrganizationSchema
-}) => {
+export const SynchronizeRepositories = ({ org }: { org: OrganizationRead }) => {
   let totalExpected = 0
   let initialSyncStates = {}
   for (let repo of org.repositories) {

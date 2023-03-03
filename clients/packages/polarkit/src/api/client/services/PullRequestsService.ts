@@ -2,7 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { Platforms } from '../models/Platforms';
-import type { PullRequestSchema } from '../models/PullRequestSchema';
+import type { PullRequestRead } from '../models/PullRequestRead';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -13,7 +13,7 @@ export class PullRequestsService {
 
   /**
    * Get Repository Pull Requests
-   * @returns PullRequestSchema Successful Response
+   * @returns PullRequestRead Successful Response
    * @throws ApiError
    */
   public getRepositoryPullRequests({
@@ -24,7 +24,7 @@ export class PullRequestsService {
     platform: Platforms,
     organizationName: string,
     name: string,
-  }): CancelablePromise<Array<PullRequestSchema>> {
+  }): CancelablePromise<Array<PullRequestRead>> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/pull_requests/{platform}/{organization_name}/{name}',

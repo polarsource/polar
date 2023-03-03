@@ -18,7 +18,7 @@ log = structlog.get_logger()
 # method to reduce the amount of reduction to stay DRY-ish.
 
 
-class CreateMinimalPullRequest(IssueCreate):
+class MinimalPullRequestCreate(IssueCreate):
     requested_reviewers: JSONAny
     requested_teams: JSONAny
 
@@ -71,7 +71,7 @@ class CreateMinimalPullRequest(IssueCreate):
         return create
 
 
-class CreateFullPullRequest(CreateMinimalPullRequest):
+class FullPullRequestCreate(MinimalPullRequestCreate):
     commits: int | None
     additions: int | None
     deletions: int | None
@@ -84,7 +84,7 @@ class CreateFullPullRequest(CreateMinimalPullRequest):
 
     merged_by: JSONAny
 
-    __mutable_keys__ = CreateMinimalPullRequest.__mutable_keys__ | {
+    __mutable_keys__ = MinimalPullRequestCreate.__mutable_keys__ | {
         "commits",
         "additions",
         "deletions",
@@ -122,11 +122,11 @@ class CreateFullPullRequest(CreateMinimalPullRequest):
         return create
 
 
-class UpdatePullRequest(CreateFullPullRequest):
+class PullRequestUpdate(FullPullRequestCreate):
     ...
 
 
-class PullRequestSchema(CreateFullPullRequest):
+class PullRequestRead(FullPullRequestCreate):
     id: str
     created_at: datetime
     modified_at: datetime | None

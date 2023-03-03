@@ -3,14 +3,14 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from tests.fixtures.webhook import TestWebhook, TestWebhookFactory
 
 from polar import actions
 from polar.clients import github
 from polar.models.organization import Organization
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, AsyncSessionLocal
-from polar.schema.organization import CreateOrganization
+from polar.schema.organization import OrganizationCreate
+from tests.fixtures.webhook import TestWebhook, TestWebhookFactory
 
 
 async def assert_repository_deleted(
@@ -45,7 +45,7 @@ async def create_org(
     # TODO: Move this into its own schema helper
     account = event.installation.account
     is_personal = account.type.lower() == "user"
-    create_schema = CreateOrganization(
+    create_schema = OrganizationCreate(
         platform=Platforms.github,
         name=account.login,
         external_id=account.id,

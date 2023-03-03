@@ -22,11 +22,11 @@ class Base(Schema):
     installation_suspended_at: datetime | None
 
 
-class CreateOrganization(Base):
+class OrganizationCreate(Base):
     @classmethod
     def from_github_installation(
         cls, installation: github.rest.Installation
-    ) -> CreateOrganization:
+    ) -> OrganizationCreate:
         account = installation.account
 
         if isinstance(account, github.rest.SimpleUser):
@@ -56,11 +56,11 @@ class CreateOrganization(Base):
         )
 
 
-class UpdateOrganization(CreateOrganization):
+class OrganizationUpdate(OrganizationCreate):
     ...
 
 
-class OrganizationSchema(Base):
+class OrganizationRead(Base):
     id: str
     # TODO: Different schema for unauthenticated requests? If we introduce them
     status: Organization.Status

@@ -12,12 +12,12 @@ from polar.clients import github
 from polar.models import Organization, User, UserOrganization
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
-from polar.schema.organization import CreateOrganization, UpdateOrganization
+from polar.schema.organization import OrganizationCreate, OrganizationUpdate
 
 log = structlog.get_logger()
 
 
-class OrganizationActions(Action[Organization, CreateOrganization, UpdateOrganization]):
+class OrganizationActions(Action[Organization, OrganizationCreate, OrganizationUpdate]):
     @property
     def default_upsert_index_elements(self) -> list[Column[Any]]:
         return [self.model.external_id]
@@ -92,7 +92,7 @@ class GithubOrganization(OrganizationActions):
 
     async def fetch_installations(
         self, session: AsyncSession, user: User
-    ) -> list[CreateOrganization] | None:
+    ) -> list[OrganizationCreate] | None:
         oauth = user.get_platform_oauth_account(Platforms.github)
         if not oauth:
             # TODO Handle
@@ -113,7 +113,7 @@ class GithubOrganization(OrganizationActions):
         if not installations:
             return None
 
-        return [CreateOrganization.from_github_installation(i) for i in installations]
+        return [OrganizationCreate.from_github_installation(i) for i in installations]
 
     async def install(
         self, session: AsyncSession, user: User, installation_id: int

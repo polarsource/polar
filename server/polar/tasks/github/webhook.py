@@ -9,8 +9,8 @@ from polar.models import Issue, Organization, PullRequest, Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
 from polar.schema.issue import IssueRead
-from polar.schema.organization import CreateOrganization
-from polar.schema.pull_request import CreateFullPullRequest, PullRequestSchema
+from polar.schema.organization import OrganizationCreate
+from polar.schema.pull_request import FullPullRequestCreate, PullRequestRead
 from polar.schema.repository import CreateRepository
 from polar.worker import get_db_session, sync_worker, task
 
@@ -134,7 +134,7 @@ async def upsert_pull_request(
         )
         return None
 
-    create_schema = CreateFullPullRequest.full_pull_request_from_github(
+    create_schema = FullPullRequestCreate.full_pull_request_from_github(
         event.pull_request,
         organization_id=uuid.UUID(
             organization.id
@@ -283,7 +283,7 @@ async def handle_pull_request(
         if not pr:
             return dict(success=False, reason="Could not save PR")
 
-        schema = PullRequestSchema.from_orm(pr)
+        schema = PullRequestRead.from_orm(pr)
         return dict(success=True, pull_request=schema.dict())
 
 
@@ -336,7 +336,7 @@ async def pull_request_synchronize_async(
         if not pr:
             return dict(success=False, reason="Could not sync PR")
 
-        schema = PullRequestSchema.from_orm(pr)
+        schema = PullRequestRead.from_orm(pr)
         return dict(success=True, pull_request=schema.dict())
 
 
@@ -360,7 +360,7 @@ async def installation_created(
         # TODO: Move this into its own schema helper
         account = event.installation.account
         is_personal = account.type.lower() == "user"
-        create_schema = CreateOrganization(
+        create_schema = OrganizationCreate(
             platform=Platforms.github,
             name=account.login,
             external_id=account.id,

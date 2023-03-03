@@ -11,7 +11,7 @@ from polar.clients import github
 from polar.config import settings
 from polar.models import Organization, User
 from polar.postgres import AsyncSession
-from polar.schema.organization import OrganizationSchema
+from polar.schema.organization import OrganizationRead
 from polar.tasks.github import webhook as hooks
 
 log = structlog.get_logger()
@@ -43,7 +43,7 @@ class InstallationCreate(BaseModel):
     external_id: int
 
 
-@router.post("/installations", response_model=OrganizationSchema)
+@router.post("/installations", response_model=OrganizationRead)
 async def install(
     installation: InstallationCreate,
     session: AsyncSession = Depends(get_db_session),

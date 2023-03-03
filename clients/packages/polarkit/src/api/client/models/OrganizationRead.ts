@@ -6,7 +6,7 @@ import type { Platforms } from './Platforms';
 import type { RepositorySchema } from './RepositorySchema';
 import type { Status } from './Status';
 
-export type OrganizationSchema = {
+export type OrganizationRead = {
   platform: Platforms;
   name: string;
   external_id: number;

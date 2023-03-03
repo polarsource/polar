@@ -1,19 +1,18 @@
 {
-  "python.analysis.typeCheckingMode": "off",
+  "python.analysis.typeCheckingMode": "basic",
   "python.envFile": "${workspaceFolder}/server/.env",
   "python.defaultInterpreterPath": "${workspaceFolder}/server/.venv/bin/python",
   "python.terminal.activateEnvironment": true,
   "python.terminal.activateEnvInCurrentTerminal": true,
   "python.linting.pylintEnabled": false,
   "python.linting.mypyEnabled": true,
-  "mypy.runUsingActiveInterpreter": true,
+  "editor.formatOnSave": true,
   "python.linting.enabled": true,
   "python.formatting.provider": "black",
   "python.testing.pytestArgs": ["tests"],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "[python]": {
-    "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
       "source.organizeImports": true,
       "source.fixAll": true

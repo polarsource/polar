@@ -30,27 +30,6 @@ export type { ValidationError } from './models/ValidationError';
 export { Visibility } from './models/Visibility';
 export type { WebhookResponse } from './models/WebhookResponse';
 
-export { $Body_users_auth_jwt_login } from './schemas/$Body_users_auth_jwt_login';
-export { $CreateReward } from './schemas/$CreateReward';
-export { $ErrorModel } from './schemas/$ErrorModel';
-export { $HTTPValidationError } from './schemas/$HTTPValidationError';
-export { $InstallationCreate } from './schemas/$InstallationCreate';
-export { $IssueRead } from './schemas/$IssueRead';
-export { $OAuth2AuthorizeResponse } from './schemas/$OAuth2AuthorizeResponse';
-export { $OrganizationSchema } from './schemas/$OrganizationSchema';
-export { $Platforms } from './schemas/$Platforms';
-export { $polar__models__issue__IssueFields__State } from './schemas/$polar__models__issue__IssueFields__State';
-export { $polar__schema__reward__State } from './schemas/$polar__schema__reward__State';
-export { $PullRequestSchema } from './schemas/$PullRequestSchema';
-export { $RepositorySchema } from './schemas/$RepositorySchema';
-export { $RewardSchema } from './schemas/$RewardSchema';
-export { $Status } from './schemas/$Status';
-export { $UserRead } from './schemas/$UserRead';
-export { $UserUpdate } from './schemas/$UserUpdate';
-export { $ValidationError } from './schemas/$ValidationError';
-export { $Visibility } from './schemas/$Visibility';
-export { $WebhookResponse } from './schemas/$WebhookResponse';
-
 export { IntegrationsService } from './services/IntegrationsService';
 export { IssuesService } from './services/IssuesService';
 export { PullRequestsService } from './services/PullRequestsService';

@@ -5,21 +5,17 @@
   "python.terminal.activateEnvironment": true,
   "python.terminal.activateEnvInCurrentTerminal": true,
   "python.linting.pylintEnabled": false,
-  "python.linting.flake8Enabled": true,
   "python.linting.mypyEnabled": true,
   "python.linting.enabled": true,
   "python.formatting.provider": "black",
-  "editor.formatOnSave": true,
   "python.testing.pytestArgs": ["tests"],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
-  "isort.args": [
-    "--profile",
-    "black"
-  ],
   "[python]": {
+    "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-      "source.organizeImports": true
+      "source.organizeImports": true,
+      "source.fixAll": true
     }
   },
   "files.exclude": {

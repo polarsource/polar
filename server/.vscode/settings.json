@@ -6,6 +6,7 @@
   "python.terminal.activateEnvInCurrentTerminal": true,
   "python.linting.pylintEnabled": false,
   "python.linting.mypyEnabled": true,
+  "mypy.runUsingActiveInterpreter": true,
   "python.linting.enabled": true,
   "python.formatting.provider": "black",
   "python.testing.pytestArgs": ["tests"],

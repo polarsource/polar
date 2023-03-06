@@ -3,8 +3,8 @@ from typing import Any
 
 from pydantic import Field, SecretStr
 
+from polar.kit.schemas import Schema
 from polar.models.account import Account
-from polar.schema.base import Schema
 
 
 class AccountLinkTypes(str, Enum):

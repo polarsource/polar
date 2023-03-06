@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 
-from polar.schema.base import Schema
+from polar.kit.schemas import Schema
 
 
 class State(str, Enum):

@@ -6,8 +6,8 @@ from sqlalchemy.orm import InstrumentedAttribute
 
 from polar.kit.extensions.sqlalchemy import GUID
 from polar.kit.models import RecordModel
+from polar.kit.schemas import Schema
 from polar.postgres import AsyncSession, sql
-from polar.schema.base import Schema
 
 ModelType = TypeVar("ModelType", bound=RecordModel)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=Schema)

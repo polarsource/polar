@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import datetime
 
 from polar.integrations.github import client as github
+from polar.kit.schemas import Schema
 from polar.models import Organization, Repository
 from polar.platforms import Platforms
-from polar.schema.base import Schema
 
 
 class RepositoryCreate(Schema):

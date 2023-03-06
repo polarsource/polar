@@ -15,8 +15,8 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.properties import MappedColumn
 from sqlalchemy.sql.selectable import FromClause
 
+from polar.kit.schemas import Schema
 from polar.postgres import AsyncSession, sql
-from polar.schema.base import Schema
 
 ModelType = TypeVar("ModelType", bound="ActiveRecordMixin")
 SchemaType = TypeVar("SchemaType", bound=Schema)

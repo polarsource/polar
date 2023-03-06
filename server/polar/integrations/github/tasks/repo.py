@@ -1,7 +1,8 @@
 import structlog
 
-from polar import actions, signals
+from polar import signals
 from polar.ext.sqlalchemy.types import GUID
+from polar.integrations.github import actions
 from polar.models import Organization, Repository
 from polar.postgres import AsyncSession
 from polar.worker import get_db_session, sync_worker, task

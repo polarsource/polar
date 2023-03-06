@@ -12,8 +12,8 @@ from fastapi_users.authentication import (
 from httpx_oauth.clients.github import GitHubOAuth2
 from pydantic import BaseModel
 
-from polar.actions import github_user
 from polar.config import settings
+from polar.integrations.github.actions.user import github_user
 from polar.models import User
 
 log = structlog.get_logger()

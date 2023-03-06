@@ -12,7 +12,7 @@ from polar.platforms import Platforms
 from polar.postgres import AsyncSession
 from polar.schema.reward import RewardCreate, RewardRead, State
 
-router = APIRouter(prefix="/rewards", tags=["rewards"])
+router = APIRouter()
 
 
 @router.post("", response_model=RewardRead)

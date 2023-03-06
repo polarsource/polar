@@ -6,8 +6,8 @@ from typing import Any, AsyncGenerator
 import pytest
 from httpx import AsyncClient, Response
 
-from polar.clients import github
 from polar.config import settings
+from polar.integrations.github import client as github
 
 from .vcr import read_cassette
 

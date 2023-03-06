@@ -4,11 +4,11 @@ from typing import Sequence
 
 import typer
 
-from polar.actions import github_organization
 from polar.config import settings
+from polar.integrations.github.actions import github_organization
+from polar.integrations.github.tasks.repo import sync_repository_issues
 from polar.models import Issue, Organization, Repository
 from polar.postgres import AsyncSession, AsyncSessionLocal, sql
-from polar.tasks.github.repo import sync_repository_issues
 
 cli = typer.Typer()
 

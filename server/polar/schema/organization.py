@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from polar.clients import github
+from polar.integrations.github import client as github
 from polar.models.organization import Organization
 from polar.platforms import Platforms
 from polar.schema.base import Schema

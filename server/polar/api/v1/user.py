@@ -1,9 +1,10 @@
 from fastapi import APIRouter
+
 from polar.api.auth import auth_backend
 from polar.api.deps import fastapi_users
 from polar.schema.user import UserRead, UserUpdate
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter()
 
 router.include_router(
     fastapi_users.get_users_router(UserRead, UserUpdate),

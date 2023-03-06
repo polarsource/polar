@@ -6,8 +6,8 @@ from typing import Self, Type
 
 import structlog
 
-from polar.clients import github
 from polar.exceptions import ExpectedIssueGotPullRequest
+from polar.integrations.github import client as github
 from polar.models.issue import Issue
 from polar.platforms import Platforms
 from polar.schema.base import Schema

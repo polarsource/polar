@@ -9,7 +9,7 @@ from polar.event import Receivers
 from polar.models import User
 from polar.redis import Redis
 
-router = APIRouter(prefix="/stream", tags=["stream"])
+router = APIRouter()
 
 log = structlog.get_logger()
 

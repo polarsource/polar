@@ -1,4 +1,3 @@
-from polar.actions.issue import issue
 from polar.actions.organization import organization
 from polar.actions.pull_request import pull_request
 from polar.actions.repository import repository
@@ -10,7 +9,6 @@ __all__ = [
     "account",
     "organization",
     "repository",
-    "issue",
     "pull_request",
     "reward",
 ]

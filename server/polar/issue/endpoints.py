@@ -2,13 +2,15 @@ from typing import Sequence
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from polar.actions import issue, organization, repository
+from polar.actions import organization, repository
 from polar.api.deps import current_active_user, get_db_session
 from polar.auth.repository import repository_auth
 from polar.models import Issue, User
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
-from polar.schema.issue import IssueRead
+
+from .schemas import IssueRead
+from .service import issue
 
 router = APIRouter()
 

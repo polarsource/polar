@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 
 from polar.integrations.github.endpoints import router as github_router
+from polar.issue.endpoints import router as issue_router
 
-from .v1.issue import router as issue_router
 from .v1.pull_request import router as pull_request_router
 from .v1.reward import router as reward_router
 from .v1.stream import router as stream_router

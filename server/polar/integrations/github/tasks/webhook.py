@@ -4,10 +4,10 @@ from typing import Any
 import structlog
 
 from polar.integrations.github import client as github
+from polar.issue.schemas import IssueRead
 from polar.models import Issue, Organization, PullRequest, Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
-from polar.schema.issue import IssueRead
 from polar.schema.organization import OrganizationCreate
 from polar.schema.pull_request import FullPullRequestCreate, PullRequestRead
 from polar.schema.repository import RepositoryCreate

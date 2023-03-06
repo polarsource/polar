@@ -10,7 +10,8 @@ from polar.kit.services import ResourceService
 from polar.models.issue import Issue
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
-from polar.schema.issue import IssueCreate, IssueUpdate
+
+from .schemas import IssueCreate, IssueUpdate
 
 log = structlog.get_logger()
 

@@ -6,9 +6,9 @@ import structlog
 from polar.integrations.github import client as github
 from polar.issue.schemas import IssueRead
 from polar.models import Issue, Organization, PullRequest, Repository
+from polar.organization.schemas import OrganizationCreate
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
-from polar.schema.organization import OrganizationCreate
 from polar.schema.pull_request import FullPullRequestCreate, PullRequestRead
 from polar.schema.repository import RepositoryCreate
 from polar.worker import get_db_session, sync_worker, task

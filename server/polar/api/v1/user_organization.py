@@ -2,11 +2,11 @@ from typing import Sequence
 
 from fastapi import APIRouter, Depends
 
-from polar.actions import organization
 from polar.api.deps import current_active_user, get_db_session
 from polar.models import Organization, User
+from polar.organization.schemas import OrganizationRead
+from polar.organization.service import organization
 from polar.postgres import AsyncSession
-from polar.schema.organization import OrganizationRead
 from polar.schema.repository import RepositoryRead
 
 router = APIRouter()

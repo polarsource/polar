@@ -9,7 +9,8 @@ from polar.kit.services import ResourceService
 from polar.models import Organization, User, UserOrganization
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
-from polar.schema.organization import OrganizationCreate, OrganizationUpdate
+
+from .schemas import OrganizationCreate, OrganizationUpdate
 
 log = structlog.get_logger()
 

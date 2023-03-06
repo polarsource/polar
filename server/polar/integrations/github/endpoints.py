@@ -9,8 +9,8 @@ from polar.api.deps import current_active_user, fastapi_users, get_db_session
 from polar.config import settings
 from polar.integrations.github import client as github
 from polar.models import Organization, User
+from polar.organization.schemas import OrganizationRead
 from polar.postgres import AsyncSession
-from polar.schema.organization import OrganizationRead
 
 from .actions.organization import github_organization
 from .tasks import webhook as hooks

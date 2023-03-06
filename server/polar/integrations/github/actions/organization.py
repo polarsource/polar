@@ -2,11 +2,11 @@ from datetime import datetime
 
 import structlog
 
-from polar.actions.organization import OrganizationService
 from polar.models import Organization, User
+from polar.organization.schemas import OrganizationCreate
+from polar.organization.service import OrganizationService
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
-from polar.schema.organization import OrganizationCreate
 
 from .. import client as github
 from .repository import github_repository

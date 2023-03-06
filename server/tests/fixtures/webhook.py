@@ -9,6 +9,8 @@ from httpx import AsyncClient, Response
 from polar.clients import github
 from polar.config import settings
 
+from .vcr import read_cassette
+
 
 class TestWebhook:
     __test__ = False  # This is a base class, not a test
@@ -44,9 +46,7 @@ class TestWebhookFactory:
         self.client = client
 
     def generate_cassette(self, name: str) -> dict[str, Any]:
-        filename = f"tests/fixtures/cassettes/webhooks/github/{name}.json"
-        with open(filename, "r") as fp:
-            cassette: dict[str, Any] = json.loads(fp.read())
+        cassette = read_cassette(f"github/webhooks/{name}.json")
 
         data = json.dumps(cassette["body"]).encode()
         signature = github.webhooks.sign(

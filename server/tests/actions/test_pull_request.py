@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 
 import pytest
@@ -14,18 +13,17 @@ from polar.platforms import Platforms
 from polar.postgres import AsyncSession
 from polar.schema.organization import OrganizationCreate
 from polar.schema.repository import RepositoryCreate
+from tests.fixtures.vcr import read_cassette
 
 
 def simple_pull_request() -> github.rest.PullRequestSimple:
-    with open("tests/actions/github_pull_request_simple.json", "r") as fp:
-        body = json.loads(fp.read())
-        return github.rest.PullRequestSimple(**body)
+    body = read_cassette("github/pull_request/simple.json")
+    return github.rest.PullRequestSimple(**body)
 
 
 def full_pull_request() -> github.rest.PullRequest:
-    with open("tests/actions/github_pull_request_full.json", "r") as fp:
-        body = json.loads(fp.read())
-        return github.rest.PullRequest(**body)
+    body = read_cassette("github/pull_request/full.json")
+    return github.rest.PullRequest(**body)
 
 
 async def create_org(session: AsyncSession) -> Organization:

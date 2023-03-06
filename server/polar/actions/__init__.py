@@ -1,21 +1,16 @@
-from polar.actions.issue import github_issue, issue
-from polar.actions.organization import github_organization, organization
-from polar.actions.pull_request import github_pull_request, pull_request
-from polar.actions.repository import github_repository, repository
+from polar.actions.issue import issue
+from polar.actions.organization import organization
+from polar.actions.pull_request import pull_request
+from polar.actions.repository import repository
 from polar.actions.reward import reward
-from polar.actions.user import github_user, user
+from polar.actions.user import user
 
 __all__ = [
     "user",
-    "github_user",
     "account",
     "organization",
-    "github_organization",
     "repository",
-    "github_repository",
     "issue",
-    "github_issue",
     "pull_request",
-    "github_pull_request",
     "reward",
 ]

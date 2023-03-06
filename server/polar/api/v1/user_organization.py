@@ -9,7 +9,7 @@ from polar.postgres import AsyncSession
 from polar.schema.organization import OrganizationRead
 from polar.schema.repository import RepositoryRead
 
-router = APIRouter(prefix="/user/organizations", tags=["user.organizations"])
+router = APIRouter()
 
 
 @router.get("", response_model=list[OrganizationRead])
@@ -30,5 +30,4 @@ async def get_user_organizations(
         ]
         return o
 
-    return [expand_children(org) for org in orgs]
     return [expand_children(org) for org in orgs]

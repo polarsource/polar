@@ -10,7 +10,7 @@ from polar.platforms import Platforms
 from polar.postgres import AsyncSession
 from polar.schema.issue import IssueRead
 
-router = APIRouter(prefix="/issues", tags=["issues"])
+router = APIRouter()
 
 
 @router.get("/{platform}/{organization_name}/{name}", response_model=list[IssueRead])

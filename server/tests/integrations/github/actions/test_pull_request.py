@@ -3,10 +3,12 @@ from datetime import datetime
 import pytest
 from sqlalchemy import text
 
-from polar.actions.organization import github_organization
-from polar.actions.pull_request import github_pull_request
-from polar.actions.repository import github_repository
-from polar.clients import github
+from polar.integrations.github import client as github
+from polar.integrations.github.actions import (
+    github_organization,
+    github_pull_request,
+    github_repository,
+)
 from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.platforms import Platforms

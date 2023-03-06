@@ -11,7 +11,7 @@ from polar.platforms import Platforms
 from polar.postgres import AsyncSession
 from polar.schema.pull_request import PullRequestRead
 
-router = APIRouter(prefix="/pull_requests", tags=["pull_requests"])
+router = APIRouter()
 
 
 @router.get(

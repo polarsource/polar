@@ -6,7 +6,7 @@ from typing import Self
 
 import structlog
 
-from polar.clients import github
+from polar.integrations.github import client as github
 from polar.schema.issue import IssueCreate
 from polar.typing import JSONAny
 

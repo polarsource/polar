@@ -5,7 +5,7 @@ import structlog
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import InstrumentedAttribute
 
-from polar.actions.base import Action
+from polar.kit.services import ResourceService
 from polar.models import Organization, User, UserOrganization
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
@@ -14,7 +14,9 @@ from polar.schema.organization import OrganizationCreate, OrganizationUpdate
 log = structlog.get_logger()
 
 
-class OrganizationActions(Action[Organization, OrganizationCreate, OrganizationUpdate]):
+class OrganizationService(
+    ResourceService[Organization, OrganizationCreate, OrganizationUpdate]
+):
     @property
     def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
         return [self.model.external_id]
@@ -81,4 +83,4 @@ class OrganizationActions(Action[Organization, OrganizationCreate, OrganizationU
             await nested.rollback()
 
 
-organization = OrganizationActions(Organization)
+organization = OrganizationService(Organization)

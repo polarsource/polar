@@ -1,6 +1,6 @@
 import structlog
 
-from polar.actions.user import UserActions
+from polar.actions.user import UserService
 from polar.models import User
 from polar.postgres import AsyncSession
 
@@ -9,7 +9,7 @@ from .. import client as github
 log = structlog.get_logger()
 
 
-class GithubUserActions(UserActions):
+class GithubUserService(UserService):
     async def update_profile(
         self, session: AsyncSession, user: User, access_token: str
     ) -> User:
@@ -64,4 +64,4 @@ class GithubUserActions(UserActions):
         return user
 
 
-github_user = GithubUserActions(User)
+github_user = GithubUserService(User)

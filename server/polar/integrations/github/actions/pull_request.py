@@ -3,7 +3,7 @@ from typing import Sequence
 
 import structlog
 
-from polar.actions.pull_request import PullRequestAction
+from polar.actions.pull_request import PullRequestService
 from polar.integrations.github import client as github
 from polar.models.pull_request import PullRequest
 from polar.platforms import Platforms
@@ -13,7 +13,7 @@ from polar.schema.pull_request import FullPullRequestCreate, MinimalPullRequestC
 log = structlog.get_logger()
 
 
-class GithubPullRequestActions(PullRequestAction):
+class GithubPullRequestService(PullRequestService):
     async def get_by_external_id(
         self, session: AsyncSession, external_id: int
     ) -> PullRequest | None:
@@ -122,4 +122,4 @@ class GithubPullRequestActions(PullRequestAction):
         )
 
 
-github_pull_request = GithubPullRequestActions(PullRequest)
+github_pull_request = GithubPullRequestService(PullRequest)

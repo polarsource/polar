@@ -3,8 +3,8 @@ from typing import Sequence
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
 
-from polar.actions.base import Action
 from polar.kit.extensions.sqlalchemy import GUID
+from polar.kit.services import ResourceService
 from polar.models.pull_request import PullRequest
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
@@ -13,8 +13,8 @@ from polar.schema.pull_request import MinimalPullRequestCreate, PullRequestUpdat
 log = structlog.get_logger()
 
 
-class PullRequestAction(
-    Action[PullRequest, MinimalPullRequestCreate, PullRequestUpdate]
+class PullRequestService(
+    ResourceService[PullRequest, MinimalPullRequestCreate, PullRequestUpdate]
 ):
     @property
     def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
@@ -36,4 +36,4 @@ class PullRequestAction(
         return issues
 
 
-pull_request = PullRequestAction(PullRequest)
+pull_request = PullRequestService(PullRequest)

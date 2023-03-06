@@ -2,7 +2,7 @@ from datetime import datetime
 
 import structlog
 
-from polar.actions.organization import OrganizationActions
+from polar.actions.organization import OrganizationService
 from polar.models import Organization, User
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
@@ -14,7 +14,7 @@ from .repository import github_repository
 log = structlog.get_logger()
 
 
-class GithubOrganization(OrganizationActions):
+class GithubOrganizationService(OrganizationService):
     async def get_by_external_id(
         self, session: AsyncSession, external_id: int
     ) -> Organization | None:
@@ -125,4 +125,4 @@ class GithubOrganization(OrganizationActions):
         return await self.delete(session, installation_id=installation_id)
 
 
-github_organization = GithubOrganization(Organization)
+github_organization = GithubOrganizationService(Organization)

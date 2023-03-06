@@ -4,7 +4,7 @@ import uuid
 
 import structlog
 
-from polar.actions.issue import IssueActions
+from polar.actions.issue import IssueService
 from polar.exceptions import ExpectedIssueGotPullRequest
 from polar.integrations.github import client as github
 from polar.models.issue import Issue
@@ -15,7 +15,7 @@ from polar.schema.issue import IssueCreate
 log = structlog.get_logger()
 
 
-class GithubIssueActions(IssueActions):
+class GithubIssueService(IssueService):
     async def get_by_external_id(
         self, session: AsyncSession, external_id: int
     ) -> Issue | None:
@@ -76,4 +76,4 @@ class GithubIssueActions(IssueActions):
         return await self.upsert_many(session, schemas, constraints=[Issue.external_id])
 
 
-github_issue = GithubIssueActions(Issue)
+github_issue = GithubIssueService(Issue)

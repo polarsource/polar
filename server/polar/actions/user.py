@@ -1,7 +1,7 @@
 import structlog
 from fastapi_users.db import SQLAlchemyUserDatabase
 
-from polar.actions.base import Action
+from polar.kit.services import ResourceService
 from polar.models import User
 from polar.schema.user import UserCreate, UserUpdate
 
@@ -14,8 +14,8 @@ class UserDatabase(SQLAlchemyUserDatabase):
     ...
 
 
-class UserActions(Action[User, UserCreate, UserUpdate]):
+class UserService(ResourceService[User, UserCreate, UserUpdate]):
     ...
 
 
-user = UserActions(User)
+user = UserService(User)

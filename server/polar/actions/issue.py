@@ -5,8 +5,8 @@ from typing import Sequence
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
 
-from polar.actions.base import Action
 from polar.kit.extensions.sqlalchemy import GUID
+from polar.kit.services import ResourceService
 from polar.models.issue import Issue
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
@@ -15,7 +15,7 @@ from polar.schema.issue import IssueCreate, IssueUpdate
 log = structlog.get_logger()
 
 
-class IssueActions(Action[Issue, IssueCreate, IssueUpdate]):
+class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
     @property
     def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
         return [self.model.external_id]
@@ -34,4 +34,4 @@ class IssueActions(Action[Issue, IssueCreate, IssueUpdate]):
         return issues
 
 
-issue = IssueActions(Issue)
+issue = IssueService(Issue)

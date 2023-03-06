@@ -3,7 +3,7 @@ from typing import AsyncGenerator, Literal
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
 
-from polar.actions.repository import RepositoryActions
+from polar.actions.repository import RepositoryService
 from polar.models import Issue, Organization, PullRequest, Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
@@ -16,7 +16,7 @@ from .pull_request import github_pull_request
 log = structlog.get_logger()
 
 
-class GithubRepositoryActions(RepositoryActions):
+class GithubRepositoryService(RepositoryService):
     async def get_by_external_id(
         self, session: AsyncSession, external_id: int
     ) -> Repository | None:
@@ -128,4 +128,4 @@ class GithubRepositoryActions(RepositoryActions):
         return instances
 
 
-github_repository = GithubRepositoryActions(Repository)
+github_repository = GithubRepositoryService(Repository)

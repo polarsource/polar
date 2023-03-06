@@ -4,17 +4,17 @@ from typing import Any, Generic, TypeVar
 
 from sqlalchemy.orm import InstrumentedAttribute
 
-from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import GUID
-from polar.kit.schemas import Schema
-from polar.postgres import AsyncSession, sql
+from .db.models import RecordModel
+from .db.postgres import AsyncSession, sql
+from .extensions.sqlalchemy import GUID
+from .schemas import Schema
 
 ModelType = TypeVar("ModelType", bound=RecordModel)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=Schema)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=Schema)
 
 
-class Action(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
+class ResourceService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     # Ideally, actions would only contain class methods since there is
     # no state to retain. Unable to achieve this with mapping the model
     # and schema as class attributes though without breaking typing.

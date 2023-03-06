@@ -9,7 +9,7 @@ from polar import signals
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import GUID, StringEnum
 from polar.platforms import Platforms
-from polar.typing import JSONDict, JSONList
+from polar.types import JSONDict, JSONList
 
 
 class Platform(enum.Enum):

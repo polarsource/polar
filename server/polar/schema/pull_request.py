@@ -8,7 +8,7 @@ import structlog
 
 from polar.integrations.github import client as github
 from polar.schema.issue import IssueCreate
-from polar.typing import JSONAny
+from polar.types import JSONAny
 
 log = structlog.get_logger()
 

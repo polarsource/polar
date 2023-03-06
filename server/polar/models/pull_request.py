@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from polar import signals
 from polar.kit.db.models import RecordModel
 from polar.models.issue import IssueFields
-from polar.typing import JSONDict, JSONList
+from polar.types import JSONDict, JSONList
 
 
 class PullRequest(IssueFields, RecordModel):

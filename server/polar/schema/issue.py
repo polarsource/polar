@@ -11,7 +11,7 @@ from polar.integrations.github import client as github
 from polar.kit.schemas import Schema
 from polar.models.issue import Issue
 from polar.platforms import Platforms
-from polar.typing import JSONAny
+from polar.types import JSONAny
 
 # TODO: Ugly. Fix how to deal with githubkit typing at times.
 TIssueData = (

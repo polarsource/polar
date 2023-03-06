@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from polar.ext.sqlalchemy import GUID, StringEnum
+from polar.kit.extensions.sqlalchemy import GUID, StringEnum
 from polar.kit.models import RecordModel
 
 if TYPE_CHECKING:  # pragma: no cover

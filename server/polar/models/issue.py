@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, MappedColumn, declared_attr, mapped_column
 
 from polar import signals
-from polar.ext.sqlalchemy import GUID, StringEnum
+from polar.kit.extensions.sqlalchemy import GUID, StringEnum
 from polar.kit.models import RecordModel
 from polar.platforms import Platforms
 from polar.typing import JSONDict, JSONList

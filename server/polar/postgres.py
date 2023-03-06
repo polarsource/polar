@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.pool import NullPool
 
 from polar.config import settings
-from polar.ext.sqlalchemy import sql
+from polar.kit.extensions.sqlalchemy import sql
 
 
 def create_engine(is_celery: bool = False) -> AsyncEngine:

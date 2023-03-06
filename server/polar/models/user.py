@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from polar.ext.sqlalchemy import GUID
+from polar.kit.extensions.sqlalchemy import GUID
 from polar.kit.models import RecordModel
 from polar.platforms import Platforms
 

@@ -5,7 +5,7 @@ from typing import Sequence
 import structlog
 
 from polar.actions.base import Action
-from polar.ext.sqlalchemy.types import GUID
+from polar.kit.extensions.sqlalchemy import GUID
 from polar.models.reward import Reward
 from polar.postgres import AsyncSession, sql
 from polar.schema.reward import RewardCreate, RewardUpdate

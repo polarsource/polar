@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from polar.ext.sqlalchemy import GUID
+from polar.kit.extensions.sqlalchemy import GUID
 from polar.kit.models import StatusMixin, TimestampedModel
 
 if TYPE_CHECKING:  # pragma: no cover

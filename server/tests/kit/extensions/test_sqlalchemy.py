@@ -6,7 +6,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import dialect as postgresql
 
-from polar.ext.sqlalchemy import GUID, IntEnum
+from polar.kit.extensions.sqlalchemy import GUID, IntEnum
 from polar.kit.models import StatusFlag
 from polar.postgres import AsyncEngineLocal, AsyncSession, sql
 from tests.fixtures.database import TestModel

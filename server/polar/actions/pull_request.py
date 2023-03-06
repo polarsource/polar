@@ -4,7 +4,7 @@ import structlog
 from sqlalchemy.orm import InstrumentedAttribute
 
 from polar.actions.base import Action
-from polar.ext.sqlalchemy.types import GUID
+from polar.kit.extensions.sqlalchemy import GUID
 from polar.models.pull_request import PullRequest
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql

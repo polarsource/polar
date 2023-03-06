@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from polar.ext.sqlalchemy.types import GUID
+from polar.kit.extensions.sqlalchemy import GUID
 from polar.models.reward import Reward
 from polar.postgres import AsyncSession
 

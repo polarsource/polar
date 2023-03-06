@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from sqlalchemy import TIMESTAMP
 from sqlalchemy.orm import DeclarativeBase, Mapped, MappedColumn, mapped_column
 
-from polar.ext.sqlalchemy import GUID, IntEnum
+from polar.kit.extensions.sqlalchemy import GUID, IntEnum
 
 from .mixins import ActiveRecordMixin, SerializeMixin
 

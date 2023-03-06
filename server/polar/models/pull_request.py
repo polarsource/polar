@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar import signals
-from polar.kit.models import RecordModel
+from polar.kit.db.models import RecordModel
 from polar.models.issue import IssueFields
 from polar.typing import JSONDict, JSONList
 

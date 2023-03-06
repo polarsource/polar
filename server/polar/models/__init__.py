@@ -1,4 +1,4 @@
-from polar.kit.models import Model, StatusFlag, StatusMixin, TimestampedModel
+from polar.kit.db.models import Model, StatusFlag, StatusMixin, TimestampedModel
 
 from .account import Account
 from .issue import Issue

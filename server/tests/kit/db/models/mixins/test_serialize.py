@@ -1,6 +1,6 @@
 import pytest
 
-from polar.kit.models.mixins import SerializeMixin
+from polar.kit.db.models.mixins import SerializeMixin
 from polar.postgres import AsyncSession
 from tests.fixtures.database import TestModel
 

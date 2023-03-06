@@ -4,8 +4,8 @@ from typing import Any, Generic, TypeVar
 
 from sqlalchemy.orm import InstrumentedAttribute
 
+from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import GUID
-from polar.kit.models import RecordModel
 from polar.kit.schemas import Schema
 from polar.postgres import AsyncSession, sql
 

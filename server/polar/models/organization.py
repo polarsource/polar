@@ -7,8 +7,8 @@ from sqlalchemy import TIMESTAMP, Boolean, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar import signals
+from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import GUID, StringEnum
-from polar.kit.models import RecordModel
 from polar.platforms import Platforms
 
 if TYPE_CHECKING:  # pragma: no cover

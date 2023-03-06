@@ -5,11 +5,11 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import dialect as postgresql
-from tests.fixtures.database import TestModel
 
 from polar.ext.sqlalchemy import GUID, IntEnum
-from polar.models.base import StatusFlag
+from polar.kit.models import StatusFlag
 from polar.postgres import AsyncEngineLocal, AsyncSession, sql
+from tests.fixtures.database import TestModel
 
 
 @pytest.fixture(scope="module")

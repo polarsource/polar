@@ -5,7 +5,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.ext.sqlalchemy import GUID
-from polar.models.base import StatusMixin, TimestampedModel
+from polar.kit.models import StatusMixin, TimestampedModel
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.organization import Organization

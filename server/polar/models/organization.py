@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar import signals
 from polar.ext.sqlalchemy import GUID, StringEnum
-from polar.models.base import RecordModel
+from polar.kit.models import RecordModel
 from polar.platforms import Platforms
 
 if TYPE_CHECKING:  # pragma: no cover

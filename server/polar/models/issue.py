@@ -5,7 +5,7 @@ from sqlalchemy import TIMESTAMP, ForeignKey, Integer, String, Text, UniqueConst
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, MappedColumn, declared_attr, mapped_column
 
-from polar import signals
+from polar.issue.signals import issue_created, issue_updated
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import GUID, StringEnum
 from polar.enums import Platforms
@@ -96,5 +96,5 @@ class Issue(IssueFields, RecordModel):
         UniqueConstraint("organization_id", "repository_id", "number"),
     )
 
-    on_created_signal = signals.issue_created
-    on_updated_signal = signals.issue_updated
+    on_created_signal = issue_created
+    on_updated_signal = issue_updated

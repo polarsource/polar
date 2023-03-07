@@ -1,13 +1,19 @@
 import structlog
 
-from polar import signals
+from polar.issue.signals import (
+    issue_synced,
+    issue_sync_completed,
+    issue_created,
+    issue_updated,
+)
+from polar.pull_request.signals import pull_request_created, pull_request_updated
 from polar.eventstream.service import publish
 from polar.models import Issue, Organization, PullRequest, Repository
 
 log = structlog.get_logger()
 
 
-@signals.issue_synced.connect
+@issue_synced.connect
 async def on_issue_synced(
     sender: Repository, organization: Organization, issue: Issue, synced: int
 ) -> None:
@@ -27,7 +33,7 @@ async def on_issue_synced(
     )
 
 
-@signals.issue_sync_completed.connect
+@issue_sync_completed.connect
 async def on_issue_sync_completed(
     sender: Repository, organization: Organization, synced: int
 ) -> None:
@@ -48,7 +54,7 @@ async def on_issue_sync_completed(
 ###############################################################################
 
 
-@signals.issue_created.connect
+@issue_created.connect
 async def on_issue_created(issue: Issue) -> None:
     await publish(
         "issue.created",
@@ -58,7 +64,7 @@ async def on_issue_created(issue: Issue) -> None:
     )
 
 
-@signals.issue_updated.connect
+@issue_updated.connect
 async def on_issue_updated(issue: Issue) -> None:
     await publish(
         "issue.updated",
@@ -72,7 +78,7 @@ async def on_issue_updated(issue: Issue) -> None:
     )
 
 
-@signals.pull_request_created.connect
+@pull_request_created.connect
 async def on_pull_request_created(pr: PullRequest) -> None:
     await publish(
         "pull_request.created",
@@ -82,7 +88,7 @@ async def on_pull_request_created(pr: PullRequest) -> None:
     )
 
 
-@signals.pull_request_updated.connect
+@pull_request_updated.connect
 async def on_pull_request_updated(pr: PullRequest) -> None:
     await publish(
         "pull_request.updated",

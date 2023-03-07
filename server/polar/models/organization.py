@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import TIMESTAMP, Boolean, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from polar import signals
+from polar.organization.signals import organization_created, organization_updated
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import GUID, StringEnum
 from polar.enums import Platforms
@@ -30,8 +30,8 @@ class Organization(RecordModel):
         UniqueConstraint("installation_id"),
     )
 
-    on_created_signal = signals.organization_created
-    on_updated_signal = signals.organization_updated
+    on_created_signal = organization_created
+    on_updated_signal = organization_updated
 
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
     name: Mapped[str] = mapped_column(String(length=50), nullable=False, unique=True)

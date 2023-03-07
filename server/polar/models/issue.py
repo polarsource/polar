@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, MappedColumn, declared_attr, mapped_column
 from polar import signals
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import GUID, StringEnum
-from polar.platforms import Platforms
+from polar.enums import Platforms
 from polar.types import JSONDict, JSONList
 
 

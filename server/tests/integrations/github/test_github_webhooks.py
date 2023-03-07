@@ -8,7 +8,7 @@ from polar.integrations.github import actions
 from polar.integrations.github import client as github
 from polar.models.organization import Organization
 from polar.organization.schemas import OrganizationCreate
-from polar.platforms import Platforms
+from polar.enums import Platforms
 from polar.postgres import AsyncSession, AsyncSessionLocal
 from tests.fixtures.webhook import TestWebhook, TestWebhookFactory
 

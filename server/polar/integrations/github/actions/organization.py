@@ -5,7 +5,7 @@ import structlog
 from polar.models import Organization, User
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import OrganizationService
-from polar.platforms import Platforms
+from polar.enums import Platforms
 from polar.postgres import AsyncSession
 
 from .. import client as github

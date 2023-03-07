@@ -5,7 +5,7 @@ import structlog
 
 from polar.integrations.github import client as github
 from polar.models.pull_request import PullRequest
-from polar.platforms import Platforms
+from polar.enums import Platforms
 from polar.postgres import AsyncSession
 from polar.pull_request.schemas import FullPullRequestCreate, MinimalPullRequestCreate
 from polar.pull_request.service import PullRequestService

@@ -9,7 +9,7 @@ from polar.integrations.github import client as github
 from polar.issue.schemas import IssueCreate
 from polar.issue.service import IssueService
 from polar.models.issue import Issue
-from polar.platforms import Platforms
+from polar.enums import Platforms
 from polar.postgres import AsyncSession
 
 log = structlog.get_logger()

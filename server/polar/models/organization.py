@@ -9,7 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from polar import signals
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import GUID, StringEnum
-from polar.platforms import Platforms
+from polar.enums import Platforms
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.account import Account

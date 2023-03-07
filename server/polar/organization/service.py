@@ -7,7 +7,7 @@ from sqlalchemy.orm import InstrumentedAttribute
 
 from polar.kit.services import ResourceService
 from polar.models import Organization, User, UserOrganization
-from polar.platforms import Platforms
+from polar.enums import Platforms
 from polar.postgres import AsyncSession, sql
 
 from .schemas import OrganizationCreate, OrganizationUpdate

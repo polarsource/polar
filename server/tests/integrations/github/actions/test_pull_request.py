@@ -12,7 +12,7 @@ from polar.integrations.github.actions import (
 from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.organization.schemas import OrganizationCreate
-from polar.platforms import Platforms
+from polar.enums import Platforms
 from polar.postgres import AsyncSession
 from polar.repository.schemas import RepositoryCreate
 from tests.fixtures.vcr import read_cassette

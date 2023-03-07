@@ -8,7 +8,7 @@ from sqlalchemy.orm import InstrumentedAttribute
 from polar.kit.extensions.sqlalchemy import GUID
 from polar.kit.services import ResourceService
 from polar.models.issue import Issue
-from polar.platforms import Platforms
+from polar.enums import Platforms
 from polar.postgres import AsyncSession, sql
 
 from .schemas import IssueCreate, IssueUpdate

@@ -7,7 +7,7 @@ from polar.auth.repository import repository_auth
 from polar.models import User
 from polar.models.pull_request import PullRequest
 from polar.organization.service import organization
-from polar.platforms import Platforms
+from polar.enums import Platforms
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository
 

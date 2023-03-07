@@ -6,7 +6,7 @@ from polar.auth.dependencies import current_active_user
 from polar.auth.repository import repository_auth
 from polar.models import Issue, Reward, User
 from polar.organization.service import organization
-from polar.platforms import Platforms
+from polar.enums import Platforms
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository
 

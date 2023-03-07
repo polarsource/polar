@@ -7,7 +7,7 @@ from polar.integrations.github import client as github
 from polar.issue.schemas import IssueRead
 from polar.models import Issue, Organization, PullRequest, Repository
 from polar.organization.schemas import OrganizationCreate
-from polar.platforms import Platforms
+from polar.enums import Platforms
 from polar.postgres import AsyncSession
 from polar.pull_request.schemas import FullPullRequestCreate, PullRequestRead
 from polar.repository.schemas import RepositoryCreate

@@ -4,7 +4,7 @@ import structlog
 from sqlalchemy.orm import InstrumentedAttribute
 
 from polar.models import Issue, Organization, PullRequest, Repository
-from polar.platforms import Platforms
+from polar.enums import Platforms
 from polar.postgres import AsyncSession
 from polar.repository.schemas import RepositoryCreate
 from polar.repository.service import RepositoryService

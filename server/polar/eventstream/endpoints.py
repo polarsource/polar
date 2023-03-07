@@ -5,9 +5,10 @@ from fastapi import APIRouter, Depends
 from sse_starlette.sse import EventSourceResponse
 
 from polar.api.deps import current_active_user, get_redis
-from polar.event import Receivers
 from polar.models import User
 from polar.redis import Redis
+
+from .service import Receivers
 
 router = APIRouter()
 

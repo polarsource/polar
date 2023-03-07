@@ -1,7 +1,7 @@
 import structlog
 
 from polar import signals
-from polar.event import publish
+from polar.eventstream.service import publish
 from polar.models import Issue, Organization, PullRequest, Repository
 
 log = structlog.get_logger()

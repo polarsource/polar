@@ -7,6 +7,8 @@ import type { RepositoryRead } from './RepositoryRead';
 import type { Status } from './Status';
 
 export type OrganizationRead = {
+  funding_badge_retroactive?: boolean;
+  funding_badge_show_amount?: boolean;
   platform: Platforms;
   name: string;
   external_id: number;
@@ -17,6 +19,7 @@ export type OrganizationRead = {
   installation_created_at: string;
   installation_updated_at?: string;
   installation_suspended_at?: string;
+  onboarded_at?: string;
   id: string;
   status: Status;
   created_at: string;

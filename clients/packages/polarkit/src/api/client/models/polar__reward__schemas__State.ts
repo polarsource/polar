@@ -5,7 +5,7 @@
 /**
  * An enumeration.
  */
-export enum polar__schema__reward__State {
+export enum polar__reward__schemas__State {
   CREATED = 'created',
   PENDING = 'pending',
   PAID = 'paid',

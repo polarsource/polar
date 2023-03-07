@@ -2,7 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import type { polar__schema__reward__State } from './polar__schema__reward__State';
+import type { polar__reward__schemas__State } from './polar__reward__schemas__State';
 
 export type RewardRead = {
   issue_id: string;
@@ -11,6 +11,6 @@ export type RewardRead = {
   created_at: string;
   repository_id: string;
   organization_id: string;
-  state: polar__schema__reward__State;
+  state: polar__reward__schemas__State;
 };
 

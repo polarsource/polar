@@ -54,8 +54,20 @@ class Organization(RecordModel):
     installation_suspender: Mapped[uuid.UUID | None] = mapped_column(GUID)
 
     status: Mapped[Status] = mapped_column(
-        StringEnum(Status), nullable=False, default=Status.INACTIVE
+        StringEnum(Status), nullable=False, default=Status.ACTIVE
     )
+
+    # Add badge to all historical & open issues before onboarding?
+    funding_badge_retroactive: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+
+    # Whether to show funding amount in the badge
+    funding_badge_show_amount: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+
+    onboarded_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
     users: "Mapped[User]" = relationship(
         "UserOrganization",

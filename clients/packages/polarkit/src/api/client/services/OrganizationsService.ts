@@ -13,11 +13,11 @@ export class OrganizationsService {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
-   * Update Organization Settings
+   * Update Settings
    * @returns OrganizationRead Successful Response
    * @throws ApiError
    */
-  public updateOrganizationSettings({
+  public updateSettings({
     platform,
     organizationName,
     requestBody,
@@ -28,7 +28,7 @@ export class OrganizationsService {
   }): CancelablePromise<OrganizationRead> {
     return this.httpRequest.request({
       method: 'PUT',
-      url: '/api/v1/organizations/{platform}/{organization_name}',
+      url: '/api/v1/organizations/{platform}/{organization_name}/settings',
       path: {
         'platform': platform,
         'organization_name': organizationName,

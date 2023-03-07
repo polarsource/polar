@@ -11,8 +11,8 @@ from .service import organization
 router = APIRouter()
 
 
-@router.put("/{platform}/{organization_name}", response_model=OrganizationRead)
-async def update_organization_settings(
+@router.put("/{platform}/{organization_name}/settings", response_model=OrganizationRead)
+async def update_settings(
     platform: Platforms,
     organization_name: str,
     settings: OrganizationSettings,

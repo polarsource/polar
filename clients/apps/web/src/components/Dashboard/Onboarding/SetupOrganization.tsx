@@ -1,4 +1,6 @@
+import { api } from 'polarkit/api'
 import { type OrganizationRead } from 'polarkit/api/client'
+import { useStore } from 'polarkit/store'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ShowcaseGithubBadge from './ShowcaseGithubBadge'
@@ -8,15 +10,28 @@ import OnboardingControls from './OnboardingControls'
 export const SetupOrganization = ({ org }: { org: OrganizationRead }) => {
   const [addBadgeToAll, setAddBadgeToAll] = useState(true)
   const [showAmountRaised, setShowAmountRaised] = useState(true)
+  const setCurrentOrg = useStore((state) => state.setCurrentOrg)
   const navigate = useNavigate()
 
-  const onClickContinue = () => {
-    console.log('Time to save')
-  }
-
-  const onClickSkip = () => {
+  const redirectToFirstRepo = () => {
     const firstRepo = org.repositories[0]
     navigate(`/dashboard/${org.name}/${firstRepo.name}`)
+  }
+
+  const onClickContinue = async () => {
+    const response = api.organizations
+      .updateSettings({
+        platform: org.platform,
+        organizationName: org.name,
+        requestBody: {
+          funding_badge_retroactive: addBadgeToAll,
+          funding_badge_show_amount: showAmountRaised,
+        },
+      })
+      .then((updatedOrg: OrganizationRead) => {
+        setCurrentOrg(updatedOrg)
+        redirectToFirstRepo()
+      })
   }
 
   return (
@@ -82,7 +97,7 @@ export const SetupOrganization = ({ org }: { org: OrganizationRead }) => {
       <OnboardingControls
         onClickContinue={onClickContinue}
         skippable={true}
-        onClickSkip={onClickSkip}
+        onClickSkip={redirectToFirstRepo}
       />
     </>
   )

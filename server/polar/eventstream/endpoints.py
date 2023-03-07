@@ -4,7 +4,8 @@ import structlog
 from fastapi import APIRouter, Depends
 from sse_starlette.sse import EventSourceResponse
 
-from polar.api.deps import current_active_user, get_redis
+from polar.auth.dependencies import current_active_user
+from polar.redis import get_redis
 from polar.models import User
 from polar.redis import Redis
 

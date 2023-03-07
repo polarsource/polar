@@ -2,12 +2,12 @@ from typing import Sequence
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from polar.api.deps import current_active_user, get_db_session
+from polar.auth.dependencies import current_active_user
 from polar.auth.repository import repository_auth
 from polar.models import Issue, User
 from polar.organization.service import organization
 from polar.platforms import Platforms
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository
 
 from .schemas import IssueRead

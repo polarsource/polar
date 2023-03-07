@@ -6,12 +6,12 @@ from httpx_oauth.clients.github import GitHubOAuth2
 from pydantic import BaseModel
 
 from polar.auth.session import auth_backend
-from polar.api.deps import current_active_user, fastapi_users, get_db_session
+from polar.auth.dependencies import current_active_user, fastapi_users
 from polar.config import settings
 from polar.integrations.github import client as github
 from polar.models import Organization, User
 from polar.organization.schemas import OrganizationRead
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncSession, get_db_session
 
 from .actions.organization import github_organization
 from .tasks import webhook as hooks

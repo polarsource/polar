@@ -3,11 +3,11 @@ from typing import AsyncGenerator, Literal
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
 
-from polar.actions.repository import RepositoryService
 from polar.models import Issue, Organization, PullRequest, Repository
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
-from polar.schema.repository import RepositoryCreate
+from polar.repository.schemas import RepositoryCreate
+from polar.repository.service import RepositoryService
 
 from .. import client as github
 from .issue import github_issue

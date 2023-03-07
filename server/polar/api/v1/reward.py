@@ -2,7 +2,7 @@ from typing import Sequence
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from polar.actions import repository, reward
+from polar.actions import reward
 from polar.api.deps import current_active_user, get_db_session
 from polar.auth.repository import repository_auth
 from polar.models import User
@@ -11,6 +11,7 @@ from polar.models.reward import Reward
 from polar.organization.service import organization
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
+from polar.repository.service import repository
 from polar.schema.reward import RewardCreate, RewardRead, State
 
 router = APIRouter()

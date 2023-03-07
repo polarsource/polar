@@ -10,7 +10,7 @@ from polar.organization.schemas import OrganizationCreate
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
 from polar.pull_request.schemas import FullPullRequestCreate, PullRequestRead
-from polar.schema.repository import RepositoryCreate
+from polar.repository.schemas import RepositoryCreate
 from polar.worker import get_db_session, sync_worker, task
 
 from .. import actions

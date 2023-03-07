@@ -14,7 +14,7 @@ from polar.models.repository import Repository
 from polar.organization.schemas import OrganizationCreate
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
-from polar.schema.repository import RepositoryCreate
+from polar.repository.schemas import RepositoryCreate
 from tests.fixtures.vcr import read_cassette
 
 

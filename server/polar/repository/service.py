@@ -3,7 +3,8 @@ from sqlalchemy.orm import InstrumentedAttribute
 
 from polar.kit.services import ResourceService
 from polar.models import Repository
-from polar.schema.repository import RepositoryCreate, RepositoryUpdate
+
+from .schemas import RepositoryCreate, RepositoryUpdate
 
 log = structlog.get_logger()
 
@@ -16,4 +17,5 @@ class RepositoryService(
         return [self.model.external_id]
 
 
+repository = RepositoryService(Repository)
 repository = RepositoryService(Repository)

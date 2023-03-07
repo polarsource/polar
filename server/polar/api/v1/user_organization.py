@@ -7,7 +7,7 @@ from polar.models import Organization, User
 from polar.organization.schemas import OrganizationRead
 from polar.organization.service import organization
 from polar.postgres import AsyncSession
-from polar.schema.repository import RepositoryRead
+from polar.repository.schemas import RepositoryRead
 
 router = APIRouter()
 

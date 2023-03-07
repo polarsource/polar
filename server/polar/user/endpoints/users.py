@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from polar.api.auth import auth_backend
+from polar.auth.session import auth_backend
 from polar.api.deps import fastapi_users
 
 from ..schemas import UserRead, UserUpdate

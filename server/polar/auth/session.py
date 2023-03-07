@@ -9,7 +9,6 @@ from fastapi_users.authentication import (
     CookieTransport,
     JWTStrategy,
 )
-from httpx_oauth.clients.github import GitHubOAuth2
 from pydantic import BaseModel
 
 from polar.config import settings
@@ -17,10 +16,6 @@ from polar.integrations.github.actions.user import github_user
 from polar.models import User
 
 log = structlog.get_logger()
-
-github_oauth_client = GitHubOAuth2(
-    settings.GITHUB_CLIENT_ID, settings.GITHUB_CLIENT_SECRET
-)
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):

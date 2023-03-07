@@ -5,7 +5,7 @@ from fastapi import Depends
 from fastapi_users import FastAPIUsers
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from polar.api.auth import UserManager, auth_backend
+from polar.auth.session import UserManager, auth_backend
 from polar.models import OAuthAccount, User
 from polar.postgres import AsyncSessionLocal
 from polar.redis import get_redis

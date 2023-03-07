@@ -54,7 +54,7 @@ By default we use absolute imports. However, within an isolated module, e.g `pol
 
 **How should a module be structured**
 
-| polar/<module>/ | Explanation & Usage                                          |
+| polar/your_module/ | Explanation & Usage                                          |
 | --------------- | ------------------------------------------------------------ |
 | endpoints.py    | FastAPI `router` for the module. Mounted and routed in `polar.api`. Endpoint functions should be in charge of validation and authentication, but business logic should be contained within `service.py` |
 | schemas.py      | Pydantic schemas for request/response and data validation. Resources should have schemas for their applicable CRUD operations named `<Resource>(Read|Create|Update|Delete)` |

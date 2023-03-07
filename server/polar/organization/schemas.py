@@ -51,7 +51,7 @@ class OrganizationCreate(Base):
             is_site_admin=is_site_admin,
             installation_id=installation.id,
             installation_created_at=installation.created_at,
-            installation_modified_at=installation.updated_at,
+            installation_updated_at=installation.updated_at,
             installation_suspended_at=installation.suspended_at,
         )
 

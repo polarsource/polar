@@ -13,7 +13,7 @@ from polar.models import Organization, User
 from polar.organization.schemas import OrganizationRead
 from polar.postgres import AsyncSession, get_db_session
 
-from .actions.organization import github_organization
+from .service.organization import github_organization
 from .tasks import webhook as hooks
 
 log = structlog.get_logger()

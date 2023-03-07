@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import text
 
 from polar.integrations.github import client as github
-from polar.integrations.github.actions import (
+from polar.integrations.github.service import (
     github_organization,
     github_pull_request,
     github_repository,

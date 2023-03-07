@@ -12,7 +12,7 @@ from fastapi_users.authentication import (
 from pydantic import BaseModel
 
 from polar.config import settings
-from polar.integrations.github.actions.user import github_user
+from polar.integrations.github.service.user import github_user
 from polar.models import User
 
 log = structlog.get_logger()

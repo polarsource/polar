@@ -3,10 +3,10 @@ from fastapi import APIRouter
 from polar.integrations.github.endpoints import router as github_router
 from polar.issue.endpoints import router as issue_router
 from polar.pull_request.endpoints import router as pull_request_router
+from polar.reward.endpoints import router as reward_router
 from polar.user.endpoints.user_organization import router as user_organization_router
 from polar.user.endpoints.users import router as user_router
 
-from .v1.reward import router as reward_router
 from .v1.stream import router as stream_router
 
 router = APIRouter(prefix="/api/v1")

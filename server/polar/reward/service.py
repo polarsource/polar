@@ -8,7 +8,8 @@ from polar.kit.extensions.sqlalchemy import GUID
 from polar.kit.services import ResourceService
 from polar.models.reward import Reward
 from polar.postgres import AsyncSession, sql
-from polar.schema.reward import RewardCreate, RewardUpdate
+
+from .schemas import RewardCreate, RewardUpdate
 
 log = structlog.get_logger()
 

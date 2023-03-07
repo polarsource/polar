@@ -17,7 +17,7 @@ const ProgressBar = ({
 
   return (
     <>
-      <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+      <div className="h-2.5 w-full rounded-full bg-gray-200 dark:bg-gray-700">
         <div
           className={classNames(
             completed
@@ -38,23 +38,23 @@ export const SynchronizeRepository = ({ repo }: { repo: RepoSyncState }) => {
       <div
         className={classNames(
           repo.completed ? 'bg-gray-50 opacity-50' : 'bg-white',
-          'flex flex-row my-5 px-6 py-4 shadow-md rounded-lg',
+          'my-5 flex flex-row rounded-lg px-6 py-4 shadow-md',
         )}
       >
-        <div className="basis-2/6 my-auto">
+        <div className="my-auto basis-2/6">
           <div className="flex flex-row">
             {repo.avatar_url && (
               <img
-                className="w-10 h-10 rounded-full border border-gray-100"
+                className="h-10 w-10 rounded-full border border-gray-100"
                 src={repo.avatar_url}
               />
             )}
-            <strong className="font-medium text-base my-auto mx-4">
+            <strong className="my-auto mx-4 text-base font-medium">
               {repo.name}
             </strong>
           </div>
         </div>
-        <div className="basis-2/6 my-auto">
+        <div className="my-auto basis-2/6">
           <p className="text-xs">
             {repo.synced}{' '}
             <span className="text-gray-500">
@@ -62,7 +62,7 @@ export const SynchronizeRepository = ({ repo }: { repo: RepoSyncState }) => {
             </span>
           </p>
         </div>
-        <div className="basis-2/6 my-auto">
+        <div className="my-auto basis-2/6">
           <ProgressBar
             progress={repo.synced}
             target={repo.expected}
@@ -73,3 +73,5 @@ export const SynchronizeRepository = ({ repo }: { repo: RepoSyncState }) => {
     </>
   )
 }
+
+export default SynchronizeRepository

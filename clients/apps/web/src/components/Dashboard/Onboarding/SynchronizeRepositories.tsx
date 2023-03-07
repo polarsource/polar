@@ -1,12 +1,18 @@
-import { useState, useEffect, type MouseEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useSSE } from 'polarkit/hooks'
 import { type OrganizationRead } from 'polarkit/api/client'
-import { type SyncEvent, type RepoSyncState } from './types'
+import { useSSE } from 'polarkit/hooks'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { type RepoSyncState, type SyncEvent } from './types'
 
-import { SynchronizeRepository } from './SynchronizeRepository'
+import OnboardingControls from './OnboardingControls'
+import SynchronizeRepository from './SynchronizeRepository'
 
-export const SynchronizeRepositories = ({ org }: { org: OrganizationRead }) => {
+const getInitializedSyncState = (
+  org: OrganizationRead,
+): {
+  totalExpected: number
+  initialSyncStates: { [id: string]: RepoSyncState }
+} => {
   let totalExpected = 0
   let initialSyncStates = {}
   for (let repo of org.repositories) {
@@ -20,7 +26,19 @@ export const SynchronizeRepositories = ({ org }: { org: OrganizationRead }) => {
     }
     totalExpected += repo.open_issues
   }
-  const navigate = useNavigate()
+  return { totalExpected, initialSyncStates }
+}
+
+export const SynchronizeRepositories = ({
+  org,
+  onContinue,
+}: {
+  org: OrganizationRead
+  onContinue: () => void
+}) => {
+  let { totalExpected, initialSyncStates } = getInitializedSyncState(org)
+  const [searchParams] = useSearchParams()
+  const [debug] = useState<boolean>(searchParams.get('debug') === '1')
   const emitter = useSSE(org.id)
   const [syncingRepos, setSyncingRepos] = useState<{
     [id: string]: RepoSyncState
@@ -73,21 +91,15 @@ export const SynchronizeRepositories = ({ org }: { org: OrganizationRead }) => {
     })
   }
 
-  const onIssueSyncCompleted = (data: SyncEvent) => {
-    sync({ data, completed: true })
-  }
-
-  const onIssueSynced = (data: SyncEvent) => {
-    sync({ data, completed: data.synced === data.expected })
-  }
-
-  const onSkipClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    event.preventDefault()
-    const firstRepo = org.repositories[0]
-    navigate(`/dashboard/${org.name}/${firstRepo.name}`)
-  }
-
   useEffect(() => {
+    const onIssueSyncCompleted = (data: SyncEvent) => {
+      sync({ data, completed: true })
+    }
+
+    const onIssueSynced = (data: SyncEvent) => {
+      sync({ data, completed: data.synced === data.expected })
+    }
+
     emitter.on('issue.synced', onIssueSynced)
     emitter.on('issue.sync.completed', onIssueSyncCompleted)
 
@@ -95,11 +107,11 @@ export const SynchronizeRepositories = ({ org }: { org: OrganizationRead }) => {
       emitter.off('issue.synced', onIssueSynced)
       emitter.off('issue.sync.completed', onIssueSyncCompleted)
     }
-  }, [])
+  }, [emitter])
 
   return (
     <>
-      <h1 className="text-xl text-center font-normal text-gray-600 drop-shadow-md my-11">
+      <h1 className="my-11 text-center text-xl font-normal text-gray-600 drop-shadow-md">
         Connecting repositories
       </h1>
       <ul>
@@ -111,11 +123,10 @@ export const SynchronizeRepositories = ({ org }: { org: OrganizationRead }) => {
           )
         })}
       </ul>
-      {progress.percentage > 20 && (
-        <a href="#" className="text-center text-gray-600" onClick={onSkipClick}>
-          Continue
-        </a>
-      )}
+      {progress.percentage > 40 ||
+        (debug && <OnboardingControls onClickContinue={onContinue} />)}
     </>
   )
 }
+
+export default SynchronizeRepositories

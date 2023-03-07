@@ -1,14 +1,16 @@
 import { OrganizationRead } from 'polarkit/api/client'
-import { requireAuth } from 'polarkit/hooks'
-import { useUserOrganizations } from 'polarkit/hooks'
-import { useParams } from 'react-router-dom'
+import { requireAuth, useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
+import { useState } from 'react'
+import { useParams } from 'react-router-dom'
 
-import { SynchronizeRepositories } from '../components/Dashboard/Onboarding/SynchronizeRepositories'
+import SetupOrganization from '../components/Dashboard/Onboarding/SetupOrganization'
+import SynchronizeRepositories from '../components/Dashboard/Onboarding/SynchronizeRepositories'
 
 const Initialize = () => {
   const { orgSlug } = useParams()
   const { currentUser } = requireAuth()
+  const [showSetup, setShowSetup] = useState(false)
   const userOrgQuery = useUserOrganizations(currentUser?.id)
   const currentOrg = useStore((state) => state.currentOrg)
   const setCurrentOrg = useStore((state) => state.setCurrentOrg)
@@ -27,8 +29,16 @@ const Initialize = () => {
   return (
     <>
       <div className="flex h-screen">
-        <div className="w-[700px] m-auto">
-          <SynchronizeRepositories org={currentOrg} />
+        <div className="m-auto w-[700px]">
+          {showSetup && <SetupOrganization org={currentOrg} />}
+          {!showSetup && (
+            <SynchronizeRepositories
+              org={currentOrg}
+              onContinue={() => {
+                setShowSetup(true)
+              }}
+            />
+          )}
         </div>
       </div>
     </>

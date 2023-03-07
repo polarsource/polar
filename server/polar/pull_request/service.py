@@ -8,7 +8,8 @@ from polar.kit.services import ResourceService
 from polar.models.pull_request import PullRequest
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession, sql
-from polar.schema.pull_request import MinimalPullRequestCreate, PullRequestUpdate
+
+from .schemas import MinimalPullRequestCreate, PullRequestUpdate
 
 log = structlog.get_logger()
 

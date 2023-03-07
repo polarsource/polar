@@ -2,7 +2,7 @@ from typing import Sequence
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from polar.actions import pull_request, repository
+from polar.actions import repository
 from polar.api.deps import current_active_user, get_db_session
 from polar.auth.repository import repository_auth
 from polar.models import User
@@ -10,7 +10,8 @@ from polar.models.pull_request import PullRequest
 from polar.organization.service import organization
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
-from polar.schema.pull_request import PullRequestRead
+from polar.pull_request.schemas import PullRequestRead
+from polar.pull_request.service import pull_request
 
 router = APIRouter()
 

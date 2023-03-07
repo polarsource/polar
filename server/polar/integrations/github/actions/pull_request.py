@@ -3,12 +3,12 @@ from typing import Sequence
 
 import structlog
 
-from polar.actions.pull_request import PullRequestService
 from polar.integrations.github import client as github
 from polar.models.pull_request import PullRequest
 from polar.platforms import Platforms
 from polar.postgres import AsyncSession
-from polar.schema.pull_request import FullPullRequestCreate, MinimalPullRequestCreate
+from polar.pull_request.schemas import FullPullRequestCreate, MinimalPullRequestCreate
+from polar.pull_request.service import PullRequestService
 
 log = structlog.get_logger()
 

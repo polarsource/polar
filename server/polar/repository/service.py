@@ -18,4 +18,3 @@ class RepositoryService(
 
 
 repository = RepositoryService(Repository)
-repository = RepositoryService(Repository)

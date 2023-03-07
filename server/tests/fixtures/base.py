@@ -3,9 +3,8 @@ from typing import AsyncGenerator
 import pytest
 from httpx import AsyncClient
 
-from polar.api.deps import get_db_session
 from polar.app import app
-from polar.postgres import AsyncSession, AsyncSessionLocal
+from polar.postgres import AsyncSession, AsyncSessionLocal, get_db_session
 
 
 @pytest.fixture(scope="session")

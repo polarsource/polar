@@ -1,8 +1,8 @@
 from sqlalchemy import Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from polar.ext.sqlalchemy.types import GUID
-from polar.models.base import RecordModel
+from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy import GUID
 
 
 class Reward(RecordModel):

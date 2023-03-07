@@ -23,7 +23,7 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-from polar.ext.sqlalchemy import GUID
+from polar.kit.extensions.sqlalchemy import GUID
 
 # revision identifiers, used by Alembic.
 revision: str = "8fb1fcc039a1"

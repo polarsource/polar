@@ -1,6 +1,6 @@
-from polar.actions import organization
 from polar.models.repository import Repository
 from polar.models.user import User
+from polar.organization.service import organization
 from polar.postgres import AsyncSession
 
 

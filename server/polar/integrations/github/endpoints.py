@@ -2,22 +2,27 @@ from typing import Any, Literal
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request
+from httpx_oauth.clients.github import GitHubOAuth2
 from pydantic import BaseModel
 
-from polar.api.auth import auth_backend, github_oauth_client
-from polar.api.deps import current_active_user, fastapi_users, get_db_session
+from polar.auth.session import auth_backend
+from polar.auth.dependencies import current_active_user, fastapi_users
 from polar.config import settings
 from polar.integrations.github import client as github
 from polar.models import Organization, User
-from polar.postgres import AsyncSession
-from polar.schema.organization import OrganizationRead
+from polar.organization.schemas import OrganizationRead
+from polar.postgres import AsyncSession, get_db_session
 
-from .actions.organization import github_organization
+from .service.organization import github_organization
 from .tasks import webhook as hooks
 
 log = structlog.get_logger()
 
 router = APIRouter()
+
+github_oauth_client = GitHubOAuth2(
+    settings.GITHUB_CLIENT_ID, settings.GITHUB_CLIENT_SECRET
+)
 
 
 ###############################################################################

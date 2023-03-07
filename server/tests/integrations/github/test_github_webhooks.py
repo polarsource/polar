@@ -4,32 +4,32 @@ from typing import Any
 
 import pytest
 
-from polar.integrations.github import actions
+from polar.integrations.github import service
 from polar.integrations.github import client as github
 from polar.models.organization import Organization
-from polar.platforms import Platforms
+from polar.organization.schemas import OrganizationCreate
+from polar.enums import Platforms
 from polar.postgres import AsyncSession, AsyncSessionLocal
-from polar.schema.organization import OrganizationCreate
 from tests.fixtures.webhook import TestWebhook, TestWebhookFactory
 
 
 async def assert_repository_deleted(
     session: AsyncSession, repo: dict[str, Any]
 ) -> None:
-    record = await actions.github_repository.get_by_external_id(session, repo["id"])
+    record = await service.github_repository.get_by_external_id(session, repo["id"])
     assert record is None
 
 
 async def assert_repository_exists(session: AsyncSession, repo: dict[str, Any]) -> None:
     repo_id = repo["id"]
-    record = await actions.github_repository.get_by_external_id(session, repo_id)
+    record = await service.github_repository.get_by_external_id(session, repo_id)
     assert record is not None
     assert record.name == repo["name"]
     assert record.is_private == repo["private"]
 
 
 async def get_asserted_org(session: AsyncSession, **clauses: Any) -> Organization:
-    org = await actions.github_organization.get_by(session, **clauses)
+    org = await service.github_organization.get_by(session, **clauses)
     assert org
     return org
 
@@ -60,7 +60,7 @@ async def create_org(
         installation_suspended_at=event.installation.suspended_at,
     )
     async with AsyncSessionLocal() as session:
-        org = await actions.github_organization.upsert(session, create_schema)
+        org = await service.github_organization.upsert(session, create_schema)
         org.status = status
         session.add(org)
         await session.commit()
@@ -101,7 +101,7 @@ async def test_webhook_installation_created(
     response = await hook.send()
     assert response.status_code == 200
 
-    org = await actions.github_organization.get_by(
+    org = await service.github_organization.get_by(
         session, installation_id=installation_id
     )
 
@@ -156,7 +156,7 @@ async def test_webhook_installation_delete(github_webhook: TestWebhookFactory) -
     assert response.status_code == 200
 
     async with AsyncSessionLocal() as session:
-        fetched = await actions.github_organization.get_by(session, external_id=org_id)
+        fetched = await service.github_organization.get_by(session, external_id=org_id)
         assert fetched is None
 
 
@@ -167,7 +167,7 @@ async def test_webhook_repositories_added(
     hook = github_webhook.create("installation_repositories.added")
     new_repo = hook["repositories_added"][0]
 
-    repo = await actions.github_repository.get_by_external_id(session, new_repo["id"])
+    repo = await service.github_repository.get_by_external_id(session, new_repo["id"])
     assert repo is None
 
     await create_repositories(github_webhook)
@@ -187,7 +187,7 @@ async def test_webhook_repositories_removed(
     response = await hook.send()
     assert response.status_code == 200
 
-    repo = await actions.github_repository.get_by_external_id(
+    repo = await service.github_repository.get_by_external_id(
         session, delete_repo["id"]
     )
     assert repo is None
@@ -201,13 +201,13 @@ async def test_webhook_issues_opened(
     hook = github_webhook.create("issues.opened")
     issue_id = hook["issue"]["id"]
 
-    issue = await actions.github_issue.get_by_external_id(session, issue_id)
+    issue = await service.github_issue.get_by_external_id(session, issue_id)
     assert issue is None
 
     response = await hook.send()
     assert response.status_code == 200
 
-    issue = await actions.github_issue.get_by_external_id(session, issue_id)
+    issue = await service.github_issue.get_by_external_id(session, issue_id)
     assert issue is not None
 
 
@@ -227,7 +227,7 @@ async def test_webhook_issues_labeled(github_webhook: TestWebhookFactory) -> Non
 
     issue_id = hook["issue"]["id"]
     async with AsyncSessionLocal() as session:
-        issue = await actions.github_issue.get_by_external_id(session, issue_id)
+        issue = await service.github_issue.get_by_external_id(session, issue_id)
         assert issue is not None
         assert issue.labels is None
 
@@ -236,7 +236,7 @@ async def test_webhook_issues_labeled(github_webhook: TestWebhookFactory) -> Non
     assert response.status_code == 200
 
     async with AsyncSessionLocal() as session:
-        issue = await actions.github_issue.get_by_external_id(session, issue_id)
+        issue = await service.github_issue.get_by_external_id(session, issue_id)
         assert issue.labels[0]["name"] == hook["issue"]["labels"][0]["name"]
 
 
@@ -247,12 +247,12 @@ async def test_webhook_pull_request_opened(
     hook = github_webhook.create("pull_request.opened")
     pr_id = hook["pull_request"]["id"]
 
-    pr = await actions.github_pull_request.get_by_external_id(session, pr_id)
+    pr = await service.github_pull_request.get_by_external_id(session, pr_id)
     assert pr is None
 
     await create_pr(github_webhook)
 
-    pr = await actions.github_pull_request.get_by_external_id(session, pr_id)
+    pr = await service.github_pull_request.get_by_external_id(session, pr_id)
     assert pr is not None
 
     assert pr.additions == 3
@@ -268,11 +268,11 @@ async def test_webhook_pull_request_synchronize(
     pr_id = hook["pull_request"]["id"]
 
     async with AsyncSessionLocal() as session:
-        pr = await actions.github_pull_request.get_by_external_id(session, pr_id)
+        pr = await service.github_pull_request.get_by_external_id(session, pr_id)
         assert pr.merge_commit_sha is None
 
     await hook.send()
 
     async with AsyncSessionLocal() as session:
-        pr = await actions.github_pull_request.get_by_external_id(session, pr_id)
+        pr = await service.github_pull_request.get_by_external_id(session, pr_id)
         assert pr.merge_commit_sha is not None

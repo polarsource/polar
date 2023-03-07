@@ -4,7 +4,7 @@ from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
 
 from polar import receivers  # noqa
-from polar.api.endpoints import router
+from polar.api import router
 from polar.config import settings
 from polar.logging import configure as configure_logging
 

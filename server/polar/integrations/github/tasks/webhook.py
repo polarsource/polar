@@ -4,16 +4,16 @@ from typing import Any
 import structlog
 
 from polar.integrations.github import client as github
+from polar.issue.schemas import IssueRead
 from polar.models import Issue, Organization, PullRequest, Repository
-from polar.platforms import Platforms
+from polar.organization.schemas import OrganizationCreate
+from polar.enums import Platforms
 from polar.postgres import AsyncSession
-from polar.schema.issue import IssueRead
-from polar.schema.organization import OrganizationCreate
-from polar.schema.pull_request import FullPullRequestCreate, PullRequestRead
-from polar.schema.repository import RepositoryCreate
+from polar.pull_request.schemas import FullPullRequestCreate, PullRequestRead
+from polar.repository.schemas import RepositoryCreate
 from polar.worker import get_db_session, sync_worker, task
 
-from .. import actions
+from .. import service
 
 log = structlog.get_logger()
 
@@ -45,7 +45,7 @@ async def add_repositories(
         schemas.append(create_schema)
 
     log.debug("github.repositories.upsert_many", repos=schemas)
-    instances = await actions.github_repository.upsert_many(session, schemas)
+    instances = await service.github_repository.upsert_many(session, schemas)
     return instances
 
 
@@ -60,7 +60,7 @@ async def remove_repositories(
     count = 0
     for repo in repositories:
         # TODO: All true now, but that will change
-        res = await actions.github_repository.delete(session, external_id=repo.id)
+        res = await service.github_repository.delete(session, external_id=repo.id)
         if res:
             count += 1
     return count
@@ -72,7 +72,7 @@ async def upsert_issue(
     repository_id = event.repository.id
     owner_id = event.repository.owner.id
 
-    organization = await actions.github_organization.get_by_external_id(
+    organization = await service.github_organization.get_by_external_id(
         session, owner_id
     )
     if not organization:
@@ -84,7 +84,7 @@ async def upsert_issue(
         )
         return None
 
-    repository = await actions.github_repository.get_by_external_id(
+    repository = await service.github_repository.get_by_external_id(
         session, repository_id
     )
     if not repository:
@@ -96,7 +96,7 @@ async def upsert_issue(
         )
         return None
 
-    record = await actions.github_issue.store(
+    record = await service.github_issue.store(
         session,
         event.issue,
         organization_id=uuid.UUID(organization.id),  # TODO: cast should not be needed
@@ -111,7 +111,7 @@ async def upsert_pull_request(
     repository_id = event.repository.id
     owner_id = event.repository.owner.id
 
-    organization = await actions.github_organization.get_by_external_id(
+    organization = await service.github_organization.get_by_external_id(
         session, owner_id
     )
     if not organization:
@@ -123,7 +123,7 @@ async def upsert_pull_request(
         )
         return None
 
-    repository = await actions.github_repository.get_by_external_id(
+    repository = await service.github_repository.get_by_external_id(
         session, repository_id
     )
     if not repository:
@@ -142,7 +142,7 @@ async def upsert_pull_request(
         ),  # TODO: Fix! For some reason get_by_external_id returns the id as a str!
         repository_id=uuid.UUID(repository.id),
     )
-    record = await actions.github_pull_request.upsert(session, create_schema)
+    record = await service.github_pull_request.upsert(session, create_schema)
     return record
 
 
@@ -157,7 +157,7 @@ async def repositories_changed(
     async with get_db_session() as session:
         event = get_event(scope, action, payload)
         # TODO: Verify that this works even for personal Github accounts?
-        organization = await actions.github_organization.get_by_external_id(
+        organization = await service.github_organization.get_by_external_id(
             session, event.installation.account.id
         )
         if not organization:
@@ -215,7 +215,7 @@ async def handle_issue(
             return dict(success=False, reason="Could not save issue")
 
         # TODO: Comment instead? Via event trigger too?
-        # actions.github_issue.add_actions(installation["id"], issue)
+        # service.github_issue.add_actions(installation["id"], issue)
         schema = IssueRead.from_orm(issue)
         return dict(success=True, issue=schema.dict())
 
@@ -373,7 +373,7 @@ async def installation_created(
             installation_modified_at=event.installation.updated_at,
             installation_suspended_at=event.installation.suspended_at,
         )
-        organization = await actions.github_organization.upsert(session, create_schema)
+        organization = await service.github_organization.upsert(session, create_schema)
         await add_repositories(session, organization, event.repositories)
         return dict(success=True)
 
@@ -385,7 +385,7 @@ async def installation_delete(
 ) -> dict[str, Any]:
     async with get_db_session() as session:
         event = get_event(scope, action, payload)
-        await actions.github_organization.remove(session, event.installation.id)
+        await service.github_organization.remove(session, event.installation.id)
         return dict(success=True)
 
 
@@ -397,7 +397,7 @@ async def installation_suspend(
     async with get_db_session() as session:
         event = get_event(scope, action, payload)
 
-        await actions.github_organization.suspend(
+        await service.github_organization.suspend(
             session,
             event.installation.id,
             event.installation.suspended_by,
@@ -415,5 +415,5 @@ async def installation_unsuspend(
     async with get_db_session() as session:
         event = get_event(scope, action, payload)
 
-        await actions.github_organization.unsuspend(session, event.installation.id)
+        await service.github_organization.unsuspend(session, event.installation.id)
         return dict(success=True)

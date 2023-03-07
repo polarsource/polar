@@ -5,9 +5,9 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from polar.ext.sqlalchemy import GUID
-from polar.models.base import RecordModel
-from polar.platforms import Platforms
+from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy import GUID
+from polar.enums import Platforms
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.organization import Organization

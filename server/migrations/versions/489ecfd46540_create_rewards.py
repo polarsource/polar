@@ -10,7 +10,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # Polar Custom Imports
-from polar.ext.sqlalchemy import GUID
+from polar.kit.extensions.sqlalchemy import GUID
 
 # revision identifiers, used by Alembic.
 revision = "489ecfd46540"

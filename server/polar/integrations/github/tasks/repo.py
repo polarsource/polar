@@ -1,8 +1,8 @@
 import structlog
 
-from polar import signals
-from polar.ext.sqlalchemy.types import GUID
-from polar.integrations.github import actions
+from polar.issue.signals import issue_synced, issue_sync_completed
+from polar.integrations.github import service
+from polar.kit.extensions.sqlalchemy import GUID
 from polar.models import Organization, Repository
 from polar.postgres import AsyncSession
 from polar.worker import get_db_session, sync_worker, task
@@ -15,12 +15,12 @@ async def get_organization_and_repo(
     organization_id: GUID,
     repository_id: GUID,
 ) -> tuple[Organization, Repository]:
-    organization = await actions.github_organization.get(session, organization_id)
+    organization = await service.github_organization.get(session, organization_id)
     if not organization:
         log.warning("no organization found", organization_id=organization_id)
         raise ValueError("no organization found")
 
-    repository = await actions.github_repository.get(session, repository_id)
+    repository = await service.github_repository.get(session, repository_id)
     if not repository:
         log.warning("no repository found", repository_id=organization_id)
         raise ValueError("no repository found")
@@ -39,7 +39,7 @@ async def sync_repository_issues(
             session, organization_id, repository_id
         )
         synced = 0
-        async for issue in actions.github_repository.sync_issues(
+        async for issue in service.github_repository.sync_issues(
             session, organization, repository
         ):
             if not issue:
@@ -54,14 +54,14 @@ async def sync_repository_issues(
                 issue=issue.id,
                 title=issue.title,
             )
-            await signals.issue_synced.send_async(
+            await issue_synced.send_async(
                 repository,
                 organization=organization,
                 issue=issue,
                 synced=synced,
             )
 
-        await signals.issue_sync_completed.send_async(
+        await issue_sync_completed.send_async(
             repository,
             organization=organization,
             synced=synced,
@@ -78,7 +78,7 @@ async def sync_repository_pull_requests(
         organization, repository = await get_organization_and_repo(
             session, organization_id, repository_id
         )
-        async for pull in actions.github_repository.sync_pull_requests(
+        async for pull in service.github_repository.sync_pull_requests(
             session, organization, repository
         ):
             log.info(

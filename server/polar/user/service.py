@@ -3,7 +3,8 @@ from fastapi_users.db import SQLAlchemyUserDatabase
 
 from polar.kit.services import ResourceService
 from polar.models import User
-from polar.schema.user import UserCreate, UserUpdate
+
+from .schemas import UserCreate, UserUpdate
 
 log = structlog.get_logger()
 

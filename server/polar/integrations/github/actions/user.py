@@ -1,8 +1,8 @@
 import structlog
 
-from polar.actions.user import UserService
 from polar.models import User
 from polar.postgres import AsyncSession
+from polar.user.service import UserService
 
 from .. import client as github
 

@@ -12,15 +12,14 @@ from polar.models.issue import Issue
 from polar.enums import Platforms
 from polar.types import JSONAny
 
-# TODO: Ugly. Fix how to deal with githubkit typing at times.
-TIssueData = (
-    github.rest.Issue
-    | github.webhooks.IssuesOpenedPropIssue
-    | github.webhooks.PullRequestOpenedPropPullRequest
-    | github.rest.PullRequest
-    | github.rest.PullRequestSimple
-    | github.webhooks.PullRequestOpenedPropPullRequest
+from polar.integrations.github.types import (
+    GithubIssue,
+    GithubPullRequestFull,
+    GithubPullRequestSimple,
 )
+
+# TODO: Move Github schema extensions to Github integration module
+TIssueData = GithubIssue | GithubPullRequestFull | GithubPullRequestSimple
 
 
 log = structlog.get_logger()

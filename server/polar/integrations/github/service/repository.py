@@ -89,7 +89,7 @@ class GithubRepositoryService(RepositoryService):
                 yield record
 
     async def upsert_many(
-        cls,
+        self,
         session: AsyncSession,
         create_schemas: list[RepositoryCreate],
         constraints: list[InstrumentedAttribute[int]] | None = None,

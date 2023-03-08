@@ -60,8 +60,8 @@ class GithubRepositoryService(RepositoryService):
             record = await store_resource_method(
                 session,
                 data=data,
-                organization_id=organization.id,
-                repository_id=repository.id,
+                organization=organization,
+                repository=repository,
             )
             if not record:
                 log.warning(

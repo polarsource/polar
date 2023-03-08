@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import uuid
 
 import structlog
 
 from polar.exceptions import ExpectedIssueGotPullRequest
 from polar.issue.schemas import IssueCreate
 from polar.issue.service import IssueService
-from polar.models.issue import Issue
+from polar.models import Issue, Organization, Repository
 from polar.enums import Platforms
 from polar.postgres import AsyncSession
 
@@ -27,14 +26,14 @@ class GithubIssueService(IssueService):
         session: AsyncSession,
         *,
         data: GithubIssue,
-        organization_id: uuid.UUID,
-        repository_id: uuid.UUID,
+        organization: Organization,
+        repository: Repository,
     ) -> Issue:
         records = await self.store_many(
             session,
             data=[data],
-            organization_id=organization_id,
-            repository_id=repository_id,
+            organization=organization,
+            repository=repository,
         )
         return records[0]
 
@@ -43,16 +42,16 @@ class GithubIssueService(IssueService):
         session: AsyncSession,
         *,
         data: list[GithubIssue],
-        organization_id: uuid.UUID,
-        repository_id: uuid.UUID,
+        organization: Organization,
+        repository: Repository,
     ) -> list[Issue]:
         def parse(
             issue: GithubIssue,
         ) -> IssueCreate:
             return IssueCreate.from_github(
                 issue,
-                organization_id=organization_id,
-                repository_id=repository_id,
+                organization_id=organization.id,
+                repository_id=repository.id,
             )
 
         schemas = []
@@ -69,8 +68,8 @@ class GithubIssueService(IssueService):
             log.warning(
                 "github.issue",
                 error="no issues to store",
-                organization_id=organization_id,
-                repository_id=repository_id,
+                organization_id=organization.id,
+                repository_id=repository.id,
             )
             return []
 

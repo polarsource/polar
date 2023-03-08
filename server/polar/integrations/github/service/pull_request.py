@@ -34,9 +34,7 @@ class GithubPullRequestService(PullRequestService):
             organization_id=organization_id,
             repository_id=repository_id,
         )
-        if records:
-            return records[0]
-        raise RuntimeError("failed to store pull request")
+        return records[0]
 
     async def store_many_simple(
         self,
@@ -83,9 +81,7 @@ class GithubPullRequestService(PullRequestService):
             organization_id=organization_id,
             repository_id=repository_id,
         )
-        if records:
-            return records[0]
-        raise RuntimeError("failed to store pull request")
+        return records[0]
 
     async def store_many_full(
         self,

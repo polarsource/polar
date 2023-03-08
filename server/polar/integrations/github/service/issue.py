@@ -36,9 +36,7 @@ class GithubIssueService(IssueService):
             organization_id=organization_id,
             repository_id=repository_id,
         )
-        if records:
-            return records[0]
-        raise RuntimeError("failed to store issue")
+        return records[0]
 
     async def store_many(
         self,

@@ -1,6 +1,5 @@
 import structlog
 
-from polar.issue.signals import issue_synced, issue_sync_completed
 from polar.integrations.github import service
 from polar.kit.extensions.sqlalchemy import GUID
 from polar.models import Organization, Repository
@@ -38,33 +37,8 @@ async def sync_repository_issues(
         organization, repository = await get_organization_and_repo(
             session, organization_id, repository_id
         )
-        synced = 0
-        async for issue in service.github_repository.sync_issues(
-            session, organization, repository
-        ):
-            if not issue:
-                break
-
-            synced += 1
-            log.info(
-                "github.repo.sync.issues",
-                state="synced",
-                created=issue.was_created,
-                updated=issue.was_updated,
-                issue=issue.id,
-                title=issue.title,
-            )
-            await issue_synced.send_async(
-                repository,
-                organization=organization,
-                issue=issue,
-                synced=synced,
-            )
-
-        await issue_sync_completed.send_async(
-            repository,
-            organization=organization,
-            synced=synced,
+        await service.github_repository.sync_issues(
+            session, organization=organization, repository=repository
         )
 
 
@@ -78,17 +52,9 @@ async def sync_repository_pull_requests(
         organization, repository = await get_organization_and_repo(
             session, organization_id, repository_id
         )
-        async for pull in service.github_repository.sync_pull_requests(
-            session, organization, repository
-        ):
-            log.info(
-                "github.repo.sync.pull_requests",
-                state="synced",
-                created=pull.was_created,
-                updated=pull.was_updated,
-                issue=pull.id,
-                title=pull.title,
-            )
+        await service.github_repository.sync_pull_requests(
+            session, organization=organization, repository=repository
+        )
 
 
 @task(name="github.repo.sync")

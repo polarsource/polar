@@ -6,7 +6,6 @@ from typing import Self, Type
 
 import structlog
 
-from polar.exceptions import ExpectedIssueGotPullRequest
 from polar.integrations.github import client as github
 from polar.kit.schemas import Schema
 from polar.models.issue import Issue
@@ -117,9 +116,6 @@ class IssueCreate(Base):
         organization_id: uuid.UUID,
         repository_id: uuid.UUID,
     ) -> Self:
-        if github.is_set(data, "pull_request"):
-            raise ExpectedIssueGotPullRequest()
-
         return cls.get_normalized_github_issue(
             data,
             organization_id=organization_id,

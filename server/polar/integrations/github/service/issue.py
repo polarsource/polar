@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import structlog
 
-from polar.exceptions import ExpectedIssueGotPullRequest
 from polar.issue.schemas import IssueCreate
 from polar.issue.service import IssueService
 from polar.models import Issue, Organization, Repository
@@ -54,16 +53,7 @@ class GithubIssueService(IssueService):
                 repository_id=repository.id,
             )
 
-        schemas = []
-        for issue in data:
-            try:
-                create_schema = parse(issue)
-            except ExpectedIssueGotPullRequest:
-                log.debug("github.issue", error="got pull request", issue=issue)
-                continue
-
-            schemas.append(create_schema)
-
+        schemas = [parse(issue) for issue in data]
         if not schemas:
             log.warning(
                 "github.issue",

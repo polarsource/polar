@@ -83,7 +83,7 @@ async def test_create_pull_request(
     # Store simple
     created = await github_pull_request.store_simple(
         session,
-        simple,
+        data=simple,
         organization_id=org.id,
         repository_id=repo.id,
     )
@@ -115,7 +115,7 @@ async def test_create_pull_request(
 
     stored_simple_again = await github_pull_request.store_simple(
         session,
-        simple,
+        data=simple,
         organization_id=org.id,
         repository_id=repo.id,
     )

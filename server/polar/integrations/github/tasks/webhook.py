@@ -98,7 +98,7 @@ async def upsert_issue(
 
     record = await service.github_issue.store(
         session,
-        event.issue,
+        data=event.issue,
         organization_id=uuid.UUID(organization.id),  # TODO: cast should not be needed
         repository_id=uuid.UUID(repository.id),
     )

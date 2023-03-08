@@ -3,12 +3,13 @@ from typing import Sequence
 
 import structlog
 
-from polar.integrations.github import client as github
 from polar.models.pull_request import PullRequest
 from polar.enums import Platforms
 from polar.postgres import AsyncSession
 from polar.pull_request.schemas import FullPullRequestCreate, MinimalPullRequestCreate
 from polar.pull_request.service import PullRequestService
+
+from ..types import GithubPullRequestFull, GithubPullRequestSimple
 
 log = structlog.get_logger()
 
@@ -22,13 +23,14 @@ class GithubPullRequestService(PullRequestService):
     async def store_simple(
         self,
         session: AsyncSession,
-        data: github.rest.PullRequestSimple,
+        *,
+        data: GithubPullRequestSimple,
         organization_id: uuid.UUID,
         repository_id: uuid.UUID,
     ) -> PullRequest:
         records = await self.store_many_simple(
             session,
-            [data],
+            data=[data],
             organization_id=organization_id,
             repository_id=repository_id,
         )
@@ -39,11 +41,12 @@ class GithubPullRequestService(PullRequestService):
     async def store_many_simple(
         self,
         session: AsyncSession,
-        data: Sequence[github.rest.PullRequestSimple],
+        *,
+        data: Sequence[GithubPullRequestSimple],
         organization_id: uuid.UUID,
         repository_id: uuid.UUID,
     ) -> list[PullRequest]:
-        def parse(pr: github.rest.PullRequestSimple) -> MinimalPullRequestCreate:
+        def parse(pr: GithubPullRequestSimple) -> MinimalPullRequestCreate:
             return MinimalPullRequestCreate.minimal_pull_request_from_github(
                 pr,
                 organization_id=organization_id,
@@ -70,8 +73,7 @@ class GithubPullRequestService(PullRequestService):
     async def store_full(
         self,
         session: AsyncSession,
-        data: github.rest.PullRequest
-        | github.webhooks.PullRequestOpenedPropPullRequest,
+        data: GithubPullRequestFull,
         organization_id: uuid.UUID,
         repository_id: uuid.UUID,
     ) -> PullRequest:
@@ -88,16 +90,11 @@ class GithubPullRequestService(PullRequestService):
     async def store_many_full(
         self,
         session: AsyncSession,
-        data: Sequence[
-            github.rest.PullRequest | github.webhooks.PullRequestOpenedPropPullRequest
-        ],
+        data: Sequence[GithubPullRequestFull],
         organization_id: uuid.UUID,
         repository_id: uuid.UUID,
     ) -> list[PullRequest]:
-        def parse(
-            pr: github.rest.PullRequest
-            | github.webhooks.PullRequestOpenedPropPullRequest,
-        ) -> FullPullRequestCreate:
+        def parse(pr: GithubPullRequestFull) -> FullPullRequestCreate:
             return FullPullRequestCreate.full_pull_request_from_github(
                 pr,
                 organization_id=organization_id,

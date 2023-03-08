@@ -5,12 +5,13 @@ import uuid
 import structlog
 
 from polar.exceptions import ExpectedIssueGotPullRequest
-from polar.integrations.github import client as github
 from polar.issue.schemas import IssueCreate
 from polar.issue.service import IssueService
 from polar.models.issue import Issue
 from polar.enums import Platforms
 from polar.postgres import AsyncSession
+
+from ..types import GithubIssue
 
 log = structlog.get_logger()
 
@@ -24,29 +25,31 @@ class GithubIssueService(IssueService):
     async def store(
         self,
         session: AsyncSession,
-        data: github.rest.Issue | github.webhooks.IssuesOpenedPropIssue,
+        *,
+        data: GithubIssue,
         organization_id: uuid.UUID,
         repository_id: uuid.UUID,
     ) -> Issue:
         records = await self.store_many(
             session,
-            [data],
+            data=[data],
             organization_id=organization_id,
             repository_id=repository_id,
         )
         if records:
             return records[0]
-        return []
+        raise RuntimeError("failed to store issue")
 
     async def store_many(
         self,
         session: AsyncSession,
-        data: list[github.rest.Issue | github.webhooks.IssuesOpenedPropIssue],
+        *,
+        data: list[GithubIssue],
         organization_id: uuid.UUID,
         repository_id: uuid.UUID,
     ) -> list[Issue]:
         def parse(
-            issue: github.rest.Issue | github.webhooks.IssuesOpenedPropIssue,
+            issue: GithubIssue,
         ) -> IssueCreate:
             return IssueCreate.from_github(
                 issue,

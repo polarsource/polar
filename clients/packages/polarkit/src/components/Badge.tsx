@@ -17,7 +17,6 @@ const flexStyle = {
 }
 
 const badgeContainerStyle = {
-  width: '550px',
   background: '#FFFFFF',
   boxShadow:
     '0px 1px 8px rgba(0, 0, 0, 0.07), 0px 0.5px 2.5px rgba(0, 0, 0, 0.2)',
@@ -37,10 +36,25 @@ const buttonStyle = {
   marginRight: '6px',
 }
 
-export const Badge = ({ showAmountRaised }: { showAmountRaised: boolean }) => {
+export const Badge = ({
+  width = 445,
+  height = 44,
+  showAmountRaised = false,
+}: {
+  width: number
+  height: number
+  showAmountRaised: boolean
+}) => {
   return (
     <>
-      <div className="badge-container" style={badgeContainerStyle}>
+      <div
+        className="badge-container"
+        style={{
+          width: width,
+          height: height - 3, // Room for box shadow
+          ...badgeContainerStyle,
+        }}
+      >
         <div
           className="badge-content"
           style={{
@@ -51,6 +65,8 @@ export const Badge = ({ showAmountRaised }: { showAmountRaised: boolean }) => {
           <div
             className="badge-back-button"
             style={{
+              width: '100px',
+              height: '30px',
               background: '#8A63F9',
               ...buttonStyle,
             }}
@@ -62,6 +78,7 @@ export const Badge = ({ showAmountRaised }: { showAmountRaised: boolean }) => {
               border: '1px solid rgba(0, 0, 0, 0.2)',
               ...buttonStyle,
               color: '#000',
+              height: '30px',
             }}
           >
             Fix it
@@ -81,7 +98,13 @@ export const Badge = ({ showAmountRaised }: { showAmountRaised: boolean }) => {
               >
                 $250
               </p>{' '}
-              <p style={{ color: 'rgba(0, 0, 0, 0.5)', marginRight: '6px' }}>
+              <p
+                style={{
+                  width: '90px',
+                  color: 'rgba(0, 0, 0, 0.5)',
+                  marginRight: '6px',
+                }}
+              >
                 raised from
               </p>
               <img
@@ -104,8 +127,10 @@ export const Badge = ({ showAmountRaised }: { showAmountRaised: boolean }) => {
             borderLeft: '1px solid rgba(0, 0, 0, 0.04)',
             borderRadius: '0 11px 11px 0',
             ...flexStyle,
+            alignContent: 'center',
             flexDirection: 'column',
             padding: '8px 21px',
+            height: height - 3,
           }}
         >
           <svg
@@ -121,15 +146,10 @@ export const Badge = ({ showAmountRaised }: { showAmountRaised: boolean }) => {
               fillOpacity="0.5"
             />
           </svg>
-          <p
-            style={{
-              fontSize: '12px',
-            }}
-          >
-            Polar
-          </p>
         </div>
       </div>
     </>
   )
 }
+
+export default Badge

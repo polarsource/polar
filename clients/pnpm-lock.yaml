@@ -29,7 +29,6 @@ importers:
       '@types/react': 18.0.18
       '@types/react-dom': 18.0.6
       '@types/react-router-dom': ^5.3.3
-      '@vercel/og': ^0.3.0
       autoprefixer: ^10.4.8
       axios: ^0.27.2
       eslint: 8.23.0
@@ -43,6 +42,7 @@ importers:
       react-dom: ^18.2.0
       react-router-dom: ^6.4.1
       react-time-ago: ^7.2.1
+      satori: ^0.4.2
       tailwindcss: ^3.1.8
       tsconfig: workspace:*
       typescript: 4.8.3
@@ -52,7 +52,6 @@ importers:
       '@stripe/react-stripe-js': 1.16.5_zw7zferaqqsd3ootrrf2mrlpoi
       '@stripe/stripe-js': 1.47.0
       '@tailwindcss/forms': 0.5.3_tailwindcss@3.2.7
-      '@vercel/og': 0.3.0
       axios: 0.27.2
       javascript-time-ago: 2.5.9
       next: 13.2.3_biqbaboplfbrettd7655fr4n2y
@@ -61,6 +60,7 @@ importers:
       react-dom: 18.2.0_react@18.2.0
       react-router-dom: 6.8.1_biqbaboplfbrettd7655fr4n2y
       react-time-ago: 7.2.1_eqoz6kcnf5na464z2zfynejspu
+      satori: 0.4.2
     devDependencies:
       '@types/node': 18.7.16
       '@types/react': 18.0.18
@@ -415,11 +415,6 @@ packages:
     engines: {node: '>=14'}
     dev: false
 
-  /@resvg/resvg-wasm/2.4.1:
-    resolution: {integrity: sha512-yi6R0HyHtsoWTRA06Col4WoDs7SvlXU3DLMNP2bdAgs7HK18dTEVl1weXgxRzi8gwLteGUbIg29zulxIB3GSdg==}
-    engines: {node: '>= 10'}
-    dev: false
-
   /@rushstack/eslint-patch/1.2.0:
     resolution: {integrity: sha512-sXo/qW2/pAcmT43VoRKOJbDOfV3cYpq3szSVfIThQXNt+E4DfKj361vaAt3c88U5tPUxzEswam7GW48PJqtKAg==}
 
@@ -629,15 +624,6 @@ packages:
     dependencies:
       '@typescript-eslint/types': 5.53.0
       eslint-visitor-keys: 3.3.0
-
-  /@vercel/og/0.3.0:
-    resolution: {integrity: sha512-0L7tAgyLJWv2jdCg7NQtoWOs+ZK+pYeJBev3r1Y8apHjcu7Qj/OfR65JlAPfTMH8b6iUpVtBeHWVUo5KAhaC2A==}
-    engines: {node: '>=16'}
-    dependencies:
-      '@resvg/resvg-wasm': 2.4.1
-      satori: 0.4.1
-      yoga-wasm-web: 0.3.0
-    dev: false
 
   /acorn-jsx/5.3.2_acorn@7.4.1:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
@@ -2969,8 +2955,8 @@ packages:
       get-intrinsic: 1.2.0
       is-regex: 1.1.4
 
-  /satori/0.4.1:
-    resolution: {integrity: sha512-uQm4+vQj57E9PO/ASAlxsRb+78fHkRUmkNLBBmfuEeGNLGqJ9ufYU7TzYP4XH60PLHYt9Wz1jSsgcAe2cz7+ng==}
+  /satori/0.4.2:
+    resolution: {integrity: sha512-/q5fFlyzi0qD8jvRxdwnty4cNdNSzt7Ar/23iaruHNhPb2Xo26R5ByOGv7p5223Ag/q2jbHuoOm6H37urE2Rqg==}
     engines: {node: '>=16'}
     dependencies:
       '@shuding/opentype.js': 1.4.0-beta.0
@@ -3439,10 +3425,6 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
     dev: true
-
-  /yoga-wasm-web/0.3.0:
-    resolution: {integrity: sha512-rD3L4jyMlO1m+RWU60lNwZQK5zmzglCV5fI1gTRikmpv3YzmNIZQbjyfE6cMNb9Xaly/C1SwemYGbsiOekMvnQ==}
-    dev: false
 
   /yoga-wasm-web/0.3.2:
     resolution: {integrity: sha512-X//8P6RHzkO4E1ba/wXwKOybeArNDQJI2vwzFLJxz5bfT9K8fB798ZVYvq+Z+hjRA0Wy2iUlOUch4n2+ddqbDQ==}

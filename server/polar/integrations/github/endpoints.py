@@ -14,7 +14,10 @@ from polar.organization.schemas import OrganizationRead
 from polar.postgres import AsyncSession, get_db_session
 
 from .service.organization import github_organization
+from .service.repository import github_repository
+from .service.issue import github_issue
 from .tasks import webhook as hooks
+from .schemas import GithubBadgeRead
 
 log = structlog.get_logger()
 
@@ -38,6 +41,45 @@ router.include_router(
         associate_by_email=True,
     ),
 )
+
+###############################################################################
+# BADGE
+###############################################################################
+
+
+@router.get(
+    "/{org}/{repo}/issues/{number}/badges/{badge_type}", response_model=GithubBadgeRead
+)
+async def get_badge_settings(
+    org: str,
+    repo: str,
+    number: int,
+    badge_type: Literal["funding"],
+    session: AsyncSession = Depends(get_db_session),
+) -> GithubBadgeRead:
+    organization = await github_organization.get_by_name(session, org)
+    if organization is None:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    repository = await github_repository.get_by(session, name=repo)
+    if repository is None:
+        raise HTTPException(status_code=404, detail="Repository not found")
+
+    issue = await github_issue.get_by(
+        session,
+        organization_id=organization.id,
+        repository_id=repository.id,
+        number=number,
+    )
+    if not issue:
+        raise HTTPException(status_code=404, detail="Issue not found")
+
+    if not issue.funding_badge_embedded_at:
+        raise HTTPException(status_code=404, detail="Funding badge not found")
+
+    badge = GithubBadgeRead(badge_type=badge_type, amount=None)
+    return badge
+
 
 ###############################################################################
 # INSTALLATIONS

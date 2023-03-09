@@ -86,8 +86,8 @@ class GithubRepositoryService(RepositoryService):
 
             await on_sync_signal.send_async(
                 session,
-                organization=organization,
                 repository=repository,
+                organization=organization,
                 record=record,
                 created=record.was_created,
                 synced=synced,
@@ -103,8 +103,8 @@ class GithubRepositoryService(RepositoryService):
         if on_completed_signal:
             await on_completed_signal.send_async(
                 session,
-                organization=organization,
                 repository=repository,
+                organization=organization,
                 synced=synced,
             )
 

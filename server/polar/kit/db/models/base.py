@@ -1,17 +1,14 @@
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import TIMESTAMP
 from sqlalchemy.orm import DeclarativeBase, Mapped, MappedColumn, mapped_column
 
 from polar.kit.extensions.sqlalchemy import GUID, IntEnum
+from polar.kit.utils import utc_now
 
 from .mixins import ActiveRecordMixin, SerializeMixin
-
-
-def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 class Model(DeclarativeBase, ActiveRecordMixin, SerializeMixin):

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-
 import structlog
 
+from polar.kit.utils import utc_now
 from polar.issue.schemas import IssueCreate
 from polar.issue.service import IssueService
 from polar.models import Issue, Organization, Repository
@@ -10,6 +10,13 @@ from polar.enums import Platforms
 from polar.postgres import AsyncSession
 
 from ..types import GithubIssue
+from ..badge import GithubBadge
+from ..signals import github_issue_created, github_issue_updated
+from ..exceptions import (
+    GithubBadgeNotEmbeddable,
+    GithubBadgeAlreadyEmbedded,
+    GithubBadgeEmbeddingDisabled,
+)
 
 log = structlog.get_logger()
 
@@ -63,7 +70,63 @@ class GithubIssueService(IssueService):
             )
             return []
 
-        return await self.upsert_many(session, schemas, constraints=[Issue.external_id])
+        records = await self.upsert_many(
+            session, schemas, constraints=[Issue.external_id]
+        )
+        for record in records:
+            signal = github_issue_updated
+            if record.was_created:
+                signal = github_issue_created
+
+            await signal.send_async(
+                session, organization=organization, repository=repository, issue=record
+            )
+
+        return records
+
+    async def embed_badge(
+        self,
+        session: AsyncSession,
+        *,
+        organization: Organization,
+        repository: Repository,
+        issue: Issue,
+    ) -> bool:
+        try:
+            badge = GithubBadge(
+                organization=organization, repository=repository, issue=issue
+            )
+            await badge.embed()
+            # Why only save the timestamp vs. updated body/issue?
+            # There's a race condition here since we updated the issue and it will
+            # trigger a webhook upon which we'll update the entire issue except for this
+            # timestamp. So we leave the updating of the issue to our webhook handler.
+            issue.funding_badge_embedded_at = utc_now()
+            await issue.save(session)
+            return True
+        except GithubBadgeNotEmbeddable as e:
+            log.info(
+                "github.issue.badge",
+                embedded=False,
+                reason=str(e),
+                issue_id=issue.id,
+            )
+        except GithubBadgeAlreadyEmbedded:
+            log.info(
+                "github.issue.badge",
+                embedded=False,
+                reason="already_embedded",
+                issue_id=issue.id,
+            )
+        except GithubBadgeEmbeddingDisabled:
+            log.info(
+                "github.issue.badge",
+                embedded=False,
+                reason="embed_disabled",
+                issue_id=issue.id,
+            )
+
+        return False
 
 
 github_issue = GithubIssueService(Issue)

@@ -72,7 +72,6 @@ const generateBadge = async (
 }
 
 export default async function handler(req: NextRequest, res: NextResponse) {
-  console.log(req.query)
   const { org, repo, number, debug } = req.query
 
   try {

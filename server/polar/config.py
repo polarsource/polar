@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     # JSON list of accepted CORS origins
     CORS_ORIGINS: list[AnyHttpUrl] = []
 
+    # URL to frontend app.
+    # Update to ngrok domain or similar in case you want
+    # working Github badges in development.
     FRONTEND_BASE_URL: str = "http://127.0.0.1:3000"
 
     # Postgres

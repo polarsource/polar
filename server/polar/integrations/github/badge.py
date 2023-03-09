@@ -63,7 +63,7 @@ class GithubBadge:
         return (True, "org_disabled_retroactive_embed")
 
     def generate_svg_url(self) -> str:
-        return "{base}/api/github/{org}/{repo}/issues/{number}/backing.svg".format(
+        return "{base}/api/github/{org}/{repo}/issues/{number}/funding.svg".format(
             base=settings.FRONTEND_BASE_URL,
             org=self.organization.name,
             repo=self.repository.name,

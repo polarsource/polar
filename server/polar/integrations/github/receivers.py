@@ -22,7 +22,7 @@ async def schedule_embed_badge_task(
     from .tasks.issue import embed_badge
 
     should_embed, _ = GithubBadge.should_embed(
-        organization, repository, issue, retroactive=False
+        organization, repository, issue, setting_retroactive_override=False
     )
     if not should_embed:
         return

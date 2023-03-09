@@ -15,5 +15,6 @@ def setup_task_logging(
     polar.logging.configure_celery_task(task_id, task, args, kwargs)
 
 
+from polar.receivers import *  # noqa
 from polar.tasks import *  # noqa
 from polar.worker import app  # noqa

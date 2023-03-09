@@ -5,6 +5,7 @@ from polar.postgres import AsyncSession
 
 from .signals import github_issue_created
 from .badge import GithubBadge
+from .tasks.issue import embed_badge
 
 log = structlog.get_logger()
 
@@ -19,8 +20,6 @@ async def schedule_embed_badge_task(
     repository: Repository,
     issue: Issue,
 ) -> None:
-    from .tasks.issue import embed_badge
-
     should_embed, _ = GithubBadge.should_embed(
         organization, repository, issue, setting_retroactive_override=False
     )

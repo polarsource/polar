@@ -48,7 +48,7 @@ class Logging(Generic[RendererType]):
                 "version": 1,
                 "disable_existing_loggers": False,
                 "formatters": {
-                    "hubbenlog": {
+                    "polar": {
                         "()": structlog.stdlib.ProcessorFormatter,
                         "processors": [
                             structlog.stdlib.ProcessorFormatter.remove_processors_meta,
@@ -66,7 +66,7 @@ class Logging(Generic[RendererType]):
                     "default": {
                         "level": level,
                         "class": "logging.StreamHandler",
-                        "formatter": "hubbenlog",
+                        "formatter": "polar",
                     },
                 },
                 "loggers": {
@@ -81,7 +81,7 @@ class Logging(Generic[RendererType]):
 
     @classmethod
     def configure_structlog(cls) -> None:
-        structlog.configure(
+        structlog.configure_once(
             processors=cls.get_processors(),
             logger_factory=structlog.stdlib.LoggerFactory(),
             wrapper_class=structlog.stdlib.BoundLogger,
@@ -106,7 +106,12 @@ class Production(Logging[structlog.processors.JSONRenderer]):
         return structlog.processors.JSONRenderer()
 
 
+def configure_celery_task(task_id: Any, task: Any, args: Any, kwargs: Any) -> None:
+    structlog.contextvars.bind_contextvars(task_id=task_id, task_name=task.name)
+
+
 def configure() -> None:
     if settings.is_development() or settings.is_testing():
-        return Development.configure()
-    return Production.configure()
+        Development.configure()
+    else:
+        Production.configure()

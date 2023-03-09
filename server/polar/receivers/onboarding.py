@@ -1,49 +1,62 @@
 import structlog
 
 from polar.issue.signals import (
-    issue_synced,
-    issue_sync_completed,
     issue_created,
     issue_updated,
+)
+from polar.repository.signals import (
+    repository_issue_synced,
+    repository_issues_sync_completed,
 )
 from polar.pull_request.signals import pull_request_created, pull_request_updated
 from polar.eventstream.service import publish
 from polar.models import Issue, Organization, PullRequest, Repository
+from polar.postgres import AsyncSession
 
 log = structlog.get_logger()
 
 
-@issue_synced.connect
+@repository_issue_synced.connect
 async def on_issue_synced(
-    sender: Repository, organization: Organization, issue: Issue, synced: int
+    session: AsyncSession,
+    *,
+    repository: Repository,
+    organization: Organization,
+    record: Issue,
+    created: bool,
+    synced: int,
 ) -> None:
-    log.info("issue.synced", issue=issue.id, title=issue.title)
+    log.info("issue.synced", issue=record.id, title=record.title)
     await publish(
         "issue.synced",
         {
             "issue": {
-                "id": issue.id,
-                "title": issue.title,
+                "id": record.id,
+                "title": record.title,
             },
-            "expected": sender.open_issues,
+            "expected": repository.open_issues,
             "synced": synced,
-            "repository_id": sender.id,
+            "repository_id": repository.id,
         },
         organization_id=organization.id,
     )
 
 
-@issue_sync_completed.connect
+@repository_issues_sync_completed.connect
 async def on_issue_sync_completed(
-    sender: Repository, organization: Organization, synced: int
+    session: AsyncSession,
+    *,
+    repository: Repository,
+    organization: Organization,
+    synced: int,
 ) -> None:
-    log.info("issue.sync.completed", repository=sender.id, synced=synced)
+    log.info("issue.sync.completed", repository=repository.id, synced=synced)
     await publish(
         "issue.sync.completed",
         {
-            "expected": sender.open_issues,
+            "expected": repository.open_issues,
             "synced": synced,
-            "repository_id": sender.id,
+            "repository_id": repository.id,
         },
         organization_id=organization.id,
     )

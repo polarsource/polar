@@ -25,7 +25,3 @@ class StripeError(Exception):
 
 class DatabaseRecordExists(Exception):
     ...
-
-
-class ExpectedIssueGotPullRequest(Exception):
-    ...

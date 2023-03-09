@@ -1,14 +1,14 @@
-import uuid
 from typing import Sequence
 
 import structlog
 
-from polar.integrations.github import client as github
-from polar.models.pull_request import PullRequest
+from polar.models import PullRequest, Organization, Repository
 from polar.enums import Platforms
 from polar.postgres import AsyncSession
 from polar.pull_request.schemas import FullPullRequestCreate, MinimalPullRequestCreate
 from polar.pull_request.service import PullRequestService
+
+from ..types import GithubPullRequestFull, GithubPullRequestSimple
 
 log = structlog.get_logger()
 
@@ -22,32 +22,32 @@ class GithubPullRequestService(PullRequestService):
     async def store_simple(
         self,
         session: AsyncSession,
-        data: github.rest.PullRequestSimple,
-        organization_id: uuid.UUID,
-        repository_id: uuid.UUID,
+        *,
+        data: GithubPullRequestSimple,
+        organization: Organization,
+        repository: Repository,
     ) -> PullRequest:
         records = await self.store_many_simple(
             session,
-            [data],
-            organization_id=organization_id,
-            repository_id=repository_id,
+            data=[data],
+            organization=organization,
+            repository=repository,
         )
-        if records:
-            return records[0]
-        raise RuntimeError("failed to store pull request")
+        return records[0]
 
     async def store_many_simple(
         self,
         session: AsyncSession,
-        data: Sequence[github.rest.PullRequestSimple],
-        organization_id: uuid.UUID,
-        repository_id: uuid.UUID,
+        *,
+        data: Sequence[GithubPullRequestSimple],
+        organization: Organization,
+        repository: Repository,
     ) -> list[PullRequest]:
-        def parse(pr: github.rest.PullRequestSimple) -> MinimalPullRequestCreate:
+        def parse(pr: GithubPullRequestSimple) -> MinimalPullRequestCreate:
             return MinimalPullRequestCreate.minimal_pull_request_from_github(
                 pr,
-                organization_id=organization_id,
-                repository_id=repository_id,
+                organization_id=organization.id,
+                repository_id=repository.id,
             )
 
         create_schemas = [parse(pr) for pr in data]
@@ -55,8 +55,8 @@ class GithubPullRequestService(PullRequestService):
             log.warning(
                 "github.pull_request",
                 error="no pull requests to store",
-                organization_id=organization_id,
-                repository_id=repository_id,
+                organization_id=organization.id,
+                repository_id=repository.id,
             )
             return []
 
@@ -70,38 +70,30 @@ class GithubPullRequestService(PullRequestService):
     async def store_full(
         self,
         session: AsyncSession,
-        data: github.rest.PullRequest
-        | github.webhooks.PullRequestOpenedPropPullRequest,
-        organization_id: uuid.UUID,
-        repository_id: uuid.UUID,
+        data: GithubPullRequestFull,
+        organization: Organization,
+        repository: Repository,
     ) -> PullRequest:
         records = await self.store_many_full(
             session,
             [data],
-            organization_id=organization_id,
-            repository_id=repository_id,
+            organization=organization,
+            repository=repository,
         )
-        if records:
-            return records[0]
-        raise RuntimeError("failed to store pull request")
+        return records[0]
 
     async def store_many_full(
         self,
         session: AsyncSession,
-        data: Sequence[
-            github.rest.PullRequest | github.webhooks.PullRequestOpenedPropPullRequest
-        ],
-        organization_id: uuid.UUID,
-        repository_id: uuid.UUID,
+        data: Sequence[GithubPullRequestFull],
+        organization: Organization,
+        repository: Repository,
     ) -> list[PullRequest]:
-        def parse(
-            pr: github.rest.PullRequest
-            | github.webhooks.PullRequestOpenedPropPullRequest,
-        ) -> FullPullRequestCreate:
+        def parse(pr: GithubPullRequestFull) -> FullPullRequestCreate:
             return FullPullRequestCreate.full_pull_request_from_github(
                 pr,
-                organization_id=organization_id,
-                repository_id=repository_id,
+                organization_id=organization.id,
+                repository_id=repository.id,
             )
 
         create_schemas = [parse(pr) for pr in data]
@@ -109,8 +101,8 @@ class GithubPullRequestService(PullRequestService):
             log.warning(
                 "github.pull_request",
                 error="no pull requests to store",
-                organization_id=organization_id,
-                repository_id=repository_id,
+                organization_id=organization.id,
+                repository_id=repository.id,
             )
             return []
 

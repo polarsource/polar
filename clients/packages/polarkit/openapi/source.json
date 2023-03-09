@@ -620,31 +620,39 @@
                 }
             }
         },
-        "/api/v1/stream": {
+        "/api/v1/pull_requests/{platform}/{organization_name}/{name}": {
             "get": {
                 "tags": [
-                    "stream"
+                    "pull_requests"
                 ],
-                "summary": "Listen",
-                "operationId": "stream:listen",
+                "summary": "Get Repository Pull Requests",
+                "operationId": "pull_requests:get_repository_pull_requests",
                 "parameters": [
                     {
                         "required": true,
                         "schema": {
-                            "title": "Organization Id",
-                            "type": "string"
+                            "$ref": "#/components/schemas/Platforms"
                         },
-                        "name": "organization_id",
-                        "in": "query"
+                        "name": "platform",
+                        "in": "path"
                     },
                     {
-                        "required": false,
+                        "required": true,
                         "schema": {
-                            "title": "Repository Id",
+                            "title": "Organization Name",
                             "type": "string"
                         },
-                        "name": "repository_id",
-                        "in": "query"
+                        "name": "organization_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Name",
+                            "type": "string"
+                        },
+                        "name": "name",
+                        "in": "path"
                     }
                 ],
                 "responses": {
@@ -652,7 +660,13 @@
                         "description": "Successful Response",
                         "content": {
                             "application/json": {
-                                "schema": {}
+                                "schema": {
+                                    "title": "Response Pull Requests:Get Repository Pull Requests",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PullRequestRead"
+                                    }
+                                }
                             }
                         }
                     },
@@ -719,74 +733,6 @@
                                     "type": "array",
                                     "items": {
                                         "$ref": "#/components/schemas/IssueRead"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
-            }
-        },
-        "/api/v1/pull_requests/{platform}/{organization_name}/{name}": {
-            "get": {
-                "tags": [
-                    "pull_requests"
-                ],
-                "summary": "Get Repository Pull Requests",
-                "operationId": "pull_requests:get_repository_pull_requests",
-                "parameters": [
-                    {
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/Platforms"
-                        },
-                        "name": "platform",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Organization Name",
-                            "type": "string"
-                        },
-                        "name": "organization_name",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Name",
-                            "type": "string"
-                        },
-                        "name": "name",
-                        "in": "path"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "title": "Response Pull Requests:Get Repository Pull Requests",
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/PullRequestRead"
                                     }
                                 }
                             }
@@ -902,6 +848,125 @@
                                     "items": {
                                         "$ref": "#/components/schemas/RewardRead"
                                     }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/stream": {
+            "get": {
+                "tags": [
+                    "stream"
+                ],
+                "summary": "Listen",
+                "operationId": "stream:listen",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Organization Id",
+                            "type": "string"
+                        },
+                        "name": "organization_id",
+                        "in": "query"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Repository Id",
+                            "type": "string"
+                        },
+                        "name": "repository_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/organizations/{platform}/{organization_name}/settings": {
+            "put": {
+                "tags": [
+                    "organizations"
+                ],
+                "summary": "Update Settings",
+                "operationId": "organizations:update_settings",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Organization Name",
+                            "type": "string"
+                        },
+                        "name": "organization_name",
+                        "in": "path"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OrganizationSettings"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrganizationRead"
                                 }
                             }
                         }
@@ -1239,6 +1304,16 @@
                 ],
                 "type": "object",
                 "properties": {
+                    "funding_badge_retroactive": {
+                        "title": "Funding Badge Retroactive",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "funding_badge_show_amount": {
+                        "title": "Funding Badge Show Amount",
+                        "type": "boolean",
+                        "default": false
+                    },
                     "platform": {
                         "$ref": "#/components/schemas/Platforms"
                     },
@@ -1281,6 +1356,11 @@
                         "type": "string",
                         "format": "date-time"
                     },
+                    "onboarded_at": {
+                        "title": "Onboarded At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
                     "id": {
                         "title": "Id",
                         "type": "string"
@@ -1304,6 +1384,22 @@
                         "items": {
                             "$ref": "#/components/schemas/RepositoryRead"
                         }
+                    }
+                }
+            },
+            "OrganizationSettings": {
+                "title": "OrganizationSettings",
+                "type": "object",
+                "properties": {
+                    "funding_badge_retroactive": {
+                        "title": "Funding Badge Retroactive",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "funding_badge_show_amount": {
+                        "title": "Funding Badge Show Amount",
+                        "type": "boolean",
+                        "default": false
                     }
                 }
             },
@@ -1798,7 +1894,7 @@
                         "type": "string"
                     },
                     "state": {
-                        "$ref": "#/components/schemas/polar__schema__reward__State"
+                        "$ref": "#/components/schemas/polar__reward__schemas__State"
                     }
                 }
             },
@@ -1954,7 +2050,7 @@
                 "type": "string",
                 "description": "An enumeration."
             },
-            "polar__schema__reward__State": {
+            "polar__reward__schemas__State": {
                 "title": "State",
                 "enum": [
                     "created",

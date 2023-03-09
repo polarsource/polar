@@ -7,6 +7,7 @@ from polar.pull_request.endpoints import router as pull_request_router
 from polar.reward.endpoints import router as reward_router
 from polar.user.endpoints.user_organization import router as user_organization_router
 from polar.user.endpoints.users import router as user_router
+from polar.organization.endpoints import router as organization_router
 
 router = APIRouter(prefix="/api/v1")
 router.include_router(user_router, prefix="/users", tags=["users"])
@@ -22,3 +23,6 @@ router.include_router(
 router.include_router(issue_router, prefix="/issues", tags=["issues"])
 router.include_router(reward_router, prefix="/rewards", tags=["rewards"])
 router.include_router(stream_router, prefix="/stream", tags=["stream"])
+router.include_router(
+    organization_router, prefix="/organizations", tags=["organizations"]
+)

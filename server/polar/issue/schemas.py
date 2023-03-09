@@ -6,22 +6,20 @@ from typing import Self, Type
 
 import structlog
 
-from polar.exceptions import ExpectedIssueGotPullRequest
 from polar.integrations.github import client as github
 from polar.kit.schemas import Schema
 from polar.models.issue import Issue
 from polar.enums import Platforms
 from polar.types import JSONAny
 
-# TODO: Ugly. Fix how to deal with githubkit typing at times.
-TIssueData = (
-    github.rest.Issue
-    | github.webhooks.IssuesOpenedPropIssue
-    | github.webhooks.PullRequestOpenedPropPullRequest
-    | github.rest.PullRequest
-    | github.rest.PullRequestSimple
-    | github.webhooks.PullRequestOpenedPropPullRequest
+from polar.integrations.github.types import (
+    GithubIssue,
+    GithubPullRequestFull,
+    GithubPullRequestSimple,
 )
+
+# TODO: Move Github schema extensions to Github integration module
+TIssueData = GithubIssue | GithubPullRequestFull | GithubPullRequestSimple
 
 
 log = structlog.get_logger()
@@ -117,9 +115,6 @@ class IssueCreate(Base):
         organization_id: uuid.UUID,
         repository_id: uuid.UUID,
     ) -> Self:
-        if github.is_set(data, "pull_request"):
-            raise ExpectedIssueGotPullRequest()
-
         return cls.get_normalized_github_issue(
             data,
             organization_id=organization_id,

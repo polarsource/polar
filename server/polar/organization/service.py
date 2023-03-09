@@ -1,5 +1,6 @@
 from typing import Sequence
 from uuid import UUID
+from datetime import datetime, timezone
 
 import structlog
 from sqlalchemy.exc import IntegrityError
@@ -10,7 +11,7 @@ from polar.models import Organization, User, UserOrganization
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, sql
 
-from .schemas import OrganizationCreate, OrganizationUpdate
+from .schemas import OrganizationCreate, OrganizationUpdate, OrganizationSettings
 
 log = structlog.get_logger()
 
@@ -82,6 +83,26 @@ class OrganizationService(
                 user_id=user.id,
             )
             await nested.rollback()
+
+    async def update_settings(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        settings: OrganizationSettings,
+    ) -> Organization:
+        # Leverage .update() in case we expand this with additional settings
+        organization.funding_badge_retroactive = settings.funding_badge_retroactive
+        organization.funding_badge_show_amount = settings.funding_badge_show_amount
+        if organization.onboarded_at is None:
+            organization.onboarded_at = datetime.now(timezone.utc)
+
+        updated = await organization.save(session)
+        log.info(
+            "organization.update_settings",
+            organization_id=organization.id,
+            settings=settings.dict(),
+        )
+        return updated
 
 
 organization = OrganizationService(Organization)

@@ -96,5 +96,9 @@ class Issue(IssueFields, RecordModel):
         UniqueConstraint("organization_id", "repository_id", "number"),
     )
 
+    funding_badge_embedded_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+
     on_created_signal = issue_created
     on_updated_signal = issue_updated

@@ -83,9 +83,9 @@ async def test_create_pull_request(
     # Store simple
     created = await github_pull_request.store_simple(
         session,
-        simple,
-        organization_id=org.id,
-        repository_id=repo.id,
+        data=simple,
+        organization=org,
+        repository=repo,
     )
 
     assert created is not None
@@ -102,8 +102,8 @@ async def test_create_pull_request(
     stored_full = await github_pull_request.store_full(
         session,
         full,
-        organization_id=org.id,
-        repository_id=repo.id,
+        organization=org,
+        repository=repo,
     )
 
     assert stored_full is not None
@@ -115,9 +115,9 @@ async def test_create_pull_request(
 
     stored_simple_again = await github_pull_request.store_simple(
         session,
-        simple,
-        organization_id=org.id,
-        repository_id=repo.id,
+        data=simple,
+        organization=org,
+        repository=repo,
     )
 
     assert stored_simple_again is not None

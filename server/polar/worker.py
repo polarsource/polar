@@ -5,7 +5,6 @@ from typing import Awaitable, Callable, ParamSpec, TypeVar
 from asgiref.sync import async_to_sync
 from celery import Celery
 
-from polar import receivers  # noqa
 from polar.config import settings
 from polar.postgres import create_engine, create_sessionmaker
 

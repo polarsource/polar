@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     # JSON list of accepted CORS origins
     CORS_ORIGINS: list[AnyHttpUrl] = []
 
+    # URL to frontend app.
+    # Update to ngrok domain or similar in case you want
+    # working Github badges in development.
+    FRONTEND_BASE_URL: str = "http://127.0.0.1:3000"
+
     # Postgres
     POSTGRES_SCHEME: str = "postgresql+asyncpg"
     POSTGRES_USER: str = "polar"
@@ -47,6 +52,10 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_ID: str = ""
     GITHUB_CLIENT_SECRET: str = ""
     GITHUB_REDIRECT_URL: str = "http://127.0.0.1:3000/github/session"
+
+    # Application behaviours
+
+    GITHUB_BADGE_EMBED: bool = False
 
     class Config:
         env_prefix = "polar_"

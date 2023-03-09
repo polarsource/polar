@@ -1,19 +1,21 @@
-import uuid
 from typing import Any
 
 import structlog
 
 from polar.integrations.github import client as github
 from polar.issue.schemas import IssueRead
-from polar.models import Issue, Organization, PullRequest, Repository
 from polar.organization.schemas import OrganizationCreate
 from polar.enums import Platforms
-from polar.postgres import AsyncSession
-from polar.pull_request.schemas import FullPullRequestCreate, PullRequestRead
-from polar.repository.schemas import RepositoryCreate
+from polar.pull_request.schemas import PullRequestRead
 from polar.worker import get_db_session, sync_worker, task
 
 from .. import service
+from .utils import (
+    add_repositories,
+    remove_repositories,
+    upsert_issue,
+    upsert_pull_request,
+)
 
 log = structlog.get_logger()
 
@@ -21,129 +23,6 @@ log = structlog.get_logger()
 def get_event(scope: str, action: str, payload: dict[str, Any]) -> github.WebhookEvent:
     log.info("github.webhook.received", scope=scope, action=action)
     return github.webhooks.parse_obj(scope, payload)
-
-
-# ------------------------------------------------------------------------------
-# Move to actions
-# ------------------------------------------------------------------------------
-
-
-async def add_repositories(
-    session: AsyncSession,
-    organization: Organization,
-    repositories: list[github.webhooks.InstallationCreatedPropRepositoriesItems],
-) -> list[Repository]:
-    schemas = []
-    for repo in repositories:
-        create_schema = RepositoryCreate(
-            platform=Platforms.github,
-            external_id=repo.id,
-            organization_id=organization.id,
-            name=repo.name,
-            is_private=repo.private,
-        )
-        schemas.append(create_schema)
-
-    log.debug("github.repositories.upsert_many", repos=schemas)
-    instances = await service.github_repository.upsert_many(session, schemas)
-    return instances
-
-
-async def remove_repositories(
-    session: AsyncSession,
-    organization: Organization,
-    repositories: list[
-        github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems
-    ],
-) -> int:
-    # TODO: Implement delete many to avoid N*2 db calls
-    count = 0
-    for repo in repositories:
-        # TODO: All true now, but that will change
-        res = await service.github_repository.delete(session, external_id=repo.id)
-        if res:
-            count += 1
-    return count
-
-
-async def upsert_issue(
-    session: AsyncSession, event: github.webhooks.IssuesOpened
-) -> Issue | None:
-    repository_id = event.repository.id
-    owner_id = event.repository.owner.id
-
-    organization = await service.github_organization.get_by_external_id(
-        session, owner_id
-    )
-    if not organization:
-        # TODO: Raise here
-        log.warning(
-            "github.webhook.issue.opened",
-            error="no organization found",
-            organization_id=owner_id,
-        )
-        return None
-
-    repository = await service.github_repository.get_by_external_id(
-        session, repository_id
-    )
-    if not repository:
-        # TODO: Raise here
-        log.warning(
-            "github.webhook.issue.opened",
-            error="no repository found",
-            repository_id=repository_id,
-        )
-        return None
-
-    record = await service.github_issue.store(
-        session,
-        event.issue,
-        organization_id=uuid.UUID(organization.id),  # TODO: cast should not be needed
-        repository_id=uuid.UUID(repository.id),
-    )
-    return record
-
-
-async def upsert_pull_request(
-    session: AsyncSession, event: github.webhooks.PullRequestOpened
-) -> PullRequest | None:
-    repository_id = event.repository.id
-    owner_id = event.repository.owner.id
-
-    organization = await service.github_organization.get_by_external_id(
-        session, owner_id
-    )
-    if not organization:
-        # TODO: Raise here
-        log.warning(
-            "github.webhook.pull_request",
-            error="no organization found",
-            organization_id=owner_id,
-        )
-        return None
-
-    repository = await service.github_repository.get_by_external_id(
-        session, repository_id
-    )
-    if not repository:
-        # TODO: Raise here
-        log.warning(
-            "github.webhook.pull_request",
-            error="no repository found",
-            repository_id=repository_id,
-        )
-        return None
-
-    create_schema = FullPullRequestCreate.full_pull_request_from_github(
-        event.pull_request,
-        organization_id=uuid.UUID(
-            organization.id
-        ),  # TODO: Fix! For some reason get_by_external_id returns the id as a str!
-        repository_id=uuid.UUID(repository.id),
-    )
-    record = await service.github_pull_request.upsert(session, create_schema)
-    return record
 
 
 # ------------------------------------------------------------------------------

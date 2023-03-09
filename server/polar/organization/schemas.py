@@ -9,7 +9,12 @@ from polar.enums import Platforms
 from polar.repository.schemas import RepositoryRead
 
 
-class Base(Schema):
+class OrganizationSettings(Schema):
+    funding_badge_retroactive: bool = False
+    funding_badge_show_amount: bool = False
+
+
+class Base(OrganizationSettings):
     platform: Platforms
     name: str
     external_id: int
@@ -20,6 +25,7 @@ class Base(Schema):
     installation_created_at: datetime
     installation_updated_at: datetime | None
     installation_suspended_at: datetime | None
+    onboarded_at: datetime | None = None
 
 
 class OrganizationCreate(Base):
@@ -51,7 +57,7 @@ class OrganizationCreate(Base):
             is_site_admin=is_site_admin,
             installation_id=installation.id,
             installation_created_at=installation.created_at,
-            installation_modified_at=installation.updated_at,
+            installation_updated_at=installation.updated_at,
             installation_suspended_at=installation.suspended_at,
         )
 

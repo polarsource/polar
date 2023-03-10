@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any, AsyncGenerator
 
-import pytest
+import pytest_asyncio
 from httpx import AsyncClient, Response
 
 from polar.config import settings
@@ -67,7 +67,7 @@ class TestWebhookFactory:
         )
 
 
-@pytest.fixture()
+@pytest_asyncio.fixture()
 async def github_webhook(
     client: AsyncClient,
 ) -> AsyncGenerator[TestWebhookFactory, None]:

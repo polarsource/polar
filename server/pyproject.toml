@@ -35,9 +35,9 @@ psycopg2-binary = "^2.9.5"
 coverage = "^7.1.0"
 pytest-mock = "^3.10.0"
 nest-asyncio = "^1.5.6"
-anyio = "^3.6.2"
 sqlalchemy-utils = "^0.40.0"
 ruff = "^0.0.253"
+pytest-asyncio = "^0.20.3"
 
 [tool.ruff]
 target-version = "py311"

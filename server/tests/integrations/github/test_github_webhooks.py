@@ -91,7 +91,7 @@ async def create_pr(github_webhook: TestWebhookFactory) -> TestWebhook:
     return hook
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_webhook_installation_created(
     session: AsyncSession, github_webhook: TestWebhookFactory
 ) -> None:
@@ -113,7 +113,7 @@ async def test_webhook_installation_created(
         await assert_repository_exists(session, repo)
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_webhook_installation_suspend(github_webhook: TestWebhookFactory) -> None:
     org = await create_org(github_webhook, status=Organization.Status.INACTIVE)
 
@@ -127,7 +127,7 @@ async def test_webhook_installation_suspend(github_webhook: TestWebhookFactory) 
         assert org.status == org.Status.SUSPENDED
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_webhook_installation_unsuspend(
     github_webhook: TestWebhookFactory,
 ) -> None:
@@ -143,7 +143,7 @@ async def test_webhook_installation_unsuspend(
         assert org.status == org.Status.ACTIVE
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_webhook_installation_delete(github_webhook: TestWebhookFactory) -> None:
     hook = github_webhook.create("installation.deleted")
     org_id = hook["installation"]["account"]["id"]
@@ -160,7 +160,7 @@ async def test_webhook_installation_delete(github_webhook: TestWebhookFactory) -
         assert fetched is None
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_webhook_repositories_added(
     session: AsyncSession, github_webhook: TestWebhookFactory
 ) -> None:
@@ -174,7 +174,7 @@ async def test_webhook_repositories_added(
     await assert_repository_exists(session, new_repo)
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_webhook_repositories_removed(
     session: AsyncSession, github_webhook: TestWebhookFactory
 ) -> None:
@@ -193,7 +193,7 @@ async def test_webhook_repositories_removed(
     assert repo is None
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_webhook_issues_opened(
     session: AsyncSession, github_webhook: TestWebhookFactory
 ) -> None:
@@ -211,7 +211,7 @@ async def test_webhook_issues_opened(
     assert issue is not None
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_webhook_issues_closed(
     session: AsyncSession, github_webhook: TestWebhookFactory
 ) -> None:
@@ -220,7 +220,7 @@ async def test_webhook_issues_closed(
     assert response.status_code == 200
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_webhook_issues_labeled(github_webhook: TestWebhookFactory) -> None:
     await create_repositories(github_webhook)
     hook = await create_issue(github_webhook)
@@ -240,7 +240,7 @@ async def test_webhook_issues_labeled(github_webhook: TestWebhookFactory) -> Non
         assert issue.labels[0]["name"] == hook["issue"]["labels"][0]["name"]
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_webhook_pull_request_opened(
     session: AsyncSession, github_webhook: TestWebhookFactory
 ) -> None:
@@ -259,7 +259,7 @@ async def test_webhook_pull_request_opened(
     assert pr.deletions == 1
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_webhook_pull_request_synchronize(
     github_webhook: TestWebhookFactory,
 ) -> None:

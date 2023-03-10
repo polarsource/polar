@@ -17,7 +17,7 @@ def test_intenum_processing() -> None:
     assert active is StatusFlag.ACTIVE
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_intenum_persistance(session: AsyncSession) -> None:
     async with AsyncEngineLocal.begin() as conn:
         await conn.run_sync(TestModel.metadata.create_all)

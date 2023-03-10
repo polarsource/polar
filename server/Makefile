@@ -11,7 +11,7 @@ shell:
 
 test:
 	@echo 'Running Polar Testing Suite'
-	POLAR_ENV=testing poetry run coverage run --source polar -m pytest
+	POLAR_ENV=testing poetry run coverage run --source polar -m pytest --log-cli-level=30
 	POLAR_ENV=testing poetry run coverage report -m
 
 db-migrate:

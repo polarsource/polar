@@ -37,9 +37,18 @@ nest-asyncio = "^1.5.6"
 anyio = "^3.6.2"
 sqlalchemy-utils = "^0.40.0"
 ruff = "^0.0.253"
+taskipy = "^1.10.3"
 
 [tool.taskipy.tasks]
+api = { cmd = "uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }
+worker = { cmd = "celery -A run_worker:app worker", help = "run celery worker" }
 test = { cmd = "POLAR_ENV=testing coverage run --source polar -m pytest && coverage report -m", help = "run all tests" }
+lint = { cmd = "task lint_ruff & task lint_black", help = "run all linters" }
+lint_ruff = { cmd = "ruff check .", help = "run ruff linter" }
+lint_black = { cmd = "black .", help = "run black linter" }
+db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade" }
+db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }
+clean = { cmd = "find * -name '*.pyc' -delete && find * -name '__pycache__' -delete", help = "clean up .pyc and __pycache__" }
 
 [tool.ruff]
 target-version = "py311"

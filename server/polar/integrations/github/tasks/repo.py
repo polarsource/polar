@@ -15,7 +15,7 @@ async def sync_repository_issues(
     organization_id: UUID,
     repository_id: UUID,
 ) -> None:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         organization, repository = await get_organization_and_repo(
             session, organization_id, repository_id
         )
@@ -30,7 +30,7 @@ async def sync_repository_pull_requests(
     organization_id: UUID,
     repository_id: UUID,
 ) -> None:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         organization, repository = await get_organization_and_repo(
             session, organization_id, repository_id
         )
@@ -47,4 +47,4 @@ async def sync_repository(
     # TODO: A bit silly to call a task scheduling... tasks.
     # Should the invocation of this function skip .delay?
     sync_repository_issues.delay(organization_id, repository_id)
-    sync_repository_pull_requests.delay(organization_id, repository_id)
+    # sync_repository_pull_requests.delay(organization_id, repository_id)

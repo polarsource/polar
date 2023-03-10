@@ -67,7 +67,7 @@ async def repositories_changed(
 async def repositories_added(
     self, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         return await repositories_changed(session, scope, action, payload)
 
 
@@ -75,7 +75,7 @@ async def repositories_added(
 async def repositories_removed(
     self, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         return await repositories_changed(session, scope, action, payload)
 
 
@@ -103,7 +103,7 @@ async def handle_issue(
 async def issue_opened(
     self, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         return await handle_issue(session, scope, action, payload)
 
 
@@ -111,7 +111,7 @@ async def issue_opened(
 async def issue_edited(
     self, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         return await handle_issue(session, scope, action, payload)
 
 
@@ -119,7 +119,7 @@ async def issue_edited(
 async def issue_closed(
     self, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         return await handle_issue(session, scope, action, payload)
 
 
@@ -127,7 +127,7 @@ async def issue_closed(
 async def issue_labeled(
     self, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         return await issue_labeled_async(session, scope, action, payload)
 
 
@@ -169,7 +169,7 @@ async def handle_pull_request(
 async def pull_request_opened(
     self, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         return await handle_pull_request(session, scope, action, payload)
 
 
@@ -177,7 +177,7 @@ async def pull_request_opened(
 async def pull_request_edited(
     self, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         return await handle_pull_request(session, scope, action, payload)
 
 
@@ -185,7 +185,7 @@ async def pull_request_edited(
 async def pull_request_closed(
     self, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         return await handle_pull_request(session, scope, action, payload)
 
 
@@ -193,7 +193,7 @@ async def pull_request_closed(
 async def pull_request_reopened(
     self, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         return await handle_pull_request(session, scope, action, payload)
 
 
@@ -201,7 +201,7 @@ async def pull_request_reopened(
 async def pull_request_synchronize(
     self, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         return await pull_request_synchronize_async(session, scope, action, payload)
 
 
@@ -228,7 +228,7 @@ async def installation_created(
 ) -> dict[str, Any]:
     # TODO: Handle user permission?
 
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
 
         payload = github.patch_unset("requester", payload)
         event = get_event(scope, action, payload)
@@ -257,7 +257,7 @@ async def installation_created(
 async def installation_delete(
     self, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         event = get_event(scope, action, payload)
         await service.github_organization.remove(session, event.installation.id)
         return dict(success=True)
@@ -267,7 +267,7 @@ async def installation_delete(
 async def installation_suspend(
     self, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         event = get_event(scope, action, payload)
 
         await service.github_organization.suspend(
@@ -284,7 +284,7 @@ async def installation_suspend(
 async def installation_unsuspend(
     self, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         event = get_event(scope, action, payload)
 
         await service.github_organization.unsuspend(session, event.installation.id)

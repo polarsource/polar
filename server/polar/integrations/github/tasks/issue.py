@@ -11,7 +11,7 @@ log = structlog.get_logger()
 
 @task(name="github.issue.embed_badge", bind=True)
 async def embed_badge(self, issue_id: UUID) -> None:
-    async with self.AsyncSession() as session:
+    async with self.get_db_session() as session:
         issue = await github_issue.get(session, issue_id)
         if not issue:
             log.warning(

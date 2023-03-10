@@ -1,7 +1,8 @@
 from . import sql
-from .types import GUID, IntEnum, StringEnum
+from .types import PostgresUUID, GUID, IntEnum, StringEnum
 
 __all__ = [
+    "PostgresUUID",
     "GUID",
     "IntEnum",
     "StringEnum",

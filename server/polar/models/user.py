@@ -1,3 +1,4 @@
+from uuid import UUID
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String
@@ -6,7 +7,7 @@ from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import GUID
+from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.enums import Platforms
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -23,8 +24,10 @@ class OAuthAccount(RecordModel):
     refresh_token: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     account_id: Mapped[str] = mapped_column(String(320), index=True, nullable=False)
     account_email: Mapped[str] = mapped_column(String(320), nullable=False)
-    user_id: Mapped[GUID] = mapped_column(
-        GUID, ForeignKey("users.id", ondelete="cascade"), nullable=False
+    user_id: Mapped[UUID] = mapped_column(
+        PostgresUUID,
+        ForeignKey("users.id", ondelete="cascade"),
+        nullable=False,
     )
 
 

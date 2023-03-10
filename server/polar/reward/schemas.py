@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from uuid import UUID
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
@@ -17,7 +18,7 @@ class State(str, Enum):
 
 
 class RewardCreate(Schema):
-    issue_id: str
+    issue_id: UUID
     amount: Decimal
 
 
@@ -26,11 +27,11 @@ class RewardUpdate(RewardCreate):
 
 
 class RewardRead(RewardCreate):
-    id: str
+    id: UUID
     created_at: datetime
 
-    repository_id: str
-    organization_id: str
+    repository_id: UUID
+    organization_id: UUID
 
     state: State
 

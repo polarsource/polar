@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from uuid import UUID
 from datetime import datetime
 
 from polar.integrations.github import client as github
@@ -67,7 +68,7 @@ class OrganizationUpdate(OrganizationCreate):
 
 
 class OrganizationRead(Base):
-    id: str
+    id: UUID
     # TODO: Different schema for unauthenticated requests? If we introduce them
     status: Organization.Status
     created_at: datetime

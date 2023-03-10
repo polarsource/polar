@@ -1,9 +1,9 @@
+from uuid import UUID
 from typing import Sequence
 
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
 
-from polar.kit.extensions.sqlalchemy import GUID
 from polar.kit.services import ResourceService
 from polar.models.pull_request import PullRequest
 from polar.enums import Platforms
@@ -27,7 +27,7 @@ class PullRequestService(
         return await self.get_by(session, platform=platform, external_id=external_id)
 
     async def list_by_repository(
-        self, session: AsyncSession, repository_id: GUID
+        self, session: AsyncSession, repository_id: UUID
     ) -> Sequence[PullRequest]:
         statement = sql.select(PullRequest).where(
             PullRequest.repository_id == repository_id

@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from polar.kit.extensions.sqlalchemy import GUID
+from polar.kit.utils import generate_uuid
 from polar.models.reward import Reward
 from polar.postgres import AsyncSession
 
@@ -15,9 +15,9 @@ from polar.postgres import AsyncSession
 async def test_reward(session: AsyncSession, test_amount: str) -> None:
     created = await Reward.create(
         session,
-        issue_id=GUID.generate(),
-        repository_id=GUID.generate(),
-        organization_id=GUID.generate(),
+        issue_id=generate_uuid(),
+        repository_id=generate_uuid(),
+        organization_id=generate_uuid(),
         amount=Decimal(test_amount),
     )
 

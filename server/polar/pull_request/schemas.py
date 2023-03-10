@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import uuid
+from uuid import UUID
 from datetime import datetime
 from typing import Self
 
@@ -52,8 +52,8 @@ class MinimalPullRequestCreate(IssueCreate):
         pr: github.rest.PullRequestSimple
         | github.rest.PullRequest
         | github.webhooks.PullRequestOpenedPropPullRequest,
-        organization_id: uuid.UUID,
-        repository_id: uuid.UUID,
+        organization_id: UUID,
+        repository_id: UUID,
     ) -> Self:
         create = cls.get_normalized_github_issue(
             pr,
@@ -100,8 +100,8 @@ class FullPullRequestCreate(MinimalPullRequestCreate):
     def full_pull_request_from_github(
         cls,
         pr: github.rest.PullRequest | github.webhooks.PullRequestOpenedPropPullRequest,
-        organization_id: uuid.UUID,
-        repository_id: uuid.UUID,
+        organization_id: UUID,
+        repository_id: UUID,
     ) -> Self:
         create = cls.minimal_pull_request_from_github(
             pr, organization_id, repository_id
@@ -127,7 +127,7 @@ class PullRequestUpdate(FullPullRequestCreate):
 
 
 class PullRequestRead(FullPullRequestCreate):
-    id: str
+    id: UUID
     created_at: datetime
     modified_at: datetime | None
 

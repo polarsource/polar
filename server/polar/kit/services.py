@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+from uuid import UUID
 from typing import Any, Generic, TypeVar
 
 from sqlalchemy.orm import InstrumentedAttribute
 
 from .db.models import RecordModel
 from .db.postgres import AsyncSession, sql
-from .extensions.sqlalchemy import GUID
 from .schemas import Schema
 
 ModelType = TypeVar("ModelType", bound=RecordModel)
@@ -26,7 +26,7 @@ class ResourceService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def upsert_constraints(self) -> list[InstrumentedAttribute[Any]]:
         return [self.model.id]
 
-    async def get(self, session: AsyncSession, id: GUID) -> ModelType | None:
+    async def get(self, session: AsyncSession, id: UUID) -> ModelType | None:
         query = sql.select(self.model).where(self.model.id == id)
         return await self.get_by_query(session, query)
 

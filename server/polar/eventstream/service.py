@@ -1,17 +1,18 @@
-import uuid
+from uuid import UUID
 from typing import Any
 
 from pydantic import BaseModel
 
+from polar.kit.utils import generate_uuid
 from polar.redis import redis
 
 
 class Receivers(BaseModel):
-    user_id: str | None = None
-    organization_id: str | None = None
-    repository_id: str | None = None
+    user_id: UUID | None = None
+    organization_id: UUID | None = None
+    repository_id: UUID | None = None
 
-    def generate_channel_name(self, scope: str, resource_id: str) -> str:
+    def generate_channel_name(self, scope: str, resource_id: UUID) -> str:
         return f"{scope}:{resource_id}"
 
     def get_channels(self) -> list[str]:
@@ -29,7 +30,7 @@ class Receivers(BaseModel):
 
 
 class Event(BaseModel):
-    id: uuid.UUID
+    id: UUID
     key: str
     payload: dict[str, Any]
 
@@ -43,16 +44,16 @@ async def send(event: Event, channels: list[str]) -> None:
 async def publish(
     key: str,
     payload: dict[str, Any],
-    user_id: str | None = None,
-    organization_id: str | None = None,
-    repository_id: str | None = None,
+    user_id: UUID | None = None,
+    organization_id: UUID | None = None,
+    repository_id: UUID | None = None,
 ) -> None:
     receivers = Receivers(
         user_id=user_id, organization_id=organization_id, repository_id=repository_id
     )
     channels = receivers.get_channels()
     event = Event(
-        id=uuid.uuid4(),
+        id=generate_uuid(),
         key=key,
         payload=payload,
     )

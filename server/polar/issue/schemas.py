@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import uuid
+from uuid import UUID
 from datetime import datetime
 from typing import Self, Type
 
@@ -29,8 +29,8 @@ class Base(Schema):
     platform: Platforms
     external_id: int
 
-    organization_id: uuid.UUID
-    repository_id: uuid.UUID
+    organization_id: UUID
+    repository_id: UUID
     number: int
 
     title: str
@@ -78,8 +78,8 @@ class IssueCreate(Base):
     def get_normalized_github_issue(
         cls: Type[Self],
         data: TIssueData,
-        organization_id: uuid.UUID,
-        repository_id: uuid.UUID,
+        organization_id: UUID,
+        repository_id: UUID,
     ) -> Self:
         ret = cls(
             platform=Platforms.github,
@@ -112,8 +112,8 @@ class IssueCreate(Base):
     def from_github(
         cls,
         data: TIssueData,
-        organization_id: uuid.UUID,
-        repository_id: uuid.UUID,
+        organization_id: UUID,
+        repository_id: UUID,
     ) -> Self:
         return cls.get_normalized_github_issue(
             data,
@@ -127,7 +127,7 @@ class IssueUpdate(IssueCreate):
 
 
 class IssueRead(IssueCreate):
-    id: str
+    id: UUID
     created_at: datetime
     modified_at: datetime | None
 

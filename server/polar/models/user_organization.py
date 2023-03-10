@@ -1,11 +1,11 @@
-import uuid
+from uuid import UUID
 from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import StatusMixin, TimestampedModel
-from polar.kit.extensions.sqlalchemy import GUID
+from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.organization import Organization
@@ -15,15 +15,15 @@ if TYPE_CHECKING:  # pragma: no cover
 class UserOrganization(TimestampedModel, StatusMixin):
     __tablename__ = "user_organizations"
 
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        GUID,
+    user_id: Mapped[UUID] = mapped_column(
+        PostgresUUID,
         ForeignKey("users.id"),
         nullable=False,
         primary_key=True,
     )
 
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        GUID,
+    organization_id: Mapped[UUID] = mapped_column(
+        PostgresUUID,
         ForeignKey("organizations.id", ondelete="CASCADE"),
         nullable=False,
         primary_key=True,

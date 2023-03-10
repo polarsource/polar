@@ -1,12 +1,12 @@
 import enum
-import uuid
+from uuid import UUID
 from datetime import datetime
 
 from sqlalchemy import TIMESTAMP
 from sqlalchemy.orm import DeclarativeBase, Mapped, MappedColumn, mapped_column
 
-from polar.kit.extensions.sqlalchemy import GUID, IntEnum
-from polar.kit.utils import utc_now
+from polar.kit.extensions.sqlalchemy import PostgresUUID, IntEnum
+from polar.kit.utils import utc_now, generate_uuid
 
 from .mixins import ActiveRecordMixin, SerializeMixin
 
@@ -29,8 +29,8 @@ class TimestampedModel(Model):
 class RecordModel(TimestampedModel):
     __abstract__ = True
 
-    id: MappedColumn[uuid.UUID] = mapped_column(
-        GUID, primary_key=True, default=GUID.generate
+    id: MappedColumn[UUID] = mapped_column(
+        PostgresUUID, primary_key=True, default=generate_uuid
     )
 
 

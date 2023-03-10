@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from uuid import UUID
 from datetime import datetime
 
 from polar.integrations.github import client as github
@@ -11,7 +12,7 @@ from polar.enums import Platforms
 class RepositoryCreate(Schema):
     platform: Platforms
     external_id: int
-    organization_id: str | None
+    organization_id: UUID | None
     name: str
     description: str | None
     open_issues: int | None
@@ -69,7 +70,7 @@ class RepositoryUpdate(RepositoryCreate):
 
 
 class RepositoryRead(RepositoryCreate):
-    id: str
+    id: UUID
     visibility: Repository.Visibility
 
     class Config:

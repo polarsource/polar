@@ -1,4 +1,4 @@
-import uuid
+from uuid import UUID
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any
@@ -9,7 +9,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import GUID, StringEnum
+from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 from polar.enums import Platforms
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -32,8 +32,8 @@ class Repository(RecordModel):
 
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
     external_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
-    organization_id: Mapped[uuid.UUID | None] = mapped_column(
-        GUID, ForeignKey("organizations.id"), nullable=True
+    organization_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID, ForeignKey("organizations.id"), nullable=True
     )
 
     organization: "Mapped[Organization]" = relationship(

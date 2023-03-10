@@ -1,4 +1,5 @@
 import asyncio
+from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, Depends
@@ -32,8 +33,8 @@ async def subscribe(redis: Redis, channels: list[str]):
 
 @router.get("")
 async def listen(
-    organization_id: str | None,
-    repository_id: str | None = None,
+    organization_id: UUID | None,
+    repository_id: UUID | None = None,
     user: User = Depends(current_active_user),
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:

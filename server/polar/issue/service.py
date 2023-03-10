@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+from uuid import UUID
 from typing import Sequence
 
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
 
-from polar.kit.extensions.sqlalchemy import GUID
 from polar.kit.services import ResourceService
 from polar.models.issue import Issue
 from polar.enums import Platforms
@@ -27,7 +27,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         return await self.get_by(session, platform=platform, external_id=external_id)
 
     async def list_by_repository(
-        self, session: AsyncSession, repository_id: GUID
+        self, session: AsyncSession, repository_id: UUID
     ) -> Sequence[Issue]:
         statement = sql.select(Issue).where(Issue.repository_id == repository_id)
         res = await session.execute(statement)

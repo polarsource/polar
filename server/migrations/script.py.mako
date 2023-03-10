@@ -10,7 +10,7 @@ import sqlalchemy as sa
 ${imports if imports else ""}
 
 # Polar Custom Imports
-from polar.kit.extensions.sqlalchemy import GUID
+from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 # revision identifiers, used by Alembic.
 revision = ${repr(up_revision)}

@@ -1,7 +1,7 @@
+from uuid import UUID
 import structlog
 
 from polar.integrations.github import service
-from polar.kit.extensions.sqlalchemy import GUID
 from polar.worker import get_db_session, sync_worker, task
 
 from .utils import get_organization_and_repo
@@ -12,8 +12,8 @@ log = structlog.get_logger()
 @task(name="github.repo.sync.issues")
 @sync_worker()
 async def sync_repository_issues(
-    organization_id: GUID,
-    repository_id: GUID,
+    organization_id: UUID,
+    repository_id: UUID,
 ) -> None:
     async with get_db_session() as session:
         organization, repository = await get_organization_and_repo(
@@ -27,8 +27,8 @@ async def sync_repository_issues(
 @task(name="github.repo.sync.pull_requests")
 @sync_worker()
 async def sync_repository_pull_requests(
-    organization_id: GUID,
-    repository_id: GUID,
+    organization_id: UUID,
+    repository_id: UUID,
 ) -> None:
     async with get_db_session() as session:
         organization, repository = await get_organization_and_repo(
@@ -42,8 +42,8 @@ async def sync_repository_pull_requests(
 @task(name="github.repo.sync")
 @sync_worker()
 async def sync_repository(
-    organization_id: GUID,
-    repository_id: GUID,
+    organization_id: UUID,
+    repository_id: UUID,
 ) -> None:
     # TODO: A bit silly to call a task scheduling... tasks.
     # Should the invocation of this function skip .delay?

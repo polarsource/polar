@@ -1,8 +1,8 @@
 import uuid
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
-from sqlalchemy import Integer, Unicode
+import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.engine import Dialect
 from sqlalchemy.types import TypeDecorator as _TypeDecorator
@@ -14,37 +14,21 @@ else:
     GUIDTypeDecorator = _TypeDecorator
     TypeDecorator = _TypeDecorator
 
+# See https://github.com/dropbox/sqlalchemy-stubs/issues/94
+PostgresUUID = cast(
+    "sa.types.TypeEngine[uuid.UUID]",
+    UUID(as_uuid=True),
+)
+
 
 class GUID(GUIDTypeDecorator):
-    """UUIDs without hyphens.
-    Postgres UUID type supports removal of hyphens, but will always store them
-    in their standard format including hyphens.
-    We want our application input & output of UUIDs to be without hyphens.
-    This is achieved by leveraging uuid4().hex at input and processing fetched
-    database results accordingly as well.
+    """Legacy - use PostgresUUID instead.
+
+    Keeping this since old migrations reference it.
     """
 
     impl = UUID
     cache_ok = True
-
-    @staticmethod
-    def generate() -> str:
-        return uuid.uuid4().hex
-
-    def process_bind_param(self, value: Any, dialect: Dialect) -> Any:
-        if isinstance(value, uuid.UUID):
-            return value.hex
-        return value
-
-    def process_result_value(self, value: Any, dialect: Dialect) -> Any:
-        # TODO: Should we support other dialects? Unused variable now
-        if value is None:
-            return value
-        elif isinstance(value, str):
-            return uuid.UUID(value).hex
-        elif isinstance(value, uuid.UUID):
-            return value.hex
-        return value
 
 
 class EnumType(TypeDecorator):
@@ -64,10 +48,10 @@ class EnumType(TypeDecorator):
 
 
 class IntEnum(EnumType):
-    impl = Integer
+    impl = sa.Integer
     cache_ok = True
 
 
 class StringEnum(EnumType):
-    impl = Unicode
+    impl = sa.Unicode
     cache_ok = True

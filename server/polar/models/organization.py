@@ -1,4 +1,4 @@
-import uuid
+from uuid import UUID
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.organization.signals import organization_created, organization_updated
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import GUID, StringEnum
+from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 from polar.enums import Platforms
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -51,7 +51,7 @@ class Organization(RecordModel):
         TIMESTAMP(timezone=True)
     )
     installation_suspended_by: Mapped[int | None] = mapped_column(Integer)
-    installation_suspender: Mapped[uuid.UUID | None] = mapped_column(GUID)
+    installation_suspender: Mapped[UUID | None] = mapped_column(PostgresUUID)
 
     status: Mapped[Status] = mapped_column(
         StringEnum(Status), nullable=False, default=Status.ACTIVE

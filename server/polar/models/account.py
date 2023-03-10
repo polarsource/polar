@@ -1,13 +1,13 @@
-import uuid
+from uuid import UUID
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import GUID, StringEnum
+from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.organization import Organization
@@ -26,11 +26,11 @@ class Account(RecordModel):
         UniqueConstraint("stripe_id"),
     )
 
-    organization_id: Mapped[uuid.UUID] = mapped_column(
-        GUID, ForeignKey("organizations.id"), unique=True
+    organization_id: Mapped[UUID] = mapped_column(
+        PostgresUUID, ForeignKey("organizations.id"), unique=True
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        GUID, ForeignKey("users.id"), unique=True
+    user_id: Mapped[UUID] = mapped_column(
+        PostgresUUID, ForeignKey("users.id"), unique=True
     )
 
     stripe_id: Mapped[str] = mapped_column(String(100), nullable=False)

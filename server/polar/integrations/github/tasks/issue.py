@@ -1,6 +1,6 @@
+from uuid import UUID
 import structlog
 
-from polar.kit.extensions.sqlalchemy import GUID
 from polar.worker import get_db_session, sync_worker, task
 
 from .utils import get_organization_and_repo
@@ -11,7 +11,7 @@ log = structlog.get_logger()
 
 @task(name="github.issue.embed_badge")
 @sync_worker()
-async def embed_badge(issue_id: GUID) -> None:
+async def embed_badge(issue_id: UUID) -> None:
     async with get_db_session() as session:
         issue = await github_issue.get(session, issue_id)
         if not issue:

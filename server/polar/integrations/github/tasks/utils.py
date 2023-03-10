@@ -1,8 +1,7 @@
+from uuid import UUID
 import structlog
-import uuid
 
 from polar.integrations.github import service
-from polar.kit.extensions.sqlalchemy import GUID
 from polar.models import Organization, Repository, Issue, PullRequest
 from polar.postgres import AsyncSession
 from polar.integrations.github import client as github
@@ -19,8 +18,8 @@ log = structlog.get_logger()
 
 async def get_organization_and_repo(
     session: AsyncSession,
-    organization_id: GUID,
-    repository_id: GUID,
+    organization_id: UUID,
+    repository_id: UUID,
 ) -> tuple[Organization, Repository]:
     organization = await service.github_organization.get(session, organization_id)
     if not organization:
@@ -141,10 +140,8 @@ async def upsert_pull_request(
 
     create_schema = FullPullRequestCreate.full_pull_request_from_github(
         event.pull_request,
-        organization_id=uuid.UUID(
-            organization.id
-        ),  # TODO: Fix! For some reason get_by_external_id returns the id as a str!
-        repository_id=uuid.UUID(repository.id),
+        organization_id=organization.id,
+        repository_id=repository.id,
     )
     record = await service.github_pull_request.upsert(session, create_schema)
     return record

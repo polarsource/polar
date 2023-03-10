@@ -1,4 +1,5 @@
 from enum import Enum
+from uuid import UUID
 from typing import Any
 
 from pydantic import Field, SecretStr
@@ -13,7 +14,7 @@ class AccountLinkTypes(str, Enum):
 
 
 class Base(Schema):
-    organization_id: str
+    organization_id: UUID
     email: SecretStr | None
     country: str | None
     currency: str | None

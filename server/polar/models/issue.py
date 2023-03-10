@@ -1,4 +1,5 @@
 import enum
+from uuid import UUID
 from datetime import datetime
 
 from sqlalchemy import TIMESTAMP, ForeignKey, Integer, String, Text, UniqueConstraint
@@ -7,7 +8,7 @@ from sqlalchemy.orm import Mapped, MappedColumn, declared_attr, mapped_column
 
 from polar.issue.signals import issue_created, issue_updated
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import GUID, StringEnum
+from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 from polar.enums import Platforms
 from polar.types import JSONDict, JSONList
 
@@ -25,12 +26,14 @@ class IssueFields:
     external_id: Mapped[int] = mapped_column(Integer, nullable=False)
 
     @declared_attr
-    def organization_id(cls) -> MappedColumn[GUID | None]:
-        return mapped_column(GUID, ForeignKey("organizations.id"), nullable=True)
+    def organization_id(cls) -> MappedColumn[UUID | None]:
+        return mapped_column(
+            PostgresUUID, ForeignKey("organizations.id"), nullable=True
+        )
 
     @declared_attr
-    def repository_id(cls) -> MappedColumn[GUID | None]:
-        return mapped_column(GUID, ForeignKey("repositories.id"), nullable=True)
+    def repository_id(cls) -> MappedColumn[UUID | None]:
+        return mapped_column(PostgresUUID, ForeignKey("repositories.id"), nullable=True)
 
     number: Mapped[int] = mapped_column(Integer, nullable=False)
 

@@ -5,24 +5,34 @@
 ```bash
 # Run these commands in this directory (./server)
 #
-# Start PostgreSQL and Redis 
+# Start PostgreSQL and Redis
 docker compose up -d
 
 # Install dependencies, enter the poetry shell
 poetry install
 poetry shell
 
+# Checkout what powers are in the toolbelt
+poetry run task --list
+
+# Use our VSCode workspace (extensions, settings etc)
+code polar.code-workspace
+
 # Run database migrations
-make db-migrate
+poetry run task db_migrate
 
 # Fast API backend
-uvicorn polar.app:app --reload --workers 1 --port 8000
+poetry run task api
 
 # (in another terminal) Start the celery worker
-celery -A run_worker:app worker
+poetry run task worker
 
 # Run the tests
-pytest
+poetry run task test
+
+# Our VSCode settings configure Black & Ruff, but you can run it manually too
+poetry run task lint
+
 ```
 
 ## Create a database migration

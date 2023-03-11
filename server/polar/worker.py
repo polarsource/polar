@@ -76,7 +76,6 @@ def task(
     timeout: SecondsTimedelta | None = None,
     keep_result_forever: bool | None = None,
     max_tries: int | None = None,
-    bind: bool = False,
 ) -> Callable[
     [Callable[Params, Awaitable[ReturnValue]]], Callable[Params, Awaitable[ReturnValue]]
 ]:

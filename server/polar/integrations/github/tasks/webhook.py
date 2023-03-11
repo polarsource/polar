@@ -7,8 +7,8 @@ from polar.issue.schemas import IssueRead
 from polar.organization.schemas import OrganizationCreate
 from polar.enums import Platforms
 from polar.pull_request.schemas import PullRequestRead
-from polar.postgres import AsyncSession
-from polar.worker import task
+from polar.postgres import AsyncSessionLocal, AsyncSession
+from polar.worker import JobContext, task
 
 from .. import service
 from .utils import (
@@ -63,19 +63,19 @@ async def repositories_changed(
     return dict(success=True, added=added, removed=deleted)
 
 
-@task(name="github.webhook.repository.added", bind=True)
+@task("github.webhook.installation_repositories.added")
 async def repositories_added(
-    self, scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         return await repositories_changed(session, scope, action, payload)
 
 
-@task(name="github.webhook.repository.removed", bind=True)
+@task(name="github.webhook.installation_repositories.removed")
 async def repositories_removed(
-    self, scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         return await repositories_changed(session, scope, action, payload)
 
 
@@ -99,35 +99,35 @@ async def handle_issue(
     return dict(success=True, issue=schema.dict())
 
 
-@task(name="github.webhook.issue.created", bind=True)
+@task("github.webhook.issues.opened")
 async def issue_opened(
-    self, scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         return await handle_issue(session, scope, action, payload)
 
 
-@task(name="github.webhook.issue.edited", bind=True)
+@task("github.webhook.issues.edited")
 async def issue_edited(
-    self, scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         return await handle_issue(session, scope, action, payload)
 
 
-@task(name="github.webhook.issue.closed", bind=True)
+@task("github.webhook.issues.closed")
 async def issue_closed(
-    self, scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         return await handle_issue(session, scope, action, payload)
 
 
-@task(name="github.webhook.issue.labeled", bind=True)
+@task("github.webhook.issues.labeled")
 async def issue_labeled(
-    self, scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         return await issue_labeled_async(session, scope, action, payload)
 
 
@@ -165,43 +165,43 @@ async def handle_pull_request(
     return dict(success=True, pull_request=schema.dict())
 
 
-@task(name="github.webhook.pull_request.created", bind=True)
+@task("github.webhook.pull_request.opened")
 async def pull_request_opened(
-    self, scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         return await handle_pull_request(session, scope, action, payload)
 
 
-@task(name="github.webhook.pull_request.edited", bind=True)
+@task("github.webhook.pull_request.edited")
 async def pull_request_edited(
-    self, scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         return await handle_pull_request(session, scope, action, payload)
 
 
-@task(name="github.webhook.pull_request.closed", bind=True)
+@task("github.webhook.pull_request.closed")
 async def pull_request_closed(
-    self, scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         return await handle_pull_request(session, scope, action, payload)
 
 
-@task(name="github.webhook.pull_request.reopened", bind=True)
+@task("github.webhook.pull_request.reopened")
 async def pull_request_reopened(
-    self, scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         return await handle_pull_request(session, scope, action, payload)
 
 
-@task(name="github.webhook.pull_request.synchronize", bind=True)
+@task("github.webhook.pull_request.synchronize")
 async def pull_request_synchronize(
-    self, scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         return await pull_request_synchronize_async(session, scope, action, payload)
 
 
@@ -222,13 +222,13 @@ async def pull_request_synchronize_async(
 # ------------------------------------------------------------------------------
 
 
-@task(name="github.webhook.installation.created", bind=True)
+@task("github.webhook.installation.created")
 async def installation_created(
-    self, scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
     # TODO: Handle user permission?
 
-    async with self.get_db_session() as session:
+    async with AsyncSessionLocal() as session:
 
         payload = github.patch_unset("requester", payload)
         event = get_event(scope, action, payload)
@@ -245,7 +245,7 @@ async def installation_created(
             is_site_admin=account.site_admin,
             installation_id=event.installation.id,
             installation_created_at=event.installation.created_at,
-            installation_modified_at=event.installation.updated_at,
+            installation_updated_at=event.installation.updated_at,
             installation_suspended_at=event.installation.suspended_at,
         )
         organization = await service.github_organization.upsert(session, create_schema)
@@ -253,21 +253,21 @@ async def installation_created(
         return dict(success=True)
 
 
-@task(name="github.webhook.installation.deleted", bind=True)
+@task("github.webhook.installation.deleted")
 async def installation_delete(
-    self, scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         event = get_event(scope, action, payload)
         await service.github_organization.remove(session, event.installation.id)
         return dict(success=True)
 
 
-@task(name="github.webhook.installation.suspended", bind=True)
+@task("github.webhook.installation.suspend")
 async def installation_suspend(
-    self, scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         event = get_event(scope, action, payload)
 
         await service.github_organization.suspend(
@@ -280,11 +280,11 @@ async def installation_suspend(
         return dict(success=True)
 
 
-@task(name="github.webhook.installation.unsuspended", bind=True)
+@task("github.webhook.installation.unsuspend")
 async def installation_unsuspend(
-    self, scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with self.get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         event = get_event(scope, action, payload)
 
         await service.github_organization.unsuspend(session, event.installation.id)

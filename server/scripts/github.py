@@ -6,9 +6,9 @@ import typer
 
 from polar.config import settings
 from polar.integrations.github.service import github_organization
-from polar.integrations.github.tasks.repo import sync_repository_issues
 from polar.models import Issue, Organization, Repository
 from polar.postgres import AsyncSession, AsyncSessionLocal, sql
+from polar.worker import enqueue_job
 
 cli = typer.Typer()
 
@@ -46,7 +46,7 @@ async def trigger_issue_sync(session: AsyncSession, org: Organization) -> None:
         raise RuntimeError(f"No repositories found for {org.name}")
 
     for repository in repositories:
-        sync_repository_issues.delay(org.id, repository.id)
+        await enqueue_job("github.repo.sync.issues", org.id, repository.id)
         typer.echo(f"Triggered issue sync for {org.name}/{repository.name}")
 
 

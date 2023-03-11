@@ -22,6 +22,7 @@ celery = {extras = ["redis"], version = "^5.2.7"}
 asgiref = "^3.6.0"
 sse-starlette = "^1.2.1"
 blinker = {git = "https://github.com/pallets-eco/blinker.git"}
+arq = "^0.25.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.12.0"
@@ -41,7 +42,7 @@ taskipy = "^1.10.3"
 
 [tool.taskipy.tasks]
 api = { cmd = "uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }
-worker = { cmd = "celery -A run_worker:app worker", help = "run celery worker" }
+worker = { cmd = "arq run_worker.WorkerSettings --watch polar", help = "run arq worker" }
 test = { cmd = "POLAR_ENV=testing coverage run --source polar -m pytest && coverage report -m", help = "run all tests" }
 lint = { cmd = "task lint_ruff & task lint_black", help = "run all linters" }
 lint_ruff = { cmd = "ruff check .", help = "run ruff linter" }

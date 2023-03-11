@@ -1,87 +1,105 @@
-from typing import Any, ParamSpec, TypeVar
+import types
+import functools
+from datetime import datetime
+from typing import Any, TypedDict, ParamSpec, TypeVar, Awaitable, Callable
 
 import structlog
-from asgiref.sync import async_to_sync
-from celery import Celery, Task
-from sqlalchemy.ext.asyncio import async_scoped_session
-from contextlib import asynccontextmanager
+from arq import func
+from arq.connections import RedisSettings, ArqRedis, create_pool as arq_create_pool
+from arq.jobs import Job
+from arq.worker import Function
+from arq.typing import SecondsTimedelta
 
 from polar.config import settings
-from polar.postgres import (
-    AsyncSession,
-    AsyncSessionLocal,
-    create_engine,
-    create_sessionmaker,
-)
 
 log = structlog.get_logger()
+
+redis_settings = RedisSettings().from_dsn(settings.redis_url)
+
+
+class WorkerContext(TypedDict):
+    redis: ArqRedis
+
+
+class JobContext(WorkerContext):
+    job_id: str
+    job_try: int
+    enqueue_time: datetime
+    score: int
+
+
+class WorkerSettings:
+    functions: list[Function | types.CoroutineType] = []
+    redis_settings = RedisSettings().from_dsn(settings.redis_url)
+
+    @staticmethod
+    async def startup(ctx: WorkerContext) -> None:
+        log.info("Startup")
+
+    @staticmethod
+    async def shutdown(ctx: WorkerContext) -> None:
+        log.info("Shutdown")
+
+    @staticmethod
+    async def on_job_start(ctx: JobContext) -> None:
+        structlog.contextvars.bind_contextvars(
+            job_id=ctx["job_id"],
+            job_try=ctx["job_try"],
+            enqueue_time=ctx["enqueue_time"],
+            score=ctx["score"],
+        )
+        log.info(f"Job started: {ctx}")
+
+    @staticmethod
+    async def on_job_end(ctx: JobContext) -> None:
+        # structlog.contextvars.clear_contextvars()
+        log.info(f"Job ended: {ctx}")
+
+
+async def create_pool() -> ArqRedis:
+    return await arq_create_pool(WorkerSettings.redis_settings)
+
+
+async def enqueue_job(name: str, *args: Any, **kwargs: Any) -> Job | None:
+    redis = await create_pool()
+    return await redis.enqueue_job(name, *args, **kwargs)
+
 
 Params = ParamSpec("Params")
 ReturnValue = TypeVar("ReturnValue")
 
-engine = create_engine(is_celery=True)
-session_factory = create_sessionmaker(engine=engine)
+
+def task(
+    name: str,
+    *,
+    keep_result: SecondsTimedelta | None = None,
+    timeout: SecondsTimedelta | None = None,
+    keep_result_forever: bool | None = None,
+    max_tries: int | None = None,
+    bind: bool = False,
+) -> Callable[
+    [Callable[Params, Awaitable[ReturnValue]]], Callable[Params, Awaitable[ReturnValue]]
+]:
+    def decorator(
+        f: Callable[Params, Awaitable[ReturnValue]]
+    ) -> Callable[Params, Awaitable[ReturnValue]]:
+        new_task = func(
+            f,
+            name=name,
+            keep_result=keep_result,
+            timeout=timeout,
+            keep_result_forever=keep_result_forever,
+            max_tries=max_tries,
+        )
+        WorkerSettings.functions.append(new_task)
+
+        @functools.wraps(f)
+        async def wrapper(*args: Params.args, **kwargs: Params.kwargs) -> ReturnValue:
+            return await f(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
-@asynccontextmanager
-async def db_session_manager(Session: async_scoped_session[AsyncSession]):
-    session = Session()
-    try:
-        yield session
-    except:
-        await session.rollback()
-        raise
-    finally:
-        await session.close()
-        await Session.remove()
-
-
-class PolarAsyncTask(Task):
-    _AsyncSession: async_scoped_session[AsyncSession] | None = None
-
-    def get_current_task_id(self) -> Any:
-        return self.request.id
-
-    def get_db_session(self):
-        if self._AsyncSession is None:
-            self._AsyncSession = async_scoped_session(
-                AsyncSessionLocal, scopefunc=self.get_current_task_id
-            )
-
-        return db_session_manager(self._AsyncSession)
-
-    async def call_async(self, *args: Any, **kwargs: Any) -> Any:
-        res = await self.run(*args, **kwargs)
-        return res
-
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        if not settings.CELERY_TASK_ALWAYS_EAGER:
-            return async_to_sync(self.call_async)(*args, **kwargs)
-
-        # Since we're running Celery in eager mode during test, we're in
-        # an asyncio event loop and can skip the async_to_sync wrapper.
-
-        # NOTE! (TODO) We've been getting warnings about not awaiting certain calls
-        # in the test suite. Since we're calling this async function synchronously and
-        # not managing the coroutine we get back. The two lines below addressed that.
-        #
-        # However, it introduced a ton of new issues :) Now we're awaiting those calls
-        # and turns out they actually trigger a ton of Github API calls. We don't want
-        # that at all. So we need to solve that separetly and then uncomment these two
-        # lines to have tests without issues and warnings...
-
-        # loop = asyncio.get_running_loop()
-        # return loop.create_task(self.call_async(*args, **kwargs))
-        return self.call_async(*args, **kwargs)
-
-
-app = Celery(
-    "polar",
-    backend=settings.CELERY_BACKEND_URL,
-    broker=settings.CELERY_BROKER_URL,
-    task_cls="polar.worker.PolarAsyncTask",
-)
-app.conf.update(
-    task_always_eager=settings.CELERY_TASK_ALWAYS_EAGER,
-)
-task = app.task
+__all__ = ["WorkerSettings", "task", "create_pool", "enqueue_job", "JobContext"]

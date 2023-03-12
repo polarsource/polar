@@ -34,26 +34,28 @@ class WorkerSettings:
 
     @staticmethod
     async def startup(ctx: WorkerContext) -> None:
-        log.info("Startup")
+        log.info("polar.worker.startup")
 
     @staticmethod
     async def shutdown(ctx: WorkerContext) -> None:
-        log.info("Shutdown")
+        log.info("polar.worker.shutdown")
 
     @staticmethod
     async def on_job_start(ctx: JobContext) -> None:
         structlog.contextvars.bind_contextvars(
             job_id=ctx["job_id"],
             job_try=ctx["job_try"],
-            enqueue_time=ctx["enqueue_time"],
+            enqueue_time=ctx["enqueue_time"].isoformat(),
             score=ctx["score"],
         )
-        log.info(f"Job started: {ctx}")
+        log.info("polar.worker.job_started")
 
     @staticmethod
     async def on_job_end(ctx: JobContext) -> None:
-        # structlog.contextvars.clear_contextvars()
-        log.info(f"Job ended: {ctx}")
+        log.info("polar.worker.job_ended")
+        structlog.contextvars.unbind_contextvars(
+            "job_id", "job_try", "enqueue_time", "score"
+        )
 
 
 async def create_pool() -> ArqRedis:

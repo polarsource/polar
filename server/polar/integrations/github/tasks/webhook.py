@@ -202,19 +202,7 @@ async def pull_request_synchronize(
     ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
     async with AsyncSessionLocal() as session:
-        return await pull_request_synchronize_async(session, scope, action, payload)
-
-
-async def pull_request_synchronize_async(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
-) -> dict[str, Any]:
-    event = get_event(scope, action, payload)
-    pr = await upsert_pull_request(session, event)
-    if not pr:
-        return dict(success=False, reason="Could not sync PR")
-
-    schema = PullRequestRead.from_orm(pr)
-    return dict(success=True, pull_request=schema.dict())
+        return await handle_pull_request(session, scope, action, payload)
 
 
 # ------------------------------------------------------------------------------

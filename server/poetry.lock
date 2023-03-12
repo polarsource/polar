@@ -77,21 +77,6 @@ typing-extensions = ">=4.1.0"
 watch = ["watchfiles (>=0.16)"]
 
 [[package]]
-name = "asgiref"
-version = "3.6.0"
-description = "ASGI specs, helper code, and adapters"
-category = "main"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "asgiref-3.6.0-py3-none-any.whl", hash = "sha256:71e68008da809b957b7ee4b43dbccff33d1b23519fb8344e33f049897077afac"},
-    {file = "asgiref-3.6.0.tar.gz", hash = "sha256:9567dfe7bd8d3c8c892227827c41cce860b368104c3431da67a0c5a65a949506"},
-]
-
-[package.extras]
-tests = ["mypy (>=0.800)", "pytest", "pytest-asyncio"]
-
-[[package]]
 name = "async-timeout"
 version = "4.0.2"
 description = "Timeout context manager for asyncio programs"
@@ -2248,4 +2233,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "e57be15001e06aa92158c7cf0f346d0ad1a23dfd6c0579611f49b74b2be09811"
+content-hash = "a3202e0b7a960d189609bb25f31d192348b13a40f934804d2006d36ffd31aab2"

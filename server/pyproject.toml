@@ -19,7 +19,6 @@ fastapi-users = {extras = ["oauth", "sqlalchemy"], version = "^10.4.0"}
 githubkit = {extras = ["auth-app"], version = "^0.9.4"}
 redis = "^4.4.2"
 celery = {extras = ["redis"], version = "^5.2.7"}
-asgiref = "^3.6.0"
 sse-starlette = "^1.2.1"
 blinker = {git = "https://github.com/pallets-eco/blinker.git"}
 arq = "^0.25.0"

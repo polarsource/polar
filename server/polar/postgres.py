@@ -6,10 +6,9 @@ from polar.kit.db.postgres import create_engine as _create_engine
 from polar.kit.db.postgres import create_sessionmaker, sql
 
 
-def create_engine(is_celery: bool = False) -> AsyncEngine:
+def create_engine() -> AsyncEngine:
     return _create_engine(
         dsn=str(settings.postgres_dsn),
-        is_celery=is_celery,
         debug=settings.DEBUG,
     )
 

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from typing import Any
+from datetime import datetime
 
 import pytest
+from pytest_mock import MockerFixture
+from arq.connections import ArqRedis
 
 from polar.integrations.github import service
 from polar.integrations.github import client as github
@@ -10,7 +13,17 @@ from polar.models.organization import Organization
 from polar.organization.schemas import OrganizationCreate
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, AsyncSessionLocal
+from polar.integrations.github.tasks import webhook as webhook_tasks
+from polar.worker import JobContext
 from tests.fixtures.webhook import TestWebhook, TestWebhookFactory
+
+FAKE_CTX: JobContext = {
+    "redis": ArqRedis(),
+    "job_id": "fake_job_id",
+    "job_try": 1,
+    "enqueue_time": datetime.utcnow(),
+    "score": 0,
+}
 
 
 async def assert_repository_deleted(
@@ -56,7 +69,7 @@ async def create_org(
         is_site_admin=account.site_admin,
         installation_id=event.installation.id,
         installation_created_at=event.installation.created_at,
-        installation_modified_at=event.installation.updated_at,
+        installation_updated_at=event.installation.updated_at,
         installation_suspended_at=event.installation.suspended_at,
     )
     async with AsyncSessionLocal() as session:
@@ -70,36 +83,41 @@ async def create_org(
 async def create_repositories(github_webhook: TestWebhookFactory) -> TestWebhook:
     await create_org(github_webhook, status=Organization.Status.ACTIVE)
     hook = github_webhook.create("installation_repositories.added")
-    response = await hook.send()
-    assert response.status_code == 200
+    await webhook_tasks.repositories_added(
+        FAKE_CTX, "installation_repositories", "added", hook.json
+    )
     return hook
 
 
 async def create_issue(github_webhook: TestWebhookFactory) -> TestWebhook:
     await create_repositories(github_webhook)
     hook = github_webhook.create("issues.opened")
-    response = await hook.send()
-    assert response.status_code == 200
+    await webhook_tasks.issue_opened(FAKE_CTX, "issues", "opened", hook.json)
     return hook
 
 
 async def create_pr(github_webhook: TestWebhookFactory) -> TestWebhook:
     await create_repositories(github_webhook)
     hook = github_webhook.create("pull_request.opened")
-    response = await hook.send()
-    assert response.status_code == 200
+    await webhook_tasks.pull_request_opened(
+        FAKE_CTX, "pull_request", "opened", hook.json
+    )
     return hook
 
 
 @pytest.mark.asyncio
 async def test_webhook_installation_created(
-    session: AsyncSession, github_webhook: TestWebhookFactory
+    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
 ) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("arq.connections.ArqRedis.enqueue_job")
+
     hook = github_webhook.create("installation.created")
     installation_id = hook["installation"]["id"]
     account = hook["installation"]["account"]
-    response = await hook.send()
-    assert response.status_code == 200
+    await webhook_tasks.installation_created(
+        FAKE_CTX, "installation", "created", hook.json
+    )
 
     org = await service.github_organization.get_by(
         session, installation_id=installation_id
@@ -114,13 +132,19 @@ async def test_webhook_installation_created(
 
 
 @pytest.mark.asyncio
-async def test_webhook_installation_suspend(github_webhook: TestWebhookFactory) -> None:
+async def test_webhook_installation_suspend(
+    mocker: MockerFixture, github_webhook: TestWebhookFactory
+) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("arq.connections.ArqRedis.enqueue_job")
+
     org = await create_org(github_webhook, status=Organization.Status.INACTIVE)
 
     hook = github_webhook.create("installation.suspend")
     org_id = hook["installation"]["account"]["id"]
-    response = await hook.send()
-    assert response.status_code == 200
+    await webhook_tasks.installation_suspend(
+        FAKE_CTX, "installation", "suspend", hook.json
+    )
 
     async with AsyncSessionLocal() as session:
         org = await get_asserted_org(session, external_id=org_id)
@@ -129,14 +153,19 @@ async def test_webhook_installation_suspend(github_webhook: TestWebhookFactory) 
 
 @pytest.mark.asyncio
 async def test_webhook_installation_unsuspend(
+    mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("arq.connections.ArqRedis.enqueue_job")
+
     org = await create_org(github_webhook, status=Organization.Status.SUSPENDED)
 
     hook = github_webhook.create("installation.unsuspend")
     org_id = hook["installation"]["account"]["id"]
-    response = await hook.send()
-    assert response.status_code == 200
+    await webhook_tasks.installation_unsuspend(
+        FAKE_CTX, "installation", "unsuspend", hook.json
+    )
 
     async with AsyncSessionLocal() as session:
         org = await get_asserted_org(session, external_id=org_id)
@@ -144,7 +173,12 @@ async def test_webhook_installation_unsuspend(
 
 
 @pytest.mark.asyncio
-async def test_webhook_installation_delete(github_webhook: TestWebhookFactory) -> None:
+async def test_webhook_installation_delete(
+    mocker: MockerFixture, github_webhook: TestWebhookFactory
+) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("arq.connections.ArqRedis.enqueue_job")
+
     hook = github_webhook.create("installation.deleted")
     org_id = hook["installation"]["account"]["id"]
 
@@ -152,8 +186,9 @@ async def test_webhook_installation_delete(github_webhook: TestWebhookFactory) -
     assert org
     assert org.external_id == org_id
 
-    response = await hook.send()
-    assert response.status_code == 200
+    await webhook_tasks.installation_delete(
+        FAKE_CTX, "installation", "deleted", hook.json
+    )
 
     async with AsyncSessionLocal() as session:
         fetched = await service.github_organization.get_by(session, external_id=org_id)
@@ -162,8 +197,11 @@ async def test_webhook_installation_delete(github_webhook: TestWebhookFactory) -
 
 @pytest.mark.asyncio
 async def test_webhook_repositories_added(
-    session: AsyncSession, github_webhook: TestWebhookFactory
+    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
 ) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("arq.connections.ArqRedis.enqueue_job")
+
     hook = github_webhook.create("installation_repositories.added")
     new_repo = hook["repositories_added"][0]
 
@@ -176,16 +214,20 @@ async def test_webhook_repositories_added(
 
 @pytest.mark.asyncio
 async def test_webhook_repositories_removed(
-    session: AsyncSession, github_webhook: TestWebhookFactory
+    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
 ) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("arq.connections.ArqRedis.enqueue_job")
+
     hook = github_webhook.create("installation_repositories.removed")
     delete_repo = hook["repositories_removed"][0]
 
     await create_repositories(github_webhook)
     await assert_repository_exists(session, delete_repo)
 
-    response = await hook.send()
-    assert response.status_code == 200
+    await webhook_tasks.repositories_removed(
+        FAKE_CTX, "installation_repositories", "removed", hook.json
+    )
 
     repo = await service.github_repository.get_by_external_id(
         session, delete_repo["id"]
@@ -195,8 +237,11 @@ async def test_webhook_repositories_removed(
 
 @pytest.mark.asyncio
 async def test_webhook_issues_opened(
-    session: AsyncSession, github_webhook: TestWebhookFactory
+    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
 ) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("arq.connections.ArqRedis.enqueue_job")
+
     await create_repositories(github_webhook)
     hook = github_webhook.create("issues.opened")
     issue_id = hook["issue"]["id"]
@@ -204,8 +249,7 @@ async def test_webhook_issues_opened(
     issue = await service.github_issue.get_by_external_id(session, issue_id)
     assert issue is None
 
-    response = await hook.send()
-    assert response.status_code == 200
+    await webhook_tasks.issue_opened(FAKE_CTX, "issues", "opened", hook.json)
 
     issue = await service.github_issue.get_by_external_id(session, issue_id)
     assert issue is not None
@@ -213,15 +257,23 @@ async def test_webhook_issues_opened(
 
 @pytest.mark.asyncio
 async def test_webhook_issues_closed(
-    session: AsyncSession, github_webhook: TestWebhookFactory
+    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
 ) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("arq.connections.ArqRedis.enqueue_job")
+
     hook = github_webhook.create("issues.closed")
-    response = await hook.send()
-    assert response.status_code == 200
+    await webhook_tasks.issue_closed(FAKE_CTX, "issues", "closed", hook.json)
+    # TODO: Actually do a test here
 
 
 @pytest.mark.asyncio
-async def test_webhook_issues_labeled(github_webhook: TestWebhookFactory) -> None:
+async def test_webhook_issues_labeled(
+    mocker: MockerFixture, github_webhook: TestWebhookFactory
+) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("arq.connections.ArqRedis.enqueue_job")
+
     await create_repositories(github_webhook)
     hook = await create_issue(github_webhook)
 
@@ -232,8 +284,7 @@ async def test_webhook_issues_labeled(github_webhook: TestWebhookFactory) -> Non
         assert issue.labels is None
 
     hook = github_webhook.create("issues.labeled")
-    response = await hook.send()
-    assert response.status_code == 200
+    await webhook_tasks.issue_labeled(FAKE_CTX, "issues", "labeled", hook.json)
 
     async with AsyncSessionLocal() as session:
         issue = await service.github_issue.get_by_external_id(session, issue_id)
@@ -242,8 +293,11 @@ async def test_webhook_issues_labeled(github_webhook: TestWebhookFactory) -> Non
 
 @pytest.mark.asyncio
 async def test_webhook_pull_request_opened(
-    session: AsyncSession, github_webhook: TestWebhookFactory
+    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
 ) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("arq.connections.ArqRedis.enqueue_job")
+
     hook = github_webhook.create("pull_request.opened")
     pr_id = hook["pull_request"]["id"]
 
@@ -261,8 +315,12 @@ async def test_webhook_pull_request_opened(
 
 @pytest.mark.asyncio
 async def test_webhook_pull_request_synchronize(
+    mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("arq.connections.ArqRedis.enqueue_job")
+
     await create_pr(github_webhook)
     hook = github_webhook.create("pull_request.synchronize")
     pr_id = hook["pull_request"]["id"]
@@ -271,7 +329,9 @@ async def test_webhook_pull_request_synchronize(
         pr = await service.github_pull_request.get_by_external_id(session, pr_id)
         assert pr.merge_commit_sha is None
 
-    await hook.send()
+    await webhook_tasks.pull_request_synchronize(
+        FAKE_CTX, "pull_request", "synchronize", hook.json
+    )
 
     async with AsyncSessionLocal() as session:
         pr = await service.github_pull_request.get_by_external_id(session, pr_id)

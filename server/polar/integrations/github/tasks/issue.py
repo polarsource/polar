@@ -1,7 +1,8 @@
 from uuid import UUID
 import structlog
 
-from polar.worker import get_db_session, sync_worker, task
+from polar.worker import JobContext, task
+from polar.postgres import AsyncSessionLocal
 
 from .utils import get_organization_and_repo
 from ..service.issue import github_issue
@@ -9,10 +10,9 @@ from ..service.issue import github_issue
 log = structlog.get_logger()
 
 
-@task(name="github.issue.embed_badge")
-@sync_worker()
-async def embed_badge(issue_id: UUID) -> None:
-    async with get_db_session() as session:
+@task("github.issue.embed_badge")
+async def embed_badge(ctx: JobContext, issue_id: UUID) -> None:
+    async with AsyncSessionLocal() as session:
         issue = await github_issue.get(session, issue_id)
         if not issue:
             log.warning(

@@ -7,7 +7,7 @@ from polar.models.reward import Reward
 from polar.postgres import AsyncSession
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "test_amount",
     [("10.10"), ("10.120"), ("10.1230"), ("123456789.99"), ("123456789.123456789")],

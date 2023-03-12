@@ -7,7 +7,8 @@ from polar.issue.schemas import IssueRead
 from polar.organization.schemas import OrganizationCreate
 from polar.enums import Platforms
 from polar.pull_request.schemas import PullRequestRead
-from polar.worker import get_db_session, sync_worker, task
+from polar.postgres import AsyncSessionLocal, AsyncSession
+from polar.worker import JobContext, task
 
 from .. import service
 from .utils import (
@@ -31,51 +32,51 @@ def get_event(scope: str, action: str, payload: dict[str, Any]) -> github.Webhoo
 
 
 async def repositories_changed(
-    scope: str, action: str, payload: dict[str, Any]
+    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with get_db_session() as session:
-        event = get_event(scope, action, payload)
-        # TODO: Verify that this works even for personal Github accounts?
-        organization = await service.github_organization.get_by_external_id(
-            session, event.installation.account.id
+    event = get_event(scope, action, payload)
+    # TODO: Verify that this works even for personal Github accounts?
+    organization = await service.github_organization.get_by_external_id(
+        session, event.installation.account.id
+    )
+    if not organization:
+        log.critical(
+            "suspicuous github webhook!",
+            webhook_id=event.id,
+            github_event=f"{scope}.{action}",
+            organization=event.installation.account.login,
         )
-        if not organization:
-            log.critical(
-                "suspicuous github webhook!",
-                webhook_id=event.id,
-                github_event=f"{scope}.{action}",
-                organization=event.installation.account.login,
-            )
-            return dict(success=False)
+        return dict(success=False)
 
-        added, deleted = 0, 0
-        if event.repositories_added:
-            instances = await add_repositories(
-                session, organization, event.repositories_added
-            )
-            added = len(instances)
+    added, deleted = 0, 0
+    if event.repositories_added:
+        instances = await add_repositories(
+            session, organization, event.repositories_added
+        )
+        added = len(instances)
 
-        if event.repositories_removed:
-            deleted = await remove_repositories(
-                session, organization, event.repositories_removed
-            )
+    if event.repositories_removed:
+        deleted = await remove_repositories(
+            session, organization, event.repositories_removed
+        )
 
-        return dict(success=True, added=added, removed=deleted)
+    return dict(success=True, added=added, removed=deleted)
 
 
-@task(name="github.webhook.repository.added")
-@sync_worker()
+@task("github.webhook.installation_repositories.added")
 async def repositories_added(
-    scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await repositories_changed(scope, action, payload)
+    async with AsyncSessionLocal() as session:
+        return await repositories_changed(session, scope, action, payload)
 
 
-@task(name="github.webhook.repository.removed")
+@task(name="github.webhook.installation_repositories.removed")
 async def repositories_removed(
-    scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await repositories_changed(scope, action, payload)
+    async with AsyncSessionLocal() as session:
+        return await repositories_changed(session, scope, action, payload)
 
 
 # ------------------------------------------------------------------------------
@@ -84,69 +85,67 @@ async def repositories_removed(
 
 
 async def handle_issue(
-    scope: str, action: str, payload: dict[str, Any]
+    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with get_db_session() as session:
-        event = get_event(scope, action, payload)
-        issue = await upsert_issue(session, event)
-        if not issue:
-            # TODO: Handle better
-            return dict(success=False, reason="Could not save issue")
+    event = get_event(scope, action, payload)
+    issue = await upsert_issue(session, event)
+    if not issue:
+        # TODO: Handle better
+        return dict(success=False, reason="Could not save issue")
 
-        # TODO: Comment instead? Via event trigger too?
-        # service.github_issue.add_actions(installation["id"], issue)
-        schema = IssueRead.from_orm(issue)
-        return dict(success=True, issue=schema.dict())
+    # TODO: Comment instead? Via event trigger too?
+    # service.github_issue.add_actions(installation["id"], issue)
+    schema = IssueRead.from_orm(issue)
+    return dict(success=True, issue=schema.dict())
 
 
-@task(name="github.webhook.issue.created")
-@sync_worker()
+@task("github.webhook.issues.opened")
 async def issue_opened(
-    scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await handle_issue(scope, action, payload)
+    async with AsyncSessionLocal() as session:
+        return await handle_issue(session, scope, action, payload)
 
 
-@task(name="github.webhook.issue.edited")
-@sync_worker()
+@task("github.webhook.issues.edited")
 async def issue_edited(
-    scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await handle_issue(scope, action, payload)
+    async with AsyncSessionLocal() as session:
+        return await handle_issue(session, scope, action, payload)
 
 
-@task(name="github.webhook.issue.closed")
-@sync_worker()
+@task("github.webhook.issues.closed")
 async def issue_closed(
-    scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await handle_issue(scope, action, payload)
+    async with AsyncSessionLocal() as session:
+        return await handle_issue(session, scope, action, payload)
 
 
-@task(name="github.webhook.issue.labeled")
-@sync_worker()
+@task("github.webhook.issues.labeled")
 async def issue_labeled(
-    scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await issue_labeled_async(scope, action, payload)
+    async with AsyncSessionLocal() as session:
+        return await issue_labeled_async(session, scope, action, payload)
 
 
 async def issue_labeled_async(
-    scope: str, action: str, payload: dict[str, Any]
+    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with get_db_session() as session:
-        # TODO: Change from upsert here?
-        # Potentially not since we might have race conditions between
-        # webhooks for installations and our own historical syncing vs.
-        # new issues coming in via other events in the meantime.
-        event = get_event(scope, action, payload)
-        issue = await upsert_issue(session, event)
-        if not issue:
-            # TODO: Handle better
-            return dict(success=False, reason="Could not save issue")
+    # TODO: Change from upsert here?
+    # Potentially not since we might have race conditions between
+    # webhooks for installations and our own historical syncing vs.
+    # new issues coming in via other events in the meantime.
+    event = get_event(scope, action, payload)
+    issue = await upsert_issue(session, event)
+    if not issue:
+        # TODO: Handle better
+        return dict(success=False, reason="Could not save issue")
 
-        schema = IssueRead.from_orm(issue)
-        return dict(success=True, issue=schema.dict())
+    schema = IssueRead.from_orm(issue)
+    return dict(success=True, issue=schema.dict())
 
 
 # ------------------------------------------------------------------------------
@@ -155,69 +154,55 @@ async def issue_labeled_async(
 
 
 async def handle_pull_request(
-    scope: str, action: str, payload: dict[str, Any]
+    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with get_db_session() as session:
-        event = get_event(scope, action, payload)
-        pr = await upsert_pull_request(session, event)
-        if not pr:
-            return dict(success=False, reason="Could not save PR")
+    event = get_event(scope, action, payload)
+    pr = await upsert_pull_request(session, event)
+    if not pr:
+        return dict(success=False, reason="Could not save PR")
 
-        schema = PullRequestRead.from_orm(pr)
-        return dict(success=True, pull_request=schema.dict())
+    schema = PullRequestRead.from_orm(pr)
+    return dict(success=True, pull_request=schema.dict())
 
 
-@task(name="github.webhook.pull_request.created")
-@sync_worker()
+@task("github.webhook.pull_request.opened")
 async def pull_request_opened(
-    scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await handle_pull_request(scope, action, payload)
+    async with AsyncSessionLocal() as session:
+        return await handle_pull_request(session, scope, action, payload)
 
 
-@task(name="github.webhook.pull_request.edited")
-@sync_worker()
+@task("github.webhook.pull_request.edited")
 async def pull_request_edited(
-    scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await handle_pull_request(scope, action, payload)
+    async with AsyncSessionLocal() as session:
+        return await handle_pull_request(session, scope, action, payload)
 
 
-@task(name="github.webhook.pull_request.closed")
-@sync_worker()
+@task("github.webhook.pull_request.closed")
 async def pull_request_closed(
-    scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await handle_pull_request(scope, action, payload)
+    async with AsyncSessionLocal() as session:
+        return await handle_pull_request(session, scope, action, payload)
 
 
-@task(name="github.webhook.pull_request.reopened")
-@sync_worker()
+@task("github.webhook.pull_request.reopened")
 async def pull_request_reopened(
-    scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await handle_pull_request(scope, action, payload)
+    async with AsyncSessionLocal() as session:
+        return await handle_pull_request(session, scope, action, payload)
 
 
-@task(name="github.webhook.pull_request.synchronize")
-@sync_worker()
+@task("github.webhook.pull_request.synchronize")
 async def pull_request_synchronize(
-    scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    return await pull_request_synchronize_async(scope, action, payload)
-
-
-async def pull_request_synchronize_async(
-    scope: str, action: str, payload: dict[str, Any]
-) -> dict[str, Any]:
-    async with get_db_session() as session:
-        event = get_event(scope, action, payload)
-        pr = await upsert_pull_request(session, event)
-        if not pr:
-            return dict(success=False, reason="Could not sync PR")
-
-        schema = PullRequestRead.from_orm(pr)
-        return dict(success=True, pull_request=schema.dict())
+    async with AsyncSessionLocal() as session:
+        return await handle_pull_request(session, scope, action, payload)
 
 
 # ------------------------------------------------------------------------------
@@ -225,14 +210,13 @@ async def pull_request_synchronize_async(
 # ------------------------------------------------------------------------------
 
 
-@task(name="github.webhook.installation.created")
-@sync_worker()
+@task("github.webhook.installation.created")
 async def installation_created(
-    scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
     # TODO: Handle user permission?
 
-    async with get_db_session() as session:
+    async with AsyncSessionLocal() as session:
 
         payload = github.patch_unset("requester", payload)
         event = get_event(scope, action, payload)
@@ -249,7 +233,7 @@ async def installation_created(
             is_site_admin=account.site_admin,
             installation_id=event.installation.id,
             installation_created_at=event.installation.created_at,
-            installation_modified_at=event.installation.updated_at,
+            installation_updated_at=event.installation.updated_at,
             installation_suspended_at=event.installation.suspended_at,
         )
         organization = await service.github_organization.upsert(session, create_schema)
@@ -257,23 +241,21 @@ async def installation_created(
         return dict(success=True)
 
 
-@task(name="github.webhook.installation.deleted")
-@sync_worker()
+@task("github.webhook.installation.deleted")
 async def installation_delete(
-    scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         event = get_event(scope, action, payload)
         await service.github_organization.remove(session, event.installation.id)
         return dict(success=True)
 
 
-@task(name="github.webhook.installation.suspended")
-@sync_worker()
+@task("github.webhook.installation.suspend")
 async def installation_suspend(
-    scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         event = get_event(scope, action, payload)
 
         await service.github_organization.suspend(
@@ -286,12 +268,11 @@ async def installation_suspend(
         return dict(success=True)
 
 
-@task(name="github.webhook.installation.unsuspended")
-@sync_worker()
+@task("github.webhook.installation.unsuspend")
 async def installation_unsuspend(
-    scope: str, action: str, payload: dict[str, Any]
+    ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with get_db_session() as session:
+    async with AsyncSessionLocal() as session:
         event = get_event(scope, action, payload)
 
         await service.github_organization.unsuspend(session, event.installation.id)

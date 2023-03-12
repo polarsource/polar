@@ -62,7 +62,7 @@ async def create_repo(session: AsyncSession, org: Organization) -> Repository:
     return repo
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_create_pull_request(
     session: AsyncSession,
 ) -> None:

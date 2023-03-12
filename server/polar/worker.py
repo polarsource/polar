@@ -1,56 +1,106 @@
-import contextlib
+import types
 import functools
-from typing import Awaitable, Callable, ParamSpec, TypeVar
+from datetime import datetime
+from typing import Any, TypedDict, ParamSpec, TypeVar, Awaitable, Callable
 
-from asgiref.sync import async_to_sync
-from celery import Celery
+import structlog
+from arq import func
+from arq.connections import RedisSettings, ArqRedis, create_pool as arq_create_pool
+from arq.jobs import Job
+from arq.worker import Function
+from arq.typing import SecondsTimedelta
 
 from polar.config import settings
-from polar.postgres import create_engine, create_sessionmaker
 
-app = Celery(
-    "polar", backend=settings.CELERY_BACKEND_URL, broker=settings.CELERY_BROKER_URL
-)
-app.conf.update(
-    task_always_eager=settings.CELERY_TASK_ALWAYS_EAGER,
-)
-task = app.task
+log = structlog.get_logger()
+
+redis_settings = RedisSettings().from_dsn(settings.redis_url)
+
+
+class WorkerContext(TypedDict):
+    redis: ArqRedis
+
+
+class JobContext(WorkerContext):
+    job_id: str
+    job_try: int
+    enqueue_time: datetime
+    score: int
+
+
+class WorkerSettings:
+    functions: list[Function | types.CoroutineType] = []
+    redis_settings = RedisSettings().from_dsn(settings.redis_url)
+
+    @staticmethod
+    async def startup(ctx: WorkerContext) -> None:
+        log.info("polar.worker.startup")
+
+    @staticmethod
+    async def shutdown(ctx: WorkerContext) -> None:
+        log.info("polar.worker.shutdown")
+
+    @staticmethod
+    async def on_job_start(ctx: JobContext) -> None:
+        structlog.contextvars.bind_contextvars(
+            job_id=ctx["job_id"],
+            job_try=ctx["job_try"],
+            enqueue_time=ctx["enqueue_time"].isoformat(),
+            score=ctx["score"],
+        )
+        log.info("polar.worker.job_started")
+
+    @staticmethod
+    async def on_job_end(ctx: JobContext) -> None:
+        log.info("polar.worker.job_ended")
+        structlog.contextvars.unbind_contextvars(
+            "job_id", "job_try", "enqueue_time", "score"
+        )
+
+
+async def create_pool() -> ArqRedis:
+    return await arq_create_pool(WorkerSettings.redis_settings)
+
+
+async def enqueue_job(name: str, *args: Any, **kwargs: Any) -> Job | None:
+    redis = await create_pool()
+    return await redis.enqueue_job(name, *args, **kwargs)
 
 
 Params = ParamSpec("Params")
 ReturnValue = TypeVar("ReturnValue")
 
-AsyncSessionLocal = create_sessionmaker(engine=create_engine(is_celery=True))
 
-
-def sync_worker() -> Callable[
-    [Callable[Params, ReturnValue]], Callable[Params, ReturnValue]
+def task(
+    name: str,
+    *,
+    keep_result: SecondsTimedelta | None = None,
+    timeout: SecondsTimedelta | None = None,
+    keep_result_forever: bool | None = None,
+    max_tries: int | None = None,
+) -> Callable[
+    [Callable[Params, Awaitable[ReturnValue]]], Callable[Params, Awaitable[ReturnValue]]
 ]:
-    def a2s(
+    def decorator(
         f: Callable[Params, Awaitable[ReturnValue]]
     ) -> Callable[Params, Awaitable[ReturnValue]]:
-        # Since we're running Celery in eager mode during test, we're in
-        # an asyncio event loop and can skip the async_to_sync wrapper.
-        if settings.CELERY_TASK_ALWAYS_EAGER:
-            return f
-        return async_to_sync(f)
+        new_task = func(
+            f,
+            name=name,
+            keep_result=keep_result,
+            timeout=timeout,
+            keep_result_forever=keep_result_forever,
+            max_tries=max_tries,
+        )
+        WorkerSettings.functions.append(new_task)
 
-    def decorator(f: Callable[Params, ReturnValue]) -> Callable[Params, ReturnValue]:
         @functools.wraps(f)
-        def wrapper(*args: Params.args, **kwargs: Params.kwargs) -> ReturnValue:
-            return a2s(f)(*args, **kwargs)
+        async def wrapper(*args: Params.args, **kwargs: Params.kwargs) -> ReturnValue:
+            return await f(*args, **kwargs)
 
         return wrapper
 
     return decorator
 
 
-@contextlib.asynccontextmanager
-async def get_db_session():
-    try:
-        engine = create_engine(is_celery=True)
-        db = create_sessionmaker(engine=engine)()
-        yield db
-    finally:
-        await db.close()
-        await engine.dispose()
+__all__ = ["WorkerSettings", "task", "create_pool", "enqueue_job", "JobContext"]

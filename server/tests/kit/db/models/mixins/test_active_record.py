@@ -9,7 +9,7 @@ class ActiveRecord(TestModel, ActiveRecordMixin):
     ...
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_create(session: AsyncSession) -> None:
     created = await ActiveRecord.create(
         session, int_column=234, str_column="Hello world"
@@ -19,7 +19,7 @@ async def test_create(session: AsyncSession) -> None:
     await created.delete(session)
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_find(session: AsyncSession) -> None:
     created = await ActiveRecord.create(session)
     retrieved = await ActiveRecord.find(session, created.id)
@@ -28,7 +28,7 @@ async def test_find(session: AsyncSession) -> None:
     await created.delete(session)
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_find_using_non_id(session: AsyncSession) -> None:
     pseudo_id = 1337
     created = await ActiveRecord.create(session, int_column=pseudo_id)
@@ -40,7 +40,7 @@ async def test_find_using_non_id(session: AsyncSession) -> None:
     await retrieved.delete(session)
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_find_by(session: AsyncSession) -> None:
     pseudo_id = 1337
     created = await ActiveRecord.create(session, int_column=pseudo_id)
@@ -52,7 +52,7 @@ async def test_find_by(session: AsyncSession) -> None:
     await retrieved.delete(session)
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_update(session: AsyncSession) -> None:
     created = await ActiveRecord.create(session)
     assert created is not None
@@ -69,7 +69,7 @@ async def test_update(session: AsyncSession) -> None:
     await retrieved.delete(session)
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_update_with_includes(session: AsyncSession) -> None:
     created = await ActiveRecord.create(
         session, int_column=1337, str_column="Hello world"
@@ -86,7 +86,7 @@ async def test_update_with_includes(session: AsyncSession) -> None:
     await retrieved.delete(session)
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_update_with_excludes(session: AsyncSession) -> None:
     created = await ActiveRecord.create(
         session, int_column=1337, str_column="Hello world"
@@ -103,7 +103,7 @@ async def test_update_with_excludes(session: AsyncSession) -> None:
     await retrieved.delete(session)
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_fill(session: AsyncSession) -> None:
     instance = ActiveRecord()
     instance.fill(int_column=1337, str_column="New instance")
@@ -129,7 +129,7 @@ def test_fill_with_excludes() -> None:
     assert instance.str_column is None
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_autocommit_disabled_on_create(session: AsyncSession) -> None:
     created = await ActiveRecord.create(session, autocommit=False, int_column=1337)
     assert created.id is None
@@ -138,7 +138,7 @@ async def test_autocommit_disabled_on_create(session: AsyncSession) -> None:
     await created.delete(session)
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_autocommit_disabled_on_update(session: AsyncSession) -> None:
     created = await ActiveRecord.create(session, int_column=1337)
     assert created.id is not None
@@ -148,7 +148,7 @@ async def test_autocommit_disabled_on_update(session: AsyncSession) -> None:
     assert retrieved is None
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_delete(session: AsyncSession) -> None:
     created = await ActiveRecord.create(session)
     assert created is not None

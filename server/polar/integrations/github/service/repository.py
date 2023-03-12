@@ -8,6 +8,7 @@ from githubkit import Paginator
 from polar.models import Organization, Repository, Issue, PullRequest
 from polar.enums import Platforms
 from polar.postgres import AsyncSession
+from polar.worker import enqueue_job
 from polar.repository.schemas import RepositoryCreate
 from polar.repository.service import RepositoryService
 from polar.repository.signals import (
@@ -182,6 +183,17 @@ class GithubRepositoryService(RepositoryService):
         )
         return (synced, errors)
 
+    async def enqueue_sync(
+        self,
+        repository: Repository,
+    ) -> None:
+        await enqueue_job(
+            "github.repo.sync.issues", repository.organization_id, repository.id
+        )
+        await enqueue_job(
+            "github.repo.sync.pull_requests", repository.organization_id, repository.id
+        )
+
     async def upsert_many(
         self,
         session: AsyncSession,
@@ -189,19 +201,14 @@ class GithubRepositoryService(RepositoryService):
         constraints: list[InstrumentedAttribute[int]] | None = None,
         mutable_keys: set[str] | None = None,
     ) -> list[Repository]:
-        # TODO: Get rid of the circular import to avoid this.
-        from ..tasks.repo import sync_repository
-
         instances = await super().upsert_many(
             session, create_schemas, constraints, mutable_keys
         )
 
         # Create tasks to sync repositories (issues, pull requests, etc.)
         for instance in instances:
-            sync_repository.delay(
-                instance.organization_id,
-                instance.id,
-            )
+            await self.enqueue_sync(instance)
+
         return instances
 
     async def install_for_organization(

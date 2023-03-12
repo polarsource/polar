@@ -12,11 +12,11 @@ from polar.integrations.github import client as github
 from polar.models import Organization, User
 from polar.organization.schemas import OrganizationRead
 from polar.postgres import AsyncSession, get_db_session
+from polar.worker import enqueue_job
 
 from .service.organization import github_organization
 from .service.repository import github_repository
 from .service.issue import github_issue
-from .tasks import webhook as hooks
 from .schemas import GithubBadgeRead
 
 log = structlog.get_logger()
@@ -112,7 +112,26 @@ async def install(
 class WebhookResponse(BaseModel):
     success: bool
     message: str | None = None
-    task_id: str | None = None
+    job_id: str | None = None
+
+
+IMPLEMENTED_WEBHOOKS = {
+    "installation.created",
+    "installation.deleted",
+    "installation.suspend",
+    "installation.unsuspend",
+    "installation_repositories.added",
+    "installation_repositories.removed",
+    "issues.opened",
+    "issues.edited",
+    "issues.closed",
+    "issues.labeled",
+    "pull_request.opened",
+    "pull_request.edited",
+    "pull_request.closed",
+    "pull_request.reopened",
+    "pull_request.synchronize",
+}
 
 
 def not_implemented(
@@ -121,39 +140,22 @@ def not_implemented(
     return WebhookResponse(success=False, message="Not implemented")
 
 
-async def queue(request: Request) -> WebhookResponse:
+async def enqueue(request: Request) -> WebhookResponse:
     json_body = await request.json()
     event_scope = request.headers["X-GitHub-Event"]
     event_action = json_body["action"]
     event_name = f"{event_scope}.{event_action}"
 
-    task_mapping = {
-        "installation.created": hooks.installation_created,
-        "installation.deleted": hooks.installation_delete,
-        "installation.suspend": hooks.installation_suspend,
-        "installation.unsuspend": hooks.installation_unsuspend,
-        "installation_repositories.added": hooks.repositories_added,
-        "installation_repositories.removed": hooks.repositories_removed,
-        "issues.opened": hooks.issue_opened,
-        "issues.edited": hooks.issue_edited,
-        "issues.closed": hooks.issue_closed,
-        "issues.labeled": hooks.issue_labeled,
-        "pull_request.opened": hooks.pull_request_opened,
-        "pull_request.edited": hooks.pull_request_edited,
-        "pull_request.closed": hooks.pull_request_closed,
-        "pull_request.reopened": hooks.pull_request_reopened,
-        "pull_request.synchronize": hooks.pull_request_synchronize,
-    }
-    task = task_mapping.get(event_name)
-    if not task:
+    if event_name not in IMPLEMENTED_WEBHOOKS:
         return not_implemented(event_scope, event_action, json_body)
 
-    queued = task.delay(event_scope, event_action, json_body)
-    if settings.CELERY_TASK_ALWAYS_EAGER:
-        await queued.result
+    task_name = f"github.webhook.{event_name}"
+    enqueued = await enqueue_job(task_name, event_scope, event_action, json_body)
+    if not enqueued:
+        return WebhookResponse(success=False, message="Failed to enqueue task")
 
-    log.info("github.webhook.queued", event_name=event_name)
-    return WebhookResponse(success=True, task_id=queued.id)
+    log.info("github.webhook.queued", task_name=task_name)
+    return WebhookResponse(success=True, job_id=enqueued.job_id)
 
 
 @router.post("/webhook", response_model=WebhookResponse)
@@ -164,7 +166,7 @@ async def webhook(request: Request) -> WebhookResponse:
         request.headers["X-Hub-Signature-256"],
     )
     if valid_signature:
-        return await queue(request)
+        return await enqueue(request)
 
     # Should be 403 Forbidden, but...
     # Throwing unsophisticated hackers/scrapers/bots off the scent

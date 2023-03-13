@@ -5,6 +5,7 @@ from typing import Sequence
 import typer
 
 from polar.config import settings
+from polar.enums import Platforms
 from polar.integrations.github.service import github_organization
 from polar.models import Issue, Organization, Repository
 from polar.postgres import AsyncSession, AsyncSessionLocal, sql
@@ -66,7 +67,7 @@ def noop() -> None:
 @typer_async
 async def resync_issues(org_name: str) -> None:
     async with AsyncSessionLocal() as session:
-        org = await github_organization.get_by_name(session, org_name)
+        org = await github_organization.get_by_name(session, Platforms.github, org_name)
         if not org:
             raise RuntimeError(f"Organization {org_name} not found")
 

@@ -20,7 +20,7 @@ async def update_settings(
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
     # TODO: Create auth dependency for user/org/repo access and implement it here ASAP
-    org = await organization.get_by_name(session, name=organization_name)
+    org = await organization.get_by_name(session, platform, name=organization_name)
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
 

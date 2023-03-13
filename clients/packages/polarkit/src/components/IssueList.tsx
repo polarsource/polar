@@ -1,10 +1,10 @@
-import { default as IssueListItem, type Issue } from './IssueListItem'
+import { useState } from 'react'
 import {
   type IssueRead,
   type PullRequestRead,
   type RewardRead,
 } from '../api/client'
-import { useState } from 'react'
+import { default as IssueListItem, type Issue } from './IssueListItem'
 
 const lastTimestamp = (issue: IssueRead) => {
   const timestamps = [
@@ -123,16 +123,6 @@ const IssueList = (props: {
 
   return (
     <div className="space-y-2 divide-y divide-gray-200">
-      <form>
-        <input
-          type="text"
-          placeholder="Search..."
-          className="border-2"
-          value={searchQuery}
-          onChange={handleQueryChange}
-        />
-      </form>
-
       {sortedIssues.map((issue) => {
         return <IssueListItem issue={issue} key={issue.id} />
       })}

@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from polar.auth.session import auth_backend
 from polar.auth.dependencies import current_active_user, fastapi_users
 from polar.config import settings
+from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.models import Organization, User
 from polar.organization.schemas import OrganizationRead
@@ -57,7 +58,7 @@ async def get_badge_settings(
     badge_type: Literal["funding"],
     session: AsyncSession = Depends(get_db_session),
 ) -> GithubBadgeRead:
-    organization = await github_organization.get_by_name(session, org)
+    organization = await github_organization.get_by_name(session, Platforms.github, org)
     if organization is None:
         raise HTTPException(status_code=404, detail="Organization not found")
 

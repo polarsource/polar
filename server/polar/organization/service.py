@@ -29,9 +29,9 @@ class OrganizationService(
         return await self.get_by(session, platform=platform, external_id=external_id)
 
     async def get_by_name(
-        self, session: AsyncSession, name: str
+        self, session: AsyncSession, platform: Platforms,  name: str
     ) -> Organization | None:
-        return await self.get_by(session, name=name)
+        return await self.get_by(session, platform=platform, name=name)
 
     async def get_all_by_user_id(
         self, session: AsyncSession, user_id: UUID

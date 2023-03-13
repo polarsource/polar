@@ -47,8 +47,9 @@ Polar started out being structured in modules per function, e.g models, schemas,
 
 Exception to this rule: Database models and core modules (see more & why below). 
 
+<img width="1014" alt="Screenshot 2023-03-13 at 08 40 23" src="https://user-images.githubusercontent.com/281715/224637060-d54c9144-df78-4d3e-ac74-d7e39a5a202e.png">
 
-**How should a module be structured**
+**How a module is structured**
 
 | polar/your_module/ | Explanation & Usage                                          |
 | --------------- | ------------------------------------------------------------ |
@@ -78,4 +79,4 @@ Pragmatic solution. Ideally, they would be and `polar.models` could be a global 
 
 By default we use absolute imports. However, within an isolated module, e.g `polar.organization`, we use relative imports to their corresponding schemas, endpoints, services and the like for better readability and separation. Let's not be fanatical about it and optimize for readability though, e.g do absolute imports vs. deep relative imports.
 
-<img width="1014" alt="Screenshot 2023-03-13 at 08 40 23" src="https://user-images.githubusercontent.com/281715/224637060-d54c9144-df78-4d3e-ac74-d7e39a5a202e.png">
+

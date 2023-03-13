@@ -7,6 +7,8 @@ import Layout from 'components/Layout/Dashboard'
 import { useSSE } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { CONFIG } from 'polarkit'
+import { useState } from 'react'
+import { DashboardFilters } from './filters'
 
 const Root = () => {
   return <h3 className="text-xl mt-10">Welcome</h3>
@@ -20,6 +22,15 @@ const DashboardEnvironment = ({ children }) => {
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
   // TODO: Unless we're sending user-only events we should probably delay SSE
   useSSE(currentOrg?.id, currentRepo?.id)
+
+  const [filters, setFilters] = useState<DashboardFilters>({
+    tab: "issues",
+    q: "",
+    statusBacklog: true,
+    statusBuild: true,
+    statusPullRequest: true,
+    statusCompleted: false,
+  })
 
   if (userOrgQuery.isLoading) return <div>Loading...</div>
 
@@ -39,7 +50,10 @@ const DashboardEnvironment = ({ children }) => {
 
   return (
     <>
-      <Layout>{children}</Layout>
+      <Layout filters={filters} onSetFilters={setFilters}>
+        <pre>{JSON.stringify(filters, 2, 4)}</pre>
+        {children}
+      </Layout>
     </>
   )
 }

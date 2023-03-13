@@ -1,10 +1,9 @@
-import { Fragment } from 'react'
 import { Listbox, Transition } from '@headlessui/react'
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid'
-import { classNames } from 'polarkit/utils/dom'
-import { useUserOrganizations, RepoListItem } from 'polarkit/hooks'
-import { requireAuth } from 'polarkit/hooks'
+import { RepoListItem, requireAuth, useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
+import { classNames } from 'polarkit/utils/dom'
+import { Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const RepoSelection = () => {
@@ -46,8 +45,8 @@ const RepoSelection = () => {
     <Listbox value={currentRepo} onChange={onChanged}>
       {({ open }) => (
         <>
-          <div className="relative mt-1 w-full">
-            <Listbox.Button className="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm">
+          <div className="relative min-w-[250px] max-w-[350px]">
+            <Listbox.Button className="relative my-2 w-full cursor-default bg-white pr-10 text-left  focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm">
               <span className="flex items-center">
                 <img
                   src={currentOrg.avatar_url}
@@ -79,7 +78,7 @@ const RepoSelection = () => {
                     key={repo.id}
                     className={({ active }) =>
                       classNames(
-                        active ? 'text-white bg-indigo-600' : 'text-gray-900',
+                        active ? 'bg-indigo-600 text-white' : 'text-gray-900',
                         'relative cursor-default select-none py-2 pl-3 pr-9',
                       )
                     }

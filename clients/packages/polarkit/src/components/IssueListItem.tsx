@@ -1,17 +1,17 @@
+import ReactTimeAgo from 'react-time-ago'
 import IconCounter from './IconCounter'
 import IssueLabel from './IssueLabel'
-import ReactTimeAgo from 'react-time-ago'
 
 import TimeAgo from 'javascript-time-ago'
 import en from 'javascript-time-ago/locale/en.json'
-import IssueReward from './IssueReward'
 import {
+  type IssueRead,
   type PullRequestRead,
   type RewardRead,
-  type IssueRead,
 } from '../api/client'
-import IssuePullRequest from './IssuePullRequest'
 import IssueActivityBox from './IssueActivityBox'
+import IssuePullRequest from './IssuePullRequest'
+import IssueReward from './IssueReward'
 
 TimeAgo.addDefaultLocale(en)
 
@@ -30,9 +30,12 @@ const IssueListItem = (props: { issue: Issue }) => {
   const haveRewardOrPullRequest =
     props.issue.rewards.length > 0 || props.issue.pullRequests.length > 0
 
+  const showCommentsCount = !!(comments && comments > 0)
+  const showReactionsThumbs = !!(reactions.plus_one > 0)
+
   return (
     <div>
-      <div className="py-4 flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 py-4">
         <div className="flex flex-col gap-1">
           <div className="flex items-start gap-4">
             <a className="font-medium" href={href}>
@@ -59,10 +62,8 @@ const IssueListItem = (props: { issue: Issue }) => {
           </div>
         </div>
         <div className="flex items-center gap-6">
-          {comments && comments > 0 && (
-            <IconCounter icon="💬" count={comments} />
-          )}
-          {reactions.plus_one > 0 && (
+          {showCommentsCount && <IconCounter icon="💬" count={comments} />}
+          {showReactionsThumbs && (
             <IconCounter icon="👍" count={reactions.plus_one} />
           )}
         </div>

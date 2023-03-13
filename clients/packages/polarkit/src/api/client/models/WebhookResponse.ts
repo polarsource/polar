@@ -5,6 +5,6 @@
 export type WebhookResponse = {
   success: boolean;
   message?: string;
-  task_id?: string;
+  job_id?: string;
 };
 

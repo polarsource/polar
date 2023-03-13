@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { GithubBadgeRead } from '../models/GithubBadgeRead';
 import type { InstallationCreate } from '../models/InstallationCreate';
 import type { OAuth2AuthorizeResponse } from '../models/OAuth2AuthorizeResponse';
 import type { OrganizationRead } from '../models/OrganizationRead';
@@ -63,6 +64,37 @@ export class IntegrationsService {
       },
       errors: {
         400: `Bad Request`,
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Get Badge Settings
+   * @returns GithubBadgeRead Successful Response
+   * @throws ApiError
+   */
+  public getBadgeSettings({
+    org,
+    repo,
+    number,
+    badgeType,
+  }: {
+    org: string,
+    repo: string,
+    number: number,
+    badgeType: 'funding',
+  }): CancelablePromise<GithubBadgeRead> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/integrations/github/{org}/{repo}/issues/{number}/badges/{badge_type}',
+      path: {
+        'org': org,
+        'repo': repo,
+        'number': number,
+        'badge_type': badgeType,
+      },
+      errors: {
         422: `Validation Error`,
       },
     });

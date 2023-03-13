@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from polar.dashboard.schemas import Entry, IssueListResponse
 from polar.enums import Platforms
 from polar.issue.schemas import IssueRead
+from polar.models.issue import Issue
 from polar.organization.schemas import OrganizationRead
 from polar.organization.service import organization
 from polar.repository.schemas import RepositoryRead
@@ -14,6 +15,15 @@ from polar.models import User
 from polar.postgres import AsyncSession, get_db_session
 
 router = APIRouter()
+
+def filterIssue(issue: Issue, q: str) -> bool:
+    q = q.casefold()
+    if q in issue.title.casefold():
+        return True
+    if issue.body and q in issue.body.casefold():
+        return True
+    return False
+    
 
 @router.get(
     "/{platform}/{organization_name}/{repository_name}",
@@ -51,6 +61,10 @@ async def get_dashboard(
             status_code=404,
             detail="Repository not found",
         )
+    
+    # filter issues by q
+    if q:
+        issues = [i for i in issues if filterIssue(i, q)]
 
     included: List[Entry[Any]] = [
         Entry(id=org.id, type="organization", attributes=OrganizationRead.from_orm(org)),

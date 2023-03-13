@@ -1,4 +1,3 @@
-import Profile from 'components/Shared/Profile'
 import Search from './Search'
 
 const Sidebar = () => {
@@ -10,10 +9,6 @@ const Sidebar = () => {
             <div className="flex flex-shrink-0 items-center px-4">
               <Search />
             </div>
-            <nav className="mt-5 flex-1 space-y-1 px-2"></nav>
-          </div>
-          <div className="flex flex-shrink-0 border-t border-gray-200 p-4">
-            <Profile />
           </div>
         </div>
       </div>

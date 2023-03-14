@@ -3,7 +3,18 @@ from uuid import UUID
 from polar.issue.schemas import IssueRead
 from polar.kit.schemas import Schema
 from pydantic.generics import GenericModel
+from enum import Enum
 
+
+class IssueStatus(str, Enum):
+    backlog = "backlog"
+    building = "building"
+    pull_request = "pull_request"
+    completed = "completed"
+
+
+# JSON:API types below
+# TODO: Move this to a separate package if we use it elsewhere
 
 DataT = TypeVar("DataT")
 

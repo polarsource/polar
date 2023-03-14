@@ -22,9 +22,11 @@ class RewardService(ResourceService[Reward, RewardCreate, RewardUpdate]):
         res = await session.execute(statement)
         issues = res.scalars().unique().all()
         return issues
-    
+
     async def get_by_issue_ids(
-        self, session: AsyncSession, issue_ids: List[UUID]
+        self,
+        session: AsyncSession,
+        issue_ids: List[UUID],
     ) -> Sequence[Reward]:
         if not issue_ids:
             return []

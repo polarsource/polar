@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 from typing import Sequence
+from sqlalchemy import or_
 
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
@@ -30,6 +31,28 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         self, session: AsyncSession, repository_id: UUID
     ) -> Sequence[Issue]:
         statement = sql.select(Issue).where(Issue.repository_id == repository_id)
+        res = await session.execute(statement)
+        issues = res.scalars().unique().all()
+        return issues
+
+    async def list_by_repository_and_status(
+        self,
+        session: AsyncSession,
+        repository_id: UUID,
+        # statuses: List[str] | None = None,
+        include_open: bool = True,
+        include_closed: bool = False,
+    ) -> Sequence[Issue]:
+        statement = sql.select(Issue).where(Issue.repository_id == repository_id)
+
+        filters = []
+        if include_open:
+            filters.append(Issue.issue_closed_at.is_(None))
+        if include_closed:
+            filters.append(Issue.issue_closed_at.is_not(None))
+
+        statement = statement.where(or_(*filters))
+
         res = await session.execute(statement)
         issues = res.scalars().unique().all()
         return issues

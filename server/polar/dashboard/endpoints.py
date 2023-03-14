@@ -1,10 +1,11 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from polar.dashboard.schemas import (
     Entry,
     IssueListResponse,
+    IssueStatus,
     Relationship,
     RelationshipData,
 )
@@ -42,7 +43,8 @@ async def get_dashboard(
     platform: Platforms,
     organization_name: str,
     repository_name: str,
-    q: str | None = None,
+    status: Union[List[IssueStatus], None] = Query(default=None),
+    q: Union[str, None] = Query(default=None),
     user: User = Depends(current_active_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueListResponse:
@@ -65,13 +67,25 @@ async def get_dashboard(
             detail="Repository not found",
         )
 
-    # get issues
-    issues = await issue.list_by_repository(session, repo.id)
-    if not issues:
-        raise HTTPException(
-            status_code=404,
-            detail="Issues not found",
+    include_open = False
+    if status:
+        include_open = (
+            IssueStatus.backlog in status
+            or IssueStatus.building in status
+            or IssueStatus.pull_request in status
         )
+
+    include_closed = False
+    if status:
+        include_closed = IssueStatus.completed in status
+
+    # get issues
+    issues = await issue.list_by_repository_and_status(
+        session,
+        repo.id,
+        include_open=include_open,
+        include_closed=include_closed,
+    )
 
     # filter issues by q
     if q:
@@ -88,8 +102,6 @@ async def get_dashboard(
         ),
         Entry(id=repo.id, type="repository", attributes=RepositoryRead.from_orm(repo)),
     ]
-
-    print(rewards)
 
     issue_relationships: Dict[UUID, List[Relationship]] = {}
 

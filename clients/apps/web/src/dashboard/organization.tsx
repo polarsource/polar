@@ -1,8 +1,18 @@
-import { requireAuth } from 'polarkit/hooks'
-import { useParams } from 'react-router-dom'
 import { api } from 'polarkit'
 import { IssueList } from 'polarkit/components'
-import { useRepositoryIssues, useRepositoryPullRequests, useRepositoryRewards } from 'polarkit/hooks'
+import {
+  requireAuth,
+  useDashboard,
+  useRepositoryPullRequests,
+} from 'polarkit/hooks'
+import {
+  type Entry_Any_,
+  type Entry_IssueRead_,
+  type IssueRead,
+  type RewardRead,
+} from 'polarkit/src/api/client'
+import { useParams } from 'react-router-dom'
+import { DashboardFilters } from './filters'
 
 const StripeAccountLink = ({ organization, stripeId }) => {
   const redirect = async () => {
@@ -36,10 +46,10 @@ const createLinks = async (organization_name: string, stripe_id: string) => {
   const response = await api
     .post(
       '/api/organizations/' +
-      organization_name +
-      '/account/' +
-      stripe_id +
-      '/links',
+        organization_name +
+        '/account/' +
+        stripe_id +
+        '/links',
     )
     .then((res) => {
       if (res.status == 200 && res.data.url) {
@@ -58,22 +68,37 @@ const createAccount = async (organization_name: string) => {
     })
 }
 
-const Organization = () => {
+const Organization = (props: { filters: DashboardFilters }) => {
+  const { filters } = props
+
   const { developer } = requireAuth()
   const { orgSlug, repoSlug } = useParams()
 
-  const repositoryIssuesQuery = useRepositoryIssues(orgSlug, repoSlug)
-  const issues = repositoryIssuesQuery.data
+  const dashboardQuery = useDashboard(orgSlug, repoSlug, filters.q)
+  const dashboard = dashboardQuery.data
 
-  const repositoryPullRequestQuery = useRepositoryPullRequests(orgSlug, repoSlug)
+  // TODO: include pull requests in the dashboard query
+  const repositoryPullRequestQuery = useRepositoryPullRequests(
+    orgSlug,
+    repoSlug,
+  )
   const pullRequests = repositoryPullRequestQuery.data
 
-  const repositoryRewardsQuery = useRepositoryRewards(orgSlug, repoSlug)
-  const repositoryRewards = repositoryRewardsQuery.data
+  const issues: IssueRead[] =
+    dashboard?.data.map((d: Entry_IssueRead_) => d.attributes) || []
+
+  const rewards2: RewardRead[] =
+    dashboard?.included
+      .filter((i: Entry_Any_) => i.type === 'reward')
+      .map((r) => r.attributes) || []
 
   return (
     <div>
-      <IssueList issues={issues} pullRequests={pullRequests} rewards={repositoryRewards} />
+      <IssueList
+        issues={issues}
+        pullRequests={pullRequests}
+        rewards={rewards2}
+      />
     </div>
   )
 

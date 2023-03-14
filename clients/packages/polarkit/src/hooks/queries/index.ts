@@ -89,3 +89,18 @@ export const useRepositoryRewards = (repoOwner: string, repoName: string) =>
       enabled: !!repoOwner && !!repoName,
     },
   )
+
+export const useDashboard = (repoOwner: string, repoName: string, q?: string) =>
+  useQuery(
+    ['dashboard', 'repo', repoOwner, repoName,  q],
+    () =>
+      api.dashboard.getDashboard({
+        platform: Platforms.GITHUB,
+        organizationName: repoOwner,
+        repositoryName: repoName,
+        q: q,
+      }),
+    {
+      enabled: !!repoOwner && !!repoName,
+    },
+  )

@@ -9,6 +9,7 @@ import { useStore } from 'polarkit/store'
 import { CONFIG } from 'polarkit'
 import { useState } from 'react'
 import { DashboardFilters } from './filters'
+import React from 'react'
 
 const Root = () => {
   return <h3 className="text-xl mt-10">Welcome</h3>
@@ -48,11 +49,15 @@ const DashboardEnvironment = ({ children }) => {
     }
   }
 
+  // Pass search filters to dynamic children
+  const renderedChildren = React.Children.map(children, function (child) {
+    return React.cloneElement(child, { filters });
+   });
+
   return (
     <>
       <Layout filters={filters} onSetFilters={setFilters}>
-        <pre>{JSON.stringify(filters, 2, 4)}</pre>
-        {children}
+        {renderedChildren}
       </Layout>
     </>
   )

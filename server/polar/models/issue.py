@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy import (
     TIMESTAMP,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -19,6 +20,9 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 from polar.enums import Platforms
 from polar.types import JSONDict, JSONList
+
+import sqlalchemy as sa
+from sqlalchemy_utils.types.ts_vector import TSVectorType
 
 
 class Platform(enum.Enum):
@@ -81,6 +85,13 @@ class IssueFields:
         TIMESTAMP(timezone=True), nullable=True
     )
 
+    title_tsv: Mapped[TSVectorType] = mapped_column(
+        TSVectorType("title", regconfig="simple"),
+        sa.Computed("to_tsvector('simple', \"title\")", persisted=True),
+    )
+
+    # __table_args__ = ()
+
     __mutables__ = {
         "title",
         "body",
@@ -105,6 +116,9 @@ class Issue(IssueFields, RecordModel):
     __table_args__ = (
         UniqueConstraint("external_id"),
         UniqueConstraint("organization_id", "repository_id", "number"),
+        Index(
+            "idx_issues_title_tsv", "title_tsv", postgresql_using="gin"
+        ),  # Search index
     )
 
     funding_badge_embedded_at: Mapped[datetime | None] = mapped_column(

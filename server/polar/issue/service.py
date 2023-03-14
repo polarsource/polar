@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 from typing import Sequence
-from sqlalchemy import or_
+from sqlalchemy import desc, func, or_
 
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
@@ -13,6 +13,7 @@ from polar.enums import Platforms
 from polar.postgres import AsyncSession, sql
 
 from .schemas import IssueCreate, IssueUpdate
+
 
 log = structlog.get_logger()
 
@@ -54,11 +55,31 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         statement = statement.where(or_(*filters))
 
         if text:
+            # Search in titles using the vector index
+            # https://www.postgresql.org/docs/current/textsearch-controls.html#TEXTSEARCH-PARSING-QUERIES
+            #
+            # The index supports fast matching of words and prefix-matching of words
+            #
+            # Here we're converting a user query like "feat cli" to
+            # "feat:* | cli:*"
+            words = text.split(" ")
+
+            # remove empty words
+            words = [w for w in words if len(w.strip()) > 0]
+
+            # convert all words to prefix matches
+            words = [f"{w}:*" for w in words]
+
+            # OR all words
+            search = " | ".join(words)
+
             statement = statement.where(
-                or_(
-                    Issue.title.ilike(f"%{text}%"),
-                    Issue.body.ilike(f"%{text}%"),
-                )
+                Issue.title_tsv.bool_op("@@")(func.to_tsquery(search))
+            )
+
+            # Sort results based on matching
+            statement = statement.order_by(
+                desc(func.ts_rank_cd(Issue.title_tsv, func.to_tsquery(search)))
             )
 
         res = await session.execute(statement)

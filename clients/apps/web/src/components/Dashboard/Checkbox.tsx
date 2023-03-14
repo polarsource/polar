@@ -1,4 +1,11 @@
-const Checkbox = (props: { id: string; children: any, value: boolean, onChange: any  }) => {
+import { ChangeEvent } from 'react'
+
+const Checkbox = (props: {
+  id: string
+  children: any
+  value: boolean
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void
+}) => {
   return (
     <div className="relative flex items-start">
       <div className="flex h-6 items-center">

@@ -2,8 +2,11 @@ import { DashboardFilters } from 'dashboard/filters'
 import { Dispatch, SetStateAction } from 'react'
 import Search from './Search'
 
-const Sidebar = (props: {filters: DashboardFilters, onSetFilters: Dispatch<SetStateAction<DashboardFilters>>}) => {
-  const {filters, onSetFilters} = props
+const Sidebar = (props: {
+  filters: DashboardFilters
+  onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
+}) => {
+  const { filters, onSetFilters } = props
   return (
     <>
       <div className="fixed mt-16 hidden min-h-full bg-[#F7F7F7] pb-16  md:inset-y-0 md:flex md:w-80 md:flex-col">

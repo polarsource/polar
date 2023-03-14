@@ -21,6 +21,7 @@ redis = "^4.4.2"
 sse-starlette = "^1.2.1"
 blinker = {git = "https://github.com/pallets-eco/blinker.git"}
 arq = "^0.25.0"
+stripe = "^5.2.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.12.0"

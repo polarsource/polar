@@ -22,8 +22,8 @@ class RewardCreate(Schema):
     amount: Decimal
 
 
-class RewardUpdate(RewardCreate):
-    ...
+class RewardUpdate(Schema):
+    amount: Decimal
 
 
 class RewardRead(RewardCreate):
@@ -34,6 +34,8 @@ class RewardRead(RewardCreate):
     organization_id: UUID
 
     state: State
+
+    client_secret: str | None
 
     class Config:
         orm_mode = True

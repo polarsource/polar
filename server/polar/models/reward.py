@@ -1,4 +1,5 @@
 from uuid import UUID
+from decimal import Decimal
 
 from sqlalchemy import Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -14,7 +15,7 @@ class Reward(RecordModel):
     repository_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)
     organization_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)
 
-    amount: Mapped[Numeric] = mapped_column(
+    amount: Mapped[Decimal] = mapped_column(
         Numeric(precision=25, scale=10), nullable=False
     )
 

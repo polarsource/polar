@@ -1,4 +1,4 @@
-const Tab = (props: { active: boolean; children: any }) => {
+const Tab = (props: { active: boolean; children: React.ReactNode }) => {
   return (
     <div
       className={

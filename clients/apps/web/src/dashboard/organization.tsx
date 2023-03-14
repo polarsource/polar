@@ -27,7 +27,7 @@ const Organization = (props: { filters: DashboardFilters }) => {
   const issues: IssueRead[] =
     dashboard?.data.map((d: Entry_IssueRead_) => d.attributes) || []
 
-  const rewards2: RewardRead[] =
+  const rewards: RewardRead[] =
     dashboard?.included
       .filter((i: Entry_Any_) => i.type === 'reward')
       .map((r) => r.attributes) || []
@@ -37,7 +37,7 @@ const Organization = (props: { filters: DashboardFilters }) => {
       <IssueList
         issues={issues}
         pullRequests={pullRequests}
-        rewards={rewards2}
+        rewards={rewards}
       />
     </div>
   )

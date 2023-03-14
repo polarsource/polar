@@ -5,22 +5,20 @@ import Checkbox from './Checkbox'
 import Tab from './Tab'
 import Tabs from './Tabs'
 
-const Search = (props: {filters: DashboardFilters, onSetFilters: Dispatch<SetStateAction<DashboardFilters>>}) => {
-  const {filters, onSetFilters} = props
+const Search = (props: {
+  filters: DashboardFilters
+  onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
+}) => {
+  const { filters, onSetFilters } = props
 
   const onQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
-    onSetFilters({...filters,q: event.target.value})
+    onSetFilters({ ...filters, q: event.target.value })
   }
 
   const onStatusChange = (event: ChangeEvent<HTMLInputElement>) => {
-
-    console.log(event)
-
     const id = event.target.id
-
-    let f = {...filters}
+    let f = { ...filters }
     f[id] = event.target.checked
-
     onSetFilters(f)
   }
 
@@ -62,13 +60,42 @@ const Search = (props: {filters: DashboardFilters, onSetFilters: Dispatch<SetSta
         </div>
         <div className="flex items-center justify-between">
           <div className="text-md text-black/50">Status</div>
-          <div className="text-sm text-[#5824D9]/70 cursor-pointer" onClick={resetStatus}>Reset</div>
+          <div
+            className="cursor-pointer text-sm text-[#5824D9]/70"
+            onClick={resetStatus}
+          >
+            Reset
+          </div>
         </div>
         <div className="space-y-2">
-          <Checkbox id="statusBacklog" value={filters.statusBacklog} onChange={onStatusChange}>Backlog</Checkbox>
-          <Checkbox id="statusBuild" value={filters.statusBuild} onChange={onStatusChange}>Build</Checkbox>
-          <Checkbox id="statusPullRequest" value={filters.statusPullRequest} onChange={onStatusChange}>Pull request</Checkbox>
-          <Checkbox id="statusCompleted" value={filters.statusCompleted} onChange={onStatusChange}>Completed</Checkbox>
+          <Checkbox
+            id="statusBacklog"
+            value={filters.statusBacklog}
+            onChange={onStatusChange}
+          >
+            Backlog
+          </Checkbox>
+          <Checkbox
+            id="statusBuild"
+            value={filters.statusBuild}
+            onChange={onStatusChange}
+          >
+            Build
+          </Checkbox>
+          <Checkbox
+            id="statusPullRequest"
+            value={filters.statusPullRequest}
+            onChange={onStatusChange}
+          >
+            Pull request
+          </Checkbox>
+          <Checkbox
+            id="statusCompleted"
+            value={filters.statusCompleted}
+            onChange={onStatusChange}
+          >
+            Completed
+          </Checkbox>
         </div>
       </form>
     </div>

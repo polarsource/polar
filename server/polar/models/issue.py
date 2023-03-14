@@ -2,9 +2,17 @@ import enum
 from uuid import UUID
 from datetime import datetime
 
-from sqlalchemy import TIMESTAMP, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    TIMESTAMP,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, MappedColumn, declared_attr, mapped_column
+
 
 from polar.issue.signals import issue_created, issue_updated
 from polar.kit.db.models import RecordModel

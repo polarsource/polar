@@ -11,7 +11,6 @@ from polar.dashboard.schemas import (
 )
 from polar.enums import Platforms
 from polar.issue.schemas import IssueRead
-from polar.models.issue import Issue
 from polar.organization.schemas import OrganizationRead
 from polar.organization.service import organization
 from polar.repository.schemas import RepositoryRead
@@ -24,15 +23,6 @@ from polar.models import User
 from polar.postgres import AsyncSession, get_db_session
 
 router = APIRouter()
-
-
-def filterIssue(issue: Issue, q: str) -> bool:
-    q = q.casefold()
-    if q in issue.title.casefold():
-        return True
-    if issue.body and q in issue.body.casefold():
-        return True
-    return False
 
 
 @router.get(
@@ -83,19 +73,12 @@ async def get_dashboard(
     issues = await issue.list_by_repository_and_status(
         session,
         repo.id,
+        text=q,
         include_open=include_open,
         include_closed=include_closed,
     )
 
-    # filter issues by q
-    if q:
-        issues = [i for i in issues if filterIssue(i, q)]
-
-    # get rewards
-    issue_ids = [i.id for i in issues]
-
-    rewards = await reward.get_by_issue_ids(session, issue_ids)
-
+    # add org and repo to included
     included: List[Entry[Any]] = [
         Entry(
             id=org.id, type="organization", attributes=OrganizationRead.from_orm(org)
@@ -103,6 +86,11 @@ async def get_dashboard(
         Entry(id=repo.id, type="repository", attributes=RepositoryRead.from_orm(repo)),
     ]
 
+    # get rewards
+    issue_ids = [i.id for i in issues]
+    rewards = await reward.get_by_issue_ids(session, issue_ids)
+
+    # start building issue relationships with rewards
     issue_relationships: Dict[UUID, List[Relationship]] = {}
 
     # add rewards to included

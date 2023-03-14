@@ -39,7 +39,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         self,
         session: AsyncSession,
         repository_id: UUID,
-        # statuses: List[str] | None = None,
+        text: str | None = None,
         include_open: bool = True,
         include_closed: bool = False,
     ) -> Sequence[Issue]:
@@ -52,6 +52,14 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             filters.append(Issue.issue_closed_at.is_not(None))
 
         statement = statement.where(or_(*filters))
+
+        if text:
+            statement = statement.where(
+                or_(
+                    Issue.title.ilike(f"%{text}%"),
+                    Issue.body.ilike(f"%{text}%"),
+                )
+            )
 
         res = await session.execute(statement)
         issues = res.scalars().unique().all()

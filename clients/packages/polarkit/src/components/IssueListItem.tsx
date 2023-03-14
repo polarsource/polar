@@ -10,6 +10,7 @@ import {
   type RewardRead,
 } from '../api/client'
 import IssueActivityBox from './IssueActivityBox'
+import IssueProgress from './IssueProgress'
 import IssuePullRequest from './IssuePullRequest'
 import IssueReward from './IssueReward'
 
@@ -61,11 +62,17 @@ const IssueListItem = (props: { issue: Issue }) => {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-6">
-          {showCommentsCount && <IconCounter icon="💬" count={comments} />}
-          {showReactionsThumbs && (
-            <IconCounter icon="👍" count={reactions.plus_one} />
-          )}
+        <div className="flex items-center gap-12">
+          <div className="flex items-center gap-6">
+            {showCommentsCount && (
+              <IconCounter icon="comments" count={comments} />
+            )}
+            {showReactionsThumbs && (
+              <IconCounter icon="thumbs_up" count={reactions.plus_one} />
+            )}
+          </div>
+
+          <IssueProgress progress="building" />
         </div>
       </div>
 

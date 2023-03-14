@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { type OrganizationRead, type RepositoryRead } from 'polarkit/api/client'
 import { api } from '../../api'
-import { Platforms } from '../../api/client'
+import { IssueStatus, Platforms } from '../../api/client'
 
 export type RepoListItem = RepositoryRead & {
   organization: OrganizationRead
@@ -90,15 +90,28 @@ export const useRepositoryRewards = (repoOwner: string, repoName: string) =>
     },
   )
 
-export const useDashboard = (repoOwner: string, repoName: string, q?: string) =>
+export const useDashboard = (
+  repoOwner: string,
+  repoName: string,
+  q?: string,
+  status?: Array<IssueStatus>,
+) =>
   useQuery(
-    ['dashboard', 'repo', repoOwner, repoName, q],
+    [
+      'dashboard',
+      'repo',
+      repoOwner,
+      repoName,
+      q,
+      JSON.stringify(status), // Array as cache key
+    ],
     ({ signal }) => {
       const promise = api.dashboard.getDashboard({
         platform: Platforms.GITHUB,
         organizationName: repoOwner,
         repositoryName: repoName,
         q: q,
+        status: status,
       })
 
       signal?.addEventListener('abort', () => {

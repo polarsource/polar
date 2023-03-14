@@ -1100,6 +1100,17 @@
                     {
                         "required": false,
                         "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/components/schemas/IssueStatus"
+                            }
+                        },
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
                             "title": "Q",
                             "type": "string"
                         },
@@ -1567,6 +1578,17 @@
                         "format": "date-time"
                     }
                 }
+            },
+            "IssueStatus": {
+                "title": "IssueStatus",
+                "enum": [
+                    "backlog",
+                    "building",
+                    "pull_request",
+                    "completed"
+                ],
+                "type": "string",
+                "description": "An enumeration."
             },
             "OAuth2AuthorizeResponse": {
                 "title": "OAuth2AuthorizeResponse",

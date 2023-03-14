@@ -22,8 +22,15 @@ export type Issue = IssueRead & {
 }
 
 const IssueListItem = (props: { issue: Issue }) => {
-  const { title, number, state, issue_created_at, reactions, comments } =
-    props.issue
+  const {
+    title,
+    number,
+    state,
+    issue_created_at,
+    reactions,
+    comments,
+    issue_closed_at,
+  } = props.issue
   const href = `https://github.com/todo/todo/issues/${number}`
   const createdAt = new Date(issue_created_at)
   const closedAt = new Date(issue_created_at)
@@ -33,6 +40,10 @@ const IssueListItem = (props: { issue: Issue }) => {
 
   const showCommentsCount = !!(comments && comments > 0)
   const showReactionsThumbs = !!(reactions.plus_one > 0)
+
+  // TODO!
+  const isCompleted = !!issue_closed_at
+  const isBuilding = isCompleted === false
 
   return (
     <div>
@@ -72,7 +83,8 @@ const IssueListItem = (props: { issue: Issue }) => {
             )}
           </div>
 
-          <IssueProgress progress="building" />
+          {isCompleted && <IssueProgress progress="completed" />}
+          {isBuilding && <IssueProgress progress="building" />}
         </div>
       </div>
 

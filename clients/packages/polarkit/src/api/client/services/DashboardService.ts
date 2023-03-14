@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { IssueListResponse } from '../models/IssueListResponse';
+import type { IssueStatus } from '../models/IssueStatus';
 import type { Platforms } from '../models/Platforms';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
@@ -20,11 +21,13 @@ export class DashboardService {
     platform,
     organizationName,
     repositoryName,
+    status,
     q,
   }: {
     platform: Platforms,
     organizationName: string,
     repositoryName: string,
+    status?: Array<IssueStatus>,
     q?: string,
   }): CancelablePromise<IssueListResponse> {
     return this.httpRequest.request({
@@ -36,6 +39,7 @@ export class DashboardService {
         'repository_name': repositoryName,
       },
       query: {
+        'status': status,
         'q': q,
       },
       errors: {

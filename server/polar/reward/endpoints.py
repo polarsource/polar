@@ -2,13 +2,10 @@ from typing import Sequence
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from polar.auth.dependencies import current_active_user
-from polar.auth.repository import repository_auth
-from polar.models import Issue, Reward, User
-from polar.organization.service import organization
+from polar.auth.dependencies import Auth
+from polar.models import Issue, Reward
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, get_db_session
-from polar.repository.service import repository
 
 from .schemas import RewardCreate, RewardRead, State
 from .service import reward
@@ -16,10 +13,13 @@ from .service import reward
 router = APIRouter()
 
 
-@router.post("", response_model=RewardRead)
+@router.post("/{platform}/{org_name}/{repo_name}", response_model=RewardRead)
 async def create_rewawrd(
+    platform: Platforms,
+    org_name: str,
+    repo_name: str,
     reward: RewardCreate,
-    user: User = Depends(current_active_user),
+    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> Reward:
     issue = await Issue.find(session=session, id=reward.issue_id)
@@ -30,36 +30,17 @@ async def create_rewawrd(
             detail="Issue not found",
         )
 
-    if not issue.repository_id:
+    if issue.repository_id != auth.repository.id:
         raise HTTPException(
-            status_code=404,
-            detail="Issue does not belong to a repository",
-        )
-
-    repo = await repository.get(
-        session=session,
-        id=issue.repository_id,
-    )
-
-    if not repo:
-        raise HTTPException(
-            status_code=404,
-            detail="Repository not found",
-        )
-
-    # Validate that the user has access to the repository
-    if not await repository_auth.can_write(session, user, repo):
-        raise HTTPException(
-            status_code=403,
-            detail="User does not have access to this repository",
+            status_code=403, detail="Issue does not belong to this repository"
         )
 
     # Create the reward
     created = await Reward.create(
         session=session,
         issue_id=issue.id,
-        repository_id=repo.id,
-        organization_id=repo.organization_id,
+        repository_id=auth.repository.id,
+        organization_id=auth.organization.id,
         amount=reward.amount,
         state=State.created,
     )
@@ -67,47 +48,15 @@ async def create_rewawrd(
     return created
 
 
-@router.get("/{platform}/{organization_name}/{name}", response_model=list[RewardRead])
+@router.get("/{platform}/{org_name}/{repo_name}", response_model=list[RewardRead])
 async def get_repository_rewards(
     platform: Platforms,
-    organization_name: str,
-    name: str,
-    user: User = Depends(current_active_user),
+    org_name: str,
+    repo_name: str,
+    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> Sequence[Reward]:
-
-    org = await organization.get_by(
-        session=session,
-        platform=platform,
-        name=organization_name,
+    rewards = await reward.list_by_repository(
+        session=session, repository_id=auth.repository.id
     )
-
-    if not org:
-        raise HTTPException(
-            status_code=404,
-            detail="Organization not found",
-        )
-
-    repo = await repository.get_by(
-        session=session,
-        platform=platform,
-        organization_id=org.id,
-        name=name,
-    )
-
-    if not repo:
-        raise HTTPException(
-            status_code=404,
-            detail="Repository not found",
-        )
-
-    # Validate that the user has access to the repository
-    if not await repository_auth.can_write(session, user, repo):
-        raise HTTPException(
-            status_code=403,
-            detail="User does not have access to this repository",
-        )
-
-    rewards = await reward.list_by_repository(session=session, repository_id=repo.id)
-
     return rewards

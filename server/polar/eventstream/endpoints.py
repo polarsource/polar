@@ -5,7 +5,7 @@ import structlog
 from fastapi import APIRouter, Depends
 from sse_starlette.sse import EventSourceResponse
 
-from polar.auth.dependencies import current_active_user
+from polar.auth.dependencies import Auth
 from polar.redis import get_redis
 from polar.models import User
 from polar.redis import Redis
@@ -35,7 +35,7 @@ async def subscribe(redis: Redis, channels: list[str]):
 async def listen(
     organization_id: UUID | None,
     repository_id: UUID | None = None,
-    user: User = Depends(current_active_user),
+    user: User = Depends(Auth.current_user),
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:
     # TODO(Security): Validate user & org+repo relationships here!

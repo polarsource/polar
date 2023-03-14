@@ -1,18 +1,15 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import Organization from './organization'
-import Initialize from './initialize'
-import { requireAuth } from 'polarkit/hooks'
-import { useUserOrganizations } from 'polarkit/hooks'
 import Layout from 'components/Layout/Dashboard'
-import { useSSE } from 'polarkit/hooks'
-import { useStore } from 'polarkit/store'
 import { CONFIG } from 'polarkit'
-import { useState } from 'react'
+import { requireAuth, useSSE, useUserOrganizations } from 'polarkit/hooks'
+import { useStore } from 'polarkit/store'
+import React, { useState } from 'react'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { DashboardFilters } from './filters'
-import React from 'react'
+import Initialize from './initialize'
+import Organization from './organization'
 
 const Root = () => {
-  return <h3 className="text-xl mt-10">Welcome</h3>
+  return <h3 className="mt-10 text-xl">Welcome</h3>
 }
 
 const DashboardEnvironment = ({ children }) => {
@@ -22,11 +19,11 @@ const DashboardEnvironment = ({ children }) => {
   const currentRepo = useStore((state) => state.currentRepo)
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
   // TODO: Unless we're sending user-only events we should probably delay SSE
-  useSSE(currentOrg?.id, currentRepo?.id)
+  useSSE(currentOrg?.platform, currentOrg?.name, currentRepo?.name)
 
   const [filters, setFilters] = useState<DashboardFilters>({
-    tab: "issues",
-    q: "",
+    tab: 'issues',
+    q: '',
     statusBacklog: true,
     statusBuild: true,
     statusPullRequest: true,
@@ -51,8 +48,8 @@ const DashboardEnvironment = ({ children }) => {
 
   // Pass search filters to dynamic children
   const renderedChildren = React.Children.map(children, function (child) {
-    return React.cloneElement(child, { filters });
-   });
+    return React.cloneElement(child, { filters })
+  })
 
   return (
     <>

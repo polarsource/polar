@@ -10,10 +10,10 @@ from polar.postgres import AsyncSession, get_db_session
 from .schemas import RewardCreate, RewardRead, State
 from .service import reward
 
-router = APIRouter()
+router = APIRouter(tags=["rewards"])
 
 
-@router.post("/{platform}/{org_name}/{repo_name}", response_model=RewardRead)
+@router.post("/{platform}/{org_name}/{repo_name}/rewards", response_model=RewardRead)
 async def create_rewawrd(
     platform: Platforms,
     org_name: str,
@@ -48,7 +48,9 @@ async def create_rewawrd(
     return created
 
 
-@router.get("/{platform}/{org_name}/{repo_name}", response_model=list[RewardRead])
+@router.get(
+    "/{platform}/{org_name}/{repo_name}/rewards", response_model=list[RewardRead]
+)
 async def get_repository_rewards(
     platform: Platforms,
     org_name: str,

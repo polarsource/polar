@@ -11,22 +11,22 @@ from polar.organization.endpoints import router as organization_router
 from polar.dashboard.endpoints import router as dashboard_router
 
 router = APIRouter(prefix="/api/v1")
-router.include_router(user_router, prefix="/users", tags=["users"])
-router.include_router(
-    user_organization_router, prefix="/user/organizations", tags=["user.organizations"]
-)
-router.include_router(
-    github_router, prefix="/integrations/github", tags=["integrations"]
-)
-router.include_router(
-    pull_request_router, prefix="/pull_requests", tags=["pull_requests"]
-)
-router.include_router(issue_router, prefix="/issues", tags=["issues"])
-router.include_router(reward_router, prefix="/rewards", tags=["rewards"])
-router.include_router(stream_router, prefix="/stream", tags=["stream"])
-router.include_router(
-    organization_router, prefix="/organizations", tags=["organizations"]
-)
-router.include_router(
-    dashboard_router, prefix="/dashboard", tags=["dashboard"]
-)
+# /users
+router.include_router(user_router)
+# /user/organizations
+router.include_router(user_organization_router)
+# /integrations/github
+router.include_router(github_router)
+# /{platform}/{org_name}/{repo_name}/pulls
+router.include_router(pull_request_router)
+# /{platform}/{org_name}/{repo_name}/issues
+router.include_router(issue_router)
+# /{platform}/{org_name}/{repo_name}/rewards
+router.include_router(reward_router)
+# /{org_name}/stream
+# /{org_name}/{repo_name}/stream
+router.include_router(stream_router)
+# /{platform}/{org_name}/
+router.include_router(organization_router)
+# /{platform}/{org_name}/{repo_name}/dashboard
+router.include_router(dashboard_router)

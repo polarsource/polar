@@ -692,7 +692,7 @@
                 }
             }
         },
-        "/api/v1/pull_requests/{platform}/{organization_name}/{name}": {
+        "/api/v1/{platform}/{org_name}/{repo_name}/pulls": {
             "get": {
                 "tags": [
                     "pull_requests"
@@ -711,19 +711,19 @@
                     {
                         "required": true,
                         "schema": {
-                            "title": "Organization Name",
+                            "title": "Org Name",
                             "type": "string"
                         },
-                        "name": "organization_name",
+                        "name": "org_name",
                         "in": "path"
                     },
                     {
                         "required": true,
                         "schema": {
-                            "title": "Name",
+                            "title": "Repo Name",
                             "type": "string"
                         },
-                        "name": "name",
+                        "name": "repo_name",
                         "in": "path"
                     }
                 ],
@@ -760,7 +760,7 @@
                 ]
             }
         },
-        "/api/v1/issues/{platform}/{organization_name}/{name}": {
+        "/api/v1/{platform}/{org_name}/{repo_name}/issues": {
             "get": {
                 "tags": [
                     "issues"
@@ -779,19 +779,19 @@
                     {
                         "required": true,
                         "schema": {
-                            "title": "Organization Name",
+                            "title": "Org Name",
                             "type": "string"
                         },
-                        "name": "organization_name",
+                        "name": "org_name",
                         "in": "path"
                     },
                     {
                         "required": true,
                         "schema": {
-                            "title": "Name",
+                            "title": "Repo Name",
                             "type": "string"
                         },
-                        "name": "name",
+                        "name": "repo_name",
                         "in": "path"
                     }
                 ],
@@ -828,13 +828,107 @@
                 ]
             }
         },
-        "/api/v1/rewards": {
+        "/api/v1/{platform}/{org_name}/{repo_name}/rewards": {
+            "get": {
+                "tags": [
+                    "rewards"
+                ],
+                "summary": "Get Repository Rewards",
+                "operationId": "rewards:get_repository_rewards",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Org Name",
+                            "type": "string"
+                        },
+                        "name": "org_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Repo Name",
+                            "type": "string"
+                        },
+                        "name": "repo_name",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "title": "Response Rewards:Get Repository Rewards",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/RewardRead"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            },
             "post": {
                 "tags": [
                     "rewards"
                 ],
                 "summary": "Create Rewawrd",
                 "operationId": "rewards:create_rewawrd",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Org Name",
+                            "type": "string"
+                        },
+                        "name": "org_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Repo Name",
+                            "type": "string"
+                        },
+                        "name": "repo_name",
+                        "in": "path"
+                    }
+                ],
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -874,13 +968,37 @@
                 ]
             }
         },
-        "/api/v1/rewards/{platform}/{organization_name}/{name}": {
+        "/api/v1/user/stream": {
             "get": {
                 "tags": [
-                    "rewards"
+                    "stream"
                 ],
-                "summary": "Get Repository Rewards",
-                "operationId": "rewards:get_repository_rewards",
+                "summary": "User Stream",
+                "operationId": "stream:user_stream",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/{platform}/{org_name}/stream": {
+            "get": {
+                "tags": [
+                    "stream"
+                ],
+                "summary": "User Org Stream",
+                "operationId": "stream:user_org_stream",
                 "parameters": [
                     {
                         "required": true,
@@ -893,82 +1011,11 @@
                     {
                         "required": true,
                         "schema": {
-                            "title": "Organization Name",
+                            "title": "Org Name",
                             "type": "string"
                         },
-                        "name": "organization_name",
+                        "name": "org_name",
                         "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Name",
-                            "type": "string"
-                        },
-                        "name": "name",
-                        "in": "path"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "title": "Response Rewards:Get Repository Rewards",
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/RewardRead"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
-            }
-        },
-        "/api/v1/stream": {
-            "get": {
-                "tags": [
-                    "stream"
-                ],
-                "summary": "Listen",
-                "operationId": "stream:listen",
-                "parameters": [
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Organization Id",
-                            "type": "string",
-                            "format": "uuid"
-                        },
-                        "name": "organization_id",
-                        "in": "query"
-                    },
-                    {
-                        "required": false,
-                        "schema": {
-                            "title": "Repository Id",
-                            "type": "string",
-                            "format": "uuid"
-                        },
-                        "name": "repository_id",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -998,7 +1045,69 @@
                 ]
             }
         },
-        "/api/v1/organizations/{platform}/{organization_name}/settings": {
+        "/api/v1/{platform}/{org_name}/{repo_name}/stream": {
+            "get": {
+                "tags": [
+                    "stream"
+                ],
+                "summary": "User Org Repo Stream",
+                "operationId": "stream:user_org_repo_stream",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Org Name",
+                            "type": "string"
+                        },
+                        "name": "org_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Repo Name",
+                            "type": "string"
+                        },
+                        "name": "repo_name",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/{platform}/{organization_name}/settings": {
             "put": {
                 "tags": [
                     "organizations"
@@ -1017,11 +1126,11 @@
                     {
                         "required": true,
                         "schema": {
-                            "title": "Organization Name",
+                            "title": "Org Name",
                             "type": "string"
                         },
-                        "name": "organization_name",
-                        "in": "path"
+                        "name": "org_name",
+                        "in": "query"
                     }
                 ],
                 "requestBody": {
@@ -1063,7 +1172,7 @@
                 ]
             }
         },
-        "/api/v1/dashboard/{platform}/{organization_name}/{repository_name}": {
+        "/api/v1/{platform}/{org_name}/{repo_name}/dashboard": {
             "get": {
                 "tags": [
                     "dashboard"
@@ -1082,19 +1191,19 @@
                     {
                         "required": true,
                         "schema": {
-                            "title": "Organization Name",
+                            "title": "Org Name",
                             "type": "string"
                         },
-                        "name": "organization_name",
+                        "name": "org_name",
                         "in": "path"
                     },
                     {
                         "required": true,
                         "schema": {
-                            "title": "Repository Name",
+                            "title": "Repo Name",
                             "type": "string"
                         },
-                        "name": "repository_name",
+                        "name": "repo_name",
                         "in": "path"
                     },
                     {

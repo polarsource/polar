@@ -19,24 +19,24 @@ export class DashboardService {
    */
   public getDashboard({
     platform,
-    organizationName,
-    repositoryName,
+    orgName,
+    repoName,
     status,
     q,
   }: {
     platform: Platforms,
-    organizationName: string,
-    repositoryName: string,
+    orgName: string,
+    repoName: string,
     status?: Array<IssueStatus>,
     q?: string,
   }): CancelablePromise<IssueListResponse> {
     return this.httpRequest.request({
       method: 'GET',
-      url: '/api/v1/dashboard/{platform}/{organization_name}/{repository_name}',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/dashboard',
       path: {
         'platform': platform,
-        'organization_name': organizationName,
-        'repository_name': repositoryName,
+        'org_name': orgName,
+        'repo_name': repoName,
       },
       query: {
         'status': status,

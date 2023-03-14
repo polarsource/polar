@@ -39,7 +39,7 @@ export const SynchronizeRepositories = ({
   let { totalExpected, initialSyncStates } = getInitializedSyncState(org)
   const [searchParams] = useSearchParams()
   const [debug] = useState<boolean>(searchParams.get('debug') === '1')
-  const emitter = useSSE(org.id)
+  const emitter = useSSE(org.platform, org.name)
   const [syncingRepos, setSyncingRepos] = useState<{
     [id: string]: RepoSyncState
   }>(initialSyncStates)

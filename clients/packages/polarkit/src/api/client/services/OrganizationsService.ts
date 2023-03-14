@@ -19,19 +19,21 @@ export class OrganizationsService {
    */
   public updateSettings({
     platform,
-    organizationName,
+    orgName,
     requestBody,
   }: {
     platform: Platforms,
-    organizationName: string,
+    orgName: string,
     requestBody: OrganizationSettings,
   }): CancelablePromise<OrganizationRead> {
     return this.httpRequest.request({
       method: 'PUT',
-      url: '/api/v1/organizations/{platform}/{organization_name}/settings',
+      url: '/api/v1/{platform}/{organization_name}/settings',
       path: {
         'platform': platform,
-        'organization_name': organizationName,
+      },
+      query: {
+        'org_name': orgName,
       },
       body: requestBody,
       mediaType: 'application/json',

@@ -8,7 +8,7 @@ from polar.postgres import AsyncSession, get_db_session
 from .schemas import OrganizationRead, OrganizationSettings
 from .service import organization
 
-router = APIRouter()
+router = APIRouter(tags=["organizations"])
 
 
 @router.put("/{platform}/{organization_name}/settings", response_model=OrganizationRead)

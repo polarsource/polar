@@ -19,11 +19,11 @@ from polar.reward.service import reward
 from polar.auth.dependencies import Auth
 from polar.postgres import AsyncSession, get_db_session
 
-router = APIRouter()
+router = APIRouter(tags=["dashboard"])
 
 
 @router.get(
-    "/{platform}/{org_name}/{repo_name}",
+    "/{platform}/{org_name}/{repo_name}/dashboard",
     response_model=IssueListResponse,
 )
 async def get_dashboard(

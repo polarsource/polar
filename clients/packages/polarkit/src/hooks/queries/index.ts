@@ -51,8 +51,8 @@ export const useRepositoryIssues = (repoOwner: string, repoName: string) =>
     () =>
       api.issues.getRepositoryIssues({
         platform: Platforms.GITHUB,
-        organizationName: repoOwner,
-        name: repoName,
+        orgName: repoOwner,
+        repoName: repoName,
       }),
     {
       enabled: !!repoOwner && !!repoName,
@@ -68,8 +68,8 @@ export const useRepositoryPullRequests = (
     () =>
       api.pullRequests.getRepositoryPullRequests({
         platform: Platforms.GITHUB,
-        organizationName: repoOwner,
-        name: repoName,
+        orgName: repoOwner,
+        repoName: repoName,
       }),
     {
       enabled: !!repoOwner && !!repoName,
@@ -82,8 +82,8 @@ export const useRepositoryRewards = (repoOwner: string, repoName: string) =>
     () =>
       api.rewards.getRepositoryRewards({
         platform: Platforms.GITHUB,
-        organizationName: repoOwner,
-        name: repoName,
+        orgName: repoOwner,
+        repoName: repoName,
       }),
     {
       enabled: !!repoOwner && !!repoName,
@@ -108,8 +108,8 @@ export const useDashboard = (
     ({ signal }) => {
       const promise = api.dashboard.getDashboard({
         platform: Platforms.GITHUB,
-        organizationName: repoOwner,
-        repositoryName: repoName,
+        orgName: repoOwner,
+        repoName: repoName,
         q: q,
         status: status,
       })

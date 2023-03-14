@@ -10,10 +10,12 @@ from polar.postgres import AsyncSession, get_db_session
 from .schemas import PullRequestRead
 from .service import pull_request
 
-router = APIRouter()
+router = APIRouter(tags=["pull_requests"])
 
 
-@router.get("/{platform}/{org_name}/{repo_name}", response_model=list[PullRequestRead])
+@router.get(
+    "/{platform}/{org_name}/{repo_name}/pulls", response_model=list[PullRequestRead]
+)
 async def get_repository_pull_requests(
     platform: Platforms,
     org_name: str,

@@ -13,20 +13,27 @@ export class RewardsService {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
-   * Create Rewawrd
+   * Get Repository Rewards
    * @returns RewardRead Successful Response
    * @throws ApiError
    */
-  public createRewawrd({
-    requestBody,
+  public getRepositoryRewards({
+    platform,
+    orgName,
+    repoName,
   }: {
-    requestBody: RewardCreate,
-  }): CancelablePromise<RewardRead> {
+    platform: Platforms,
+    orgName: string,
+    repoName: string,
+  }): CancelablePromise<Array<RewardRead>> {
     return this.httpRequest.request({
-      method: 'POST',
-      url: '/api/v1/rewards',
-      body: requestBody,
-      mediaType: 'application/json',
+      method: 'GET',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/rewards',
+      path: {
+        'platform': platform,
+        'org_name': orgName,
+        'repo_name': repoName,
+      },
       errors: {
         422: `Validation Error`,
       },
@@ -34,27 +41,31 @@ export class RewardsService {
   }
 
   /**
-   * Get Repository Rewards
+   * Create Rewawrd
    * @returns RewardRead Successful Response
    * @throws ApiError
    */
-  public getRepositoryRewards({
+  public createRewawrd({
     platform,
-    organizationName,
-    name,
+    orgName,
+    repoName,
+    requestBody,
   }: {
     platform: Platforms,
-    organizationName: string,
-    name: string,
-  }): CancelablePromise<Array<RewardRead>> {
+    orgName: string,
+    repoName: string,
+    requestBody: RewardCreate,
+  }): CancelablePromise<RewardRead> {
     return this.httpRequest.request({
-      method: 'GET',
-      url: '/api/v1/rewards/{platform}/{organization_name}/{name}',
+      method: 'POST',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/rewards',
       path: {
         'platform': platform,
-        'organization_name': organizationName,
-        'name': name,
+        'org_name': orgName,
+        'repo_name': repoName,
       },
+      body: requestBody,
+      mediaType: 'application/json',
       errors: {
         422: `Validation Error`,
       },

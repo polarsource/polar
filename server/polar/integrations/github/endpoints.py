@@ -22,7 +22,7 @@ from .schemas import GithubBadgeRead
 
 log = structlog.get_logger()
 
-router = APIRouter()
+router = APIRouter(prefix="/integrations/github", tags=["integrations"])
 
 github_oauth_client = GitHubOAuth2(
     settings.GITHUB_CLIENT_ID, settings.GITHUB_CLIENT_SECRET

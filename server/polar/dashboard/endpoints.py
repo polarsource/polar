@@ -12,10 +12,12 @@ from polar.dashboard.schemas import (
 from polar.enums import Platforms
 from polar.issue.schemas import IssueRead
 from polar.organization.schemas import OrganizationRead
+from polar.pull_request.schemas import PullRequestRead
 from polar.repository.schemas import RepositoryRead
 from polar.issue.service import issue
 from polar.reward.schemas import RewardRead
 from polar.reward.service import reward
+from polar.pull_request.service import pull_request
 from polar.auth.dependencies import Auth
 from polar.postgres import AsyncSession, get_db_session
 
@@ -76,6 +78,8 @@ async def get_dashboard(
 
     # start building issue relationships with rewards
     issue_relationships: Dict[UUID, List[Relationship]] = {}
+    for i in issues:
+        issue_relationships[i.id] = []
 
     # add rewards to included
     for r in rewards:
@@ -84,14 +88,10 @@ async def get_dashboard(
         )
         # inject relationships
         rel = Relationship(data=RelationshipData(type="reward", id=r.id))
-        if r.issue_id not in issue_relationships:
-            issue_relationships[r.issue_id] = []
         issue_relationships[r.issue_id].append(rel)
 
     # Add repository and organization relationships to issues
     for i in issues:
-        if i.id not in issue_relationships:
-            issue_relationships[i.id] = []
         orgRel = Relationship(
             data=RelationshipData(type="organization", id=auth.organization.id)
         )
@@ -101,6 +101,22 @@ async def get_dashboard(
             data=RelationshipData(type="repository", id=auth.repository.id)
         )
         issue_relationships[i.id].append(repoRel)
+
+    # get linked pull requests
+    for i in issues:
+        prs = await pull_request.list_by_repository_for_issue(
+            session, auth.repository.id, i.number
+        )
+        # Add to included and to relationships
+        for pr in prs:
+            entry: Entry[PullRequestRead] = Entry(
+                id=pr.id,
+                type="pull_request",
+                attributes=PullRequestRead.from_orm(pr),
+            )
+            rel = Relationship(data=RelationshipData(type="pull_request", id=pr.id))
+            included.append(entry)
+            issue_relationships[i.id].append(rel)
 
     return IssueListResponse(
         data=[

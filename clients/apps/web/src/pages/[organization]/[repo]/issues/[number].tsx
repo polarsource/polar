@@ -1,10 +1,7 @@
-import { loadStripe } from '@stripe/stripe-js/pure'
 import Checkout from 'components/Website/Checkout'
 import type { NextPage } from 'next'
 import { api } from 'polarkit'
 import { IssuePledge, Platforms } from 'polarkit/api/client'
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY)
 
 const PublicCheckoutPage: NextPage = ({
   organization,

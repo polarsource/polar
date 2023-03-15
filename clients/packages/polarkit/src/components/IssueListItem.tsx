@@ -12,7 +12,7 @@ import {
   type RewardRead,
 } from '../api/client'
 import IssueActivityBox from './IssueActivityBox'
-import IssueProgress from './IssueProgress'
+import IssueProgress, { Progress } from './IssueProgress'
 import IssuePullRequest from './IssuePullRequest'
 import IssueReward from './IssueReward'
 
@@ -45,9 +45,16 @@ const IssueListItem = (props: {
   const showCommentsCount = !!(comments && comments > 0)
   const showReactionsThumbs = !!(reactions.plus_one > 0)
 
-  // TODO!
-  const isCompleted = !!issue_closed_at
-  const isBuilding = isCompleted === false
+  const getissueProgress = (): Progress => {
+    if (!!issue_closed_at) {
+      return 'completed'
+    }
+    if (props.pullRequests.length > 0) {
+      return 'pull_request'
+    }
+    return 'backlog'
+  }
+  const issueProgress = getissueProgress()
 
   return (
     <div>
@@ -87,8 +94,7 @@ const IssueListItem = (props: {
             )}
           </div>
 
-          {isCompleted && <IssueProgress progress="completed" />}
-          {isBuilding && <IssueProgress progress="building" />}
+          <IssueProgress progress={issueProgress} />
         </div>
       </div>
 

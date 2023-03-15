@@ -4,6 +4,7 @@
 import type { Platforms } from '../models/Platforms';
 import type { RewardCreate } from '../models/RewardCreate';
 import type { RewardRead } from '../models/RewardRead';
+import type { RewardUpdate } from '../models/RewardUpdate';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -41,11 +42,11 @@ export class RewardsService {
   }
 
   /**
-   * Create Rewawrd
+   * Create Reward
    * @returns RewardRead Successful Response
    * @throws ApiError
    */
-  public createRewawrd({
+  public createReward({
     platform,
     orgName,
     repoName,
@@ -63,6 +64,41 @@ export class RewardsService {
         'platform': platform,
         'org_name': orgName,
         'repo_name': repoName,
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Patch Reward
+   * @returns RewardRead Successful Response
+   * @throws ApiError
+   */
+  public patchReward({
+    platform,
+    orgName,
+    repoName,
+    rewardId,
+    requestBody,
+  }: {
+    platform: Platforms,
+    orgName: string,
+    repoName: string,
+    rewardId: string,
+    requestBody: RewardUpdate,
+  }): CancelablePromise<RewardRead> {
+    return this.httpRequest.request({
+      method: 'PATCH',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/rewards/{reward_id}',
+      path: {
+        'platform': platform,
+        'org_name': orgName,
+        'repo_name': repoName,
+        'reward_id': rewardId,
       },
       body: requestBody,
       mediaType: 'application/json',

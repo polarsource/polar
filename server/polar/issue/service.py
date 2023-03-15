@@ -28,6 +28,22 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
     ) -> Issue | None:
         return await self.get_by(session, platform=platform, external_id=external_id)
 
+    async def get_by_number(
+        self,
+        session: AsyncSession,
+        platform: Platforms,
+        organization_id: UUID,
+        repository_id: UUID,
+        number: int,
+    ) -> Issue | None:
+        return await self.get_by(
+            session,
+            platform=platform,
+            organization_id=organization_id,
+            repository_id=repository_id,
+            number=number,
+        )
+
     async def list_by_repository(
         self, session: AsyncSession, repository_id: UUID
     ) -> Sequence[Issue]:

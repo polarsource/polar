@@ -12,5 +12,6 @@ export type RewardRead = {
   repository_id: string;
   organization_id: string;
   state: polar__reward__schemas__State;
+  client_secret?: string;
 };
 

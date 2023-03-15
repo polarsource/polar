@@ -30,7 +30,7 @@ class OrganizationService(
         return await self.get_by(session, platform=platform, external_id=external_id)
 
     async def get_by_name(
-        self, session: AsyncSession, platform: Platforms,  name: str
+        self, session: AsyncSession, platform: Platforms, name: str
     ) -> Organization | None:
         return await self.get_by(session, platform=platform, name=name)
 
@@ -108,8 +108,8 @@ class OrganizationService(
         *,
         platform: Platforms,
         org_name: str,
-        repo_name: str | None = None,
-        user_id: UUID | None = None,
+        repo_name: str,
+        user_id: UUID,
     ) -> tuple[Organization, Repository] | None:
         org = await self._get_protected(
             session,
@@ -117,6 +117,27 @@ class OrganizationService(
             org_name=org_name,
             repo_name=repo_name,
             user_id=user_id,
+        )
+        if not org:
+            return None
+
+        # Return a tuple of (org, repo) for intuititive usage (unpacking)
+        # versus having to do org.repos[0] in the caller.
+        return (org, org.repos[0])
+
+    async def get_with_repo(
+        self,
+        session: AsyncSession,
+        *,
+        platform: Platforms,
+        org_name: str,
+        repo_name: str,
+    ) -> tuple[Organization, Repository] | None:
+        org = await self._get_protected(
+            session,
+            platform=platform,
+            org_name=org_name,
+            repo_name=repo_name,
         )
         if not org:
             return None

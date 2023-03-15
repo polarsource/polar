@@ -17,7 +17,7 @@ router = APIRouter(tags=["rewards"])
 
 
 @router.post("/{platform}/{org_name}/{repo_name}/rewards", response_model=RewardRead)
-async def create_rewawrd(
+async def create_reward(
     platform: Platforms,
     org_name: str,
     repo_name: str,

@@ -5,7 +5,8 @@ import type { GithubBadgeRead } from '../models/GithubBadgeRead';
 import type { InstallationCreate } from '../models/InstallationCreate';
 import type { OAuth2AuthorizeResponse } from '../models/OAuth2AuthorizeResponse';
 import type { OrganizationRead } from '../models/OrganizationRead';
-import type { WebhookResponse } from '../models/WebhookResponse';
+import type { polar__integrations__github__endpoints__WebhookResponse } from '../models/polar__integrations__github__endpoints__WebhookResponse';
+import type { polar__integrations__stripe__endpoints__WebhookResponse } from '../models/polar__integrations__stripe__endpoints__WebhookResponse';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -123,13 +124,25 @@ export class IntegrationsService {
 
   /**
    * Webhook
-   * @returns WebhookResponse Successful Response
+   * @returns polar__integrations__github__endpoints__WebhookResponse Successful Response
    * @throws ApiError
    */
-  public webhook(): CancelablePromise<WebhookResponse> {
+  public webhook(): CancelablePromise<polar__integrations__github__endpoints__WebhookResponse> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/integrations/github/webhook',
+    });
+  }
+
+  /**
+   * Webhook
+   * @returns polar__integrations__stripe__endpoints__WebhookResponse Successful Response
+   * @throws ApiError
+   */
+  public webhook1(): CancelablePromise<polar__integrations__stripe__endpoints__WebhookResponse> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/integrations/stripe/webhook',
     });
   }
 

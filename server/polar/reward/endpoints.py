@@ -55,11 +55,16 @@ async def create_rewawrd(
     return ret
 
 
-@router.patch("/rewards/{reward_id}", response_model=RewardRead)
+@router.patch(
+    "/{platform}/{org_name}/{repo_name}/rewards/{reward_id}", response_model=RewardRead
+)
 async def patch_reward(
+    platform: Platforms,
+    org_name: str,
+    repo_name: str,
     reward_id: UUID,
     updates: RewardUpdate,
-    user: User = Depends(current_active_user),
+    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> RewardRead:
     reward = await Reward.find(session=session, id=reward_id)
@@ -68,6 +73,11 @@ async def patch_reward(
         raise HTTPException(
             status_code=404,
             detail="Reward not found",
+        )
+
+    if reward.repository_id != auth.repository.id:
+        raise HTTPException(
+            status_code=403, detail="Reward does not belong to this repository"
         )
 
     reward.amount = updates.amount

@@ -1,14 +1,18 @@
-from typing import Any
+import stripe
 
 from polar.worker import JobContext, task
+from polar.postgres import AsyncSessionLocal
+from polar.models import Reward
+from polar.reward.schemas import State
 
 
 @task("stripe.webhook.payment_intent.succeeded")
-async def payment_intent_created(
-    ctx: JobContext, event_object: dict[str, Any]
-) -> dict[str, Any]:
-    print("PAYMENT INTENT SUCCEEDED")
-    print(event_object)
-    return event_object
-    # async with AsyncSessionLocal() as session:
-    #     return await handle_issue(session, scope, action, payload)
+async def payment_intent_succeeded(ctx: JobContext, event: stripe.Event) -> None:
+    async with AsyncSessionLocal() as session:
+        print(event)
+        reward = await Reward.find_by(
+            session=session, payment_id=event["data"]["object"]["id"]
+        )
+        if reward and reward.state == State.initiated:
+            reward.state = State.created
+            await reward.save(session=session)

@@ -9,7 +9,8 @@ from polar.kit.schemas import Schema
 
 
 class State(str, Enum):
-    created = "created"  # Created by the customer. Polar has received the money.
+    initiated = "initiated"  # Initiated by customer. Polar has not received money yet.
+    created = "created"  # Polar has received the money.
     pending = "pending"  # The issue has been closed, but the reward has not been paid.
     paid = "paid"  # The reward has been paid out to the maintainer.
 

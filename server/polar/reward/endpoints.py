@@ -48,7 +48,7 @@ async def create_rewawrd(
         repository_id=auth.repository.id,
         organization_id=auth.organization.id,
         amount=reward.amount,
-        state=State.created,
+        state=State.initiated,
         payment_id=payment_intent.id,
     )
 

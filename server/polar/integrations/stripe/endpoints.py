@@ -37,7 +37,7 @@ async def enqueue(event: stripe.Event) -> WebhookResponse:
         return not_implemented()
 
     task_name = f"stripe.webhook.{event_type}"
-    enqueued = await enqueue_job(task_name, event["data"]["object"])
+    enqueued = await enqueue_job(task_name, event)
     if not enqueued:
         return WebhookResponse(success=False, message="Failed to enqueue task")
 

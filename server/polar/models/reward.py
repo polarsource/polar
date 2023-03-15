@@ -20,6 +20,6 @@ class Reward(RecordModel):
         Numeric(precision=25, scale=10), nullable=False
     )
 
-    state: Mapped[str] = mapped_column(String, nullable=False, default="created")
+    state: Mapped[str] = mapped_column(String, nullable=False, default="initiated")
 
     # TODO: Add stripe fields here to support anonymous customers?

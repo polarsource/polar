@@ -5,23 +5,26 @@ import IssueLabel from './IssueLabel'
 import TimeAgo from 'javascript-time-ago'
 import en from 'javascript-time-ago/locale/en.json'
 import {
+  OrganizationRead,
+  RepositoryRead,
   type IssueRead,
   type PullRequestRead,
   type RewardRead,
 } from '../api/client'
 import IssueActivityBox from './IssueActivityBox'
-import IssueProgress from './IssueProgress'
+import IssueProgress, { Progress } from './IssueProgress'
 import IssuePullRequest from './IssuePullRequest'
 import IssueReward from './IssueReward'
 
 TimeAgo.addDefaultLocale(en)
 
-export type Issue = IssueRead & {
+const IssueListItem = (props: {
+  issue: IssueRead
   pullRequests: PullRequestRead[]
   rewards: RewardRead[]
-}
-
-const IssueListItem = (props: { issue: Issue }) => {
+  org: OrganizationRead
+  repo: RepositoryRead
+}) => {
   const {
     title,
     number,
@@ -31,19 +34,27 @@ const IssueListItem = (props: { issue: Issue }) => {
     comments,
     issue_closed_at,
   } = props.issue
-  const href = `https://github.com/todo/todo/issues/${number}`
+
+  const href = `https://github.com/${props.org.name}/${props.repo.name}/issues/${number}`
   const createdAt = new Date(issue_created_at)
   const closedAt = new Date(issue_created_at)
 
   const haveRewardOrPullRequest =
-    props.issue.rewards.length > 0 || props.issue.pullRequests.length > 0
+    props.rewards.length > 0 || props.pullRequests.length > 0
 
   const showCommentsCount = !!(comments && comments > 0)
   const showReactionsThumbs = !!(reactions.plus_one > 0)
 
-  // TODO!
-  const isCompleted = !!issue_closed_at
-  const isBuilding = isCompleted === false
+  const getissueProgress = (): Progress => {
+    if (!!issue_closed_at) {
+      return 'completed'
+    }
+    if (props.pullRequests.length > 0) {
+      return 'pull_request'
+    }
+    return 'backlog'
+  }
+  const issueProgress = getissueProgress()
 
   return (
     <div>
@@ -83,18 +94,17 @@ const IssueListItem = (props: { issue: Issue }) => {
             )}
           </div>
 
-          {isCompleted && <IssueProgress progress="completed" />}
-          {isBuilding && <IssueProgress progress="building" />}
+          <IssueProgress progress={issueProgress} />
         </div>
       </div>
 
       {haveRewardOrPullRequest && (
         <IssueActivityBox>
-          {props.issue.rewards.map((reward: RewardRead) => {
+          {props.rewards.map((reward: RewardRead) => {
             return <IssueReward reward={reward} key={reward.id} />
           })}
 
-          {props.issue.pullRequests.map((pr: PullRequestRead) => {
+          {props.pullRequests.map((pr: PullRequestRead) => {
             return (
               <IssuePullRequest
                 issue={props.issue}

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Set, Union
 from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 
@@ -11,11 +11,14 @@ from polar.dashboard.schemas import (
 )
 from polar.enums import Platforms
 from polar.issue.schemas import IssueRead
+from polar.models.issue import Issue
 from polar.organization.schemas import OrganizationRead
+from polar.pull_request.schemas import PullRequestRead
 from polar.repository.schemas import RepositoryRead
 from polar.issue.service import issue
 from polar.reward.schemas import RewardRead
 from polar.reward.service import reward
+from polar.pull_request.service import pull_request
 from polar.auth.dependencies import Auth
 from polar.postgres import AsyncSession, get_db_session
 
@@ -76,6 +79,8 @@ async def get_dashboard(
 
     # start building issue relationships with rewards
     issue_relationships: Dict[UUID, List[Relationship]] = {}
+    for i in issues:
+        issue_relationships[i.id] = []
 
     # add rewards to included
     for r in rewards:
@@ -83,10 +88,54 @@ async def get_dashboard(
             Entry(id=r.id, type="reward", attributes=RewardRead.from_orm(r))
         )
         # inject relationships
-        rel = Relationship(data=[RelationshipData(type="reward", id=r.id)])
-        if r.issue_id not in issue_relationships:
-            issue_relationships[r.issue_id] = []
+        rel = Relationship(data=RelationshipData(type="reward", id=r.id))
         issue_relationships[r.issue_id].append(rel)
+
+    # Add repository and organization relationships to issues
+    for i in issues:
+        orgRel = Relationship(
+            data=RelationshipData(type="organization", id=auth.organization.id)
+        )
+        issue_relationships[i.id].append(orgRel)
+
+        repoRel = Relationship(
+            data=RelationshipData(type="repository", id=auth.repository.id)
+        )
+        issue_relationships[i.id].append(repoRel)
+
+    issues_with_prs: Set[UUID] = set()
+
+    # get linked pull requests
+    for i in issues:
+        prs = await pull_request.list_by_repository_for_issue(
+            session, auth.repository.id, i.number
+        )
+        # Add to included and to relationships
+        for pr in prs:
+            entry: Entry[PullRequestRead] = Entry(
+                id=pr.id,
+                type="pull_request",
+                attributes=PullRequestRead.from_orm(pr),
+            )
+            rel = Relationship(data=RelationshipData(type="pull_request", id=pr.id))
+            included.append(entry)
+            issue_relationships[i.id].append(rel)
+
+        if prs:
+            issues_with_prs.add(i.id)
+
+    def issue_progress(issue: Issue) -> IssueStatus:
+        if issue.issue_closed_at:
+            return IssueStatus.completed
+        if issue.id in issues_with_prs:
+            return IssueStatus.pull_request
+        return IssueStatus.backlog
+
+    # filter issues to only include issues with any of the expected statuses
+    if status:
+        issues = [i for i in issues if issue_progress(i) in status]
+
+    # TODO: only include related objects for issues in the response
 
     return IssueListResponse(
         data=[

@@ -1,8 +1,8 @@
+import dynamic from 'next/dynamic'
+import { useRouter } from 'next/router'
+import { requireAuth } from 'polarkit/hooks'
 import type { ReactElement } from 'react'
 import type { NextPageWithLayout } from 'utils/next'
-import dynamic from 'next/dynamic'
-import { requireAuth } from 'polarkit/hooks'
-import { useRouter } from 'next/router'
 
 const Dashboard = dynamic(() => import('../dashboard'), {
   ssr: false,

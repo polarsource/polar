@@ -9,45 +9,6 @@ import {
 } from '../api/client'
 import { default as IssueListItem } from './IssueListItem'
 
-const lastTimestamp = (issue: IssueRead) => {
-  const timestamps = [
-    new Date(issue.issue_created_at),
-    // TODO: Latest comment, commit, etc.
-  ]
-
-  if (issue.issue_closed_at) {
-    timestamps.push(new Date(issue.issue_closed_at))
-  }
-  if (issue.issue_modified_at) {
-    timestamps.push(new Date(issue.issue_modified_at))
-  }
-
-  const sorted = timestamps
-    .filter((d) => Boolean(d))
-    .sort((a, b) => {
-      return b.getTime() - a.getTime()
-    })
-
-  return sorted[0]
-}
-
-const pullRequestsForIssue = (
-  issue: IssueRead,
-  pullRequests: PullRequestRead[],
-): PullRequestRead[] => {
-  const re = new RegExp(
-    `(Close|Closes|Closed|Fix|Fixes|Fixed|Resolve|Resolves|Resolved) #${issue.number}(?![0-9])`,
-    'gi',
-  )
-
-  const filtered = pullRequests.filter((pr) => {
-    if (pr.body && re.test(pr.body)) return true
-    return false
-  })
-
-  return filtered
-}
-
 type IssueListItemData = {
   issue: IssueRead
   pullRequests: PullRequestRead[]
@@ -74,7 +35,7 @@ const populateRelations = <T,>(
 
 const IssueList = (props: {
   issues: Entry_IssueRead_[]
-  pullRequests: PullRequestRead[]
+  pullRequests: Map<string, PullRequestRead>
   rewards: Map<string, RewardRead>
   orgs: Map<string, OrganizationRead>
   repos: Map<string, RepositoryRead>
@@ -90,7 +51,7 @@ const IssueList = (props: {
     const sorted = issues.map((issue): IssueListItemData => {
       return {
         issue: issue.attributes,
-        pullRequests: pullRequestsForIssue(issue.attributes, pullRequests),
+        pullRequests: populateRelations(issue, pullRequests, 'pull_request'),
         rewards: populateRelations(issue, rewards, 'reward'),
         org: populateRelations(issue, orgs, 'organization')[0],
         repo: populateRelations(issue, repos, 'repository')[0],

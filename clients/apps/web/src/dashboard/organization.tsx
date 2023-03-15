@@ -8,7 +8,8 @@ import {
   type RewardRead,
 } from 'polarkit/api/client'
 import { IssueList } from 'polarkit/components'
-import { useDashboard, useRepositoryPullRequests } from 'polarkit/hooks'
+import { useDashboard } from 'polarkit/hooks'
+import { PullRequestRead } from 'polarkit/src/api/client'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { DashboardFilters } from './filters'
@@ -48,23 +49,19 @@ const Organization = (props: { filters: DashboardFilters }) => {
   const dashboardQuery = useDashboard(orgSlug, repoSlug, filters.q, statuses)
   const dashboard = dashboardQuery.data
 
-  // TODO: include pull requests in the dashboard query
-  const repositoryPullRequestQuery = useRepositoryPullRequests(
-    orgSlug,
-    repoSlug,
-  )
-  const pullRequests = repositoryPullRequestQuery.data
-
   const [issues, setIssues] = useState<Entry_IssueRead_[]>()
   const [orgs, setOrgs] = useState<Map<string, OrganizationRead>>()
   const [rewards, setRewards] = useState<Map<string, RewardRead>>()
   const [repos, setRepos] = useState<Map<string, RepositoryRead>>()
+  const [pullRequests, setPullRequests] =
+    useState<Map<string, PullRequestRead>>()
 
   useEffect(() => {
     setIssues(dashboard?.data || [])
     setOrgs(buildMapForType<OrganizationRead>(dashboard, 'organization'))
     setRewards(buildMapForType<RewardRead>(dashboard, 'rewards'))
     setRepos(buildMapForType<RepositoryRead>(dashboard, 'repository'))
+    setPullRequests(buildMapForType<PullRequestRead>(dashboard, 'pull_request'))
   }, [dashboard])
 
   return (

@@ -124,9 +124,6 @@ async def get_dashboard(
         if prs:
             issues_with_prs.add(i.id)
 
-        # if status and IssueStatus.pull_request not in status:
-        # do not return issue
-
     def issue_progress(issue: Issue) -> IssueStatus:
         if issue.issue_closed_at:
             return IssueStatus.completed
@@ -137,6 +134,8 @@ async def get_dashboard(
     # filter issues to only include issues with any of the expected statuses
     if status:
         issues = [i for i in issues if issue_progress(i) in status]
+
+    # TODO: only include related objects for issues in the response
 
     return IssueListResponse(
         data=[

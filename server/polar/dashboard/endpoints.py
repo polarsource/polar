@@ -83,10 +83,24 @@ async def get_dashboard(
             Entry(id=r.id, type="reward", attributes=RewardRead.from_orm(r))
         )
         # inject relationships
-        rel = Relationship(data=[RelationshipData(type="reward", id=r.id)])
+        rel = Relationship(data=RelationshipData(type="reward", id=r.id))
         if r.issue_id not in issue_relationships:
             issue_relationships[r.issue_id] = []
         issue_relationships[r.issue_id].append(rel)
+
+    # Add repository and organization relationships to issues
+    for i in issues:
+        if i.id not in issue_relationships:
+            issue_relationships[i.id] = []
+        orgRel = Relationship(
+            data=RelationshipData(type="organization", id=auth.organization.id)
+        )
+        issue_relationships[i.id].append(orgRel)
+
+        repoRel = Relationship(
+            data=RelationshipData(type="repository", id=auth.repository.id)
+        )
+        issue_relationships[i.id].append(repoRel)
 
     return IssueListResponse(
         data=[

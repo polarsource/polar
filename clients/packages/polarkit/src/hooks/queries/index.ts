@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, UseQueryResult } from '@tanstack/react-query'
 import { type OrganizationRead, type RepositoryRead } from 'polarkit/api/client'
 import { api } from '../../api'
-import { IssueStatus, Platforms } from '../../api/client'
+import { IssueListResponse, IssueStatus, Platforms } from '../../api/client'
 
 export type RepoListItem = RepositoryRead & {
   organization: OrganizationRead
@@ -95,7 +95,7 @@ export const useDashboard = (
   repoName: string,
   q?: string,
   status?: Array<IssueStatus>,
-) =>
+): UseQueryResult<IssueListResponse> =>
   useQuery(
     [
       'dashboard',

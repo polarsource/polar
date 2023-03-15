@@ -26,7 +26,7 @@ class RelationshipData(Schema):
 
 class Relationship(Schema):
     # TODO: links?
-    data: List[RelationshipData]
+    data: RelationshipData
 
 
 class Entry(GenericModel, Generic[DataT]):

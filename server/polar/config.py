@@ -55,6 +55,7 @@ class Settings(BaseSettings):
 
     # Stripe
     STRIPE_SECRET_KEY: str = ""
+    STRIPE_ENDPOINT_SECRET: str = ""
 
     # Application behaviours
 

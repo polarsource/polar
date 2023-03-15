@@ -99,7 +99,7 @@ const Progress100 = () => (
   </svg>
 )
 
-type Progress = 'backlog' | 'building' | 'pull_request' | 'completed'
+export type Progress = 'backlog' | 'building' | 'pull_request' | 'completed'
 
 const IssueProgress = (props: { progress: Progress }) => {
   const { progress } = props

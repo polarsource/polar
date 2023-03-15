@@ -38,6 +38,9 @@ async def create_rewawrd(
             status_code=403, detail="Issue does not belong to this repository"
         )
 
+    # Create a payment intent with Stripe
+    payment_intent = stripe.create_intent(amount=reward.amount, issue_id=issue.id)
+
     # Create the reward
     created = await Reward.create(
         session=session,
@@ -46,12 +49,12 @@ async def create_rewawrd(
         organization_id=auth.organization.id,
         amount=reward.amount,
         state=State.created,
+        payment_id=payment_intent.id,
     )
 
-    # Create a payment intent with Stripe
-    payment_intent = stripe.create_intent(amount=reward.amount, issue_id=issue.id)
     ret = RewardRead.from_orm(created)
     ret.client_secret = payment_intent.client_secret
+
     return ret
 
 
@@ -81,14 +84,15 @@ async def patch_reward(
         )
 
     reward.amount = updates.amount
+
+    # Modify the corresponding payment intent
+    payment_intent = stripe.modify_intent(reward.payment_id, amount=reward.amount)
+
     await reward.save(session=session)
 
-    # Create a payment intent with Stripe
-    payment_intent = stripe.create_intent(
-        amount=reward.amount, issue_id=reward.issue_id
-    )
     ret = RewardRead.from_orm(reward)
     ret.client_secret = payment_intent.client_secret
+
     return ret
 
 

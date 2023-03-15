@@ -20,5 +20,11 @@ class StripeService(object):
             transfer_group=f"{issue_id}",
         )
 
+    def modify_intent(self, id: str, amount: Decimal) -> stripe_lib.PaymentIntent:
+        return stripe_lib.PaymentIntent.modify(
+            id,
+            amount=amount * 100,
+        )
+
 
 stripe = StripeService()

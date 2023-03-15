@@ -40,9 +40,13 @@ poetry run task lint
 
 ## Create a database migration
 
+Modify the model in polar.model, then run
+
 ```bash
 alembic revision --autogenerate -m "[description]"
 ```
+
+and a migration will be generated for you.
 
 ## Design
 

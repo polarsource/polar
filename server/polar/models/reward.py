@@ -14,6 +14,7 @@ class Reward(RecordModel):
     issue_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)
     repository_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)
     organization_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)
+    payment_id: Mapped[str] = mapped_column(String, nullable=True, index=True)
 
     amount: Mapped[Decimal] = mapped_column(
         Numeric(precision=25, scale=10), nullable=False

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   type IssueRead,
   type PullRequestRead,
@@ -51,14 +50,9 @@ const IssueList = (props: {
   rewards: RewardRead[]
 }) => {
   const { issues, pullRequests, rewards } = props
-
   if (!issues) return <div>Loading issues...</div>
   if (!pullRequests) return <div>Loading pull requests...</div>
   if (!rewards) return <div>Loading rewards...</div>
-
-  const [searchQuery, setSearchQuery] = useState('')
-  const handleQueryChange = (e: React.FormEvent<HTMLInputElement>) =>
-    setSearchQuery(e.target.value)
 
   const sortByActivity = (a: IssueRead, b: IssueRead) => {
     const aDate = lastTimestamp(a)
@@ -66,60 +60,15 @@ const IssueList = (props: {
     return bDate.getTime() - aDate.getTime()
   }
 
-  const filterPullRequest = (pr: PullRequestRead): boolean => {
-    const query = searchQuery.toLowerCase()
-    // PR Title
-    if (pr.title.toLowerCase().indexOf(query) > -1) {
-      return true
+  let sortedIssues = issues.map((issue): Issue => {
+    return {
+      ...issue,
+      pullRequests: pullRequestsForIssue(issue, pullRequests),
+      rewards: rewards.filter((reward) => reward.issue_id === issue.id),
     }
-    // PR username
-    if (pr.author.login.toLowerCase().indexOf(query) > -1) {
-      return true
-    }
-    return false
-  }
-
-  const filterByQuery = (issue: Issue): boolean => {
-    if (searchQuery.length === 0) {
-      return true
-    }
-
-    const query = searchQuery.toLowerCase()
-
-    // Issue Title
-    if (issue.title.toLowerCase().indexOf(query) > -1) {
-      return true
-    }
-
-    // Issue Number
-    if (issue.number.toString().indexOf(query) > -1) {
-      return true
-    }
-
-    // Issue username
-    if (issue.author.login.toLowerCase().indexOf(query) > -1) {
-      return true
-    }
-
-    // If any associated PR matches
-    // TODO: Do we also want to filter the PRs?
-    if (issue.pullRequests.find(filterPullRequest)) {
-      return true
-    }
-
-    return false
-  }
-
-  let sortedIssues = issues
-    .map((issue): Issue => {
-      return {
-        ...issue,
-        pullRequests: pullRequestsForIssue(issue, pullRequests),
-        rewards: rewards.filter((reward) => reward.issue_id === issue.id),
-      }
-    })
-    .filter(filterByQuery)
-    .sort(sortByActivity)
+  })
+  //.filter(filterByQuery)
+  // .sort(sortByActivity)
 
   return (
     <div className="space-y-2 divide-y divide-gray-200">

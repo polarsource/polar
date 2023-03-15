@@ -10,6 +10,7 @@ import {
   type RewardRead,
 } from '../api/client'
 import IssueActivityBox from './IssueActivityBox'
+import IssueProgress from './IssueProgress'
 import IssuePullRequest from './IssuePullRequest'
 import IssueReward from './IssueReward'
 
@@ -21,8 +22,15 @@ export type Issue = IssueRead & {
 }
 
 const IssueListItem = (props: { issue: Issue }) => {
-  const { title, number, state, issue_created_at, reactions, comments } =
-    props.issue
+  const {
+    title,
+    number,
+    state,
+    issue_created_at,
+    reactions,
+    comments,
+    issue_closed_at,
+  } = props.issue
   const href = `https://github.com/todo/todo/issues/${number}`
   const createdAt = new Date(issue_created_at)
   const closedAt = new Date(issue_created_at)
@@ -32,6 +40,10 @@ const IssueListItem = (props: { issue: Issue }) => {
 
   const showCommentsCount = !!(comments && comments > 0)
   const showReactionsThumbs = !!(reactions.plus_one > 0)
+
+  // TODO!
+  const isCompleted = !!issue_closed_at
+  const isBuilding = isCompleted === false
 
   return (
     <div>
@@ -61,11 +73,18 @@ const IssueListItem = (props: { issue: Issue }) => {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-6">
-          {showCommentsCount && <IconCounter icon="💬" count={comments} />}
-          {showReactionsThumbs && (
-            <IconCounter icon="👍" count={reactions.plus_one} />
-          )}
+        <div className="flex items-center gap-12">
+          <div className="flex items-center gap-6">
+            {showCommentsCount && (
+              <IconCounter icon="comments" count={comments} />
+            )}
+            {showReactionsThumbs && (
+              <IconCounter icon="thumbs_up" count={reactions.plus_one} />
+            )}
+          </div>
+
+          {isCompleted && <IssueProgress progress="completed" />}
+          {isBuilding && <IssueProgress progress="building" />}
         </div>
       </div>
 

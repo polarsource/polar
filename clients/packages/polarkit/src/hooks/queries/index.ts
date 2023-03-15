@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { type OrganizationRead, type RepositoryRead } from 'polarkit/api/client'
 import { api } from '../../api'
-import { Platforms } from '../../api/client'
+import { IssueStatus, Platforms } from '../../api/client'
 
 export type RepoListItem = RepositoryRead & {
   organization: OrganizationRead
@@ -51,8 +51,8 @@ export const useRepositoryIssues = (repoOwner: string, repoName: string) =>
     () =>
       api.issues.getRepositoryIssues({
         platform: Platforms.GITHUB,
-        organizationName: repoOwner,
-        name: repoName,
+        orgName: repoOwner,
+        repoName: repoName,
       }),
     {
       enabled: !!repoOwner && !!repoName,
@@ -68,8 +68,8 @@ export const useRepositoryPullRequests = (
     () =>
       api.pullRequests.getRepositoryPullRequests({
         platform: Platforms.GITHUB,
-        organizationName: repoOwner,
-        name: repoName,
+        orgName: repoOwner,
+        repoName: repoName,
       }),
     {
       enabled: !!repoOwner && !!repoName,
@@ -82,23 +82,36 @@ export const useRepositoryRewards = (repoOwner: string, repoName: string) =>
     () =>
       api.rewards.getRepositoryRewards({
         platform: Platforms.GITHUB,
-        organizationName: repoOwner,
-        name: repoName,
+        orgName: repoOwner,
+        repoName: repoName,
       }),
     {
       enabled: !!repoOwner && !!repoName,
     },
   )
 
-export const useDashboard = (repoOwner: string, repoName: string, q?: string) =>
+export const useDashboard = (
+  repoOwner: string,
+  repoName: string,
+  q?: string,
+  status?: Array<IssueStatus>,
+) =>
   useQuery(
-    ['dashboard', 'repo', repoOwner, repoName, q],
+    [
+      'dashboard',
+      'repo',
+      repoOwner,
+      repoName,
+      q,
+      JSON.stringify(status), // Array as cache key
+    ],
     ({ signal }) => {
       const promise = api.dashboard.getDashboard({
         platform: Platforms.GITHUB,
-        organizationName: repoOwner,
-        repositoryName: repoName,
+        orgName: repoOwner,
+        repoName: repoName,
         q: q,
+        status: status,
       })
 
       signal?.addEventListener('abort', () => {

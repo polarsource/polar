@@ -1,96 +1,80 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Query
 
 from polar.dashboard.schemas import (
     Entry,
     IssueListResponse,
+    IssueStatus,
     Relationship,
     RelationshipData,
 )
 from polar.enums import Platforms
 from polar.issue.schemas import IssueRead
-from polar.models.issue import Issue
 from polar.organization.schemas import OrganizationRead
-from polar.organization.service import organization
 from polar.repository.schemas import RepositoryRead
-from polar.repository.service import repository
 from polar.issue.service import issue
 from polar.reward.schemas import RewardRead
 from polar.reward.service import reward
-from polar.auth.dependencies import current_active_user
-from polar.models import User
+from polar.auth.dependencies import Auth
 from polar.postgres import AsyncSession, get_db_session
 
-router = APIRouter()
-
-
-def filterIssue(issue: Issue, q: str) -> bool:
-    q = q.casefold()
-    if q in issue.title.casefold():
-        return True
-    if issue.body and q in issue.body.casefold():
-        return True
-    return False
+router = APIRouter(tags=["dashboard"])
 
 
 @router.get(
-    "/{platform}/{organization_name}/{repository_name}",
+    "/{platform}/{org_name}/{repo_name}/dashboard",
     response_model=IssueListResponse,
 )
 async def get_dashboard(
     platform: Platforms,
-    organization_name: str,
-    repository_name: str,
-    q: str | None = None,
-    user: User = Depends(current_active_user),
+    org_name: str,
+    repo_name: str,
+    status: Union[List[IssueStatus], None] = Query(default=None),
+    q: Union[str, None] = Query(default=None),
+    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueListResponse:
-
-    # find org
-    org = await organization.get_by_name(session, platform, organization_name)
-    if not org:
-        raise HTTPException(
-            status_code=404,
-            detail="Organization not found",
+    include_open = False
+    if status:
+        include_open = (
+            IssueStatus.backlog in status
+            or IssueStatus.building in status
+            or IssueStatus.pull_request in status
         )
 
-    # find repo
-    repo = await repository.get_by(
-        session, organization_id=org.id, name=repository_name
-    )
-    if not repo:
-        raise HTTPException(
-            status_code=404,
-            detail="Repository not found",
-        )
+    include_closed = False
+    if status:
+        include_closed = IssueStatus.completed in status
 
     # get issues
-    issues = await issue.list_by_repository(session, repo.id)
-    if not issues:
-        raise HTTPException(
-            status_code=404,
-            detail="Issues not found",
-        )
+    issues = await issue.list_by_repository_and_status(
+        session,
+        auth.repository.id,
+        text=q,
+        include_open=include_open,
+        include_closed=include_closed,
+    )
 
-    # filter issues by q
-    if q:
-        issues = [i for i in issues if filterIssue(i, q)]
+    # add org and repo to included
+    included: List[Entry[Any]] = [
+        Entry(
+            id=auth.organization.id,
+            type="organization",
+            attributes=OrganizationRead.from_orm(auth.organization),
+        ),
+        Entry(
+            id=auth.repository.id,
+            type="repository",
+            attributes=RepositoryRead.from_orm(auth.repository),
+        ),
+    ]
 
     # get rewards
     issue_ids = [i.id for i in issues]
-
     rewards = await reward.get_by_issue_ids(session, issue_ids)
 
-    included: List[Entry[Any]] = [
-        Entry(
-            id=org.id, type="organization", attributes=OrganizationRead.from_orm(org)
-        ),
-        Entry(id=repo.id, type="repository", attributes=RepositoryRead.from_orm(repo)),
-    ]
-
-    print(rewards)
-
+    # start building issue relationships with rewards
     issue_relationships: Dict[UUID, List[Relationship]] = {}
 
     # add rewards to included

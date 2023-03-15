@@ -1,7 +1,7 @@
+import EventEmitter from 'eventemitter3'
 import { useEffect } from 'react'
 import { getServerURL } from '../../utils'
 import { onIssueUpdated } from './issues'
-import EventEmitter from 'eventemitter3'
 
 const ACTIONS: {
   [key: string]: (payload: any) => void
@@ -12,26 +12,20 @@ const ACTIONS: {
 const emitter = new EventEmitter()
 
 export const useSSE = (
-  organizationId?: string,
-  repositoryId?: string,
+  platform?: string,
+  orgName?: string,
+  repoName?: string,
 ): EventEmitter => {
-  const params: {
-    organization_id?: string
-    repository_id?: string
-  } = {}
-  if (organizationId) {
-    params.organization_id = organizationId
+  let streamURL = getServerURL('/api/v1')
+  if (!orgName && !repoName) {
+    streamURL += '/user'
+  } else {
+    streamURL += `/${platform}/${orgName}`
+    if (repoName) {
+      streamURL += `/${repoName}`
+    }
   }
-  if (repositoryId) {
-    params.repository_id = repositoryId
-  }
-
-  let streamURL: string
-  if (params.organization_id || params.repository_id) {
-    const base = getServerURL('/api/v1/stream')
-    const query = new URLSearchParams(params)
-    streamURL = `${base}?${query.toString()}`
-  }
+  streamURL += '/stream'
 
   useEffect(() => {
     if (!streamURL) {

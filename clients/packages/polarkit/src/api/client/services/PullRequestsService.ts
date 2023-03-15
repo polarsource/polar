@@ -18,20 +18,20 @@ export class PullRequestsService {
    */
   public getRepositoryPullRequests({
     platform,
-    organizationName,
-    name,
+    orgName,
+    repoName,
   }: {
     platform: Platforms,
-    organizationName: string,
-    name: string,
+    orgName: string,
+    repoName: string,
   }): CancelablePromise<Array<PullRequestRead>> {
     return this.httpRequest.request({
       method: 'GET',
-      url: '/api/v1/pull_requests/{platform}/{organization_name}/{name}',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/pulls',
       path: {
         'platform': platform,
-        'organization_name': organizationName,
-        'name': name,
+        'org_name': orgName,
+        'repo_name': repoName,
       },
       errors: {
         422: `Validation Error`,

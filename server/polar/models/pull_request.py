@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import TIMESTAMP, Boolean, Integer, String, UniqueConstraint
+from sqlalchemy import TIMESTAMP, Boolean, Index, Integer, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -15,6 +15,9 @@ class PullRequest(IssueFields, RecordModel):
     __table_args__ = (
         UniqueConstraint("external_id"),
         UniqueConstraint("organization_id", "repository_id", "number"),
+        Index(
+            "idx_pull_requests_title_tsv", "title_tsv", postgresql_using="gin"
+        ),  # Search index
     )
 
     on_created_signal = pull_request_created

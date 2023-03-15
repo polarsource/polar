@@ -18,20 +18,20 @@ export class IssuesService {
    */
   public getRepositoryIssues({
     platform,
-    organizationName,
-    name,
+    orgName,
+    repoName,
   }: {
     platform: Platforms,
-    organizationName: string,
-    name: string,
+    orgName: string,
+    repoName: string,
   }): CancelablePromise<Array<IssueRead>> {
     return this.httpRequest.request({
       method: 'GET',
-      url: '/api/v1/issues/{platform}/{organization_name}/{name}',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/issues',
       path: {
         'platform': platform,
-        'organization_name': organizationName,
-        'name': name,
+        'org_name': orgName,
+        'repo_name': repoName,
       },
       errors: {
         422: `Validation Error`,

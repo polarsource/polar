@@ -22,6 +22,7 @@ sse-starlette = "^1.2.1"
 blinker = {git = "https://github.com/pallets-eco/blinker.git"}
 arq = "^0.25.0"
 stripe = "^5.2.0"
+sqlalchemy-searchable = "^1.4.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.12.0"

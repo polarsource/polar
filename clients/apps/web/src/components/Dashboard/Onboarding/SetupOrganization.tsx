@@ -22,7 +22,7 @@ export const SetupOrganization = ({ org }: { org: OrganizationRead }) => {
     const response = api.organizations
       .updateSettings({
         platform: org.platform,
-        organizationName: org.name,
+        orgName: org.name,
         requestBody: {
           funding_badge_retroactive: addBadgeToAll,
           funding_badge_show_amount: showAmountRaised,

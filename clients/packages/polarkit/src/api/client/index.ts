@@ -19,6 +19,7 @@ export type { HTTPValidationError } from './models/HTTPValidationError';
 export { InstallationCreate } from './models/InstallationCreate';
 export type { IssueListResponse } from './models/IssueListResponse';
 export type { IssueRead } from './models/IssueRead';
+export { IssueStatus } from './models/IssueStatus';
 export type { OAuth2AuthorizeResponse } from './models/OAuth2AuthorizeResponse';
 export type { OrganizationRead } from './models/OrganizationRead';
 export type { OrganizationSettings } from './models/OrganizationSettings';

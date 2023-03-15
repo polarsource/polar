@@ -1,18 +1,17 @@
 import asyncio
-from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, Depends
 from sse_starlette.sse import EventSourceResponse
 
-from polar.auth.dependencies import current_active_user
+from polar.enums import Platforms
+from polar.auth.dependencies import Auth
 from polar.redis import get_redis
-from polar.models import User
 from polar.redis import Redis
 
 from .service import Receivers
 
-router = APIRouter()
+router = APIRouter(tags=["stream"])
 
 log = structlog.get_logger()
 
@@ -31,15 +30,37 @@ async def subscribe(redis: Redis, channels: list[str]):
             await asyncio.sleep(0.1)
 
 
-@router.get("")
-async def listen(
-    organization_id: UUID | None,
-    repository_id: UUID | None = None,
-    user: User = Depends(current_active_user),
+@router.get("/user/stream")
+async def user_stream(
+    auth: Auth = Depends(Auth.current_user),
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:
-    # TODO(Security): Validate user & org+repo relationships here!
+    receivers = Receivers(user_id=auth.user.id)
+    return EventSourceResponse(subscribe(redis, receivers.get_channels()))
+
+
+@router.get("/{platform}/{org_name}/stream")
+async def user_org_stream(
+    platform: Platforms,
+    org_name: str,
+    auth: Auth = Depends(Auth.user_with_org_access),
+    redis: Redis = Depends(get_redis),
+) -> EventSourceResponse:
+    receivers = Receivers(user_id=auth.user.id, organization_id=auth.organization.id)
+    return EventSourceResponse(subscribe(redis, receivers.get_channels()))
+
+
+@router.get("/{platform}/{org_name}/{repo_name}/stream")
+async def user_org_repo_stream(
+    platform: Platforms,
+    org_name: str,
+    repo_name: str,
+    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
+    redis: Redis = Depends(get_redis),
+) -> EventSourceResponse:
     receivers = Receivers(
-        user_id=user.id, organization_id=organization_id, repository_id=repository_id
+        user_id=auth.user.id,
+        organization_id=auth.organization.id,
+        repository_id=auth.repository.id,
     )
     return EventSourceResponse(subscribe(redis, receivers.get_channels()))

@@ -9,7 +9,7 @@ from polar.organization.service import organization
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.schemas import RepositoryRead
 
-router = APIRouter()
+router = APIRouter(prefix="/user/organizations", tags=["user.organizations"])
 
 
 @router.get("", response_model=list[OrganizationRead])

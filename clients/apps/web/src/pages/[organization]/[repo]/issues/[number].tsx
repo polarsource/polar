@@ -21,7 +21,6 @@ const PublicCheckoutPage: NextPage = ({
           repository={repository}
           issue={issue}
           query={query}
-          stripePromise={stripePromise}
         />
 
         <div className="text-center">

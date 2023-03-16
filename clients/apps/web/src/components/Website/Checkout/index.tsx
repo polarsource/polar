@@ -233,7 +233,6 @@ const Checkout = ({
   repository,
   issue,
   query,
-  stripePromise,
 }: IssuePledge & {
   query: any // TODO: Investigate & fix type
 }) => {

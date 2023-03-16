@@ -1,3 +1,6 @@
+/**
+ * TODO(gustav): remove all styles in this file with tailwind classes on the components in RepoSelection
+ */
 :root {
   --font-sans: 'Inter', --apple-system, BlinkMacSystemFont, Segoe UI, Roboto,
     Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
@@ -47,16 +50,6 @@
   --blue12: hsl(211, 100%, 15%);
 }
 
-[cmdk-root] {
-  background: var(--gray1);
-  border-radius: 12px;
-  padding: 8px 0;
-  font-family: var(--font-sans);
-  box-shadow: var(--cmdk-shadow);
-  border: 1px solid var(--gray6);
-  position: relative;
-}
-
 [cmdk-input] {
   font-family: var(--font-sans);
   border: none;
@@ -68,52 +61,6 @@
 
   &::placeholder {
     color: var(--gray9);
-  }
-}
-
-[cmdk-item] {
-  content-visibility: auto;
-
-  cursor: pointer;
-  height: 40px;
-  border-radius: 8px;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 8px;
-  color: var(--gray12);
-  user-select: none;
-  will-change: background, color;
-  transition: all 150ms ease;
-  transition-property: none;
-
-  &[aria-selected='true'] {
-    background: var(--gray4);
-    color: var(--gray12);
-  }
-
-  &[aria-disabled='true'] {
-    color: var(--gray8);
-    cursor: not-allowed;
-  }
-
-  &:active {
-    transition-property: background;
-    background: var(--gray4);
-  }
-
-  &:first-child {
-    margin-top: 8px;
-  }
-
-  & + [cmdk-item] {
-    margin-top: 4px;
-  }
-
-  svg {
-    width: 18px;
-    height: 18px;
   }
 }
 

@@ -1,16 +1,22 @@
-import { PlusIcon } from '@heroicons/react/20/solid'
+import {
+  CodeBracketIcon as CodeBracketIconSmall,
+  PlusIcon,
+} from '@heroicons/react/20/solid'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
-import { CodeBracketIcon } from '@heroicons/react/24/solid'
 import { Command } from 'cmdk'
 import { requireAuth, useUserOrganizations } from 'polarkit/hooks'
-import { OrganizationRead } from 'polarkit/src/api/client'
+import { OrganizationRead, RepositoryRead } from 'polarkit/src/api/client'
 import { useStore } from 'polarkit/store'
 import React, { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import useOutsideClick from 'utils/useOutsideClick'
 
 export function RepoSelection() {
   const [value, setValue] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement | null>(null)
   const listRef = React.useRef(null)
+  const navigate = useNavigate()
+  const location = useLocation()
 
   const [open, setOpen] = React.useState(false)
 
@@ -21,23 +27,78 @@ export function RepoSelection() {
   const currentRepo = useStore((state) => state.currentRepo)
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
 
-  React.useEffect(() => {
+  useEffect(() => {
     inputRef?.current?.focus()
   }, [])
 
   const organizations = userOrgQuery.data
-  const repositories = userOrgQuery.repositories
 
-  const [selectedOrg, setSelectedOrg] = useState<OrganizationRead | undefined>()
+  // detect current from url
+  useEffect(() => {
+    const parts = location.pathname.split('/')
+
+    if (!organizations) {
+      return
+    }
+
+    if (parts.length < 3) {
+      return
+    }
+
+    let org: OrganizationRead | undefined
+    let repo: RepositoryRead | undefined
+
+    // Find org
+    const orgName = parts[2]
+    const orgs = organizations.filter((o) => o.name === orgName)
+
+    if (orgs.length === 0) {
+      return
+    }
+    org = orgs[0]
+
+    // Find repo
+    if (parts.length === 4 && org) {
+      const repoName = parts[3]
+      // from org find repo
+      const repos = org.repositories.filter((r) => r.name === repoName)
+      if (repos.length >= 0) {
+        repo = repos[0]
+      }
+    }
+
+    setCurrentOrgRepo(org, repo)
+  }, [organizations])
+
+  const [dropdownSelectedOrg, setDropdowndropdownSelectedOrg] = useState<
+    OrganizationRead | undefined
+  >()
+
+  const resetDropdown = () => {
+    setOpen(false)
+    setDropdowndropdownSelectedOrg(undefined)
+    setInputValue('')
+  }
 
   const onSelectOrg = (org: OrganizationRead) => {
     // Select org again, go to it!
-    if (selectedOrg && selectedOrg.id === org.id) {
-      alert('Go to org!')
+    if (dropdownSelectedOrg && dropdownSelectedOrg.id === org.id) {
+      setCurrentOrgRepo(org, undefined)
+      resetDropdown()
+      navigate(`/dashboard/${org.name}`)
+      return
     }
 
-    setSelectedOrg(org)
+    setDropdowndropdownSelectedOrg(org)
     setInputValue('')
+  }
+
+  const onSelectRepo = (org: OrganizationRead, repo: RepositoryRead) => {
+    if (org && repo) {
+      setCurrentOrgRepo(org, repo)
+      resetDropdown()
+      navigate(`/dashboard/${org.name}/${repo.name}`)
+    }
   }
 
   const onValueChange = (search: string) => {
@@ -48,11 +109,10 @@ export function RepoSelection() {
     useState(false)
 
   const onInputKeyUp = (e) => {
-    console.log(e, e.target.value)
     // Backspace once to select, backspace again to delete
     if (e.code === 'Backspace' && e.target.value === '') {
       if (orgIsBackspaceHighlighted) {
-        setSelectedOrg(undefined)
+        setDropdowndropdownSelectedOrg(undefined)
         setOrgIsBackspaceHighlighted(false)
       } else {
         setOrgIsBackspaceHighlighted(true)
@@ -71,19 +131,10 @@ export function RepoSelection() {
   const [inputValue, setInputValue] = useState('')
 
   useEffect(() => {
-    // let orgs =
-    //   organizations?.filter((o) => {
-    //     if (selectedOrg === undefined) {
-    //       return true
-    //     }
-    //     return selectedOrg.id === o.id
-    //   }) || []
-    //
-
     let orgs = []
 
     // No selected org, and no search: show only orgs
-    if (selectedOrg === undefined && inputValue === '') {
+    if (dropdownSelectedOrg === undefined && inputValue === '') {
       orgs =
         organizations?.map((o) => {
           return {
@@ -91,23 +142,26 @@ export function RepoSelection() {
             repositories: [],
           }
         }) || []
-    } else if (selectedOrg === undefined) {
+    } else if (dropdownSelectedOrg === undefined) {
       orgs = organizations
-    } else if (selectedOrg) {
+    } else if (dropdownSelectedOrg) {
       // selected org
-      orgs = organizations?.filter((o) => o.id === selectedOrg.id) || []
+      orgs = organizations?.filter((o) => o.id === dropdownSelectedOrg.id) || []
     } else {
       orgs = []
     }
 
     setListOrgs(orgs)
-  }, [selectedOrg, organizations, inputValue])
+  }, [dropdownSelectedOrg, organizations, inputValue])
 
   const onInputValueChange = (e) => {
     setValue(e)
     setInputValue(e)
-    console.log(e)
   }
+
+  const outsideClickRef = useOutsideClick(() => {
+    setOpen(false)
+  })
 
   // TODO: return better styling...
   if (!currentUser) {
@@ -117,98 +171,119 @@ export function RepoSelection() {
   if (!userOrgQuery.isSuccess) return <div>Error</div>
 
   return (
-    <div>
+    <div
+      ref={outsideClickRef}
+      onClick={(e) => {
+        e.stopPropagation()
+      }}
+    >
+      <div
+        className={`h-0 transition-all duration-200 ease-linear ${
+          open ? 'w-[350px]' : 'w-0'
+        }`}
+      ></div>
       {!open && (
         <div
-          className="flex cursor-pointer space-x-3"
-          onClick={() => setOpen(!open)}
+          className="flex cursor-pointer items-center space-x-2 rounded-md p-2 text-sm hover:bg-neutral-100"
+          onClick={() => setOpen(true)}
         >
           <img
             src={currentOrg.avatar_url}
             alt=""
             className="h-6 w-6 flex-shrink-0 rounded-full"
           />
-          <span className="block truncate">
-            {currentOrg.name} / {currentRepo.name}
-          </span>
-          <ChevronUpDownIcon class="h-6 w-6 text-black/50" />
+          <div className="flex items-center space-x-1">
+            <span className="font-medium text-black">{currentOrg.name}</span>
+
+            {currentRepo && (
+              <>
+                <span className="text-black/20">/</span>
+                <span className="text-black/50">{currentRepo.name}</span>
+              </>
+            )}
+          </div>
+          <ChevronUpDownIcon className="h-6 w-6 text-black/50" />
         </div>
       )}
-
       {open && (
         <>
-          <div className="h-0 w-[400px]"></div>
-          <Command
-            value={value}
-            onValueChange={onValueChange}
-            className="!absolute -mt-6 w-full max-w-[400px]"
-          >
-            <div className="flex items-center space-x-2 px-4">
-              {selectedOrg && (
-                <>
-                  <div
-                    className={`flex-shrink-0 px-2 ${
-                      orgIsBackspaceHighlighted ? 'rounded-md bg-gray-200' : ''
-                    }`}
-                  >
-                    {selectedOrg.name}
-                  </div>
-                  <div className="flex-shrink-0">/</div>
-                </>
-              )}
-              <Command.Input
-                ref={inputRef}
-                autoFocus
-                placeholder="Search orgs and repos..."
-                className="mx-0 px-0 focus:border-0 focus:ring-0"
-                onKeyDown={onInputKeyUp}
-                value={inputValue}
-                onValueChange={onInputValueChange}
-              />
-            </div>
-            <hr cmdk-raycast-loader="" />
-            <Command.List ref={listRef}>
-              <Command.Empty>No results found.</Command.Empty>
-
-              {listOrgs.map((org) => (
-                <React.Fragment key={org.id}>
-                  <Command.Item
-                    value={`${org.name}`}
-                    onSelect={() => onSelectOrg(org)}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <Avatar url={org.avatar_url} />
-                      <span>{org.name}</span>
-                    </div>
-                  </Command.Item>
-                  {org.repositories.map((r) => (
-                    <Command.Item
-                      value={`${org.name}/${r.name}`}
-                      key={r.id}
-                      onSelect={() => alert('selected!')}
+          <div>
+            <Command
+              value={value}
+              onValueChange={onValueChange}
+              className="!absolute top-3  w-full max-w-[350px] rounded-xl border-[1px] border-neutral-100 bg-white shadow-xl"
+            >
+              <div className="flex items-center space-x-1 px-2">
+                {dropdownSelectedOrg && (
+                  <>
+                    <div
+                      className={`flex-shrink-0 cursor-pointer rounded-md px-2 py-1 text-sm text-black	transition-colors duration-100 hover:bg-neutral-100   ${
+                        orgIsBackspaceHighlighted ? ' bg-neutral-100' : ''
+                      }`}
+                      onClick={() => {
+                        setOrgIsBackspaceHighlighted(true)
+                      }}
                     >
-                      <div className="flex items-center space-x-2">
-                        <div className="flex h-6 w-6 items-center justify-center">
-                          <CodeBracketIcon class="block h-6 w-6" />
-                        </div>
-                        <span>
-                          {org.name} / {r.name}
-                        </span>
-                      </div>
-                    </Command.Item>
-                  ))}
-                </React.Fragment>
-              ))}
-              <Command.Item>
-                <div className="flex items-center space-x-2 text-purple-800">
-                  <div className="flex h-6 w-6 items-center justify-center">
-                    <PlusIcon class="block h-6 w-6" />
+                      {dropdownSelectedOrg.name}
+                    </div>
+                    <div className="flex-shrink-0">/</div>
+                  </>
+                )}
+                <Command.Input
+                  ref={inputRef}
+                  autoFocus
+                  placeholder="Search orgs and repos..."
+                  className="m-0 px-2 focus:border-0 focus:ring-0"
+                  onKeyDown={onInputKeyUp}
+                  value={inputValue}
+                  onValueChange={onInputValueChange}
+                />
+              </div>
+              <hr cmdk-raycast-loader="" />
+              <Command.List ref={listRef}>
+                <Command.Empty>No results found.</Command.Empty>
+
+                {listOrgs.map((org) => (
+                  <React.Fragment key={org.id}>
+                    <Item
+                      value={`${org.name}`}
+                      onSelect={() => onSelectOrg(org)}
+                    >
+                      <Avatar url={org.avatar_url} />
+                      <Text>{org.name}</Text>
+                    </Item>
+                    {org.repositories.map((r) => (
+                      <Item
+                        value={`${org.name}/${r.name}`}
+                        key={r.id}
+                        onSelect={() => onSelectRepo(org, r)}
+                      >
+                        <Icon>
+                          <CodeBracketIconSmall className="block h-5 w-5 text-[#B2B2B2]" />
+                        </Icon>
+
+                        {dropdownSelectedOrg && <Text>{r.name}</Text>}
+
+                        {!dropdownSelectedOrg && (
+                          <Text>
+                            {org.name} / {r.name}
+                          </Text>
+                        )}
+                      </Item>
+                    ))}
+                  </React.Fragment>
+                ))}
+                <Item value="Connect a repository">
+                  <div className="flex items-center space-x-2 text-purple-800">
+                    <Icon>
+                      <PlusIcon className="block h-6 w-6" />
+                    </Icon>
+                    <Text>Connect a repository</Text>
                   </div>
-                  <span>Connect a repository</span>
-                </div>
-              </Command.Item>
-            </Command.List>
-          </Command>
+                </Item>
+              </Command.List>
+            </Command>
+          </div>
         </>
       )}
     </div>
@@ -220,32 +295,19 @@ export default RepoSelection
 function Item({
   children,
   value,
+  onSelect = () => {},
 }: {
   children: React.ReactNode
   value: string
+  onSelect?: () => void
 }) {
   return (
-    <Command.Item value={value} onSelect={() => {}}>
-      {children}
-    </Command.Item>
-  )
-}
-
-function SubItem({
-  children,
-  shortcut,
-}: {
-  children: React.ReactNode
-  shortcut: string
-}) {
-  return (
-    <Command.Item>
-      {children}
-      <div cmdk-raycast-submenu-shortcuts="">
-        {shortcut.split(' ').map((key) => {
-          return <kbd key={key}>{key}</kbd>
-        })}
-      </div>
+    <Command.Item
+      value={value}
+      onSelect={onSelect}
+      className="py-4rounded-md flex  h-10 cursor-pointer select-none items-center rounded-md p-2 transition-colors duration-100  first:mt-2 aria-selected:bg-neutral-100"
+    >
+      <div className="flex max-w-full items-center space-x-2">{children}</div>
     </Command.Item>
   )
 }
@@ -253,6 +315,22 @@ function SubItem({
 function Avatar(props: { url: string }) {
   const { url } = props
   return <img src={url} className="h-6 w-6 rounded-full" />
+}
+
+function Text({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="overflow-hidden text-ellipsis whitespace-nowrap text-sm text-black">
+      {children}
+    </span>
+  )
+}
+
+function Icon({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex-0 inline-flex h-6 w-6 flex-shrink-0 items-center justify-center">
+      {children}
+    </div>
+  )
 }
 
 function TerminalIcon() {

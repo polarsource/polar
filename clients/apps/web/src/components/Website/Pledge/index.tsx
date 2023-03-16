@@ -5,8 +5,8 @@ import {
   useStripe,
 } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
-import IssueCard from 'components/Website/Checkout/IssueCard'
-import RepositoryCard from 'components/Website/Checkout/RepositoryCard'
+import IssueCard from 'components/Website/Pledge/IssueCard'
+import RepositoryCard from 'components/Website/Pledge/RepositoryCard'
 import { api } from 'polarkit'
 import { type IssuePledge, type RewardRead } from 'polarkit/api/client'
 import { useEffect, useState } from 'react'

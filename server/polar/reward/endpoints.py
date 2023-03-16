@@ -47,6 +47,7 @@ async def create_reward(
         issue_id=issue.id,
         repository_id=auth.repository.id,
         organization_id=auth.organization.id,
+        email=reward.email,
         amount=reward.amount,
         state=State.initiated,
         payment_id=payment_intent.id,
@@ -83,10 +84,17 @@ async def patch_reward(
             status_code=403, detail="Reward does not belong to this repository"
         )
 
-    reward.amount = updates.amount
+    payment_intent = None
 
-    # Modify the corresponding payment intent
-    payment_intent = stripe.modify_intent(reward.payment_id, amount=reward.amount)
+    if updates.amount and updates.amount != reward.amount:
+        reward.amount = updates.amount
+        payment_intent = stripe.modify_intent(reward.payment_id, amount=reward.amount)
+
+    if updates.email and updates.email != reward.email:
+        reward.email = updates.email
+
+    if payment_intent is None:
+        payment_intent = stripe.retrieve_intent(reward.payment_id)
 
     await reward.save(session=session)
 

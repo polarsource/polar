@@ -20,11 +20,13 @@ class State(str, Enum):
 
 class RewardCreate(Schema):
     issue_id: UUID
+    email: str
     amount: Decimal
 
 
 class RewardUpdate(Schema):
-    amount: Decimal
+    email: str | None
+    amount: Decimal | None
 
 
 class RewardRead(RewardCreate):

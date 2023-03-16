@@ -26,5 +26,8 @@ class StripeService(object):
             amount=amount * 100,
         )
 
+    def retrieve_intent(self, id: str) -> stripe_lib.PaymentIntent:
+        return stripe_lib.PaymentIntent.retrieve(id)
+
 
 stripe = StripeService()

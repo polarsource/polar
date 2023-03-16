@@ -1,9 +1,9 @@
-import Checkout from 'components/Website/Checkout'
+import Checkout from 'components/Website/Pledge'
 import type { NextPage } from 'next'
 import { api } from 'polarkit'
 import { IssuePledge, Platforms } from 'polarkit/api/client'
 
-const PublicCheckoutPage: NextPage = ({
+const PledgePage: NextPage = ({
   organization,
   repository,
   issue,
@@ -36,7 +36,7 @@ const PublicCheckoutPage: NextPage = ({
     </>
   )
 }
-PublicCheckoutPage.getLayout = (page: ReactElement) => {
+PledgePage.getLayout = (page: ReactElement) => {
   return <div>{page}</div>
 }
 
@@ -52,4 +52,4 @@ export const getServerSideProps = async (context) => {
   return { props: { organization, repository, issue, query: context.query } }
 }
 
-export default PublicCheckoutPage
+export default PledgePage

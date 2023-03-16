@@ -55,7 +55,8 @@ class Settings(BaseSettings):
 
     # Stripe
     STRIPE_SECRET_KEY: str = ""
-    STRIPE_ENDPOINT_SECRET: str = ""
+    # Stripe webhook secret
+    STRIPE_WEBHOOK_SECRET: str = ""
 
     # Application behaviours
 

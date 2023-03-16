@@ -8,8 +8,8 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 
-class Reward(RecordModel):
-    __tablename__ = "rewards"
+class Pledge(RecordModel):
+    __tablename__ = "pledges"
 
     issue_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)
     repository_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)

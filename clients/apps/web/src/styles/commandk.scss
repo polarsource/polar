@@ -64,17 +64,6 @@
   }
 }
 
-[cmdk-list] {
-  padding: 0 8px;
-  height: 393px;
-  overflow: auto;
-  overscroll-behavior: contain;
-  scroll-padding-block-end: 40px;
-  transition: 100ms ease;
-  transition-property: height;
-  padding-bottom: 40px;
-}
-
 [cmdk-separator] {
   height: 1px;
   width: 100%;

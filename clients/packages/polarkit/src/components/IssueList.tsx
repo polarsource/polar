@@ -41,13 +41,13 @@ const IssueList = (props: {
   repos: Map<string, RepositoryRead>
 }) => {
   const { issues, pullRequests, rewards, orgs, repos } = props
-  if (!issues) return <div>Loading issues...</div>
-  if (!pullRequests) return <div>Loading pull requests...</div>
-  if (!rewards) return <div>Loading rewards...</div>
 
   const [sortedIssues, setSortedIssues] = useState<IssueListItemData[]>([])
 
   useEffect(() => {
+    if (!issues) {
+      return
+    }
     const sorted = issues.map((issue): IssueListItemData => {
       return {
         issue: issue.attributes,
@@ -60,20 +60,22 @@ const IssueList = (props: {
     setSortedIssues(sorted)
   }, [issues, pullRequests, rewards, orgs, repos])
 
+  if (!issues) return <div>Loading issues...</div>
+  if (!pullRequests) return <div>Loading pull requests...</div>
+  if (!rewards) return <div>Loading rewards...</div>
+
   return (
     <div className="space-y-2 divide-y divide-gray-200">
       {sortedIssues.map((i) => {
         return (
-          <>
-            <IssueListItem
-              issue={i.issue}
-              pullRequests={i.pullRequests}
-              rewards={i.rewards}
-              org={i.org}
-              repo={i.repo}
-              key={i.issue.id}
-            />
-          </>
+          <IssueListItem
+            issue={i.issue}
+            pullRequests={i.pullRequests}
+            rewards={i.rewards}
+            org={i.org}
+            repo={i.repo}
+            key={i.issue.id}
+          />
         )
       })}
     </div>

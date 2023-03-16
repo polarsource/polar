@@ -42,7 +42,7 @@ const DetailsForm = ({
 
   return (
     <>
-      <form className="flex flex-col">
+      <form className="flex flex-col" onSubmit={onSubmit}>
         <label htmlFor="amount">Choose amount to pledge</label>
         <div className="flex flex-row items-center space-x-4">
           <input
@@ -58,9 +58,7 @@ const DetailsForm = ({
         <label htmlFor="email">Contact details</label>
         <input type="email" id="email" onChange={onEmailChange} />
 
-        <button type="submit" onClick={onSubmit}>
-          Submit
-        </button>
+        <button type="submit">Submit</button>
       </form>
     </>
   )

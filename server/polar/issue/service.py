@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from uuid import UUID
-from typing import Sequence
+from typing import List, Sequence
 from sqlalchemy import desc, func, or_
 
 import structlog
@@ -39,12 +39,12 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
     async def list_by_repository_and_status(
         self,
         session: AsyncSession,
-        repository_id: UUID,
+        repository_ids: List[UUID],
         text: str | None = None,
         include_open: bool = True,
         include_closed: bool = False,
     ) -> Sequence[Issue]:
-        statement = sql.select(Issue).where(Issue.repository_id == repository_id)
+        statement = sql.select(Issue).where(Issue.repository_id.in_(repository_ids))
 
         filters = []
         if include_open:

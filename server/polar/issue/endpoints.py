@@ -3,9 +3,10 @@ from typing import Sequence
 from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
-from polar.models import Organization, Repository, Issue
+from polar.models import Issue
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, get_db_session
+from polar.exceptions import ResourceNotFound
 from polar.kit.schemas import Schema
 
 from polar.repository.schemas import RepositoryRead
@@ -24,40 +25,6 @@ class IssuePledge(Schema):
     issue: IssueRead
     organization: OrganizationRead
     repository: RepositoryRead
-
-
-async def get_public_org_repo_and_issue(
-    session: AsyncSession,
-    *,
-    platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    number: int,
-) -> tuple[Organization, Repository, Issue]:
-    org_and_repo = await organization_service.get_with_repo(
-        session,
-        platform=platform,
-        org_name=org_name,
-        repo_name=repo_name,
-    )
-    if not org_and_repo:
-        raise HTTPException(
-            status_code=404,
-            detail="Organization/repository combination not found",
-        )
-
-    organization, repository = org_and_repo
-    issue = await issue_service.get_by_number(
-        session,
-        platform=platform,
-        organization_id=organization.id,
-        repository_id=repository.id,
-        number=number,
-    )
-    if not issue:
-        raise HTTPException(status_code=404, detail="Issue not found")
-
-    return (organization, repository, issue)
 
 
 @router.get("/{platform}/{org_name}/{repo_name}/issues", response_model=list[IssueRead])
@@ -84,14 +51,20 @@ async def get_public_issue(
     number: int,
     session: AsyncSession = Depends(get_db_session),
 ) -> Issue:
-    _, __, issue = await get_public_org_repo_and_issue(
-        session,
-        platform=platform,
-        org_name=org_name,
-        repo_name=repo_name,
-        number=number,
-    )
-    return issue
+    try:
+        _, __, issue = await organization_service.get_with_repo_and_issue(
+            session,
+            platform=platform,
+            org_name=org_name,
+            repo_name=repo_name,
+            number=number,
+        )
+        return issue
+    except ResourceNotFound:
+        raise HTTPException(
+            status_code=404,
+            detail="Organization, repo and issue combination not found",
+        )
 
 
 @router.get(
@@ -105,16 +78,21 @@ async def get_public_issue_pledge(
     number: int,
     session: AsyncSession = Depends(get_db_session),
 ) -> IssuePledge:
-    organization, repository, issue = await get_public_org_repo_and_issue(
-        session,
-        platform=platform,
-        org_name=org_name,
-        repo_name=repo_name,
-        number=number,
-    )
-    ret = IssuePledge(
-        organization=OrganizationRead.from_orm(organization),
-        repository=RepositoryRead.from_orm(repository),
-        issue=IssueRead.from_orm(issue),
-    )
-    return ret
+    try:
+        org, repo, issue = await organization_service.get_with_repo_and_issue(
+            session,
+            platform=platform,
+            org_name=org_name,
+            repo_name=repo_name,
+            number=number,
+        )
+        return IssuePledge(
+            organization=OrganizationRead.from_orm(org),
+            repository=RepositoryRead.from_orm(repo),
+            issue=IssueRead.from_orm(issue),
+        )
+    except ResourceNotFound:
+        raise HTTPException(
+            status_code=404,
+            detail="Organization, repo and issue combination not found",
+        )

@@ -25,3 +25,7 @@ class StripeError(Exception):
 
 class DatabaseRecordExists(Exception):
     ...
+
+
+class ResourceNotFound(Exception):
+    ...

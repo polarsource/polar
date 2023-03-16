@@ -2,23 +2,23 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { Platforms } from '../models/Platforms';
-import type { RewardCreate } from '../models/RewardCreate';
-import type { RewardRead } from '../models/RewardRead';
-import type { RewardUpdate } from '../models/RewardUpdate';
+import type { PledgeCreate } from '../models/PledgeCreate';
+import type { PledgeRead } from '../models/PledgeRead';
+import type { PledgeUpdate } from '../models/PledgeUpdate';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
 
-export class RewardsService {
+export class PledgesService {
 
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
-   * Get Repository Rewards
-   * @returns RewardRead Successful Response
+   * Get Repository Pledges
+   * @returns PledgeRead Successful Response
    * @throws ApiError
    */
-  public getRepositoryRewards({
+  public getRepositoryPledges({
     platform,
     orgName,
     repoName,
@@ -26,10 +26,10 @@ export class RewardsService {
     platform: Platforms,
     orgName: string,
     repoName: string,
-  }): CancelablePromise<Array<RewardRead>> {
+  }): CancelablePromise<Array<PledgeRead>> {
     return this.httpRequest.request({
       method: 'GET',
-      url: '/api/v1/{platform}/{org_name}/{repo_name}/rewards',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/pledges',
       path: {
         'platform': platform,
         'org_name': orgName,
@@ -42,11 +42,11 @@ export class RewardsService {
   }
 
   /**
-   * Create Reward
-   * @returns RewardRead Successful Response
+   * Create Pledge
+   * @returns PledgeRead Successful Response
    * @throws ApiError
    */
-  public createReward({
+  public createPledge({
     platform,
     orgName,
     repoName,
@@ -55,11 +55,11 @@ export class RewardsService {
     platform: Platforms,
     orgName: string,
     repoName: string,
-    requestBody: RewardCreate,
-  }): CancelablePromise<RewardRead> {
+    requestBody: PledgeCreate,
+  }): CancelablePromise<PledgeRead> {
     return this.httpRequest.request({
       method: 'POST',
-      url: '/api/v1/{platform}/{org_name}/{repo_name}/rewards',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/pledges',
       path: {
         'platform': platform,
         'org_name': orgName,
@@ -74,31 +74,31 @@ export class RewardsService {
   }
 
   /**
-   * Patch Reward
-   * @returns RewardRead Successful Response
+   * Update Pledge
+   * @returns PledgeRead Successful Response
    * @throws ApiError
    */
-  public patchReward({
+  public updatePledge({
     platform,
     orgName,
     repoName,
-    rewardId,
+    pledgeId,
     requestBody,
   }: {
     platform: Platforms,
     orgName: string,
     repoName: string,
-    rewardId: string,
-    requestBody: RewardUpdate,
-  }): CancelablePromise<RewardRead> {
+    pledgeId: string,
+    requestBody: PledgeUpdate,
+  }): CancelablePromise<PledgeRead> {
     return this.httpRequest.request({
       method: 'PATCH',
-      url: '/api/v1/{platform}/{org_name}/{repo_name}/rewards/{reward_id}',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/pledges/{pledge_id}',
       path: {
         'platform': platform,
         'org_name': orgName,
         'repo_name': repoName,
-        'reward_id': rewardId,
+        'pledge_id': pledgeId,
       },
       body: requestBody,
       mediaType: 'application/json',

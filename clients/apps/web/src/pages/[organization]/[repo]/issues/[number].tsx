@@ -1,4 +1,4 @@
-import Checkout from 'components/Website/Pledge'
+import Pledge from 'components/Website/Pledge'
 import type { NextPage } from 'next'
 import { api } from 'polarkit'
 import { IssuePledge, Platforms } from 'polarkit/api/client'
@@ -16,7 +16,7 @@ const PledgePage: NextPage = ({
           Complete your backing
         </h1>
 
-        <Checkout
+        <Pledge
           organization={organization}
           repository={repository}
           issue={issue}

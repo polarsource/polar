@@ -2,9 +2,9 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import type { polar__reward__schemas__State } from './polar__reward__schemas__State';
+import type { polar__pledge__schemas__State } from './polar__pledge__schemas__State';
 
-export type RewardRead = {
+export type PledgeRead = {
   issue_id: string;
   email: string;
   amount: number;
@@ -12,7 +12,7 @@ export type RewardRead = {
   created_at: string;
   repository_id: string;
   organization_id: string;
-  state: polar__reward__schemas__State;
+  state: polar__pledge__schemas__State;
   client_secret?: string;
 };
 

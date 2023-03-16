@@ -2,7 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-export type RewardUpdate = {
+export type PledgeUpdate = {
   email?: string;
   amount?: number;
 };

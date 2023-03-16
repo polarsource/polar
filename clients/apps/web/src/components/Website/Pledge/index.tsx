@@ -125,11 +125,20 @@ const CheckoutDetailsForm = ({
 }: IssuePledge & {
   setCheckout: (checkout: RewardRead) => void
 }) => {
-  const [amount, _setAmount] = useState(0)
-  const [currency, setCurrency] = useState('usd')
+  const [amount, setAmount] = useState(0)
+  const [email, setEmail] = useState('')
 
-  const setAmount = (amount: string) => {
-    _setAmount(parseInt(amount))
+  const onAmountChange = (e) => {
+    setAmount(parseInt(e.target.value))
+  }
+
+  const onEmailChange = (e) => {
+    setEmail(e.target.value)
+  }
+
+  const onSubmit = (e) => {
+    e.preventDefault()
+    createCheckout()
   }
 
   const createCheckout = async () => {
@@ -140,9 +149,9 @@ const CheckoutDetailsForm = ({
       requestBody: {
         issue_id: issue.id,
         amount: amount,
+        email: email,
       },
     })
-    console.log(checkout)
     setCheckout(checkout)
   }
 
@@ -156,23 +165,15 @@ const CheckoutDetailsForm = ({
             id="amount"
             placeholder="50"
             min="50"
-            onChange={(e) => {
-              setAmount(e.target.value)
-            }}
+            onChange={onAmountChange}
           />
           <p>Minimum is $50</p>
         </div>
 
         <label htmlFor="email">Contact details</label>
-        <input type="email" id="email" />
+        <input type="email" id="email" onChange={onEmailChange} />
 
-        <button
-          type="submit"
-          onClick={(e) => {
-            e.preventDefault()
-            createCheckout()
-          }}
-        >
+        <button type="submit" onClick={onSubmit}>
           Submit
         </button>
       </form>

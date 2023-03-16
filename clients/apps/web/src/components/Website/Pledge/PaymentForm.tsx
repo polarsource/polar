@@ -1,5 +1,8 @@
+'use client'
+
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { useRouter } from 'next/router'
+import { type PledgeRead } from 'polarkit/api/client'
 import { useState } from 'react'
 
 interface Payment {
@@ -9,8 +12,10 @@ interface Payment {
 }
 
 const PaymentForm = ({
+  pledge,
   query,
 }: {
+  pledge: PledgeRead
   query: {
     payment_intent_client_secret: string | undefined
   }
@@ -21,12 +26,15 @@ const PaymentForm = ({
   const [errorMessage, setErrorMessage] = useState(null)
   const [loading, setLoading] = useState(false)
 
+  const statusURL = new URL(window.location.href + '/status')
+  statusURL.searchParams.append('pledge_id', pledge.id)
+
   const redirect = (paymentIntent) => {
     /*
      * Same location & query params as the serverside redirect from Stripe if required
      * by the payment method - easing the implementation.
      */
-    const location = new URL(window.location.href + '/status')
+    const location = new URL(statusURL)
     location.searchParams.append('payment_intent_id', paymentIntent.id)
     location.searchParams.append(
       'payment_intent_client_secret',
@@ -68,7 +76,7 @@ const PaymentForm = ({
         //`Elements` instance that was used to create the Payment Element
         elements,
         confirmParams: {
-          return_url: window.location.href + '/status',
+          return_url: statusURL.toString(),
         },
         redirect: 'if_required',
       })

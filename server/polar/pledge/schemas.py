@@ -6,6 +6,9 @@ from decimal import Decimal
 from enum import Enum
 
 from polar.kit.schemas import Schema
+from polar.organization.schemas import OrganizationRead
+from polar.repository.schemas import RepositoryRead
+from polar.issue.schemas import IssueRead
 
 
 class State(str, Enum):
@@ -42,3 +45,10 @@ class PledgeRead(PledgeCreate):
 
     class Config:
         orm_mode = True
+
+
+class PledgeResources(Schema):
+    pledge: PledgeRead | None
+    issue: IssueRead | None
+    organization: OrganizationRead | None
+    repository: RepositoryRead | None

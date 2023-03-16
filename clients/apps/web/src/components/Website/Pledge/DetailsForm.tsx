@@ -1,5 +1,5 @@
 import { api } from 'polarkit'
-import { type IssuePledge, type PledgeRead } from 'polarkit/api/client'
+import { type PledgeRead, type PledgeResources } from 'polarkit/api/client'
 import { useState } from 'react'
 
 const DetailsForm = ({
@@ -7,7 +7,7 @@ const DetailsForm = ({
   repository,
   issue,
   setPledge,
-}: IssuePledge & {
+}: PledgeResources & {
   setPledge: (pledge: PledgeRead) => void
 }) => {
   const [amount, setAmount] = useState(0)

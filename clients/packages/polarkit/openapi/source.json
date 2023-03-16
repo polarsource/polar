@@ -920,10 +920,10 @@
         "/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}/pledge": {
             "get": {
                 "tags": [
-                    "issues"
+                    "pledges"
                 ],
-                "summary": "Get Public Issue Pledge",
-                "operationId": "issues:get_public_issue_pledge",
+                "summary": "Get Pledge With Resources",
+                "operationId": "pledges:get_pledge_with_resources",
                 "parameters": [
                     {
                         "required": true,
@@ -959,6 +959,26 @@
                         },
                         "name": "number",
                         "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Pledge Id",
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "name": "pledge_id",
+                        "in": "query"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Include",
+                            "type": "string",
+                            "default": "organization,repository,issue"
+                        },
+                        "name": "include",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -967,7 +987,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/IssuePledge"
+                                    "$ref": "#/components/schemas/PledgeResources"
                                 }
                             }
                         }
@@ -1739,26 +1759,6 @@
                     }
                 }
             },
-            "IssuePledge": {
-                "title": "IssuePledge",
-                "required": [
-                    "issue",
-                    "organization",
-                    "repository"
-                ],
-                "type": "object",
-                "properties": {
-                    "issue": {
-                        "$ref": "#/components/schemas/IssueRead"
-                    },
-                    "organization": {
-                        "$ref": "#/components/schemas/OrganizationRead"
-                    },
-                    "repository": {
-                        "$ref": "#/components/schemas/RepositoryRead"
-                    }
-                }
-            },
             "IssueRead": {
                 "title": "IssueRead",
                 "required": [
@@ -2175,6 +2175,24 @@
                     "client_secret": {
                         "title": "Client Secret",
                         "type": "string"
+                    }
+                }
+            },
+            "PledgeResources": {
+                "title": "PledgeResources",
+                "type": "object",
+                "properties": {
+                    "pledge": {
+                        "$ref": "#/components/schemas/PledgeRead"
+                    },
+                    "issue": {
+                        "$ref": "#/components/schemas/IssueRead"
+                    },
+                    "organization": {
+                        "$ref": "#/components/schemas/OrganizationRead"
+                    },
+                    "repository": {
+                        "$ref": "#/components/schemas/RepositoryRead"
                     }
                 }
             },

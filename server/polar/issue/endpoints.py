@@ -7,24 +7,13 @@ from polar.models import Issue
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, get_db_session
 from polar.exceptions import ResourceNotFound
-from polar.kit.schemas import Schema
 
-from polar.repository.schemas import RepositoryRead
-from polar.organization.schemas import OrganizationRead
 from polar.organization.service import organization as organization_service
 
 from .schemas import IssueRead
 from .service import issue as issue_service
 
 router = APIRouter(tags=["issues"])
-
-
-# TODO: This is a bit of a mess. To be refactored once checkout is in-place
-# and we can see all of the pieces together.
-class IssuePledge(Schema):
-    issue: IssueRead
-    organization: OrganizationRead
-    repository: RepositoryRead
 
 
 @router.get("/{platform}/{org_name}/{repo_name}/issues", response_model=list[IssueRead])
@@ -60,37 +49,6 @@ async def get_public_issue(
             number=number,
         )
         return issue
-    except ResourceNotFound:
-        raise HTTPException(
-            status_code=404,
-            detail="Organization, repo and issue combination not found",
-        )
-
-
-@router.get(
-    "/{platform}/{org_name}/{repo_name}/issues/{number}/pledge",
-    response_model=IssuePledge,
-)
-async def get_public_issue_pledge(
-    platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    number: int,
-    session: AsyncSession = Depends(get_db_session),
-) -> IssuePledge:
-    try:
-        org, repo, issue = await organization_service.get_with_repo_and_issue(
-            session,
-            platform=platform,
-            org_name=org_name,
-            repo_name=repo_name,
-            number=number,
-        )
-        return IssuePledge(
-            organization=OrganizationRead.from_orm(org),
-            repository=RepositoryRead.from_orm(repo),
-            issue=IssueRead.from_orm(issue),
-        )
     except ResourceNotFound:
         raise HTTPException(
             status_code=404,

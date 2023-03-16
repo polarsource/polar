@@ -1,14 +1,14 @@
 import Pledge from 'components/Website/Pledge'
 import type { NextPage } from 'next'
 import { api } from 'polarkit'
-import { IssuePledge, Platforms } from 'polarkit/api/client'
+import { Platforms, PledgeResources } from 'polarkit/api/client'
 
 const PledgePage: NextPage = ({
   organization,
   repository,
   issue,
   query,
-}: IssuePledge) => {
+}: PledgeResources) => {
   return (
     <>
       <div className="container mx-auto mt-24">
@@ -41,11 +41,12 @@ PledgePage.getLayout = (page: ReactElement) => {
 }
 
 export const getServerSideProps = async (context) => {
-  const res = await api.issues.getPublicIssuePledge({
+  const res = await api.pledges.getPledgeWithResources({
     platform: Platforms.GITHUB,
     orgName: context.params.organization,
     repoName: context.params.repo,
     number: context.params.number,
+    include: 'issue,organization,repository',
   })
 
   const { organization, repository, issue } = res

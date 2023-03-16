@@ -1,6 +1,6 @@
 import { Elements } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
-import { type IssuePledge, type PledgeRead } from 'polarkit/api/client'
+import { type PledgeRead, type PledgeResources } from 'polarkit/api/client'
 import { useState } from 'react'
 import DetailsForm from './DetailsForm'
 import IssueCard from './IssueCard'
@@ -14,7 +14,7 @@ const Pledge = ({
   repository,
   issue,
   query,
-}: IssuePledge & {
+}: PledgeResources & {
   query: any // TODO: Investigate & fix type
 }) => {
   const [pledge, setPledge] = useState<PledgeRead | null>(null)
@@ -46,7 +46,7 @@ const Pledge = ({
                 clientSecret: clientSecret,
               }}
             >
-              <PaymentForm query={query} />
+              <PaymentForm pledge={pledge} query={query} />
             </Elements>
           )}
         </div>

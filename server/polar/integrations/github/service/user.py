@@ -63,5 +63,37 @@ class GithubUserService(UserService):
         )
         return user
 
+    async def accessable_orgs(self, session: AsyncSession, user: User) -> None:
+
+        client = await github.get_user_client(session, user)
+
+        return
+
+        # oauth = user.get_primary_oauth_account()
+
+        # app_client = github.get_app_client()
+        # app_client.rest.apps.get
+
+        client = github.get_client(oauth.access_token)
+
+        page = 1
+
+        try:
+
+            # https://docs.github.com/en/rest/apps/installations?apiVersion=2022-11-28#list-app-installations-accessible-to-the-user-access-token
+            installations = (
+                await client.rest.apps.async_list_installations_for_authenticated_user(
+                    per_page=30, page=page
+                )
+            )
+            for i in installations.parsed_data.installations:
+                log.warn("found installation", i=i)
+        except Exception as e:
+            log.error(
+                "github error",
+                e=e,
+                token=oauth.access_token,
+            )
+
 
 github_user = GithubUserService(User)

@@ -4,6 +4,7 @@
 
 export type RewardCreate = {
   issue_id: string;
+  email: string;
   amount: number;
 };
 

@@ -2569,6 +2569,7 @@
                 "title": "RewardCreate",
                 "required": [
                     "issue_id",
+                    "email",
                     "amount"
                 ],
                 "type": "object",
@@ -2577,6 +2578,10 @@
                         "title": "Issue Id",
                         "type": "string",
                         "format": "uuid"
+                    },
+                    "email": {
+                        "title": "Email",
+                        "type": "string"
                     },
                     "amount": {
                         "title": "Amount",
@@ -2588,6 +2593,7 @@
                 "title": "RewardRead",
                 "required": [
                     "issue_id",
+                    "email",
                     "amount",
                     "id",
                     "created_at",
@@ -2601,6 +2607,10 @@
                         "title": "Issue Id",
                         "type": "string",
                         "format": "uuid"
+                    },
+                    "email": {
+                        "title": "Email",
+                        "type": "string"
                     },
                     "amount": {
                         "title": "Amount",
@@ -2637,11 +2647,12 @@
             },
             "RewardUpdate": {
                 "title": "RewardUpdate",
-                "required": [
-                    "amount"
-                ],
                 "type": "object",
                 "properties": {
+                    "email": {
+                        "title": "Email",
+                        "type": "string"
+                    },
                     "amount": {
                         "title": "Amount",
                         "type": "number"

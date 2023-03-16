@@ -6,6 +6,7 @@ import type { polar__reward__schemas__State } from './polar__reward__schemas__St
 
 export type RewardRead = {
   issue_id: string;
+  email: string;
   amount: number;
   id: string;
   created_at: string;

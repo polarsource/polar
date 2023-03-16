@@ -3,6 +3,7 @@
 /* eslint-disable */
 
 export type RewardUpdate = {
-  amount: number;
+  email?: string;
+  amount?: number;
 };
 

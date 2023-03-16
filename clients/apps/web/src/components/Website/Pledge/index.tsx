@@ -25,31 +25,35 @@ const Pledge = ({
 
   return (
     <>
-      <div className="my-16 flex flex-row space-x-6">
-        <div className="flex flex-col">
-          <IssueCard issue={issue} />
-          <RepositoryCard organization={organization} repository={repository} />
+      <div className="my-14 flex flex-col">
+        <div className="flex flex-row rounded-xl bg-white p-2 text-center drop-shadow-lg">
+          <div className="w-1/2">
+            <IssueCard issue={issue} />
+          </div>
+          <div className="w-1/2 text-left">
+            <div className="py-5 px-6">
+              {!showPayments && (
+                <DetailsForm
+                  organization={organization}
+                  repository={repository}
+                  issue={issue}
+                  setPledge={setPledge}
+                />
+              )}
+              {showPayments && (
+                <Elements
+                  stripe={stripePromise}
+                  options={{
+                    clientSecret: clientSecret,
+                  }}
+                >
+                  <PaymentForm pledge={pledge} query={query} />
+                </Elements>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="rounded-xl bg-white px-8 py-14 drop-shadow-lg">
-          {!showPayments && (
-            <DetailsForm
-              organization={organization}
-              repository={repository}
-              issue={issue}
-              setPledge={setPledge}
-            />
-          )}
-          {showPayments && (
-            <Elements
-              stripe={stripePromise}
-              options={{
-                clientSecret: clientSecret,
-              }}
-            >
-              <PaymentForm pledge={pledge} query={query} />
-            </Elements>
-          )}
-        </div>
+        <RepositoryCard organization={organization} repository={repository} />
       </div>
     </>
   )

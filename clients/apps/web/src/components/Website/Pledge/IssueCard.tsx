@@ -3,7 +3,7 @@ import { type IssueRead } from 'polarkit/api/client'
 const IssueCard = ({ issue }: { issue: IssueRead }) => {
   return (
     <>
-      <div className="rounded-xl bg-white px-8 py-14 text-center drop-shadow-lg">
+      <div className="justify-self rounded-xl border bg-purple-50 px-8 py-14 text-center">
         <strong className="text-sm font-medium text-gray-600">
           Issue to be fixed
         </strong>

@@ -26,19 +26,19 @@ export class DashboardService {
   }: {
     platform: Platforms,
     orgName: string,
-    repoName: string,
+    repoName?: string,
     status?: Array<IssueStatus>,
     q?: string,
   }): CancelablePromise<IssueListResponse> {
     return this.httpRequest.request({
       method: 'GET',
-      url: '/api/v1/{platform}/{org_name}/{repo_name}/dashboard',
+      url: '/api/v1/{platform}/{org_name}/dashboard',
       path: {
         'platform': platform,
         'org_name': orgName,
-        'repo_name': repoName,
       },
       query: {
+        'repo_name': repoName,
         'status': status,
         'q': q,
       },

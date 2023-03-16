@@ -1172,7 +1172,7 @@
                 ]
             }
         },
-        "/api/v1/{platform}/{org_name}/{repo_name}/dashboard": {
+        "/api/v1/{platform}/{org_name}/dashboard": {
             "get": {
                 "tags": [
                     "dashboard"
@@ -1198,13 +1198,13 @@
                         "in": "path"
                     },
                     {
-                        "required": true,
+                        "required": false,
                         "schema": {
                             "title": "Repo Name",
                             "type": "string"
                         },
                         "name": "repo_name",
-                        "in": "path"
+                        "in": "query"
                     },
                     {
                         "required": false,
@@ -2150,11 +2150,7 @@
                 "type": "object",
                 "properties": {
                     "data": {
-                        "title": "Data",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/RelationshipData"
-                        }
+                        "$ref": "#/components/schemas/RelationshipData"
                     }
                 }
             },

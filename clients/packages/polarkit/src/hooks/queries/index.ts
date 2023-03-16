@@ -91,8 +91,8 @@ export const useRepositoryRewards = (repoOwner: string, repoName: string) =>
   )
 
 export const useDashboard = (
-  repoOwner: string,
-  repoName: string,
+  orgName: string,
+  repoName?: string,
   q?: string,
   status?: Array<IssueStatus>,
 ): UseQueryResult<IssueListResponse> =>
@@ -100,7 +100,7 @@ export const useDashboard = (
     [
       'dashboard',
       'repo',
-      repoOwner,
+      orgName,
       repoName,
       q,
       JSON.stringify(status), // Array as cache key
@@ -108,7 +108,7 @@ export const useDashboard = (
     ({ signal }) => {
       const promise = api.dashboard.getDashboard({
         platform: Platforms.GITHUB,
-        orgName: repoOwner,
+        orgName: orgName,
         repoName: repoName,
         q: q,
         status: status,
@@ -121,6 +121,6 @@ export const useDashboard = (
       return promise
     },
     {
-      enabled: !!repoOwner && !!repoName,
+      enabled: !!orgName,
     },
   )

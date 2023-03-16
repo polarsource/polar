@@ -14,9 +14,6 @@ class StripeService(object):
         return stripe_lib.PaymentIntent.create(
             amount=amount * 100,
             currency="USD",
-            automatic_payment_methods={
-                "enabled": True,
-            },
             transfer_group=f"{issue_id}",
         )
 

@@ -135,8 +135,6 @@ async def get_user_client(
         and oauth.refresh_token
         and oauth.expires_at <= (time.time() + 60 * 30)
     ):
-        log.debug("zegl: token is expired, attempting refresh")
-
         refresh = await GitHub().arequest(
             method="POST",
             url="https://github.com/login/oauth/access_token",

@@ -23,14 +23,13 @@ class GithubUserService(UserService):
     async def update_profile(
         self, session: AsyncSession, user: User, access_token: str
     ) -> User:
-        oauth = user.get_primary_oauth_account()
-        if oauth.access_token != access_token:
+        client = await github.get_user_client(session, user)
+        if not client:
             log.warning(
-                "user.update_profile", error="access_token.mismatch", user_id=user.id
+                "user.update_profile", error="no github client found", user_id=user.id
             )
             return user
 
-        client = github.get_client(oauth.access_token)
         response = await client.rest.users.async_get_authenticated()
         try:
             github.ensure_expected_response(response)

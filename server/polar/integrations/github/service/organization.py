@@ -23,12 +23,11 @@ class GithubOrganizationService(OrganizationService):
     async def fetch_installations(
         self, session: AsyncSession, user: User
     ) -> list[OrganizationCreate] | None:
-        oauth = user.get_platform_oauth_account(Platforms.github)
-        if not oauth:
+        client = await github.get_user_client(session, user)
+        if not client:
             # TODO Handle
             return None
 
-        client = github.get_client(oauth.access_token)
         response = (
             await client.rest.apps.async_list_installations_for_authenticated_user()
         )

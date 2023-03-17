@@ -10,7 +10,7 @@ const HowItWorks = () => {
         <h4 className="text-lg font-normal text-gray-600">How does it work?</h4>
         <ul className="mt-8 flex flex-row justify-center space-x-16">
           <li className="flex w-56 flex-col text-center">
-            <div className="mx-auto w-8 rounded-full border-2 border-purple-800">
+            <div className="mx-auto w-7 rounded-full border-2 border-purple-800">
               <span className="text-sm font-bold text-purple-800">1</span>
             </div>
             <strong className="mt-4 text-sm font-medium text-gray-900">
@@ -21,7 +21,7 @@ const HowItWorks = () => {
             </p>
           </li>
           <li className="flex w-56 flex-col text-center">
-            <div className="mx-auto w-8 rounded-full border-2 border-purple-800">
+            <div className="mx-auto w-7 rounded-full border-2 border-purple-800">
               <span className="text-sm font-bold text-purple-800">2</span>
             </div>
             <strong className="mt-4 text-sm font-medium text-gray-900">
@@ -32,7 +32,7 @@ const HowItWorks = () => {
             </p>
           </li>
           <li className="flex w-56 flex-col text-center">
-            <div className="mx-auto w-8 rounded-full border-2 border-purple-800">
+            <div className="mx-auto w-7 rounded-full border-2 border-purple-800">
               <span className="text-sm font-bold text-purple-800">3</span>
             </div>
             <strong className="mt-4 text-sm font-medium text-gray-900">

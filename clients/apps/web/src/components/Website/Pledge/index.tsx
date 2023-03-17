@@ -14,7 +14,7 @@ const Pledge = ({
   return (
     <>
       <div className="my-14 flex flex-col">
-        <div className="flex flex-row rounded-xl bg-white p-2 text-center drop-shadow-lg">
+        <div className="flex flex-row items-stretch rounded-xl bg-white p-2 text-center drop-shadow-lg">
           <div className="w-1/2">
             <IssueCard issue={issue} />
           </div>

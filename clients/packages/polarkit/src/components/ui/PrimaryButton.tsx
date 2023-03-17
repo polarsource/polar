@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { type HTMLButtonElement } from 'react'
 import { classNames } from '../../utils/dom'
 
 const PrimaryButton = (props: {

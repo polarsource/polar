@@ -3,7 +3,6 @@ from typing import List, Literal, Callable, Any, Coroutine
 from uuid import UUID
 
 import structlog
-from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.exc import IntegrityError
 from blinker import Signal
 from githubkit import Paginator
@@ -200,28 +199,12 @@ class GithubRepositoryService(RepositoryService):
             "github.repo.sync.pull_requests", repository.organization_id, repository.id
         )
 
-    async def upsert_many(
-        self,
-        session: AsyncSession,
-        create_schemas: list[RepositoryCreate],
-        constraints: list[InstrumentedAttribute[int]] | None = None,
-        mutable_keys: set[str] | None = None,
-    ) -> list[Repository]:
-        instances = await super().upsert_many(
-            session, create_schemas, constraints, mutable_keys
-        )
-
-        # Create tasks to sync repositories (issues, pull requests, etc.)
-        for instance in instances:
-            await self.enqueue_sync(instance)
-
-        return instances
-
     async def install_for_organization(
         self,
         session: AsyncSession,
         organization: Organization,
         installation_id: int,
+        trigger_sync_job: bool = False,
     ) -> list[Repository] | None:
         client = github.get_app_installation_client(installation_id)
         response = await client.rest.apps.async_list_repos_accessible_to_installation()
@@ -231,7 +214,13 @@ class GithubRepositoryService(RepositoryService):
             RepositoryCreate.from_github(organization, repo)
             for repo in response.parsed_data.repositories
         ]
+
         instances = await self.upsert_many(session, repos)
+
+        if trigger_sync_job:
+            for instance in instances:
+                await self.enqueue_sync(instance)
+
         return instances
 
     async def ensure_installed(
@@ -259,14 +248,13 @@ class GithubRepositoryService(RepositoryService):
                 validated_at=datetime.now(),
             )
             session.add(relation)
-            await session.commit()
+            await nested.commit()
             log.info(
                 "repository.add_user",
                 user_id=user.id,
                 organization_id=organization.id,
                 repository_id=repository.id,
             )
-            await nested.commit()
         except IntegrityError as e:
             # TODO: Currently, we treat this as success since the connection
             # exists. However, once we use status to distinguish active/inactive

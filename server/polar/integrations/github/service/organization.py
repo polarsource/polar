@@ -67,7 +67,7 @@ class GithubOrganizationService(OrganizationService):
         # TODO: Better error handling?
         await self.add_user(session, organization, user)
         await github_repository.install_for_organization(
-            session, organization, installation_id
+            session, organization, installation_id, trigger_sync_job=True
         )
 
         # TODO: Use SQLAlchemy features here vs. hard setter

@@ -1,10 +1,20 @@
-const PrimaryButton = (props) => {
+import React from 'react'
+import { classNames } from '../../utils/dom'
+
+const PrimaryButton = (props: {
+  children: React.ReactNode
+  disabled: boolean
+  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void
+}) => {
+  const disabled = props.disabled ? props.disabled : false
+  const classes = classNames(
+    disabled ? 'bg-gray-100 text-gray-400' : 'bg-purple-500 text-white',
+    'm-auto w-full rounded-lg p-2 text-center text-sm font-medium',
+  )
+
   return (
     <>
-      <button
-        className="m-auto w-full rounded-lg bg-purple-500 p-2 text-center text-sm font-medium text-white"
-        onClick={props.onClick}
-      >
+      <button className={classes} onClick={props.onClick} disabled={disabled}>
         {props.children}
       </button>
     </>

@@ -3,6 +3,7 @@
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { useRouter } from 'next/router'
 import { type PledgeRead } from 'polarkit/api/client'
+import PrimaryButton from 'polarkit/components/ui/PrimaryButton'
 import { useState } from 'react'
 
 interface Payment {
@@ -11,37 +12,38 @@ interface Payment {
   checked: boolean
 }
 
-const PaymentForm = ({
-  pledge,
-  query,
-}: {
-  pledge: PledgeRead
-  query: {
-    payment_intent_client_secret: string | undefined
-  }
-}) => {
+const PaymentForm = ({ pledge }: { pledge?: PledgeRead }) => {
   const router = useRouter()
   const stripe = useStripe()
   const elements = useElements()
   const [errorMessage, setErrorMessage] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [canSubmit, setCanSubmit] = useState(false)
 
-  const statusURL = new URL(window.location.href + '/status')
-  statusURL.searchParams.append('pledge_id', pledge.id)
+  const generateRedirectURL = (paymentIntent?) => {
+    const statusURL = new URL(window.location.href + '/status')
+    if (pledge) {
+      statusURL.searchParams.append('pledge_id', pledge.id)
+    }
+    if (!paymentIntent) {
+      return statusURL.toString()
+    }
 
-  const redirect = (paymentIntent) => {
     /*
      * Same location & query params as the serverside redirect from Stripe if required
      * by the payment method - easing the implementation.
      */
-    const location = new URL(statusURL)
-    location.searchParams.append('payment_intent_id', paymentIntent.id)
-    location.searchParams.append(
+    statusURL.searchParams.append('payment_intent_id', paymentIntent.id)
+    statusURL.searchParams.append(
       'payment_intent_client_secret',
       paymentIntent.client_secret,
     )
-    location.searchParams.append('redirect_status', paymentIntent.status)
-    router.replace(location.toString())
+    statusURL.searchParams.append('redirect_status', paymentIntent.status)
+    return statusURL.toString()
+  }
+
+  const redirect = (paymentIntent) => {
+    const location = generateRedirectURL(paymentIntent)
+    router.replace(location)
   }
 
   const handlePayment = (paymentIntent) => {
@@ -61,7 +63,7 @@ const PaymentForm = ({
     }
   }
 
-  const onSubmit = (event) => {
+  const onSubmit = async (event) => {
     event.preventDefault()
 
     if (!stripe || !elements) {
@@ -70,18 +72,16 @@ const PaymentForm = ({
       return
     }
 
-    setLoading(true)
-    stripe
+    return await stripe
       .confirmPayment({
         //`Elements` instance that was used to create the Payment Element
         elements,
         confirmParams: {
-          return_url: statusURL.toString(),
+          return_url: generateRedirectURL(),
         },
         redirect: 'if_required',
       })
       .then(({ paymentIntent }) => {
-        setLoading(false)
         handlePayment(paymentIntent)
       })
       .catch((error) => {
@@ -89,15 +89,23 @@ const PaymentForm = ({
       })
   }
 
+  const onStripeFormChange = (event) => {
+    setCanSubmit(event.complete)
+  }
+
+  const amount = pledge?.amount || 0
+
   return (
-    <form onSubmit={onSubmit}>
-      <PaymentElement />
-      {loading && <div>Loading...</div>}
-      {!loading && <button disabled={!stripe}>Submit</button>}
-      <br />
+    <div className="mt-5">
+      <PaymentElement onChange={onStripeFormChange} />
 
       {errorMessage && <div>{errorMessage}</div>}
-    </form>
+      <div className="mt-6">
+        <PrimaryButton disabled={!canSubmit} onClick={onSubmit}>
+          Pledge ${amount}
+        </PrimaryButton>
+      </div>
+    </div>
   )
 }
 export default PaymentForm

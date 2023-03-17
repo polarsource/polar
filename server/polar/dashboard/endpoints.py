@@ -107,7 +107,7 @@ async def get_dashboard(
             )
         )
 
-    # get rewards
+    # get pledges
     issue_ids = [i.id for i in issues]
     pledges = await pledge.get_by_issue_ids(session, issue_ids)
 

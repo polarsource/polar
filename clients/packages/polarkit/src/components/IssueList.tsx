@@ -40,7 +40,7 @@ const IssueList = (props: {
   pullRequests: Map<string, PullRequestRead>
   pledges: Map<string, PledgeRead>
 }) => {
-  const { issues, pullRequests, rewards, orgs, repos } = props
+  const { issues, pullRequests, pledges, orgs, repos } = props
 
   const [sortedIssues, setSortedIssues] = useState<IssueListItemData[]>([])
 
@@ -58,11 +58,11 @@ const IssueList = (props: {
       }
     })
     setSortedIssues(sorted)
-  }, [issues, pullRequests, rewards, orgs, repos])
+  }, [issues, pullRequests, pledges, orgs, repos])
 
   if (!issues) return <div>Loading issues...</div>
   if (!pullRequests) return <div>Loading pull requests...</div>
-  if (!rewards) return <div>Loading rewards...</div>
+  if (!pledges) return <div>Loading pledges...</div>
 
   return (
     <div className="space-y-2 divide-y divide-gray-200">
@@ -71,7 +71,7 @@ const IssueList = (props: {
           <IssueListItem
             issue={i.issue}
             pullRequests={i.pullRequests}
-            rewards={i.rewards}
+            pledges={i.pledges}
             org={i.org}
             repo={i.repo}
             key={i.issue.id}

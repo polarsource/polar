@@ -18,6 +18,7 @@ const PaymentForm = ({ pledge }: { pledge?: PledgeRead }) => {
   const elements = useElements()
   const [errorMessage, setErrorMessage] = useState(null)
   const [canSubmit, setCanSubmit] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const generateRedirectURL = (paymentIntent?) => {
     const statusURL = new URL(window.location.href + '/status')
@@ -72,6 +73,7 @@ const PaymentForm = ({ pledge }: { pledge?: PledgeRead }) => {
       return
     }
 
+    setLoading(true)
     return await stripe
       .confirmPayment({
         //`Elements` instance that was used to create the Payment Element
@@ -87,6 +89,7 @@ const PaymentForm = ({ pledge }: { pledge?: PledgeRead }) => {
       .catch((error) => {
         setErrorMessage(error.message)
       })
+      .finally(() => setLoading(false))
   }
 
   const onStripeFormChange = (event) => {
@@ -100,8 +103,13 @@ const PaymentForm = ({ pledge }: { pledge?: PledgeRead }) => {
       <PaymentElement onChange={onStripeFormChange} />
 
       {errorMessage && <div>{errorMessage}</div>}
+
       <div className="mt-6">
-        <PrimaryButton disabled={!canSubmit} onClick={onSubmit}>
+        <PrimaryButton
+          disabled={!canSubmit}
+          loading={loading}
+          onClick={onSubmit}
+        >
           Pledge ${amount}
         </PrimaryButton>
       </div>

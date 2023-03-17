@@ -1,4 +1,5 @@
 import { type OrganizationRead, type RepositoryRead } from 'polarkit/api/client'
+import { GrayCard } from 'polarkit/components/ui/Cards'
 
 const RepositoryCard = ({
   organization,
@@ -9,7 +10,7 @@ const RepositoryCard = ({
 }) => {
   return (
     <>
-      <div className="border-1 mt-6 w-full rounded-xl border py-6 px-8 text-center">
+      <GrayCard className="mt-6 py-6 px-8 text-center" padding={false}>
         <div className="flex flex-row justify-center space-x-2">
           <img
             className="h-6 w-6 rounded-full"
@@ -28,7 +29,7 @@ const RepositoryCard = ({
           <p className="text-sm text-red-600">License (missing)</p>
           <p className="text-sm text-red-600">URL (missing)</p>
         </div>
-      </div>
+      </GrayCard>
     </>
   )
 }

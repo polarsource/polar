@@ -1,4 +1,5 @@
 import { type PledgeResources } from 'polarkit/api/client'
+import { WhiteCard } from 'polarkit/components/ui/Cards'
 import IssueCard from './IssueCard'
 import PledgeForm from './PledgeForm'
 import RepositoryCard from './RepositoryCard'
@@ -14,7 +15,10 @@ const Pledge = ({
   return (
     <>
       <div className="my-14 flex flex-col">
-        <div className="flex flex-row items-stretch rounded-xl bg-white p-2 text-center drop-shadow-lg">
+        <WhiteCard
+          className="flex flex-row items-stretch p-2 text-center"
+          padding={false}
+        >
           <div className="w-1/2">
             <IssueCard issue={issue} />
           </div>
@@ -28,7 +32,7 @@ const Pledge = ({
               />
             </div>
           </div>
-        </div>
+        </WhiteCard>
         <RepositoryCard organization={organization} repository={repository} />
       </div>
     </>

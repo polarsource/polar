@@ -258,5 +258,15 @@ class OrganizationService(
         )
         return updated
 
+    async def get_user_organizations(
+        self, session: AsyncSession, user_id: UUID
+    ) -> Sequence[UserOrganization]:
+        statement = sql.select(UserOrganization).where(
+            UserOrganization.user_id == user_id
+        )
+        res = await session.execute(statement)
+        pulls = res.scalars().unique().all()
+        return pulls
+
 
 organization = OrganizationService(Organization)

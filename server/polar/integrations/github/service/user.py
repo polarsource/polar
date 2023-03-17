@@ -1,8 +1,14 @@
+from datetime import datetime, timedelta
 from typing import List, TypedDict
 from uuid import UUID
 import structlog
+from polar.kit.extensions.sqlalchemy import sql
 
 from polar.models import User
+from polar.models.organization import Organization
+from polar.models.repository import Repository
+from polar.models.user_organization import UserOrganization
+from polar.models.user_repository import UserRepository
 from polar.postgres import AsyncSession
 from polar.user.service import UserService
 
@@ -72,31 +78,9 @@ class GithubUserService(UserService):
         )
         return user
 
-    async def user_accessable_repos(
+    async def populate_user_accessable_orgs_and_repositories(
         self, session: AsyncSession, user: User
-    ) -> List[UserAccessableInstallation]:
-        installations = await self.user_accessable_installations(session, user)
-
-        res = []
-        for i in installations:
-            # repos = await self.user_accessable_installation_repositories(
-            #     session, user, i.id
-            # )
-            # TODOsss
-            o: UserAccessableInstallation = {
-                "installation": i,
-                "repositories": [],
-            }
-            res.append(o)
-
-        return res
-
-    async def user_accessable_installations(
-        self, session: AsyncSession, user: User
-    ) -> List[github.rest.Installation]:
-        # Use cache
-        # TODO:
-
+    ) -> None:
         # Fetch which installations the user can access
         installations = await self.fetch_user_accessable_installations(session, user)
 
@@ -158,10 +142,6 @@ class GithubUserService(UserService):
         # Remove access entries for organizations that the user doesn't have access to anymore
         await github_organization.cleanup_access(session, access_to_orgs_ids, user)
 
-        # TODO: something is messing up the transactions??
-
-        return []
-
     async def fetch_user_accessable_installations(
         self, session: AsyncSession, user: User
     ) -> List[github.rest.Installation]:
@@ -204,6 +184,91 @@ class GithubUserService(UserService):
             res.append(repo)
 
         return res
+
+    async def user_can_access_org(
+        self, session: AsyncSession, user: User, org: Organization
+    ) -> bool:
+
+        # Have valid, and recently validated access
+        if await self.__user_can_access_org(session, user, org):
+            return True
+
+        # Unknown status, refresh from API
+        await self.populate_user_accessable_orgs_and_repositories(session, user)
+
+        # TODO: somehow cache false access requests as well
+
+        # Fetch again
+        return await self.__user_can_access_org(session, user, org)
+
+    async def __user_can_access_org(
+        self, session: AsyncSession, user: User, org: Organization
+    ) -> bool:
+
+        stmt = sql.select(UserOrganization).where(
+            UserOrganization.user_id == user.id,
+            UserOrganization.organization_id == org.id,
+        )
+
+        res = await session.execute(stmt)
+        user_org = res.scalars().unique().first()
+        if not user_org:
+            return False
+        if not user_org.validated_at:
+            return False
+        if user_org.validated_at < datetime.now() + timedelta(days=1):
+            log.info(
+                "stale validated_at, triggering refresh for", user=user.id, org=org.id
+            )
+            return False
+        return True
+
+    async def user_can_access_repo(
+        self,
+        session: AsyncSession,
+        user: User,
+        org: Organization,
+        repo: Repository,
+    ) -> bool:
+
+        # Have valid, and recently validated access
+        if await self.__user_can_access_repo(session, user, org, repo):
+            return True
+
+        # Unknown status, refresh from API
+        await self.populate_user_accessable_orgs_and_repositories(session, user)
+
+        # TODO: somehow cache false access requests as well
+
+        # Fetch again
+        return await self.__user_can_access_repo(session, user, org, repo)
+
+    async def __user_can_access_repo(
+        self,
+        session: AsyncSession,
+        user: User,
+        org: Organization,
+        repo: Repository,
+    ) -> bool:
+
+        stmt = sql.select(UserRepository).where(
+            UserRepository.user_id == user.id,
+            UserRepository.organization_id == org.id,
+            UserRepository.repository_id == repo.id,
+        )
+
+        res = await session.execute(stmt)
+        user_org = res.scalars().unique().first()
+        if not user_org:
+            return False
+        if not user_org.validated_at:
+            return False
+        if user_org.validated_at < datetime.now() + timedelta(days=1):
+            log.info(
+                "stale validated_at, triggering refresh for", user=user.id, org=org.id
+            )
+            return False
+        return True
 
 
 github_user = GithubUserService(User)

@@ -6,7 +6,7 @@ from httpx_oauth.clients.github import GitHubOAuth2
 from pydantic import BaseModel
 
 from polar.auth.session import auth_backend
-from polar.auth.dependencies import Auth, current_active_user, fastapi_users
+from polar.auth.dependencies import current_active_user, fastapi_users
 from polar.config import settings
 from polar.enums import Platforms
 from polar.integrations.github import client as github
@@ -18,7 +18,6 @@ from polar.worker import enqueue_job
 from .service.organization import github_organization
 from .service.repository import github_repository
 from .service.issue import github_issue
-from .service.user import github_user
 from .schemas import GithubBadgeRead
 
 log = structlog.get_logger()
@@ -173,21 +172,3 @@ async def webhook(request: Request) -> WebhookResponse:
     # Should be 403 Forbidden, but...
     # Throwing unsophisticated hackers/scrapers/bots off the scent
     raise HTTPException(status_code=404)
-
-
-@router.get("/refresh_orgs")
-async def refresh_orgs(
-    auth: Auth = Depends(Auth.current_user),
-    session: AsyncSession = Depends(get_db_session),
-) -> Any:
-    installations = await github_user.user_accessable_installations(session, auth.user)
-
-    res = []
-    for i in installations:
-        repos = await github_user.user_accessable_installation_repositories(
-            session, auth.user, i.id
-        )
-        res.append({"org": i.account.login, "repos": [r.name for r in repos]})
-
-    # raise HTTPException(status_code=401)
-    return {"ok": res}

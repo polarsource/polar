@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import List, TypedDict
+from typing import List, Sequence, TypedDict
 from uuid import UUID
 import structlog
 from polar.kit.extensions.sqlalchemy import sql
@@ -188,9 +188,33 @@ class GithubUserService(UserService):
     async def user_can_access_org(
         self, session: AsyncSession, user: User, org: Organization
     ) -> bool:
+        async def lookup() -> bool:
+            stmt = sql.select(UserOrganization).where(
+                UserOrganization.user_id == user.id,
+                UserOrganization.organization_id == org.id,
+            )
+
+            res = await session.execute(stmt)
+            user_org = res.scalars().unique().first()
+            if not user_org:
+                return False
+            if not user_org.validated_at:
+                return False
+
+            cutoff = datetime.now(user_org.validated_at.tzinfo) - timedelta(days=1)
+            if user_org.validated_at < cutoff:
+                log.info(
+                    "stale validated_at, triggering refresh for",
+                    user=user.id,
+                    org=org.id,
+                    validated_at=user_org.validated_at,
+                    cutoff=cutoff,
+                )
+                return False
+            return True
 
         # Have valid, and recently validated access
-        if await self.__user_can_access_org(session, user, org):
+        if await lookup():
             return True
 
         # Unknown status, refresh from API
@@ -199,35 +223,7 @@ class GithubUserService(UserService):
         # TODO: somehow cache false access requests as well
 
         # Fetch again
-        return await self.__user_can_access_org(session, user, org)
-
-    async def __user_can_access_org(
-        self, session: AsyncSession, user: User, org: Organization
-    ) -> bool:
-
-        stmt = sql.select(UserOrganization).where(
-            UserOrganization.user_id == user.id,
-            UserOrganization.organization_id == org.id,
-        )
-
-        res = await session.execute(stmt)
-        user_org = res.scalars().unique().first()
-        if not user_org:
-            return False
-        if not user_org.validated_at:
-            return False
-
-        cutoff = datetime.now(user_org.validated_at.tzinfo) - timedelta(days=1)
-        if user_org.validated_at < cutoff:
-            log.info(
-                "stale validated_at, triggering refresh for",
-                user=user.id,
-                org=org.id,
-                validated_at=user_org.validated_at,
-                cutoff=cutoff,
-            )
-            return False
-        return True
+        return await lookup()
 
     async def user_can_access_repo(
         self,
@@ -236,8 +232,32 @@ class GithubUserService(UserService):
         org: Organization,
         repo: Repository,
     ) -> bool:
+        async def lookup() -> bool:
+            stmt = sql.select(UserRepository).where(
+                UserRepository.user_id == user.id,
+                UserRepository.organization_id == org.id,
+                UserRepository.repository_id == repo.id,
+            )
+
+            res = await session.execute(stmt)
+            user_repo = res.scalars().unique().first()
+            if not user_repo:
+                return False
+            if not user_repo.validated_at:
+                return False
+
+            cutoff = datetime.now(user_repo.validated_at.tzinfo) - timedelta(days=1)
+            if user_repo.validated_at < cutoff:
+                log.info(
+                    "stale validated_at, triggering refresh for",
+                    user=user.id,
+                    org=org.id,
+                )
+                return False
+            return True
+
         # Have valid, and recently validated access
-        if await self.__user_can_access_repo(session, user, org, repo):
+        if await lookup():
             return True
 
         # Unknown status, refresh from API
@@ -246,36 +266,77 @@ class GithubUserService(UserService):
         # TODO: somehow cache false access requests as well
 
         # Fetch again
-        return await self.__user_can_access_repo(session, user, org, repo)
+        return await lookup()
 
-    async def __user_can_access_repo(
+    async def user_accessable_repos(
         self,
         session: AsyncSession,
         user: User,
         org: Organization,
-        repo: Repository,
-    ) -> bool:
-
-        stmt = sql.select(UserRepository).where(
-            UserRepository.user_id == user.id,
-            UserRepository.organization_id == org.id,
-            UserRepository.repository_id == repo.id,
-        )
-
-        res = await session.execute(stmt)
-        user_repo = res.scalars().unique().first()
-        if not user_repo:
-            return False
-        if not user_repo.validated_at:
-            return False
-
-        cutoff = datetime.now(user_repo.validated_at.tzinfo) - timedelta(days=1)
-        if user_repo.validated_at < cutoff:
-            log.info(
-                "stale validated_at, triggering refresh for", user=user.id, org=org.id
+    ) -> Sequence[UserRepository]:
+        async def lookup() -> Sequence[UserRepository]:
+            stmt = sql.select(UserRepository).where(
+                UserRepository.user_id == user.id,
+                UserRepository.organization_id == org.id,
             )
-            return False
-        return True
+            res = await session.execute(stmt)
+            return res.scalars().unique().all()
+
+        user_repos = await lookup()
+
+        outOfDate = False
+
+        for r in user_repos:
+            if not r.validated_at:
+                outOfDate = True
+                break
+            cutoff = datetime.now(r.validated_at.tzinfo) - timedelta(days=1)
+            if r.validated_at < cutoff:
+                outOfDate = True
+                break
+
+        # No stale data
+        if not outOfDate:
+            return user_repos
+
+        # Unknown status, refresh from API
+        await self.populate_user_accessable_orgs_and_repositories(session, user)
+
+        return await lookup()
+
+    async def user_accessable_orgs(
+        self,
+        session: AsyncSession,
+        user: User,
+    ) -> Sequence[UserOrganization]:
+        async def lookup() -> Sequence[UserOrganization]:
+            stmt = sql.select(UserOrganization).where(
+                UserOrganization.user_id == user.id,
+            )
+            res = await session.execute(stmt)
+            return res.scalars().unique().all()
+
+        user_repos = await lookup()
+
+        outOfDate = False
+
+        for r in user_repos:
+            if not r.validated_at:
+                outOfDate = True
+                break
+            cutoff = datetime.now(r.validated_at.tzinfo) - timedelta(days=1)
+            if r.validated_at < cutoff:
+                outOfDate = True
+                break
+
+        # No stale data
+        if not outOfDate:
+            return user_repos
+
+        # Unknown status, refresh from API
+        await self.populate_user_accessable_orgs_and_repositories(session, user)
+
+        return await lookup()
 
 
 github_user = GithubUserService(User)

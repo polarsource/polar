@@ -35,13 +35,18 @@ export function RepoSelection() {
 
   // detect current from url
   useEffect(() => {
-    const parts = location.pathname.split('/')
-
     if (!organizations) {
       return
     }
 
-    if (parts.length < 3) {
+    const parts = location.pathname.replace('/dashboard/', '').split('/')
+    let [orgName, repoName] = parts
+
+    if (!orgName && !repoName) {
+      if (!currentOrg) {
+        let defaultOrg = organizations[0]
+        setCurrentOrgRepo(defaultOrg, defaultOrg.repositories[0])
+      }
       return
     }
 
@@ -49,17 +54,14 @@ export function RepoSelection() {
     let repo: RepositoryRead | undefined
 
     // Find org
-    const orgName = parts[2]
     const orgs = organizations.filter((o) => o.name === orgName)
-
     if (orgs.length === 0) {
       return
     }
     org = orgs[0]
 
     // Find repo
-    if (parts.length === 4 && org) {
-      const repoName = parts[3]
+    if (repoName && org) {
       // from org find repo
       const repos = org.repositories.filter((r) => r.name === repoName)
       if (repos.length >= 0) {
@@ -169,6 +171,8 @@ export function RepoSelection() {
   }
   if (userOrgQuery.isLoading) return <div>Loading...</div>
   if (!userOrgQuery.isSuccess) return <div>Error</div>
+
+  if (!currentOrg) return null
 
   return (
     <div

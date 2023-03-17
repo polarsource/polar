@@ -18,6 +18,13 @@ class UserRepository(TimestampedModel, StatusMixin):
         primary_key=True,
     )
 
+    organization_id: Mapped[UUID] = mapped_column(
+        PostgresUUID,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        primary_key=True,
+    )
+
     repository_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
         ForeignKey("repositories.id", ondelete="CASCADE"),

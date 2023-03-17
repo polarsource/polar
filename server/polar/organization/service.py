@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import List, Sequence
 from uuid import UUID
 from datetime import datetime, timezone
 
@@ -196,6 +196,7 @@ class OrganizationService(
                 user_id=user.id,
                 organization_id=organization.id,
             )
+            await nested.commit()
         except IntegrityError:
             # TODO: Currently, we treat this as success since the connection
             # exists. However, once we use status to distinguish active/inactive
@@ -217,6 +218,22 @@ class OrganizationService(
             .values(
                 validated_at=datetime.now(),
             )
+        )
+        await session.execute(stmt)
+        await session.commit()
+
+    async def cleanup_access(
+        self,
+        session: AsyncSession,
+        organization_ids: List[UUID],
+        user: User,
+    ) -> None:
+        """
+        Remove entries for organizations that the user doesn't have access to anymore
+        """
+        stmt = sql.Delete(UserOrganization).where(
+            UserOrganization.user_id == user.id,
+            UserOrganization.organization_id.not_in(organization_ids),
         )
         await session.execute(stmt)
         await session.commit()

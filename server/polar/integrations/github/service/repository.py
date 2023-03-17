@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import Literal, Callable, Any, Coroutine
+from typing import List, Literal, Callable, Any, Coroutine
+from uuid import UUID
 
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
@@ -243,12 +244,17 @@ class GithubRepositoryService(RepositoryService):
         return await self.upsert(session, to_create)
 
     async def add_user(
-        self, session: AsyncSession, repository: Repository, user: User
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        repository: Repository,
+        user: User,
     ) -> None:
         nested = await session.begin_nested()
         try:
             relation = UserRepository(
                 user_id=user.id,
+                organization_id=organization.id,
                 repository_id=repository.id,
                 validated_at=datetime.now(),
             )
@@ -257,8 +263,10 @@ class GithubRepositoryService(RepositoryService):
             log.info(
                 "repository.add_user",
                 user_id=user.id,
-                repository=repository.id,
+                organization_id=organization.id,
+                repository_id=repository.id,
             )
+            await nested.commit()
         except IntegrityError as e:
             # TODO: Currently, we treat this as success since the connection
             # exists. However, once we use status to distinguish active/inactive
@@ -266,7 +274,8 @@ class GithubRepositoryService(RepositoryService):
             log.info(
                 "repository.add_user.already_exists",
                 user_id=user.id,
-                repository=repository.id,
+                organization_id=organization.id,
+                repository_id=repository.id,
             )
 
             log.error("already exists", e=e)
@@ -278,11 +287,30 @@ class GithubRepositoryService(RepositoryService):
             sql.Update(UserRepository)
             .where(
                 UserRepository.user_id == user.id,
+                UserRepository.organization_id == organization.id,
                 UserRepository.repository_id == repository.id,
             )
             .values(
                 validated_at=datetime.now(),
             )
+        )
+        await session.execute(stmt)
+        await session.commit()
+
+    async def cleanup_repositories_access(
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+        repository_ids: List[UUID],
+        user: User,
+    ) -> None:
+        """
+        Remove entries for repositories that the user doesn't have access to anymore
+        """
+        stmt = sql.Delete(UserRepository).where(
+            UserRepository.user_id == user.id,
+            UserRepository.organization_id == organization_id,
+            UserRepository.repository_id.not_in(repository_ids),
         )
         await session.execute(stmt)
         await session.commit()

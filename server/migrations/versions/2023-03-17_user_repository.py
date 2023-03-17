@@ -1,8 +1,8 @@
 """user_repository
 
-Revision ID: e5c87d3d3893
+Revision ID: 869be070983f
 Revises: 75d831301aab
-Create Date: 2023-03-17 10:38:43.583034
+Create Date: 2023-03-17 13:07:03.767226
 
 """
 from alembic import op
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 # Polar Custom Imports
 
 # revision identifiers, used by Alembic.
-revision = "e5c87d3d3893"
+revision = "869be070983f"
 down_revision = "75d831301aab"
 branch_labels = None
 depends_on = None
@@ -23,11 +23,15 @@ def upgrade() -> None:
     op.create_table(
         "user_repositories",
         sa.Column("user_id", sa.UUID(), nullable=False),
+        sa.Column("organization_id", sa.UUID(), nullable=False),
         sa.Column("repository_id", sa.UUID(), nullable=False),
         sa.Column("validated_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("status", sa.Integer, nullable=False),
+        sa.ForeignKeyConstraint(
+            ["organization_id"], ["organizations.id"], ondelete="CASCADE"
+        ),
         sa.ForeignKeyConstraint(
             ["repository_id"], ["repositories.id"], ondelete="CASCADE"
         ),
@@ -35,7 +39,7 @@ def upgrade() -> None:
             ["user_id"],
             ["users.id"],
         ),
-        sa.PrimaryKeyConstraint("user_id", "repository_id"),
+        sa.PrimaryKeyConstraint("user_id", "organization_id", "repository_id"),
     )
     op.add_column(
         "user_organizations",

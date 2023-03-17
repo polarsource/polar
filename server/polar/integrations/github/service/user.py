@@ -1,4 +1,5 @@
 from typing import List, TypedDict
+from uuid import UUID
 import structlog
 
 from polar.models import User
@@ -100,6 +101,8 @@ class GithubUserService(UserService):
         # Fetch which installations the user can access
         installations = await self.fetch_user_accessable_installations(session, user)
 
+        access_to_orgs_ids: List[UUID] = []
+
         # Write to cache
         for i in installations:
             org = await github_organization.ensure_installed(session, i)
@@ -112,14 +115,13 @@ class GithubUserService(UserService):
                 )
                 continue
 
+            access_to_orgs_ids.append(org.id)
+
             await github_organization.add_user(session, org, user)
 
             log.info(
                 "ensured installation", installation=i.account.login, user=user.email
             )
-            # await UserOrganization.upsert(
-            #    session, UserOrganization(user_id=user.id, organization_id=org.id)
-            # )
 
             # install for org
             await github_repository.install_for_organization(session, org, i.id)
@@ -128,23 +130,36 @@ class GithubUserService(UserService):
                 session, user, i.id
             )
 
+            access_to_repo_ids: List[UUID] = []
+
             for github_repo in github_repos:
                 repo = await github_repository.ensure_installed(
                     session, org, github_repo
                 )
                 if not repo:
                     continue
-                await github_repository.add_user(session, repo, user)
+                await github_repository.add_user(session, org, repo, user)
                 log.info(
                     "ensured repository",
                     installation=i.account.login,
                     repo=github_repo.name,
                     user=user.email,
                 )
+                access_to_repo_ids.append(repo.id)
 
-            # TODO: remove repos that the user no longer has access to
-        # TODO: remove orgs that the user no longer has access to
-        # TODO: something is messing up the transactions?
+            log.info(
+                "cleanup access", access_to_repo_ids=access_to_repo_ids, user=user.id
+            )
+
+            # Remove access entries for repositories that the user doesn't have access to anymore
+            await github_repository.cleanup_repositories_access(
+                session, org.id, access_to_repo_ids, user
+            )
+
+        # Remove access entries for organizations that the user doesn't have access to anymore
+        await github_organization.cleanup_access(session, access_to_orgs_ids, user)
+
+        # TODO: something is messing up the transactions??
 
         return []
 

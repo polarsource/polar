@@ -1,3 +1,4 @@
+import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
 import { type IssueRead } from 'polarkit/api/client'
 
 const IssueCard = ({ issue }: { issue: IssueRead }) => {
@@ -12,8 +13,15 @@ const IssueCard = ({ issue }: { issue: IssueRead }) => {
           #{issue.number} opened {issue.issue_created_at}
         </p>
         <div className="mt-6 flex flex-row justify-center space-x-4">
-          <p>Thumbs-up: {issue.reactions.plus_one}</p>
-          <p>Comments: {issue.comments}</p>
+          <p className="w-16 text-sm text-gray-600">
+            <span className="mr-2">👍</span> {issue.reactions.plus_one}
+          </p>
+          <p className="h-4 w-16 text-sm text-gray-600">
+            <span className="relative top-1 mr-2 inline-block h-4">
+              <ChatBubbleLeftIcon className="h-4 w-4" />
+            </span>{' '}
+            {issue.comments}
+          </p>
         </div>
       </div>
     </>

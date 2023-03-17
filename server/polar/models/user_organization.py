@@ -1,7 +1,8 @@
+from datetime import datetime
 from uuid import UUID
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import TIMESTAMP, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import StatusMixin, TimestampedModel
@@ -29,6 +30,11 @@ class UserOrganization(TimestampedModel, StatusMixin):
         primary_key=True,
     )
 
+    # Last time we validated with GitHub that this user can access this organization
+    validated_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True),
+    )
+
     user: "Mapped[User]" = relationship(
         "User", back_populates="organization_associations", lazy="joined"
     )
@@ -36,3 +42,5 @@ class UserOrganization(TimestampedModel, StatusMixin):
     organization: "Mapped[Organization]" = relationship(
         "Organization", back_populates="users", lazy="joined"
     )
+
+    __mutables__ = {"validated_at"}

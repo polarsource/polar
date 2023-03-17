@@ -67,12 +67,23 @@ class GithubOrganizationService(OrganizationService):
 
         # TODO: Better error handling?
         await self.add_user(session, organization, user)
-        repositories = await github_repository.install_for_organization(
+        await github_repository.install_for_organization(
             session, organization, installation_id
         )
+
         # TODO: Use SQLAlchemy features here vs. hard setter
-        organization.repositories = repositories
+        # organization.repositories = repositories
+
         return organization
+
+    async def ensure_installed(
+        self, session: AsyncSession, installation: github.rest.Installation
+    ) -> Organization | None:
+        to_create = OrganizationCreate.from_github_installation(installation)
+        inst = await self.upsert(session, to_create)
+        if not inst:
+            return None
+        return inst
 
     async def suspend(
         self,

@@ -8,6 +8,7 @@ from .repository import Repository
 from .pledge import Pledge
 from .user import OAuthAccount, User
 from .user_organization import UserOrganization
+from .user_repository import UserRepository
 
 __all__ = [
     "Model",
@@ -19,6 +20,7 @@ __all__ = [
     "Account",
     "Organization",
     "UserOrganization",
+    "UserRepository",
     "Repository",
     "Issue",
     "PullRequest",

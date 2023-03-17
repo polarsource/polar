@@ -185,7 +185,9 @@ class OrganizationService(
         nested = await session.begin_nested()
         try:
             relation = UserOrganization(
-                user_id=user.id, organization_id=organization.id
+                user_id=user.id,
+                organization_id=organization.id,
+                validated_at=datetime.now(),
             )
             session.add(relation)
             await session.commit()
@@ -204,6 +206,20 @@ class OrganizationService(
                 user_id=user.id,
             )
             await nested.rollback()
+
+        # Update validated_at
+        stmt = (
+            sql.Update(UserOrganization)
+            .where(
+                UserOrganization.user_id == user.id,
+                UserOrganization.organization_id == organization.id,
+            )
+            .values(
+                validated_at=datetime.now(),
+            )
+        )
+        await session.execute(stmt)
+        await session.commit()
 
     async def update_settings(
         self,

@@ -1,12 +1,21 @@
+from typing import List, TypedDict
 import structlog
 
 from polar.models import User
 from polar.postgres import AsyncSession
 from polar.user.service import UserService
 
+from .organization import github_organization
+from .repository import github_repository
+
 from .. import client as github
 
 log = structlog.get_logger()
+
+
+class UserAccessableInstallation(TypedDict):
+    installation: github.rest.Installation
+    repositories: List[github.rest.Repository]
 
 
 class GithubUserService(UserService):
@@ -63,37 +72,124 @@ class GithubUserService(UserService):
         )
         return user
 
-    async def accessable_orgs(self, session: AsyncSession, user: User) -> None:
+    async def user_accessable_repos(
+        self, session: AsyncSession, user: User
+    ) -> List[UserAccessableInstallation]:
+        installations = await self.user_accessable_installations(session, user)
+
+        res = []
+        for i in installations:
+            # repos = await self.user_accessable_installation_repositories(
+            #     session, user, i.id
+            # )
+            # TODOsss
+            o: UserAccessableInstallation = {
+                "installation": i,
+                "repositories": [],
+            }
+            res.append(o)
+
+        return res
+
+    async def user_accessable_installations(
+        self, session: AsyncSession, user: User
+    ) -> List[github.rest.Installation]:
+        # Use cache
+        # TODO:
+
+        # Fetch which installations the user can access
+        installations = await self.fetch_user_accessable_installations(session, user)
+
+        # Write to cache
+        for i in installations:
+            org = await github_organization.ensure_installed(session, i)
+
+            if not org:
+                log.error(
+                    "failed to ensure installation",
+                    installation_id=i.id,
+                    login=i.account.login,
+                )
+                continue
+
+            await github_organization.add_user(session, org, user)
+
+            log.info(
+                "ensured installation", installation=i.account.login, user=user.email
+            )
+            # await UserOrganization.upsert(
+            #    session, UserOrganization(user_id=user.id, organization_id=org.id)
+            # )
+
+            # install for org
+            await github_repository.install_for_organization(session, org, i.id)
+
+            github_repos = await self.fetch_user_accessable_installation_repositories(
+                session, user, i.id
+            )
+
+            for github_repo in github_repos:
+                repo = await github_repository.ensure_installed(
+                    session, org, github_repo
+                )
+                if not repo:
+                    continue
+                await github_repository.add_user(session, repo, user)
+                log.info(
+                    "ensured repository",
+                    installation=i.account.login,
+                    repo=github_repo.name,
+                    user=user.email,
+                )
+
+            # TODO: remove repos that the user no longer has access to
+        # TODO: remove orgs that the user no longer has access to
+        # TODO: something is messing up the transactions?
+
+        return []
+
+    async def fetch_user_accessable_installations(
+        self, session: AsyncSession, user: User
+    ) -> List[github.rest.Installation]:
+        """
+        Load user accessable installations from GitHub API
+
+        Finds the union between app installations and the users user-to-server token.
+        """
 
         client = await github.get_user_client(session, user)
+        res = []
+        async for install in client.paginate(
+            client.rest.apps.async_list_installations_for_authenticated_user,
+            map_func=lambda r: r.parsed_data.installations,
+        ):
+            res.append(install)
+        return res
 
-        return
+    async def fetch_user_accessable_installation_repositories(
+        self,
+        session: AsyncSession,
+        user: User,
+        installation_id: int,
+    ) -> List[github.rest.Repository]:
+        """
+        Load user accessable repositories from GitHub API
 
-        # oauth = user.get_primary_oauth_account()
+        Finds the union between user accessable repositories in an installation and the
+        users user-to-server-token.
+        """
+        client = await github.get_user_client(session, user)
 
-        # app_client = github.get_app_client()
-        # app_client.rest.apps.get
+        res = []
 
-        client = github.get_client(oauth.access_token)
+        async for repo in client.paginate(
+            client.rest.apps.async_list_installation_repos_for_authenticated_user,
+            map_func=lambda r: r.parsed_data.repositories,
+            installation_id=installation_id,
+        ):
+            res.append(repo)
 
-        page = 1
-
-        try:
-
-            # https://docs.github.com/en/rest/apps/installations?apiVersion=2022-11-28#list-app-installations-accessible-to-the-user-access-token
-            installations = (
-                await client.rest.apps.async_list_installations_for_authenticated_user(
-                    per_page=30, page=page
-                )
-            )
-            for i in installations.parsed_data.installations:
-                log.warn("found installation", i=i)
-        except Exception as e:
-            log.error(
-                "github error",
-                e=e,
-                token=oauth.access_token,
-            )
+        return res
 
 
 github_user = GithubUserService(User)

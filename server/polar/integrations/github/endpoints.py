@@ -177,12 +177,17 @@ async def webhook(request: Request) -> WebhookResponse:
 
 @router.get("/refresh_orgs")
 async def refresh_orgs(
-    # request: Request,
     auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    log.warn("zegllll")
-    print("ZEGLLL")
-    await github_user.accessable_orgs(session, auth.user)
-    raise HTTPException(status_code=401)
-    return {"ok": "ok"}
+    installations = await github_user.user_accessable_installations(session, auth.user)
+
+    res = []
+    for i in installations:
+        repos = await github_user.user_accessable_installation_repositories(
+            session, auth.user, i.id
+        )
+        res.append({"org": i.account.login, "repos": [r.name for r in repos]})
+
+    # raise HTTPException(status_code=401)
+    return {"ok": res}

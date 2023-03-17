@@ -1,12 +1,17 @@
+from datetime import datetime
 from typing import Literal, Callable, Any, Coroutine
 
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
+from sqlalchemy.exc import IntegrityError
 from blinker import Signal
 from githubkit import Paginator
+from polar.kit.extensions.sqlalchemy import sql
 
 from polar.models import Organization, Repository, Issue, PullRequest
 from polar.enums import Platforms
+from polar.models.user import User
+from polar.models.user_repository import UserRepository
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
 from polar.repository.schemas import RepositoryCreate
@@ -227,6 +232,60 @@ class GithubRepositoryService(RepositoryService):
         ]
         instances = await self.upsert_many(session, repos)
         return instances
+
+    async def ensure_installed(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        repo: github.rest.Repository,
+    ) -> Repository | None:
+        to_create = RepositoryCreate.from_github(organization, repo)
+        return await self.upsert(session, to_create)
+
+    async def add_user(
+        self, session: AsyncSession, repository: Repository, user: User
+    ) -> None:
+        nested = await session.begin_nested()
+        try:
+            relation = UserRepository(
+                user_id=user.id,
+                repository_id=repository.id,
+                validated_at=datetime.now(),
+            )
+            session.add(relation)
+            await session.commit()
+            log.info(
+                "repository.add_user",
+                user_id=user.id,
+                repository=repository.id,
+            )
+        except IntegrityError as e:
+            # TODO: Currently, we treat this as success since the connection
+            # exists. However, once we use status to distinguish active/inactive
+            # installations we need to change this.
+            log.info(
+                "repository.add_user.already_exists",
+                user_id=user.id,
+                repository=repository.id,
+            )
+
+            log.error("already exists", e=e)
+
+            await nested.rollback()
+
+        # Update validated_at
+        stmt = (
+            sql.Update(UserRepository)
+            .where(
+                UserRepository.user_id == user.id,
+                UserRepository.repository_id == repository.id,
+            )
+            .values(
+                validated_at=datetime.now(),
+            )
+        )
+        await session.execute(stmt)
+        await session.commit()
 
 
 github_repository = GithubRepositoryService(Repository)

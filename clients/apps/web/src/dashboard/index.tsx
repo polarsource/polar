@@ -30,20 +30,14 @@ const DashboardEnvironment = ({ children }) => {
     statusCompleted: false,
   })
 
+  const organizations = userOrgQuery.data
+
   if (userOrgQuery.isLoading) return <div>Loading...</div>
 
   if (!userOrgQuery.isSuccess) return <div>Error</div>
 
-  const organizations = userOrgQuery.data
   if (!organizations.length) {
     window.location.replace(CONFIG.GITHUB_INSTALLATION_URL)
-  }
-
-  if (!currentOrg || !currentRepo) {
-    const defaultSelected = organizations[0]
-    if (defaultSelected) {
-      setCurrentOrgRepo(defaultSelected, defaultSelected.repositories[0])
-    }
   }
 
   // Pass search filters to dynamic children
@@ -77,7 +71,7 @@ const router = createBrowserRouter([
     path: '/dashboard/:orgSlug',
     element: (
       <DashboardEnvironment>
-        <Organization />
+        <Organization filters={{}} />
       </DashboardEnvironment>
     ),
   },
@@ -85,7 +79,7 @@ const router = createBrowserRouter([
     path: '/dashboard/:orgSlug/:repoSlug',
     element: (
       <DashboardEnvironment>
-        <Organization />
+        <Organization filters={{}} />
       </DashboardEnvironment>
     ),
   },

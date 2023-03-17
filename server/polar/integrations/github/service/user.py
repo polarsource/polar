@@ -216,9 +216,15 @@ class GithubUserService(UserService):
             return False
         if not user_org.validated_at:
             return False
-        if user_org.validated_at < datetime.now() + timedelta(days=1):
+
+        cutoff = datetime.now(user_org.validated_at.tzinfo) - timedelta(days=1)
+        if user_org.validated_at < cutoff:
             log.info(
-                "stale validated_at, triggering refresh for", user=user.id, org=org.id
+                "stale validated_at, triggering refresh for",
+                user=user.id,
+                org=org.id,
+                validated_at=user_org.validated_at,
+                cutoff=cutoff,
             )
             return False
         return True
@@ -230,7 +236,6 @@ class GithubUserService(UserService):
         org: Organization,
         repo: Repository,
     ) -> bool:
-
         # Have valid, and recently validated access
         if await self.__user_can_access_repo(session, user, org, repo):
             return True
@@ -258,12 +263,14 @@ class GithubUserService(UserService):
         )
 
         res = await session.execute(stmt)
-        user_org = res.scalars().unique().first()
-        if not user_org:
+        user_repo = res.scalars().unique().first()
+        if not user_repo:
             return False
-        if not user_org.validated_at:
+        if not user_repo.validated_at:
             return False
-        if user_org.validated_at < datetime.now() + timedelta(days=1):
+
+        cutoff = datetime.now(user_repo.validated_at.tzinfo) - timedelta(days=1)
+        if user_repo.validated_at < cutoff:
             log.info(
                 "stale validated_at, triggering refresh for", user=user.id, org=org.id
             )

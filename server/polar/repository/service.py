@@ -31,5 +31,18 @@ class RepositoryService(
         res = await session.execute(statement)
         return res.scalars().unique().all()
 
+    async def get_by_organization_and_name(
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+        name: str,
+    ) -> Repository | None:
+        statement = sql.select(Repository).where(
+            Repository.organization_id == organization_id,
+            Repository.name == name,
+        )
+        res = await session.execute(statement)
+        return res.scalars().unique().first()
+
 
 repository = RepositoryService(Repository)

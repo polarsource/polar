@@ -1,7 +1,13 @@
+import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import type { NextPage } from 'next'
 import { api } from 'polarkit'
 import { Platforms, type PledgeResources } from 'polarkit/api/client'
 
+import TimeAgo from 'javascript-time-ago'
+import en from 'javascript-time-ago/locale/en.json'
+import IssueListItem from 'polarkit/components/IssueListItem'
+
+TimeAgo.addDefaultLocale(en)
 const PledgeStatusPage: NextPage = ({
   organization,
   repository,
@@ -11,8 +17,23 @@ const PledgeStatusPage: NextPage = ({
 }: PledgeResources) => {
   return (
     <>
-      <div className="container mx-auto mt-24">
-        <h1>Status page</h1>
+      <div className="mx-auto mt-24 w-[768px]">
+        <div className="align-midle flex flex-row">
+          <h1 className="w-1/2 text-2xl font-normal text-gray-800">
+            <CheckCircleIcon className="inline-block h-10 w-10 text-purple-500" />{' '}
+            Thank you!
+          </h1>
+          <p className="w-1/2 text-right align-middle text-sm font-normal text-gray-600">
+            Backed on {pledge.created_at}
+          </p>
+        </div>
+
+        <IssueListItem
+          issue={issue}
+          org={organization}
+          repo={repository}
+          pledges={[pledge]}
+        />
         <p>{JSON.stringify(pledge)}</p>
       </div>
     </>

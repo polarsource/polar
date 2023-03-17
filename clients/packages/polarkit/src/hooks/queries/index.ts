@@ -76,11 +76,11 @@ export const useRepositoryPullRequests = (
     },
   )
 
-export const useRepositoryRewards = (repoOwner: string, repoName: string) =>
+export const useRepositoryPledges = (repoOwner: string, repoName: string) =>
   useQuery(
-    ['rewards', 'repo', repoOwner, repoName],
+    ['pledges', 'repo', repoOwner, repoName],
     () =>
-      api.rewards.getRepositoryRewards({
+      api.pledges.getRepositoryPledges({
         platform: Platforms.GITHUB,
         orgName: repoOwner,
         repoName: repoName,

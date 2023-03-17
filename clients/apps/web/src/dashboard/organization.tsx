@@ -4,8 +4,8 @@ import {
   type Entry_IssueRead_,
   type IssueListResponse,
   type OrganizationRead,
+  type PledgeRead,
   type RepositoryRead,
-  type RewardRead,
 } from 'polarkit/api/client'
 import { IssueList } from 'polarkit/components'
 import { useDashboard } from 'polarkit/hooks'
@@ -51,7 +51,7 @@ const Organization = (props: { filters: DashboardFilters }) => {
 
   const [issues, setIssues] = useState<Entry_IssueRead_[]>()
   const [orgs, setOrgs] = useState<Map<string, OrganizationRead>>()
-  const [rewards, setRewards] = useState<Map<string, RewardRead>>()
+  const [pledges, setPledges] = useState<Map<string, PledgeRead>>()
   const [repos, setRepos] = useState<Map<string, RepositoryRead>>()
   const [pullRequests, setPullRequests] =
     useState<Map<string, PullRequestRead>>()
@@ -59,7 +59,7 @@ const Organization = (props: { filters: DashboardFilters }) => {
   useEffect(() => {
     setIssues(dashboard?.data || [])
     setOrgs(buildMapForType<OrganizationRead>(dashboard, 'organization'))
-    setRewards(buildMapForType<RewardRead>(dashboard, 'rewards'))
+    setPledges(buildMapForType<PledgeRead>(dashboard, 'pledges'))
     setRepos(buildMapForType<RepositoryRead>(dashboard, 'repository'))
     setPullRequests(buildMapForType<PullRequestRead>(dashboard, 'pull_request'))
   }, [dashboard])
@@ -69,7 +69,7 @@ const Organization = (props: { filters: DashboardFilters }) => {
       <IssueList
         issues={issues}
         pullRequests={pullRequests}
-        rewards={rewards}
+        pledges={pledges}
         orgs={orgs}
         repos={repos}
       />

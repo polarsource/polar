@@ -1,30 +1,22 @@
-import React from 'react'
+import { BellIcon } from '@heroicons/react/24/outline'
+import Link from 'next/link'
 import { useAuth } from 'polarkit/hooks'
+import Logout from './Logout'
 
 const Profile = () => {
   const { authenticated, currentUser, logout } = useAuth()
-  if (!authenticated) {
-    // TODO: Switch to <Link> or can we use that even in Dashboard (pure)?
-    return <a href="/login">Login</a>
-  }
 
-  const handleLogout = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault()
-    logout()
+  if (!authenticated) {
+    return <Link href="/login">Login</Link>
   }
 
   return (
     <>
-      <div className="flex items-center">
-        <img
-          className="h-8 w-8 rounded-full"
-          src={currentUser.profile.avatar_url}
-          alt=""
-        />
-        <a href="#" className="ml-3" onClick={handleLogout}>
-          Logout
-        </a>
-      </div>
+      <BellIcon
+        className="h-6 w-6 cursor-pointer text-gray-400 transition-colors duration-100 hover:text-gray-800"
+        aria-hidden="true"
+      />
+      <Logout />
     </>
   )
 }

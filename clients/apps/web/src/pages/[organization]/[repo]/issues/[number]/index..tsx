@@ -74,9 +74,6 @@ const PledgePage: NextPage = ({
     </>
   )
 }
-PledgePage.getLayout = (page: ReactElement) => {
-  return <div>{page}</div>
-}
 
 export const getServerSideProps = async (context) => {
   const res = await api.pledges.getPledgeWithResources({

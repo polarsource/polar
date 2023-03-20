@@ -68,7 +68,9 @@ class GithubUserService(UserService):
 
     async def sync_github_admin_orgs(self, session: AsyncSession, user: User) -> None:
         installations = await self.fetch_user_accessible_installations(session, user)
-        client = await github.get_user_client(session, user)
+
+        user_client = await github.get_user_client(session, user)
+        self_github_user = user_client.rest.users.get_authenticated()
 
         log.info(
             "sync_github_admin_orgs.installations",
@@ -102,9 +104,12 @@ class GithubUserService(UserService):
                 await organization.add_user(session, org, user, is_admin=True)
             else:
                 try:
+                    client = github.get_app_installation_client(i.id)
+
                     # If installed on github org, check access
-                    membership = await client.rest.orgs.async_get_membership_for_authenticated_user(
-                        i.account.login
+                    membership = await client.rest.orgs.async_get_membership_for_user(
+                        i.account.login,
+                        self_github_user.parsed_data.login,
                     )
 
                     data = membership.parsed_data

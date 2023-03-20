@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from uuid import UUID
 from datetime import datetime
-from decimal import Decimal
 from enum import Enum
 
 from polar.kit.schemas import Schema
@@ -24,12 +23,12 @@ class State(str, Enum):
 class PledgeCreate(Schema):
     issue_id: UUID
     email: str
-    amount: Decimal
+    amount: int
 
 
 class PledgeUpdate(Schema):
     email: str | None
-    amount: Decimal | None
+    amount: int | None
 
 
 class PledgeRead(PledgeCreate):

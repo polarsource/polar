@@ -1,98 +1,21 @@
-import { api } from 'polarkit'
-import { type PledgeRead, type PledgeResources } from 'polarkit/api/client'
-import { CONFIG } from 'polarkit/config'
-import { useState } from 'react'
+import { type PledgeResources } from 'polarkit/api/client'
 
 const DetailsForm = ({
-  organization,
-  repository,
-  issue,
-  pledge,
-  setPledge,
+  setAmount,
+  setEmail,
+  minimumAmount,
 }: PledgeResources & {
-  pledge?: PledgeRead
-  setPledge: (pledge: PledgeRead) => void
+  setAmount: (amount: number) => void
+  setEmail: (email: string) => void
+  minimumAmount: number
 }) => {
-  const [amount, setAmount] = useState(0)
-  const [email, setEmail] = useState('')
-
-  const MINIMUM_PLEDGE = CONFIG.MINIMUM_PLEDGE_AMOUNT
-
-  const validateEmail = (email) => {
-    return email.match(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/)
+  const onAmountChange = (event) => {
+    const amount = parseInt(event.target.value)
+    setAmount(amount)
   }
 
-  const shouldSynchronizePledge = () => {
-    if (amount < MINIMUM_PLEDGE) {
-      return false
-    }
-
-    if (pledge) {
-      if (!validateEmail(email)) {
-        return false
-      }
-
-      return pledge.amount !== amount || pledge.email !== email
-    }
-    return true
-  }
-
-  const createPledge = async () => {
-    if (!shouldSynchronizePledge()) {
-      return false
-    }
-
-    return await api.pledges.createPledge({
-      platform: organization.platform,
-      orgName: organization.name,
-      repoName: repository.name,
-      requestBody: {
-        issue_id: issue.id,
-        amount: amount,
-        email: email,
-      },
-    })
-  }
-
-  const updatePledge = async () => {
-    if (!shouldSynchronizePledge()) {
-      return false
-    }
-
-    return await api.pledges.updatePledge({
-      platform: organization.platform,
-      orgName: organization.name,
-      repoName: repository.name,
-      pledgeId: pledge.id,
-      requestBody: {
-        amount: amount,
-        email: email,
-      },
-    })
-  }
-
-  const synchronizePledge = async () => {
-    let updatedPledge: PledgeRead
-    if (!pledge) {
-      updatedPledge = await createPledge()
-    } else {
-      updatedPledge = await updatePledge()
-    }
-
-    if (updatedPledge) {
-      setPledge(updatedPledge)
-    }
-  }
-
-  const onAmountChange = (e) => {
-    setAmount(parseInt(e.target.value))
-    synchronizePledge()
-  }
-
-  const onEmailChange = (e) => {
-    const email = e.target.value
-    setEmail(email)
-    synchronizePledge()
+  const onEmailChange = (event) => {
+    setEmail(event.target.value)
   }
 
   return (
@@ -109,7 +32,7 @@ const DetailsForm = ({
             className="block w-full rounded-md border-gray-200 py-3 px-4 pl-9 pr-16 text-sm shadow-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500"
             onChange={onAmountChange}
             onBlur={onAmountChange}
-            placeholder={MINIMUM_PLEDGE}
+            placeholder={minimumAmount}
           />
           <div className="pointer-events-none absolute inset-y-0 left-0 z-20 flex items-center pl-4">
             <span className="text-gray-500">$</span>
@@ -119,7 +42,7 @@ const DetailsForm = ({
           </div>
         </div>
         <p className="w-1/3 text-xs text-gray-500">
-          Minimum is ${MINIMUM_PLEDGE}
+          Minimum is ${minimumAmount}
         </p>
       </div>
 

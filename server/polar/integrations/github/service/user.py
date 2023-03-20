@@ -84,15 +84,20 @@ class GithubUserService(UserService):
         # Fetch which installations the user can access
         installations = await self.fetch_user_accessible_installations(session, user)
 
+        # Build list of GitHub-organizations that the user can access
+        # This will be used to remove access from Polar-organizations that the user
+        # no longer should have access to
         access_to_orgs_ids: List[UUID] = []
 
         # Write to cache
         for i in installations:
-            org = await github_organization.ensure_installed(session, i)
+
+            # Save the github organization as a Polar organization (if not exists)
+            org = await github_organization.save_from_github(session, i)
 
             if not org:
                 log.error(
-                    "failed to ensure installation",
+                    "failed to save organization/installation",
                     installation_id=i.id,
                     login=i.account.login,
                 )
@@ -100,27 +105,29 @@ class GithubUserService(UserService):
 
             access_to_orgs_ids.append(org.id)
 
+            # Create/Update UserOrganization entry
             await github_organization.add_user(session, org, user)
 
-            log.info(
-                "ensured installation", installation=i.account.login, user=user.email
-            )
-
-            # install for org
-            await github_repository.install_for_organization(session, org, i.id)
-
+            # For this user, fetch which GitHub-repositories in the GitHub-organization
+            # that the user can access.
             github_repos = await self.fetch_user_accessible_installation_repositories(
                 session, user, i.id
             )
 
+            # Build list of repositories in this org that the user can access.
+            # Will be used to remove access from repositories that the user no longer
+            # can access.
             access_to_repo_ids: List[UUID] = []
 
             for github_repo in github_repos:
-                repo = await github_repository.ensure_installed(
+                # Create a polar-Repository from the GitHub-repository if it doesn't exist
+                repo = await github_repository.upsert_from_github(
                     session, org, github_repo
                 )
                 if not repo:
                     continue
+
+                # Create/Update UserRepository entry
                 await github_repository.add_user(session, org, repo, user)
                 log.info(
                     "ensured repository",
@@ -130,17 +137,27 @@ class GithubUserService(UserService):
                 )
                 access_to_repo_ids.append(repo.id)
 
-            log.info(
-                "cleanup access", access_to_repo_ids=access_to_repo_ids, user=user.id
-            )
-
             # Remove access entries for repositories that the user doesn't have access to anymore
             await github_repository.cleanup_repositories_access(
                 session, org.id, access_to_repo_ids, user
             )
 
+            log.info(
+                "synced repository access",
+                org_id=org.id,
+                access_to_repo_ids=access_to_repo_ids,
+                user=user.id,
+            )
+
         # Remove access entries for organizations that the user doesn't have access to anymore
         await github_organization.cleanup_access(session, access_to_orgs_ids, user)
+
+        log.info(
+            "synced organization access",
+            org_id=org.id,
+            access_to_orgs_ids=access_to_orgs_ids,
+            user=user.id,
+        )
 
     async def fetch_user_accessible_installations(
         self, session: AsyncSession, user: User
@@ -284,19 +301,19 @@ class GithubUserService(UserService):
 
         user_repos = await lookup()
 
-        outOfDate = False
+        out_of_date = False
 
         for r in user_repos:
             if not r.validated_at:
-                outOfDate = True
+                out_of_date = True
                 break
             cutoff = datetime.now(r.validated_at.tzinfo) - timedelta(days=1)
             if r.validated_at < cutoff:
-                outOfDate = True
+                out_of_date = True
                 break
 
         # No stale data
-        if not outOfDate:
+        if not out_of_date:
             return user_repos
 
         # Unknown status, refresh from API

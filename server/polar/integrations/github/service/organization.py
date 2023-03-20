@@ -75,7 +75,7 @@ class GithubOrganizationService(OrganizationService):
 
         return organization
 
-    async def ensure_installed(
+    async def save_from_github(
         self, session: AsyncSession, installation: github.rest.Installation
     ) -> Organization | None:
         to_create = OrganizationCreate.from_github_installation(installation)

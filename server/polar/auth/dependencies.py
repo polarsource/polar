@@ -87,7 +87,6 @@ class Auth:
             session,
             platform=platform,
             name=org_name,
-            # user_id=user.id,
         )
         if not organization:
             raise HTTPException(status_code=404, detail="Organization not found")

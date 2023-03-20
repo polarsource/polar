@@ -223,7 +223,7 @@ class GithubRepositoryService(RepositoryService):
 
         return instances
 
-    async def ensure_installed(
+    async def upsert_from_github(
         self,
         session: AsyncSession,
         organization: Organization,

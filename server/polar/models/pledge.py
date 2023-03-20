@@ -1,7 +1,6 @@
 from uuid import UUID
-from decimal import Decimal
 
-from sqlalchemy import Numeric, String
+from sqlalchemy import String, BigInteger
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.db.models import RecordModel
@@ -18,9 +17,7 @@ class Pledge(RecordModel):
 
     email: Mapped[str] = mapped_column(String, nullable=False, index=True)
 
-    amount: Mapped[Decimal] = mapped_column(
-        Numeric(precision=25, scale=10), nullable=False
-    )
+    amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
     state: Mapped[str] = mapped_column(String, nullable=False, default="initiated")
 

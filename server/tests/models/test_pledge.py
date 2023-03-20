@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 import pytest
 
 from polar.kit.utils import generate_uuid
@@ -10,7 +8,7 @@ from polar.postgres import AsyncSession
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "test_amount",
-    [("10.10"), ("10.120"), ("10.1230"), ("123456789.99"), ("123456789.123456789")],
+    [1010, 12345678999],
 )
 async def test_pledge(session: AsyncSession, test_amount: str) -> None:
     email = "alice@polar.sh"
@@ -21,7 +19,7 @@ async def test_pledge(session: AsyncSession, test_amount: str) -> None:
         repository_id=generate_uuid(),
         organization_id=generate_uuid(),
         email=email,
-        amount=Decimal(test_amount),
+        amount=int(test_amount),
     )
 
     assert created.id is not None
@@ -32,4 +30,4 @@ async def test_pledge(session: AsyncSession, test_amount: str) -> None:
     got = await Pledge.find(session, created.id)
     assert got is not None
     assert got.email == email
-    assert got.amount == Decimal(test_amount)
+    assert got.amount == int(test_amount)

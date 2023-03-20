@@ -66,7 +66,7 @@ class GithubOrganizationService(OrganizationService):
             return None
 
         # TODO: Better error handling?
-        await self.add_user(session, organization, user)
+        await self.add_user(session, organization, user, is_admin=True)
         repositories = await github_repository.install_for_organization(
             session, organization, installation_id
         )

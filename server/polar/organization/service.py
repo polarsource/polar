@@ -189,19 +189,27 @@ class OrganizationService(
         return (organization, repository, issue_obj)
 
     async def add_user(
-        self, session: AsyncSession, organization: Organization, user: User
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        is_admin: bool,
     ) -> None:
         nested = await session.begin_nested()
         try:
             relation = UserOrganization(
-                user_id=user.id, organization_id=organization.id
+                user_id=user.id,
+                organization_id=organization.id,
+                is_admin=is_admin,
             )
             session.add(relation)
             await nested.commit()
+            await session.commit()
             log.info(
-                "organization.add_user",
+                "organization.add_user.created",
                 user_id=user.id,
                 organization_id=organization.id,
+                is_admin=is_admin,
             )
             return
         except IntegrityError:
@@ -214,6 +222,18 @@ class OrganizationService(
                 user_id=user.id,
             )
             await nested.rollback()
+
+        # Update
+        stmt = (
+            sql.Update(UserOrganization)
+            .where(
+                UserOrganization.user_id == user.id,
+                UserOrganization.organization_id == organization.id,
+            )
+            .values(is_admin=is_admin)
+        )
+        await session.execute(stmt)
+        await session.commit()
 
     async def update_settings(
         self,

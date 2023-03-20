@@ -1,7 +1,7 @@
 from uuid import UUID
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import Boolean, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import StatusMixin, TimestampedModel
@@ -36,3 +36,5 @@ class UserOrganization(TimestampedModel, StatusMixin):
     organization: "Mapped[Organization]" = relationship(
         "Organization", back_populates="users", lazy="joined"
     )
+
+    is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

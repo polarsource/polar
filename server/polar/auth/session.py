@@ -43,9 +43,13 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
             associate_by_email=associate_by_email,
             is_verified_by_default=is_verified_by_default,
         )
-        return await github_user.update_profile(
+        gh_user = await github_user.update_profile(
             self.user_db.session, user, access_token
         )
+
+        await github_user.sync_github_admin_orgs(self.user_db.session, user)
+
+        return gh_user
 
     async def on_after_register(
         self, user: User, request: Request | None = None

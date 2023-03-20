@@ -1,8 +1,11 @@
+from typing import List
 import structlog
+from polar.enums import Platforms
 
 from polar.models import User
 from polar.postgres import AsyncSession
 from polar.user.service import UserService
+from polar.organization.service import organization
 
 from .. import client as github
 
@@ -62,6 +65,106 @@ class GithubUserService(UserService):
             github_username=user.profile["username"],
         )
         return user
+
+    async def sync_github_admin_orgs(self, session: AsyncSession, user: User) -> None:
+        installations = await self.fetch_user_accessible_installations(session, user)
+        client = await github.get_user_client(session, user)
+
+        log.info(
+            "sync_github_admin_orgs.installations",
+            user_id=user.id,
+            installation_ids=[i.id for i in installations],
+        )
+
+        gh_oauth = user.get_platform_oauth_account(Platforms.github)
+        if not gh_oauth:
+            log.error("sync_github_admin_orgs.no-platform-oauth-found", user_id=user.id)
+            return
+
+        for i in installations:
+            org = await organization.get_by_platform(
+                session, Platforms.github, i.account.id
+            )
+            if not org:
+                log.error("sync_github_admin_orgs.org-not-found", id=i.id)
+                continue
+
+            # If installed on personal account, always admin
+            if i.account.id == int(gh_oauth.account_id):
+
+                log.info(
+                    "sync_github_admin_orgs.add_admin",
+                    org_id=org.id,
+                    user_id=user.id,
+                )
+
+                # Add as admin in Polar (or upgrade existing memeber to admin)
+                await organization.add_user(session, org, user, is_admin=True)
+            else:
+                try:
+                    # If installed on github org, check access
+                    membership = await client.rest.orgs.async_get_membership_for_authenticated_user(
+                        i.account.login
+                    )
+
+                    data = membership.parsed_data
+                    if data.role == "admin" and data.state == "active":
+                        log.info(
+                            "sync_github_admin_orgs.add_admin",
+                            org_id=org.id,
+                            user_id=user.id,
+                        )
+
+                        # Add as admin in Polar (or upgrade existing memeber to admin)
+                        await organization.add_user(session, org, user, is_admin=True)
+                except Exception as e:
+                    log.error(
+                        "sync_github_admin_orgs.failed",
+                        err=e,
+                        org_id=org.id,
+                        user_id=user.id,
+                    )
+
+    async def fetch_user_accessible_installations(
+        self, session: AsyncSession, user: User
+    ) -> List[github.rest.Installation]:
+        """
+        Load user accessible installations from GitHub API
+        Finds the union between app installations and the users user-to-server token.
+        """
+
+        client = await github.get_user_client(session, user)
+        res = []
+        async for install in client.paginate(
+            client.rest.apps.async_list_installations_for_authenticated_user,
+            map_func=lambda r: r.parsed_data.installations,
+        ):
+            res.append(install)
+        return res
+
+    async def fetch_user_accessible_installation_repositories(
+        self,
+        session: AsyncSession,
+        user: User,
+        installation_id: int,
+    ) -> List[github.rest.Repository]:
+        """
+        Load user accessible repositories from GitHub API
+        Finds the union between user accessible repositories in an installation and the
+        users user-to-server-token.
+        """
+        client = await github.get_user_client(session, user)
+
+        res = []
+
+        async for repo in client.paginate(
+            client.rest.apps.async_list_installation_repos_for_authenticated_user,
+            map_func=lambda r: r.parsed_data.repositories,
+            installation_id=installation_id,
+        ):
+            res.append(repo)
+
+        return res
 
 
 github_user = GithubUserService(User)

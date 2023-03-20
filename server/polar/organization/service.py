@@ -6,6 +6,7 @@ import structlog
 from sqlalchemy import and_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import InstrumentedAttribute, contains_eager
+from polar.kit import utils
 
 from polar.kit.services import ResourceService
 from polar.exceptions import ResourceNotFound
@@ -187,7 +188,7 @@ class OrganizationService(
             relation = UserOrganization(
                 user_id=user.id,
                 organization_id=organization.id,
-                validated_at=datetime.now(),
+                validated_at=utils.utc_now(),
             )
             session.add(relation)
             await nested.commit()
@@ -196,6 +197,7 @@ class OrganizationService(
                 user_id=user.id,
                 organization_id=organization.id,
             )
+            return
         except IntegrityError:
             # TODO: Currently, we treat this as success since the connection
             # exists. However, once we use status to distinguish active/inactive
@@ -256,16 +258,6 @@ class OrganizationService(
             settings=settings.dict(),
         )
         return updated
-
-    async def get_user_organizations(
-        self, session: AsyncSession, user_id: UUID
-    ) -> Sequence[UserOrganization]:
-        statement = sql.select(UserOrganization).where(
-            UserOrganization.user_id == user_id
-        )
-        res = await session.execute(statement)
-        pulls = res.scalars().unique().all()
-        return pulls
 
 
 organization = OrganizationService(Organization)

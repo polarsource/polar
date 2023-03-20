@@ -20,14 +20,14 @@ async def get_user_organizations(
     session: AsyncSession = Depends(get_db_session),
 ) -> Sequence[OrganizationRead]:
     # get list of orgs that the user can see
-    user_orgs = await github_user.user_accessable_orgs(session, user)
+    user_orgs = await github_user.user_accessible_orgs(session, user)
 
     # fetch orgs
     orgs = [await organization.get(session, o.organization_id) for o in user_orgs]
 
     async def expand_children(org: Organization) -> OrganizationRead:
         # get the repositories in this org that the user can access
-        user_repos = await github_user.user_accessable_repos(session, user, org)
+        user_repos = await github_user.user_accessible_repos(session, user, org)
 
         # fetch as repo
         repos = [await repository.get(session, r.repository_id) for r in user_repos]

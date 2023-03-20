@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import List, Literal, Callable, Any, Coroutine
 from uuid import UUID
 
@@ -6,6 +5,7 @@ import structlog
 from sqlalchemy.exc import IntegrityError
 from blinker import Signal
 from githubkit import Paginator
+from polar.kit import utils
 from polar.kit.extensions.sqlalchemy import sql
 
 from polar.models import Organization, Repository, Issue, PullRequest
@@ -245,7 +245,7 @@ class GithubRepositoryService(RepositoryService):
                 user_id=user.id,
                 organization_id=organization.id,
                 repository_id=repository.id,
-                validated_at=datetime.now(),
+                validated_at=utils.utc_now(),
             )
             session.add(relation)
             await nested.commit()
@@ -255,6 +255,7 @@ class GithubRepositoryService(RepositoryService):
                 organization_id=organization.id,
                 repository_id=repository.id,
             )
+            return
         except IntegrityError as e:
             # TODO: Currently, we treat this as success since the connection
             # exists. However, once we use status to distinguish active/inactive
@@ -279,7 +280,7 @@ class GithubRepositoryService(RepositoryService):
                 UserRepository.repository_id == repository.id,
             )
             .values(
-                validated_at=datetime.now(),
+                validated_at=utils.utc_now(),
             )
         )
         await session.execute(stmt)

@@ -78,11 +78,11 @@ class GithubUserService(UserService):
         )
         return user
 
-    async def populate_user_accessable_orgs_and_repositories(
+    async def populate_user_accessible_orgs_and_repositories(
         self, session: AsyncSession, user: User
     ) -> None:
         # Fetch which installations the user can access
-        installations = await self.fetch_user_accessable_installations(session, user)
+        installations = await self.fetch_user_accessible_installations(session, user)
 
         access_to_orgs_ids: List[UUID] = []
 
@@ -109,7 +109,7 @@ class GithubUserService(UserService):
             # install for org
             await github_repository.install_for_organization(session, org, i.id)
 
-            github_repos = await self.fetch_user_accessable_installation_repositories(
+            github_repos = await self.fetch_user_accessible_installation_repositories(
                 session, user, i.id
             )
 
@@ -142,11 +142,11 @@ class GithubUserService(UserService):
         # Remove access entries for organizations that the user doesn't have access to anymore
         await github_organization.cleanup_access(session, access_to_orgs_ids, user)
 
-    async def fetch_user_accessable_installations(
+    async def fetch_user_accessible_installations(
         self, session: AsyncSession, user: User
     ) -> List[github.rest.Installation]:
         """
-        Load user accessable installations from GitHub API
+        Load user accessible installations from GitHub API
 
         Finds the union between app installations and the users user-to-server token.
         """
@@ -160,16 +160,16 @@ class GithubUserService(UserService):
             res.append(install)
         return res
 
-    async def fetch_user_accessable_installation_repositories(
+    async def fetch_user_accessible_installation_repositories(
         self,
         session: AsyncSession,
         user: User,
         installation_id: int,
     ) -> List[github.rest.Repository]:
         """
-        Load user accessable repositories from GitHub API
+        Load user accessible repositories from GitHub API
 
-        Finds the union between user accessable repositories in an installation and the
+        Finds the union between user accessible repositories in an installation and the
         users user-to-server-token.
         """
         client = await github.get_user_client(session, user)
@@ -218,7 +218,7 @@ class GithubUserService(UserService):
             return True
 
         # Unknown status, refresh from API
-        await self.populate_user_accessable_orgs_and_repositories(session, user)
+        await self.populate_user_accessible_orgs_and_repositories(session, user)
 
         # TODO: somehow cache false access requests as well
 
@@ -261,14 +261,14 @@ class GithubUserService(UserService):
             return True
 
         # Unknown status, refresh from API
-        await self.populate_user_accessable_orgs_and_repositories(session, user)
+        await self.populate_user_accessible_orgs_and_repositories(session, user)
 
         # TODO: somehow cache false access requests as well
 
         # Fetch again
         return await lookup()
 
-    async def user_accessable_repos(
+    async def user_accessible_repos(
         self,
         session: AsyncSession,
         user: User,
@@ -300,11 +300,11 @@ class GithubUserService(UserService):
             return user_repos
 
         # Unknown status, refresh from API
-        await self.populate_user_accessable_orgs_and_repositories(session, user)
+        await self.populate_user_accessible_orgs_and_repositories(session, user)
 
         return await lookup()
 
-    async def user_accessable_orgs(
+    async def user_accessible_orgs(
         self,
         session: AsyncSession,
         user: User,
@@ -334,7 +334,7 @@ class GithubUserService(UserService):
             return user_repos
 
         # Unknown status, refresh from API
-        await self.populate_user_accessable_orgs_and_repositories(session, user)
+        await self.populate_user_accessible_orgs_and_repositories(session, user)
 
         return await lookup()
 

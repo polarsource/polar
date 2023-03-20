@@ -20,7 +20,7 @@ class GithubUserService(UserService):
             )
             return user
 
-        client = github.get_client(oauth.access_token)
+        client = await github.get_user_client(session, user)
         response = await client.rest.users.async_get_authenticated()
         try:
             github.ensure_expected_response(response)

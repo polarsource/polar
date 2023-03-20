@@ -28,7 +28,7 @@ class GithubOrganizationService(OrganizationService):
             # TODO Handle
             return None
 
-        client = github.get_client(oauth.access_token)
+        client = await github.get_user_client(session, user)
         response = (
             await client.rest.apps.async_list_installations_for_authenticated_user()
         )

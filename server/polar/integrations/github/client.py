@@ -1,4 +1,6 @@
-from typing import Any
+import time
+from typing import Any, Union
+from pydantic import Field
 
 import structlog
 from fastapi.encoders import jsonable_encoder
@@ -14,6 +16,9 @@ from githubkit import (
 )
 
 from polar.config import settings
+from polar.enums import Platforms
+from polar.models.user import User
+from polar.postgres import AsyncSession
 
 log = structlog.get_logger()
 
@@ -104,6 +109,61 @@ def ensure_expected_response(
 ###############################################################################
 
 
+class RefreshAccessToken(rest.GitHubRestModel):
+    access_token: str = Field(default=...)  # The new access token
+    expires_in: int = Field(
+        default=...
+    )  # The number of seconds until access_token expires (will always be 28800)
+    refresh_token: Union[str, None] = Field(
+        default=...
+    )  # A new refres token (is only set if the app is using expiring refresh tokens)
+    refresh_token_expires_in: Union[int, None] = Field(default=...)
+    scope: str = Field(default=...)  # Always an empty string
+    token_type: str = Field(default=...)  # Always "bearer"
+
+
+async def get_user_client(
+    session: AsyncSession, user: User
+) -> GitHub[TokenAuthStrategy]:
+    oauth = user.get_platform_oauth_account(Platforms.github)
+    if not oauth:
+        raise Exception("no github oauth account found")
+
+    # if token expires within 30 minutes, refresh it
+    if (
+        oauth.expires_at
+        and oauth.refresh_token
+        and oauth.expires_at <= (time.time() + 60 * 30)
+    ):
+        refresh = await GitHub().arequest(
+            method="POST",
+            url="https://github.com/login/oauth/access_token",
+            params={
+                "client_id": settings.GITHUB_CLIENT_ID,
+                "client_secret": settings.GITHUB_CLIENT_SECRET,
+                "refresh_token": oauth.refresh_token,
+                "grant_type": "refresh_token",
+            },
+            headers={"Accept": "application/json"},
+            response_model=RefreshAccessToken,
+        )
+
+        if refresh:
+            r = refresh.parsed_data
+            # update
+            oauth.access_token = r.access_token
+            oauth.expires_at = int(time.time()) + r.expires_in
+            if r.refresh_token:
+                oauth.refresh_token = r.refresh_token
+
+            log.info("github.auth.refresh.succeeded", user=user.id)
+            await oauth.save(session)
+        else:
+            log.error("github.auth.refresh.failed", user=user.id)
+
+    return get_client(oauth.access_token)
+
+
 def get_client(access_token: str) -> GitHub[TokenAuthStrategy]:
     return GitHub(access_token)
 
@@ -137,6 +197,7 @@ __all__ = [
     "get_client",
     "get_app_client",
     "get_app_installation_client",
+    "get_user_client",
     "patch_unset",
     "WebhookEvent",
     "webhooks",

@@ -24,7 +24,7 @@ const PledgeForm = ({
 
   const MINIMUM_PLEDGE = CONFIG.MINIMUM_PLEDGE_AMOUNT
 
-  const validateEmail = (email) => {
+  const validateEmail = (email: string) => {
     return email.match(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/)
   }
 

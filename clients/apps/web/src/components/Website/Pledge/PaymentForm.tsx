@@ -6,12 +6,6 @@ import { type PledgeRead } from 'polarkit/api/client'
 import PrimaryButton from 'polarkit/components/ui/PrimaryButton'
 import { useState } from 'react'
 
-interface Payment {
-  status: string | null
-  success: boolean
-  checked: boolean
-}
-
 const PaymentForm = ({ pledge }: { pledge?: PledgeRead }) => {
   const router = useRouter()
   const stripe = useStripe()

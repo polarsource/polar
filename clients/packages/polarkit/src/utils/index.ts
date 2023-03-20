@@ -6,3 +6,8 @@ export const getServerURL = (path?: string): string => {
   const baseWithPath = `${baseURL}${path}`
   return baseWithPath
 }
+
+export const getCentsInDollarString = (cents: number): string => {
+  const dollars = cents / 100
+  return dollars.toString()
+}

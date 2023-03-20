@@ -1,13 +1,20 @@
 import React, { type HTMLButtonElement } from 'react'
 import { classNames } from '../../utils/dom'
 
-const LoadingSpinner = () => {
+const LoadingSpinner = (props: { disabled: boolean }) => {
+  const classes = classNames(
+    props.disabled
+      ? 'fill-gray-300 text-gray-200'
+      : 'fill-white text-purple-300',
+    'inline h-6 w-6 animate-spin',
+  )
+
   return (
     <>
       <div role="status" className="w-full text-center">
         <svg
           aria-hidden="true"
-          className="inline h-6 w-6 animate-spin fill-white text-purple-300"
+          className={classes}
           viewBox="0 0 100 101"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
@@ -33,11 +40,8 @@ const PrimaryButton = (props: {
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => void
 }) => {
   const disabled = props.disabled ? props.disabled : false
-  if (props.loading) {
-  }
-
   let classes = 'm-auto w-full rounded-lg p-2 text-center text-sm font-medium'
-  if (props.loading) {
+  if (props.loading && !disabled) {
     classes = classNames('bg-purple-400 text-white', classes)
   } else {
     classes = classNames(
@@ -49,7 +53,7 @@ const PrimaryButton = (props: {
   return (
     <>
       <button className={classes} onClick={props.onClick} disabled={disabled}>
-        {props.loading && <LoadingSpinner />}
+        {props.loading && <LoadingSpinner disabled={disabled} />}
         {!props.loading && props.children}
       </button>
     </>

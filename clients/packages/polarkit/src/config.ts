@@ -17,5 +17,7 @@ export const CONFIG = {
     process?.env?.NEXT_PUBLIC_LOCALSTORAGE_PERSIST_VERSION,
     1,
   ),
-  MINIMUM_PLEDGE_AMOUNT: process?.env?.NEXT_PUBLIC_MINIMUM_PLEDGE_AMOUNT || 20,
+  // Minimum amount in cents
+  MINIMUM_PLEDGE_AMOUNT:
+    process?.env?.NEXT_PUBLIC_MINIMUM_PLEDGE_AMOUNT || 2000,
 }

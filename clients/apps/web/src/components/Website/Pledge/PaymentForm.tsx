@@ -4,15 +4,27 @@ import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { useRouter } from 'next/router'
 import { type PledgeRead } from 'polarkit/api/client'
 import PrimaryButton from 'polarkit/components/ui/PrimaryButton'
+import { getCentsInDollarString } from 'polarkit/utils'
 import { useState } from 'react'
 
-const PaymentForm = ({ pledge }: { pledge?: PledgeRead }) => {
+const PaymentForm = ({
+  pledge,
+  isSyncing,
+  setSyncing,
+  setErrorMessage,
+}: {
+  pledge?: PledgeRead
+  isSyncing: boolean
+  setSyncing: (isLocked: boolean) => void
+  setErrorMessage: (message: string) => void
+}) => {
   const router = useRouter()
   const stripe = useStripe()
   const elements = useElements()
-  const [errorMessage, setErrorMessage] = useState(null)
-  const [canSubmit, setCanSubmit] = useState(false)
-  const [loading, setLoading] = useState(false)
+
+  const [isStripeCompleted, setStripeCompleted] = useState(false)
+  const canSubmit = !isSyncing && pledge && isStripeCompleted
+  const amount = pledge?.amount || 0
 
   const generateRedirectURL = (paymentIntent?) => {
     const statusURL = new URL(window.location.href + '/status')
@@ -67,7 +79,8 @@ const PaymentForm = ({ pledge }: { pledge?: PledgeRead }) => {
       return
     }
 
-    setLoading(true)
+    setSyncing(true)
+    setErrorMessage(null)
     return await stripe
       .confirmPayment({
         //`Elements` instance that was used to create the Payment Element
@@ -83,28 +96,24 @@ const PaymentForm = ({ pledge }: { pledge?: PledgeRead }) => {
       .catch((error) => {
         setErrorMessage(error.message)
       })
-      .finally(() => setLoading(false))
+      .finally(() => setSyncing(false))
   }
 
   const onStripeFormChange = (event) => {
-    setCanSubmit(event.complete)
+    setStripeCompleted(event.complete)
   }
-
-  const amount = pledge?.amount || 0
 
   return (
     <div className="mt-5">
       <PaymentElement onChange={onStripeFormChange} />
 
-      {errorMessage && <div>{errorMessage}</div>}
-
       <div className="mt-6">
         <PrimaryButton
           disabled={!canSubmit}
-          loading={loading}
+          loading={isSyncing}
           onClick={onSubmit}
         >
-          Pledge ${amount}
+          Pledge ${getCentsInDollarString(amount)}
         </PrimaryButton>
       </div>
     </div>

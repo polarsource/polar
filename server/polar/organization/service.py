@@ -197,12 +197,13 @@ class OrganizationService(
                 user_id=user.id, organization_id=organization.id
             )
             session.add(relation)
-            await session.commit()
+            await nested.commit()
             log.info(
                 "organization.add_user",
                 user_id=user.id,
                 organization_id=organization.id,
             )
+            return
         except IntegrityError:
             # TODO: Currently, we treat this as success since the connection
             # exists. However, once we use status to distinguish active/inactive

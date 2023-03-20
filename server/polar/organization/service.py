@@ -155,7 +155,7 @@ class OrganizationService(
         platform: Platforms,
         org_name: str,
         repo_name: str,
-        number: int,
+        issue: int | UUID,
     ) -> tuple[Organization, Repository, Issue]:
         org_and_repo = await self.get_with_repo(
             session,
@@ -167,17 +167,26 @@ class OrganizationService(
             raise ResourceNotFound()
 
         organization, repository = org_and_repo
-        issue = await issue_service.get_by_number(
-            session,
-            platform=platform,
-            organization_id=organization.id,
-            repository_id=repository.id,
-            number=number,
-        )
-        if not issue:
+        if isinstance(issue, int):
+            issue_obj = await issue_service.get_by_number(
+                session,
+                platform=platform,
+                organization_id=organization.id,
+                repository_id=repository.id,
+                number=issue,
+            )
+        else:
+            issue_obj = await issue_service.get_by(
+                session,
+                platform=platform,
+                organization_id=organization.id,
+                repository_id=repository.id,
+                id=issue,
+            )
+        if not issue_obj:
             raise ResourceNotFound()
 
-        return (organization, repository, issue)
+        return (organization, repository, issue_obj)
 
     async def add_user(
         self, session: AsyncSession, organization: Organization, user: User

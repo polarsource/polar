@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
-from polar.models import Issue, Pledge, Repository
+from polar.models import Pledge, Repository
 from polar.exceptions import ResourceNotFound
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, get_db_session
@@ -64,7 +64,7 @@ async def get_pledge_with_resources(
             platform=platform,
             org_name=org_name,
             repo_name=repo_name,
-            number=number,
+            issue=number,
         )
 
         included_pledge = None
@@ -107,21 +107,19 @@ async def create_pledge(
     org_name: str,
     repo_name: str,
     pledge: PledgeCreate,
-    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> PledgeRead:
-    issue = await Issue.find(session=session, id=pledge.issue_id)
-
-    if not issue:
-        raise HTTPException(
-            status_code=404,
-            detail="Issue not found",
-        )
-
-    if issue.repository_id != auth.repository.id:
-        raise HTTPException(
-            status_code=403, detail="Issue does not belong to this repository"
-        )
+    (
+        organization,
+        repository,
+        issue,
+    ) = await organization_service.get_with_repo_and_issue(
+        session=session,
+        platform=platform,
+        org_name=org_name,
+        repo_name=repo_name,
+        issue=pledge.issue_id,
+    )
 
     # Create a payment intent with Stripe
     payment_intent = stripe.create_intent(amount=pledge.amount, issue_id=issue.id)
@@ -130,8 +128,8 @@ async def create_pledge(
     created = await Pledge.create(
         session=session,
         issue_id=issue.id,
-        repository_id=auth.repository.id,
-        organization_id=auth.organization.id,
+        repository_id=repository.id,
+        organization_id=organization.id,
         email=pledge.email,
         amount=pledge.amount,
         state=State.initiated,

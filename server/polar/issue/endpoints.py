@@ -46,7 +46,7 @@ async def get_public_issue(
             platform=platform,
             org_name=org_name,
             repo_name=repo_name,
-            number=number,
+            issue=number,
         )
         return issue
     except ResourceNotFound:

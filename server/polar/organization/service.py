@@ -176,7 +176,7 @@ class OrganizationService(
                 number=issue,
             )
         else:
-            issue_obj = await issue_service.get_by(
+            issue_obj = await issue_service.get_by_id(
                 session,
                 platform=platform,
                 organization_id=organization.id,

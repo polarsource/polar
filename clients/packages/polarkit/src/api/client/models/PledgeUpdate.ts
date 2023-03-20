@@ -2,8 +2,8 @@
 /* tslint:disable */
 /* eslint-disable */
 
-export type RewardCreate = {
-  issue_id: string;
-  amount: number;
+export type PledgeUpdate = {
+  email?: string;
+  amount?: number;
 };
 

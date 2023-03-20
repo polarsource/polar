@@ -3,7 +3,7 @@ from decimal import Decimal
 import pytest
 
 from polar.kit.utils import generate_uuid
-from polar.models.reward import Reward
+from polar.models.pledge import Pledge
 from polar.postgres import AsyncSession
 
 
@@ -12,12 +12,15 @@ from polar.postgres import AsyncSession
     "test_amount",
     [("10.10"), ("10.120"), ("10.1230"), ("123456789.99"), ("123456789.123456789")],
 )
-async def test_reward(session: AsyncSession, test_amount: str) -> None:
-    created = await Reward.create(
+async def test_pledge(session: AsyncSession, test_amount: str) -> None:
+    email = "alice@polar.sh"
+
+    created = await Pledge.create(
         session,
         issue_id=generate_uuid(),
         repository_id=generate_uuid(),
         organization_id=generate_uuid(),
+        email=email,
         amount=Decimal(test_amount),
     )
 
@@ -26,6 +29,7 @@ async def test_reward(session: AsyncSession, test_amount: str) -> None:
     await session.commit()
     await session.refresh(created)
 
-    got = await Reward.find(session, created.id)
+    got = await Pledge.find(session, created.id)
     assert got is not None
+    assert got.email == email
     assert got.amount == Decimal(test_amount)

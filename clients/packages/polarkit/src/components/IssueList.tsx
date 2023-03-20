@@ -3,18 +3,18 @@ import {
   OrganizationRead,
   type Entry_IssueRead_,
   type IssueRead,
+  type PledgeRead,
   type PullRequestRead,
   type RepositoryRead,
-  type RewardRead,
 } from '../api/client'
 import { default as IssueListItem } from './IssueListItem'
 
 type IssueListItemData = {
-  issue: IssueRead
-  pullRequests: PullRequestRead[]
-  rewards: RewardRead[]
   org: OrganizationRead
   repo: RepositoryRead
+  issue: IssueRead
+  pullRequests: PullRequestRead[]
+  pledges: PledgeRead[]
 }
 
 const populateRelations = <T,>(
@@ -34,13 +34,13 @@ const populateRelations = <T,>(
 }
 
 const IssueList = (props: {
-  issues: Entry_IssueRead_[]
-  pullRequests: Map<string, PullRequestRead>
-  rewards: Map<string, RewardRead>
   orgs: Map<string, OrganizationRead>
   repos: Map<string, RepositoryRead>
+  issues: Entry_IssueRead_[]
+  pullRequests: Map<string, PullRequestRead>
+  pledges: Map<string, PledgeRead>
 }) => {
-  const { issues, pullRequests, rewards, orgs, repos } = props
+  const { issues, pullRequests, pledges, orgs, repos } = props
 
   const [sortedIssues, setSortedIssues] = useState<IssueListItemData[]>([])
 
@@ -52,17 +52,17 @@ const IssueList = (props: {
       return {
         issue: issue.attributes,
         pullRequests: populateRelations(issue, pullRequests, 'pull_request'),
-        rewards: populateRelations(issue, rewards, 'reward'),
+        pledges: populateRelations(issue, pledges, 'pledge'),
         org: populateRelations(issue, orgs, 'organization')[0],
         repo: populateRelations(issue, repos, 'repository')[0],
       }
     })
     setSortedIssues(sorted)
-  }, [issues, pullRequests, rewards, orgs, repos])
+  }, [issues, pullRequests, pledges, orgs, repos])
 
   if (!issues) return <div>Loading issues...</div>
   if (!pullRequests) return <div>Loading pull requests...</div>
-  if (!rewards) return <div>Loading rewards...</div>
+  if (!pledges) return <div>Loading pledges...</div>
 
   return (
     <div className="space-y-2 divide-y divide-gray-200">
@@ -71,7 +71,7 @@ const IssueList = (props: {
           <IssueListItem
             issue={i.issue}
             pullRequests={i.pullRequests}
-            rewards={i.rewards}
+            pledges={i.pledges}
             org={i.org}
             repo={i.repo}
             key={i.issue.id}

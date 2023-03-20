@@ -8,9 +8,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import InstrumentedAttribute, contains_eager
 
 from polar.kit.services import ResourceService
-from polar.models import Organization, User, UserOrganization, Repository
+from polar.exceptions import ResourceNotFound
+from polar.models import Organization, User, UserOrganization, Repository, Issue
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, sql
+from polar.issue.service import issue as issue_service
 
 from .schemas import OrganizationCreate, OrganizationUpdate, OrganizationSettings
 
@@ -30,7 +32,7 @@ class OrganizationService(
         return await self.get_by(session, platform=platform, external_id=external_id)
 
     async def get_by_name(
-        self, session: AsyncSession, platform: Platforms,  name: str
+        self, session: AsyncSession, platform: Platforms, name: str
     ) -> Organization | None:
         return await self.get_by(session, platform=platform, name=name)
 
@@ -108,9 +110,9 @@ class OrganizationService(
         *,
         platform: Platforms,
         org_name: str,
-        repo_name: str | None = None,
-        user_id: UUID | None = None,
-    ) -> tuple[Organization, Repository] | None:
+        repo_name: str,
+        user_id: UUID,
+    ) -> tuple[Organization, Repository]:
         org = await self._get_protected(
             session,
             platform=platform,
@@ -119,11 +121,63 @@ class OrganizationService(
             user_id=user_id,
         )
         if not org:
-            return None
+            raise ResourceNotFound()
 
         # Return a tuple of (org, repo) for intuititive usage (unpacking)
         # versus having to do org.repos[0] in the caller.
         return (org, org.repos[0])
+
+    async def get_with_repo(
+        self,
+        session: AsyncSession,
+        *,
+        platform: Platforms,
+        org_name: str,
+        repo_name: str,
+    ) -> tuple[Organization, Repository]:
+        org = await self._get_protected(
+            session,
+            platform=platform,
+            org_name=org_name,
+            repo_name=repo_name,
+        )
+        if not org:
+            raise ResourceNotFound()
+
+        # Return a tuple of (org, repo) for intuititive usage (unpacking)
+        # versus having to do org.repos[0] in the caller.
+        return (org, org.repos[0])
+
+    async def get_with_repo_and_issue(
+        self,
+        session: AsyncSession,
+        *,
+        platform: Platforms,
+        org_name: str,
+        repo_name: str,
+        number: int,
+    ) -> tuple[Organization, Repository, Issue]:
+        org_and_repo = await self.get_with_repo(
+            session,
+            platform=platform,
+            org_name=org_name,
+            repo_name=repo_name,
+        )
+        if not org_and_repo:
+            raise ResourceNotFound()
+
+        organization, repository = org_and_repo
+        issue = await issue_service.get_by_number(
+            session,
+            platform=platform,
+            organization_id=organization.id,
+            repository_id=repository.id,
+            number=number,
+        )
+        if not issue:
+            raise ResourceNotFound()
+
+        return (organization, repository, issue)
 
     async def add_user(
         self, session: AsyncSession, organization: Organization, user: User

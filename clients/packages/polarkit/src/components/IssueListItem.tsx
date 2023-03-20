@@ -8,22 +8,22 @@ import {
   OrganizationRead,
   RepositoryRead,
   type IssueRead,
+  type PledgeRead,
   type PullRequestRead,
-  type RewardRead,
 } from '../api/client'
 import IssueActivityBox from './IssueActivityBox'
+import IssuePledge from './IssuePledge'
 import IssueProgress, { Progress } from './IssueProgress'
 import IssuePullRequest from './IssuePullRequest'
-import IssueReward from './IssueReward'
 
 TimeAgo.addDefaultLocale(en)
 
 const IssueListItem = (props: {
-  issue: IssueRead
-  pullRequests: PullRequestRead[]
-  rewards: RewardRead[]
   org: OrganizationRead
   repo: RepositoryRead
+  issue: IssueRead
+  pullRequests: PullRequestRead[]
+  pledges?: PledgeRead[]
 }) => {
   const {
     title,
@@ -39,8 +39,8 @@ const IssueListItem = (props: {
   const createdAt = new Date(issue_created_at)
   const closedAt = new Date(issue_created_at)
 
-  const haveRewardOrPullRequest =
-    props.rewards.length > 0 || props.pullRequests.length > 0
+  const havePledgeOrPullRequest =
+    props.pledges?.length > 0 || props.pullRequests?.length > 0
 
   const showCommentsCount = !!(comments && comments > 0)
   const showReactionsThumbs = !!(reactions.plus_one > 0)
@@ -49,7 +49,7 @@ const IssueListItem = (props: {
     if (!!issue_closed_at) {
       return 'completed'
     }
-    if (props.pullRequests.length > 0) {
+    if (props.pullRequests?.length > 0) {
       return 'pull_request'
     }
     return 'backlog'
@@ -98,21 +98,23 @@ const IssueListItem = (props: {
         </div>
       </div>
 
-      {haveRewardOrPullRequest && (
+      {havePledgeOrPullRequest && (
         <IssueActivityBox>
-          {props.rewards.map((reward: RewardRead) => {
-            return <IssueReward reward={reward} key={reward.id} />
-          })}
+          {props.pledges &&
+            props.pledges.map((pledge: PledgeRead) => {
+              return <IssuePledge pledge={pledge} key={pledge.id} />
+            })}
 
-          {props.pullRequests.map((pr: PullRequestRead) => {
-            return (
-              <IssuePullRequest
-                issue={props.issue}
-                pullRequest={pr}
-                key={pr.number}
-              />
-            )
-          })}
+          {props.pullRequests &&
+            props.pullRequests.map((pr: PullRequestRead) => {
+              return (
+                <IssuePullRequest
+                  issue={props.issue}
+                  pullRequest={pr}
+                  key={pr.number}
+                />
+              )
+            })}
         </IssueActivityBox>
       )}
     </div>

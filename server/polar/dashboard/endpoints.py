@@ -17,8 +17,8 @@ from polar.organization.schemas import OrganizationRead
 from polar.pull_request.schemas import PullRequestRead
 from polar.repository.schemas import RepositoryRead
 from polar.issue.service import issue
-from polar.reward.schemas import RewardRead
-from polar.reward.service import reward
+from polar.pledge.schemas import PledgeRead
+from polar.pledge.service import pledge
 from polar.pull_request.service import pull_request
 from polar.repository.service import repository
 from polar.auth.dependencies import Auth
@@ -107,22 +107,22 @@ async def get_dashboard(
             )
         )
 
-    # get rewards
+    # get pledges
     issue_ids = [i.id for i in issues]
-    rewards = await reward.get_by_issue_ids(session, issue_ids)
+    pledges = await pledge.get_by_issue_ids(session, issue_ids)
 
-    # start building issue relationships with rewards
+    # start building issue relationships with pledges
     issue_relationships: Dict[UUID, List[Relationship]] = {}
     for i in issues:
         issue_relationships[i.id] = []
 
-    # add rewards to included
-    for r in rewards:
+    # add pledges to included
+    for r in pledges:
         included.append(
-            Entry(id=r.id, type="reward", attributes=RewardRead.from_orm(r))
+            Entry(id=r.id, type="pledge", attributes=PledgeRead.from_orm(r))
         )
         # inject relationships
-        rel = Relationship(data=RelationshipData(type="reward", id=r.id))
+        rel = Relationship(data=RelationshipData(type="pledge", id=r.id))
         issue_relationships[r.issue_id].append(rel)
 
     # Add repository and organization relationships to issues

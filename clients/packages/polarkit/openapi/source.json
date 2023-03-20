@@ -684,7 +684,28 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/WebhookResponse"
+                                    "$ref": "#/components/schemas/polar__integrations__github__endpoints__WebhookResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/integrations/stripe/webhook": {
+            "post": {
+                "tags": [
+                    "integrations"
+                ],
+                "summary": "Webhook",
+                "operationId": "integrations:webhook",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/polar__integrations__stripe__endpoints__WebhookResponse"
                                 }
                             }
                         }
@@ -828,13 +849,169 @@
                 ]
             }
         },
-        "/api/v1/{platform}/{org_name}/{repo_name}/rewards": {
+        "/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}": {
             "get": {
                 "tags": [
-                    "rewards"
+                    "issues"
                 ],
-                "summary": "Get Repository Rewards",
-                "operationId": "rewards:get_repository_rewards",
+                "summary": "Get Public Issue",
+                "operationId": "issues:get_public_issue",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Org Name",
+                            "type": "string"
+                        },
+                        "name": "org_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Repo Name",
+                            "type": "string"
+                        },
+                        "name": "repo_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Number",
+                            "type": "integer"
+                        },
+                        "name": "number",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IssueRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}/pledge": {
+            "get": {
+                "tags": [
+                    "pledges"
+                ],
+                "summary": "Get Pledge With Resources",
+                "operationId": "pledges:get_pledge_with_resources",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Org Name",
+                            "type": "string"
+                        },
+                        "name": "org_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Repo Name",
+                            "type": "string"
+                        },
+                        "name": "repo_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Number",
+                            "type": "integer"
+                        },
+                        "name": "number",
+                        "in": "path"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Pledge Id",
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "name": "pledge_id",
+                        "in": "query"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Include",
+                            "type": "string",
+                            "default": "organization,repository,issue"
+                        },
+                        "name": "include",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PledgeResources"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/{platform}/{org_name}/{repo_name}/pledges": {
+            "get": {
+                "tags": [
+                    "pledges"
+                ],
+                "summary": "Get Repository Pledges",
+                "operationId": "pledges:get_repository_pledges",
                 "parameters": [
                     {
                         "required": true,
@@ -869,10 +1046,10 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "title": "Response Rewards:Get Repository Rewards",
+                                    "title": "Response Pledges:Get Repository Pledges",
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/RewardRead"
+                                        "$ref": "#/components/schemas/PledgeRead"
                                     }
                                 }
                             }
@@ -897,10 +1074,10 @@
             },
             "post": {
                 "tags": [
-                    "rewards"
+                    "pledges"
                 ],
-                "summary": "Create Rewawrd",
-                "operationId": "rewards:create_rewawrd",
+                "summary": "Create Pledge",
+                "operationId": "pledges:create_pledge",
                 "parameters": [
                     {
                         "required": true,
@@ -933,7 +1110,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/RewardCreate"
+                                "$ref": "#/components/schemas/PledgeCreate"
                             }
                         }
                     },
@@ -945,7 +1122,91 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/RewardRead"
+                                    "$ref": "#/components/schemas/PledgeRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/{platform}/{org_name}/{repo_name}/pledges/{pledge_id}": {
+            "patch": {
+                "tags": [
+                    "pledges"
+                ],
+                "summary": "Update Pledge",
+                "operationId": "pledges:update_pledge",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Org Name",
+                            "type": "string"
+                        },
+                        "name": "org_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Repo Name",
+                            "type": "string"
+                        },
+                        "name": "repo_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Pledge Id",
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "name": "pledge_id",
+                        "in": "path"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PledgeUpdate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PledgeRead"
                                 }
                             }
                         }
@@ -1837,6 +2098,118 @@
                 "type": "string",
                 "description": "An enumeration."
             },
+            "PledgeCreate": {
+                "title": "PledgeCreate",
+                "required": [
+                    "issue_id",
+                    "email",
+                    "amount"
+                ],
+                "type": "object",
+                "properties": {
+                    "issue_id": {
+                        "title": "Issue Id",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "email": {
+                        "title": "Email",
+                        "type": "string"
+                    },
+                    "amount": {
+                        "title": "Amount",
+                        "type": "number"
+                    }
+                }
+            },
+            "PledgeRead": {
+                "title": "PledgeRead",
+                "required": [
+                    "issue_id",
+                    "email",
+                    "amount",
+                    "id",
+                    "created_at",
+                    "repository_id",
+                    "organization_id",
+                    "state"
+                ],
+                "type": "object",
+                "properties": {
+                    "issue_id": {
+                        "title": "Issue Id",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "email": {
+                        "title": "Email",
+                        "type": "string"
+                    },
+                    "amount": {
+                        "title": "Amount",
+                        "type": "number"
+                    },
+                    "id": {
+                        "title": "Id",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "created_at": {
+                        "title": "Created At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "repository_id": {
+                        "title": "Repository Id",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "organization_id": {
+                        "title": "Organization Id",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "state": {
+                        "$ref": "#/components/schemas/polar__pledge__schemas__State"
+                    },
+                    "client_secret": {
+                        "title": "Client Secret",
+                        "type": "string"
+                    }
+                }
+            },
+            "PledgeResources": {
+                "title": "PledgeResources",
+                "type": "object",
+                "properties": {
+                    "pledge": {
+                        "$ref": "#/components/schemas/PledgeRead"
+                    },
+                    "issue": {
+                        "$ref": "#/components/schemas/IssueRead"
+                    },
+                    "organization": {
+                        "$ref": "#/components/schemas/OrganizationRead"
+                    },
+                    "repository": {
+                        "$ref": "#/components/schemas/RepositoryRead"
+                    }
+                }
+            },
+            "PledgeUpdate": {
+                "title": "PledgeUpdate",
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "title": "Email",
+                        "type": "string"
+                    },
+                    "amount": {
+                        "title": "Amount",
+                        "type": "number"
+                    }
+                }
+            },
             "PullRequestRead": {
                 "title": "PullRequestRead",
                 "required": [
@@ -2304,72 +2677,6 @@
                     }
                 }
             },
-            "RewardCreate": {
-                "title": "RewardCreate",
-                "required": [
-                    "issue_id",
-                    "amount"
-                ],
-                "type": "object",
-                "properties": {
-                    "issue_id": {
-                        "title": "Issue Id",
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "amount": {
-                        "title": "Amount",
-                        "type": "number"
-                    }
-                }
-            },
-            "RewardRead": {
-                "title": "RewardRead",
-                "required": [
-                    "issue_id",
-                    "amount",
-                    "id",
-                    "created_at",
-                    "repository_id",
-                    "organization_id",
-                    "state"
-                ],
-                "type": "object",
-                "properties": {
-                    "issue_id": {
-                        "title": "Issue Id",
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "amount": {
-                        "title": "Amount",
-                        "type": "number"
-                    },
-                    "id": {
-                        "title": "Id",
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "created_at": {
-                        "title": "Created At",
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "repository_id": {
-                        "title": "Repository Id",
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "organization_id": {
-                        "title": "Organization Id",
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "state": {
-                        "$ref": "#/components/schemas/polar__reward__schemas__State"
-                    }
-                }
-            },
             "Status": {
                 "title": "Status",
                 "enum": [
@@ -2492,7 +2799,28 @@
                 ],
                 "description": "An enumeration."
             },
-            "WebhookResponse": {
+            "polar__integrations__github__endpoints__WebhookResponse": {
+                "title": "WebhookResponse",
+                "required": [
+                    "success"
+                ],
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "title": "Success",
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "job_id": {
+                        "title": "Job Id",
+                        "type": "string"
+                    }
+                }
+            },
+            "polar__integrations__stripe__endpoints__WebhookResponse": {
                 "title": "WebhookResponse",
                 "required": [
                     "success"
@@ -2522,9 +2850,10 @@
                 "type": "string",
                 "description": "An enumeration."
             },
-            "polar__reward__schemas__State": {
+            "polar__pledge__schemas__State": {
                 "title": "State",
                 "enum": [
+                    "initiated",
                     "created",
                     "pending",
                     "paid"

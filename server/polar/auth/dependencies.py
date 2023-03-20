@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException
 from fastapi_users import FastAPIUsers
 
 from polar.models import OAuthAccount, User, Organization, Repository
+from polar.exceptions import ResourceNotFound
 from polar.user.service import UserDatabase
 from polar.postgres import AsyncSession, get_db_session
 from polar.enums import Platforms
@@ -100,18 +101,17 @@ class Auth:
         session: AsyncSession = Depends(get_db_session),
         user: User = Depends(current_active_user),
     ) -> "Auth":
-        org_and_repo = await organization_service.get_with_repo_for_user(
-            session,
-            platform=platform,
-            org_name=org_name,
-            repo_name=repo_name,
-            user_id=user.id,
-        )
-        if not org_and_repo:
+        try:
+            org, repo = await organization_service.get_with_repo_for_user(
+                session,
+                platform=platform,
+                org_name=org_name,
+                repo_name=repo_name,
+                user_id=user.id,
+            )
+            return Auth(user=user, organization=org, repository=repo)
+        except ResourceNotFound:
             raise HTTPException(
                 status_code=404,
                 detail="Organization/repository combination not found for user",
             )
-
-        organization, repository = org_and_repo
-        return Auth(user=user, organization=organization, repository=repository)

@@ -53,6 +53,11 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_SECRET: str = ""
     GITHUB_REDIRECT_URL: str = "http://127.0.0.1:3000/github/session"
 
+    # Stripe
+    STRIPE_SECRET_KEY: str = ""
+    # Stripe webhook secret
+    STRIPE_WEBHOOK_SECRET: str = ""
+
     # Application behaviours
 
     GITHUB_BADGE_EMBED: bool = False

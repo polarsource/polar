@@ -2,9 +2,10 @@ from fastapi import APIRouter
 
 from polar.eventstream.endpoints import router as stream_router
 from polar.integrations.github.endpoints import router as github_router
+from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.issue.endpoints import router as issue_router
 from polar.pull_request.endpoints import router as pull_request_router
-from polar.reward.endpoints import router as reward_router
+from polar.pledge.endpoints import router as pledge_router
 from polar.user.endpoints.user_organization import router as user_organization_router
 from polar.user.endpoints.users import router as user_router
 from polar.organization.endpoints import router as organization_router
@@ -17,12 +18,14 @@ router.include_router(user_router)
 router.include_router(user_organization_router)
 # /integrations/github
 router.include_router(github_router)
+# /integrations/stripe
+router.include_router(stripe_router)
 # /{platform}/{org_name}/{repo_name}/pulls
 router.include_router(pull_request_router)
 # /{platform}/{org_name}/{repo_name}/issues
 router.include_router(issue_router)
-# /{platform}/{org_name}/{repo_name}/rewards
-router.include_router(reward_router)
+# /{platform}/{org_name}/{repo_name}/pledges
+router.include_router(pledge_router)
 # /{org_name}/stream
 # /{org_name}/{repo_name}/stream
 router.include_router(stream_router)

@@ -5,7 +5,7 @@ from .issue import Issue
 from .organization import Organization
 from .pull_request import PullRequest
 from .repository import Repository
-from .reward import Reward
+from .pledge import Pledge
 from .user import OAuthAccount, User
 from .user_organization import UserOrganization
 
@@ -22,5 +22,5 @@ __all__ = [
     "Repository",
     "Issue",
     "PullRequest",
-    "Reward",
+    "Pledge",
 ]

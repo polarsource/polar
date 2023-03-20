@@ -1,13 +1,17 @@
 import { DashboardFilters } from 'dashboard/filters'
 import { Dispatch, SetStateAction } from 'react'
 import Sidebar from '../Dashboard/Sidebar'
-import Topbar from '../Dashboard/Topbar'
+import Topbar from '../Shared/Topbar'
 
-const Layout = (props: {children: any, filters: DashboardFilters, onSetFilters: Dispatch<SetStateAction<DashboardFilters>>}) => {
-  const {filters, onSetFilters, children} = props
+const Layout = (props: {
+  children: any
+  filters: DashboardFilters
+  onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
+}) => {
+  const { filters, onSetFilters, children } = props
   return (
     <div className="">
-      <Topbar />
+      <Topbar isDashboard={true} />
       <div>
         <Sidebar filters={filters} onSetFilters={onSetFilters} />
         <div className="flex min-h-screen flex-1 flex-col bg-white pt-16 md:pl-80">

@@ -24,6 +24,8 @@ class Account(RecordModel):
         UniqueConstraint("stripe_id"),
     )
 
+    account_type: Mapped[str] = mapped_column(String(10), nullable=False)
+
     organization_id: Mapped[UUID] = mapped_column(
         PostgresUUID, ForeignKey("organizations.id"), unique=True
     )
@@ -31,7 +33,7 @@ class Account(RecordModel):
 
     stripe_id: Mapped[str] = mapped_column(String(100), nullable=False)
 
-    email: Mapped[str] = mapped_column(String(254))
+    email: Mapped[str | None] = mapped_column(String(254), nullable=True)
 
     country: Mapped[str | None] = mapped_column(String(2))
     currency: Mapped[str | None] = mapped_column(String(3))
@@ -40,7 +42,7 @@ class Account(RecordModel):
     is_charges_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
     is_payouts_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
-    type: Mapped[str] = mapped_column(String(10), nullable=False)
+    business_type: Mapped[str] = mapped_column(String(10), nullable=True)
 
     status: Mapped[str] = mapped_column(
         StringEnum(Status), nullable=False, default=Status.CREATED

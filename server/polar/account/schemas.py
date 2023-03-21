@@ -11,19 +11,18 @@ class AccountLinkTypes(str, Enum):
     account_update = "account_update"
 
 
-class Base(Schema):
-    type: AccountType
+class AccountCreate(Schema):
+    account_type: AccountType | None
 
 
-class AccountCreate(Base):
-    ...
-
-
-class AccountUpdate(Base):
+class AccountUpdate(Schema):
     ...
 
 
 class AccountRead(AccountCreate):
+    account_type: AccountType | None
+    stripe_id: str
+
     class Config:
         orm_mode = True
 

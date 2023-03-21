@@ -2,11 +2,19 @@ import structlog
 import stripe
 import stripe.error
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
+from starlette.responses import RedirectResponse
 from pydantic import BaseModel
+
+from polar.auth.dependencies import Auth
+from polar.postgres import AsyncSession, get_db_session
 
 from polar.config import settings
 from polar.worker import enqueue_job
+
+from .service import stripe as stripe_lib
+from polar.account.schemas import AccountUpdate
+from polar.account.service import account as account_service
 
 log = structlog.get_logger()
 
@@ -43,6 +51,40 @@ async def enqueue(event: stripe.Event) -> WebhookResponse:
 
     log.info("stripe.webhook.queued", task_name=task_name)
     return WebhookResponse(success=True, job_id=enqueued.job_id)
+
+
+@router.get("/return")
+async def stripe_connect_return(
+    auth: Auth = Depends(Auth.user_with_org_access),
+    session: AsyncSession = Depends(get_db_session),
+) -> RedirectResponse:
+    account = await account_service.get_by(
+        session, organization_id=auth.organization.id
+    )
+    if not account:
+        raise HTTPException(status_code=400, detail="Error while getting account")
+    stripe_account = stripe_lib.retrieve_account(account.stripe_id)
+    await account_service.update(
+        session,
+        account,
+        AccountUpdate(
+            email=stripe_account.email,
+            country=stripe_account.country,
+            currency=stripe_account.default_currency,
+            is_details_submitted=stripe_account.details_submitted,
+            is_charges_enabled=stripe_account.charges_enabled,
+            is_payouts_enabled=stripe_account.payouts_enabled,
+            data=stripe_account.to_dict(),
+        ),
+    )
+    return RedirectResponse(
+        url=settings.generate_frontend_url(f"/dashboard/{auth.organization.name}")
+    )
+
+
+@router.get("/refresh")
+def stripe_connect_refresh() -> WebhookResponse:
+    return not_implemented()
 
 
 @router.post("/webhook", response_model=WebhookResponse)

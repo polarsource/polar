@@ -26,12 +26,22 @@ class StripeService(object):
     def create_account(self) -> stripe_lib.Account:
         return stripe_lib.Account.create(type="express")
 
-    def create_link(self, stripe_id: str) -> stripe_lib.AccountLink:
-        external_url = "http://127.0.0.1:3000/api/v1/integrations/stripe"  # TODO
+    def retrieve_account(self, id: str) -> stripe_lib.Account:
+        return stripe_lib.Account.retrieve(id)
+
+    def create_link(
+        self, stripe_id: str, appendix: str | None = None
+    ) -> stripe_lib.AccountLink:
+        refresh_url = settings.generate_external_url("/integrations/stripe/refresh") + (
+            appendix or ""
+        )
+        return_url = settings.generate_external_url("/integrations/stripe/return") + (
+            appendix or ""
+        )
         return stripe_lib.AccountLink.create(
             account=stripe_id,
-            refresh_url=f"{external_url}/refresh",
-            return_url=f"{external_url}/return",
+            refresh_url=refresh_url,
+            return_url=return_url,
             type="account_onboarding",
         )
 

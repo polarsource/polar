@@ -53,7 +53,11 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         )
 
     async def create_link(
-        self, session: AsyncSession, organization_id: UUID, stripe_id: str
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+        stripe_id: str,
+        appendix: str | None = None,
     ) -> AccountLink | None:
         if (
             await self.get_by(
@@ -64,7 +68,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             # TODO: Error?
             return None
 
-        account_link = stripe.create_link(stripe_id)
+        account_link = stripe.create_link(stripe_id, appendix)
         return AccountLink(**account_link)
 
 

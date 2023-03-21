@@ -38,7 +38,10 @@ async def create_link(
     session: AsyncSession = Depends(get_db_session),
 ) -> AccountLink:
     created = await account_service.create_link(
-        session, auth.organization.id, stripe_id
+        session,
+        auth.organization.id,
+        stripe_id,
+        f"?org_name={auth.organization.name}",
     )
     if not created:
         raise HTTPException(status_code=400, detail="Error while creating link")

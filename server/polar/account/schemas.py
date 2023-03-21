@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Any
 
 from pydantic import Field
 
@@ -16,7 +17,13 @@ class AccountCreate(Schema):
 
 
 class AccountUpdate(Schema):
-    ...
+    email: str | None
+    country: str
+    currency: str
+    is_details_submitted: bool
+    is_charges_enabled: bool
+    is_payouts_enabled: bool
+    data: dict[str, Any]
 
 
 class AccountRead(AccountCreate):

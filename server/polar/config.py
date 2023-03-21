@@ -119,10 +119,10 @@ class Settings(BaseSettings):
         return self.is_environment(Environment.production)
 
     def generate_external_url(self, path: str) -> str:
-        return f"{self.BASE_URL}#{path}"
+        return f"{self.BASE_URL}{path}"
 
     def generate_frontend_url(self, path: str) -> str:
-        return f"{self.FRONTEND_BASE_URL}#{path}"
+        return f"{self.FRONTEND_BASE_URL}{path}"
 
 
 env = Environment(os.getenv("POLAR_ENV", Environment.development))

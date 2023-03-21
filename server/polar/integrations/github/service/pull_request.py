@@ -1,6 +1,7 @@
 from typing import Sequence
 
 import structlog
+import polar.integrations.github.client as github
 
 from polar.models import PullRequest, Organization, Repository
 from polar.enums import Platforms
@@ -112,6 +113,27 @@ class GithubPullRequestService(PullRequestService):
             constraints=[PullRequest.external_id],
             mutable_keys=FullPullRequestCreate.__mutable_keys__,
         )
+
+    async def sync_pull_request(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        repository: Repository,
+        number: int,
+    ) -> PullRequest | None:
+        client = github.get_app_installation_client(organization.installation_id)
+
+        gh_pull = await client.rest.pulls.async_get(
+            owner=organization.name, repo=repository.name, pull_number=number
+        )
+        if not gh_pull:
+            return None
+
+        pull = await self.store_full(
+            session, gh_pull.parsed_data, organization, repository
+        )
+
+        return pull
 
 
 github_pull_request = GithubPullRequestService(PullRequest)

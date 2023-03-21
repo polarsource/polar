@@ -88,13 +88,12 @@ class GitHubIssueReferencesService:
             issue_number=issue.number,
         )
 
-        events = await client.rest.issues.async_list_events_for_timeline(
+        async for event in client.paginate(
+            client.rest.issues.async_list_events_for_timeline,
             owner=org.name,
             repo=repo.name,
             issue_number=issue.number,
-        )
-
-        for event in events.parsed_data:
+        ):
             if isinstance(event, github.rest.TimelineCrossReferencedEvent):
                 await self.parse_issue_pull_request_reference(session, event, issue)
 

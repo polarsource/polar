@@ -23,5 +23,8 @@ class StripeService(object):
     def retrieve_intent(self, id: str) -> stripe_lib.PaymentIntent:
         return stripe_lib.PaymentIntent.retrieve(id)
 
+    def create_account(self) -> stripe_lib.Account:
+        return stripe_lib.Account.create(type="express")
+
 
 stripe = StripeService()

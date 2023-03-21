@@ -9,11 +9,12 @@ import polar.integrations.github.client as github
 from polar.integrations.github.service.repository import github_repository
 from polar.integrations.github.service.pull_request import github_pull_request
 from polar.integrations.github.service.issue import github_issue
+from polar.kit import utils
 
 from polar.models import Organization, Repository
 from polar.models.issue import Issue
 from polar.models.issue_reference import IssueReference
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncSession, sql
 from polar.worker import enqueue_job
 
 
@@ -29,6 +30,29 @@ class GitHubIssueReferencesService:
         When we know which issues that have been mentioned, a job to fetch and parse timeline
         events will be triggered.
         """
+
+        if (
+            repo.repository_issues_references_synced_at
+            and (utils.utc_now() - repo.repository_issues_references_synced_at).seconds
+            < 60
+        ):
+            # Crawled within the last minute, skip
+            log.info(
+                "github.sync_repo_references.skip",
+                owner=org.name,
+                repo=repo.name,
+            )
+            return
+
+        # Set sync timestamp
+        stmt = (
+            sql.Update(Repository)
+            .where(Repository.id == repo.id)
+            .values(repository_issues_references_synced_at=utils.utc_now())
+        )
+        await session.execute(stmt)
+        await session.commit()
+
         client = get_app_installation_client(org.installation_id)
 
         log.info(

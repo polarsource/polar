@@ -64,6 +64,9 @@ class Repository(RecordModel):
     repository_modified_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
+    repository_issues_references_synced_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
 
     ###############################################################################
     # FEATURE & STATUS FLAGS

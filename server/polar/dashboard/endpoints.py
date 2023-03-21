@@ -142,11 +142,9 @@ async def get_dashboard(
 
     # get linked pull requests
     for i in issues:
-        if not i.repository_id:
-            continue
-
-        prs = await pull_request.list_by_repository_for_issue(
-            session, i.repository_id, i.number
+        prs = await pull_request.list_referencing_issue(
+            session,
+            i,
         )
         # Add to included and to relationships
         for pr in prs:

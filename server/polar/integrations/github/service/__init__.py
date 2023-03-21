@@ -3,6 +3,7 @@ from .organization import github_organization
 from .pull_request import github_pull_request
 from .repository import github_repository
 from .user import github_user
+from .reference import github_reference
 
 __all__ = [
     "github_issue",
@@ -10,4 +11,5 @@ __all__ = [
     "github_pull_request",
     "github_repository",
     "github_user",
+    "github_reference",
 ]

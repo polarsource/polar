@@ -93,7 +93,7 @@ async def handle_issue(
         # TODO: Handle better
         return dict(success=False, reason="Could not save issue")
 
-    # Trigger references sync job
+    # Trigger references sync job for entire repository
     await enqueue_job(
         "github.repo.sync.issue_references", issue.organization_id, issue.repository_id
     )

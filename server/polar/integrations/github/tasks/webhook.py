@@ -8,7 +8,7 @@ from polar.organization.schemas import OrganizationCreate
 from polar.enums import Platforms
 from polar.pull_request.schemas import PullRequestRead
 from polar.postgres import AsyncSessionLocal, AsyncSession
-from polar.worker import JobContext, task
+from polar.worker import JobContext, enqueue_job, task
 
 from .. import service
 from .utils import (
@@ -92,6 +92,11 @@ async def handle_issue(
     if not issue:
         # TODO: Handle better
         return dict(success=False, reason="Could not save issue")
+
+    # Trigger references sync job
+    await enqueue_job(
+        "github.repo.sync.issue_references", issue.organization_id, issue.repository_id
+    )
 
     # TODO: Comment instead? Via event trigger too?
     # service.github_issue.add_actions(installation["id"], issue)

@@ -64,7 +64,7 @@ class GitHubIssueReferencesService:
                 synced_issues.add(issue.id)
 
                 # Trigger issue references sync job
-                await enqueue_job("github.issue.sync.issue_referenecs", issue.id)
+                await enqueue_job("github.issue.sync.issue_references", issue.id)
 
         return None
 

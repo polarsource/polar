@@ -1,4 +1,5 @@
 import { type PledgeRead } from '../api/client'
+import { getCentsInDollarString } from '../utils'
 
 const IssuePledge = (props: { pledge: PledgeRead }) => {
   const { pledge } = props
@@ -7,7 +8,9 @@ const IssuePledge = (props: { pledge: PledgeRead }) => {
       <div className="flex items-center gap-2">
         <span className="space-x-1 rounded-xl bg-[#FFE794] px-1.5 py-0.5 text-[#574814]">
           <span className="text-md">🏆</span>
-          <span className="text-sm font-medium">${pledge.amount}</span>
+          <span className="text-sm font-medium">
+            ${getCentsInDollarString(pledge.amount)}
+          </span>
         </span>
         <span className="text-sm text-gray-500">
           contributed by{' '}

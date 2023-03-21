@@ -8,6 +8,7 @@ from .repository import Repository
 from .pledge import Pledge
 from .user import OAuthAccount, User
 from .user_organization import UserOrganization
+from .issue_reference import IssueReference
 
 __all__ = [
     "Model",
@@ -23,4 +24,5 @@ __all__ = [
     "Issue",
     "PullRequest",
     "Pledge",
+    "IssueReference",
 ]

@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 from typing import Set
 from uuid import UUID
 
@@ -15,9 +16,11 @@ from polar.models.issue import Issue
 from polar.models.issue_reference import (
     ExternalGitHubPullRequestReference,
     IssueReference,
+    ReferenceType,
 )
 from polar.postgres import AsyncSession, sql
 from polar.worker import enqueue_job
+from fastapi.encoders import jsonable_encoder
 
 
 log = structlog.get_logger()
@@ -147,30 +150,15 @@ class GitHubIssueReferencesService:
         if not event.source.issue.repository:
             return
 
-        # If mentioned in a outsider repository, create weak reference
+        # If mentioned in a outsider repository, create an external reference
         if event.source.issue.repository.id != repo.external_id:
-            return await self.create_external_reference(
-                session, org, repo, event, issue
-            )
-
-        # Check if we have this repo
-        # referenced_by_repo = await github_repository.get_by_external_id(
-        #    session, evt_repo.id
-        # )
-
-        # if not referenced_by_repo:
-        #    # TODO: Support references from repositories that are not on Polar
-        #    log.warn(
-        #        "github.parse_issue_pull_request_reference.repo-not-found",
-        #        ref_repo_id=evt_repo.id,
-        #    )
-        #    return
+            return await self.create_external_reference(session, event, issue)
 
         # If mentioning Pull Request Exists on Polar
         referenced_by_pr = await github_pull_request.get_by(
             session,
             repository_id=repo.id,
-            number=i.number,
+            number=event.source.issue.number,
         )
 
         if not referenced_by_pr:
@@ -182,29 +170,31 @@ class GitHubIssueReferencesService:
                     session,
                     organization=org,
                     repository=repo,
-                    number=i.number,
+                    number=event.source.issue.number,
                 )
 
         # If still missing, skip
         if not referenced_by_pr:
             log.error(
                 "github.parse_issue_pull_request_reference.pr-not-found",
-                external_pr_id=i.id,
+                external_pr_id=issue.id,
             )
             return
 
         # Track mention
         await self.create_reference(
             session,
-            issue_id=issue.id,
-            pr_id=referenced_by_pr.id,
+            ref=IssueReference(
+                issue_id=issue.id,
+                pull_request_id=referenced_by_pr.id,
+                external_id=str(referenced_by_pr.id),
+                reference_type=ReferenceType.PULL_REQUEST,
+            ),
         )
 
     async def create_external_reference(
         self,
         session: AsyncSession,
-        org: Organization,
-        repo: Repository,
         event: github.rest.TimelineCrossReferencedEvent,
         issue: Issue,
     ) -> None:
@@ -213,7 +203,7 @@ class GitHubIssueReferencesService:
         i = event.source.issue
         if not i.repository:
             return
-        if not i.repository.owner.name:
+        if not i.repository.owner.login:
             return
 
         # Mention was not from a pull request
@@ -224,7 +214,7 @@ class GitHubIssueReferencesService:
             return
 
         obj = ExternalGitHubPullRequestReference(
-            organization_name=i.repository.owner.name,
+            organization_name=i.repository.owner.login,
             repository_name=i.repository.name,
             title=i.title,
             number=i.number,
@@ -234,68 +224,51 @@ class GitHubIssueReferencesService:
             is_draft=True if i.draft else False,
             is_merged=True if i.pull_request.merged_at else False,
         )
+        
 
-        await self.upsert_external_reference(session, issue_id=issue.id, obj=obj)
+        ref = IssueReference(
+            issue_id=issue.id,
+            external_id=i.pull_request.html_url,
+            reference_type=ReferenceType.EXTERNAL_GITHUB_PULL_REQUEST,
+            external_source=jsonable_encoder(obj),
+        )
+
+        await self.create_reference(session, ref=ref)
 
     async def create_reference(
-        self, session: AsyncSession, issue_id: UUID, pr_id: UUID
+        self, session: AsyncSession, ref: IssueReference
     ) -> None:
         nested = await session.begin_nested()
         try:
-            relation = IssueReference(
-                issue_id=issue_id,
-                pull_request_id=pr_id,
-            )
-            session.add(relation)
+            session.add(ref)
             await nested.commit()
             await session.commit()
             log.info(
                 "issue.create_reference.created",
-                issue_id=issue_id,
-                pull_request_id=pr_id,
+                ref=ref,
             )
             return
-        except IntegrityError:
+        except IntegrityError as e:
+            log.error("integrity",e=e)
             log.info(
                 "issue.create_reference.already_exists",
-                issue_id=issue_id,
-                pull_request_id=pr_id,
+                ref=ref,
             )
             await nested.rollback()
 
-    async def upsert_external_reference(
-        self,
-        session: AsyncSession,
-        issue_id: UUID,
-        obj: ExternalGitHubPullRequestReference,
-    ) -> None:
-        nested = await session.begin_nested()
-        try:
-            relation = IssueReference(
-                issue_id=issue_id,
-                # pull_request_id=pr_id,
-                reference_type="external_pull_request",
-                external_source=obj,
+        # Update external_source
+        stmt = (
+            sql.Update(IssueReference)
+            .where(
+                IssueReference.issue_id == ref.issue_id,
+                IssueReference.reference_type == ref.reference_type,
+                IssueReference.external_id == ref.external_id,
             )
-            session.add(relation)
-            await nested.commit()
-            await session.commit()
-            log.info(
-                "issue.create_reference.created",
-                issue_id=issue_id,
-                # pull_request_id=pr_id,
-            )
-            return
-        except IntegrityError:
-            log.info(
-                "issue.create_reference.already_exists",
-                issue_id=issue_id,
-                # pull_request_id=pr_id,
-            )
-            await nested.rollback()
+            .values(external_source=ref.external_source)
+        )
 
-        # TODO: Update!
-        # TODO: We need a new primary key / unique index...
+        await session.execute(stmt)
+        await session.commit()
 
 
 github_reference = GitHubIssueReferencesService()

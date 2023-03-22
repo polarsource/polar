@@ -1,4 +1,5 @@
 import enum
+from typing import Self
 from uuid import UUID
 from datetime import datetime
 

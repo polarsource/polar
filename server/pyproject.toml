@@ -24,6 +24,8 @@ arq = "^0.25.0"
 stripe = "^5.2.0"
 sqlalchemy-searchable = "^1.4.1"
 pytest-subtests = "^0.10.0"
+types-redis = "^4.5.2.0"
+mypy = "^1.1.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.12.0"

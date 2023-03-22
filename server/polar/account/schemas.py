@@ -39,7 +39,6 @@ class AccountRead(AccountCreate):
 class AccountLink(Schema):
     type: str = "account_link"
     created: int
-    expires_at: int
     url: str
 
 

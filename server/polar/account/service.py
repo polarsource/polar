@@ -48,7 +48,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             data=stripe_account.to_dict(),
         )
 
-    async def create_link(
+    async def onboarding_link(
         self,
         session: AsyncSession,
         organization_id: UUID,
@@ -62,7 +62,23 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             # TODO: Error?
             return None
 
-        account_link = stripe.create_link(stripe_id, appendix)
+        account_link = stripe.create_account_link(stripe_id, appendix)
+        return AccountLink(**account_link)
+
+    async def dashboard_link(
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+        stripe_id: str,
+    ) -> AccountLink | None:
+        account = await self.get_by(
+            session=session, organization_id=organization_id, stripe_id=stripe_id
+        )
+        if account is None:
+            # TODO: Error?
+            return None
+
+        account_link = stripe.create_login_link(stripe_id)
         return AccountLink(**account_link)
 
     def get_balance(

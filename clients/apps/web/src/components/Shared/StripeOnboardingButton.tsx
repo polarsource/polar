@@ -14,7 +14,7 @@ const StripeOnboardingButton = ({ stripeId }: { stripeId?: string }) => {
       })
       stripeAccountId = account.stripe_id
     }
-    const link = await api.accounts.createLink({
+    const link = await api.accounts.onboardingLink({
       platform: Platforms.GITHUB,
       orgName: currentOrg.name,
       stripeId: stripeAccountId,

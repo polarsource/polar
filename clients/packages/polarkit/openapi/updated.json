@@ -1311,157 +1311,6 @@
                         "APIKeyCookie": []
                     }
                 ]
-            },
-            "post": {
-                "tags": [
-                    "pledges"
-                ],
-                "summary": "Create Pledge",
-                "operationId": "create_pledge",
-                "parameters": [
-                    {
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/Platforms"
-                        },
-                        "name": "platform",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Org Name",
-                            "type": "string"
-                        },
-                        "name": "org_name",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Repo Name",
-                            "type": "string"
-                        },
-                        "name": "repo_name",
-                        "in": "path"
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PledgeCreate"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/PledgeRead"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/{platform}/{org_name}/{repo_name}/pledges/{pledge_id}": {
-            "patch": {
-                "tags": [
-                    "pledges"
-                ],
-                "summary": "Update Pledge",
-                "operationId": "update_pledge",
-                "parameters": [
-                    {
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/Platforms"
-                        },
-                        "name": "platform",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Org Name",
-                            "type": "string"
-                        },
-                        "name": "org_name",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Repo Name",
-                            "type": "string"
-                        },
-                        "name": "repo_name",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Pledge Id",
-                            "type": "string",
-                            "format": "uuid"
-                        },
-                        "name": "pledge_id",
-                        "in": "path"
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PledgeUpdate"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/PledgeRead"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
             }
         },
         "/api/v1/user/stream": {
@@ -1874,13 +1723,77 @@
                 ]
             }
         },
-        "/api/v1/{platform}/{org_name}/accounts/{stripe_id}/links": {
-            "post": {
+        "/api/v1/{platform}/{org_name}/accounts/{stripe_id}/onboarding_link": {
+            "get": {
                 "tags": [
                     "accounts"
                 ],
-                "summary": "Create Link",
-                "operationId": "create_link",
+                "summary": "Onboarding Link",
+                "operationId": "onboarding_link",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Org Name",
+                            "type": "string"
+                        },
+                        "name": "org_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Stripe Id",
+                            "type": "string"
+                        },
+                        "name": "stripe_id",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AccountLink"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/{platform}/{org_name}/accounts/{stripe_id}/dashboard_link": {
+            "get": {
+                "tags": [
+                    "accounts"
+                ],
+                "summary": "Dashboard Link",
+                "operationId": "dashboard_link",
                 "parameters": [
                     {
                         "required": true,
@@ -1954,7 +1867,6 @@
                 "title": "AccountLink",
                 "required": [
                     "created",
-                    "expires_at",
                     "url"
                 ],
                 "type": "object",
@@ -1966,10 +1878,6 @@
                     },
                     "created": {
                         "title": "Created",
-                        "type": "integer"
-                    },
-                    "expires_at": {
-                        "title": "Expires At",
                         "type": "integer"
                     },
                     "url": {

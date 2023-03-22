@@ -53,6 +53,18 @@ jobs:
       - name: 🔧 poetry install
         working-directory: ./server
         run: poetry install --no-root
-      - name: 🐍 Run tests
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            server/.mypy_cache
+            server/.pytest_cache
+          key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.poetry-version }}
+
+      - name: 🛟 Type Check Server (mypy)
+        working-directory: ./server
+        run:  poetry run task lint_types
+
+      - name: 🐍 Run tests (pytest)
         working-directory: ./server
         run: poetry run pytest

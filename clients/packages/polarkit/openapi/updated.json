@@ -1784,7 +1784,11 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/AccountRead"
+                                    "title": "Response Accounts:Get Account",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/AccountRead"
+                                    }
                                 }
                             }
                         }
@@ -1991,6 +1995,10 @@
                     "balance": {
                         "title": "Balance",
                         "type": "integer"
+                    },
+                    "is_details_submitted": {
+                        "title": "Is Details Submitted",
+                        "type": "boolean"
                     }
                 }
             },

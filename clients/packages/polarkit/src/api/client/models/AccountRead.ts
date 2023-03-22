@@ -8,5 +8,6 @@ export type AccountRead = {
   account_type?: AccountType;
   stripe_id: string;
   balance?: number;
+  is_details_submitted?: boolean;
 };
 

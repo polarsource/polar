@@ -24,7 +24,7 @@ export class AccountsService {
   }: {
     platform: Platforms,
     orgName: string,
-  }): CancelablePromise<AccountRead> {
+  }): CancelablePromise<Array<AccountRead>> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/{platform}/{org_name}/accounts',

@@ -30,6 +30,7 @@ class AccountRead(AccountCreate):
     account_type: AccountType | None
     stripe_id: str
     balance: int | None
+    is_details_submitted: bool | None
 
     class Config:
         orm_mode = True

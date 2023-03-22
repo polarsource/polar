@@ -1,5 +1,5 @@
 import { Cog8ToothIcon, CubeIcon } from '@heroicons/react/24/outline'
-import StripeSignupButton from 'components/Shared/StripeSignupButton'
+import StripeOnboardingButton from 'components/Shared/StripeOnboardingButton'
 import { useOrganizationAccounts } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { classNames } from 'polarkit/utils/dom'
@@ -19,9 +19,13 @@ const DashboardNav = () => {
       {accountQuery.isLoading ? (
         <p>Loading...</p>
       ) : accounts.length === 1 ? (
-        <BalanceBadge balance={accounts[0].balance} />
+        accounts[0].is_details_submitted ? (
+          <BalanceBadge balance={accounts[0].balance} />
+        ) : (
+          <StripeOnboardingButton stripeId={accounts[0].stripe_id} />
+        )
       ) : (
-        <StripeSignupButton />
+        <StripeOnboardingButton />
       )}
       <Cog8ToothIcon
         className="h-6 w-6 cursor-pointer text-gray-400 transition-colors duration-100 hover:text-gray-800"

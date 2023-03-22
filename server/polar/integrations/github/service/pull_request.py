@@ -43,7 +43,7 @@ class GithubPullRequestService(PullRequestService):
         data: Sequence[GithubPullRequestSimple],
         organization: Organization,
         repository: Repository,
-    ) -> list[PullRequest]:
+    ) -> Sequence[PullRequest]:
         def parse(pr: GithubPullRequestSimple) -> MinimalPullRequestCreate:
             return MinimalPullRequestCreate.minimal_pull_request_from_github(
                 pr,
@@ -89,7 +89,7 @@ class GithubPullRequestService(PullRequestService):
         data: Sequence[GithubPullRequestFull],
         organization: Organization,
         repository: Repository,
-    ) -> list[PullRequest]:
+    ) -> Sequence[PullRequest]:
         def parse(pr: GithubPullRequestFull) -> FullPullRequestCreate:
             return FullPullRequestCreate.full_pull_request_from_github(
                 pr,

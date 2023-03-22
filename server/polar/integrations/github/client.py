@@ -22,8 +22,6 @@ from polar.postgres import AsyncSession
 
 log = structlog.get_logger()
 
-WebhookEvent = webhooks.types.WebhookEvent
-
 
 class UnexpectedStatusCode(Exception):
     ...
@@ -78,14 +76,6 @@ def attr(obj: object, attr: str) -> Any:
     if is_set(obj, attr):
         return getattr(obj, attr)
     return None
-
-
-def patch_unset(field: str, payload: dict[str, Any]) -> dict[str, Any]:
-    # TODO: Remove this once the following issue is resolved:
-    # https://github.com/yanyongyu/githubkit/issues/14
-    if payload.get(field) is None:
-        payload[field] = utils.UNSET
-    return payload
 
 
 ###############################################################################

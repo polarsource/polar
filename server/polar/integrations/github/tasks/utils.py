@@ -1,7 +1,9 @@
+from typing import Sequence, Union
 from uuid import UUID
 import structlog
 
 from polar.integrations.github import service
+from polar.issue.schemas import IssueCreate
 from polar.models import Organization, Repository, Issue, PullRequest
 from polar.postgres import AsyncSession
 from polar.integrations.github import client as github
@@ -37,8 +39,14 @@ async def get_organization_and_repo(
 async def add_repositories(
     session: AsyncSession,
     organization: Organization,
-    repositories: list[github.webhooks.InstallationCreatedPropRepositoriesItems],
-) -> list[Repository]:
+    repositories: Sequence[
+        Union[
+            github.webhooks.InstallationCreatedPropRepositoriesItems,
+            github.webhooks.InstallationRepositoriesAddedPropRepositoriesAddedItems,
+            github.webhooks.InstallationRepositoriesRemovedPropRepositoriesAddedItems,
+        ]
+    ],
+) -> Sequence[Repository]:
     schemas = []
     for repo in repositories:
         create_schema = RepositoryCreate(
@@ -58,8 +66,12 @@ async def add_repositories(
 async def remove_repositories(
     session: AsyncSession,
     organization: Organization,
-    repositories: list[
-        github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems
+    repositories: Sequence[
+        Union[
+            github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems,
+            github.webhooks.InstallationRepositoriesAddedPropRepositoriesRemovedItems,
+            github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems,
+        ]
     ],
 ) -> int:
     # TODO: Implement delete many to avoid N*2 db calls
@@ -73,7 +85,12 @@ async def remove_repositories(
 
 
 async def upsert_issue(
-    session: AsyncSession, event: github.webhooks.IssuesOpened
+    session: AsyncSession,
+    event: Union[
+        github.webhooks.IssuesOpened,
+        github.webhooks.IssuesEdited,
+        github.webhooks.IssuesClosed,
+    ],
 ) -> Issue | None:
     repository_id = event.repository.id
     owner_id = event.repository.owner.id
@@ -109,7 +126,14 @@ async def upsert_issue(
 
 
 async def upsert_pull_request(
-    session: AsyncSession, event: github.webhooks.PullRequestOpened
+    session: AsyncSession,
+    event: Union[
+        github.webhooks.PullRequestOpened,
+        github.webhooks.PullRequestEdited,
+        github.webhooks.PullRequestClosed,
+        github.webhooks.PullRequestReopened,
+        github.webhooks.PullRequestSynchronize,
+    ],
 ) -> PullRequest | None:
     repository_id = event.repository.id
     owner_id = event.repository.owner.id
@@ -143,5 +167,6 @@ async def upsert_pull_request(
         organization_id=organization.id,
         repository_id=repository.id,
     )
+
     record = await service.github_pull_request.upsert(session, create_schema)
     return record

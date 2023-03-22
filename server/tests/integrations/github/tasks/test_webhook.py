@@ -9,6 +9,7 @@ from arq.connections import ArqRedis
 
 from polar.integrations.github import service
 from polar.integrations.github import client as github
+from polar.kit import utils
 from polar.models.organization import Organization
 from polar.organization.schemas import OrganizationCreate
 from polar.enums import Platforms
@@ -52,10 +53,10 @@ async def create_org(
     status: Organization.Status = Organization.Status.ACTIVE,
 ) -> Organization:
     hook = github_webhook.create("installation.created")
-    hook = github.patch_unset("requester", hook.json)
-    event: github.webhooks.InstallationCreated = github.webhooks.parse_obj(
-        "installation", hook
-    )
+    # hook = github.patch_unset("requester", hook.json)
+    event = github.webhooks.parse_obj("installation", hook.json)
+    if not isinstance(event, github.webhooks.InstallationCreated):
+        raise Exception("unexpected type")
 
     # TODO: Move this into its own schema helper
     account = event.installation.account
@@ -68,8 +69,8 @@ async def create_org(
         is_personal=is_personal,
         is_site_admin=account.site_admin,
         installation_id=event.installation.id,
-        installation_created_at=event.installation.created_at,
-        installation_updated_at=event.installation.updated_at,
+        installation_created_at=utils.utc_now(),  # Or something else?
+        installation_updated_at=utils.utc_now(),  # Or something else?
         installation_suspended_at=event.installation.suspended_at,
     )
     async with AsyncSessionLocal() as session:
@@ -288,6 +289,8 @@ async def test_webhook_issues_labeled(
 
     async with AsyncSessionLocal() as session:
         issue = await service.github_issue.get_by_external_id(session, issue_id)
+        assert issue is not None
+        assert issue.labels is not None
         assert issue.labels[0]["name"] == hook["issue"]["labels"][0]["name"]
 
 
@@ -327,6 +330,7 @@ async def test_webhook_pull_request_synchronize(
 
     async with AsyncSessionLocal() as session:
         pr = await service.github_pull_request.get_by_external_id(session, pr_id)
+        assert pr is not None
         assert pr.merge_commit_sha is None
 
     await webhook_tasks.pull_request_synchronize(
@@ -335,4 +339,5 @@ async def test_webhook_pull_request_synchronize(
 
     async with AsyncSessionLocal() as session:
         pr = await service.github_pull_request.get_by_external_id(session, pr_id)
+        assert pr is not None
         assert pr.merge_commit_sha is not None

@@ -1,4 +1,4 @@
-from typing import Literal, Callable, Any, Coroutine
+from typing import Literal, Callable, Any, Coroutine, Sequence
 
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
@@ -200,7 +200,7 @@ class GithubRepositoryService(RepositoryService):
         create_schemas: list[RepositoryCreate],
         constraints: list[InstrumentedAttribute[int]] | None = None,
         mutable_keys: set[str] | None = None,
-    ) -> list[Repository]:
+    ) -> Sequence[Repository]:
         instances = await super().upsert_many(
             session, create_schemas, constraints, mutable_keys
         )
@@ -216,7 +216,7 @@ class GithubRepositoryService(RepositoryService):
         session: AsyncSession,
         organization: Organization,
         installation_id: int,
-    ) -> list[Repository] | None:
+    ) -> Sequence[Repository] | None:
         client = github.get_app_installation_client(installation_id)
         response = await client.rest.apps.async_list_repos_accessible_to_installation()
         github.ensure_expected_response(response)

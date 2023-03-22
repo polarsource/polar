@@ -12,28 +12,28 @@ from polar.enums import Platforms
 class RepositoryCreate(Schema):
     platform: Platforms
     external_id: int
-    organization_id: UUID | None
+    organization_id: UUID | None = None
     name: str
-    description: str | None
-    open_issues: int | None
-    forks: int | None
-    stars: int | None
-    watchers: int | None
-    main_branch: str | None
-    topics: list[str] | None
-    license: str | None
-    repository_pushed_at: datetime | None
-    repository_created_at: datetime | None
-    repository_modified_at: datetime | None
+    description: str | None = None
+    open_issues: int | None = None
+    forks: int | None = None
+    stars: int | None = None
+    watchers: int | None = None
+    main_branch: str | None = None
+    topics: list[str] | None = None
+    license: str | None = None
+    repository_pushed_at: datetime | None = None
+    repository_created_at: datetime | None = None
+    repository_modified_at: datetime | None = None
     is_private: bool
-    is_fork: bool | None
-    is_issues_enabled: bool | None
-    is_projects_enabled: bool | None
-    is_wiki_enabled: bool | None
-    is_pages_enabled: bool | None
-    is_downloads_enabled: bool | None
-    is_archived: bool | None
-    is_disabled: bool | None
+    is_fork: bool | None = None
+    is_issues_enabled: bool | None = None
+    is_projects_enabled: bool | None = None
+    is_wiki_enabled: bool | None = None
+    is_pages_enabled: bool | None = None
+    is_downloads_enabled: bool | None = None
+    is_archived: bool | None = None
+    is_disabled: bool | None = None
 
     @classmethod
     def from_github(cls, organization: Organization, repo: github.rest.Repository):

@@ -1,9 +1,12 @@
-from typing import Any
+from datetime import datetime
+from typing import Any, Union
 
 import structlog
 
 from polar.integrations.github import client as github
 from polar.issue.schemas import IssueRead
+from polar.kit.extensions.sqlalchemy import sql
+from polar.models.issue import Issue
 from polar.organization.schemas import OrganizationCreate
 from polar.enums import Platforms
 from polar.pull_request.schemas import PullRequestRead
@@ -21,20 +24,23 @@ from .utils import (
 log = structlog.get_logger()
 
 
-def get_event(scope: str, action: str, payload: dict[str, Any]) -> github.WebhookEvent:
-    log.info("github.webhook.received", scope=scope, action=action)
-    return github.webhooks.parse_obj(scope, payload)
-
-
 # ------------------------------------------------------------------------------
 # REPOSITORIES
 # ------------------------------------------------------------------------------
 
 
 async def repositories_changed(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    session: AsyncSession,
+    scope: str,
+    action: str,
+    event: Union[
+        github.webhooks.InstallationRepositoriesAdded,
+        github.webhooks.InstallationRepositoriesRemoved,
+    ],
 ) -> dict[str, Any]:
-    event = get_event(scope, action, payload)
+    if not event.installation:
+        return dict(success=False)
+
     # TODO: Verify that this works even for personal Github accounts?
     organization = await service.github_organization.get_by_external_id(
         session, event.installation.account.id
@@ -42,7 +48,7 @@ async def repositories_changed(
     if not organization:
         log.critical(
             "suspicuous github webhook!",
-            webhook_id=event.id,
+            # webhook_id=event.id,
             github_event=f"{scope}.{action}",
             organization=event.installation.account.login,
         )
@@ -67,16 +73,24 @@ async def repositories_changed(
 async def repositories_added(
     ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
+    parsed = github.webhooks.parse_obj(scope, payload)
+    if not isinstance(parsed, github.webhooks.InstallationRepositoriesAdded):
+        log.error("github.webhook.unexpected_type")
+        raise Exception("unexpected webhook payload")
     async with AsyncSessionLocal() as session:
-        return await repositories_changed(session, scope, action, payload)
+        return await repositories_changed(session, scope, action, parsed)
 
 
 @task(name="github.webhook.installation_repositories.removed")
 async def repositories_removed(
     ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
+    parsed = github.webhooks.parse_obj(scope, payload)
+    if not isinstance(parsed, github.webhooks.InstallationRepositoriesRemoved):
+        log.error("github.webhook.unexpected_type")
+        raise Exception("unexpected webhook payload")
     async with AsyncSessionLocal() as session:
-        return await repositories_changed(session, scope, action, payload)
+        return await repositories_changed(session, scope, action, parsed)
 
 
 # ------------------------------------------------------------------------------
@@ -85,9 +99,15 @@ async def repositories_removed(
 
 
 async def handle_issue(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    session: AsyncSession,
+    scope: str,
+    action: str,
+    event: Union[
+        github.webhooks.IssuesOpened,
+        github.webhooks.IssuesEdited,
+        github.webhooks.IssuesClosed,
+    ],
 ) -> dict[str, Any]:
-    event = get_event(scope, action, payload)
     issue = await upsert_issue(session, event)
     if not issue:
         # TODO: Handle better
@@ -108,46 +128,76 @@ async def handle_issue(
 async def issue_opened(
     ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
+    parsed = github.webhooks.parse_obj(scope, payload)
+    if not isinstance(parsed, github.webhooks.IssuesOpened):
+        log.error("github.webhook.unexpected_type")
+        raise Exception("unexpected webhook payload")
+
     async with AsyncSessionLocal() as session:
-        return await handle_issue(session, scope, action, payload)
+        return await handle_issue(session, scope, action, parsed)
 
 
 @task("github.webhook.issues.edited")
 async def issue_edited(
     ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
+    parsed = github.webhooks.parse_obj(scope, payload)
+    if not isinstance(parsed, github.webhooks.IssuesEdited):
+        log.error("github.webhook.unexpected_type")
+        raise Exception("unexpected webhook payload")
+
     async with AsyncSessionLocal() as session:
-        return await handle_issue(session, scope, action, payload)
+        return await handle_issue(session, scope, action, parsed)
 
 
 @task("github.webhook.issues.closed")
 async def issue_closed(
     ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
+    parsed = github.webhooks.parse_obj(scope, payload)
+    if not isinstance(parsed, github.webhooks.IssuesClosed):
+        log.error("github.webhook.unexpected_type")
+        raise Exception("unexpected webhook payload")
+
     async with AsyncSessionLocal() as session:
-        return await handle_issue(session, scope, action, payload)
+        return await handle_issue(session, scope, action, parsed)
 
 
 @task("github.webhook.issues.labeled")
 async def issue_labeled(
     ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
+    parsed = github.webhooks.parse_obj(scope, payload)
+    if not isinstance(parsed, github.webhooks.IssuesLabeled):
+        log.error("github.webhook.unexpected_type")
+        raise Exception("unexpected webhook payload")
+
     async with AsyncSessionLocal() as session:
-        return await issue_labeled_async(session, scope, action, payload)
+        return await issue_labeled_async(session, scope, action, parsed)
 
 
 async def issue_labeled_async(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    session: AsyncSession, scope: str, action: str, event: github.webhooks.IssuesLabeled
 ) -> dict[str, Any]:
-    # TODO: Change from upsert here?
-    # Potentially not since we might have race conditions between
-    # webhooks for installations and our own historical syncing vs.
-    # new issues coming in via other events in the meantime.
-    event = get_event(scope, action, payload)
-    issue = await upsert_issue(session, event)
+    issue = await service.github_issue.get_by_external_id(session, event.issue.id)
     if not issue:
         # TODO: Handle better
-        return dict(success=False, reason="Could not save issue")
+        return dict(success=False, reason="issue not found")
+
+    # modify labels
+    stmt = (
+        sql.Update(Issue)
+        .where(Issue.id == issue.id)
+        .values(labels=github.jsonify(event.issue.labels))
+    )
+    await session.execute(stmt)
+    await session.commit()
+
+    # get for return
+    issue = await service.github_issue.get_by_external_id(session, event.issue.id)
+    if not issue:
+        # TODO: Handle better
+        return dict(success=False, reason="issue not found")
 
     schema = IssueRead.from_orm(issue)
     return dict(success=True, issue=schema.dict())
@@ -159,9 +209,17 @@ async def issue_labeled_async(
 
 
 async def handle_pull_request(
-    session: AsyncSession, scope: str, action: str, payload: dict[str, Any]
+    session: AsyncSession,
+    scope: str,
+    action: str,
+    event: Union[
+        github.webhooks.PullRequestOpened,
+        github.webhooks.PullRequestEdited,
+        github.webhooks.PullRequestClosed,
+        github.webhooks.PullRequestReopened,
+        github.webhooks.PullRequestSynchronize,
+    ],
 ) -> dict[str, Any]:
-    event = get_event(scope, action, payload)
     pr = await upsert_pull_request(session, event)
     if not pr:
         return dict(success=False, reason="Could not save PR")
@@ -174,40 +232,65 @@ async def handle_pull_request(
 async def pull_request_opened(
     ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
+    parsed = github.webhooks.parse_obj(scope, payload)
+    if not isinstance(parsed, github.webhooks.PullRequestOpened):
+        log.error("github.webhook.unexpected_type")
+        raise Exception("unexpected webhook payload")
+
     async with AsyncSessionLocal() as session:
-        return await handle_pull_request(session, scope, action, payload)
+        return await handle_pull_request(session, scope, action, parsed)
 
 
 @task("github.webhook.pull_request.edited")
 async def pull_request_edited(
     ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
+    parsed = github.webhooks.parse_obj(scope, payload)
+    if not isinstance(parsed, github.webhooks.PullRequestEdited):
+        log.error("github.webhook.unexpected_type")
+        raise Exception("unexpected webhook payload")
+
     async with AsyncSessionLocal() as session:
-        return await handle_pull_request(session, scope, action, payload)
+        return await handle_pull_request(session, scope, action, parsed)
 
 
 @task("github.webhook.pull_request.closed")
 async def pull_request_closed(
     ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
+    parsed = github.webhooks.parse_obj(scope, payload)
+    if not isinstance(parsed, github.webhooks.PullRequestClosed):
+        log.error("github.webhook.unexpected_type")
+        raise Exception("unexpected webhook payload")
+
     async with AsyncSessionLocal() as session:
-        return await handle_pull_request(session, scope, action, payload)
+        return await handle_pull_request(session, scope, action, parsed)
 
 
 @task("github.webhook.pull_request.reopened")
 async def pull_request_reopened(
     ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
+    parsed = github.webhooks.parse_obj(scope, payload)
+    if not isinstance(parsed, github.webhooks.PullRequestReopened):
+        log.error("github.webhook.unexpected_type")
+        raise Exception("unexpected webhook payload")
+
     async with AsyncSessionLocal() as session:
-        return await handle_pull_request(session, scope, action, payload)
+        return await handle_pull_request(session, scope, action, parsed)
 
 
 @task("github.webhook.pull_request.synchronize")
 async def pull_request_synchronize(
     ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
+    parsed = github.webhooks.parse_obj(scope, payload)
+    if not isinstance(parsed, github.webhooks.PullRequestSynchronize):
+        log.error("github.webhook.unexpected_type")
+        raise Exception("unexpected webhook payload")
+
     async with AsyncSessionLocal() as session:
-        return await handle_pull_request(session, scope, action, payload)
+        return await handle_pull_request(session, scope, action, parsed)
 
 
 # ------------------------------------------------------------------------------
@@ -221,10 +304,27 @@ async def installation_created(
 ) -> dict[str, Any]:
     # TODO: Handle user permission?
 
+    event = github.webhooks.parse_obj(scope, payload)
+    if not isinstance(event, github.webhooks.InstallationCreated):
+        log.error("github.webhook.unexpected_type")
+        raise Exception("unexpected webhook payload")
+
     async with AsyncSessionLocal() as session:
 
-        payload = github.patch_unset("requester", payload)
-        event = get_event(scope, action, payload)
+        # TODO: Remove this once the following issue is resolved:
+        # https://github.com/yanyongyu/githubkit/issues/14
+        if event.requester is None:
+            event.requester = github.utils.UNSET
+
+        if isinstance(event.installation.created_at, int):
+            event.installation.created_at = datetime.fromtimestamp(
+                event.installation.created_at
+            )
+
+        if isinstance(event.installation.updated_at, int):
+            event.installation.updated_at = datetime.fromtimestamp(
+                event.installation.updated_at
+            )
 
         # TODO: Move this into its own schema helper
         account = event.installation.account
@@ -242,7 +342,10 @@ async def installation_created(
             installation_suspended_at=event.installation.suspended_at,
         )
         organization = await service.github_organization.upsert(session, create_schema)
-        await add_repositories(session, organization, event.repositories)
+
+        if event.repositories:
+            await add_repositories(session, organization, event.repositories)
+
         return dict(success=True)
 
 
@@ -250,8 +353,12 @@ async def installation_created(
 async def installation_delete(
     ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
+    event = github.webhooks.parse_obj(scope, payload)
+    if not isinstance(event, github.webhooks.InstallationDeleted):
+        log.error("github.webhook.unexpected_type")
+        raise Exception("unexpected webhook payload")
+
     async with AsyncSessionLocal() as session:
-        event = get_event(scope, action, payload)
         await service.github_organization.remove(session, event.installation.id)
         return dict(success=True)
 
@@ -260,13 +367,16 @@ async def installation_delete(
 async def installation_suspend(
     ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with AsyncSessionLocal() as session:
-        event = get_event(scope, action, payload)
+    event = github.webhooks.parse_obj(scope, payload)
+    if not isinstance(event, github.webhooks.InstallationSuspend):
+        log.error("github.webhook.unexpected_type")
+        raise Exception("unexpected webhook payload")
 
+    async with AsyncSessionLocal() as session:
         await service.github_organization.suspend(
             session,
             event.installation.id,
-            event.installation.suspended_by,
+            event.installation.suspended_by.id,
             event.installation.suspended_at,
             event.sender.id,
         )
@@ -277,8 +387,11 @@ async def installation_suspend(
 async def installation_unsuspend(
     ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    async with AsyncSessionLocal() as session:
-        event = get_event(scope, action, payload)
+    event = github.webhooks.parse_obj(scope, payload)
+    if not isinstance(event, github.webhooks.InstallationUnsuspend):
+        log.error("github.webhook.unexpected_type")
+        raise Exception("unexpected webhook payload")
 
+    async with AsyncSessionLocal() as session:
         await service.github_organization.unsuspend(session, event.installation.id)
         return dict(success=True)

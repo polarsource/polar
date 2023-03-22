@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Sequence, Union
 
 import structlog
 
@@ -8,6 +9,8 @@ from polar.issue.service import IssueService
 from polar.models import Issue, Organization, Repository
 from polar.enums import Platforms
 from polar.postgres import AsyncSession
+from polar.integrations.github import client as github
+
 
 from ..types import GithubIssue
 from ..badge import GithubBadge
@@ -31,7 +34,12 @@ class GithubIssueService(IssueService):
         self,
         session: AsyncSession,
         *,
-        data: GithubIssue,
+        data: Union[
+            GithubIssue,  # TODO: remove nested union
+            github.webhooks.IssuesOpenedPropIssue,
+            github.webhooks.IssuesClosedPropIssue,
+            github.webhooks.Issue,
+        ],
         organization: Organization,
         repository: Repository,
     ) -> Issue:
@@ -47,12 +55,24 @@ class GithubIssueService(IssueService):
         self,
         session: AsyncSession,
         *,
-        data: list[GithubIssue],
+        data: list[
+            Union[
+                GithubIssue,  # TODO: remove nested union
+                github.webhooks.IssuesOpenedPropIssue,
+                github.webhooks.IssuesClosedPropIssue,
+                github.webhooks.Issue,
+            ],
+        ],
         organization: Organization,
         repository: Repository,
-    ) -> list[Issue]:
+    ) -> Sequence[Issue]:
         def parse(
-            issue: GithubIssue,
+            issue: Union[
+                GithubIssue,  # TODO: remove nested union
+                github.webhooks.IssuesOpenedPropIssue,
+                github.webhooks.IssuesClosedPropIssue,
+                github.webhooks.Issue,
+            ],
         ) -> IssueCreate:
             return IssueCreate.from_github(
                 issue,

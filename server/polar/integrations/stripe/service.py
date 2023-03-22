@@ -29,6 +29,14 @@ class StripeService(object):
     def retrieve_account(self, id: str) -> stripe_lib.Account:
         return stripe_lib.Account.retrieve(id)
 
+    def retrieve_balance(self, id: str) -> int:
+        # Return available USD on the specified account
+        balance = stripe_lib.Balance.retrieve(stripe_account=id)
+        for b in balance["available"]:
+            if b["currency"] == "usd":
+                return b["amount"]
+        return 0
+
     def create_link(
         self, stripe_id: str, appendix: str | None = None
     ) -> stripe_lib.AccountLink:

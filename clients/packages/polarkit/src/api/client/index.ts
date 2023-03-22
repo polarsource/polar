@@ -9,6 +9,10 @@ export { CancelablePromise, CancelError } from './core/CancelablePromise';
 export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
+export type { AccountCreate } from './models/AccountCreate';
+export type { AccountLink } from './models/AccountLink';
+export type { AccountRead } from './models/AccountRead';
+export { AccountType } from './models/AccountType';
 export type { BadgeAmount } from './models/BadgeAmount';
 export type { Body_users_auth_jwt_login } from './models/Body_users_auth_jwt_login';
 export type { Entry_Any_ } from './models/Entry_Any_';
@@ -42,6 +46,7 @@ export type { UserUpdate } from './models/UserUpdate';
 export type { ValidationError } from './models/ValidationError';
 export { Visibility } from './models/Visibility';
 
+export { AccountsService } from './services/AccountsService';
 export { DashboardService } from './services/DashboardService';
 export { IntegrationsService } from './services/IntegrationsService';
 export { IssuesService } from './services/IssuesService';

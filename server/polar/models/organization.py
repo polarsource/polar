@@ -75,8 +75,8 @@ class Organization(RecordModel):
         lazy="raise_on_sql",
     )
 
-    account: "Mapped[Account]" = relationship(
-        "Account", back_populates="organization", uselist=False, lazy="raise_on_sql"
+    account: "Mapped[Account | None]" = relationship(
+        "Account", back_populates="organization", uselist=False, lazy="joined"
     )
 
     # TODO: Given service.organization.get_with_repo_by_name can we drop lazy=joined

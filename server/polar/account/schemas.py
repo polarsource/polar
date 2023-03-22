@@ -29,6 +29,7 @@ class AccountUpdate(Schema):
 class AccountRead(AccountCreate):
     account_type: AccountType | None
     stripe_id: str
+    balance: int | None
 
     class Config:
         orm_mode = True

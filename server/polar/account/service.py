@@ -17,7 +17,7 @@ log = structlog.get_logger()
 
 
 class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
-    async def create_stripe_account(
+    async def create_account(
         self,
         session: AsyncSession,
         organization_id: UUID,
@@ -28,11 +28,9 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             await self.get_by(session=session, organization_id=organization_id)
             is not None
         ):
-            # TODO: Error?
             return None
 
         if account.account_type != AccountType.stripe:
-            # TODO: Error?
             return None
 
         stripe_account = stripe.create_account()
@@ -59,17 +57,23 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         stripe_id: str,
         appendix: str | None = None,
     ) -> AccountLink | None:
-        if (
-            await self.get_by(
-                session=session, organization_id=organization_id, stripe_id=stripe_id
-            )
-            is None
-        ):
+        account = await self.get_by(
+            session=session, organization_id=organization_id, stripe_id=stripe_id
+        )
+        if account is None:
             # TODO: Error?
             return None
 
         account_link = stripe.create_link(stripe_id, appendix)
         return AccountLink(**account_link)
+
+    def get_balance(
+        self,
+        account: Account,
+    ) -> int | None:
+        if account.account_type != AccountType.stripe:
+            return None
+        return stripe.retrieve_balance(account.stripe_id)
 
 
 account = AccountService(Account)

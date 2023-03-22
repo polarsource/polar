@@ -5,6 +5,7 @@ import type { BaseHttpRequest } from './core/BaseHttpRequest';
 import type { OpenAPIConfig } from './core/OpenAPI';
 import { AxiosHttpRequest } from './core/AxiosHttpRequest';
 
+import { AccountsService } from './services/AccountsService';
 import { DashboardService } from './services/DashboardService';
 import { IntegrationsService } from './services/IntegrationsService';
 import { IssuesService } from './services/IssuesService';
@@ -19,6 +20,7 @@ type HttpRequestConstructor = new (config: OpenAPIConfig) => BaseHttpRequest;
 
 export class PolarAPI {
 
+  public readonly accounts: AccountsService;
   public readonly dashboard: DashboardService;
   public readonly integrations: IntegrationsService;
   public readonly issues: IssuesService;
@@ -44,6 +46,7 @@ export class PolarAPI {
       ENCODE_PATH: config?.ENCODE_PATH,
     });
 
+    this.accounts = new AccountsService(this.request);
     this.dashboard = new DashboardService(this.request);
     this.integrations = new IntegrationsService(this.request);
     this.issues = new IssuesService(this.request);

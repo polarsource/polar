@@ -12,7 +12,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.config import settings
 from polar.worker import enqueue_job
 
-from .service import stripe as stripe_lib
+from .service import stripe as stripe_service
 from polar.account.schemas import AccountUpdate
 from polar.account.service import account as account_service
 
@@ -63,7 +63,7 @@ async def stripe_connect_return(
     )
     if not account:
         raise HTTPException(status_code=400, detail="Error while getting account")
-    stripe_account = stripe_lib.retrieve_account(account.stripe_id)
+    stripe_account = stripe_service.retrieve_account(account.stripe_id)
     await account_service.update(
         session,
         account,

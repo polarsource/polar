@@ -16,7 +16,7 @@ from polar.postgres import AsyncSession
 log = structlog.get_logger()
 
 
-@repository_issue_synced.connect
+@repository_issue_synced.connect  # type: ignore
 async def on_issue_synced(
     session: AsyncSession,
     *,
@@ -42,7 +42,7 @@ async def on_issue_synced(
     )
 
 
-@repository_issues_sync_completed.connect
+@repository_issues_sync_completed.connect  # type: ignore
 async def on_issue_sync_completed(
     session: AsyncSession,
     *,
@@ -67,7 +67,7 @@ async def on_issue_sync_completed(
 ###############################################################################
 
 
-@issue_created.connect
+@issue_created.connect  # type: ignore
 async def on_issue_created(issue: Issue) -> None:
     await publish(
         "issue.created",
@@ -77,7 +77,7 @@ async def on_issue_created(issue: Issue) -> None:
     )
 
 
-@issue_updated.connect
+@issue_updated.connect  # type: ignore
 async def on_issue_updated(issue: Issue) -> None:
     await publish(
         "issue.updated",
@@ -91,7 +91,7 @@ async def on_issue_updated(issue: Issue) -> None:
     )
 
 
-@pull_request_created.connect
+@pull_request_created.connect  # type: ignore
 async def on_pull_request_created(pr: PullRequest) -> None:
     await publish(
         "pull_request.created",
@@ -101,7 +101,7 @@ async def on_pull_request_created(pr: PullRequest) -> None:
     )
 
 
-@pull_request_updated.connect
+@pull_request_updated.connect  # type: ignore
 async def on_pull_request_updated(pr: PullRequest) -> None:
     await publish(
         "pull_request.updated",

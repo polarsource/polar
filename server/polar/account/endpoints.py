@@ -19,7 +19,7 @@ async def create_account(
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> AccountRead:
-    created = await account_service.create_stripe_account(
+    created = await account_service.create_account(
         session, auth.organization.id, auth.user.id, account
     )
     if not created:

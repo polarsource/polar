@@ -32,9 +32,8 @@ class GitHubIssueReferencesService:
         """
 
         if (
-            repo.repository_issues_references_synced_at
-            and (utils.utc_now() - repo.repository_issues_references_synced_at).seconds
-            < 60
+            repo.issues_references_synced_at
+            and (utils.utc_now() - repo.issues_references_synced_at).seconds < 60
         ):
             # Crawled within the last minute, skip
             log.info(
@@ -48,7 +47,7 @@ class GitHubIssueReferencesService:
         stmt = (
             sql.Update(Repository)
             .where(Repository.id == repo.id)
-            .values(repository_issues_references_synced_at=utils.utc_now())
+            .values(issues_references_synced_at=utils.utc_now())
         )
         await session.execute(stmt)
         await session.commit()

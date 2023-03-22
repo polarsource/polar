@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from uuid import UUID
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, Sequence, TypeVar
 
 from sqlalchemy.orm import InstrumentedAttribute
 
@@ -57,7 +57,7 @@ class ResourceService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         create_schemas: list[CreateSchemaType],
         constraints: list[InstrumentedAttribute[Any]] | None = None,
         mutable_keys: set[str] | None = None,
-    ) -> list[ModelType]:
+    ) -> Sequence[ModelType]:
         if constraints is None:
             constraints = self.upsert_constraints
 

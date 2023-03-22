@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from functools import cache
-from typing import Any, ClassVar, TypeVar
+from typing import Any, ClassVar, Generic, List, Sequence, TypeVar
 
 from blinker import Signal
-from sqlalchemy import Column, column
+from sqlalchemy import Column, ColumnClause, column
 from sqlalchemy.orm import (
     InstrumentedAttribute,
     Mapped,
@@ -23,7 +23,7 @@ SchemaType = TypeVar("SchemaType", bound=Schema)
 
 
 # Active Record-ish
-class ActiveRecordMixin:
+class ActiveRecordMixin(Generic[ModelType]):
     __mutables__: set[Column[Any]] | set[str] | None = None
     __table__: ClassVar[FromClause]
 
@@ -42,7 +42,7 @@ class ActiveRecordMixin:
     @classmethod
     def xmax(cls) -> Mapped[int]:
         # Unless we use `with_expression` to get `xmax` this will be None
-        return query_expression()
+        return query_expression()  # type: ignore
 
     @property
     def was_created(self) -> bool:
@@ -64,9 +64,11 @@ class ActiveRecordMixin:
     @cache
     def get_mutable_keys(cls: type[ModelType]) -> set[str]:
         def name(c: str | MappedColumn[Any] | Column[Any]) -> str:
+            if isinstance(c, str):
+                return c
             if hasattr(c, "name"):
                 return c.name
-            return c
+            raise Exception("no mutable key name found")
 
         columns = cls.__mutables__
         if columns is not None:
@@ -115,13 +117,15 @@ class ActiveRecordMixin:
         constraints: list[InstrumentedAttribute[Any]],
         # Defaults to the mutable keys as defined by on the Model
         mutable_keys: set[str] | None = None,
-    ) -> list[ModelType]:
+    ) -> Sequence[ModelType]:
         values = [obj.dict() for obj in objects]
         if not values:
             raise ValueError("Zero values provided")
 
         # Create a literal column for xmax to be able to select it in the ORM statement
-        xmax = column("xmax", is_literal=True, _selectable=cls.__table__)
+        xmax: ColumnClause[int] = column(
+            "xmax", is_literal=True, _selectable=cls.__table__
+        )
 
         insert_stmt = sql.insert(cls).values(values)
 
@@ -145,7 +149,7 @@ class ActiveRecordMixin:
         res = await session.execute(orm_stmt)
         instances = res.scalars().all()
         await session.commit()
-        await cls.on_upserted(instances)
+        await cls.on_upserted([i for i in instances])
         return instances
 
     @classmethod
@@ -156,7 +160,7 @@ class ActiveRecordMixin:
         constraints: list[InstrumentedAttribute[Any]],
         mutable_keys: set[str] | None = None,
     ) -> ModelType:
-        upserted: list[ModelType] = await cls.upsert_many(
+        upserted: Sequence[ModelType] = await cls.upsert_many(
             session,
             [obj],
             constraints=constraints,
@@ -213,7 +217,7 @@ class ActiveRecordMixin:
         await self.on_updated()
         return res
 
-    async def delete(self: ModelType, session: AsyncSession) -> None:
+    async def delete(self: Any, session: AsyncSession) -> None:
         # TODO: Can we get an affected rows or similar to verify delete?
         await session.delete(self)
         await session.commit()

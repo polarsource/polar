@@ -29,7 +29,7 @@ class Platform(enum.Enum):
     GITHUB = "github"
 
 
-class IssueFields(RecordModel):
+class IssueFields:
     class State(str, enum.Enum):
         OPEN = "open"
         CLOSED = "closed"
@@ -90,26 +90,27 @@ class IssueFields(RecordModel):
         sa.Computed("to_tsvector('simple', \"title\")", persisted=True),
     )
 
-    __mutables__ = {
-        "title",
-        "body",
-        "comments",
-        "author",
-        "author_association",
-        "labels",
-        "assignee",
-        "assignees",
-        "milestone",
-        "closed_by",
-        "reactions",
-        "state",
-        "state_reason",
-        "issue_closed_at",
-        "issue_modified_at",
-    }
+
+issue_fields_mutables = {
+    "title",
+    "body",
+    "comments",
+    "author",
+    "author_association",
+    "labels",
+    "assignee",
+    "assignees",
+    "milestone",
+    "closed_by",
+    "reactions",
+    "state",
+    "state_reason",
+    "issue_closed_at",
+    "issue_modified_at",
+}
 
 
-class Issue(IssueFields):
+class Issue(IssueFields, RecordModel):
     __tablename__ = "issues"
     __table_args__ = (
         UniqueConstraint("external_id"),
@@ -125,3 +126,5 @@ class Issue(IssueFields):
 
     on_created_signal = issue_created
     on_updated_signal = issue_updated
+
+    __mutables__ = issue_fields_mutables

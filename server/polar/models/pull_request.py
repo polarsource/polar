@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.pull_request.signals import pull_request_created, pull_request_updated
 from polar.kit.db.models import RecordModel
-from polar.models.issue import IssueFields
+from polar.models.issue import IssueFields, issue_fields_mutables
 from polar.types import JSONDict, JSONList
 
 
@@ -60,7 +60,7 @@ class PullRequest(IssueFields, RecordModel):
     head: Mapped[JSONDict | None] = mapped_column(JSONB, nullable=True, default=dict)
     base: Mapped[JSONDict | None] = mapped_column(JSONB, nullable=True, default=dict)
 
-    __mutables__ = IssueFields.__mutables__ | {
+    __mutables__ = issue_fields_mutables | {
         "commits",
         "additions",
         "deletions",

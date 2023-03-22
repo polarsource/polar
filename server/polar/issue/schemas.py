@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 from datetime import datetime
-from typing import Optional, Self, Type
+from typing import Optional, Self, Type, Union
 
 import structlog
 
@@ -17,10 +17,6 @@ from polar.integrations.github.types import (
     GithubPullRequestFull,
     GithubPullRequestSimple,
 )
-
-# TODO: Move Github schema extensions to Github integration module
-TIssueData = GithubIssue | GithubPullRequestFull | GithubPullRequestSimple
-
 
 log = structlog.get_logger()
 
@@ -77,7 +73,20 @@ class IssueCreate(Base):
     @classmethod
     def get_normalized_github_issue(
         cls: Type[Self],
-        data: TIssueData,
+        data: Union[
+            GithubIssue,
+            GithubPullRequestFull,
+            GithubPullRequestSimple,
+            github.rest.PullRequestSimple,
+            github.rest.PullRequest,
+            github.webhooks.PullRequestOpenedPropPullRequest,
+            github.webhooks.PullRequest,
+            github.webhooks.PullRequestClosedPropPullRequest,
+            github.webhooks.PullRequestReopenedPropPullRequest,
+            github.webhooks.IssuesOpenedPropIssue,
+            github.webhooks.IssuesClosedPropIssue,
+            github.webhooks.Issue,
+        ],
         organization_id: UUID,
         repository_id: UUID,
     ) -> Self:
@@ -116,7 +125,20 @@ class IssueCreate(Base):
     @classmethod
     def from_github(
         cls,
-        data: TIssueData,
+        data: Union[
+            GithubIssue,
+            GithubPullRequestFull,
+            GithubPullRequestSimple,
+            github.rest.PullRequestSimple,
+            github.rest.PullRequest,
+            github.webhooks.PullRequestOpenedPropPullRequest,
+            github.webhooks.PullRequest,
+            github.webhooks.PullRequestClosedPropPullRequest,
+            github.webhooks.PullRequestReopenedPropPullRequest,
+            github.webhooks.IssuesOpenedPropIssue,
+            github.webhooks.IssuesClosedPropIssue,
+            github.webhooks.Issue,
+        ],
         organization_id: UUID,
         repository_id: UUID,
     ) -> Self:

@@ -11,7 +11,7 @@ from polar.models.pull_request import PullRequest
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, sql
 
-from .schemas import MinimalPullRequestCreate, PullRequestUpdate
+from .schemas import FullPullRequestCreate, MinimalPullRequestCreate, PullRequestUpdate
 
 log = structlog.get_logger()
 
@@ -51,4 +51,13 @@ class PullRequestService(
         return pulls
 
 
+class FullPullRequestService(
+    ResourceService[PullRequest, FullPullRequestCreate, PullRequestUpdate]
+):
+    @property
+    def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
+        return [self.model.external_id]
+
+
 pull_request = PullRequestService(PullRequest)
+full_pull_request = FullPullRequestService(PullRequest)

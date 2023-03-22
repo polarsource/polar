@@ -4,6 +4,7 @@ import {
 } from '@heroicons/react/20/solid'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { Command } from 'cmdk'
+import { CONFIG } from 'polarkit/config'
 import { requireAuth, useUserOrganizations } from 'polarkit/hooks'
 import { OrganizationRead, RepositoryRead } from 'polarkit/src/api/client'
 import { useStore } from 'polarkit/store'
@@ -257,7 +258,12 @@ export function RepoSelection() {
                     ))}
                   </React.Fragment>
                 ))}
-                <Item value="Connect a repository">
+                <Item
+                  value="Connect a repository"
+                  onSelect={() => {
+                    window.location.replace(CONFIG.GITHUB_INSTALLATION_URL)
+                  }}
+                >
                   <div className="flex items-center space-x-2 text-purple-800">
                     <Icon>
                       <PlusIcon className="block h-6 w-6" />

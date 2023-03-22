@@ -18,9 +18,9 @@ from polar.models import User
 log = structlog.get_logger()
 
 
-class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
+class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):  # type: ignore
     async def oauth_callback(
-        self: BaseUserManager[User, uuid.UUID],
+        self: BaseUserManager[User, uuid.UUID],  # type: ignore
         oauth_name: str,
         access_token: str,
         account_id: str,
@@ -32,7 +32,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         associate_by_email: bool = False,
         is_verified_by_default: bool = False
     ) -> User:
-        user = await super().oauth_callback(
+        user = await super().oauth_callback(  # type: ignore
             oauth_name,
             access_token,
             account_id,
@@ -44,10 +44,10 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
             is_verified_by_default=is_verified_by_default,
         )
         gh_user = await github_user.update_profile(
-            self.user_db.session, user, access_token
+            self.user_db.session, user, access_token  # type: ignore
         )
 
-        await github_user.sync_github_admin_orgs(self.user_db.session, user)
+        await github_user.sync_github_admin_orgs(self.user_db.session, user)  # type: ignore
 
         return gh_user
 

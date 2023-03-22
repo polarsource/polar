@@ -1,4 +1,4 @@
-from typing import List
+from typing import Callable, List
 import structlog
 from polar.enums import Platforms
 
@@ -84,6 +84,12 @@ class GithubUserService(UserService):
             return
 
         for i in installations:
+            if not i.account:
+                continue
+            if isinstance(i.account, github.rest.Enterprise):
+                log.error("sync_github_admin_orgs.github_enterprise_not_supoprted")
+                continue
+
             org = await organization.get_by_platform(
                 session, Platforms.github, i.account.id
             )
@@ -138,11 +144,16 @@ class GithubUserService(UserService):
         Finds the union between app installations and the users user-to-server token.
         """
 
+        def map_func(
+            r: github.Response[github.rest.UserInstallationsGetResponse200],
+        ):
+            return r.parsed_data.installations
+
         client = await github.get_user_client(session, user)
         res = []
         async for install in client.paginate(
             client.rest.apps.async_list_installations_for_authenticated_user,
-            map_func=lambda r: r.parsed_data.installations,
+            map_func=map_func,
         ):
             res.append(install)
         return res
@@ -162,9 +173,16 @@ class GithubUserService(UserService):
 
         res = []
 
+        def map_func(
+            r: github.Response[
+                github.rest.UserInstallationsInstallationIdRepositoriesGetResponse200
+            ],
+        ):
+            return r.parsed_data.repositories
+
         async for repo in client.paginate(
             client.rest.apps.async_list_installation_repos_for_authenticated_user,
-            map_func=lambda r: r.parsed_data.repositories,
+            map_func=map_func,
             installation_id=installation_id,
         ):
             res.append(repo)

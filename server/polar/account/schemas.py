@@ -31,6 +31,7 @@ class AccountRead(AccountCreate):
     stripe_id: str
     balance: int | None
     is_details_submitted: bool | None
+    is_admin: bool | None
 
     class Config:
         orm_mode = True

@@ -6,12 +6,14 @@ import { useStore } from 'polarkit/store'
 const BalanceBadge = ({ account }: { account: AccountRead }) => {
   const currentOrg = useStore((store) => store.currentOrg)
   const visitDashboard = async () => {
-    const link = await api.accounts.dashboardLink({
-      platform: Platforms.GITHUB,
-      orgName: currentOrg.name,
-      stripeId: account.stripe_id,
-    })
-    window.location.href = link.url
+    if (account.is_details_submitted) {
+      const link = await api.accounts.dashboardLink({
+        platform: Platforms.GITHUB,
+        orgName: currentOrg.name,
+        stripeId: account.stripe_id,
+      })
+      window.location.href = link.url
+    }
   }
 
   const formattedBalance = (Math.round(account.balance * 100) / 100).toFixed(2)

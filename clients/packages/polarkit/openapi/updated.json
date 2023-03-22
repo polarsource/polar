@@ -1907,6 +1907,10 @@
                     "is_details_submitted": {
                         "title": "Is Details Submitted",
                         "type": "boolean"
+                    },
+                    "is_admin": {
+                        "title": "Is Admin",
+                        "type": "boolean"
                     }
                 }
             },

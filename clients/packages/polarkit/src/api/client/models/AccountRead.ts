@@ -9,5 +9,6 @@ export type AccountRead = {
   stripe_id: string;
   balance?: number;
   is_details_submitted?: boolean;
+  is_admin?: boolean;
 };
 

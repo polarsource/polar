@@ -18,7 +18,7 @@ from .session import UserManager, auth_backend
 async def get_user_db(
     session: AsyncSession = Depends(get_db_session),
 ) -> AsyncGenerator[UserDatabase, None]:
-    yield UserDatabase(session, User, OAuthAccount)
+    yield UserDatabase(session, User, OAuthAccount)  # type: ignore
 
 
 async def get_user_manager(
@@ -27,7 +27,7 @@ async def get_user_manager(
     yield UserManager(user_db)
 
 
-fastapi_users = FastAPIUsers[User, uuid.UUID](get_user_manager, [auth_backend])
+fastapi_users = FastAPIUsers[User, uuid.UUID](get_user_manager, [auth_backend])  # type: ignore
 
 current_active_user = fastapi_users.current_user(active=True)
 

@@ -101,24 +101,24 @@ async def get_pledge_with_resources(
         )
 
 
-@router.post("/{platform}/{org_name}/{repo_name}/pledges", response_model=PledgeRead)
+@router.post(
+    "/{platform}/{org_name}/{repo_name}/issues/{number}/pledges",
+    response_model=PledgeRead,
+)
 async def create_pledge(
     platform: Platforms,
     org_name: str,
     repo_name: str,
+    number: int,
     pledge: PledgeCreate,
     session: AsyncSession = Depends(get_db_session),
 ) -> PledgeRead:
-    (
-        organization,
-        repository,
-        issue,
-    ) = await organization_service.get_with_repo_and_issue(
+    org, repo, issue = await organization_service.get_with_repo_and_issue(
         session=session,
         platform=platform,
         org_name=org_name,
         repo_name=repo_name,
-        issue=pledge.issue_id,
+        issue=number,
     )
 
     # Create a payment intent with Stripe
@@ -128,8 +128,8 @@ async def create_pledge(
     created = await Pledge.create(
         session=session,
         issue_id=issue.id,
-        repository_id=repository.id,
-        organization_id=organization.id,
+        repository_id=repo.id,
+        organization_id=org.id,
         email=pledge.email,
         amount=pledge.amount,
         state=State.initiated,
@@ -143,20 +143,27 @@ async def create_pledge(
 
 
 @router.patch(
-    "/{platform}/{org_name}/{repo_name}/pledges/{pledge_id}", response_model=PledgeRead
+    "/{platform}/{org_name}/{repo_name}/issues/{number}/pledges/{pledge_id}",
+    response_model=PledgeRead,
 )
 async def update_pledge(
     platform: Platforms,
     org_name: str,
     repo_name: str,
+    number: int,
     pledge_id: UUID,
     updates: PledgeUpdate,
-    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> PledgeRead:
-    pledge = await get_pledge_or_404(
-        session, pledge_id=pledge_id, for_repository=auth.repository
+    org, repo, issue = await organization_service.get_with_repo_and_issue(
+        session=session,
+        platform=platform,
+        org_name=org_name,
+        repo_name=repo_name,
+        issue=number,
     )
+
+    pledge = await get_pledge_or_404(session, pledge_id=pledge_id, for_repository=repo)
 
     payment_intent = None
 
@@ -179,7 +186,8 @@ async def update_pledge(
 
 
 @router.get(
-    "/{platform}/{org_name}/{repo_name}/pledges", response_model=list[PledgeRead]
+    "/{platform}/{org_name}/{repo_name}/pledges",
+    response_model=list[PledgeRead],
 )
 async def get_repository_pledges(
     platform: Platforms,

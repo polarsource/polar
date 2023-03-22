@@ -1005,6 +1005,172 @@
                 }
             }
         },
+        "/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}/pledges": {
+            "post": {
+                "tags": [
+                    "pledges"
+                ],
+                "summary": "Create Pledge",
+                "operationId": "pledges:create_pledge",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Org Name",
+                            "type": "string"
+                        },
+                        "name": "org_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Repo Name",
+                            "type": "string"
+                        },
+                        "name": "repo_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Number",
+                            "type": "integer"
+                        },
+                        "name": "number",
+                        "in": "path"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PledgeCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PledgeRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}/pledges/{pledge_id}": {
+            "patch": {
+                "tags": [
+                    "pledges"
+                ],
+                "summary": "Update Pledge",
+                "operationId": "pledges:update_pledge",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Org Name",
+                            "type": "string"
+                        },
+                        "name": "org_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Repo Name",
+                            "type": "string"
+                        },
+                        "name": "repo_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Number",
+                            "type": "integer"
+                        },
+                        "name": "number",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Pledge Id",
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "name": "pledge_id",
+                        "in": "path"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PledgeUpdate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PledgeRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/{platform}/{org_name}/{repo_name}/pledges": {
             "get": {
                 "tags": [
@@ -1051,162 +1217,6 @@
                                     "items": {
                                         "$ref": "#/components/schemas/PledgeRead"
                                     }
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
-            },
-            "post": {
-                "tags": [
-                    "pledges"
-                ],
-                "summary": "Create Pledge",
-                "operationId": "pledges:create_pledge",
-                "parameters": [
-                    {
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/Platforms"
-                        },
-                        "name": "platform",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Org Name",
-                            "type": "string"
-                        },
-                        "name": "org_name",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Repo Name",
-                            "type": "string"
-                        },
-                        "name": "repo_name",
-                        "in": "path"
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PledgeCreate"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/PledgeRead"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
-            }
-        },
-        "/api/v1/{platform}/{org_name}/{repo_name}/pledges/{pledge_id}": {
-            "patch": {
-                "tags": [
-                    "pledges"
-                ],
-                "summary": "Update Pledge",
-                "operationId": "pledges:update_pledge",
-                "parameters": [
-                    {
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/Platforms"
-                        },
-                        "name": "platform",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Org Name",
-                            "type": "string"
-                        },
-                        "name": "org_name",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Repo Name",
-                            "type": "string"
-                        },
-                        "name": "repo_name",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Pledge Id",
-                            "type": "string",
-                            "format": "uuid"
-                        },
-                        "name": "pledge_id",
-                        "in": "path"
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PledgeUpdate"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/PledgeRead"
                                 }
                             }
                         }
@@ -2118,7 +2128,7 @@
                     },
                     "amount": {
                         "title": "Amount",
-                        "type": "number"
+                        "type": "integer"
                     }
                 }
             },
@@ -2147,7 +2157,7 @@
                     },
                     "amount": {
                         "title": "Amount",
-                        "type": "number"
+                        "type": "integer"
                     },
                     "id": {
                         "title": "Id",
@@ -2206,7 +2216,7 @@
                     },
                     "amount": {
                         "title": "Amount",
-                        "type": "number"
+                        "type": "integer"
                     }
                 }
             },

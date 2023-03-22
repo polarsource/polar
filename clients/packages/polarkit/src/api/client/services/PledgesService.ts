@@ -54,6 +54,79 @@ export class PledgesService {
   }
 
   /**
+   * Create Pledge
+   * @returns PledgeRead Successful Response
+   * @throws ApiError
+   */
+  public createPledge({
+    platform,
+    orgName,
+    repoName,
+    number,
+    requestBody,
+  }: {
+    platform: Platforms,
+    orgName: string,
+    repoName: string,
+    number: number,
+    requestBody: PledgeCreate,
+  }): CancelablePromise<PledgeRead> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}/pledges',
+      path: {
+        'platform': platform,
+        'org_name': orgName,
+        'repo_name': repoName,
+        'number': number,
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Update Pledge
+   * @returns PledgeRead Successful Response
+   * @throws ApiError
+   */
+  public updatePledge({
+    platform,
+    orgName,
+    repoName,
+    number,
+    pledgeId,
+    requestBody,
+  }: {
+    platform: Platforms,
+    orgName: string,
+    repoName: string,
+    number: number,
+    pledgeId: string,
+    requestBody: PledgeUpdate,
+  }): CancelablePromise<PledgeRead> {
+    return this.httpRequest.request({
+      method: 'PATCH',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}/pledges/{pledge_id}',
+      path: {
+        'platform': platform,
+        'org_name': orgName,
+        'repo_name': repoName,
+        'number': number,
+        'pledge_id': pledgeId,
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
    * Get Repository Pledges
    * @returns PledgeRead Successful Response
    * @throws ApiError
@@ -75,73 +148,6 @@ export class PledgesService {
         'org_name': orgName,
         'repo_name': repoName,
       },
-      errors: {
-        422: `Validation Error`,
-      },
-    });
-  }
-
-  /**
-   * Create Pledge
-   * @returns PledgeRead Successful Response
-   * @throws ApiError
-   */
-  public createPledge({
-    platform,
-    orgName,
-    repoName,
-    requestBody,
-  }: {
-    platform: Platforms,
-    orgName: string,
-    repoName: string,
-    requestBody: PledgeCreate,
-  }): CancelablePromise<PledgeRead> {
-    return this.httpRequest.request({
-      method: 'POST',
-      url: '/api/v1/{platform}/{org_name}/{repo_name}/pledges',
-      path: {
-        'platform': platform,
-        'org_name': orgName,
-        'repo_name': repoName,
-      },
-      body: requestBody,
-      mediaType: 'application/json',
-      errors: {
-        422: `Validation Error`,
-      },
-    });
-  }
-
-  /**
-   * Update Pledge
-   * @returns PledgeRead Successful Response
-   * @throws ApiError
-   */
-  public updatePledge({
-    platform,
-    orgName,
-    repoName,
-    pledgeId,
-    requestBody,
-  }: {
-    platform: Platforms,
-    orgName: string,
-    repoName: string,
-    pledgeId: string,
-    requestBody: PledgeUpdate,
-  }): CancelablePromise<PledgeRead> {
-    return this.httpRequest.request({
-      method: 'PATCH',
-      url: '/api/v1/{platform}/{org_name}/{repo_name}/pledges/{pledge_id}',
-      path: {
-        'platform': platform,
-        'org_name': orgName,
-        'repo_name': repoName,
-        'pledge_id': pledgeId,
-      },
-      body: requestBody,
-      mediaType: 'application/json',
       errors: {
         422: `Validation Error`,
       },

@@ -35,6 +35,7 @@ const PledgeForm = ({
       platform: organization.platform,
       orgName: organization.name,
       repoName: repository.name,
+      number: issue.number,
       requestBody: {
         issue_id: issue.id,
         amount: amount,
@@ -48,6 +49,7 @@ const PledgeForm = ({
       platform: organization.platform,
       orgName: organization.name,
       repoName: repository.name,
+      number: issue.number,
       pledgeId: pledge.id,
       requestBody: {
         amount: amount,

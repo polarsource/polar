@@ -7,7 +7,7 @@ from polar.models import PullRequest, Organization, Repository
 from polar.enums import Platforms
 from polar.postgres import AsyncSession
 from polar.pull_request.schemas import FullPullRequestCreate, MinimalPullRequestCreate
-from polar.pull_request.service import PullRequestService
+from polar.pull_request.service import PullRequestService, full_pull_request
 
 from ..types import GithubPullRequestFull, GithubPullRequestSimple
 
@@ -107,7 +107,7 @@ class GithubPullRequestService(PullRequestService):
             )
             return []
 
-        return await self.upsert_many(
+        return await full_pull_request.upsert_many(
             session,
             create_schemas,
             constraints=[PullRequest.external_id],

@@ -36,7 +36,11 @@ class RepositoryCreate(Schema):
     is_disabled: bool | None
 
     @classmethod
-    def from_github(cls, organization: Organization, repo: github.Repository):
+    def from_github(cls, organization: Organization, repo: github.rest.Repository):
+        topics = None
+        if repo.topics:
+            topics = repo.topics
+
         return cls(
             platform=Platforms.github,
             external_id=repo.id,
@@ -48,7 +52,7 @@ class RepositoryCreate(Schema):
             stars=repo.stargazers_count,
             watchers=repo.watchers_count,
             main_branch=repo.default_branch,
-            topics=repo.topics,
+            topics=topics,
             license=None,  # TODO: Store repo.license?
             repository_pushed_at=repo.pushed_at,
             repository_created_at=repo.created_at,

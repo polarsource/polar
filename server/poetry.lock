@@ -128,7 +128,7 @@ test = ["flake8 (>=5.0.4,<5.1.0)", "uvloop (>=0.15.3)"]
 name = "attrs"
 version = "22.2.0"
 description = "Classes Without Boilerplate"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -997,7 +997,7 @@ files = [
 name = "iniconfig"
 version = "2.0.0"
 description = "brain-dead simple config-ini parsing"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1113,7 +1113,7 @@ files = [
 name = "mypy"
 version = "1.1.1"
 description = "Optional static typing for Python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1159,7 +1159,7 @@ reports = ["lxml"]
 name = "mypy-extensions"
 version = "1.0.0"
 description = "Type system extensions for programs checked with the mypy type checker."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.5"
 files = [
@@ -1183,7 +1183,7 @@ files = [
 name = "packaging"
 version = "23.0"
 description = "Core utilities for Python packages"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1244,7 +1244,7 @@ test = ["appdirs (==1.4.4)", "covdefaults (>=2.2.2)", "pytest (>=7.2.1)", "pytes
 name = "pluggy"
 version = "1.0.0"
 description = "plugin and hook calling mechanisms for python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -1454,7 +1454,7 @@ tests = ["coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)"]
 name = "pytest"
 version = "7.2.2"
 description = "pytest: simple powerful testing with Python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1513,7 +1513,7 @@ dev = ["pre-commit", "pytest-asyncio", "tox"]
 name = "pytest-subtests"
 version = "0.10.0"
 description = "unittest subTest() support and subtests fixture"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1992,7 +1992,7 @@ test = ["black (>=22.3.0,<23.0.0)", "coverage (>=6.2,<7.0)", "isort (>=5.0.6,<6.
 name = "types-pyopenssl"
 version = "23.0.0.4"
 description = "Typing stubs for pyOpenSSL"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 files = [
@@ -2007,7 +2007,7 @@ cryptography = ">=35.0.0"
 name = "types-redis"
 version = "4.5.2.0"
 description = "Typing stubs for redis"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 files = [
@@ -2249,4 +2249,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "01ad540c4cce26cd92396b8dcbc96aa6a3aea6a5cfea2bba9ad34a0aa699277d"
+content-hash = "d224a1b229a776c9c10d3aa3273cb2efd55898107011c9beb35c24d209e3e1ee"

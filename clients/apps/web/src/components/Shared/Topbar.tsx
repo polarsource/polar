@@ -19,11 +19,12 @@ const DashboardNav = () => {
       {accountQuery.isLoading ? (
         <p>Loading...</p>
       ) : accounts.length === 1 ? (
-        accounts[0].is_details_submitted ? (
+        <>
           <BalanceBadge balance={accounts[0].balance} />
-        ) : (
-          <StripeOnboardingButton stripeId={accounts[0].stripe_id} />
-        )
+          {!accounts[0].is_details_submitted && (
+            <StripeOnboardingButton stripeId={accounts[0].stripe_id} />
+          )}
+        </>
       ) : (
         <StripeOnboardingButton />
       )}

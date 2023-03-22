@@ -1,4 +1,4 @@
-from blinker import Namespace  # noqa: F401
+from blinker import Namespace
 
 signal = Namespace().signal
 

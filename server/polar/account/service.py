@@ -24,10 +24,8 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         admin_id: UUID,
         account: AccountCreate,
     ) -> Account | None:
-        if (
-            await self.get_by(session=session, organization_id=organization_id)
-            is not None
-        ):
+        existing = await self.get_by(session=session, organization_id=organization_id)
+        if existing is not None:
             return None
 
         if account.account_type != AccountType.stripe:

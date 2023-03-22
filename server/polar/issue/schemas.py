@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 from datetime import datetime
-from typing import Self, Type
+from typing import Optional, Self, Type
 
 import structlog
 
@@ -81,6 +81,11 @@ class IssueCreate(Base):
         organization_id: UUID,
         repository_id: UUID,
     ) -> Self:
+        if not data.id:
+            raise Exception("no external id set")
+
+        body = data.body if data.body else ""
+
         ret = cls(
             platform=Platforms.github,
             external_id=data.id,
@@ -88,7 +93,7 @@ class IssueCreate(Base):
             repository_id=repository_id,
             number=data.number,
             title=data.title,
-            body=data.body,
+            body=body,
             comments=getattr(data, "comments", None),
             author=github.jsonify(data.user),
             author_association=data.author_association,

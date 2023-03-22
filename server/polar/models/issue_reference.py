@@ -29,6 +29,10 @@ class ExternalGitHubPullRequestReference(Schema):
 class ExternalGitHubCommitReference(Schema):
     organization_name: str
     repository_name: str
+
+    user_login: str
+    user_avatar: str
+
     commit_id: str
 
 

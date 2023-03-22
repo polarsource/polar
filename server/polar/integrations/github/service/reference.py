@@ -14,6 +14,7 @@ from polar.kit import utils
 from polar.models import Organization, Repository
 from polar.models.issue import Issue
 from polar.models.issue_reference import (
+    ExternalGitHubCommitReference,
     ExternalGitHubPullRequestReference,
     IssueReference,
     ReferenceType,
@@ -127,6 +128,13 @@ class GitHubIssueReferencesService:
                     session, org, repo, event, issue
                 )
 
+            # For some reason, this events maps to the StateChangeIssueEvent type
+            if event.event == "referenced" and isinstance(event, github.rest.StateChangeIssueEvent):
+                await self.parse_issue_commit_reference(
+                    session, event, issue
+                )
+
+
         return
 
     async def parse_issue_pull_request_reference(
@@ -192,6 +200,41 @@ class GitHubIssueReferencesService:
             ),
         )
 
+    async def parse_issue_commit_reference(
+        self,
+        session: AsyncSession,
+        event: github.rest.StateChangeIssueEvent,
+        issue: Issue,
+    ) -> None:
+        if not event.commit_url or not event.commit_id:
+            return
+
+        # Parse org name and repo from url
+        # Example: "https://api.github.com/repos/zegl/polarforkotest/commits/471f58636e9b66228141d5e2c76be24f20f1553f"
+
+        parts = event.commit_url.split("/")
+        if len(parts) < 6:
+            return
+
+        obj = ExternalGitHubCommitReference(
+            organization_name=parts[4],
+            repository_name=parts[5],
+            user_login=event.actor.login,
+            user_avatar=event.actor.avatar_url,
+            commit_id=event.commit_id,
+        )
+
+        ref = IssueReference(
+            issue_id=issue.id,
+            external_id=event.commit_id,
+            reference_type=ReferenceType.EXTERNAL_GITHUB_COMMIT,
+            external_source=jsonable_encoder(obj),
+        )
+
+        await self.create_reference(session, ref=ref)
+        return
+
+
     async def create_external_reference(
         self,
         session: AsyncSession,
@@ -249,7 +292,6 @@ class GitHubIssueReferencesService:
             )
             return
         except IntegrityError as e:
-            log.error("integrity",e=e)
             log.info(
                 "issue.create_reference.already_exists",
                 ref=ref,

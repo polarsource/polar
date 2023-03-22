@@ -11,5 +11,7 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"mypy.runUsingActiveInterpreter": true
+	}
 }

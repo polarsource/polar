@@ -117,13 +117,13 @@ async def get_dashboard(
         issue_relationships[i.id] = []
 
     # add pledges to included
-    for r in pledges:
+    for pled in pledges:
         included.append(
-            Entry(id=r.id, type="pledge", attributes=PledgeRead.from_orm(r))
+            Entry(id=pled.id, type="pledge", attributes=PledgeRead.from_orm(pled))
         )
         # inject relationships
-        rel = Relationship(data=RelationshipData(type="pledge", id=r.id))
-        issue_relationships[r.issue_id].append(rel)
+        rel = Relationship(data=RelationshipData(type="pledge", id=pled.id))
+        issue_relationships[pled.issue_id].append(rel)
 
     # Add repository and organization relationships to issues
     for i in issues:

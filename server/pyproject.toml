@@ -23,13 +23,10 @@ blinker = {git = "https://github.com/pallets-eco/blinker.git"}
 arq = "^0.25.0"
 stripe = "^5.2.0"
 sqlalchemy-searchable = "^1.4.1"
-pytest-subtests = "^0.10.0"
-types-redis = "^4.5.2.0"
-mypy = "^1.1.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.12.0"
-mypy = "^1.0.1"
+mypy = "^1.1.1"
 pytest = "^7.2.1"
 httpx = "^0.23.3"
 pytest-sugar = "^0.9.6"
@@ -42,6 +39,8 @@ sqlalchemy-utils = "^0.40.0"
 ruff = "^0.0.253"
 pytest-asyncio = "^0.20.3"
 taskipy = "^1.10.3"
+types-redis = "^4.5.2.0"
+pytest-subtests = "^0.10.0"
 
 [tool.taskipy.tasks]
 api = { cmd = "task verify_github_app && uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }

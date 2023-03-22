@@ -5,6 +5,7 @@ import type { GithubBadgeRead } from '../models/GithubBadgeRead';
 import type { InstallationCreate } from '../models/InstallationCreate';
 import type { OAuth2AuthorizeResponse } from '../models/OAuth2AuthorizeResponse';
 import type { OrganizationRead } from '../models/OrganizationRead';
+import type { Platforms } from '../models/Platforms';
 import type { polar__integrations__github__endpoints__WebhookResponse } from '../models/polar__integrations__github__endpoints__WebhookResponse';
 import type { polar__integrations__stripe__endpoints__WebhookResponse } from '../models/polar__integrations__stripe__endpoints__WebhookResponse';
 
@@ -131,6 +132,43 @@ export class IntegrationsService {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/integrations/github/webhook',
+    });
+  }
+
+  /**
+   * Stripe Connect Return
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public stripeConnectReturn({
+    platform,
+    orgName,
+  }: {
+    platform: Platforms,
+    orgName: string,
+  }): CancelablePromise<any> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/integrations/stripe/return',
+      query: {
+        'platform': platform,
+        'org_name': orgName,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Stripe Connect Refresh
+   * @returns polar__integrations__stripe__endpoints__WebhookResponse Successful Response
+   * @throws ApiError
+   */
+  public stripeConnectRefresh(): CancelablePromise<polar__integrations__stripe__endpoints__WebhookResponse> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/integrations/stripe/refresh',
     });
   }
 

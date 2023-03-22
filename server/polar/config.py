@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     # JSON list of accepted CORS origins
     CORS_ORIGINS: list[AnyHttpUrl] = []
 
+    # Base URL for the backend. Used by generate_external_url to
+    # generate URLs to the backend accessible from the outside.
+    BASE_URL: str = "http://127.0.0.1:8000/api/v1"
+
     # URL to frontend app.
     # Update to ngrok domain or similar in case you want
     # working Github badges in development.
@@ -113,6 +117,12 @@ class Settings(BaseSettings):
 
     def is_production(self) -> bool:
         return self.is_environment(Environment.production)
+
+    def generate_external_url(self, path: str) -> str:
+        return f"{self.BASE_URL}{path}"
+
+    def generate_frontend_url(self, path: str) -> str:
+        return f"{self.FRONTEND_BASE_URL}{path}"
 
 
 env = Environment(os.getenv("POLAR_ENV", Environment.development))

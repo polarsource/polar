@@ -45,6 +45,14 @@ export const useUserOrganizations = (userId: string) => {
   return query
 }
 
+export const useOrganizationAccounts = (repoOwner: string) =>
+  useQuery(['organization', repoOwner, 'account'], () =>
+    api.accounts.getAccount({
+      platform: Platforms.GITHUB,
+      orgName: repoOwner,
+    }),
+  )
+
 export const useRepositoryIssues = (repoOwner: string, repoName: string) =>
   useQuery(
     ['issues', 'repo', repoOwner, repoName],

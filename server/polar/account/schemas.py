@@ -1,11 +1,10 @@
 from enum import Enum
-from uuid import UUID
 from typing import Any
 
-from pydantic import Field, SecretStr
+from pydantic import Field
 
 from polar.kit.schemas import Schema
-from polar.models.account import Account
+from polar.enums import AccountType
 
 
 class AccountLinkTypes(str, Enum):
@@ -13,25 +12,14 @@ class AccountLinkTypes(str, Enum):
     account_update = "account_update"
 
 
-class Base(Schema):
-    organization_id: UUID
-    email: SecretStr | None
-    country: str | None
-    currency: str | None
-    is_details_submitted: bool
-    is_charges_enabled: bool
-    is_payouts_enabled: bool
-    status: Account.Status = Account.Status.CREATED
+class AccountCreate(Schema):
+    account_type: AccountType | None
 
 
-class AccountCreate(Base):
-    stripe_id: str
-    is_personal: bool
-    type: str
-    data: dict[str, Any]
-
-
-class AccountUpdate(Base):
+class AccountUpdate(Schema):
+    email: str | None
+    country: str
+    currency: str
     is_details_submitted: bool
     is_charges_enabled: bool
     is_payouts_enabled: bool
@@ -39,6 +27,11 @@ class AccountUpdate(Base):
 
 
 class AccountRead(AccountCreate):
+    account_type: AccountType | None
+    stripe_id: str
+    balance: int | None
+    is_details_submitted: bool | None
+
     class Config:
         orm_mode = True
 

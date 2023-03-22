@@ -88,13 +88,13 @@ class Organization(RecordModel):
     )
 
     __mutables__ = {
-        name,
-        avatar_url,
-        is_personal,
-        is_site_admin,
-        installation_id,
-        installation_created_at,
-        installation_updated_at,
-        installation_suspended_at,
-        status,
+        "name",
+        "avatar_url",
+        "is_personal",
+        "is_site_admin",
+        "installation_id",
+        "installation_created_at",
+        "installation_updated_at",
+        "installation_suspended_at",
+        "status",
     }

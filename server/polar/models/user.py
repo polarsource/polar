@@ -57,7 +57,7 @@ class User(RecordModel):
         "organization_associations", "organization"
     )
 
-    __mutables__ = {email, profile}
+    __mutables__ = {"email", "profile"}
 
     def get_primary_oauth_account(self) -> OAuthAccount:
         return self.oauth_accounts[0]

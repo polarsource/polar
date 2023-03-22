@@ -55,10 +55,10 @@ class Account(RecordModel):
     )
 
     __mutables__ = {
-        is_details_submitted,
-        is_charges_enabled,
-        is_payouts_enabled,
-        type,
-        data,
-        status,
+        "is_details_submitted",
+        "is_charges_enabled",
+        "is_payouts_enabled",
+        "type",
+        "data",
+        "status",
     }

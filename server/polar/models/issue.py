@@ -29,7 +29,7 @@ class Platform(enum.Enum):
     GITHUB = "github"
 
 
-class IssueFields:
+class IssueFields(RecordModel):
     class State(str, enum.Enum):
         OPEN = "open"
         CLOSED = "closed"
@@ -90,8 +90,6 @@ class IssueFields:
         sa.Computed("to_tsvector('simple', \"title\")", persisted=True),
     )
 
-    # __table_args__ = ()
-
     __mutables__ = {
         "title",
         "body",
@@ -111,7 +109,7 @@ class IssueFields:
     }
 
 
-class Issue(IssueFields, RecordModel):
+class Issue(IssueFields):
     __tablename__ = "issues"
     __table_args__ = (
         UniqueConstraint("external_id"),

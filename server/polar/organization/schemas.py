@@ -43,11 +43,12 @@ class OrganizationCreate(Base):
             external_id = account.id
             is_site_admin = account.site_admin
         else:
-            # TODO: Better support for GitHub Enterprise
-            is_personal = False
-            name = None
-            avatar_url = None
-            is_site_admin = False
+            raise Exception("Polar does not support GitHub Enterprise")
+
+        if not name:
+            raise Exception("repository.name is not set")
+        if not avatar_url:
+            raise Exception("repository.avatar_url is not set")
 
         return cls(
             platform=Platforms.github,

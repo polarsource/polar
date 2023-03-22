@@ -20,7 +20,7 @@ const DashboardNav = () => {
         <p>Loading...</p>
       ) : accounts.length === 1 ? (
         <>
-          <BalanceBadge balance={accounts[0].balance} />
+          <BalanceBadge account={accounts[0]} />
           {!accounts[0].is_details_submitted && (
             <StripeOnboardingButton stripeId={accounts[0].stripe_id} />
           )}

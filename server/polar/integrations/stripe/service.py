@@ -37,7 +37,7 @@ class StripeService(object):
                 return b["amount"]
         return 0
 
-    def create_link(
+    def create_account_link(
         self, stripe_id: str, appendix: str | None = None
     ) -> stripe_lib.AccountLink:
         refresh_url = settings.generate_external_url("/integrations/stripe/refresh") + (
@@ -52,6 +52,9 @@ class StripeService(object):
             return_url=return_url,
             type="account_onboarding",
         )
+
+    def create_login_link(self, stripe_id: str) -> stripe_lib.AccountLink:
+        return stripe_lib.Account.create_login_link(stripe_id)
 
 
 stripe = StripeService()

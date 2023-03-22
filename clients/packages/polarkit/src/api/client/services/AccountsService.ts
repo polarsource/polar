@@ -68,11 +68,11 @@ export class AccountsService {
   }
 
   /**
-   * Create Link
+   * Onboarding Link
    * @returns AccountLink Successful Response
    * @throws ApiError
    */
-  public createLink({
+  public onboardingLink({
     platform,
     orgName,
     stripeId,
@@ -82,8 +82,36 @@ export class AccountsService {
     stripeId: string,
   }): CancelablePromise<AccountLink> {
     return this.httpRequest.request({
-      method: 'POST',
-      url: '/api/v1/{platform}/{org_name}/accounts/{stripe_id}/links',
+      method: 'GET',
+      url: '/api/v1/{platform}/{org_name}/accounts/{stripe_id}/onboarding_link',
+      path: {
+        'platform': platform,
+        'org_name': orgName,
+        'stripe_id': stripeId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Dashboard Link
+   * @returns AccountLink Successful Response
+   * @throws ApiError
+   */
+  public dashboardLink({
+    platform,
+    orgName,
+    stripeId,
+  }: {
+    platform: Platforms,
+    orgName: string,
+    stripeId: string,
+  }): CancelablePromise<AccountLink> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/{platform}/{org_name}/accounts/{stripe_id}/dashboard_link',
       path: {
         'platform': platform,
         'org_name': orgName,

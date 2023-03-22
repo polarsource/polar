@@ -27,25 +27,47 @@ async def create_account(
     return AccountRead.from_orm(created)
 
 
-@router.post(
-    "/{platform}/{org_name}/accounts/{stripe_id}/links", response_model=AccountLink
+@router.get(
+    "/{platform}/{org_name}/accounts/{stripe_id}/onboarding_link",
+    response_model=AccountLink,
 )
-async def create_link(
+async def onboarding_link(
     platform: Platforms,
     org_name: str,
     stripe_id: str,
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> AccountLink:
-    created = await account_service.create_link(
+    link = await account_service.onboarding_link(
         session,
         auth.organization.id,
         stripe_id,
         f"?platform={platform.value}&org_name={auth.organization.name}",
     )
-    if not created:
+    if not link:
         raise HTTPException(status_code=400, detail="Error while creating link")
-    return created
+    return link
+
+
+@router.get(
+    "/{platform}/{org_name}/accounts/{stripe_id}/dashboard_link",
+    response_model=AccountLink,
+)
+async def dashboard_link(
+    platform: Platforms,
+    org_name: str,
+    stripe_id: str,
+    auth: Auth = Depends(Auth.user_with_org_access),
+    session: AsyncSession = Depends(get_db_session),
+) -> AccountLink:
+    link = await account_service.dashboard_link(
+        session,
+        auth.organization.id,
+        stripe_id,
+    )
+    if not link:
+        raise HTTPException(status_code=400, detail="Error while creating link")
+    return link
 
 
 @router.get("/{platform}/{org_name}/accounts", response_model=list[AccountRead | None])

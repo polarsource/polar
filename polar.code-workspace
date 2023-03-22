@@ -10,8 +10,5 @@
 			"name": "root",
 			"path": "."
 		}
-	],
-	"settings": {
-		"mypy.runUsingActiveInterpreter": true
-	}
+	]
 }

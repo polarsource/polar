@@ -85,7 +85,7 @@ def task(
         f: Callable[Params, Awaitable[ReturnValue]]
     ) -> Callable[Params, Awaitable[ReturnValue]]:
         new_task = func(
-            f,
+            f,  # type: ignore
             name=name,
             keep_result=keep_result,
             timeout=timeout,

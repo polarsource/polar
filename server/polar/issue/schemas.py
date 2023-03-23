@@ -1,4 +1,5 @@
 from __future__ import annotations
+from enum import Enum
 
 from uuid import UUID
 from datetime import datetime
@@ -10,6 +11,12 @@ from polar.integrations.github import client as github
 from polar.kit.schemas import Schema
 from polar.models.issue import Issue
 from polar.enums import Platforms
+from polar.models.issue_reference import (
+    IssueReference,
+    ReferenceType,
+    ExternalGitHubPullRequestReference as ExternalGitHubPullRequestReferenceModel,
+    ExternalGitHubCommitReference as ExternalGitHubCommitReferenceModel,
+)
 from polar.types import JSONAny
 
 from polar.integrations.github.types import (
@@ -166,3 +173,113 @@ class GetIssuePath(Schema):
     organization: str
     repo: str
     number: int
+
+
+class IssueReferenceType(str, Enum):
+    pull_request = "pull_request"
+    external_github_pull_request = "external_github_pull_request"
+    external_github_commit = "external_github_commit"
+
+
+class PullRequestReference(Schema):
+    id: UUID
+    title: str
+    author_login: str
+    author_avatar: str
+    number: int
+    organization_name: str
+    repository_name: str
+    additions: int
+    deletions: int
+    state: str  # open | closed
+    created_at: datetime
+    merged_at: datetime | None
+    closed_at: datetime | None
+
+
+class ExternalGitHubPullRequestReference(Schema):
+    title: str
+    author_login: str
+    author_avatar: str
+    number: int
+    organization_name: str
+    repository_name: str
+    state: str  # open | closed
+
+
+class ExternalGitHubCommitReference(Schema):
+    author_login: str
+    author_avatar: str
+    sha: str
+    organization_name: str
+    repository_name: str
+
+
+class IssueReferenceRead(Schema):
+    id: str
+    type: IssueReferenceType
+    payload: Union[
+        PullRequestReference,
+        ExternalGitHubPullRequestReference,
+        ExternalGitHubCommitReference,
+    ]
+
+    @classmethod
+    def from_model(cls, m: IssueReference) -> IssueReferenceRead:
+        match m.reference_type:
+            case ReferenceType.PULL_REQUEST:
+                pr = m.pull_request
+                if pr:
+                    return IssueReferenceRead(
+                        id=m.external_id,
+                        type=IssueReferenceType.pull_request,
+                        payload=PullRequestReference(
+                            id=pr.id,
+                            title=pr.title,
+                            author_login="xx",
+                            author_avatar="xx",
+                            number=pr.number,
+                            organization_name="org",
+                            repository_name="repo",
+                            additions=pr.additions or 0,
+                            deletions=pr.deletions or 0,
+                            state=pr.state,
+                            created_at=pr.issue_created_at,
+                            merged_at=pr.merged_at,
+                            closed_at=pr.issue_closed_at,
+                        ),
+                    )
+
+            case ReferenceType.EXTERNAL_GITHUB_PULL_REQUEST:
+                pr = m.external_source
+                if isinstance(pr, ExternalGitHubPullRequestReferenceModel):
+                    return IssueReferenceRead(
+                        id=m.external_id,
+                        type=IssueReferenceType.external_github_pull_request,
+                        payload=ExternalGitHubPullRequestReference(
+                            title=pr.title,
+                            author_login=pr.user_login,
+                            author_avatar=pr.user_avatar,
+                            number=pr.number,
+                            organization_name=pr.organization_name,
+                            repository_name=pr.repository_name,
+                            state=pr.state,
+                        ),
+                    )
+
+            case ReferenceType.EXTERNAL_GITHUB_COMMIT:
+                r = m.external_source
+                if isinstance(r, ExternalGitHubCommitReferenceModel):
+                    return IssueReferenceRead(
+                        id=m.external_id,
+                        type=IssueReferenceType.external_github_pull_request,
+                        payload=ExternalGitHubCommitReference(
+                            author_login=r.user_login,
+                            author_avatar=r.user_avatar,
+                            organization_name=r.organization_name,
+                            repository_name=r.repository_name,
+                            sha=r.commit_id,
+                        ),
+                    )
+
+        raise Exception("unable to convert IssueReference to IssueReferenceRead")

@@ -10,6 +10,8 @@ from sqlalchemy.orm import InstrumentedAttribute
 from polar.kit.services import ResourceService
 from polar.models.issue import Issue
 from polar.enums import Platforms
+from polar.models.issue_reference import IssueReference
+from polar.models.pull_request import PullRequest
 from polar.postgres import AsyncSession, sql
 
 from .schemas import IssueCreate, IssueUpdate
@@ -117,6 +119,22 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         res = await session.execute(statement)
         issues = res.scalars().unique().all()
         return issues
+
+    async def list_issue_references(
+        self,
+        session: AsyncSession,
+        issue: Issue,
+    ) -> Sequence[IssueReference]:
+        stmt = (
+            sql.select(IssueReference)
+            .join(PullRequest, IssueReference.pull_request_id == PullRequest.id)
+            .where(
+                IssueReference.issue_id == issue.id,
+            )
+        )
+        res = await session.execute(stmt)
+        refs = res.scalars().unique().all()
+        return refs
 
 
 issue = IssueService(Issue)

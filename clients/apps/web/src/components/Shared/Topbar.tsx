@@ -9,7 +9,7 @@ import Profile from './Profile'
 
 const DashboardNav = () => {
   const currentOrg = useStore((state) => state.currentOrg)
-  const accountQuery = useOrganizationAccounts(currentOrg.name)
+  const accountQuery = useOrganizationAccounts(currentOrg?.name)
 
   const accounts = accountQuery.data
 

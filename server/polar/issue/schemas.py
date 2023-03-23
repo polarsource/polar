@@ -188,8 +188,6 @@ class PullRequestReference(Schema):
     author_login: str
     author_avatar: str
     number: int
-    organization_name: str
-    repository_name: str
     additions: int
     deletions: int
     state: str  # open | closed
@@ -231,17 +229,28 @@ class IssueReferenceRead(Schema):
             case ReferenceType.PULL_REQUEST:
                 pr = m.pull_request
                 if pr:
+
+                    avatar = pr.author.get("avatar_url", None) if pr.author else None
+                    if not avatar:
+                        raise Exception(
+                            "unable to convert IssueReference to IssueReferenceRead"
+                        )
+
+                    login = pr.author.get("login", None) if pr.author else None
+                    if not login:
+                        raise Exception(
+                            "unable to convert IssueReference to IssueReferenceRead"
+                        )
+
                     return IssueReferenceRead(
                         id=m.external_id,
                         type=IssueReferenceType.pull_request,
                         payload=PullRequestReference(
                             id=pr.id,
                             title=pr.title,
-                            author_login="xx",
-                            author_avatar="xx",
+                            author_login=login,
+                            author_avatar=avatar,
                             number=pr.number,
-                            organization_name="org",
-                            repository_name="repo",
                             additions=pr.additions or 0,
                             deletions=pr.deletions or 0,
                             state=pr.state,

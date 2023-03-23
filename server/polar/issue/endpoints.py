@@ -91,4 +91,4 @@ async def get_issue_references(
         )
 
     refs = await issue_service.list_issue_references(session, issue)
-    return [IssueReferenceRead.from_db(r) for r in refs]
+    return [IssueReferenceRead.from_model(r) for r in refs]

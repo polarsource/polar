@@ -4,6 +4,7 @@ from enum import Enum
 from uuid import UUID
 from datetime import datetime
 from typing import Optional, Self, Type, Union
+from pydantic import parse_obj_as
 
 import structlog
 
@@ -251,28 +252,32 @@ class IssueReferenceRead(Schema):
                     )
 
             case ReferenceType.EXTERNAL_GITHUB_PULL_REQUEST:
-                pr = m.external_source
-                if isinstance(pr, ExternalGitHubPullRequestReferenceModel):
+                if m.external_source:
+                    prx = parse_obj_as(
+                        ExternalGitHubPullRequestReferenceModel, m.external_source
+                    )
                     return IssueReferenceRead(
                         id=m.external_id,
                         type=IssueReferenceType.external_github_pull_request,
                         payload=ExternalGitHubPullRequestReference(
-                            title=pr.title,
-                            author_login=pr.user_login,
-                            author_avatar=pr.user_avatar,
-                            number=pr.number,
-                            organization_name=pr.organization_name,
-                            repository_name=pr.repository_name,
-                            state=pr.state,
+                            title=prx.title,
+                            author_login=prx.user_login,
+                            author_avatar=prx.user_avatar,
+                            number=prx.number,
+                            organization_name=prx.organization_name,
+                            repository_name=prx.repository_name,
+                            state=prx.state,
                         ),
                     )
 
             case ReferenceType.EXTERNAL_GITHUB_COMMIT:
-                r = m.external_source
-                if isinstance(r, ExternalGitHubCommitReferenceModel):
+                if m.external_source:
+                    r = parse_obj_as(
+                        ExternalGitHubCommitReferenceModel, m.external_source
+                    )
                     return IssueReferenceRead(
                         id=m.external_id,
-                        type=IssueReferenceType.external_github_pull_request,
+                        type=IssueReferenceType.external_github_commit,
                         payload=ExternalGitHubCommitReference(
                             author_login=r.user_login,
                             author_avatar=r.user_avatar,

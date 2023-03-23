@@ -1,7 +1,8 @@
 from __future__ import annotations
 import asyncio
-from typing import Set
+from typing import Any, List, Set, Union
 from uuid import UUID
+from githubkit import Response
 
 import structlog
 from polar.exceptions import IntegrityError
@@ -25,6 +26,32 @@ from fastapi.encoders import jsonable_encoder
 
 
 log = structlog.get_logger()
+
+
+TimelineEventType = Union[
+    github.rest.LabeledIssueEvent,
+    github.rest.UnlabeledIssueEvent,
+    github.rest.MilestonedIssueEvent,
+    github.rest.DemilestonedIssueEvent,
+    github.rest.RenamedIssueEvent,
+    github.rest.ReviewRequestedIssueEvent,
+    github.rest.ReviewRequestRemovedIssueEvent,
+    github.rest.ReviewDismissedIssueEvent,
+    github.rest.LockedIssueEvent,
+    github.rest.AddedToProjectIssueEvent,
+    github.rest.MovedColumnInProjectIssueEvent,
+    github.rest.RemovedFromProjectIssueEvent,
+    github.rest.ConvertedNoteToIssueIssueEvent,
+    github.rest.TimelineCommentEvent,
+    github.rest.TimelineCrossReferencedEvent,
+    github.rest.TimelineCommittedEvent,
+    github.rest.TimelineReviewedEvent,
+    github.rest.TimelineLineCommentedEvent,
+    github.rest.TimelineCommitCommentedEvent,
+    github.rest.TimelineAssignedIssueEvent,
+    github.rest.TimelineUnassignedIssueEvent,
+    github.rest.StateChangeIssueEvent,
+]
 
 
 class GitHubIssueReferencesService:
@@ -74,28 +101,30 @@ class GitHubIssueReferencesService:
 
         events = res.parsed_data
 
-        synced_issues: Set[UUID] = set()
+        for external_issue_id in self.external_issue_ids_to_sync(events):
+            issue = await github_issue.get_by_external_id(session, external_issue_id)
+            if not issue:
+                log.warn(
+                    "github.sync_repo_references.issue-not-found",
+                    repo_id=repo.id,
+                    external_issue_id=external_issue_id,
+                )
+                continue
+            # Trigger issue references sync job
+            await enqueue_job("github.issue.sync.issue_references", issue.id)
+
+        return None
+
+    def external_issue_ids_to_sync(
+        self, events: List[github.rest.IssueEvent]
+    ) -> Set[int]:
+        res: Set[int] = set()
 
         for event in events:
             if event.event == "referenced" and event.issue:
-                issue = await github_issue.get_by_external_id(session, event.issue.id)
-                if not issue:
-                    log.warn(
-                        "github.sync_repo_references.issue-not-found",
-                        repo_id=repo.id,
-                        external_issue_id=event.issue.id,
-                    )
-                    continue
+                res.add(event.issue.id)
 
-                # sync has already been triggered for this issue
-                if issue.id in synced_issues:
-                    continue
-                synced_issues.add(issue.id)
-
-                # Trigger issue references sync job
-                await enqueue_job("github.issue.sync.issue_references", issue.id)
-
-        return None
+        return res
 
     async def sync_issue_references(
         self,
@@ -123,19 +152,35 @@ class GitHubIssueReferencesService:
             repo=repo.name,
             issue_number=issue.number,
         ):
-            if isinstance(event, github.rest.TimelineCrossReferencedEvent):
-                await self.parse_issue_pull_request_reference(
-                    session, org, repo, event, issue
-                )
-
-            # For some reason, this events maps to the StateChangeIssueEvent type
-            if event.event == "referenced" and isinstance(event, github.rest.StateChangeIssueEvent):
-                await self.parse_issue_commit_reference(
-                    session, event, issue
-                )
-
+            ref = await self.parse_issue_timeline_event(
+                session, org, repo, issue, event
+            )
+            if ref:
+                # persist
+                await self.create_reference(session, ref)
 
         return
+
+    async def parse_issue_timeline_event(
+        self,
+        session: AsyncSession,
+        org: Organization,
+        repo: Repository,
+        issue: Issue,
+        event: TimelineEventType,
+    ) -> IssueReference | None:
+        if isinstance(event, github.rest.TimelineCrossReferencedEvent):
+            return await self.parse_issue_pull_request_reference(
+                session, org, repo, event, issue
+            )
+
+        # For some reason, this events maps to the StateChangeIssueEvent type
+        if event.event == "referenced" and isinstance(
+            event, github.rest.StateChangeIssueEvent
+        ):
+            return await self.parse_issue_commit_reference(event, issue)
+
+        return None
 
     async def parse_issue_pull_request_reference(
         self,
@@ -144,23 +189,23 @@ class GitHubIssueReferencesService:
         repo: Repository,
         event: github.rest.TimelineCrossReferencedEvent,
         issue: Issue,
-    ) -> None:
+    ) -> IssueReference | None:
         if not event.source.issue:
-            return
+            return None
 
         # Mention was not from a pull request
         if not isinstance(
             event.source.issue.pull_request,
             github.rest.IssuePropPullRequest,
         ):
-            return
+            return None
 
         if not event.source.issue.repository:
-            return
+            return None
 
         # If mentioned in a outsider repository, create an external reference
         if event.source.issue.repository.id != repo.external_id:
-            return await self.create_external_reference(session, event, issue)
+            return self.parse_external_reference(event, issue)
 
         # If mentioning Pull Request Exists on Polar
         referenced_by_pr = await github_pull_request.get_by(
@@ -187,34 +232,30 @@ class GitHubIssueReferencesService:
                 "github.parse_issue_pull_request_reference.pr-not-found",
                 external_pr_id=issue.id,
             )
-            return
+            return None
 
-        # Track mention
-        await self.create_reference(
-            session,
-            ref=IssueReference(
-                issue_id=issue.id,
-                pull_request_id=referenced_by_pr.id,
-                external_id=str(referenced_by_pr.id),
-                reference_type=ReferenceType.PULL_REQUEST,
-            ),
+        # Polar-internal pull request reference
+        return IssueReference(
+            issue_id=issue.id,
+            pull_request_id=referenced_by_pr.id,
+            external_id=str(referenced_by_pr.id),
+            reference_type=ReferenceType.PULL_REQUEST,
         )
 
     async def parse_issue_commit_reference(
         self,
-        session: AsyncSession,
         event: github.rest.StateChangeIssueEvent,
         issue: Issue,
-    ) -> None:
+    ) -> IssueReference | None:
         if not event.commit_url or not event.commit_id:
-            return
+            return None
 
         # Parse org name and repo from url
         # Example: "https://api.github.com/repos/zegl/polarforkotest/commits/471f58636e9b66228141d5e2c76be24f20f1553f"
 
         parts = event.commit_url.split("/")
         if len(parts) < 6:
-            return
+            return None
 
         obj = ExternalGitHubCommitReference(
             organization_name=parts[4],
@@ -231,30 +272,27 @@ class GitHubIssueReferencesService:
             external_source=jsonable_encoder(obj),
         )
 
-        await self.create_reference(session, ref=ref)
-        return
+        return ref
 
-
-    async def create_external_reference(
+    def parse_external_reference(
         self,
-        session: AsyncSession,
         event: github.rest.TimelineCrossReferencedEvent,
         issue: Issue,
-    ) -> None:
+    ) -> IssueReference | None:
         if not event.source.issue:
-            return
+            return None
         i = event.source.issue
         if not i.repository:
-            return
+            return None
         if not i.repository.owner.login:
-            return
+            return None
 
         # Mention was not from a pull request
         if not isinstance(
             i.pull_request,
             github.rest.IssuePropPullRequest,
         ):
-            return
+            return None
 
         obj = ExternalGitHubPullRequestReference(
             organization_name=i.repository.owner.login,
@@ -267,7 +305,6 @@ class GitHubIssueReferencesService:
             is_draft=True if i.draft else False,
             is_merged=True if i.pull_request.merged_at else False,
         )
-        
 
         ref = IssueReference(
             issue_id=issue.id,
@@ -276,7 +313,7 @@ class GitHubIssueReferencesService:
             external_source=jsonable_encoder(obj),
         )
 
-        await self.create_reference(session, ref=ref)
+        return ref
 
     async def create_reference(
         self, session: AsyncSession, ref: IssueReference

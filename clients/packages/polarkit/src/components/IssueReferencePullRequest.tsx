@@ -4,6 +4,8 @@ import {
   PullRequestReference,
   RepositoryRead,
 } from '../api/client'
+import GitMergeIcon from './icons/GitMergeIcon'
+import GitPullRequestIcon from './icons/GitPullRequestIcon'
 
 const IssueReference = (props: {
   pr: PullRequestReference
@@ -16,6 +18,8 @@ const IssueReference = (props: {
 
   let backgroundColor = 'bg-gray-800'
   let borderColor = 'border-gray-800'
+
+  const isMerged = pr.state === 'closed' && pr.merged_at
 
   if (pr.state == 'open') {
     backgroundColor = 'bg-green-50'
@@ -37,6 +41,8 @@ const IssueReference = (props: {
             className="h-8 w-8 rounded-full border-2 border-white bg-gray-200"
             src={pr.author_avatar}
           />
+          {isMerged && <GitMergeIcon />}
+          {!isMerged && <GitPullRequestIcon />}
           <a href={href}>
             <strong>{pr.title}</strong>
           </a>

@@ -49,7 +49,7 @@ test = { cmd = "POLAR_ENV=testing coverage run --source polar -m pytest && cover
 lint = { cmd = "task lint_ruff & task lint_black", help = "run all linters" }
 lint_ruff = { cmd = "ruff check .", help = "run ruff linter" }
 lint_black = { cmd = "black .", help = "run black linter" }
-lint_types = { cmd = "mypy polar scripts", help = "run mypy type verify" }
+lint_types = { cmd = "mypy polar scripts tests", help = "run mypy type verify" }
 db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade" }
 db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }
 clean = { cmd = "find * -name '*.pyc' -delete && find * -name '__pycache__' -delete", help = "clean up .pyc and __pycache__" }

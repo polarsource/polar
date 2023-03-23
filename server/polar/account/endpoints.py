@@ -38,9 +38,10 @@ async def onboarding_link(
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> AccountLink:
-    link = await account_service.onboarding_link(
+    link = await account_service.onboarding_link_for_user(
         session,
         auth.organization.id,
+        auth.user,
         stripe_id,
         f"?platform={platform.value}&org_name={auth.organization.name}",
     )

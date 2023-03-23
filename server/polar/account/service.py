@@ -3,6 +3,8 @@ from uuid import UUID
 
 
 import structlog
+
+from polar.models.user import User
 from .schemas import AccountCreate, AccountLink, AccountUpdate
 
 
@@ -48,17 +50,18 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             data=stripe_account.to_dict(),
         )
 
-    async def onboarding_link(
+    async def onboarding_link_for_user(
         self,
         session: AsyncSession,
         organization_id: UUID,
+        user: User,
         stripe_id: str,
         appendix: str | None = None,
     ) -> AccountLink | None:
         account = await self.get_by(
             session=session, organization_id=organization_id, stripe_id=stripe_id
         )
-        if account is None:
+        if account is None or account.admin_id != user.id:
             # TODO: Error?
             return None
 

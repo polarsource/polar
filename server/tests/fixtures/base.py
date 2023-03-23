@@ -28,7 +28,7 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
 
 @pytest_asyncio.fixture()
 async def client(session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    async def override_get_db_session() -> None:
+    async def override_get_db_session() -> AsyncGenerator[AsyncSession, None]:
         async with AsyncSessionLocal() as session:
             yield session
 

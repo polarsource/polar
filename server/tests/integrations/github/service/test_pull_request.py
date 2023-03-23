@@ -38,7 +38,7 @@ async def create_org(session: AsyncSession) -> Organization:
         is_site_admin=False,
         installation_id=123,
         installation_created_at=datetime.now(),
-        installation_modified_at=datetime.now(),
+        installation_updated_at=datetime.now(),
         installation_suspended_at=None,
     )
 

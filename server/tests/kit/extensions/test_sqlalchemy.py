@@ -11,9 +11,9 @@ from tests.fixtures.database import TestModel
 
 def test_intenum_processing() -> None:
     intenum = IntEnum(StatusFlag)
-    assert intenum.process_result_value(None, postgresql) is None
+    assert intenum.process_result_value(None, postgresql) is None  # type: ignore
 
-    active = intenum.process_result_value(StatusFlag.ACTIVE.value, postgresql)
+    active = intenum.process_result_value(StatusFlag.ACTIVE.value, postgresql)  # type: ignore
     assert active is StatusFlag.ACTIVE
 
 
@@ -45,8 +45,8 @@ async def test_intenum_persistance(session: AsyncSession) -> None:
 def test_intenum_binding() -> None:
     # Just casting our Enum type and not the type itself, e.g int.
     StatusColumn = IntEnum(StatusFlag)
-    assert StatusColumn.process_bind_param("hello", postgresql) == "hello"
+    assert StatusColumn.process_bind_param("hello", postgresql) == "hello"  # type: ignore
     assert (
-        StatusColumn.process_bind_param(StatusFlag.ACTIVE, postgresql)
+        StatusColumn.process_bind_param(StatusFlag.ACTIVE, postgresql)  # type: ignore
         == StatusFlag.ACTIVE.value
     )

@@ -18,11 +18,15 @@ export type { Body_users_auth_jwt_login } from './models/Body_users_auth_jwt_log
 export type { Entry_Any_ } from './models/Entry_Any_';
 export type { Entry_IssueRead_ } from './models/Entry_IssueRead_';
 export type { ErrorModel } from './models/ErrorModel';
+export type { ExternalGitHubCommitReference } from './models/ExternalGitHubCommitReference';
+export type { ExternalGitHubPullRequestReference } from './models/ExternalGitHubPullRequestReference';
 export { GithubBadgeRead } from './models/GithubBadgeRead';
 export type { HTTPValidationError } from './models/HTTPValidationError';
 export { InstallationCreate } from './models/InstallationCreate';
 export type { IssueListResponse } from './models/IssueListResponse';
 export type { IssueRead } from './models/IssueRead';
+export type { IssueReferenceRead } from './models/IssueReferenceRead';
+export { IssueReferenceType } from './models/IssueReferenceType';
 export { IssueStatus } from './models/IssueStatus';
 export type { OAuth2AuthorizeResponse } from './models/OAuth2AuthorizeResponse';
 export type { OrganizationRead } from './models/OrganizationRead';
@@ -37,6 +41,7 @@ export type { polar__integrations__stripe__endpoints__WebhookResponse } from './
 export { polar__models__issue__IssueFields__State } from './models/polar__models__issue__IssueFields__State';
 export { polar__pledge__schemas__State } from './models/polar__pledge__schemas__State';
 export type { PullRequestRead } from './models/PullRequestRead';
+export type { PullRequestReference } from './models/PullRequestReference';
 export type { Relationship } from './models/Relationship';
 export type { RelationshipData } from './models/RelationshipData';
 export type { RepositoryRead } from './models/RepositoryRead';

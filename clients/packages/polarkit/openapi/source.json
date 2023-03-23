@@ -991,6 +991,83 @@
                 }
             }
         },
+        "/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}/references": {
+            "get": {
+                "tags": [
+                    "issues"
+                ],
+                "summary": "Get Issue References",
+                "operationId": "issues:get_issue_references",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Org Name",
+                            "type": "string"
+                        },
+                        "name": "org_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Repo Name",
+                            "type": "string"
+                        },
+                        "name": "repo_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Number",
+                            "type": "integer"
+                        },
+                        "name": "number",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "title": "Response Issues:Get Issue References",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/IssueReferenceRead"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
+        },
         "/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}/pledge": {
             "get": {
                 "tags": [
@@ -2074,6 +2151,82 @@
                     }
                 }
             },
+            "ExternalGitHubCommitReference": {
+                "title": "ExternalGitHubCommitReference",
+                "required": [
+                    "author_login",
+                    "author_avatar",
+                    "sha",
+                    "organization_name",
+                    "repository_name"
+                ],
+                "type": "object",
+                "properties": {
+                    "author_login": {
+                        "title": "Author Login",
+                        "type": "string"
+                    },
+                    "author_avatar": {
+                        "title": "Author Avatar",
+                        "type": "string"
+                    },
+                    "sha": {
+                        "title": "Sha",
+                        "type": "string"
+                    },
+                    "organization_name": {
+                        "title": "Organization Name",
+                        "type": "string"
+                    },
+                    "repository_name": {
+                        "title": "Repository Name",
+                        "type": "string"
+                    }
+                }
+            },
+            "ExternalGitHubPullRequestReference": {
+                "title": "ExternalGitHubPullRequestReference",
+                "required": [
+                    "title",
+                    "author_login",
+                    "author_avatar",
+                    "number",
+                    "organization_name",
+                    "repository_name",
+                    "state"
+                ],
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "title": "Title",
+                        "type": "string"
+                    },
+                    "author_login": {
+                        "title": "Author Login",
+                        "type": "string"
+                    },
+                    "author_avatar": {
+                        "title": "Author Avatar",
+                        "type": "string"
+                    },
+                    "number": {
+                        "title": "Number",
+                        "type": "integer"
+                    },
+                    "organization_name": {
+                        "title": "Organization Name",
+                        "type": "string"
+                    },
+                    "repository_name": {
+                        "title": "Repository Name",
+                        "type": "string"
+                    },
+                    "state": {
+                        "title": "State",
+                        "type": "string"
+                    }
+                }
+            },
             "GithubBadgeRead": {
                 "title": "GithubBadgeRead",
                 "required": [
@@ -2350,6 +2503,48 @@
                         "format": "date-time"
                     }
                 }
+            },
+            "IssueReferenceRead": {
+                "title": "IssueReferenceRead",
+                "required": [
+                    "id",
+                    "type",
+                    "payload"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "title": "Id",
+                        "type": "string"
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/IssueReferenceType"
+                    },
+                    "payload": {
+                        "title": "Payload",
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/PullRequestReference"
+                            },
+                            {
+                                "$ref": "#/components/schemas/ExternalGitHubPullRequestReference"
+                            },
+                            {
+                                "$ref": "#/components/schemas/ExternalGitHubCommitReference"
+                            }
+                        ]
+                    }
+                }
+            },
+            "IssueReferenceType": {
+                "title": "IssueReferenceType",
+                "enum": [
+                    "pull_request",
+                    "external_github_pull_request",
+                    "external_github_commit"
+                ],
+                "type": "string",
+                "description": "An enumeration."
             },
             "IssueStatus": {
                 "title": "IssueStatus",
@@ -2912,6 +3107,81 @@
                     },
                     "modified_at": {
                         "title": "Modified At",
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "PullRequestReference": {
+                "title": "PullRequestReference",
+                "required": [
+                    "id",
+                    "title",
+                    "author_login",
+                    "author_avatar",
+                    "number",
+                    "organization_name",
+                    "repository_name",
+                    "additions",
+                    "deletions",
+                    "state",
+                    "created_at"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "title": "Id",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "title": "Title",
+                        "type": "string"
+                    },
+                    "author_login": {
+                        "title": "Author Login",
+                        "type": "string"
+                    },
+                    "author_avatar": {
+                        "title": "Author Avatar",
+                        "type": "string"
+                    },
+                    "number": {
+                        "title": "Number",
+                        "type": "integer"
+                    },
+                    "organization_name": {
+                        "title": "Organization Name",
+                        "type": "string"
+                    },
+                    "repository_name": {
+                        "title": "Repository Name",
+                        "type": "string"
+                    },
+                    "additions": {
+                        "title": "Additions",
+                        "type": "integer"
+                    },
+                    "deletions": {
+                        "title": "Deletions",
+                        "type": "integer"
+                    },
+                    "state": {
+                        "title": "State",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "title": "Created At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "merged_at": {
+                        "title": "Merged At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "closed_at": {
+                        "title": "Closed At",
                         "type": "string",
                         "format": "date-time"
                     }

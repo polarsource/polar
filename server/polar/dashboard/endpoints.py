@@ -10,16 +10,15 @@ from polar.dashboard.schemas import (
     RelationshipData,
 )
 from polar.enums import Platforms
-from polar.issue.schemas import IssueRead
+from polar.issue.schemas import IssueRead, IssueReferenceRead
 from polar.models.issue import Issue
+from polar.models.issue_reference import ReferenceType
 from polar.models.repository import Repository
 from polar.organization.schemas import OrganizationRead
-from polar.pull_request.schemas import PullRequestRead
 from polar.repository.schemas import RepositoryRead
 from polar.issue.service import issue
 from polar.pledge.schemas import PledgeRead
 from polar.pledge.service import pledge
-from polar.pull_request.service import pull_request
 from polar.repository.service import repository
 from polar.auth.dependencies import Auth
 from polar.postgres import AsyncSession, get_db_session
@@ -142,23 +141,25 @@ async def get_dashboard(
 
     # get linked pull requests
     for i in issues:
-        prs = await pull_request.list_referencing_issue(
-            session,
-            i,
-        )
-        # Add to included and to relationships
-        for pr in prs:
-            entry: Entry[PullRequestRead] = Entry(
-                id=pr.id,
-                type="pull_request",
-                attributes=PullRequestRead.from_orm(pr),
+        refs = await issue.list_issue_references(session, i)
+        for ref in refs:
+            entry = Entry(
+                id=ref.external_id,
+                type="reference",
+                attributes=IssueReferenceRead.from_model(ref),
             )
-            rel = Relationship(data=RelationshipData(type="pull_request", id=pr.id))
             included.append(entry)
+
+            rel = Relationship(
+                data=RelationshipData(type="reference", id=ref.external_id)
+            )
             issue_relationships[i.id].append(rel)
 
-        if prs:
-            issues_with_prs.add(i.id)
+            if (
+                ref.reference_type == ReferenceType.PULL_REQUEST
+                or ref.reference_type == ReferenceType.EXTERNAL_GITHUB_PULL_REQUEST
+            ):
+                issues_with_prs.add(i.id)
 
     def issue_progress(issue: Issue) -> IssueStatus:
         if issue.issue_closed_at:

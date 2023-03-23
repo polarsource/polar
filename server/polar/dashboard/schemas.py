@@ -1,4 +1,4 @@
-from typing import Any, Generic, List, TypeVar
+from typing import Any, Generic, List, TypeVar, Union
 from uuid import UUID
 from polar.issue.schemas import IssueRead
 from polar.kit.schemas import Schema

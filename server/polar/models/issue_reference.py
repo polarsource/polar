@@ -1,14 +1,16 @@
 import enum
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import TimestampedModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.schemas import Schema
 from sqlalchemy.dialects.postgresql import JSONB
+
+from polar.models.pull_request import PullRequest
 
 
 class ExternalGitHubPullRequestReference(Schema):
@@ -75,8 +77,12 @@ class IssueReference(TimestampedModel):
         nullable=True,
     )
 
+    pull_request: Mapped[PullRequest | None] = relationship(
+        "PullRequest",
+        lazy="joined",
+    )
+
     # If referenced by an external resource
     external_source: Mapped[
         ExternalGitHubPullRequestReference | ExternalGitHubCommitReference | None
     ] = mapped_column(JSONB, nullable=True, default=None)
-

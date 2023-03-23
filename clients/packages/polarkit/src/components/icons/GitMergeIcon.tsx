@@ -1,4 +1,4 @@
-const GitBranchIcon = () => (
+const GitMergeIcon = () => (
   <svg
     width="18"
     height="18"
@@ -33,4 +33,4 @@ const GitBranchIcon = () => (
   </svg>
 )
 
-export default GitBranchIcon
+export default GitMergeIcon

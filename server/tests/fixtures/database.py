@@ -21,8 +21,10 @@ class TestModel(StatusMixin, Model):
     str_column: Mapped[str | None] = mapped_column(String)
 
 
-@pytest_asyncio.fixture(scope="session", autouse=True)
-async def initialize_test_database() -> None:
+@pytest_asyncio.fixture(scope="module", autouse=True)
+async def initialize_test_database(session: AsyncSession) -> None:
+    await session.commit()
+
     async with AsyncEngineLocal.begin() as conn:
         await conn.run_sync(Model.metadata.drop_all)
         await conn.run_sync(Model.metadata.create_all)

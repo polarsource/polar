@@ -127,7 +127,11 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
     ) -> Sequence[IssueReference]:
         stmt = (
             sql.select(IssueReference)
-            .join(PullRequest, IssueReference.pull_request_id == PullRequest.id)
+            .join(
+                PullRequest,
+                IssueReference.pull_request_id == PullRequest.id,
+                isouter=True,
+            )
             .where(
                 IssueReference.issue_id == issue.id,
             )

@@ -1,4 +1,6 @@
 import { ExternalGitHubPullRequestReference } from '../api/client'
+import GitMergeIcon from './icons/GitMergeIcon'
+import GitPullRequestIcon from './icons/GitPullRequestIcon'
 
 const IssueReferenceExternalGitHubCommit = (props: {
   pr: ExternalGitHubPullRequestReference
@@ -9,6 +11,8 @@ const IssueReferenceExternalGitHubCommit = (props: {
 
   let backgroundColor = 'bg-gray-50'
   let borderColor = 'border-gray-100'
+
+  const isMerged = pr.state === 'closed'
 
   if (pr.state == 'open') {
     backgroundColor = 'bg-green-50'
@@ -30,6 +34,8 @@ const IssueReferenceExternalGitHubCommit = (props: {
             className="h-8 w-8 rounded-full border-2 border-white bg-gray-200"
             src={pr.author_avatar}
           />
+          {isMerged && <GitMergeIcon />}
+          {!isMerged && <GitPullRequestIcon />}
           <a href={href}>
             {pr.organization_name}/{pr.repository_name}#{pr.number}
           </a>

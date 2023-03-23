@@ -109,7 +109,14 @@ const IssueListItem = (props: {
 
           {props.references &&
             props.references.map((r: IssueReferenceRead) => {
-              return <IssueReference issue={issue} reference={r} key={r.id} />
+              return (
+                <IssueReference
+                  org={props.org}
+                  repo={props.repo}
+                  reference={r}
+                  key={r.id}
+                />
+              )
             })}
         </IssueActivityBox>
       )}

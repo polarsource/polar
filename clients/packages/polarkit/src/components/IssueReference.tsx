@@ -3,7 +3,8 @@ import {
   ExternalGitHubPullRequestReference,
   IssueReferenceRead,
   IssueReferenceType,
-  type IssueRead,
+  OrganizationRead,
+  RepositoryRead,
   type PullRequestReference,
 } from '../api/client'
 import IssueReferenceExternalGitHubCommit from './IssueReferenceExternalGitHubCommit'
@@ -11,15 +12,17 @@ import IssueReferenceExternalGitHubPullRequest from './IssueReferenceExternalGit
 import IssueReferencePullRequest from './IssueReferencePullRequest'
 
 const IssueReference = (props: {
-  issue: IssueRead
+  org: OrganizationRead
+  repo: RepositoryRead
   reference: IssueReferenceRead
 }) => {
-  const { issue, reference } = props
+  const { reference } = props
 
   if (reference && reference.type === IssueReferenceType.PULL_REQUEST) {
     return (
       <IssueReferencePullRequest
-        issue={issue}
+        org={props.org}
+        repo={props.repo}
         pr={reference.payload as PullRequestReference}
       />
     )
@@ -31,7 +34,6 @@ const IssueReference = (props: {
   ) {
     return (
       <IssueReferenceExternalGitHubCommit
-        issue={issue}
         commit={reference.payload as ExternalGitHubCommitReference}
       />
     )
@@ -44,7 +46,6 @@ const IssueReference = (props: {
     return (
       <>
         <IssueReferenceExternalGitHubPullRequest
-          issue={issue}
           pr={reference.payload as ExternalGitHubPullRequestReference}
         />
       </>

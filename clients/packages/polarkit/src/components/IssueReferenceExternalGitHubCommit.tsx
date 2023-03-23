@@ -1,7 +1,6 @@
-import { ExternalGitHubCommitReference, type IssueRead } from '../api/client'
+import { ExternalGitHubCommitReference } from '../api/client'
 
 const IssueReferenceExternalGitHubCommit = (props: {
-  issue: IssueRead
   commit: ExternalGitHubCommitReference
 }) => {
   const commit = props.commit

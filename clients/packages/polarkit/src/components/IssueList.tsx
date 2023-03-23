@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import {
+  IssueReferenceRead,
   OrganizationRead,
   type Entry_IssueRead_,
   type IssueRead,
   type PledgeRead,
-  type PullRequestRead,
   type RepositoryRead,
 } from '../api/client'
 import { default as IssueListItem } from './IssueListItem'
@@ -13,7 +13,7 @@ type IssueListItemData = {
   org: OrganizationRead
   repo: RepositoryRead
   issue: IssueRead
-  pullRequests: PullRequestRead[]
+  references: IssueReferenceRead[]
   pledges: PledgeRead[]
 }
 
@@ -28,8 +28,6 @@ const populateRelations = <T,>(
       .map((rel) => lookup.get(rel.data.id))
       .filter(Boolean)
       .map((r) => r as T) || []
-
-  console.log(typ, issue.relationships, r)
   return r
 }
 
@@ -37,10 +35,10 @@ const IssueList = (props: {
   orgs: Map<string, OrganizationRead>
   repos: Map<string, RepositoryRead>
   issues: Entry_IssueRead_[]
-  pullRequests: Map<string, PullRequestRead>
+  references: Map<string, IssueReferenceRead>
   pledges: Map<string, PledgeRead>
 }) => {
-  const { issues, pullRequests, pledges, orgs, repos } = props
+  const { issues, references, pledges, orgs, repos } = props
 
   const [sortedIssues, setSortedIssues] = useState<IssueListItemData[]>([])
 
@@ -51,17 +49,17 @@ const IssueList = (props: {
     const sorted = issues.map((issue): IssueListItemData => {
       return {
         issue: issue.attributes,
-        pullRequests: populateRelations(issue, pullRequests, 'pull_request'),
+        references: populateRelations(issue, references, 'reference'),
         pledges: populateRelations(issue, pledges, 'pledge'),
         org: populateRelations(issue, orgs, 'organization')[0],
         repo: populateRelations(issue, repos, 'repository')[0],
       }
     })
     setSortedIssues(sorted)
-  }, [issues, pullRequests, pledges, orgs, repos])
+  }, [issues, references, pledges, orgs, repos])
 
   if (!issues) return <div>Loading issues...</div>
-  if (!pullRequests) return <div>Loading pull requests...</div>
+  if (!references) return <div>Loading references...</div>
   if (!pledges) return <div>Loading pledges...</div>
 
   return (
@@ -70,7 +68,7 @@ const IssueList = (props: {
         return (
           <IssueListItem
             issue={i.issue}
-            pullRequests={i.pullRequests}
+            references={i.references}
             pledges={i.pledges}
             org={i.org}
             repo={i.repo}

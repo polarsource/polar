@@ -1,11 +1,11 @@
-import { type IssueRead, type PullRequestRead } from '../api/client'
 import ReactTimeAgo from 'react-time-ago'
+import { PullRequestReference, type IssueRead } from '../api/client'
 
-const IssuePullRequest = (props: {
+const IssueReference = (props: {
   issue: IssueRead
-  pullRequest: PullRequestRead
+  pr: PullRequestReference
 }) => {
-  const pr = props.pullRequest
+  const pr = props.pr
 
   if (!pr) return <></>
 
@@ -27,13 +27,12 @@ const IssuePullRequest = (props: {
       >
         <div className="flex items-center gap-2">
           <img
-            className="bg-gray-200 rounded-full h-8 w-8 border-2 border-white"
-            src={pr.author.avatar_url}
+            className="h-8 w-8 rounded-full border-2 border-white bg-gray-200"
+            src={pr.author_avatar}
           />
           <strong>{pr.title}</strong>
           <span className="text-gray-500">
-            #{pr.number} opened{' '}
-            <ReactTimeAgo date={new Date(pr.issue_created_at)} />
+            #{pr.number} opened <ReactTimeAgo date={new Date(pr.created_at)} />
           </span>
         </div>
         <div className="flex items-center gap-4">
@@ -48,7 +47,7 @@ const IssuePullRequest = (props: {
           {pr.state == 'open' && (
             <a
               href="#"
-              className="text-white bg-green-600 py-1 px-2 rounded-md text-sm"
+              className="rounded-md bg-green-600 py-1 px-2 text-sm text-white"
             >
               Review
             </a>
@@ -56,7 +55,7 @@ const IssuePullRequest = (props: {
           {pr.state == 'closed' && (
             <a
               href="#"
-              className="text-white bg-purple-600 py-1 px-2 rounded-md text-sm"
+              className="rounded-md bg-purple-600 py-1 px-2 text-sm text-white"
             >
               Reward
             </a>
@@ -67,4 +66,4 @@ const IssuePullRequest = (props: {
   )
 }
 
-export default IssuePullRequest
+export default IssueReference

@@ -9,7 +9,7 @@ import {
 } from 'polarkit/api/client'
 import { IssueList } from 'polarkit/components'
 import { useDashboard } from 'polarkit/hooks'
-import { PullRequestRead } from 'polarkit/src/api/client'
+import { IssueReferenceRead } from 'polarkit/src/api/client'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { DashboardFilters } from './filters'
@@ -53,22 +53,22 @@ const Organization = (props: { filters: DashboardFilters }) => {
   const [orgs, setOrgs] = useState<Map<string, OrganizationRead>>()
   const [pledges, setPledges] = useState<Map<string, PledgeRead>>()
   const [repos, setRepos] = useState<Map<string, RepositoryRead>>()
-  const [pullRequests, setPullRequests] =
-    useState<Map<string, PullRequestRead>>()
+  const [references, setReferences] =
+    useState<Map<string, IssueReferenceRead>>()
 
   useEffect(() => {
     setIssues(dashboard?.data || [])
     setOrgs(buildMapForType<OrganizationRead>(dashboard, 'organization'))
     setPledges(buildMapForType<PledgeRead>(dashboard, 'pledges'))
     setRepos(buildMapForType<RepositoryRead>(dashboard, 'repository'))
-    setPullRequests(buildMapForType<PullRequestRead>(dashboard, 'pull_request'))
+    setReferences(buildMapForType<IssueReferenceRead>(dashboard, 'reference'))
   }, [dashboard])
 
   return (
     <div>
       <IssueList
         issues={issues}
-        pullRequests={pullRequests}
+        references={references}
         pledges={pledges}
         orgs={orgs}
         repos={repos}

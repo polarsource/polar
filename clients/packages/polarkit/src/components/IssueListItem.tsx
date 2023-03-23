@@ -5,16 +5,16 @@ import IssueLabel from './IssueLabel'
 import TimeAgo from 'javascript-time-ago'
 import en from 'javascript-time-ago/locale/en.json'
 import {
+  IssueReferenceRead,
   OrganizationRead,
   RepositoryRead,
   type IssueRead,
   type PledgeRead,
-  type PullRequestRead,
 } from '../api/client'
 import IssueActivityBox from './IssueActivityBox'
 import IssuePledge from './IssuePledge'
 import IssueProgress, { Progress } from './IssueProgress'
-import IssuePullRequest from './IssuePullRequest'
+import IssueReference from './IssueReference'
 
 TimeAgo.addDefaultLocale(en)
 
@@ -22,7 +22,7 @@ const IssueListItem = (props: {
   org: OrganizationRead
   repo: RepositoryRead
   issue: IssueRead
-  pullRequests: PullRequestRead[]
+  references: IssueReferenceRead[]
   pledges?: PledgeRead[]
 }) => {
   const {
@@ -35,12 +35,14 @@ const IssueListItem = (props: {
     issue_closed_at,
   } = props.issue
 
+  const issue = props.issue
+
   const href = `https://github.com/${props.org.name}/${props.repo.name}/issues/${number}`
   const createdAt = new Date(issue_created_at)
   const closedAt = new Date(issue_created_at)
 
   const havePledgeOrPullRequest =
-    props.pledges?.length > 0 || props.pullRequests?.length > 0
+    props.pledges?.length > 0 || props.references?.length > 0
 
   const showCommentsCount = !!(comments && comments > 0)
   const showReactionsThumbs = !!(reactions.plus_one > 0)
@@ -49,7 +51,7 @@ const IssueListItem = (props: {
     if (!!issue_closed_at) {
       return 'completed'
     }
-    if (props.pullRequests?.length > 0) {
+    if (props.references?.length > 0) {
       return 'pull_request'
     }
     return 'backlog'
@@ -105,15 +107,9 @@ const IssueListItem = (props: {
               return <IssuePledge pledge={pledge} key={pledge.id} />
             })}
 
-          {props.pullRequests &&
-            props.pullRequests.map((pr: PullRequestRead) => {
-              return (
-                <IssuePullRequest
-                  issue={props.issue}
-                  pullRequest={pr}
-                  key={pr.number}
-                />
-              )
+          {props.references &&
+            props.references.map((r: IssueReferenceRead) => {
+              return <IssueReference issue={issue} reference={r} key={r.id} />
             })}
         </IssueActivityBox>
       )}

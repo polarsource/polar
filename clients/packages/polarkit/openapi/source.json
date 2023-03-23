@@ -3120,8 +3120,6 @@
                     "author_login",
                     "author_avatar",
                     "number",
-                    "organization_name",
-                    "repository_name",
                     "additions",
                     "deletions",
                     "state",
@@ -3149,14 +3147,6 @@
                     "number": {
                         "title": "Number",
                         "type": "integer"
-                    },
-                    "organization_name": {
-                        "title": "Organization Name",
-                        "type": "string"
-                    },
-                    "repository_name": {
-                        "title": "Repository Name",
-                        "type": "string"
                     },
                     "additions": {
                         "title": "Additions",

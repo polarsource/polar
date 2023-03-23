@@ -8,8 +8,6 @@ export type PullRequestReference = {
   author_login: string;
   author_avatar: string;
   number: number;
-  organization_name: string;
-  repository_name: string;
   additions: number;
   deletions: number;
   state: string;

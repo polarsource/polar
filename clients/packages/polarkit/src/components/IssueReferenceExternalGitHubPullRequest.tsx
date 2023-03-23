@@ -1,10 +1,6 @@
-import {
-  ExternalGitHubPullRequestReference,
-  type IssueRead,
-} from '../api/client'
+import { ExternalGitHubPullRequestReference } from '../api/client'
 
 const IssueReferenceExternalGitHubCommit = (props: {
-  issue: IssueRead
   pr: ExternalGitHubPullRequestReference
 }) => {
   const pr = props.pr

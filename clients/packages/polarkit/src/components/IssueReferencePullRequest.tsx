@@ -1,9 +1,14 @@
 import ReactTimeAgo from 'react-time-ago'
-import { PullRequestReference, type IssueRead } from '../api/client'
+import {
+  OrganizationRead,
+  PullRequestReference,
+  RepositoryRead,
+} from '../api/client'
 
 const IssueReference = (props: {
-  issue: IssueRead
   pr: PullRequestReference
+  org: OrganizationRead
+  repo: RepositoryRead
 }) => {
   const pr = props.pr
 
@@ -20,6 +25,8 @@ const IssueReference = (props: {
     borderColor = 'border-purple-100'
   }
 
+  const href = `https://github.com/${props.org.name}/${props.repo.name}/pull/${pr.number}`
+
   return (
     <>
       <div
@@ -30,9 +37,12 @@ const IssueReference = (props: {
             className="h-8 w-8 rounded-full border-2 border-white bg-gray-200"
             src={pr.author_avatar}
           />
-          <strong>{pr.title}</strong>
+          <a href={href}>
+            <strong>{pr.title}</strong>
+          </a>
           <span className="text-gray-500">
-            #{pr.number} opened <ReactTimeAgo date={new Date(pr.created_at)} />
+            <a href={href}>#{pr.number}</a> opened{' '}
+            <ReactTimeAgo date={new Date(pr.created_at)} /> by {pr.author_login}
           </span>
         </div>
         <div className="flex items-center gap-4">

@@ -7,6 +7,12 @@
     ".": {
       "default": "./index.ts"
     },
+    "./api/client": "./src/api/client/index.ts",
+    "./api": "./src/api/index.ts",
+    "./store": "./src/store/index.ts",
+    "./hooks": "./src/hooks/index.ts",
+    "./utils": "./src/utils/index.ts",
+    "./components": "./src/components/index.ts",
     "./package.json": "./package.json",
     "./*": "./src/*"
   },

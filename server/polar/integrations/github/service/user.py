@@ -25,12 +25,12 @@ class GithubUserService(UserService):
             sql.select(User)
             .join(OAuthAccount, User.id == OAuthAccount.user_id)
             .where(
-                OAuthAccount.oauth_name == "github",
+                OAuthAccount.oauth_name == Platforms.github.value,
                 OAuthAccount.account_id == str(id),
             )
         )
         res = await session.execute(stmt)
-        return res.scalars().unique().first()
+        return res.scalars().first()
 
     def generate_profile_json(
         self,
@@ -95,16 +95,19 @@ class GithubUserService(UserService):
         session: AsyncSession,
         *,
         github_user: GithubUser,
-        account: OAuthAccount,
+        user: User,
         tokens: OAuthAccessToken,
     ) -> User:
-        user = account.user
         profile = self.generate_profile_json(github_user=github_user)
         await user.update(
             session,
             autocommit=False,
             profile=profile,
         )
+        account = user.get_platform_oauth_account(Platforms.github)
+        if not account:
+            raise RuntimeError("No github account found for user")
+
         await account.update(
             session,
             autocommit=False,
@@ -128,14 +131,10 @@ class GithubUserService(UserService):
         authenticated = await self.fetch_authenticated_user(
             access_token=tokens.access_token
         )
-        account = await self.get_oauth_account_by_account_id(
-            session,
-            oauth_name=Platforms.github.value,
-            account_id=str(authenticated.id),
-        )
-        if account:
+        existing_user = await self.get_user_by_github_id(session, id=authenticated.id)
+        if existing_user:
             user = await self.login(
-                session, github_user=authenticated, account=account, tokens=tokens
+                session, github_user=authenticated, user=existing_user, tokens=tokens
             )
         else:
             user = await self.signup(session, github_user=authenticated, tokens=tokens)

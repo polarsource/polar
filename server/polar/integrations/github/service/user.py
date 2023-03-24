@@ -65,27 +65,25 @@ class GithubUserService(UserService):
         tokens: OAuthAccessToken,
     ) -> User:
         profile = self.generate_profile_json(github_user=github_user)
-        new_user = await user_service.create(
-            session,
-            create_schema=UserCreate(
-                email=EmailStr(github_user.email),
-                profile=profile,
-                hashed_password="",
-                is_active=True,
-                is_verified=True,
-                is_superuser=False,
-            ),
+        new_user = User(
+            email=EmailStr(github_user.email),
+            profile=profile,
+            hashed_password="",
+            is_active=True,
+            is_verified=True,
+            is_superuser=False,
+            oauth_accounts=[
+                OAuthAccount(
+                    oauth_name=Platforms.github.value,
+                    access_token=tokens.access_token,
+                    expires_at=tokens.expires_at,
+                    refresh_token=tokens.refresh_token,
+                    account_id=str(github_user.id),
+                    account_email=github_user.email,
+                )
+            ],
         )
-        account = OAuthAccount(
-            oauth_name=Platforms.github.value,
-            access_token=tokens.access_token,
-            expires_at=tokens.expires_at,
-            refresh_token=tokens.refresh_token,
-            account_id=str(github_user.id),
-            account_email=github_user.email,
-            user_id=new_user.id,
-        )
-        session.add(account)
+        session.add(new_user)
         await session.commit()
         log.info("github.user.signup", user_id=new_user.id, username=github_user.login)
         return new_user
@@ -139,8 +137,7 @@ class GithubUserService(UserService):
         else:
             user = await self.signup(session, github_user=authenticated, tokens=tokens)
 
-        # TODO Fix and re-implement sync_github_admin_orgs
-        # await self.sync_github_admin_orgs(session, user)
+        await self.sync_github_admin_orgs(session, user)
         return user
 
     async def sync_github_admin_orgs(self, session: AsyncSession, user: User) -> None:

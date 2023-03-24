@@ -1,7 +1,81 @@
-const SettingsPage: NextPage = ({ organization }) => {
+import { NextPage } from 'next'
+import { useRouter } from 'next/router'
+import {
+  useOrganization,
+  useOrganizationSettingsMutation,
+} from 'polarkit/hooks'
+import { useEffect, useState } from 'react'
+
+const SettingsPage: NextPage = () => {
+  const router = useRouter()
+
+  const { organization } = router.query
+  const handle: string = typeof organization === 'string' ? organization : ''
+  const orgData = useOrganization(handle)
+  const org = orgData.data
+
+  const [badgeShowRaised, setBadgeShowRaised] = useState(false)
+  const [badgeAddOldIssues, setBadgeAddOldIssues] = useState(false)
+
+  const [emailIssueReceivesBacking, setEmailIssueReceivesBacking] =
+    useState(false)
+  const [emailIssueBranchCreated, setEmailIssueBranchCreated] = useState(false)
+  const [emailPullRequestCreated, setEmailPullRequestCreated] = useState(false)
+  const [emailPullRequestMerged, setEmailPullRequestMerged] = useState(false)
+
+  let didFirstSet = false
+
+  useEffect(() => {
+    if (!org) {
+      return
+    }
+
+    if (didFirstSet) {
+      return
+    }
+
+    setEmailIssueReceivesBacking(
+      !!org.email_notification_issue_receives_backing,
+    )
+    setEmailIssueBranchCreated(
+      !!org.email_notification_backed_issue_branch_created,
+    )
+    setEmailPullRequestCreated(
+      !!org.email_notification_backed_issue_pull_request_created,
+    )
+    setEmailPullRequestMerged(
+      !!org.email_notification_backed_issue_pull_request_merged,
+    )
+
+    didFirstSet = true
+  }, [org])
+
+  const mutation = useOrganizationSettingsMutation()
+
+  const save = () => {
+    mutation.mutate({
+      orgName: handle,
+      body: {
+        funding_badge_show_amount: badgeShowRaised,
+        funding_badge_retroactive: badgeAddOldIssues,
+
+        email_notification_issue_receives_backing: emailIssueReceivesBacking,
+        email_notification_backed_issue_branch_created: emailIssueBranchCreated,
+        email_notification_backed_issue_pull_request_created:
+          emailPullRequestCreated,
+        email_notification_backed_issue_pull_request_merged:
+          emailPullRequestMerged,
+      },
+    })
+  }
+
   return (
     <>
       <div className="mx-auto mt-24 max-w-[1100px] divide-y divide-gray-200 ">
+        for={organization}
+        org={JSON.stringify(org)}
+        <br />
+        saving={JSON.stringify(mutation.isLoading)}
         <Section>
           <SectionDescription
             title="Polar badge"
@@ -9,14 +83,27 @@ const SettingsPage: NextPage = ({ organization }) => {
           />
 
           <Box>
-            <Checbox
+            <Checkbox
+              id="add-old-issues"
               title="Add badge to old issues as well"
               description="Could impact sorting on GitHub"
+              isChecked={badgeShowRaised}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setBadgeShowRaised(e.target.checked)
+                save()
+              }}
             />
-            <Checbox title="Show amount raised" />
+            <Checkbox
+              id="show-raised"
+              title="Show amount raised"
+              isChecked={badgeAddOldIssues}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setBadgeAddOldIssues(e.target.checked)
+                save()
+              }}
+            />
           </Box>
         </Section>
-
         <Section>
           <SectionDescription
             title="Email notifications"
@@ -24,13 +111,44 @@ const SettingsPage: NextPage = ({ organization }) => {
           />
 
           <Box>
-            <Checbox title="Issue receives backing" />
-            <Checbox title="Branch created for issue with backing" />
-            <Checbox title="Pull request created for issue with backing" />
-            <Checbox title="Pull request merged for issue with backing" />
+            <Checkbox
+              id="email-backing"
+              title="Issue receives backing"
+              isChecked={emailIssueReceivesBacking}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setEmailIssueReceivesBacking(e.target.checked)
+                save()
+              }}
+            />
+            <Checkbox
+              id="email-branch-created"
+              title="Branch created for issue with backing"
+              isChecked={emailIssueBranchCreated}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setEmailIssueBranchCreated(e.target.checked)
+                save()
+              }}
+            />
+            <Checkbox
+              id="email-pr-created"
+              title="Pull request created for issue with backing"
+              isChecked={emailPullRequestCreated}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setEmailPullRequestCreated(e.target.checked)
+                save()
+              }}
+            />
+            <Checkbox
+              id="email-pr-merged"
+              title="Pull request merged for issue with backing"
+              isChecked={emailPullRequestMerged}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setEmailPullRequestMerged(e.target.checked)
+                save()
+              }}
+            />
           </Box>
         </Section>
-
         <Section>
           <SectionDescription title="Delete account" description="" />
 
@@ -61,23 +179,37 @@ const Box = ({ children }) => {
     </div>
   )
 }
-const Checbox = ({ title, description = '' }) => {
+const Checkbox = ({
+  id,
+  title,
+  isChecked,
+  onChange,
+  description = undefined,
+}: {
+  id: string
+  title: string
+  description?: string
+  isChecked: boolean
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+}) => {
   return (
     <div className="relative flex items-start">
       <div className="flex h-6 items-center">
         <input
-          id="comments"
-          aria-describedby="comments-description"
-          name="comments"
+          id={id}
+          aria-describedby={`${id}-description`}
+          name={id}
           type="checkbox"
+          onChange={onChange}
+          checked={isChecked}
           className="h-4 w-4 rounded border-gray-300 text-[#8A63F9] focus:ring-[#8A63F9]"
         />
       </div>
       <div className="ml-3 text-sm leading-6">
-        <label htmlFor="comments" className="font-medium text-black">
+        <label htmlFor={id} className="font-medium text-black">
           {title}
         </label>{' '}
-        <span id="comments-description" className="text-black/50">
+        <span id={`${id}-description`} className="text-black/50">
           {description}
         </span>
       </div>

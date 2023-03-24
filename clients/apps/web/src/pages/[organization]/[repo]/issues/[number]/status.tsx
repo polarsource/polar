@@ -2,7 +2,7 @@ import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import type { NextPage } from 'next'
 import { api } from 'polarkit'
 import { Platforms, type PledgeResources } from 'polarkit/api/client'
-import IssueListItem from 'polarkit/components/IssueListItem'
+import { IssueListItem } from 'polarkit/components'
 import { GrayCard, WhiteCard } from 'polarkit/components/ui/Cards'
 import ReactTimeAgo from 'react-time-ago'
 

@@ -1,4 +1,5 @@
 import {
+  IssueReferenceRead,
   IssueStatus,
   type Entry_Any_,
   type Entry_IssueRead_,
@@ -9,7 +10,6 @@ import {
 } from 'polarkit/api/client'
 import { IssueList } from 'polarkit/components'
 import { useDashboard } from 'polarkit/hooks'
-import { IssueReferenceRead } from 'polarkit/src/api/client'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { DashboardFilters } from './filters'

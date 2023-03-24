@@ -13,6 +13,9 @@
     "./hooks": "./src/hooks/index.ts",
     "./utils": "./src/utils/index.ts",
     "./components": "./src/components/index.ts",
+    "./components/ui": "./src/components/ui/index.ts",
+    "./components/ui/Cards": "./src/components/ui/Cards/index.ts",
+    "./components/icons": "./src/components/icons/index.ts",
     "./package.json": "./package.json",
     "./*": "./src/*"
   },

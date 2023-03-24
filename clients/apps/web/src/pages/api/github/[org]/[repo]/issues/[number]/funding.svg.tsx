@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import path from 'path'
 import satori from 'satori'
 
-import Badge from 'polarkit/components/Badge'
+import { Badge } from 'polarkit/components'
 
 type BadgeAmount = {
   currency: string

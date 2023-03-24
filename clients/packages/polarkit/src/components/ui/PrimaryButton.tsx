@@ -1,4 +1,4 @@
-import React, { type HTMLButtonElement } from 'react'
+import React from 'react'
 import { classNames } from '../../utils/dom'
 
 const LoadingSpinner = (props: { disabled: boolean }) => {

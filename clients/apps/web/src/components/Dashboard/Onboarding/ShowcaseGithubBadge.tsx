@@ -1,4 +1,4 @@
-import { Badge } from 'polarkit/components/Badge'
+import { Badge } from 'polarkit/components'
 
 export const ShowcaseGithubBadge = ({
   showAmountRaised,

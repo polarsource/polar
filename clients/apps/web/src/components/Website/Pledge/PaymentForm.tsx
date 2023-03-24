@@ -3,7 +3,7 @@
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { useRouter } from 'next/router'
 import { type PledgeRead } from 'polarkit/api/client'
-import PrimaryButton from 'polarkit/components/ui/PrimaryButton'
+import { PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/utils'
 import { useState } from 'react'
 

@@ -1,6 +1,10 @@
-import { useQuery, UseQueryResult } from '@tanstack/react-query'
-import { type OrganizationRead, type RepositoryRead } from 'polarkit/api/client'
-import { api } from '../../api'
+import { useMutation, useQuery, UseQueryResult } from '@tanstack/react-query'
+import {
+  OrganizationSettingsUpdate,
+  type OrganizationRead,
+  type RepositoryRead,
+} from 'polarkit/api/client'
+import { api, queryClient } from '../../api'
 import { IssueListResponse, IssueStatus, Platforms } from '../../api/client'
 
 export type RepoListItem = RepositoryRead & {
@@ -132,3 +136,33 @@ export const useDashboard = (
       enabled: !!orgName,
     },
   )
+
+export const useOrganization = (orgName: string) =>
+  useQuery(
+    ['organization', orgName],
+    () =>
+      api.organizations.get({
+        platform: Platforms.GITHUB,
+        orgName: orgName,
+      }),
+    {
+      enabled: !!orgName,
+    },
+  )
+
+export const useOrganizationSettingsMutation = () =>
+  useMutation({
+    mutationFn: (variables: {
+      orgName: string
+      body: OrganizationSettingsUpdate
+    }) => {
+      return api.organizations.updateSettings({
+        platform: Platforms.GITHUB,
+        orgName: variables.orgName,
+        requestBody: variables.body,
+      })
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.setQueryData(['organization', variables.orgName], result)
+    },
+  })

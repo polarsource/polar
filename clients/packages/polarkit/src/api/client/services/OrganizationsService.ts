@@ -2,7 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { OrganizationRead } from '../models/OrganizationRead';
-import type { OrganizationSettings } from '../models/OrganizationSettings';
+import type { OrganizationSettingsUpdate } from '../models/OrganizationSettingsUpdate';
 import type { Platforms } from '../models/Platforms';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
@@ -24,7 +24,7 @@ export class OrganizationsService {
   }: {
     platform: Platforms,
     orgName: string,
-    requestBody: OrganizationSettings,
+    requestBody: OrganizationSettingsUpdate,
   }): CancelablePromise<OrganizationRead> {
     return this.httpRequest.request({
       method: 'PUT',

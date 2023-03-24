@@ -2,7 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-export type ErrorModel = {
-  detail: (string | Record<string, string>);
+export type AuthorizationResponse = {
+  authorization_url: string;
 };
 

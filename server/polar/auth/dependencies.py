@@ -1,35 +1,22 @@
-import uuid
-from typing import AsyncGenerator
+from fastapi import Request, HTTPException, Depends
 
-from fastapi import Depends, HTTPException
-from fastapi_users import FastAPIUsers
-
-from polar.models import OAuthAccount, User, Organization, Repository
+from polar.models import User, Organization, Repository
 from polar.exceptions import ResourceNotFound
-from polar.user.service import UserDatabase
 from polar.postgres import AsyncSession, get_db_session
 from polar.enums import Platforms
-
 from polar.organization.service import organization as organization_service
 
-from .session import UserManager, auth_backend
+from .service import AuthService
 
 
-async def get_user_db(
+async def current_active_user(
+    request: Request,
     session: AsyncSession = Depends(get_db_session),
-) -> AsyncGenerator[UserDatabase, None]:
-    yield UserDatabase(session, User, OAuthAccount)  # type: ignore
-
-
-async def get_user_manager(
-    user_db: UserDatabase = Depends(get_user_db),
-) -> AsyncGenerator[UserManager, None]:
-    yield UserManager(user_db)
-
-
-fastapi_users = FastAPIUsers[User, uuid.UUID](get_user_manager, [auth_backend])  # type: ignore
-
-current_active_user = fastapi_users.current_user(active=True)
+) -> User:
+    user = await AuthService.get_user_from_auth_cookie(session, request=request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return user
 
 
 class Auth:

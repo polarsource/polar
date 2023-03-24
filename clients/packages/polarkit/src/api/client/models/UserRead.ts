@@ -2,15 +2,13 @@
 /* tslint:disable */
 /* eslint-disable */
 
-/**
- * Base User model.
- */
 export type UserRead = {
-  profile: any;
-  id?: any;
   email: string;
+  profile: any;
+  hashed_password: string;
   is_active?: boolean;
   is_superuser?: boolean;
   is_verified?: boolean;
+  id: string;
 };
 

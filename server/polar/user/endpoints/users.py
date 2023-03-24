@@ -1,19 +1,21 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Response
 
-from polar.auth.session import auth_backend
-from polar.auth.dependencies import fastapi_users
+from polar.models import User
+from polar.auth.dependencies import Auth
+from polar.auth.service import AuthService, LogoutResponse
 
-from ..schemas import UserRead, UserUpdate
+from ..schemas import UserRead
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-router.include_router(
-    fastapi_users.get_users_router(UserRead, UserUpdate),
-)
 
-# TODO: Contribute to or patch fastapi-users to accept which routers to return.
-# We want to skip returning the login (password form) endpoint here since we're
-# solely using OAuth2.
-router.include_router(
-    fastapi_users.get_auth_router(auth_backend),
-)
+@router.get("/me", response_model=UserRead)
+async def get_authenticated(auth: Auth = Depends(Auth.current_user)) -> User:
+    return auth.user
+
+
+@router.get("/logout")
+async def logout(
+    response: Response, auth: Auth = Depends(Auth.current_user)
+) -> LogoutResponse:
+    return AuthService.generate_logout_response(response=response)

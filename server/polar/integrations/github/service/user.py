@@ -1,15 +1,18 @@
-from typing import Callable, List
+from typing import Callable, List, Any
 import structlog
+from pydantic import EmailStr
+
 from polar.enums import Platforms
 from polar.kit.extensions.sqlalchemy import sql
-
-from polar.models import User
-from polar.models.user import OAuthAccount
+from polar.models import User, OAuthAccount
 from polar.postgres import AsyncSession
-from polar.user.service import UserService
+from polar.user.service import UserService, user as user_service
+from polar.user.schemas import UserCreate
 from polar.organization.service import organization
 
 from .. import client as github
+from ..schemas import OAuthAccessToken
+from ..types import GithubUser
 
 log = structlog.get_logger()
 
@@ -29,57 +32,116 @@ class GithubUserService(UserService):
         res = await session.execute(stmt)
         return res.scalars().unique().first()
 
-    async def update_profile(
-        self, session: AsyncSession, user: User, access_token: str
-    ) -> User:
-        oauth = user.get_primary_oauth_account()
-        if oauth.access_token != access_token:
-            log.warning(
-                "user.update_profile", error="access_token.mismatch", user_id=user.id
-            )
-            return user
-
-        client = await github.get_user_client(session, user)
-        response = await client.rest.users.async_get_authenticated()
-        try:
-            github.ensure_expected_response(response)
-        except github.UnexpectedStatusCode:
-            log.warning(
-                "user.update_profile",
-                error="github.http.error",
-                user_id=user.id,
-                status_code=response.status_code,
-            )
-            return user
-
-        data = response.json()
-        user.profile = {
-            "username": data["login"],
+    def generate_profile_json(
+        self,
+        *,
+        github_user: GithubUser,
+    ) -> dict[str, Any]:
+        return {
+            "username": github_user.login,
             "platform": "github",
-            "external_id": data["id"],
-            "avatar_url": data["avatar_url"],
-            "name": data["name"],
-            "bio": data["bio"],
-            "company": data["company"],
-            "blog": data["blog"],
-            "location": data["location"],
-            "hireable": data["hireable"],
-            "twitter": data["twitter_username"],
-            "public_repos": data["public_repos"],
-            "public_gists": data["public_gists"],
-            "followers": data["followers"],
-            "following": data["following"],
-            "created_at": data["created_at"],
-            "updated_at": data["updated_at"],
+            "external_id": github_user.id,
+            "avatar_url": github_user.avatar_url,
+            "name": github_user.name,
+            "bio": github_user.bio,
+            "company": github_user.company,
+            "blog": github_user.blog,
+            "location": github_user.location,
+            "hireable": github_user.hireable,
+            "twitter": github_user.twitter_username,
+            "public_repos": github_user.public_repos,
+            "public_gists": github_user.public_gists,
+            "followers": github_user.followers,
+            "following": github_user.following,
+            "created_at": github_user.created_at.isoformat(),
+            "updated_at": github_user.updated_at.isoformat(),
         }
-        session.add(user)
-        # TODO: Check success?
+
+    async def signup(
+        self,
+        session: AsyncSession,
+        *,
+        github_user: GithubUser,
+        tokens: OAuthAccessToken,
+    ) -> User:
+        profile = self.generate_profile_json(github_user=github_user)
+        new_user = await user_service.create(
+            session,
+            create_schema=UserCreate(
+                email=EmailStr(github_user.email),
+                profile=profile,
+                hashed_password="",
+                is_active=True,
+                is_verified=True,
+                is_superuser=False,
+            ),
+        )
+        account = OAuthAccount(
+            oauth_name=Platforms.github.value,
+            access_token=tokens.access_token,
+            expires_at=tokens.expires_at,
+            refresh_token=tokens.refresh_token,
+            account_id=str(github_user.id),
+            account_email=github_user.email,
+            user_id=new_user.id,
+        )
+        session.add(account)
+        await session.commit()
+        log.info("github.user.signup", user_id=new_user.id, username=github_user.login)
+        return new_user
+
+    async def login(
+        self,
+        session: AsyncSession,
+        *,
+        github_user: GithubUser,
+        account: OAuthAccount,
+        tokens: OAuthAccessToken,
+    ) -> User:
+        user = account.user
+        profile = self.generate_profile_json(github_user=github_user)
+        await user.update(
+            session,
+            autocommit=False,
+            profile=profile,
+        )
+        await account.update(
+            session,
+            autocommit=False,
+            # Update everything except unique references (user_id + account_id)
+            access_token=tokens.access_token,
+            expires_at=tokens.expires_at,
+            refresh_token=tokens.refresh_token,
+            account_email=github_user.email,
+        )
         await session.commit()
         log.info(
-            "user.update_profile",
+            "github.user.login",
             user_id=user.id,
             github_username=user.profile["username"],
         )
+        return user
+
+    async def login_or_signup(
+        self, session: AsyncSession, *, tokens: OAuthAccessToken
+    ) -> User:
+        authenticated = await self.fetch_authenticated_user(
+            access_token=tokens.access_token
+        )
+        account = await self.get_oauth_account_by_account_id(
+            session,
+            oauth_name=Platforms.github.value,
+            account_id=str(authenticated.id),
+        )
+        if account:
+            user = await self.login(
+                session, github_user=authenticated, account=account, tokens=tokens
+            )
+        else:
+            user = await self.signup(session, github_user=authenticated, tokens=tokens)
+
+        # TODO Fix and re-implement sync_github_admin_orgs
+        # await self.sync_github_admin_orgs(session, user)
         return user
 
     async def sync_github_admin_orgs(self, session: AsyncSession, user: User) -> None:
@@ -151,6 +213,28 @@ class GithubUserService(UserService):
                         org_id=org.id,
                         user_id=user.id,
                     )
+
+    async def fetch_authenticated_user(self, *, access_token: str) -> GithubUser:
+        client = github.get_client(access_token)
+
+        # Get authenticated github user
+        response = await client.rest.users.async_get_authenticated()
+        github.ensure_expected_response(response)
+        gh_user = response.parsed_data
+        if github.is_set(gh_user, "email"):
+            return gh_user
+
+        # No public email. Using our user:email scope permission to fetch
+        # all private emails and using the first one which is the primary.
+        #
+        # TODO: Re-confirm that it is indeed the primary
+        email_response = (
+            await client.rest.users.async_list_emails_for_authenticated_user()
+        )
+        github.ensure_expected_response(email_response)
+        emails = email_response.parsed_data
+        gh_user.email = emails[0].email
+        return gh_user
 
     async def fetch_user_accessible_installations(
         self, session: AsyncSession, user: User

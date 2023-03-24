@@ -1,9 +1,10 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { AuthorizationResponse } from '../models/AuthorizationResponse';
 import type { GithubBadgeRead } from '../models/GithubBadgeRead';
 import type { InstallationCreate } from '../models/InstallationCreate';
-import type { OAuth2AuthorizeResponse } from '../models/OAuth2AuthorizeResponse';
+import type { LoginResponse } from '../models/LoginResponse';
 import type { OrganizationRead } from '../models/OrganizationRead';
 import type { Platforms } from '../models/Platforms';
 import type { polar__integrations__github__endpoints__WebhookResponse } from '../models/polar__integrations__github__endpoints__WebhookResponse';
@@ -17,31 +18,20 @@ export class IntegrationsService {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
-   * Oauth:Github.Jwt.Authorize
-   * @returns OAuth2AuthorizeResponse Successful Response
+   * Github Authorize
+   * @returns AuthorizationResponse Successful Response
    * @throws ApiError
    */
-  public githubAuthorize({
-    scopes,
-  }: {
-    scopes?: Array<string>,
-  }): CancelablePromise<OAuth2AuthorizeResponse> {
+  public githubAuthorize(): CancelablePromise<AuthorizationResponse> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/integrations/github/authorize',
-      query: {
-        'scopes': scopes,
-      },
-      errors: {
-        422: `Validation Error`,
-      },
     });
   }
 
   /**
-   * Oauth:Github.Jwt.Callback
-   * The response varies based on the authentication backend used.
-   * @returns any Successful Response
+   * Github Callback
+   * @returns LoginResponse Successful Response
    * @throws ApiError
    */
   public githubCallback({
@@ -54,7 +44,7 @@ export class IntegrationsService {
     codeVerifier?: string,
     state?: string,
     error?: string,
-  }): CancelablePromise<any> {
+  }): CancelablePromise<LoginResponse> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/integrations/github/callback',
@@ -65,7 +55,6 @@ export class IntegrationsService {
         'error': error,
       },
       errors: {
-        400: `Bad Request`,
         422: `Validation Error`,
       },
     });

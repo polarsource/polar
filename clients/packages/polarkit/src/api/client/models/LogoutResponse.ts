@@ -2,7 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-export type OAuth2AuthorizeResponse = {
-  authorization_url: string;
+export type LogoutResponse = {
+  success: boolean;
 };
 

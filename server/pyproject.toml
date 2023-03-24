@@ -15,7 +15,6 @@ alembic = "^1.9.2"
 sqlalchemy = {extras = ["asyncio"], version = "^2.0.0"}
 greenlet = "^2.0.2"  # Need to be explicit, M1 Mac issue (https://github.com/python-poetry/poetry/issues/5429)
 structlog = "^22.3.0"
-fastapi-users = {extras = ["oauth", "sqlalchemy"], version = "^10.4.0"}
 githubkit = {extras = ["auth-app"], version = "^0.9.4"}
 redis = "^4.4.2"
 sse-starlette = "^1.2.1"
@@ -23,6 +22,9 @@ blinker = {git = "https://github.com/pallets-eco/blinker.git"}
 arq = "^0.25.0"
 stripe = "^5.2.0"
 sqlalchemy-searchable = "^1.4.1"
+pyjwt = "^2.6.0"
+httpx-oauth = "^0.11.0"
+pydantic = {extras = ["email"], version = "^1.10.7"}
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.12.0"

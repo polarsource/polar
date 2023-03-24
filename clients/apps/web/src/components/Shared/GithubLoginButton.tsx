@@ -5,7 +5,7 @@ const GithubLoginButton = () => {
     process.env.NEXT_PUBLIC_API_URL + '/apps/github/signin'
 
   const signin = async () => {
-    await api.integrations.githubAuthorize({ scopes: null }).then((res) => {
+    await api.integrations.githubAuthorize().then((res) => {
       if (res.authorization_url) {
         window.location.href = res.authorization_url
       }
@@ -19,10 +19,10 @@ const GithubLoginButton = () => {
         e.preventDefault()
         signin()
       }}
-      className="group transition duration-300 ease-in-out inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-slate-700"
+      className="group inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-gray-200 transition duration-300 ease-in-out hover:bg-slate-700"
     >
       <svg
-        className="w-5 h-5 text-gray-400 mr-3"
+        className="mr-3 h-5 w-5 text-gray-400"
         aria-hidden="true"
         fill="currentColor"
         viewBox="0 0 20 20"

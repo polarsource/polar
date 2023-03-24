@@ -1,3 +1,4 @@
+import FakePullRequest from 'components/Settings/FakePullRequest'
 import { NextPage } from 'next'
 import { useRouter } from 'next/router'
 import {
@@ -117,6 +118,7 @@ const SettingsPage: NextPage = () => {
             />
 
             <Box>
+              <FakePullRequest />
               <Checkbox
                 id="add-old-issues"
                 title="Add badge to old issues as well"

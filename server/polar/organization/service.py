@@ -14,7 +14,11 @@ from polar.enums import Platforms
 from polar.postgres import AsyncSession, sql
 from polar.issue.service import issue as issue_service
 
-from .schemas import OrganizationCreate, OrganizationUpdate, OrganizationSettings
+from .schemas import (
+    OrganizationCreate,
+    OrganizationSettingsUpdate,
+    OrganizationUpdate,
+)
 
 log = structlog.get_logger()
 
@@ -239,13 +243,38 @@ class OrganizationService(
         self,
         session: AsyncSession,
         organization: Organization,
-        settings: OrganizationSettings,
+        settings: OrganizationSettingsUpdate,
     ) -> Organization:
         # Leverage .update() in case we expand this with additional settings
-        organization.funding_badge_retroactive = settings.funding_badge_retroactive
-        organization.funding_badge_show_amount = settings.funding_badge_show_amount
+
+        if settings.funding_badge_retroactive is not None:
+            organization.funding_badge_retroactive = settings.funding_badge_retroactive
+
+        if settings.funding_badge_show_amount is not None:
+            organization.funding_badge_show_amount = settings.funding_badge_show_amount
+
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(timezone.utc)
+
+        if settings.email_notification_issue_receives_backing is not None:
+            organization.email_notification_issue_receives_backing = (
+                settings.email_notification_issue_receives_backing
+            )
+
+        if settings.email_notification_backed_issue_branch_created is not None:
+            organization.email_notification_backed_issue_branch_created = (
+                settings.email_notification_backed_issue_branch_created
+            )
+
+        if settings.email_notification_backed_issue_pull_request_created is not None:
+            organization.email_notification_backed_issue_pull_request_created = (
+                settings.email_notification_backed_issue_pull_request_created
+            )
+
+        if settings.email_notification_backed_issue_pull_request_merged is not None:
+            organization.email_notification_backed_issue_pull_request_merged = (
+                settings.email_notification_backed_issue_pull_request_merged
+            )
 
         updated = await organization.save(session)
         log.info(

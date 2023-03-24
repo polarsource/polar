@@ -25,7 +25,7 @@ class GithubUserService(UserService):
             sql.select(User)
             .join(OAuthAccount, User.id == OAuthAccount.user_id)
             .where(
-                OAuthAccount.oauth_name == Platforms.github.value,
+                OAuthAccount.platform == Platforms.github,
                 OAuthAccount.account_id == str(id),
             )
         )
@@ -38,10 +38,7 @@ class GithubUserService(UserService):
         github_user: GithubUser,
     ) -> dict[str, Any]:
         return {
-            "username": github_user.login,
             "platform": "github",
-            "external_id": github_user.id,
-            "avatar_url": github_user.avatar_url,
             "name": github_user.name,
             "bio": github_user.bio,
             "company": github_user.company,
@@ -66,15 +63,13 @@ class GithubUserService(UserService):
     ) -> User:
         profile = self.generate_profile_json(github_user=github_user)
         new_user = User(
-            email=EmailStr(github_user.email),
+            username=github_user.login,
+            email=github_user.email,
+            avatar_url=github_user.avatar_url,
             profile=profile,
-            hashed_password="",
-            is_active=True,
-            is_verified=True,
-            is_superuser=False,
             oauth_accounts=[
                 OAuthAccount(
-                    oauth_name=Platforms.github.value,
+                    platform=Platforms.github,
                     access_token=tokens.access_token,
                     expires_at=tokens.expires_at,
                     refresh_token=tokens.refresh_token,
@@ -100,6 +95,9 @@ class GithubUserService(UserService):
         await user.update(
             session,
             autocommit=False,
+            username=github_user.login,
+            email=github_user.email,
+            avatar_url=github_user.avatar_url,
             profile=profile,
         )
         account = user.get_platform_oauth_account(Platforms.github)
@@ -119,7 +117,7 @@ class GithubUserService(UserService):
         log.info(
             "github.user.login",
             user_id=user.id,
-            github_username=user.profile["username"],
+            username=user.username,
         )
         return user
 

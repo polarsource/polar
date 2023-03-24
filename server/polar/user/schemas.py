@@ -1,18 +1,16 @@
 import uuid
 from typing import Any
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 from polar.kit.schemas import Schema
 
 
 class UserBase(Schema):
+    username: str = Field(..., max_length=50)
     email: EmailStr
+    avatar_url: str | None
     profile: dict[str, Any]
-    hashed_password: str
-    is_active: bool = True
-    is_superuser: bool = False
-    is_verified: bool = False
 
     class Config:
         orm_mode = True

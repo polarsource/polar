@@ -31,9 +31,12 @@ const SettingsPage: NextPage = () => {
       return
     }
 
-    if (didFirstSet) {
+    if (didFirstSet.current) {
       return
     }
+
+    setBadgeAddOldIssues(!!org.funding_badge_retroactive)
+    setBadgeShowRaised(!!org.funding_badge_show_amount)
 
     setEmailIssueReceivesBacking(
       !!org.email_notification_issue_receives_backing,
@@ -118,23 +121,23 @@ const SettingsPage: NextPage = () => {
             />
 
             <Box>
-              <FakePullRequest />
+              <FakePullRequest showAmount={badgeShowRaised} />
               <Checkbox
                 id="add-old-issues"
                 title="Add badge to old issues as well"
                 description="Could impact sorting on GitHub"
-                isChecked={badgeShowRaised}
+                isChecked={badgeAddOldIssues}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setBadgeShowRaised(e.target.checked)
+                  setBadgeAddOldIssues(e.target.checked)
                   setUserChanged(true)
                 }}
               />
               <Checkbox
                 id="show-raised"
                 title="Show amount raised"
-                isChecked={badgeAddOldIssues}
+                isChecked={badgeShowRaised}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setBadgeAddOldIssues(e.target.checked)
+                  setBadgeShowRaised(e.target.checked)
                   setUserChanged(true)
                 }}
               />
@@ -211,7 +214,7 @@ const SectionDescription = ({ title, description }) => {
 
 const Box = ({ children }) => {
   return (
-    <div className=" w-full rounded-md bg-white p-5 shadow-[0_0_15px_-5px_rgba(0,0,0,0.3)]">
+    <div className=" w-full rounded-md bg-white p-5 shadow-[0_0_20px_-5px_rgba(0,0,0,0.3)]">
       <form className="flex flex-col space-y-4">{children}</form>
     </div>
   )

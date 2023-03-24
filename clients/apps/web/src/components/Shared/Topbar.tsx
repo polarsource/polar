@@ -2,7 +2,7 @@ import { Cog8ToothIcon, CubeIcon } from '@heroicons/react/24/outline'
 import StripeOnboardingButton from 'components/Shared/StripeOnboardingButton'
 import { useOrganizationAccounts } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
-import { classNames } from 'polarkit/utils/dom'
+import { classNames } from 'polarkit/utils'
 import BalanceBadge from '../Dashboard/BalanceBadge'
 import RepoSelection from '../Dashboard/RepoSelection'
 import Profile from './Profile'
@@ -28,10 +28,15 @@ const DashboardNav = () => {
       ) : (
         <StripeOnboardingButton />
       )}
-      <Cog8ToothIcon
-        className="h-6 w-6 cursor-pointer text-gray-400 transition-colors duration-100 hover:text-gray-800"
-        aria-hidden="true"
-      />
+
+      {currentOrg && (
+        <a href={`/settings/${currentOrg.name}`}>
+          <Cog8ToothIcon
+            className="h-6 w-6 cursor-pointer text-gray-400 transition-colors duration-100 hover:text-gray-800"
+            aria-hidden="true"
+          />
+        </a>
+      )}
     </>
   )
 }

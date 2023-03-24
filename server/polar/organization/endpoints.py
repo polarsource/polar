@@ -5,7 +5,7 @@ from polar.models import Organization
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, get_db_session
 
-from .schemas import OrganizationRead, OrganizationSettings
+from .schemas import OrganizationRead, OrganizationSettingsUpdate
 from .service import organization
 
 router = APIRouter(tags=["organizations"])
@@ -15,7 +15,7 @@ router = APIRouter(tags=["organizations"])
 async def update_settings(
     platform: Platforms,
     org_name: str,
-    settings: OrganizationSettings,
+    settings: OrganizationSettingsUpdate,
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:

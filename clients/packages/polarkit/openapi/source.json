@@ -1559,7 +1559,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/OrganizationSettings"
+                                "$ref": "#/components/schemas/OrganizationSettingsUpdate"
                             }
                         }
                     },
@@ -2597,6 +2597,26 @@
                         "type": "boolean",
                         "default": false
                     },
+                    "email_notification_issue_receives_backing": {
+                        "title": "Email Notification Issue Receives Backing",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "email_notification_backed_issue_branch_created": {
+                        "title": "Email Notification Backed Issue Branch Created",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "email_notification_backed_issue_pull_request_created": {
+                        "title": "Email Notification Backed Issue Pull Request Created",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "email_notification_backed_issue_pull_request_merged": {
+                        "title": "Email Notification Backed Issue Pull Request Merged",
+                        "type": "boolean",
+                        "default": false
+                    },
                     "platform": {
                         "$ref": "#/components/schemas/Platforms"
                     },
@@ -2671,19 +2691,33 @@
                     }
                 }
             },
-            "OrganizationSettings": {
-                "title": "OrganizationSettings",
+            "OrganizationSettingsUpdate": {
+                "title": "OrganizationSettingsUpdate",
                 "type": "object",
                 "properties": {
                     "funding_badge_retroactive": {
                         "title": "Funding Badge Retroactive",
-                        "type": "boolean",
-                        "default": false
+                        "type": "boolean"
                     },
                     "funding_badge_show_amount": {
                         "title": "Funding Badge Show Amount",
-                        "type": "boolean",
-                        "default": false
+                        "type": "boolean"
+                    },
+                    "email_notification_issue_receives_backing": {
+                        "title": "Email Notification Issue Receives Backing",
+                        "type": "boolean"
+                    },
+                    "email_notification_backed_issue_branch_created": {
+                        "title": "Email Notification Backed Issue Branch Created",
+                        "type": "boolean"
+                    },
+                    "email_notification_backed_issue_pull_request_created": {
+                        "title": "Email Notification Backed Issue Pull Request Created",
+                        "type": "boolean"
+                    },
+                    "email_notification_backed_issue_pull_request_merged": {
+                        "title": "Email Notification Backed Issue Pull Request Merged",
+                        "type": "boolean"
                     }
                 }
             },

@@ -30,7 +30,7 @@ export { IssueReferenceType } from './models/IssueReferenceType';
 export { IssueStatus } from './models/IssueStatus';
 export type { OAuth2AuthorizeResponse } from './models/OAuth2AuthorizeResponse';
 export type { OrganizationRead } from './models/OrganizationRead';
-export type { OrganizationSettings } from './models/OrganizationSettings';
+export type { OrganizationSettingsUpdate } from './models/OrganizationSettingsUpdate';
 export { Platforms } from './models/Platforms';
 export type { PledgeCreate } from './models/PledgeCreate';
 export type { PledgeRead } from './models/PledgeRead';

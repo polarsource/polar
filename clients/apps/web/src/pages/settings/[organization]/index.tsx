@@ -4,7 +4,7 @@ import {
   useOrganization,
   useOrganizationSettingsMutation,
 } from 'polarkit/hooks'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const SettingsPage: NextPage = () => {
   const router = useRouter()
@@ -23,7 +23,7 @@ const SettingsPage: NextPage = () => {
   const [emailPullRequestCreated, setEmailPullRequestCreated] = useState(false)
   const [emailPullRequestMerged, setEmailPullRequestMerged] = useState(false)
 
-  let didFirstSet = false
+  const didFirstSet = useRef(false)
 
   useEffect(() => {
     if (!org) {
@@ -47,12 +47,23 @@ const SettingsPage: NextPage = () => {
       !!org.email_notification_backed_issue_pull_request_merged,
     )
 
-    didFirstSet = true
+    didFirstSet.current = true
   }, [org])
 
   const mutation = useOrganizationSettingsMutation()
 
-  const save = () => {
+  const [userChanged, setUserChanged] = useState(false)
+  const [showDidSave, setShowDidSave] = useState(false)
+
+  const didSaveTimeout = useRef<undefined | ReturnType<typeof setTimeout>>(
+    undefined,
+  )
+
+  const save = async () => {
+    if (!userChanged) {
+      return
+    }
+
     mutation.mutate({
       orgName: handle,
       body: {
@@ -67,93 +78,117 @@ const SettingsPage: NextPage = () => {
           emailPullRequestMerged,
       },
     })
+
+    setShowDidSave(true)
+
+    if (didSaveTimeout.current) {
+      clearTimeout(didSaveTimeout.current)
+      didSaveTimeout.current = undefined
+    }
+
+    didSaveTimeout.current = setTimeout(() => {
+      setShowDidSave(false)
+    }, 2000)
   }
+
+  useEffect(() => {
+    save()
+  }, [
+    badgeShowRaised,
+    badgeAddOldIssues,
+    emailIssueReceivesBacking,
+    emailIssueBranchCreated,
+    emailPullRequestCreated,
+    emailPullRequestMerged,
+  ])
 
   return (
     <>
-      <div className="mx-auto mt-24 max-w-[1100px] divide-y divide-gray-200 ">
-        for={organization}
-        org={JSON.stringify(org)}
-        <br />
-        saving={JSON.stringify(mutation.isLoading)}
-        <Section>
-          <SectionDescription
-            title="Polar badge"
-            description="Polar will inject this badge into new issues on Github."
-          />
+      <div className="mx-auto mt-24 max-w-[1100px] ">
+        <div className="pl-80">
+          {showDidSave && <div className="h-4 text-black/50">Saved!</div>}
+          {!showDidSave && <div className="h-4"></div>}
+        </div>
+        <div className="divide-y divide-gray-200">
+          <Section>
+            <SectionDescription
+              title="Polar badge"
+              description="Polar will inject this badge into new issues on Github."
+            />
 
-          <Box>
-            <Checkbox
-              id="add-old-issues"
-              title="Add badge to old issues as well"
-              description="Could impact sorting on GitHub"
-              isChecked={badgeShowRaised}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setBadgeShowRaised(e.target.checked)
-                save()
-              }}
+            <Box>
+              <Checkbox
+                id="add-old-issues"
+                title="Add badge to old issues as well"
+                description="Could impact sorting on GitHub"
+                isChecked={badgeShowRaised}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setBadgeShowRaised(e.target.checked)
+                  setUserChanged(true)
+                }}
+              />
+              <Checkbox
+                id="show-raised"
+                title="Show amount raised"
+                isChecked={badgeAddOldIssues}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setBadgeAddOldIssues(e.target.checked)
+                  setUserChanged(true)
+                }}
+              />
+            </Box>
+          </Section>
+          <Section>
+            <SectionDescription
+              title="Email notifications"
+              description="Polar will send emails for the notifications enabled below."
             />
-            <Checkbox
-              id="show-raised"
-              title="Show amount raised"
-              isChecked={badgeAddOldIssues}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setBadgeAddOldIssues(e.target.checked)
-                save()
-              }}
-            />
-          </Box>
-        </Section>
-        <Section>
-          <SectionDescription
-            title="Email notifications"
-            description="Polar will send emails for the notifications enabled below."
-          />
 
-          <Box>
-            <Checkbox
-              id="email-backing"
-              title="Issue receives backing"
-              isChecked={emailIssueReceivesBacking}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setEmailIssueReceivesBacking(e.target.checked)
-                save()
-              }}
-            />
-            <Checkbox
-              id="email-branch-created"
-              title="Branch created for issue with backing"
-              isChecked={emailIssueBranchCreated}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setEmailIssueBranchCreated(e.target.checked)
-                save()
-              }}
-            />
-            <Checkbox
-              id="email-pr-created"
-              title="Pull request created for issue with backing"
-              isChecked={emailPullRequestCreated}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setEmailPullRequestCreated(e.target.checked)
-                save()
-              }}
-            />
-            <Checkbox
-              id="email-pr-merged"
-              title="Pull request merged for issue with backing"
-              isChecked={emailPullRequestMerged}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setEmailPullRequestMerged(e.target.checked)
-                save()
-              }}
-            />
-          </Box>
-        </Section>
-        <Section>
-          <SectionDescription title="Delete account" description="" />
+            <Box>
+              <Checkbox
+                id="email-backing"
+                title="Issue receives backing"
+                isChecked={emailIssueReceivesBacking}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setEmailIssueReceivesBacking(e.target.checked)
+                  setUserChanged(true)
+                }}
+              />
+              <Checkbox
+                id="email-branch-created"
+                title="Branch created for issue with backing"
+                isChecked={emailIssueBranchCreated}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setEmailIssueBranchCreated(e.target.checked)
+                  setUserChanged(true)
+                }}
+              />
+              <Checkbox
+                id="email-pr-created"
+                title="Pull request created for issue with backing"
+                isChecked={emailPullRequestCreated}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setEmailPullRequestCreated(e.target.checked)
+                  setUserChanged(true)
+                }}
+              />
+              <Checkbox
+                id="email-pr-merged"
+                title="Pull request merged for issue with backing"
+                isChecked={emailPullRequestMerged}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setEmailPullRequestMerged(e.target.checked)
+                  setUserChanged(true)
+                }}
+              />
+            </Box>
+          </Section>
+          <Section>
+            <SectionDescription title="Delete account" description="" />
 
-          <Box>xx</Box>
-        </Section>
+            <Box>xx</Box>
+          </Section>
+        </div>
       </div>
     </>
   )

@@ -302,8 +302,6 @@ async def pull_request_synchronize(
 async def installation_created(
     ctx: JobContext, scope: str, action: str, payload: dict[str, Any]
 ) -> dict[str, Any]:
-    # TODO: Handle user permission?
-
     event = github.webhooks.parse_obj(scope, payload)
     if not isinstance(event, github.webhooks.InstallationCreated):
         log.error("github.webhook.unexpected_type")
@@ -342,6 +340,13 @@ async def installation_created(
             installation_suspended_at=event.installation.suspended_at,
         )
         organization = await service.github_organization.upsert(session, create_schema)
+
+        # Sync permission for the installing user
+        sender = await service.github_user.get_user_by_github_id(
+            session, event.sender.id
+        )
+        if sender:
+            await service.github_user.sync_github_admin_orgs(session, sender)
 
         if event.repositories:
             await add_repositories(session, organization, event.repositories)

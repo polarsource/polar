@@ -1,8 +1,10 @@
 from typing import Callable, List
 import structlog
 from polar.enums import Platforms
+from polar.kit.extensions.sqlalchemy import sql
 
 from polar.models import User
+from polar.models.user import OAuthAccount
 from polar.postgres import AsyncSession
 from polar.user.service import UserService
 from polar.organization.service import organization
@@ -13,6 +15,20 @@ log = structlog.get_logger()
 
 
 class GithubUserService(UserService):
+    async def get_user_by_github_id(
+        self, session: AsyncSession, id: int
+    ) -> User | None:
+        stmt = (
+            sql.select(User)
+            .join(OAuthAccount, User.id == OAuthAccount.user_id)
+            .where(
+                OAuthAccount.oauth_name == "github",
+                OAuthAccount.account_id == str(id),
+            )
+        )
+        res = await session.execute(stmt)
+        return res.scalars().unique().first()
+
     async def update_profile(
         self, session: AsyncSession, user: User, access_token: str
     ) -> User:

@@ -11,6 +11,16 @@ from .service import organization
 router = APIRouter(tags=["organizations"])
 
 
+@router.get("/{platform}/{organization_name}", response_model=OrganizationRead)
+async def get(
+    platform: Platforms,
+    org_name: str,
+    auth: Auth = Depends(Auth.user_with_org_access),
+) -> Organization:
+    org = auth.organization
+    return org
+
+
 @router.put("/{platform}/{organization_name}/settings", response_model=OrganizationRead)
 async def update_settings(
     platform: Platforms,

@@ -1529,6 +1529,61 @@
                 ]
             }
         },
+        "/api/v1/{platform}/{organization_name}": {
+            "get": {
+                "tags": [
+                    "organizations"
+                ],
+                "summary": "Get",
+                "operationId": "get",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Org Name",
+                            "type": "string"
+                        },
+                        "name": "org_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrganizationRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "APIKeyCookie": []
+                    }
+                ]
+            }
+        },
         "/api/v1/{platform}/{organization_name}/settings": {
             "put": {
                 "tags": [

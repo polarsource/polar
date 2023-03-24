@@ -13,6 +13,33 @@ export class OrganizationsService {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
+   * Get
+   * @returns OrganizationRead Successful Response
+   * @throws ApiError
+   */
+  public get({
+    platform,
+    orgName,
+  }: {
+    platform: Platforms,
+    orgName: string,
+  }): CancelablePromise<OrganizationRead> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/{platform}/{organization_name}',
+      path: {
+        'platform': platform,
+      },
+      query: {
+        'org_name': orgName,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
    * Update Settings
    * @returns OrganizationRead Successful Response
    * @throws ApiError

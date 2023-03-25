@@ -346,7 +346,7 @@ async def installation_created(
             session, event.sender.id
         )
         if sender:
-            await service.github_user.sync_github_admin_orgs(session, sender)
+            await service.github_user.sync_github_admin_orgs(session, user=sender)
 
         if event.repositories:
             await add_repositories(session, organization, event.repositories)

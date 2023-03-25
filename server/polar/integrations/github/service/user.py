@@ -9,6 +9,7 @@ from polar.postgres import AsyncSession
 from polar.user.service import UserService, user as user_service
 from polar.user.schemas import UserCreate
 from polar.organization.service import organization
+from polar.integrations.github.client import GitHub, TokenAuthStrategy
 
 from .. import client as github
 from ..schemas import OAuthAccessToken
@@ -124,9 +125,8 @@ class GithubUserService(UserService):
     async def login_or_signup(
         self, session: AsyncSession, *, tokens: OAuthAccessToken
     ) -> User:
-        authenticated = await self.fetch_authenticated_user(
-            access_token=tokens.access_token
-        )
+        client = github.get_client(access_token=tokens.access_token)
+        authenticated = await self.fetch_authenticated_user(client=client)
         existing_user = await self.get_user_by_github_id(session, id=authenticated.id)
         if existing_user:
             user = await self.login(
@@ -135,15 +135,34 @@ class GithubUserService(UserService):
         else:
             user = await self.signup(session, github_user=authenticated, tokens=tokens)
 
-        await self.sync_github_admin_orgs(session, user)
+        await self._run_sync_github_admin_orgs(
+            session,
+            user=user,
+            github_user=authenticated,
+        )
         return user
 
-    async def sync_github_admin_orgs(self, session: AsyncSession, user: User) -> None:
-        installations = await self.fetch_user_accessible_installations(session, user)
-
+    async def sync_github_admin_orgs(
+        self, session: AsyncSession, *, user: User
+    ) -> None:
         user_client = await github.get_user_client(session, user)
-        self_github_user = user_client.rest.users.get_authenticated()
+        github_user = await self.fetch_authenticated_user(
+            client=user_client, email_required=False
+        )
+        await self._run_sync_github_admin_orgs(
+            session,
+            user=user,
+            github_user=github_user,
+        )
 
+    async def _run_sync_github_admin_orgs(
+        self,
+        session: AsyncSession,
+        *,
+        user: User,
+        github_user: GithubUser,
+    ) -> None:
+        installations = await self.fetch_user_accessible_installations(session, user)
         log.info(
             "sync_github_admin_orgs.installations",
             user_id=user.id,
@@ -152,12 +171,13 @@ class GithubUserService(UserService):
 
         gh_oauth = user.get_platform_oauth_account(Platforms.github)
         if not gh_oauth:
-            log.error("sync_github_admin_orgs.no-platform-oauth-found", user_id=user.id)
+            log.error("sync_github_admin_orgs.no_platform_oauth_found", user_id=user.id)
             return
 
         for i in installations:
             if not i.account:
                 continue
+
             if isinstance(i.account, github.rest.Enterprise):
                 log.error("sync_github_admin_orgs.github_enterprise_not_supoprted")
                 continue
@@ -166,7 +186,7 @@ class GithubUserService(UserService):
                 session, Platforms.github, i.account.id
             )
             if not org:
-                log.error("sync_github_admin_orgs.org-not-found", id=i.id)
+                log.error("sync_github_admin_orgs.org_not_found", id=i.id)
                 continue
 
             # If installed on personal account, always admin
@@ -187,7 +207,7 @@ class GithubUserService(UserService):
                     # If installed on github org, check access
                     membership = await client.rest.orgs.async_get_membership_for_user(
                         i.account.login,
-                        self_github_user.parsed_data.login,
+                        github_user.login,
                     )
 
                     data = membership.parsed_data
@@ -208,14 +228,17 @@ class GithubUserService(UserService):
                         user_id=user.id,
                     )
 
-    async def fetch_authenticated_user(self, *, access_token: str) -> GithubUser:
-        client = github.get_client(access_token)
-
+    async def fetch_authenticated_user(
+        self,
+        *,
+        client: GitHub[TokenAuthStrategy],
+        email_required: bool = True,
+    ) -> GithubUser:
         # Get authenticated github user
         response = await client.rest.users.async_get_authenticated()
         github.ensure_expected_response(response)
         gh_user = response.parsed_data
-        if github.is_set(gh_user, "email"):
+        if not email_required or github.is_set(gh_user, "email"):
             return gh_user
 
         # No public email. Using our user:email scope permission to fetch

@@ -6,8 +6,10 @@ from typing import List, Sequence
 import structlog
 
 from polar.kit.services import ResourceService
+from polar.models.user import User
 from polar.models.pledge import Pledge
 from polar.postgres import AsyncSession, sql
+from polar.exceptions import ResourceNotFound
 
 from .schemas import PledgeCreate, PledgeUpdate
 
@@ -34,6 +36,20 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         res = await session.execute(statement)
         issues = res.scalars().unique().all()
         return issues
+
+    async def connect_backer(
+        self,
+        session: AsyncSession,
+        pledge_id: UUID,
+        backer: User,
+    ) -> None:
+        pledge = await self.get(session, id=pledge_id)
+        if not pledge:
+            raise ResourceNotFound(f"Pledge not found with id: {pledge_id}")
+
+        pledge.backer_user_id = backer.id
+        session.add(pledge)
+        await session.commit()
 
 
 pledge = PledgeService(Pledge)

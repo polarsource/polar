@@ -1,3 +1,4 @@
+from uuid import UUID
 from typing import Any, Literal
 
 import structlog
@@ -22,12 +23,18 @@ from polar.organization.schemas import OrganizationRead
 from polar.postgres import AsyncSession, get_db_session
 from polar.worker import enqueue_job
 from polar.auth.service import AuthService, LoginResponse
+from polar.pledge.service import pledge as pledge_service
+
 
 from .service.organization import github_organization
 from .service.repository import github_repository
 from .service.issue import github_issue
 from .service.user import github_user
-from .schemas import GithubBadgeRead, AuthorizationResponse, OAuthAccessToken
+from .schemas import (
+    GithubBadgeRead,
+    AuthorizationResponse,
+    OAuthAccessToken,
+)
 
 log = structlog.get_logger()
 
@@ -47,14 +54,18 @@ oauth2_authorize_callback = OAuth2AuthorizeCallback(
 
 
 @router.get("/authorize")
-async def github_authorize() -> AuthorizationResponse:
-    state = jwt.encode(
-        data={},
+async def github_authorize(pledge_id: UUID | None) -> AuthorizationResponse:
+    state = {}
+    if pledge_id:
+        state["pledge_id"] = str(pledge_id)
+
+    encoded_state = jwt.encode(
+        data=state,
         secret=settings.SECRET,
     )
     authorization_url = await github_oauth_client.get_authorization_url(
         redirect_uri=settings.GITHUB_REDIRECT_URL,
-        state=state,
+        state=encoded_state,
         scope=["user", "user:email"],
     )
     return AuthorizationResponse(authorization_url=authorization_url)
@@ -83,6 +94,10 @@ async def github_callback(
         raise HTTPException(status_code=400, detail="Invalid token data")
 
     user = await github_user.login_or_signup(session, tokens=tokens)
+    pledge_id = state_data.get("pledge_id")
+    if pledge_id:
+        await pledge_service.connect_backer(session, pledge_id=pledge_id, backer=user)
+
     return AuthService.generate_login_response(response=response, user=user)
 
 

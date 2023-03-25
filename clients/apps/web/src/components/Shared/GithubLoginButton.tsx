@@ -1,15 +1,19 @@
 import { api } from 'polarkit'
 
-const GithubLoginButton = () => {
+const GithubLoginButton = (props: { pledgeId: string | undefined }) => {
   const githubSigninUrl =
     process.env.NEXT_PUBLIC_API_URL + '/apps/github/signin'
 
   const signin = async () => {
-    await api.integrations.githubAuthorize().then((res) => {
-      if (res.authorization_url) {
-        window.location.href = res.authorization_url
-      }
-    })
+    await api.integrations
+      .githubAuthorize({
+        pledgeId: props.pledgeId,
+      })
+      .then((res) => {
+        if (res.authorization_url) {
+          window.location.href = res.authorization_url
+        }
+      })
   }
 
   return (

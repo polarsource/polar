@@ -22,10 +22,20 @@ export class IntegrationsService {
    * @returns AuthorizationResponse Successful Response
    * @throws ApiError
    */
-  public githubAuthorize(): CancelablePromise<AuthorizationResponse> {
+  public githubAuthorize({
+    pledgeId,
+  }: {
+    pledgeId: string,
+  }): CancelablePromise<AuthorizationResponse> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/integrations/github/authorize',
+      query: {
+        'pledge_id': pledgeId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
     });
   }
 

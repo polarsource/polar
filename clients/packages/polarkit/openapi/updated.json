@@ -79,6 +79,18 @@
                 ],
                 "summary": "Github Authorize",
                 "operationId": "github_authorize",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Pledge Id",
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "name": "pledge_id",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful Response",
@@ -86,6 +98,16 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/AuthorizationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
                                 }
                             }
                         }

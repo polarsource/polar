@@ -252,36 +252,5 @@ class GithubUserService(UserService):
             res.append(install)
         return res
 
-    async def fetch_user_accessible_installation_repositories(
-        self,
-        session: AsyncSession,
-        user: User,
-        installation_id: int,
-    ) -> List[github.rest.Repository]:
-        """
-        Load user accessible repositories from GitHub API
-        Finds the union between user accessible repositories in an installation and the
-        users user-to-server-token.
-        """
-        client = await github.get_user_client(session, user)
-
-        res = []
-
-        def map_func(
-            r: github.Response[
-                github.rest.UserInstallationsInstallationIdRepositoriesGetResponse200
-            ],
-        ):
-            return r.parsed_data.repositories
-
-        async for repo in client.paginate(
-            client.rest.apps.async_list_installation_repos_for_authenticated_user,
-            map_func=map_func,
-            installation_id=installation_id,
-        ):
-            res.append(repo)
-
-        return res
-
 
 github_user = GithubUserService(User)

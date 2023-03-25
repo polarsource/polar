@@ -54,7 +54,7 @@ oauth2_authorize_callback = OAuth2AuthorizeCallback(
 
 
 @router.get("/authorize")
-async def github_authorize(pledge_id: UUID | None) -> AuthorizationResponse:
+async def github_authorize(pledge_id: UUID | None = None) -> AuthorizationResponse:
     state = {}
     if pledge_id:
         state["pledge_id"] = str(pledge_id)

@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     # working Github badges in development.
     FRONTEND_BASE_URL: str = "http://127.0.0.1:3000"
 
+    # Auth cookie
+    AUTH_COOKIE_KEY: str = "polar"
+    AUTH_COOKIE_TTL_SECONDS: int = 60 * 60 * 24 * 31  # 31 days
+
     # Postgres
     POSTGRES_SCHEME: str = "postgresql+asyncpg"
     POSTGRES_USER: str = "polar"

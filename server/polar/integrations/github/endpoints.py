@@ -1,12 +1,19 @@
 from typing import Any, Literal
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+)
 from httpx_oauth.clients.github import GitHubOAuth2
-from pydantic import BaseModel
+from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
+from pydantic import BaseModel, ValidationError
 
-from polar.auth.session import auth_backend
-from polar.auth.dependencies import current_active_user, fastapi_users
+from polar.kit import jwt
+from polar.auth.dependencies import current_active_user
 from polar.config import settings
 from polar.enums import Platforms
 from polar.integrations.github import client as github
@@ -14,34 +21,70 @@ from polar.models import Organization, User
 from polar.organization.schemas import OrganizationRead
 from polar.postgres import AsyncSession, get_db_session
 from polar.worker import enqueue_job
+from polar.auth.service import AuthService, LoginResponse
 
 from .service.organization import github_organization
 from .service.repository import github_repository
 from .service.issue import github_issue
-from .schemas import GithubBadgeRead
+from .service.user import github_user
+from .schemas import GithubBadgeRead, AuthorizationResponse, OAuthAccessToken
 
 log = structlog.get_logger()
 
 router = APIRouter(prefix="/integrations/github", tags=["integrations"])
 
+
+###############################################################################
+# LOGIN
+###############################################################################
+
 github_oauth_client = GitHubOAuth2(
     settings.GITHUB_CLIENT_ID, settings.GITHUB_CLIENT_SECRET
 )
-
-
-###############################################################################
-# ACCOUNT
-###############################################################################
-
-router.include_router(
-    fastapi_users.get_oauth_router(
-        github_oauth_client,
-        auth_backend,
-        settings.SECRET,
-        redirect_url=settings.GITHUB_REDIRECT_URL,
-        associate_by_email=True,
-    ),
+oauth2_authorize_callback = OAuth2AuthorizeCallback(
+    github_oauth_client, redirect_url=settings.GITHUB_REDIRECT_URL
 )
+
+
+@router.get("/authorize")
+async def github_authorize() -> AuthorizationResponse:
+    state = jwt.encode(
+        data={},
+        secret=settings.SECRET,
+    )
+    authorization_url = await github_oauth_client.get_authorization_url(
+        redirect_uri=settings.GITHUB_REDIRECT_URL,
+        state=state,
+        scope=["user", "user:email"],
+    )
+    return AuthorizationResponse(authorization_url=authorization_url)
+
+
+@router.get("/callback")
+async def github_callback(
+    request: Request,
+    response: Response,
+    session: AsyncSession = Depends(get_db_session),
+    access_token_state=Depends(oauth2_authorize_callback),
+) -> LoginResponse:
+    token_data, state = access_token_state
+    error_description = token_data.get("error_description")
+    if error_description:
+        raise HTTPException(status_code=403, detail=error_description)
+
+    try:
+        state_data = jwt.decode(token=state, secret=settings.SECRET)
+    except jwt.DecodeError:
+        raise HTTPException(status_code=400, detail="Invalid state")
+
+    try:
+        tokens = OAuthAccessToken(**token_data)
+    except ValidationError:
+        raise HTTPException(status_code=400, detail="Invalid token data")
+
+    user = await github_user.login_or_signup(session, tokens=tokens)
+    return AuthService.generate_login_response(response=response, user=user)
+
 
 ###############################################################################
 # BADGE

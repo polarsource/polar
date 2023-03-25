@@ -1,23 +1,28 @@
 import uuid
 from typing import Any
 
-from fastapi_users import schemas
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 
 from polar.kit.schemas import Schema
 
 
-class UserBase(BaseModel):
+class UserBase(Schema):
+    username: str = Field(..., max_length=50)
+    email: EmailStr
+    avatar_url: str | None
     profile: dict[str, Any]
 
+    class Config:
+        orm_mode = True
 
-class UserRead(schemas.BaseUser[uuid.UUID], UserBase):
+
+class UserRead(UserBase):
+    id: uuid.UUID
+
+
+class UserCreate(UserBase):
     ...
 
 
-class UserCreate(schemas.BaseUserCreate, UserBase, Schema):
-    ...
-
-
-class UserUpdate(schemas.BaseUserUpdate, UserBase, Schema):
+class UserUpdate(UserBase):
     ...

@@ -5,9 +5,10 @@ from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.schema import UniqueConstraint
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
+from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 from polar.enums import Platforms
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -17,12 +18,18 @@ if TYPE_CHECKING:  # pragma: no cover
 
 class OAuthAccount(RecordModel):
     __tablename__ = "oauth_accounts"
+    __table_args__ = (
+        UniqueConstraint(
+            "platform",
+            "account_id",
+        ),
+    )
 
-    oauth_name: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
+    platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
     access_token: Mapped[str] = mapped_column(String(1024), nullable=False)
     expires_at: Mapped[int | None] = mapped_column(Integer, nullable=True)
     refresh_token: Mapped[str | None] = mapped_column(String(1024), nullable=True)
-    account_id: Mapped[str] = mapped_column(String(320), index=True, nullable=False)
+    account_id: Mapped[str] = mapped_column(String(320), nullable=False)
     account_email: Mapped[str] = mapped_column(String(320), nullable=False)
     user_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
@@ -30,21 +37,22 @@ class OAuthAccount(RecordModel):
         nullable=False,
     )
 
+    user: Mapped["User"] = relationship("User", back_populates="oauth_accounts")
+
 
 class User(RecordModel):
     __tablename__ = "users"
 
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False)
-    hashed_password: Mapped[str] = mapped_column(String(1024), nullable=False)
+    avatar_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+
     profile: Mapped[dict[str, Any] | None] = mapped_column(
         JSONB, default={}, nullable=True
     )
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    is_superuser: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     oauth_accounts: Mapped[list[OAuthAccount]] = relationship(
-        OAuthAccount, lazy="joined"
+        OAuthAccount, lazy="joined", back_populates="user"
     )
 
     organization_associations: "Mapped[list[UserOrganization]]" = relationship(
@@ -59,11 +67,8 @@ class User(RecordModel):
 
     __mutables__ = {"email", "profile"}
 
-    def get_primary_oauth_account(self) -> OAuthAccount:
-        return self.oauth_accounts[0]
-
     def get_platform_oauth_account(self, platform: Platforms) -> OAuthAccount | None:
         for account in self.oauth_accounts:
-            if account.oauth_name == platform.value:
+            if account.platform == platform:
                 return account
         return None

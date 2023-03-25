@@ -10,8 +10,8 @@
                 "tags": [
                     "users"
                 ],
-                "summary": "Users:Current User",
-                "operationId": "users:users:current_user",
+                "summary": "Get Authenticated",
+                "operationId": "users:get_authenticated",
                 "responses": {
                     "200": {
                         "description": "Successful Response",
@@ -19,342 +19,6 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/UserRead"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Missing token or inactive user."
-                    }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
-            },
-            "patch": {
-                "tags": [
-                    "users"
-                ],
-                "summary": "Users:Patch Current User",
-                "operationId": "users:users:patch_current_user",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/UserUpdate"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/UserRead"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "UPDATE_USER_EMAIL_ALREADY_EXISTS": {
-                                        "summary": "A user with this email already exists.",
-                                        "value": {
-                                            "detail": "UPDATE_USER_EMAIL_ALREADY_EXISTS"
-                                        }
-                                    },
-                                    "UPDATE_USER_INVALID_PASSWORD": {
-                                        "summary": "Password validation failed.",
-                                        "value": {
-                                            "detail": {
-                                                "code": "UPDATE_USER_INVALID_PASSWORD",
-                                                "reason": "Password should beat least 3 characters"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Missing token or inactive user."
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
-            }
-        },
-        "/api/v1/users/{id}": {
-            "get": {
-                "tags": [
-                    "users"
-                ],
-                "summary": "Users:User",
-                "operationId": "users:users:user",
-                "parameters": [
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Id"
-                        },
-                        "name": "id",
-                        "in": "path"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/UserRead"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Missing token or inactive user."
-                    },
-                    "403": {
-                        "description": "Not a superuser."
-                    },
-                    "404": {
-                        "description": "The user does not exist."
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
-            },
-            "delete": {
-                "tags": [
-                    "users"
-                ],
-                "summary": "Users:Delete User",
-                "operationId": "users:users:delete_user",
-                "parameters": [
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Id"
-                        },
-                        "name": "id",
-                        "in": "path"
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Successful Response"
-                    },
-                    "401": {
-                        "description": "Missing token or inactive user."
-                    },
-                    "403": {
-                        "description": "Not a superuser."
-                    },
-                    "404": {
-                        "description": "The user does not exist."
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
-            },
-            "patch": {
-                "tags": [
-                    "users"
-                ],
-                "summary": "Users:Patch User",
-                "operationId": "users:users:patch_user",
-                "parameters": [
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Id"
-                        },
-                        "name": "id",
-                        "in": "path"
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/UserUpdate"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/UserRead"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "UPDATE_USER_EMAIL_ALREADY_EXISTS": {
-                                        "summary": "A user with this email already exists.",
-                                        "value": {
-                                            "detail": "UPDATE_USER_EMAIL_ALREADY_EXISTS"
-                                        }
-                                    },
-                                    "UPDATE_USER_INVALID_PASSWORD": {
-                                        "summary": "Password validation failed.",
-                                        "value": {
-                                            "detail": {
-                                                "code": "UPDATE_USER_INVALID_PASSWORD",
-                                                "reason": "Password should beat least 3 characters"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Missing token or inactive user."
-                    },
-                    "403": {
-                        "description": "Not a superuser."
-                    },
-                    "404": {
-                        "description": "The user does not exist."
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
-            }
-        },
-        "/api/v1/users/login": {
-            "post": {
-                "tags": [
-                    "users"
-                ],
-                "summary": "Auth:Jwt.Login",
-                "operationId": "users:auth:jwt.login",
-                "requestBody": {
-                    "content": {
-                        "application/x-www-form-urlencoded": {
-                            "schema": {
-                                "$ref": "#/components/schemas/Body_users_auth_jwt.login"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {}
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "LOGIN_BAD_CREDENTIALS": {
-                                        "summary": "Bad credentials or the user is inactive.",
-                                        "value": {
-                                            "detail": "LOGIN_BAD_CREDENTIALS"
-                                        }
-                                    },
-                                    "LOGIN_USER_NOT_VERIFIED": {
-                                        "summary": "The user is not verified.",
-                                        "value": {
-                                            "detail": "LOGIN_USER_NOT_VERIFIED"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
                                 }
                             }
                         }
@@ -363,30 +27,24 @@
             }
         },
         "/api/v1/users/logout": {
-            "post": {
+            "get": {
                 "tags": [
                     "users"
                 ],
-                "summary": "Auth:Jwt.Logout",
-                "operationId": "users:auth:jwt.logout",
+                "summary": "Logout",
+                "operationId": "users:logout",
                 "responses": {
                     "200": {
                         "description": "Successful Response",
                         "content": {
                             "application/json": {
-                                "schema": {}
+                                "schema": {
+                                    "$ref": "#/components/schemas/LogoutResponse"
+                                }
                             }
                         }
-                    },
-                    "401": {
-                        "description": "Missing token or inactive user."
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/user/organizations": {
@@ -411,12 +69,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/integrations/github/authorize": {
@@ -424,39 +77,15 @@
                 "tags": [
                     "integrations"
                 ],
-                "summary": "Oauth:Github.Jwt.Authorize",
-                "operationId": "integrations:oauth:github.jwt.authorize",
-                "parameters": [
-                    {
-                        "required": false,
-                        "schema": {
-                            "title": "Scopes",
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        },
-                        "name": "scopes",
-                        "in": "query"
-                    }
-                ],
+                "summary": "Github Authorize",
+                "operationId": "integrations:github_authorize",
                 "responses": {
                     "200": {
                         "description": "Successful Response",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/OAuth2AuthorizeResponse"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                    "$ref": "#/components/schemas/AuthorizationResponse"
                                 }
                             }
                         }
@@ -469,9 +98,8 @@
                 "tags": [
                     "integrations"
                 ],
-                "summary": "Oauth:Github.Jwt.Callback",
-                "description": "The response varies based on the authentication backend used.",
-                "operationId": "integrations:oauth:github.jwt.callback",
+                "summary": "Github Callback",
+                "operationId": "integrations:github_callback",
                 "parameters": [
                     {
                         "required": false,
@@ -515,27 +143,8 @@
                         "description": "Successful Response",
                         "content": {
                             "application/json": {
-                                "schema": {}
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "content": {
-                            "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "INVALID_STATE_TOKEN": {
-                                        "summary": "Invalid state token."
-                                    },
-                                    "LOGIN_BAD_CREDENTIALS": {
-                                        "summary": "User is inactive.",
-                                        "value": {
-                                            "detail": "LOGIN_BAD_CREDENTIALS"
-                                        }
-                                    }
+                                    "$ref": "#/components/schemas/LoginResponse"
                                 }
                             }
                         }
@@ -663,12 +272,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/integrations/github/webhook": {
@@ -737,12 +341,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/integrations/stripe/refresh": {
@@ -847,12 +446,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/{platform}/{org_name}/{repo_name}/issues": {
@@ -915,12 +509,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}": {
@@ -1060,12 +649,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}/pledge": {
@@ -1382,12 +966,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/user/stream": {
@@ -1406,12 +985,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/{platform}/{org_name}/stream": {
@@ -1459,12 +1033,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/{platform}/{org_name}/{repo_name}/stream": {
@@ -1521,12 +1090,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/{platform}/{organization_name}": {
@@ -1576,12 +1140,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/{platform}/{organization_name}/settings": {
@@ -1641,12 +1200,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/{platform}/{org_name}/dashboard": {
@@ -1725,12 +1279,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/{platform}/{org_name}/accounts": {
@@ -1784,12 +1333,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             },
             "post": {
                 "tags": [
@@ -1847,12 +1391,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/{platform}/{org_name}/accounts/{stripe_id}/onboarding_link": {
@@ -1911,12 +1450,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/{platform}/{org_name}/accounts/{stripe_id}/dashboard_link": {
@@ -1975,12 +1509,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "APIKeyCookie": []
-                    }
-                ]
+                }
             }
         }
     },
@@ -2054,6 +1583,19 @@
                 "type": "string",
                 "description": "An enumeration."
             },
+            "AuthorizationResponse": {
+                "title": "AuthorizationResponse",
+                "required": [
+                    "authorization_url"
+                ],
+                "type": "object",
+                "properties": {
+                    "authorization_url": {
+                        "title": "Authorization Url",
+                        "type": "string"
+                    }
+                }
+            },
             "BadgeAmount": {
                 "title": "BadgeAmount",
                 "required": [
@@ -2069,42 +1611,6 @@
                     "amount": {
                         "title": "Amount",
                         "type": "number"
-                    }
-                }
-            },
-            "Body_users_auth_jwt.login": {
-                "title": "Body_users:auth:jwt.login",
-                "required": [
-                    "username",
-                    "password"
-                ],
-                "type": "object",
-                "properties": {
-                    "grant_type": {
-                        "title": "Grant Type",
-                        "pattern": "password",
-                        "type": "string"
-                    },
-                    "username": {
-                        "title": "Username",
-                        "type": "string"
-                    },
-                    "password": {
-                        "title": "Password",
-                        "type": "string"
-                    },
-                    "scope": {
-                        "title": "Scope",
-                        "type": "string",
-                        "default": ""
-                    },
-                    "client_id": {
-                        "title": "Client Id",
-                        "type": "string"
-                    },
-                    "client_secret": {
-                        "title": "Client Secret",
-                        "type": "string"
                     }
                 }
             },
@@ -2180,29 +1686,6 @@
                             "$ref": "#/components/schemas/Relationship"
                         },
                         "default": []
-                    }
-                }
-            },
-            "ErrorModel": {
-                "title": "ErrorModel",
-                "required": [
-                    "detail"
-                ],
-                "type": "object",
-                "properties": {
-                    "detail": {
-                        "title": "Detail",
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "object",
-                                "additionalProperties": {
-                                    "type": "string"
-                                }
-                            }
-                        ]
                     }
                 }
             },
@@ -2612,16 +2095,35 @@
                 "type": "string",
                 "description": "An enumeration."
             },
-            "OAuth2AuthorizeResponse": {
-                "title": "OAuth2AuthorizeResponse",
+            "LoginResponse": {
+                "title": "LoginResponse",
                 "required": [
-                    "authorization_url"
+                    "success",
+                    "expires_at"
                 ],
                 "type": "object",
                 "properties": {
-                    "authorization_url": {
-                        "title": "Authorization Url",
-                        "type": "string"
+                    "success": {
+                        "title": "Success",
+                        "type": "boolean"
+                    },
+                    "expires_at": {
+                        "title": "Expires At",
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "LogoutResponse": {
+                "title": "LogoutResponse",
+                "required": [
+                    "success"
+                ],
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "title": "Success",
+                        "type": "boolean"
                     }
                 }
             },
@@ -3440,22 +2942,25 @@
             "UserRead": {
                 "title": "UserRead",
                 "required": [
+                    "email",
                     "profile",
-                    "email"
+                    "hashed_password",
+                    "id"
                 ],
                 "type": "object",
                 "properties": {
-                    "profile": {
-                        "title": "Profile",
-                        "type": "object"
-                    },
-                    "id": {
-                        "title": "Id"
-                    },
                     "email": {
                         "title": "Email",
                         "type": "string",
                         "format": "email"
+                    },
+                    "profile": {
+                        "title": "Profile",
+                        "type": "object"
+                    },
+                    "hashed_password": {
+                        "title": "Hashed Password",
+                        "type": "string"
                     },
                     "is_active": {
                         "title": "Is Active",
@@ -3471,41 +2976,11 @@
                         "title": "Is Verified",
                         "type": "boolean",
                         "default": false
-                    }
-                },
-                "description": "Base User model."
-            },
-            "UserUpdate": {
-                "title": "UserUpdate",
-                "required": [
-                    "profile"
-                ],
-                "type": "object",
-                "properties": {
-                    "profile": {
-                        "title": "Profile",
-                        "type": "object"
                     },
-                    "password": {
-                        "title": "Password",
-                        "type": "string"
-                    },
-                    "email": {
-                        "title": "Email",
+                    "id": {
+                        "title": "Id",
                         "type": "string",
-                        "format": "email"
-                    },
-                    "is_active": {
-                        "title": "Is Active",
-                        "type": "boolean"
-                    },
-                    "is_superuser": {
-                        "title": "Is Superuser",
-                        "type": "boolean"
-                    },
-                    "is_verified": {
-                        "title": "Is Verified",
-                        "type": "boolean"
+                        "format": "uuid"
                     }
                 }
             },
@@ -3611,13 +3086,6 @@
                 ],
                 "type": "string",
                 "description": "An enumeration."
-            }
-        },
-        "securitySchemes": {
-            "APIKeyCookie": {
-                "type": "apiKey",
-                "in": "cookie",
-                "name": "polar"
             }
         }
     }

@@ -3,12 +3,10 @@
 /* eslint-disable */
 
 export type UserRead = {
+  username: string;
   email: string;
+  avatar_url?: string;
   profile: any;
-  hashed_password: string;
-  is_active?: boolean;
-  is_superuser?: boolean;
-  is_verified?: boolean;
   id: string;
 };
 

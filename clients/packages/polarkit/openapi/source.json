@@ -2942,40 +2942,30 @@
             "UserRead": {
                 "title": "UserRead",
                 "required": [
+                    "username",
                     "email",
                     "profile",
-                    "hashed_password",
                     "id"
                 ],
                 "type": "object",
                 "properties": {
+                    "username": {
+                        "title": "Username",
+                        "maxLength": 50,
+                        "type": "string"
+                    },
                     "email": {
                         "title": "Email",
                         "type": "string",
                         "format": "email"
                     },
+                    "avatar_url": {
+                        "title": "Avatar Url",
+                        "type": "string"
+                    },
                     "profile": {
                         "title": "Profile",
                         "type": "object"
-                    },
-                    "hashed_password": {
-                        "title": "Hashed Password",
-                        "type": "string"
-                    },
-                    "is_active": {
-                        "title": "Is Active",
-                        "type": "boolean",
-                        "default": true
-                    },
-                    "is_superuser": {
-                        "title": "Is Superuser",
-                        "type": "boolean",
-                        "default": false
-                    },
-                    "is_verified": {
-                        "title": "Is Verified",
-                        "type": "boolean",
-                        "default": false
                     },
                     "id": {
                         "title": "Id",

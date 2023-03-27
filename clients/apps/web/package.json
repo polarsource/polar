@@ -22,7 +22,6 @@
     "polarkit": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.4.1",
     "react-time-ago": "^7.2.1",
     "sass": "^1.59.3",
     "satori": "^0.4.2"
@@ -31,7 +30,6 @@
     "@types/node": "18.7.16",
     "@types/react": "18.0.18",
     "@types/react-dom": "18.0.6",
-    "@types/react-router-dom": "^5.3.3",
     "autoprefixer": "^10.4.8",
     "eslint": "8.23.0",
     "eslint-config-custom": "workspace:*",

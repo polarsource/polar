@@ -2,16 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-
-  async rewrites() {
-    return [
-      {
-        source: '/dashboard/:any*',
-        destination: '/dashboard',
-      },
-    ]
-  },
-
   transpilePackages: ['polarkit'],
 }
 

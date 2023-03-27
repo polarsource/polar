@@ -4,20 +4,19 @@ import {
 } from '@heroicons/react/20/solid'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { Command } from 'cmdk'
+import { useRouter } from 'next/router'
 import { CONFIG } from 'polarkit'
 import { OrganizationRead, RepositoryRead } from 'polarkit/api/client'
 import { requireAuth, useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import React, { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
 import useOutsideClick from 'utils/useOutsideClick'
 
 export function RepoSelection() {
   const [value, setValue] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement | null>(null)
   const listRef = React.useRef(null)
-  const navigate = useNavigate()
-  const location = useLocation()
+  const router = useRouter()
 
   const [open, setOpen] = React.useState(false)
 
@@ -88,7 +87,7 @@ export function RepoSelection() {
     if (dropdownSelectedOrg && dropdownSelectedOrg.id === org.id) {
       setCurrentOrgRepo(org, undefined)
       resetDropdown()
-      navigate(`/dashboard/${org.name}`)
+      router.push(`/dashboard/${org.name}`)
       return
     }
 
@@ -100,7 +99,7 @@ export function RepoSelection() {
     if (org && repo) {
       setCurrentOrgRepo(org, repo)
       resetDropdown()
-      navigate(`/dashboard/${org.name}/${repo.name}`)
+      router.push(`/dashboard/${org.name}/${repo.name}`)
     }
   }
 

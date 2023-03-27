@@ -1,3 +1,4 @@
+import { useRouter } from 'next/router'
 import {
   IssueReferenceRead,
   IssueStatus,
@@ -11,7 +12,6 @@ import {
 import { IssueList } from 'polarkit/components'
 import { useDashboard } from 'polarkit/hooks'
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
 import { DashboardFilters } from './filters'
 
 const buildStatusesFilter = (filters: DashboardFilters): Array<IssueStatus> => {
@@ -39,12 +39,17 @@ const buildMapForType = <T extends IDer>(
 const Organization = (props: { filters: DashboardFilters }) => {
   const { filters } = props
 
-  const { orgSlug, repoSlug } = useParams()
+  // const { orgSlug, repoSlug } = useParams()
+  const router = useRouter()
+  const { organization, repo } = router.query
 
   let [statuses, setStatuses] = useState<Array<IssueStatus>>(
     buildStatusesFilter(filters),
   )
   useEffect(() => setStatuses(buildStatusesFilter(filters)), [props])
+
+  const orgSlug = typeof organization === 'string' ? organization : ''
+  const repoSlug = typeof repo === 'string' ? repo : ''
 
   const dashboardQuery = useDashboard(orgSlug, repoSlug, filters.q, statuses)
   const dashboard = dashboardQuery.data

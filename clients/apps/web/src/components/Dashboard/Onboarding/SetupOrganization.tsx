@@ -2,20 +2,20 @@ import { api } from 'polarkit/api'
 import { type OrganizationRead } from 'polarkit/api/client'
 import { useStore } from 'polarkit/store'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import ShowcaseGithubBadge from './ShowcaseGithubBadge'
 
+import { useRouter } from 'next/router'
 import OnboardingControls from './OnboardingControls'
 
 export const SetupOrganization = ({ org }: { org: OrganizationRead }) => {
   const [addBadgeToAll, setAddBadgeToAll] = useState(true)
   const [showAmountRaised, setShowAmountRaised] = useState(true)
   const setCurrentOrg = useStore((state) => state.setCurrentOrg)
-  const navigate = useNavigate()
+  const router = useRouter()
 
   const redirectToFirstRepo = () => {
     const firstRepo = org.repositories[0]
-    navigate(`/dashboard/${org.name}/${firstRepo.name}`)
+    router.push(`/dashboard/${org.name}/${firstRepo.name}`)
   }
 
   const onClickContinue = async () => {

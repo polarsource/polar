@@ -1,7 +1,6 @@
 import { type OrganizationRead } from 'polarkit/api/client'
 import { useSSE } from 'polarkit/hooks'
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { type RepoSyncState, type SyncEvent } from './types'
 
 import OnboardingControls from './OnboardingControls'
@@ -37,8 +36,7 @@ export const SynchronizeRepositories = ({
   onContinue: () => void
 }) => {
   let { totalExpected, initialSyncStates } = getInitializedSyncState(org)
-  const [searchParams] = useSearchParams()
-  const [debug] = useState<boolean>(searchParams.get('debug') === '1')
+  const [debug] = useState<boolean>(false) // ?
   const emitter = useSSE(org.platform, org.name)
   const [syncingRepos, setSyncingRepos] = useState<{
     [id: string]: RepoSyncState

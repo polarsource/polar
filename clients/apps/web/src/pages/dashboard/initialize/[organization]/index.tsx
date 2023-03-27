@@ -1,19 +1,22 @@
+import SetupOrganization from 'components/Dashboard/Onboarding/SetupOrganization'
+import SynchronizeRepositories from 'components/Dashboard/Onboarding/SynchronizeRepositories'
+import { NextPage } from 'next'
+import { useRouter } from 'next/router'
 import { OrganizationRead } from 'polarkit/api/client'
 import { requireAuth, useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
 
-import SetupOrganization from '../components/Dashboard/Onboarding/SetupOrganization'
-import SynchronizeRepositories from '../components/Dashboard/Onboarding/SynchronizeRepositories'
-
-const Initialize = () => {
-  const { orgSlug } = useParams()
+const Page: NextPage = () => {
+  const router = useRouter()
+  const { organization } = router.query
   const { currentUser } = requireAuth()
   const [showSetup, setShowSetup] = useState(false)
   const userOrgQuery = useUserOrganizations(currentUser?.id)
   const currentOrg = useStore((state) => state.currentOrg)
   const setCurrentOrg = useStore((state) => state.setCurrentOrg)
+
+  const orgSlug = typeof organization === 'string' ? organization : ''
 
   if (userOrgQuery.isLoading) return <div>Loading...</div>
 
@@ -24,6 +27,10 @@ const Initialize = () => {
       (org: OrganizationRead) => org.name === orgSlug,
     )
     setCurrentOrg(org)
+  }
+
+  if (!currentOrg) {
+    return <div>Loading org...</div>
   }
 
   return (
@@ -45,4 +52,4 @@ const Initialize = () => {
   )
 }
 
-export default Initialize
+export default Page

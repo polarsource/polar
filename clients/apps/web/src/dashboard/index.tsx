@@ -1,33 +1,35 @@
 import DashboardLayout from 'components/Layout/DashboardLayout'
+import { useRouter } from 'next/router'
 import { CONFIG } from 'polarkit'
 import { requireAuth, useSSE, useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import React, { useState } from 'react'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { DashboardFilters } from './filters'
-import Initialize from './initialize'
-import Organization from './organization'
 
-const Root = () => {
-  return <h3 className="mt-10 text-xl">Welcome</h3>
+export const DefaultFilters: DashboardFilters = {
+  tab: 'issues',
+  q: '',
+  statusBacklog: true,
+  statusBuild: true,
+  statusPullRequest: true,
+  statusCompleted: false,
 }
 
-const DashboardEnvironment = ({ children }) => {
+export const DashboardEnvironment = ({ children }) => {
   const { currentUser } = requireAuth()
   const userOrgQuery = useUserOrganizations(currentUser?.id)
+
+  const router = useRouter()
+  const { organization, repo } = router.query
+
   const currentOrg = useStore((state) => state.currentOrg)
   const currentRepo = useStore((state) => state.currentRepo)
-  const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
+
   // TODO: Unless we're sending user-only events we should probably delay SSE
   useSSE(currentOrg?.platform, currentOrg?.name, currentRepo?.name)
 
   const [filters, setFilters] = useState<DashboardFilters>({
-    tab: 'issues',
-    q: '',
-    statusBacklog: true,
-    statusBuild: true,
-    statusPullRequest: true,
-    statusCompleted: false,
+    ...DefaultFilters,
   })
 
   const organizations = userOrgQuery.data
@@ -53,46 +55,3 @@ const DashboardEnvironment = ({ children }) => {
     </>
   )
 }
-
-const router = createBrowserRouter([
-  {
-    path: '/dashboard',
-    element: (
-      <DashboardEnvironment>
-        <Root />
-      </DashboardEnvironment>
-    ),
-  },
-  {
-    path: '/dashboard/initialize/:orgSlug',
-    element: <Initialize />,
-  },
-  {
-    path: '/dashboard/:orgSlug',
-    element: (
-      <DashboardEnvironment>
-        <Organization filters={{}} />
-      </DashboardEnvironment>
-    ),
-  },
-  {
-    path: '/dashboard/:orgSlug/:repoSlug',
-    element: (
-      <DashboardEnvironment>
-        <Organization filters={{}} />
-      </DashboardEnvironment>
-    ),
-  },
-])
-
-const Dashboard = () => {
-  const { currentUser } = requireAuth()
-
-  return (
-    <>
-      <RouterProvider router={router} />
-    </>
-  )
-}
-
-export default Dashboard

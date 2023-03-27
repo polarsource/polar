@@ -122,7 +122,9 @@ async def create_pledge(
     )
 
     # Create a payment intent with Stripe
-    payment_intent = stripe.create_intent(amount=pledge.amount, issue_id=issue.id)
+    payment_intent = stripe.create_intent(
+        amount=pledge.amount, transfer_group=f"{issue.id}"
+    )
 
     # Create the pledge
     created = await Pledge.create(

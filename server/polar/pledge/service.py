@@ -9,7 +9,9 @@ from polar.kit.services import ResourceService
 from polar.models.user import User
 from polar.models.pledge import Pledge
 from polar.postgres import AsyncSession, sql
-from polar.exceptions import ResourceNotFound
+from polar.organization.service import organization as organization_service
+from polar.account.service import account as account_service
+from polar.exceptions import ResourceNotFound, NotPermitted
 
 from .schemas import PledgeCreate, PledgeUpdate, State
 
@@ -61,6 +63,31 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         )
         await session.execute(statement)
         await session.commit()
+
+    async def payout(self, session: AsyncSession, pledge_id: UUID) -> None:
+        pledge = await self.get(session, id=pledge_id)
+        if not pledge:
+            raise ResourceNotFound(f"Pledge not found with id: {pledge_id}")
+        if pledge.state != State.created:
+            raise NotPermitted("Pledge is not in created state")
+
+        organization = await organization_service.get(session, id=pledge.repository_id)
+        if organization is None or organization.account is None:
+            raise NotPermitted("Organization has no account")
+
+        organization_share = round(pledge.amount * 0.9)  # TODO: proper calculation
+        transfer_id = account_service.transfer(
+            session=session,
+            account=organization.account,
+            amount=organization_share,
+            transfer_group=f"{pledge.issue_id}",
+        )
+
+        if transfer_id is None:
+            raise NotPermitted("Transfer failed")  # TODO: Better error
+
+        pledge.transfer_id = transfer_id
+        await pledge.save(session=session)
 
 
 pledge = PledgeService(Pledge)

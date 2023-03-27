@@ -11,7 +11,7 @@ from polar.models.pledge import Pledge
 from polar.postgres import AsyncSession, sql
 from polar.exceptions import ResourceNotFound
 
-from .schemas import PledgeCreate, PledgeUpdate
+from .schemas import PledgeCreate, PledgeUpdate, State
 
 log = structlog.get_logger()
 
@@ -49,6 +49,17 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
 
         pledge.backer_user_id = backer.id
         session.add(pledge)
+        await session.commit()
+
+    async def mark_pending_by_issue_id(
+        self, session: AsyncSession, issue_id: UUID
+    ) -> None:
+        statement = (
+            sql.update(Pledge)
+            .where(Pledge.issue_id == issue_id, Pledge.state == State.created)
+            .values(status=State.pending)
+        )
+        await session.execute(statement)
         await session.commit()
 
 

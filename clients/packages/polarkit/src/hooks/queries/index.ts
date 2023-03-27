@@ -25,12 +25,14 @@ export const useUserOrganizations = (userId: string) => {
     const organizations = query.data
     repositories = organizations
       .map((org) => {
-        return org.repositories.map((repo) => {
-          return {
-            ...repo,
-            organization: org,
-          }
-        })
+        return (
+          org?.repositories?.map((repo) => {
+            return {
+              ...repo,
+              organization: org,
+            }
+          }) || []
+        )
       })
       .flat()
   }
@@ -42,7 +44,7 @@ export const useUserOrganizations = (userId: string) => {
       if (!repositories) return undefined
 
       return repositories.find(
-        (repo) => repo.organization.slug === orgSlug && repo.slug === repoSlug,
+        (repo) => repo.organization.name === orgSlug && repo.name === repoSlug,
       )
     },
   }

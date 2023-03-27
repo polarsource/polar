@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router'
-import { CancelablePromise, UserRead } from 'polarkit/api/client'
+import { CancelablePromise, type UserRead } from 'polarkit/api/client'
 import { useEffect, useState } from 'react'
 import { UserState, useStore } from '../store'
 import { useHasHydrated } from './hydration'

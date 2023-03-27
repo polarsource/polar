@@ -1,7 +1,6 @@
 import { api } from 'polarkit/api'
-import { CancelablePromise } from 'polarkit/api/client'
-import { useAuth } from './auth'
 import { useEffect, useState } from 'react'
+import { useAuth } from './auth'
 
 export const useGithubOAuthCallback = (
   code: string,
@@ -26,7 +25,8 @@ export const useGithubOAuthCallback = (
 
   useEffect(() => {
     let cancelled = false
-    let request = CancelablePromise<any>
+    let request: ReturnType<typeof api.integrations.githubCallback>
+
     if (!code || !state) {
       setError('We need both an OAuth code and state')
       return
@@ -45,7 +45,7 @@ export const useGithubOAuthCallback = (
         }
         setError('Invalid response')
       } catch (err) {
-        if (err.isCancelled) return
+        if (cancelled) return
         setError('Something went wrong exchanging the OAuth code for a cookie')
       }
     }

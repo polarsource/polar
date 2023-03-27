@@ -32,7 +32,8 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-timeago": "^7.1.0",
-    "zustand": "^4.3.3"
+    "zustand": "^4.3.3",
+    "next": "latest"
   },
   "devDependencies": {
     "@types/react": "^18.0.28",

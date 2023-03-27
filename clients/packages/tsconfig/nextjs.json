@@ -17,7 +17,8 @@
     "noEmit": true,
     "resolveJsonModule": true,
     "strict": false,
-    "target": "es5"
+    "target": "es5",
+    "forceConsistentCasingInFileNames": false
   },
   "include": [
     "src",

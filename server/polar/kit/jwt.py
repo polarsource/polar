@@ -18,7 +18,7 @@ def create_expiration_dt(seconds: int) -> datetime:
 
 def encode(
     *,
-    data: dict,
+    data: dict[str, Any],
     secret: str,
     expires_at: datetime | None = None,
     expires_in: int | None = DEFAULT_EXPIRATION

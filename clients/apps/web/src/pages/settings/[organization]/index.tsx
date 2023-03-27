@@ -220,7 +220,12 @@ SettingsPage.getLayout = (page: ReactElement) => {
           center: (
             <div className="flex items-center space-x-2 text-sm  font-medium">
               <div>Settings for</div>
-              <RepoSelection />,
+              <RepoSelection
+                showRepositories={false}
+                showConnectMore={false}
+                onSelectOrg={(org) => router.push(`/settings/${org}`)}
+              />
+              ,
             </div>
           ),
         }}

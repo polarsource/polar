@@ -12,7 +12,12 @@ import { useStore } from 'polarkit/store'
 import React, { useEffect, useState } from 'react'
 import useOutsideClick from 'utils/useOutsideClick'
 
-export function RepoSelection() {
+export function RepoSelection(props: {
+  showRepositories?: boolean
+  showConnectMore?: boolean
+  onSelectRepo?: (org: string, repo: string) => void
+  onSelectOrg?: (org: string) => void
+}) {
   const [value, setValue] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement | null>(null)
   const listRef = React.useRef(null)
@@ -33,14 +38,16 @@ export function RepoSelection() {
 
   const organizations = userOrgQuery.data
 
+  const { organization: routerOrg, repo: routerRepo } = router.query
+
   // detect current from url
   useEffect(() => {
     if (!organizations) {
       return
     }
 
-    const parts = location.pathname.replace('/dashboard/', '').split('/')
-    let [orgName, repoName] = parts
+    let orgName = typeof routerOrg === 'string' ? routerOrg : undefined
+    let repoName = typeof routerRepo === 'string' ? routerRepo : undefined
 
     if (!orgName && !repoName) {
       if (!currentOrg) {
@@ -70,7 +77,7 @@ export function RepoSelection() {
     }
 
     setCurrentOrgRepo(org, repo)
-  }, [organizations])
+  }, [organizations, router])
 
   const [dropdownSelectedOrg, setDropdowndropdownSelectedOrg] = useState<
     OrganizationRead | undefined
@@ -83,23 +90,31 @@ export function RepoSelection() {
   }
 
   const onSelectOrg = (org: OrganizationRead) => {
-    // Select org again, go to it!
-    if (dropdownSelectedOrg && dropdownSelectedOrg.id === org.id) {
-      setCurrentOrgRepo(org, undefined)
-      resetDropdown()
-      router.push(`/dashboard/${org.name}`)
+    // If show repositories, open selection to show repositories
+    if (props.showRepositories) {
+      // Select org again, go to it!
+      if (dropdownSelectedOrg && dropdownSelectedOrg.id === org.id) {
+        setCurrentOrgRepo(org, undefined)
+        resetDropdown()
+        props.onSelectOrg(org.name)
+        return
+      }
+
+      setDropdowndropdownSelectedOrg(org)
+      setInputValue('')
       return
     }
 
-    setDropdowndropdownSelectedOrg(org)
-    setInputValue('')
+    // If not show repositories, navigate straight away
+    resetDropdown()
+    props.onSelectOrg(org.name)
   }
 
   const onSelectRepo = (org: OrganizationRead, repo: RepositoryRead) => {
     if (org && repo) {
       setCurrentOrgRepo(org, repo)
       resetDropdown()
-      router.push(`/dashboard/${org.name}/${repo.name}`)
+      props.onSelectRepo(org.name, repo.name)
     }
   }
 
@@ -151,6 +166,15 @@ export function RepoSelection() {
       orgs = organizations?.filter((o) => o.id === dropdownSelectedOrg.id) || []
     } else {
       orgs = []
+    }
+
+    if (!props.showRepositories) {
+      orgs = orgs.map((o) => {
+        return {
+          ...o,
+          repositories: [],
+        }
+      })
     }
 
     setListOrgs(orgs)
@@ -257,19 +281,22 @@ export function RepoSelection() {
                     ))}
                   </React.Fragment>
                 ))}
-                <Item
-                  value="Connect a repository"
-                  onSelect={() => {
-                    window.location.replace(CONFIG.GITHUB_INSTALLATION_URL)
-                  }}
-                >
-                  <div className="flex items-center space-x-2 text-purple-800">
-                    <Icon>
-                      <PlusIcon className="block h-6 w-6" />
-                    </Icon>
-                    <Text>Connect a repository</Text>
-                  </div>
-                </Item>
+
+                {props.showConnectMore && (
+                  <Item
+                    value="Connect a repository"
+                    onSelect={() => {
+                      window.location.replace(CONFIG.GITHUB_INSTALLATION_URL)
+                    }}
+                  >
+                    <div className="flex items-center space-x-2 text-purple-800">
+                      <Icon>
+                        <PlusIcon className="block h-6 w-6" />
+                      </Icon>
+                      <Text>Connect a repository</Text>
+                    </div>
+                  </Item>
+                )}
               </Command.List>
             </Command>
           </div>

@@ -1,6 +1,7 @@
 import { Cog8ToothIcon } from '@heroicons/react/24/outline'
 import StripeOnboardingButton from 'components/Shared/StripeOnboardingButton'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useOrganizationAccounts } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import BalanceBadge from '../Dashboard/BalanceBadge'
@@ -11,10 +12,16 @@ const DashboardNav = () => {
   const currentOrg = useStore((state) => state.currentOrg)
   const accountQuery = useOrganizationAccounts(currentOrg?.name)
   const accounts = accountQuery.data
+  const router = useRouter()
 
   return (
     <>
-      <RepoSelection />
+      <RepoSelection
+        showRepositories={true}
+        showConnectMore={true}
+        onSelectOrg={(org) => router.push(`/dashboard/${org}`)}
+        onSelectRepo={(org, repo) => router.push(`/dashboard/${org}/${repo}`)}
+      />
 
       {accountQuery.isLoading ? (
         <p>Loading...</p>

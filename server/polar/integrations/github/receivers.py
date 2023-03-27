@@ -1,10 +1,11 @@
+from typing import Any
 import structlog
 
 from polar.models import Issue, Organization, Repository
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
 
-from .signals import github_issue_created
+from .signals import github_issue_created, github_issue_updated
 from .badge import GithubBadge
 
 log = structlog.get_logger()
@@ -14,7 +15,7 @@ log = structlog.get_logger()
 
 @github_issue_created.connect
 async def schedule_embed_badge_task(
-    session: AsyncSession,  # TODO: Treated as "sender" in Blinker... What do we want?
+    sender: Any,
     *,
     organization: Organization,
     repository: Repository,
@@ -28,3 +29,25 @@ async def schedule_embed_badge_task(
 
     log.info("github.issue.embed_badge:scheduled", issue_id=issue.id)
     await enqueue_job("github.issue.embed_badge", issue.id)
+
+
+@github_issue_created.connect
+async def schedule_fetch_references(
+    sender: Any,
+    *,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+) -> None:
+    await enqueue_job("github.issue.sync.issue_references", issue.id)
+
+
+@github_issue_updated.connect
+async def schedule_updated_fetch_references(
+    sender: Any,
+    *,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+) -> None:
+    await enqueue_job("github.issue.sync.issue_references", issue.id)

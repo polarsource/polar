@@ -23,9 +23,6 @@ async def sync_repository_issues(
         await service.github_repository.sync_issues(
             session, organization=organization, repository=repository
         )
-        await enqueue_job(
-            "github.repo.sync.issue_references", organization.id, repository.id
-        )
 
 
 @task("github.repo.sync.pull_requests")

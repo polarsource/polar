@@ -5,12 +5,9 @@ import { api } from 'polarkit'
 import { Platforms, type PledgeResources } from 'polarkit/api/client'
 import { IssueListItem } from 'polarkit/components'
 import { GrayCard, WhiteCard } from 'polarkit/components/ui/Cards'
-import ReactTimeAgo from 'react-time-ago'
+import { ReactElement } from 'react'
+import ReactTimeAgo from 'react-timeago'
 
-import TimeAgo from 'javascript-time-ago'
-import en from 'javascript-time-ago/locale/en.json'
-
-TimeAgo.addDefaultLocale(en)
 const PledgeStatusPage: NextPage = ({
   organization,
   repository,
@@ -37,6 +34,7 @@ const PledgeStatusPage: NextPage = ({
             org={organization}
             repo={repository}
             pledges={[pledge]}
+            references={[]}
           />
         </GrayCard>
 

@@ -1,9 +1,4 @@
-import ReactTimeAgo from 'react-time-ago'
-import IconCounter from './IconCounter'
-import IssueLabel from './IssueLabel'
-
-import TimeAgo from 'javascript-time-ago'
-import en from 'javascript-time-ago/locale/en.json'
+import TimeAgo from 'react-timeago'
 import {
   IssueReferenceRead,
   OrganizationRead,
@@ -11,12 +6,12 @@ import {
   type IssueRead,
   type PledgeRead,
 } from '../api/client'
+import IconCounter from './IconCounter'
 import IssueActivityBox from './IssueActivityBox'
+import IssueLabel from './IssueLabel'
 import IssuePledge from './IssuePledge'
 import IssueProgress, { Progress } from './IssueProgress'
 import IssueReference from './IssueReference'
-
-TimeAgo.addDefaultLocale(en)
 
 const IssueListItem = (props: {
   org: OrganizationRead
@@ -42,7 +37,7 @@ const IssueListItem = (props: {
   const closedAt = new Date(issue_created_at)
 
   const havePledgeOrPullRequest =
-    props.pledges?.length > 0 || props.references?.length > 0
+    (props.pledges && props.pledges.length > 0) || props.references?.length > 0
 
   const showCommentsCount = !!(comments && comments > 0)
   const showReactionsThumbs = !!(reactions.plus_one > 0)
@@ -76,12 +71,12 @@ const IssueListItem = (props: {
           <div className="text-xs text-gray-500">
             {state == 'open' && (
               <p>
-                #{number} opened <ReactTimeAgo date={createdAt} />
+                #{number} opened <TimeAgo date={new Date(createdAt)} />
               </p>
             )}
             {state == 'closed' && (
               <p>
-                #{number} closed <ReactTimeAgo date={closedAt} />
+                #{number} closed <TimeAgo date={new Date(closedAt)} />
               </p>
             )}
           </div>

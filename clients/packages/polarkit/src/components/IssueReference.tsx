@@ -1,4 +1,4 @@
-import ReactTimeAgo from 'react-time-ago'
+import TimeAgo from 'react-timeago'
 import {
   ExternalGitHubCommitReference,
   ExternalGitHubPullRequestReference,
@@ -187,22 +187,21 @@ const IssueReferencePullRequest = (props: {
         {isMerged && pr.merged_at && (
           <>
             <span className="text-sm text-gray-500">
-              #{pr.number} merged <ReactTimeAgo date={new Date(pr.merged_at)} />
+              #{pr.number} merged <TimeAgo date={new Date(pr.merged_at)} />
             </span>
           </>
         )}
         {isOpen && (
           <>
             <span className="text-gray-500">
-              #{pr.number} opened{' '}
-              <ReactTimeAgo date={new Date(pr.created_at)} />
+              #{pr.number} opened <TimeAgo date={new Date(pr.created_at)} />
             </span>
           </>
         )}
         {isClosed && pr.closed_at && (
           <>
             <span className="text-gray-500">
-              #{pr.number} closed <ReactTimeAgo date={new Date(pr.closed_at)} />
+              #{pr.number} closed <TimeAgo date={new Date(pr.closed_at)} />
             </span>
           </>
         )}

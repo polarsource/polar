@@ -1,10 +1,9 @@
-import '@stripe/stripe-js'
 import Topbar from '../Shared/Topbar'
 
 const TopbarLayout = ({ children }) => {
   return (
     <>
-      <Topbar isDashboard={false} />
+      <Topbar />
       <div>{children}</div>
     </>
   )

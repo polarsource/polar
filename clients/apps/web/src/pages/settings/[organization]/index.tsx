@@ -1,16 +1,19 @@
 import { InformationCircleIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon } from '@heroicons/react/24/solid'
+import RepoSelection from 'components/Dashboard/RepoSelection'
 import FakePullRequest from 'components/Settings/FakePullRequest'
+import Topbar from 'components/Shared/Topbar'
 import { NextPage } from 'next'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import {
   useOrganization,
   useOrganizationSettingsMutation,
 } from 'polarkit/hooks'
-import { useEffect, useRef, useState } from 'react'
+import { ReactElement, useEffect, useRef, useState } from 'react'
 
 const SettingsPage: NextPage = () => {
   const router = useRouter()
-
   const { organization } = router.query
   const handle: string = typeof organization === 'string' ? organization : ''
   const orgData = useOrganization(handle)
@@ -196,6 +199,33 @@ const SettingsPage: NextPage = () => {
           </Section>
         </div>
       </div>
+    </>
+  )
+}
+
+SettingsPage.getLayout = (page: ReactElement) => {
+  const router = useRouter()
+  const { organization } = router.query
+  const handle: string = typeof organization === 'string' ? organization : ''
+
+  return (
+    <>
+      <Topbar>
+        {{
+          left: (
+            <Link href={`/dashboard/${handle}`}>
+              <ArrowLeftIcon className="h-6 w-6 text-black" />
+            </Link>
+          ),
+          center: (
+            <div className="flex items-center space-x-2 text-sm  font-medium">
+              <div>Settings for</div>
+              <RepoSelection />,
+            </div>
+          ),
+        }}
+      </Topbar>
+      <div>{page}</div>
     </>
   )
 }

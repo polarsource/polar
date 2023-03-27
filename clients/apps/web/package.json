@@ -23,7 +23,7 @@
     "react-dom": "^18.2.0",
     "react-timeago": "^7.1.0",
     "sass": "^1.59.3",
-    "satori": "^0.4.2"
+    "satori": "0.0.44"
   },
   "devDependencies": {
     "@types/node": "18.7.16",

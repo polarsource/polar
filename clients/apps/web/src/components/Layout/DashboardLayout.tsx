@@ -3,7 +3,7 @@ import { Dispatch, SetStateAction } from 'react'
 import Sidebar from '../Dashboard/Sidebar'
 import Topbar from '../Shared/Topbar'
 
-const Layout = (props: {
+const DashboardLayout = (props: {
   children: any
   filters: DashboardFilters
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
@@ -28,4 +28,4 @@ const Layout = (props: {
   )
 }
 
-export default Layout
+export default DashboardLayout

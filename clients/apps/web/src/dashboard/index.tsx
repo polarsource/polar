@@ -1,4 +1,4 @@
-import Layout from 'components/Layout/Dashboard'
+import DashboardLayout from 'components/Layout/DashboardLayout'
 import { CONFIG } from 'polarkit'
 import { requireAuth, useSSE, useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
@@ -47,9 +47,9 @@ const DashboardEnvironment = ({ children }) => {
 
   return (
     <>
-      <Layout filters={filters} onSetFilters={setFilters}>
+      <DashboardLayout filters={filters} onSetFilters={setFilters}>
         {renderedChildren}
-      </Layout>
+      </DashboardLayout>
     </>
   )
 }

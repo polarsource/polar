@@ -1,7 +1,7 @@
 import '@stripe/stripe-js'
 import Topbar from '../Shared/Topbar'
 
-const Layout = ({ children }) => {
+const TopbarLayout = ({ children }) => {
   return (
     <>
       <Topbar isDashboard={false} />
@@ -10,4 +10,4 @@ const Layout = ({ children }) => {
   )
 }
 
-export default Layout
+export default TopbarLayout

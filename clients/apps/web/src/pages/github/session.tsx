@@ -1,8 +1,8 @@
+import Layout from 'components/Layout/EmptyLayout'
+import { useRouter } from 'next/router'
+import { useGithubOAuthCallback } from 'polarkit/hooks'
 import type { ReactElement } from 'react'
 import type { NextPageWithLayout } from 'utils/next'
-import { useRouter } from 'next/router'
-import Layout from 'components/Layout/GithubCallback'
-import { useGithubOAuthCallback } from 'polarkit/hooks'
 
 const GithubAuthPage: NextPageWithLayout = ({
   query,

@@ -1,4 +1,4 @@
-import Layout from 'components/Layout/Website'
+import TopbarLayout from 'components/Layout/TopbarLayout'
 import type { AppProps } from 'next/app'
 import { queryClient, QueryClientProvider } from 'polarkit/api'
 import type { ReactElement } from 'react'
@@ -12,7 +12,7 @@ type AppPropsWithLayout = AppProps & {
 const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
   let getLayout = Component.getLayout
   if (!Component.getLayout) {
-    getLayout = (page: ReactElement) => <Layout>{page}</Layout>
+    getLayout = (page: ReactElement) => <TopbarLayout>{page}</TopbarLayout>
   }
 
   return (

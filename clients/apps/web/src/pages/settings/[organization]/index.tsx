@@ -109,7 +109,7 @@ const SettingsPage: NextPage = () => {
 
   return (
     <>
-      <div className="mx-auto mt-24 max-w-[1100px] ">
+      <div className="mx-auto mt-24 max-w-[1100px]">
         <div className="pl-80">
           {showDidSave && <div className="h-4 text-black/50">Saved!</div>}
           {!showDidSave && <div className="h-4"></div>}

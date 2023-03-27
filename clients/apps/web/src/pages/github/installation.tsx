@@ -1,11 +1,11 @@
-import type { ReactElement } from 'react'
+import EmptyLayout from 'components/Layout/EmptyLayout'
 import type { NextPage } from 'next'
-import { useEffect, useState } from 'react'
-import { api } from 'polarkit'
-import { useAuth } from 'polarkit/hooks'
 import { useRouter } from 'next/router'
+import { api } from 'polarkit'
 import { InstallationCreate, OrganizationRead } from 'polarkit/api/client'
-import Layout from 'components/Layout/GithubCallback'
+import { useAuth } from 'polarkit/hooks'
+import type { ReactElement } from 'react'
+import { useEffect, useState } from 'react'
 
 const GithubInstallationPage: NextPage = ({ query }) => {
   const router = useRouter()
@@ -55,7 +55,7 @@ const GithubInstallationPage: NextPage = ({ query }) => {
 }
 
 GithubInstallationPage.getLayout = (page: ReactElement) => {
-  return <Layout>{page}</Layout>
+  return <EmptyLayout>{page}</EmptyLayout>
 }
 
 export const getServerSideProps = async (context) => {

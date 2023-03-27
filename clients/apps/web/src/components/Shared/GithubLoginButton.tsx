@@ -1,6 +1,6 @@
 import { api } from 'polarkit'
 
-const GithubLoginButton = (props: { pledgeId: string | undefined }) => {
+const GithubLoginButton = (props: { pledgeId?: string }) => {
   const githubSigninUrl =
     process.env.NEXT_PUBLIC_API_URL + '/apps/github/signin'
 

@@ -3,7 +3,7 @@ import { ArrowLeftIcon } from '@heroicons/react/24/solid'
 import RepoSelection from 'components/Dashboard/RepoSelection'
 import FakePullRequest from 'components/Settings/FakePullRequest'
 import Topbar from 'components/Shared/Topbar'
-import { NextPage } from 'next'
+import { NextLayoutComponentType } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import {
@@ -12,7 +12,7 @@ import {
 } from 'polarkit/hooks'
 import { ReactElement, useEffect, useRef, useState } from 'react'
 
-const SettingsPage: NextPage = () => {
+const SettingsPage: NextLayoutComponentType = () => {
   const router = useRouter()
   const { organization } = router.query
   const handle: string = typeof organization === 'string' ? organization : ''

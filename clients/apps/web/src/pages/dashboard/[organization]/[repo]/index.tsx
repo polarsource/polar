@@ -1,9 +1,9 @@
 import { DashboardEnvironment, DefaultFilters } from 'dashboard/index'
 import Organization from 'dashboard/organization'
-import type { NextPage } from 'next'
+import type { NextLayoutComponentType } from 'next'
 import { ReactElement } from 'react'
 
-const Page: NextPage = () => {
+const Page: NextLayoutComponentType = () => {
   return (
     <DashboardEnvironment>
       <Organization filters={DefaultFilters} />

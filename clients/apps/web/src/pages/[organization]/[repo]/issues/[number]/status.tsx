@@ -1,6 +1,6 @@
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import GithubLoginButton from 'components/Shared/GithubLoginButton'
-import type { NextPage } from 'next'
+import type { NextLayoutComponentType } from 'next'
 import { api } from 'polarkit'
 import { Platforms, type PledgeResources } from 'polarkit/api/client'
 import { IssueListItem } from 'polarkit/components'
@@ -8,7 +8,7 @@ import { GrayCard, WhiteCard } from 'polarkit/components/ui/Cards'
 import { ReactElement } from 'react'
 import ReactTimeAgo from 'react-timeago'
 
-const PledgeStatusPage: NextPage = ({
+const PledgeStatusPage: NextLayoutComponentType = ({
   organization,
   repository,
   issue,

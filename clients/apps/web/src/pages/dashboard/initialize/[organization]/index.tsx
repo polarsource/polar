@@ -1,13 +1,13 @@
 import SetupOrganization from 'components/Dashboard/Onboarding/SetupOrganization'
 import SynchronizeRepositories from 'components/Dashboard/Onboarding/SynchronizeRepositories'
-import { NextPage } from 'next'
+import { NextLayoutComponentType } from 'next'
 import { useRouter } from 'next/router'
 import { OrganizationRead } from 'polarkit/api/client'
 import { requireAuth, useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { useState } from 'react'
 
-const Page: NextPage = () => {
+const Page: NextLayoutComponentType = () => {
   const router = useRouter()
   const { organization } = router.query
   const { currentUser } = requireAuth()

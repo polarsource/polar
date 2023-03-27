@@ -1,9 +1,9 @@
 import Pledge from 'components/Website/Pledge'
-import type { NextPage } from 'next'
+import type { NextLayoutComponentType, NextPage } from 'next'
 import { api } from 'polarkit'
 import { Platforms, PledgeResources } from 'polarkit/api/client'
 
-const HowItWorks = () => {
+const HowItWorks: NextLayoutComponentType = () => {
   return (
     <>
       <div className="text-center">

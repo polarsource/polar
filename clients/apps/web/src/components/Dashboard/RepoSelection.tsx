@@ -9,7 +9,7 @@ import { CONFIG } from 'polarkit'
 import { OrganizationRead, RepositoryRead } from 'polarkit/api/client'
 import { requireAuth, useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import useOutsideClick from 'utils/useOutsideClick'
 
 export function RepoSelection(props: {
@@ -185,7 +185,9 @@ export function RepoSelection(props: {
     setInputValue(e)
   }
 
-  const outsideClickRef = useOutsideClick(() => {
+  const ref = useRef(null)
+
+  useOutsideClick([ref], () => {
     setOpen(false)
   })
 
@@ -200,7 +202,7 @@ export function RepoSelection(props: {
 
   return (
     <div
-      ref={outsideClickRef}
+      ref={ref}
       onClick={(e) => {
         e.stopPropagation()
       }}

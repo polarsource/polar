@@ -76,6 +76,8 @@ class GitHubIssueReferencesService:
             )
             return
 
+        pre_sync_timestamp = repo.issues_references_synced_at
+
         # Set sync timestamp
         stmt = (
             sql.Update(Repository)
@@ -93,25 +95,47 @@ class GitHubIssueReferencesService:
             name=repo.name,
         )
 
-        # TODO: paginate?
-        res = await client.rest.issues.async_list_events_for_repo(
-            owner=org.name,
-            repo=repo.name,
-        )
+        triggered_ids: Set[int] = set()
 
-        events = res.parsed_data
+        for page in range(1, 100):  # Maximum 100 pages
+            res = await client.rest.issues.async_list_events_for_repo(
+                owner=org.name, repo=repo.name, per_page=100, page=page
+            )
 
-        for external_issue_id in self.external_issue_ids_to_sync(events):
-            issue = await github_issue.get_by_external_id(session, external_issue_id)
-            if not issue:
-                log.warn(
-                    "github.sync_repo_references.issue-not-found",
-                    repo_id=repo.id,
-                    external_issue_id=external_issue_id,
+            events = res.parsed_data
+
+            # Process events that are newer than the newest event we have
+            if pre_sync_timestamp:
+                events = [e for e in events if e.created_at >= pre_sync_timestamp]
+
+            # No events, stop pagination
+            if len(events) == 0:
+                break
+
+            log.info(
+                "references.repo.page",
+                name=repo.name,
+                page=page,
+                num=len(events),
+            )
+
+            for external_issue_id in self.external_issue_ids_to_sync(events):
+                if external_issue_id in triggered_ids:
+                    continue
+                triggered_ids.add(external_issue_id)
+
+                issue = await github_issue.get_by_external_id(
+                    session, external_issue_id
                 )
-                continue
-            # Trigger issue references sync job
-            await enqueue_job("github.issue.sync.issue_references", issue.id)
+                if not issue:
+                    log.warn(
+                        "github.sync_repo_references.issue-not-found",
+                        repo_id=repo.id,
+                        external_issue_id=external_issue_id,
+                    )
+                    continue
+                # Trigger issue references sync job
+                await enqueue_job("github.issue.sync.issue_references", issue.id)
 
         return None
 

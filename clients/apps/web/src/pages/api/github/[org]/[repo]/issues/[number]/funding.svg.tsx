@@ -1,9 +1,8 @@
 import { promises as fs } from 'fs'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextApiRequest, NextApiResponse } from 'next'
 import path from 'path'
-import satori from 'satori'
-
 import { Badge } from 'polarkit/components'
+import satori from 'satori'
 
 type BadgeAmount = {
   currency: string
@@ -38,7 +37,6 @@ const getBadgeData = async (
   const endpoint = `${base}/api/v1/integrations/github/${org}/${repo}/issues/${number}/badges/funding`
   const response = await fetch(endpoint)
   const data = await response.json()
-
   if (!data.badge_type) throw new Error('Invalid badge response')
   return data as BadgeData
 }
@@ -71,14 +69,22 @@ const generateBadge = async (
   return svg
 }
 
-export default async function handler(req: NextRequest, res: NextResponse) {
-  const { org, repo, number, debug } = req.query
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
+  let { org, repo, number, debug } = req.query
+  org = typeof org === 'string' ? org : ''
+  repo = typeof repo === 'string' ? repo : ''
+  number = typeof number === 'string' ? number : ''
+  debug = typeof debug === 'string' ? debug : ''
 
   try {
     const svg = await generateBadge(org, repo, number, debug)
     res.setHeader('Content-Type', 'image/svg+xml')
     res.end(svg)
   } catch (error) {
+    res.status(404).end()
     // TODO: Return 1x1 pixel transparent SVG to avoid browser issues
   }
 }

@@ -1,3 +1,5 @@
+import { CSSProperties } from 'react'
+
 /*
  * Code from Web 1998.
  *
@@ -10,13 +12,13 @@
  *
  * So it's too early for us to use TailwindCSS in this component.
  */
-const flexStyle = {
+const flexStyle: CSSProperties = {
   display: 'flex',
   flexDirection: 'row',
   alignItems: 'center',
 }
 
-const badgeContainerStyle = {
+const badgeContainerStyle: CSSProperties = {
   background: '#FFFFFF',
   boxShadow:
     '0px 1px 8px rgba(0, 0, 0, 0.07), 0px 0.5px 2.5px rgba(0, 0, 0, 0.2)',
@@ -25,7 +27,7 @@ const badgeContainerStyle = {
   justifyContent: 'space-between',
 }
 
-const buttonStyle = {
+const buttonStyle: CSSProperties = {
   borderRadius: '6px',
   color: '#FFFFFF',
   textAlign: 'center',

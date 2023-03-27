@@ -1,17 +1,18 @@
 import EmptyLayout from 'components/Layout/EmptyLayout'
-import type { NextPage } from 'next'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit'
 import { InstallationCreate, OrganizationRead } from 'polarkit/api/client'
 import { useAuth } from 'polarkit/hooks'
 import type { ReactElement } from 'react'
 import { useEffect, useState } from 'react'
+import { NextPageWithLayout } from 'utils/next'
 
-const GithubInstallationPage: NextPage = ({ query }) => {
+const GithubInstallationPage: NextPageWithLayout = () => {
   const router = useRouter()
   const { authenticated } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [installed, setInstalled] = useState<OrganizationRead | null>(null)
+  const query = router.query
 
   const install = (query) => {
     const request = api.integrations.install({

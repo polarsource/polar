@@ -5,10 +5,12 @@ on:
     branches: ["main"]
     paths: 
       - 'server/**'
+      - '.github/**'
   pull_request:
     types: [opened, synchronize]
     paths: 
       - 'server/**'
+      - '.github/**'
 
 jobs:
   test:

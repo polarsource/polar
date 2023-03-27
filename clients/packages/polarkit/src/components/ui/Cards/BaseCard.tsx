@@ -3,11 +3,11 @@ import { type CardProperties } from './types'
 
 const BaseCard = (props: CardProperties) => {
   let className = 'w-full rounded-xl'
-  if (props.border !== false) {
+  if (props.border === true) {
     className = classNames(className, 'border')
   }
 
-  if (props.padding !== false) {
+  if (props.padding === true) {
     className = classNames(className, 'p-6')
   }
 

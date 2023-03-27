@@ -203,33 +203,38 @@ const SettingsPage: NextPage = () => {
   )
 }
 
-SettingsPage.getLayout = (page: ReactElement) => {
+const SettingsTopbar = () => {
   const router = useRouter()
   const { organization } = router.query
   const handle: string = typeof organization === 'string' ? organization : ''
+  return (
+    <Topbar>
+      {{
+        left: (
+          <Link href={`/dashboard/${handle}`}>
+            <ArrowLeftIcon className="h-6 w-6 text-black" />
+          </Link>
+        ),
+        center: (
+          <div className="flex items-center space-x-2 text-sm  font-medium">
+            <div>Settings for</div>
+            <RepoSelection
+              showRepositories={false}
+              showConnectMore={false}
+              onSelectOrg={(org) => router.push(`/settings/${org}`)}
+            />
+            ,
+          </div>
+        ),
+      }}
+    </Topbar>
+  )
+}
 
+SettingsPage.getLayout = (page: ReactElement) => {
   return (
     <>
-      <Topbar>
-        {{
-          left: (
-            <Link href={`/dashboard/${handle}`}>
-              <ArrowLeftIcon className="h-6 w-6 text-black" />
-            </Link>
-          ),
-          center: (
-            <div className="flex items-center space-x-2 text-sm  font-medium">
-              <div>Settings for</div>
-              <RepoSelection
-                showRepositories={false}
-                showConnectMore={false}
-                onSelectOrg={(org) => router.push(`/settings/${org}`)}
-              />
-              ,
-            </div>
-          ),
-        }}
-      </Topbar>
+      <SettingsTopbar />
       <div>{page}</div>
     </>
   )

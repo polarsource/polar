@@ -24,7 +24,10 @@ const PledgeForm = ({
   const [errorMessage, setErrorMessage] = useState(null)
   const [isSyncing, setSyncing] = useState(false)
 
-  const MINIMUM_PLEDGE = CONFIG.MINIMUM_PLEDGE_AMOUNT
+  const MINIMUM_PLEDGE =
+    typeof CONFIG.MINIMUM_PLEDGE_AMOUNT === 'string'
+      ? parseInt(CONFIG.MINIMUM_PLEDGE_AMOUNT)
+      : CONFIG.MINIMUM_PLEDGE_AMOUNT
 
   const validateEmail = (email: string) => {
     return email.match(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/)
@@ -188,7 +191,11 @@ const PledgeForm = ({
          */}
         {!pledge && (
           <div className="mt-6">
-            <PrimaryButton disabled={true} loading={isSyncing}>
+            <PrimaryButton
+              disabled={true}
+              loading={isSyncing}
+              onClick={() => false}
+            >
               Pledge ${getCentsInDollarString(MINIMUM_PLEDGE)}
             </PrimaryButton>
           </div>

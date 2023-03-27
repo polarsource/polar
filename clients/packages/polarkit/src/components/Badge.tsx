@@ -41,8 +41,8 @@ export const Badge = ({
   height = 44,
   showAmountRaised = false,
 }: {
-  width: number
-  height: number
+  width?: number
+  height?: number
   showAmountRaised: boolean
 }) => {
   return (

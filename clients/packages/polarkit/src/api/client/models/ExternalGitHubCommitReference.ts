@@ -8,5 +8,7 @@ export type ExternalGitHubCommitReference = {
   sha: string;
   organization_name: string;
   repository_name: string;
+  branch_name?: string;
+  message?: string;
 };
 

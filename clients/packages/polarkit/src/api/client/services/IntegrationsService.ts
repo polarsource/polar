@@ -25,7 +25,7 @@ export class IntegrationsService {
   public githubAuthorize({
     pledgeId,
   }: {
-    pledgeId: string,
+    pledgeId?: string,
   }): CancelablePromise<AuthorizationResponse> {
     return this.httpRequest.request({
       method: 'GET',

@@ -81,7 +81,7 @@
                 "operationId": "github_authorize",
                 "parameters": [
                     {
-                        "required": true,
+                        "required": false,
                         "schema": {
                             "title": "Pledge Id",
                             "type": "string",
@@ -1740,6 +1740,14 @@
                     },
                     "repository_name": {
                         "title": "Repository Name",
+                        "type": "string"
+                    },
+                    "branch_name": {
+                        "title": "Branch Name",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
                         "type": "string"
                     }
                 }

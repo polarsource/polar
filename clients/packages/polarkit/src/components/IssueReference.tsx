@@ -39,7 +39,7 @@ const IssueReference = (props: {
     const commit = reference.payload as ExternalGitHubCommitReference
     return (
       <Box>
-        <IssueReferenceExternalGitHubCommit commit={commit} />
+        <IssueReferenceExternalGitHubCommit org={props.org} commit={commit} />
       </Box>
     )
   }
@@ -104,24 +104,45 @@ const Avatar = (props: { src: string }) => {
 }
 
 const IssueReferenceExternalGitHubCommit = (props: {
+  org: OrganizationRead
   commit: ExternalGitHubCommitReference
 }) => {
   const commit = props.commit
 
   if (!commit) return <></>
 
-  const href = `https://github.com/${commit.organization_name}/${commit.repository_name}/commit/${commit.sha}`
+  const baseHref = `https://github.com/${commit.organization_name}/${commit.repository_name}`
+
+  const commitHref = `${baseHref}/commit/${commit.sha}`
+
+  const isFork = props.org.name !== commit.organization_name
 
   return (
     <>
       <LeftSide>
         <Avatar src={commit.author_avatar} />
         <GitBranchIcon />
-        <span className="">
-          <a className="font-mono text-gray-500" href={href}>
-            {commit.sha.substring(0, 6)}
-          </a>
-          ({commit.organization_name}/{commit.repository_name})
+        <span className="inline-flex space-x-2">
+          {commit.branch_name && (
+            <a
+              className="font-mono"
+              href={`${baseHref}/tree/${commit.branch_name}`}
+            >
+              {isFork && (
+                <>
+                  {commit.organization_name}/{commit.repository_name}/
+                </>
+              )}
+
+              {commit.branch_name}
+            </a>
+          )}
+
+          {!commit.branch_name && (
+            <a className="font-mono text-gray-500" href={commitHref}>
+              {commit.sha.substring(0, 6)}
+            </a>
+          )}
         </span>
       </LeftSide>
     </>
@@ -145,7 +166,9 @@ const IssueReferenceExternalGitHubPullRequest = (props: {
         <Avatar src={pr.author_avatar} />
         {isMerged && <GitMergeIcon />}
         {!isMerged && <GitPullRequestIcon />}
-        <a href={href}>{pr.title}</a>
+        <a href={href} className="font-medium">
+          {pr.title}
+        </a>
         <a href={href}>
           {pr.organization_name}/{pr.repository_name}#{pr.number}
         </a>
@@ -183,7 +206,9 @@ const IssueReferencePullRequest = (props: {
         {isMerged && <GitMergeIcon />}
         {isClosed && <GitPullRequestClosedIcon />}
         {isOpen && <GitPullRequestIcon />}
-        <a href={href}>{pr.title}</a>
+        <a href={href} className="font-medium">
+          {pr.title}
+        </a>
         {isMerged && pr.merged_at && (
           <>
             <span className="text-sm text-gray-500">

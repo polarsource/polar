@@ -59,7 +59,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         statement = (
             sql.update(Pledge)
             .where(Pledge.issue_id == issue_id, Pledge.state == State.created)
-            .values(status=State.pending)
+            .values(state=State.pending)
         )
         await session.execute(statement)
         await session.commit()
@@ -86,6 +86,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         if transfer_id is None:
             raise NotPermitted("Transfer failed")  # TODO: Better error
 
+        pledge.state = State.paid
         pledge.transfer_id = transfer_id
         await pledge.save(session=session)
 

@@ -28,5 +28,4 @@
   },
   "editor.rulers": [88],
   "mypy.dmypyExecutable": "${workspaceFolder}/.venv/bin/dmypy",
-  "mypy.configFile": "mypy.ini"
 }

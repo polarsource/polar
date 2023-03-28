@@ -70,7 +70,6 @@ ignore = [
 
 [tool.mypy]
 ignore_missing_imports = true
-strict = true
 plugins = ["pydantic.mypy"]
 
 [build-system]

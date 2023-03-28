@@ -9,5 +9,5 @@ export const getServerURL = (path?: string): string => {
 
 export const getCentsInDollarString = (cents: number): string => {
   const dollars = cents / 100
-  return dollars.toString()
+  return dollars.toFixed(2)
 }

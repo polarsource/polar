@@ -68,10 +68,12 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         pledge = await self.get(session, id=pledge_id)
         if not pledge:
             raise ResourceNotFound(f"Pledge not found with id: {pledge_id}")
-        if pledge.state != State.created:
-            raise NotPermitted("Pledge is not in created state")
+        if pledge.state != State.pending:
+            raise NotPermitted("Pledge is not in pending state")
 
-        organization = await organization_service.get(session, id=pledge.repository_id)
+        organization = await organization_service.get(
+            session, id=pledge.organization_id
+        )
         if organization is None or organization.account is None:
             raise NotPermitted("Organization has no account")
 

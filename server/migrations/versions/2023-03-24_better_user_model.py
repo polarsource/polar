@@ -16,8 +16,8 @@ from polar.enums import Platforms
 # revision identifiers, used by Alembic.
 revision = "34698e9f3aac"
 down_revision = "d057eadc5617"
-branch_labels = None
-depends_on = None
+branch_labels: tuple[str] | None = None
+depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:

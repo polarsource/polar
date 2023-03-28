@@ -8,18 +8,12 @@ Create Date: 2023-03-22 09:27:10.135938
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
-from polar import kit
-
-# Polar Custom Imports
-from polar.kit.extensions.sqlalchemy import PostgresUUID
-from polar.kit.extensions.sqlalchemy.types import StringEnum
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "9630755cf256"
 down_revision = "dc19b85fe8a6"
-branch_labels = None
-depends_on = None
+branch_labels: tuple[str] | None = None
+depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:

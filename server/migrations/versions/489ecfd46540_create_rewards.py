@@ -15,8 +15,8 @@ from polar.kit.extensions.sqlalchemy import GUID
 # revision identifiers, used by Alembic.
 revision = "489ecfd46540"
 down_revision = "8fb1fcc039a1"
-branch_labels = None
-depends_on = None
+branch_labels: tuple[str] | None = None
+depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
@@ -76,7 +76,7 @@ def downgrade() -> None:
         existing_type=postgresql.JSONB(astext_type=sa.Text()),
         nullable=True,
     )
-    op.drop_constraint(None, "oauth_accounts", type_="foreignkey")
+    op.drop_constraint(None, "oauth_accounts", type_="foreignkey")  # type: ignore
     op.create_foreign_key(
         "oauth_accounts_user_id_fkey", "oauth_accounts", "users", ["user_id"], ["id"]
     )

@@ -13,8 +13,8 @@ from alembic import op
 # revision identifiers, used by Alembic.
 revision = "c6af58446381"
 down_revision = "3c9a26ad7774"
-branch_labels = None
-depends_on = None
+branch_labels: tuple[str] | None = None
+depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
@@ -35,7 +35,7 @@ def downgrade() -> None:
             "organization_name", sa.VARCHAR(), autoincrement=False, nullable=False
         ),
     )
-    op.drop_constraint(None, "repositories", type_="unique")
+    op.drop_constraint(None, "repositories", type_="unique")  # type: ignore
     op.create_unique_constraint(
         "repositories_organization_name_name_key",
         "repositories",

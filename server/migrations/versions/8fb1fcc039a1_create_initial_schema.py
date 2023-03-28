@@ -19,6 +19,8 @@ Suffixes:
 See:
 https://stackoverflow.com/questions/4107915/postgresql-default-constraint-names/4108266#4108266
 """
+from typing import Any
+
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
@@ -28,8 +30,8 @@ from polar.kit.extensions.sqlalchemy import GUID
 # revision identifiers, used by Alembic.
 revision: str = "8fb1fcc039a1"
 down_revision: str | None = None
-branch_labels: str | None = None
-depends_on: str | None = None
+branch_labels: tuple[str] | None = None
+depends_on: tuple[str] | None = None
 
 
 def create_users() -> None:
@@ -210,7 +212,7 @@ def drop_repositories() -> None:
     op.drop_table("repositories")
 
 
-def get_base_issue_columns() -> list[sa.Column]:
+def get_base_issue_columns() -> list[sa.Column[Any]]:
     columns = [
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
@@ -241,7 +243,7 @@ def get_base_issue_columns() -> list[sa.Column]:
         sa.Column("issue_created_at", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.Column("issue_modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
     ]
-    return columns
+    return columns  # type: ignore
 
 
 def create_issues() -> None:

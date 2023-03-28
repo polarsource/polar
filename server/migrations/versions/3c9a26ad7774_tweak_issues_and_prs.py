@@ -13,8 +13,8 @@ from alembic import op
 # revision identifiers, used by Alembic.
 revision = "3c9a26ad7774"
 down_revision = "404dfa655fbc"
-branch_labels = None
-depends_on = None
+branch_labels: tuple[str] | None = None
+depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
@@ -93,7 +93,9 @@ def downgrade() -> None:
             nullable=False,
         ),
     )
-    op.drop_constraint(None, "pull_requests", type_="unique")
+    # Known issue that we resolved in later Alembic version to set our index
+    # naming convention and thereby resolve autogeneration of None values.
+    op.drop_constraint(None, "pull_requests", type_="unique")  # type: ignore
     op.create_unique_constraint(
         "pull_requests_organization_name_repository_name_number_key",
         "pull_requests",
@@ -150,7 +152,7 @@ def downgrade() -> None:
             nullable=False,
         ),
     )
-    op.drop_constraint(None, "issues", type_="unique")
+    op.drop_constraint(None, "issues", type_="unique")  # type: ignore
     op.create_unique_constraint("issues_token_key", "issues", ["token"])
     op.create_unique_constraint(
         "issues_organization_name_repository_name_number_key",

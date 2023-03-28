@@ -2,6 +2,7 @@ import { ArrowRightCircleIcon as SolidArrowRightCircleIcon } from '@heroicons/re
 import { api } from 'polarkit'
 import { AccountRead, Platforms } from 'polarkit/api/client'
 import { useStore } from 'polarkit/store'
+import { getCentsInDollarString } from 'polarkit/utils'
 
 const BalanceBadge = ({ account }: { account: AccountRead }) => {
   const currentOrg = useStore((store) => store.currentOrg)
@@ -16,7 +17,6 @@ const BalanceBadge = ({ account }: { account: AccountRead }) => {
     }
   }
 
-  const formattedBalance = (Math.round(account.balance * 100) / 100).toFixed(2)
   return (
     <a
       href="#"
@@ -26,7 +26,7 @@ const BalanceBadge = ({ account }: { account: AccountRead }) => {
       }}
     >
       <div className="flex items-center space-x-3 rounded-full border-2 border-[#E5DEF5] bg-[#F9F7FD] py-1 pr-1.5 pl-3 text-[#7556BA] transition-colors duration-100 hover:bg-[#E5DEF5]">
-        <span>${formattedBalance}</span>
+        <span>${getCentsInDollarString(account.balance)}</span>
         <SolidArrowRightCircleIcon
           className="h-6 w-6 text-[#9171D9]"
           aria-hidden="true"

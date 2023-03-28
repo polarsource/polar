@@ -14,6 +14,7 @@ class Pledge(RecordModel):
     repository_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)
     organization_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)
     payment_id: Mapped[str] = mapped_column(String, nullable=True, index=True)
+    transfer_id: Mapped[str] = mapped_column(String, nullable=True)
 
     email: Mapped[str] = mapped_column(String, nullable=False, index=True)
 

@@ -68,7 +68,7 @@ async def on_issue_sync_completed(
 
 
 @issue_created.connect  # type: ignore
-async def on_issue_created(issue: Issue) -> None:
+async def on_issue_created(issue: Issue, session: AsyncSession) -> None:
     await publish(
         "issue.created",
         {"issue": issue.id},
@@ -78,7 +78,7 @@ async def on_issue_created(issue: Issue) -> None:
 
 
 @issue_updated.connect  # type: ignore
-async def on_issue_updated(issue: Issue) -> None:
+async def on_issue_updated(issue: Issue, session: AsyncSession) -> None:
     await publish(
         "issue.updated",
         {
@@ -92,7 +92,7 @@ async def on_issue_updated(issue: Issue) -> None:
 
 
 @pull_request_created.connect  # type: ignore
-async def on_pull_request_created(pr: PullRequest) -> None:
+async def on_pull_request_created(pr: PullRequest, session: AsyncSession) -> None:
     await publish(
         "pull_request.created",
         {"pull_request": pr.id},
@@ -102,7 +102,7 @@ async def on_pull_request_created(pr: PullRequest) -> None:
 
 
 @pull_request_updated.connect  # type: ignore
-async def on_pull_request_updated(pr: PullRequest) -> None:
+async def on_pull_request_updated(pr: PullRequest, session: AsyncSession) -> None:
     await publish(
         "pull_request.updated",
         {"pull_request": pr.id},

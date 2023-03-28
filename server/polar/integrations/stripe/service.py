@@ -7,11 +7,13 @@ stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 
 
 class StripeService(object):
-    def create_intent(self, amount: int, issue_id: UUID) -> stripe_lib.PaymentIntent:
+    def create_intent(
+        self, amount: int, transfer_group: str
+    ) -> stripe_lib.PaymentIntent:
         return stripe_lib.PaymentIntent.create(
             amount=amount,
             currency="USD",
-            transfer_group=f"{issue_id}",
+            transfer_group=transfer_group,
         )
 
     def modify_intent(self, id: str, amount: int) -> stripe_lib.PaymentIntent:
@@ -55,6 +57,16 @@ class StripeService(object):
 
     def create_login_link(self, stripe_id: str) -> stripe_lib.AccountLink:
         return stripe_lib.Account.create_login_link(stripe_id)
+
+    def transfer(
+        self, destination_stripe_id: str, amount: int, transfer_group: str
+    ) -> stripe_lib.Transfer:
+        return stripe_lib.Transfer.create(
+            amount=amount,
+            currency="usd",
+            destination=destination_stripe_id,
+            transfer_group=transfer_group,
+        )
 
 
 stripe = StripeService()

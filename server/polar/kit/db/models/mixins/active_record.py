@@ -106,7 +106,7 @@ class ActiveRecordMixin(Generic[ModelType]):
         instance = cls()
         instance.fill(**values)
         created = await instance.save(session, autocommit=autocommit)
-        await created.on_created()
+        await created.on_created(session)
         return created
 
     @classmethod
@@ -149,7 +149,7 @@ class ActiveRecordMixin(Generic[ModelType]):
         res = await session.execute(orm_stmt)
         instances = res.scalars().all()
         await session.commit()
-        await cls.on_upserted([i for i in instances])
+        await cls.on_upserted(session, [i for i in instances])
         return instances
 
     @classmethod
@@ -169,15 +169,17 @@ class ActiveRecordMixin(Generic[ModelType]):
         return upserted[0]
 
     @classmethod
-    async def on_upserted(cls, instances: list[ModelType]) -> None:
+    async def on_upserted(
+        cls, session: AsyncSession, instances: list[ModelType]
+    ) -> None:
         for instance in instances:
             if not isinstance(instance.xmax, int):
                 continue
 
             if instance.xmax == 0:
-                await instance.on_created()
+                await instance.on_created(session)
             elif instance.xmax != 0:
-                await instance.on_updated()
+                await instance.on_updated(session)
 
     def fill(
         self: ModelType,
@@ -214,27 +216,27 @@ class ActiveRecordMixin(Generic[ModelType]):
             include = self.get_mutable_keys()
         updated = self.fill(include=include, exclude=exclude, **values)
         res = await updated.save(session, autocommit=autocommit)
-        await self.on_updated()
+        await self.on_updated(session)
         return res
 
     async def delete(self: Any, session: AsyncSession) -> None:
         # TODO: Can we get an affected rows or similar to verify delete?
         await session.delete(self)
         await session.commit()
-        await self.on_deleted()
+        await self.on_deleted(session)
 
-    async def signal_state_change(self, state: str) -> None:
+    async def signal_state_change(self, session: AsyncSession, state: str) -> None:
         signal = getattr(self, f"on_{state}_signal", None)
         if signal:
-            await signal.send_async(self)
+            await signal.send_async(self, session=session)
 
-    async def on_updated(self) -> None:
+    async def on_updated(self, session: AsyncSession) -> None:
         self.was_updated = True
-        await self.signal_state_change("updated")
+        await self.signal_state_change(session, "updated")
 
-    async def on_created(self) -> None:
+    async def on_created(self, session: AsyncSession) -> None:
         self.was_created = True
-        await self.signal_state_change("created")
+        await self.signal_state_change(session, "created")
 
-    async def on_deleted(self) -> None:
-        await self.signal_state_change("deleted")
+    async def on_deleted(self, session: AsyncSession) -> None:
+        await self.signal_state_change(session, "deleted")

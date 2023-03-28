@@ -143,7 +143,7 @@ async def get_dashboard(
     for i in issues:
         refs = await issue.list_issue_references(session, i)
         for ref in refs:
-            entry = Entry(
+            entry: Entry[IssueReferenceRead] = Entry(
                 id=ref.external_id,
                 type="reference",
                 attributes=IssueReferenceRead.from_model(ref),

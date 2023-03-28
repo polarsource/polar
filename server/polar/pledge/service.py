@@ -64,7 +64,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         await session.execute(statement)
         await session.commit()
 
-    async def payout(self, session: AsyncSession, pledge_id: UUID) -> None:
+    async def transfer(self, session: AsyncSession, pledge_id: UUID) -> None:
         pledge = await self.get(session, id=pledge_id)
         if not pledge:
             raise ResourceNotFound(f"Pledge not found with id: {pledge_id}")

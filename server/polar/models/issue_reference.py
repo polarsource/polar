@@ -36,6 +36,8 @@ class ExternalGitHubCommitReference(Schema):
     user_avatar: str
 
     commit_id: str
+    branch_name: str | None = None
+    message: str | None = None
 
 
 class ReferenceType(str, enum.Enum):

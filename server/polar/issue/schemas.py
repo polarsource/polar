@@ -212,6 +212,8 @@ class ExternalGitHubCommitReference(Schema):
     sha: str
     organization_name: str
     repository_name: str
+    branch_name: str | None = None
+    message: str | None = None
 
 
 class IssueReferenceRead(Schema):
@@ -293,6 +295,8 @@ class IssueReferenceRead(Schema):
                             organization_name=r.organization_name,
                             repository_name=r.repository_name,
                             sha=r.commit_id,
+                            branch_name=r.branch_name,
+                            message=r.message,
                         ),
                     )
 

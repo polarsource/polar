@@ -3,6 +3,7 @@ import asyncio
 from typing import Any, List, Set, Union
 from uuid import UUID
 from githubkit import Response
+from pydantic import parse_obj_as
 
 import structlog
 from polar.exceptions import IntegrityError
@@ -59,9 +60,9 @@ class GitHubIssueReferencesService:
         self, session: AsyncSession, org: Organization, repo: Repository
     ) -> None:
         """
-        sync_repo_references lists repository events to find issues that have been mentioned.
-        When we know which issues that have been mentioned, a job to fetch and parse timeline
-        events will be triggered.
+        sync_repo_references lists repository events to find issues that have been
+        mentioned. When we know which issues that have been mentioned, a job to fetch
+        and parse timeline events will be triggered.
         """
 
         if (
@@ -180,6 +181,9 @@ class GitHubIssueReferencesService:
                 session, org, repo, issue, event
             )
             if ref:
+                # add data missing from github api
+                ref = await self.annotate(session, org, ref)
+
                 # persist
                 await self.create_reference(session, ref)
 
@@ -239,8 +243,8 @@ class GitHubIssueReferencesService:
         )
 
         if not referenced_by_pr:
-            # If referenced by PR in the same repository, but that PR has not been synced
-            # Sync it, and try again
+            # If referenced by PR in the same repository, but that PR has not been
+            # synced. Sync it, and try again
             if event.source.issue.repository.id == repo.external_id:
                 # Try to fetch it
                 referenced_by_pr = await github_pull_request.sync_pull_request(
@@ -338,6 +342,94 @@ class GitHubIssueReferencesService:
         )
 
         return ref
+
+    async def annotate(
+        self, session: AsyncSession, org: Organization, ref: IssueReference
+    ) -> IssueReference:
+        if ref.reference_type == ReferenceType.EXTERNAL_GITHUB_COMMIT:
+            r = parse_obj_as(ExternalGitHubCommitReference, ref.external_source)
+
+            # use fields from existing db entry if set
+            existing = await self.get(
+                session, ref.issue_id, ref.reference_type, ref.external_id
+            )
+            existingRef = (
+                parse_obj_as(ExternalGitHubCommitReference, existing.external_source)
+                if existing
+                else None
+            )
+
+            ref.external_source = jsonable_encoder(
+                await self.annotate_issue_commit_reference(org, r, existingRef)
+            )
+
+        return ref
+
+    async def annotate_issue_commit_reference(
+        self,
+        org: Organization,
+        ref: ExternalGitHubCommitReference,
+        existingRef: ExternalGitHubCommitReference | None,
+    ) -> ExternalGitHubCommitReference:
+        """
+        annotate_issue_commit_reference attempts to fetch data from the GitHub API
+        and fill in the blanks in ref
+        """
+
+        # New ref has all fields
+        if ref.branch_name and ref.branch_name:
+            return ref
+
+        # Populate from existingRef
+        if existingRef and existingRef.branch_name and not ref.branch_name:
+            ref.branch_name = existingRef.branch_name
+        if existingRef and existingRef.message and not ref.message:
+            ref.message = existingRef.message
+
+        # If still not there, fetch from GitHub
+        if not ref.branch_name or not ref.message:
+            client = github.get_app_installation_client(org.installation_id)
+
+            # Fetch branches where the commit is currently the HEAD commit
+            # GitHub has no API to find branches that _contain_ a commit, so if that's
+            # what we want to do long term, we'll probably have to clone the repo and
+            # analyze it ourselves.
+            branches = await client.rest.repos.async_list_branches_for_head_commit(
+                owner=ref.organization_name,
+                repo=ref.repository_name,
+                commit_sha=ref.commit_id,
+            )
+
+            if branches and branches.parsed_data:
+                b = branches.parsed_data
+                if len(b) == 1:
+                    ref.branch_name = b[0].name
+
+            # Get commit message
+            commit = await client.rest.repos.async_get_commit(
+                owner=ref.organization_name,
+                repo=ref.repository_name,
+                ref=ref.commit_id,
+            )
+            if commit and commit.parsed_data.commit.message:
+                ref.message = commit.parsed_data.commit.message
+
+        return ref
+
+    async def get(
+        self,
+        session: AsyncSession,
+        issue_id: UUID,
+        reference_type: ReferenceType | str,
+        external_id: str,
+    ) -> IssueReference | None:
+        stmt = sql.select(IssueReference).where(
+            IssueReference.issue_id == issue_id,
+            IssueReference.reference_type == reference_type,
+            IssueReference.external_id == external_id,
+        )
+        res = await session.execute(stmt)
+        return res.scalars().first()
 
     async def create_reference(
         self, session: AsyncSession, ref: IssueReference

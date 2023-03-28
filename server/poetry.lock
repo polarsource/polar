@@ -1880,6 +1880,18 @@ cryptography = ">=35.0.0"
 types-pyOpenSSL = "*"
 
 [[package]]
+name = "types-stripe"
+version = "3.5.2.8"
+description = "Typing stubs for stripe"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-stripe-3.5.2.8.tar.gz", hash = "sha256:a572b0c3b41c6a19295449548916f7350f2fcb41af58acb5351a6b67f82c8143"},
+    {file = "types_stripe-3.5.2.8-py3-none-any.whl", hash = "sha256:7dc1c01ddc4086102b508251b246c5f6dfd99ebbba287d7b2fd29995aba7c1f2"},
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.5.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
@@ -2109,4 +2121,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "7c3f158885b851264ac67e5ab167ca60de6cee4b55a5ceb6180f1a1d4bb6a78e"
+content-hash = "eac57695601b0e4636e3de1c56e647b5178711645051c10f8fb12b2fcaeaae54"

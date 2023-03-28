@@ -227,7 +227,6 @@ async def webhook(request: Request) -> WebhookResponse:
     if valid_signature:
         return await enqueue(request)
 
-    print("Invalid signature", settings.GITHUB_APP_WEBHOOK_SECRET)
     # Should be 403 Forbidden, but...
     # Throwing unsophisticated hackers/scrapers/bots off the scent
     raise HTTPException(status_code=404)

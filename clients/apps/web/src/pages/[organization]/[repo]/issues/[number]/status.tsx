@@ -13,7 +13,6 @@ const PledgeStatusPage: NextLayoutComponentType = ({
   repository,
   issue,
   pledge,
-  query,
 }: PledgeResources) => {
   return (
     <>

@@ -53,7 +53,9 @@ const PledgePage: NextPage = ({
   repository,
   issue,
   query,
-}: PledgeResources) => {
+}: PledgeResources & {
+  query: any // TODO: Investigate & fix type
+}) => {
   return (
     <>
       <div className="mx-auto mt-24 w-[826px]">

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, UseQueryResult } from '@tanstack/react-query'
 import {
+  ApiError,
   OrganizationSettingsUpdate,
   type OrganizationRead,
   type RepositoryRead,
@@ -11,12 +12,23 @@ export type RepoListItem = RepositoryRead & {
   organization: OrganizationRead
 }
 
+const defaultRetry = (failureCount: number, error: ApiError): boolean => {
+  if (error.status === 404) {
+    return false
+  }
+  if (failureCount > 2) {
+    return false
+  }
+  return true
+}
+
 export const useUserOrganizations = (userId: string) => {
   const query = useQuery(
     ['user', 'organizations', userId],
     () => api.userOrganizations.getUserOrganizations(),
     {
       enabled: !!userId,
+      retry: defaultRetry,
     },
   )
 
@@ -52,11 +64,14 @@ export const useUserOrganizations = (userId: string) => {
 }
 
 export const useOrganizationAccounts = (repoOwner: string) =>
-  useQuery(['organization', repoOwner, 'account'], () =>
-    api.accounts.getAccount({
-      platform: Platforms.GITHUB,
-      orgName: repoOwner,
-    }),
+  useQuery(
+    ['organization', repoOwner, 'account'],
+    () =>
+      api.accounts.getAccount({
+        platform: Platforms.GITHUB,
+        orgName: repoOwner,
+      }),
+    { retry: defaultRetry },
   )
 
 export const useRepositoryIssues = (repoOwner: string, repoName: string) =>
@@ -70,6 +85,7 @@ export const useRepositoryIssues = (repoOwner: string, repoName: string) =>
       }),
     {
       enabled: !!repoOwner && !!repoName,
+      retry: defaultRetry,
     },
   )
 
@@ -87,6 +103,7 @@ export const useRepositoryPullRequests = (
       }),
     {
       enabled: !!repoOwner && !!repoName,
+      retry: defaultRetry,
     },
   )
 
@@ -101,6 +118,7 @@ export const useRepositoryPledges = (repoOwner: string, repoName: string) =>
       }),
     {
       enabled: !!repoOwner && !!repoName,
+      retry: defaultRetry,
     },
   )
 
@@ -136,6 +154,7 @@ export const useDashboard = (
     },
     {
       enabled: !!orgName,
+      retry: defaultRetry,
     },
   )
 
@@ -149,6 +168,7 @@ export const useOrganization = (orgName: string) =>
       }),
     {
       enabled: !!orgName,
+      retry: defaultRetry,
     },
   )
 

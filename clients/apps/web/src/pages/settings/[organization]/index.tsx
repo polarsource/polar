@@ -2,6 +2,7 @@ import { InformationCircleIcon } from '@heroicons/react/24/outline'
 import { ArrowLeftIcon } from '@heroicons/react/24/solid'
 import RepoSelection from 'components/Dashboard/RepoSelection'
 import FakePullRequest from 'components/Settings/FakePullRequest'
+import Spinner from 'components/Shared/Spinner'
 import Topbar from 'components/Shared/Topbar'
 import { NextLayoutComponentType } from 'next'
 import Link from 'next/link'
@@ -39,6 +40,8 @@ const SettingsPage: NextLayoutComponentType = () => {
       return
     }
 
+    // On first load, set values from API
+    // After first load, treat local values as the source of truth, and send them to the API
     setBadgeAddOldIssues(!!org.funding_badge_retroactive)
     setBadgeShowRaised(!!org.funding_badge_show_amount)
 
@@ -110,6 +113,38 @@ const SettingsPage: NextLayoutComponentType = () => {
     emailPullRequestMerged,
   ])
 
+  // show spinner if still loading after 1s
+  const [allowShowLoadingSpinner, setAllowShowLoadingSpinner] = useState(false)
+  setTimeout(() => {
+    setAllowShowLoadingSpinner(true)
+  }, 1000)
+
+  if (orgData.isError) {
+    return (
+      <>
+        <div className="mx-auto mt-24 flex max-w-[1100px] flex-col items-center">
+          <span>Organization not found</span>
+          <span>404 Not Found</span>
+        </div>
+      </>
+    )
+  }
+
+  if (orgData.isLoading) {
+    return (
+      <>
+        <div className="mx-auto mt-24 flex max-w-[1100px] flex-col items-center text-black">
+          {allowShowLoadingSpinner && (
+            <div className="flex items-center space-x-4">
+              <span>Loading</span>
+              <Spinner />
+            </div>
+          )}
+        </div>
+      </>
+    )
+  }
+
   return (
     <>
       <div className="mx-auto mt-24 max-w-[1100px]">
@@ -117,6 +152,7 @@ const SettingsPage: NextLayoutComponentType = () => {
           {showDidSave && <div className="h-4 text-black/50">Saved!</div>}
           {!showDidSave && <div className="h-4"></div>}
         </div>
+
         <div className="divide-y divide-gray-200">
           <Section>
             <SectionDescription

@@ -1,4 +1,5 @@
-type LabelSchema = {
+export type LabelSchema = {
+  id: string
   name: string
   color: string // Hex code without the #
 }

@@ -8,7 +8,7 @@ import {
 } from '../api/client'
 import IconCounter from './IconCounter'
 import IssueActivityBox from './IssueActivityBox'
-import IssueLabel from './IssueLabel'
+import IssueLabel, { LabelSchema } from './IssueLabel'
 import IssuePledge from './IssuePledge'
 import IssueProgress, { Progress } from './IssueProgress'
 import IssueReference from './IssueReference'
@@ -18,7 +18,7 @@ const IssueListItem = (props: {
   repo: RepositoryRead
   issue: IssueRead
   references: IssueReferenceRead[]
-  pledges?: PledgeRead[]
+  pledges: PledgeRead[]
 }) => {
   const {
     title,
@@ -30,14 +30,13 @@ const IssueListItem = (props: {
     issue_closed_at,
   } = props.issue
 
-  const issue = props.issue
-
   const href = `https://github.com/${props.org.name}/${props.repo.name}/issues/${number}`
   const createdAt = new Date(issue_created_at)
   const closedAt = new Date(issue_created_at)
 
-  const havePledgeOrPullRequest =
-    (props.pledges && props.pledges.length > 0) || props.references?.length > 0
+  const havePledge = props.pledges && props.pledges.length > 0
+  const haveReference = props.references && props.references?.length > 0
+  const havePledgeOrReference = havePledge || haveReference
 
   const showCommentsCount = !!(comments && comments > 0)
   const showReactionsThumbs = !!(reactions.plus_one > 0)
@@ -63,7 +62,7 @@ const IssueListItem = (props: {
             </a>
             <div className="flex items-center gap-2">
               {props.issue.labels &&
-                props.issue.labels.map((label) => {
+                props.issue.labels.map((label: LabelSchema) => {
                   return <IssueLabel label={label} key={label.id} />
                 })}
             </div>
@@ -95,7 +94,7 @@ const IssueListItem = (props: {
         </div>
       </div>
 
-      {havePledgeOrPullRequest && (
+      {havePledgeOrReference && (
         <IssueActivityBox>
           {props.pledges &&
             props.pledges.map((pledge: PledgeRead) => {

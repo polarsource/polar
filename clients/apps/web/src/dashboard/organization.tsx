@@ -64,7 +64,7 @@ const Organization = (props: { filters: DashboardFilters }) => {
   useEffect(() => {
     setIssues(dashboard?.data || [])
     setOrgs(buildMapForType<OrganizationRead>(dashboard, 'organization'))
-    setPledges(buildMapForType<PledgeRead>(dashboard, 'pledges'))
+    setPledges(buildMapForType<PledgeRead>(dashboard, 'pledge'))
     setRepos(buildMapForType<RepositoryRead>(dashboard, 'repository'))
     setReferences(buildMapForType<IssueReferenceRead>(dashboard, 'reference'))
   }, [dashboard])

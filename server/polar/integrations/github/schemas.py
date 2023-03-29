@@ -29,3 +29,10 @@ class GithubBadgeRead(Schema):
     width: int = 445
     height: int = 44
     amount: BadgeAmount | None = None
+
+
+class GithubIssueDependency(Schema):
+    raw: str
+    owner: str | None = None
+    repo: str | None = None
+    number: int

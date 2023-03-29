@@ -76,7 +76,6 @@ async def get_account(
     platform: Platforms,
     org_name: str,
     auth: Auth = Depends(Auth.user_with_org_access),
-    session: AsyncSession = Depends(get_db_session),
 ) -> list[AccountRead | None]:
     if auth.organization.account is not None:
         ret = AccountRead.from_orm(auth.organization.account)

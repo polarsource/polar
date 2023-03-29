@@ -2,6 +2,7 @@ import { InformationCircleIcon } from '@heroicons/react/24/outline'
 import { ArrowLeftIcon } from '@heroicons/react/24/solid'
 import RepoSelection from 'components/Dashboard/RepoSelection'
 import FakePullRequest from 'components/Settings/FakePullRequest'
+import PaymentSettings from 'components/Settings/PaymentSettings'
 import Spinner from 'components/Shared/Spinner'
 import Topbar from 'components/Shared/Topbar'
 import { NextLayoutComponentType } from 'next'
@@ -147,13 +148,24 @@ const SettingsPage: NextLayoutComponentType = () => {
 
   return (
     <>
-      <div className="mx-auto mt-24 max-w-[1100px]">
+      <div className="mx-auto max-w-[1100px] md:mt-24">
         <div className="pl-80">
           {showDidSave && <div className="h-4 text-black/50">Saved!</div>}
           {!showDidSave && <div className="h-4"></div>}
         </div>
 
         <div className="divide-y divide-gray-200">
+          <Section>
+            <SectionDescription
+              title="Payment details"
+              description={`Default payment methods for the ${org.name} organization to use when pledning new issues.`}
+            />
+
+            <Box>
+              <PaymentSettings org={org} />
+            </Box>
+          </Section>
+
           <Section>
             <SectionDescription
               title="Polar badge"
@@ -228,6 +240,7 @@ const SettingsPage: NextLayoutComponentType = () => {
               />
             </Box>
           </Section>
+
           <Section>
             <SectionDescription title="Delete account" description="" />
 
@@ -277,12 +290,16 @@ SettingsPage.getLayout = (page: ReactElement) => {
 }
 
 const Section = ({ children }) => {
-  return <div className="flex space-x-20 py-10">{children}</div>
+  return (
+    <div className="flex flex-col space-y-4 p-4 py-10 md:flex-row md:space-x-20 md:space-y-0">
+      {children}
+    </div>
+  )
 }
 
 const SectionDescription = ({ title, description }) => {
   return (
-    <div className="w-80">
+    <div className="flex-shrink-0 md:w-60">
       <h2 className="text-[#101828]">{title}</h2>
       <p className="text-black/50">{description}</p>
     </div>

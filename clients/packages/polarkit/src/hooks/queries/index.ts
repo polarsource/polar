@@ -62,7 +62,6 @@ export const useUserOrganizations = (currentUser: UserRead | undefined) => {
       )
     },
   }
-  return query
 }
 
 export const useOrganizationAccounts = (repoOwner: string) =>

@@ -13,11 +13,13 @@ const PaymentMethodForm = ({
   isSyncing,
   setSyncing,
   setErrorMessage,
+  onSuccess,
 }: {
   organization: OrganizationRead
   isSyncing: boolean
   setSyncing: (isLocked: boolean) => void
   setErrorMessage: (message: string) => void
+  onSuccess: () => void
 }) => {
   const router = useRouter()
   const stripe = useStripe()
@@ -37,10 +39,17 @@ const PaymentMethodForm = ({
       setupIntent.payment_method &&
       typeof setupIntent.payment_method === 'string'
     ) {
-      setDefaultPaymentMethod.mutate({
-        orgName: organization?.name,
-        paymentMethodId: setupIntent.payment_method,
-      })
+      setDefaultPaymentMethod.mutate(
+        {
+          orgName: organization?.name,
+          paymentMethodId: setupIntent.payment_method,
+        },
+        {
+          onSuccess: () => {
+            onSuccess()
+          },
+        },
+      )
     }
   }
 

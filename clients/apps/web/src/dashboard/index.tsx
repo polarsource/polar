@@ -1,6 +1,5 @@
 import DashboardLayout from 'components/Layout/DashboardLayout'
 import { useRouter } from 'next/router'
-import { CONFIG } from 'polarkit'
 import { requireAuth, useSSE, useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import React, { useState } from 'react'
@@ -24,6 +23,9 @@ export const DashboardEnvironment = ({ children }) => {
 
   const currentOrg = useStore((state) => state.currentOrg)
   const currentRepo = useStore((state) => state.currentRepo)
+  const setIsOrganizationAccount = useStore(
+    (state) => state.setIsOrganizationAccount,
+  )
 
   // TODO: Unless we're sending user-only events we should probably delay SSE
   useSSE(currentOrg?.platform, currentOrg?.name, currentRepo?.name)
@@ -38,9 +40,8 @@ export const DashboardEnvironment = ({ children }) => {
 
   if (!userOrgQuery.isSuccess) return <div>Error</div>
 
-  if (!organizations.length) {
-    window.location.replace(CONFIG.GITHUB_INSTALLATION_URL)
-  }
+  const isOrganizationAccount = organizations.length > 0
+  setIsOrganizationAccount(isOrganizationAccount)
 
   // Pass search filters to dynamic children
   const renderedChildren = React.Children.map(children, function (child) {

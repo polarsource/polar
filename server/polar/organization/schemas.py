@@ -92,3 +92,27 @@ class OrganizationRead(Base, OrganizationSettingsRead):
 
     class Config:
         orm_mode = True
+
+
+class PaymentMethod(Schema):
+    type: str  # example: "card"
+    card_last4: str | None = None
+    card_brand: str | None = None  # example: "visa"
+
+
+class OrganizationStripeCustomerRead(Schema):
+    email: str | None = None
+    addressCity: str | None = None
+    addressCountry: str | None = None
+    addressLine1: str | None = None
+    addressLine2: str | None = None
+    postalCode: str | None = None
+    state: str | None = None
+
+    default_payment_method: PaymentMethod | None = None
+
+
+class OrganizationSetupIntentRead(Schema):
+    id: str
+    status: str
+    client_secret: str

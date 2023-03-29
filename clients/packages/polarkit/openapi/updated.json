@@ -1225,6 +1225,165 @@
                 }
             }
         },
+        "/api/v1/{platform}/{organization_name}/stripe_customer": {
+            "get": {
+                "tags": [
+                    "organizations"
+                ],
+                "summary": "Get Stripe Customer",
+                "operationId": "get_stripe_customer",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Org Name",
+                            "type": "string"
+                        },
+                        "name": "org_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrganizationStripeCustomerRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/{platform}/{organization_name}/setup_intent": {
+            "post": {
+                "tags": [
+                    "organizations"
+                ],
+                "summary": "Create Setup Intent",
+                "operationId": "create_setup_intent",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Org Name",
+                            "type": "string"
+                        },
+                        "name": "org_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrganizationSetupIntentRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/{platform}/{organization_name}/set_default_payment_method": {
+            "post": {
+                "tags": [
+                    "organizations"
+                ],
+                "summary": "Set Default Payment Method",
+                "operationId": "set_default_payment_method",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Org Name",
+                            "type": "string"
+                        },
+                        "name": "org_name",
+                        "in": "query"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Payment Method Id",
+                            "type": "string"
+                        },
+                        "name": "payment_method_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrganizationStripeCustomerRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/{platform}/{org_name}/dashboard": {
             "get": {
                 "tags": [
@@ -2235,6 +2394,87 @@
                     "email_notification_backed_issue_pull_request_merged": {
                         "title": "Email Notification Backed Issue Pull Request Merged",
                         "type": "boolean"
+                    }
+                }
+            },
+            "OrganizationSetupIntentRead": {
+                "title": "OrganizationSetupIntentRead",
+                "required": [
+                    "id",
+                    "status",
+                    "client_secret"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "title": "Id",
+                        "type": "string"
+                    },
+                    "status": {
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "client_secret": {
+                        "title": "Client Secret",
+                        "type": "string"
+                    }
+                }
+            },
+            "OrganizationStripeCustomerRead": {
+                "title": "OrganizationStripeCustomerRead",
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "title": "Email",
+                        "type": "string"
+                    },
+                    "addressCity": {
+                        "title": "Addresscity",
+                        "type": "string"
+                    },
+                    "addressCountry": {
+                        "title": "Addresscountry",
+                        "type": "string"
+                    },
+                    "addressLine1": {
+                        "title": "Addressline1",
+                        "type": "string"
+                    },
+                    "addressLine2": {
+                        "title": "Addressline2",
+                        "type": "string"
+                    },
+                    "postalCode": {
+                        "title": "Postalcode",
+                        "type": "string"
+                    },
+                    "state": {
+                        "title": "State",
+                        "type": "string"
+                    },
+                    "default_payment_method": {
+                        "$ref": "#/components/schemas/PaymentMethod"
+                    }
+                }
+            },
+            "PaymentMethod": {
+                "title": "PaymentMethod",
+                "required": [
+                    "type"
+                ],
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "title": "Type",
+                        "type": "string"
+                    },
+                    "card_last4": {
+                        "title": "Card Last4",
+                        "type": "string"
+                    },
+                    "card_brand": {
+                        "title": "Card Brand",
+                        "type": "string"
                     }
                 }
             },

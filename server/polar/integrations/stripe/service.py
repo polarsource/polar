@@ -168,7 +168,7 @@ class StripeService:
         if not cust:
             raise Exception("could ont get stripe customer")
 
-        stripe_lib.Customer(
+        stripe_lib.Customer.modify(
             cust.id,
             invoice_settings={
                 "default_payment_method": payment_method_id,

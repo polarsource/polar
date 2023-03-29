@@ -49,7 +49,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         if not pledge:
             raise ResourceNotFound(f"Pledge not found with id: {pledge_id}")
 
-        pledge.backer_user_id = backer.id
+        pledge.by_user_id = backer.id
         session.add(pledge)
         await session.commit()
 

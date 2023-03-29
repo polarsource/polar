@@ -22,6 +22,6 @@ class Pledge(RecordModel):
 
     state: Mapped[str] = mapped_column(String, nullable=False, default="initiated")
 
-    backer_user_id: Mapped[UUID | None] = mapped_column(
+    by_user_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID, ForeignKey("users.id"), nullable=True, index=True
     )

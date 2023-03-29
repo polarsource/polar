@@ -50,10 +50,6 @@ export function RepoSelection(props: {
     let repoName = typeof routerRepo === 'string' ? routerRepo : undefined
 
     if (!orgName && !repoName) {
-      if (!currentOrg) {
-        let defaultOrg = organizations[0]
-        setCurrentOrgRepo(defaultOrg, defaultOrg.repositories[0])
-      }
       return
     }
 

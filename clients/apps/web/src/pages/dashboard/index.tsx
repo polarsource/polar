@@ -1,7 +1,18 @@
+import { DashboardEnvironment, DefaultFilters } from 'dashboard/index'
+import Organization from 'dashboard/organization'
 import type { NextLayoutComponentType } from 'next'
+import { ReactElement } from 'react'
 
 const Page: NextLayoutComponentType = () => {
-  return <h1 className="mt-10 text-3xl font-bold underline">Dashboard</h1>
+  return (
+    <DashboardEnvironment>
+      <Organization filters={DefaultFilters} />
+    </DashboardEnvironment>
+  )
+}
+
+Page.getLayout = (page: ReactElement) => {
+  return <>{page}</>
 }
 
 export default Page

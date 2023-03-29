@@ -23,6 +23,8 @@ export const DashboardEnvironment = ({ children }) => {
 
   const currentOrg = useStore((state) => state.currentOrg)
   const currentRepo = useStore((state) => state.currentRepo)
+  const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
+
   const setIsOrganizationAccount = useStore(
     (state) => state.setIsOrganizationAccount,
   )
@@ -42,6 +44,11 @@ export const DashboardEnvironment = ({ children }) => {
 
   const isOrganizationAccount = organizations.length > 0
   setIsOrganizationAccount(isOrganizationAccount)
+
+  // Set default org and repo unless one is already set to support /dashboard
+  if (isOrganizationAccount && !currentOrg) {
+    setCurrentOrgRepo(organizations[0], organizations[0].repositories[0])
+  }
 
   // Pass search filters to dynamic children
   const renderedChildren = React.Children.map(children, function (child) {

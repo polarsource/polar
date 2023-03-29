@@ -95,6 +95,10 @@ class Organization(RecordModel):
         "Account", back_populates="organization", uselist=False, lazy="joined"
     )
 
+    stripe_customer_id: Mapped[str | None] = mapped_column(
+        String(length=50), nullable=True, unique=True, default=None
+    )
+
     # TODO: Given service.organization.get_with_repo_by_name can we drop lazy=joined
     # to be more explicit about the join?
     repos: "Mapped[list[Repository]]" = relationship(

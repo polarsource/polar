@@ -19,9 +19,13 @@ const IssuePledge = (props: { pledge: PledgeRead }) => {
           </span>
         </span>
       </div>
-      <a href="#" className="border-2 border-pink-800 text-sm text-gray-500">
-        Reward Details &rsaquo;
-      </a>
+
+      <div>
+        <span className="text-gray-300">(state={pledge.state}) </span>
+        <a href="#" className="border-2 border-pink-800 text-sm text-gray-500">
+          Reward Details &rsaquo;
+        </a>
+      </div>
     </div>
   )
 }

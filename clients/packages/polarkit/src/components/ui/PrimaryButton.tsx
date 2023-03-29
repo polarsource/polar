@@ -33,12 +33,17 @@ const LoadingSpinner = (props: { disabled: boolean }) => {
   )
 }
 
-const PrimaryButton = (props: {
+type ButtonProps = {
   children: React.ReactNode
-  disabled: boolean
-  loading: boolean
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => void
-}) => {
+} & typeof defaultProps
+
+const defaultProps = {
+  disabled: false,
+  loading: false,
+}
+
+const PrimaryButton = (props: ButtonProps) => {
   const disabled = props.disabled ? props.disabled : false
   let classes = 'm-auto w-full rounded-lg p-2 text-center text-sm font-medium'
   if (props.loading && !disabled) {
@@ -59,4 +64,6 @@ const PrimaryButton = (props: {
     </>
   )
 }
+PrimaryButton.defaultProps = defaultProps
+
 export default PrimaryButton

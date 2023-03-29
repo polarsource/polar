@@ -34,11 +34,11 @@ class Base(Schema):
     external_id: int
     avatar_url: str
     is_personal: bool
-    is_site_admin: bool
-    installation_id: int
-    installation_created_at: datetime
-    installation_updated_at: datetime | None
-    installation_suspended_at: datetime | None
+    is_site_admin: bool | None = None
+    installation_id: int | None = None
+    installation_created_at: datetime | None = None
+    installation_updated_at: datetime | None = None
+    installation_suspended_at: datetime | None = None
     onboarded_at: datetime | None = None
 
 

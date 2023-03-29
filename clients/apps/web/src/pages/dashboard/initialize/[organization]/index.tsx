@@ -12,7 +12,7 @@ const Page: NextLayoutComponentType = () => {
   const { organization } = router.query
   const { currentUser } = requireAuth()
   const [showSetup, setShowSetup] = useState(false)
-  const userOrgQuery = useUserOrganizations(currentUser?.id)
+  const userOrgQuery = useUserOrganizations(currentUser)
   const currentOrg = useStore((state) => state.currentOrg)
   const setCurrentOrg = useStore((state) => state.setCurrentOrg)
 

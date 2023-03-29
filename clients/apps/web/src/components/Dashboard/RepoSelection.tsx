@@ -26,7 +26,7 @@ export function RepoSelection(props: {
   const [open, setOpen] = React.useState(false)
 
   const { currentUser } = requireAuth()
-  const userOrgQuery = useUserOrganizations(currentUser?.id)
+  const userOrgQuery = useUserOrganizations(currentUser)
 
   const currentOrg = useStore((state) => state.currentOrg)
   const currentRepo = useStore((state) => state.currentRepo)

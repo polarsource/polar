@@ -4,6 +4,7 @@ import {
   OrganizationSettingsUpdate,
   type OrganizationRead,
   type RepositoryRead,
+  type UserRead,
 } from 'polarkit/api/client'
 import { api, queryClient } from '../../api'
 import { IssueListResponse, IssueStatus, Platforms } from '../../api/client'
@@ -22,7 +23,8 @@ const defaultRetry = (failureCount: number, error: ApiError): boolean => {
   return true
 }
 
-export const useUserOrganizations = (userId: string) => {
+export const useUserOrganizations = (currentUser: UserRead | undefined) => {
+  const userId = currentUser?.id
   const query = useQuery(
     ['user', 'organizations', userId],
     () => api.userOrganizations.getUserOrganizations(),

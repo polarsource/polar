@@ -17,7 +17,7 @@ export const DefaultFilters: DashboardFilters = {
 
 export const DashboardEnvironment = ({ children }) => {
   const { currentUser } = requireAuth()
-  const userOrgQuery = useUserOrganizations(currentUser?.id)
+  const userOrgQuery = useUserOrganizations(currentUser)
 
   const router = useRouter()
   const { organization, repo } = router.query

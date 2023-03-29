@@ -14,6 +14,7 @@ from polar.integrations.github import service
 from polar.integrations.github.schemas import GithubIssueDependency
 from polar.kit import utils
 from polar.issue.schemas import IssueCreate
+from polar.models.issue_dependency import IssueDependency
 from polar.organization.schemas import OrganizationCreate
 from polar.enums import Platforms
 
@@ -125,45 +126,16 @@ class GitHubIssueDependenciesService:
                     organization_id=organization.id,
                     repository_id=repository.id,
                 )
-                issue = await service.github_issue.upsert(session, issue_schema)
+                dependency_issue = await service.github_issue.upsert(
+                    session, issue_schema
+                )
 
-    async def sync_issue_references(
-        self,
-        session: AsyncSession,
-        org: Organization,
-        repo: Repository,
-        issue: Issue,
-    ) -> None:
-        """
-        sync_issue_references uses the GitHub Timeline API to find CrossReference events
-        and creates IssueReferences
-        """
-        client = get_app_installation_client(org.installation_id)
+                issue_dependency = IssueDependency(
+                    dependent_issue_id=issue.id, dependency_issue_id=dependency_issue.id
+                )
+                session.add(issue_dependency)
 
-        log.info(
-            "github.sync_issue_references",
-            id=repo.id,
-            name=repo.name,
-            issue_number=issue.number,
-        )
-
-        async for event in client.paginate(
-            client.rest.issues.async_list_events_for_timeline,
-            owner=org.name,
-            repo=repo.name,
-            issue_number=issue.number,
-        ):
-            ref = await self.parse_issue_timeline_event(
-                session, org, repo, issue, event
-            )
-            if ref:
-                # add data missing from github api
-                ref = await self.annotate(session, org, ref)
-
-                # persist
-                await self.create_reference(session, ref)
-
-        return
+            await session.commit()
 
 
 github_dependency = GitHubIssueDependenciesService()

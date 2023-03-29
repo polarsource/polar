@@ -73,7 +73,7 @@ export function RepoSelection(props: {
     }
 
     setCurrentOrgRepo(org, repo)
-  }, [organizations, router])
+  }, [organizations, router, routerOrg, routerRepo, setCurrentOrgRepo])
 
   const [dropdownSelectedOrg, setDropdowndropdownSelectedOrg] = useState<
     OrganizationRead | undefined
@@ -174,7 +174,7 @@ export function RepoSelection(props: {
     }
 
     setListOrgs(orgs)
-  }, [dropdownSelectedOrg, organizations, inputValue])
+  }, [dropdownSelectedOrg, organizations, inputValue, props.showRepositories])
 
   const onInputValueChange = (e) => {
     setValue(e)

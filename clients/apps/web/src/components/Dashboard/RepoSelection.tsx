@@ -38,43 +38,6 @@ export function RepoSelection(props: {
 
   const organizations = userOrgQuery.data
 
-  const { organization: routerOrg, repo: routerRepo } = router.query
-
-  // detect current from url
-  useEffect(() => {
-    if (!organizations) {
-      return
-    }
-
-    let orgName = typeof routerOrg === 'string' ? routerOrg : undefined
-    let repoName = typeof routerRepo === 'string' ? routerRepo : undefined
-
-    if (!orgName && !repoName) {
-      return
-    }
-
-    let org: OrganizationRead | undefined
-    let repo: RepositoryRead | undefined
-
-    // Find org
-    const orgs = organizations.filter((o) => o.name === orgName)
-    if (orgs.length === 0) {
-      return
-    }
-    org = orgs[0]
-
-    // Find repo
-    if (repoName && org) {
-      // from org find repo
-      const repos = org.repositories.filter((r) => r.name === repoName)
-      if (repos.length >= 0) {
-        repo = repos[0]
-      }
-    }
-
-    setCurrentOrgRepo(org, repo)
-  }, [organizations, router, routerOrg, routerRepo, setCurrentOrgRepo])
-
   const [dropdownSelectedOrg, setDropdowndropdownSelectedOrg] = useState<
     OrganizationRead | undefined
   >()

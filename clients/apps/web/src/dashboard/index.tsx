@@ -1,5 +1,6 @@
 import DashboardLayout from 'components/Layout/DashboardLayout'
 import { useRouter } from 'next/router'
+import { type OrganizationRead, type RepositoryRead } from 'polarkit/api/client'
 import { requireAuth, useSSE, useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import React, { useState } from 'react'
@@ -19,11 +20,11 @@ export const DashboardEnvironment = ({ children }) => {
   const userOrgQuery = useUserOrganizations(currentUser)
 
   const router = useRouter()
-  const { organization, repo } = router.query
 
   const currentOrg = useStore((state) => state.currentOrg)
   const currentRepo = useStore((state) => state.currentRepo)
   const setCurrentOrg = useStore((state) => state.setCurrentOrg)
+  const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
 
   const setIsOrganizationAccount = useStore(
     (state) => state.setIsOrganizationAccount,
@@ -45,11 +46,33 @@ export const DashboardEnvironment = ({ children }) => {
   const isOrganizationAccount = organizations.length > 0
   setIsOrganizationAccount(isOrganizationAccount)
 
-  // Set default org and repo unless one is already set to support /dashboard
-  if (isOrganizationAccount && !currentOrg) {
-    setCurrentOrg(organizations[0])
-  }
+  // Setup accurate org and repo state
+  const { orgSlug, repoSlug } = router.query
+  if (isOrganizationAccount) {
+    let org: OrganizationRead | undefined
+    let repo: RepositoryRead | undefined
 
+    if (orgSlug) {
+      const orgSearch = organizations.filter((o) => o.name === orgSlug)
+      org = orgSearch[0]
+    }
+
+    if (repoSlug) {
+      const repoSearch = org.repositories.filter((r) => r.name === repoSlug)
+      repo = repoSearch[0]
+    }
+
+    if (orgSlug) {
+      if (repoSlug) {
+        setCurrentOrgRepo(org, repo)
+      } else {
+        setCurrentOrg(org)
+      }
+    } else {
+      // Set a default org if none is selected via URL
+      setCurrentOrg(organizations[0])
+    }
+  }
   // Pass search filters to dynamic children
   const renderedChildren = React.Children.map(children, function (child) {
     return React.cloneElement(child, { filters })

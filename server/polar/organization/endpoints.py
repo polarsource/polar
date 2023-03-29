@@ -54,10 +54,7 @@ async def get_stripe_customer(
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationStripeCustomerRead:
-
     customer = await stripe.get_or_create_customer(session, auth.organization)
-
-    log.info("zegl customer", customer=customer)
 
     if not customer:
         raise HTTPException(
@@ -69,8 +66,6 @@ async def get_stripe_customer(
         payment_method = stripe.get_payment_method(
             customer.invoice_settings.default_payment_method
         )
-
-        log.info("zegl payment_method", payment_method=payment_method)
 
         default_payment_method = PaymentMethod(
             type=payment_method.type,
@@ -101,8 +96,6 @@ async def create_setup_intent(
 
     if not setup_intent:
         raise HTTPException(status_code=500, detail="Error could not setup_intent")
-
-    log.info("zegl intent", intent=setup_intent)
 
     return OrganizationSetupIntentRead(
         id=setup_intent.id,

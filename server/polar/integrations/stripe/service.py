@@ -43,18 +43,19 @@ class StripeService:
 
         if not customer:
             raise Exception("could not find a stripe customer")
+        if not customer.invoice_settings.default_payment_method:
+            raise Exception("could not find a default payment method")
 
         return stripe_lib.PaymentIntent.create(
             amount=amount,
             currency="USD",
             transfer_group=transfer_group,
-            # setup_future_usage="off_session",
             metadata={
                 "issue_id": issue.id,
                 "issue_title": issue.title,
             },
             customer=customer.id,
-            # payment_method="pm",
+            payment_method=customer.invoice_settings.default_payment_method,
         )
 
     def modify_intent(self, id: str, amount: int) -> stripe_lib.PaymentIntent:

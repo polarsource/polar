@@ -26,14 +26,22 @@ class RelationshipData(Schema):
 
 class Relationship(Schema):
     # TODO: links?
-    data: RelationshipData
+    data: RelationshipData | List[RelationshipData]
+
+
+class IssueRelationship(Schema):
+    pledges: List[Relationship] | None = None
+    organization: Relationship | None = None
+    repository: Relationship | None = None
+    references: List[Relationship] | None = None
+    dependencies: List[Relationship] | None = None
 
 
 class Entry(GenericModel, Generic[DataT]):
     type: str
     id: str | UUID
     attributes: DataT
-    relationships: List[Relationship] = []
+    relationships: IssueRelationship | None = None
 
 
 class ListResponse(GenericModel, Generic[DataT]):

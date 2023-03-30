@@ -3,12 +3,12 @@
 /* eslint-disable */
 
 import type { IssueRead } from './IssueRead';
-import type { Relationship } from './Relationship';
+import type { IssueRelationship } from './IssueRelationship';
 
 export type Entry_IssueRead_ = {
   type: string;
   id: string;
   attributes: IssueRead;
-  relationships?: Array<Relationship>;
+  relationships?: IssueRelationship;
 };
 

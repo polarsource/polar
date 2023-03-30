@@ -5,12 +5,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from polar.dashboard.schemas import (
     Entry,
     IssueListResponse,
+    IssueRelationship,
     IssueStatus,
     Relationship,
     RelationshipData,
 )
 from polar.enums import Platforms
-from polar.issue.schemas import IssueRead, IssueReferenceRead
+from polar.issue.schemas import IssueRead, IssueReferenceRead, IssueDependencyRead
 from polar.models.issue import Issue
 from polar.models.issue_reference import ReferenceType
 from polar.models.repository import Repository
@@ -111,9 +112,12 @@ async def get_dashboard(
     pledges = await pledge.get_by_issue_ids(session, issue_ids)
 
     # start building issue relationships with pledges
-    issue_relationships: Dict[UUID, List[Relationship]] = {}
-    for i in issues:
-        issue_relationships[i.id] = []
+    issue_relationships: Dict[UUID, IssueRelationship] = {}
+    # for i in issues:
+    #     issue_relationships[i.id] = IssueRelationship()
+
+    def get_issue_relationship(issue_id: UUID) -> IssueRelationship:
+        return issue_relationships.setdefault(issue_id, IssueRelationship())
 
     # add pledges to included
     for pled in pledges:
@@ -122,20 +126,23 @@ async def get_dashboard(
         )
         # inject relationships
         rel = Relationship(data=RelationshipData(type="pledge", id=pled.id))
-        issue_relationships[pled.issue_id].append(rel)
+        pledge_relationship = get_issue_relationship(pled.issue_id)
+        if not pledge_relationship.pledges:
+            pledge_relationship.pledges = []
+        pledge_relationship.pledges.append(rel)
 
     # Add repository and organization relationships to issues
     for i in issues:
         orgRel = Relationship(
             data=RelationshipData(type="organization", id=auth.organization.id)
         )
-        issue_relationships[i.id].append(orgRel)
+        get_issue_relationship(i.id).organization = orgRel
 
         if i.repository_id:
             repoRel = Relationship(
                 data=RelationshipData(type="repository", id=i.repository_id)
             )
-            issue_relationships[i.id].append(repoRel)
+            get_issue_relationship(i.id).repository = repoRel
 
     issues_with_prs: Set[UUID] = set()
 
@@ -143,23 +150,41 @@ async def get_dashboard(
     for i in issues:
         refs = await issue.list_issue_references(session, i)
         for ref in refs:
-            entry: Entry[IssueReferenceRead] = Entry(
+            ref_entry: Entry[IssueReferenceRead] = Entry(
                 id=ref.external_id,
                 type="reference",
                 attributes=IssueReferenceRead.from_model(ref),
             )
-            included.append(entry)
+            included.append(ref_entry)
 
-            rel = Relationship(
-                data=RelationshipData(type="reference", id=ref.external_id)
-            )
-            issue_relationships[i.id].append(rel)
+            rel = Relationship(data=RelationshipData(type="reference", id=ref_entry.id))
+            reference_relationship = get_issue_relationship(ref.issue_id)
+            if not reference_relationship.references:
+                reference_relationship.references = []
+            reference_relationship.references.append(rel)
 
             if (
                 ref.reference_type == ReferenceType.PULL_REQUEST
                 or ref.reference_type == ReferenceType.EXTERNAL_GITHUB_PULL_REQUEST
             ):
                 issues_with_prs.add(i.id)
+
+    # add issue dependencies
+    for i in issues:
+        deps = await issue.list_dependency_issues(session, i)
+        for dep in deps:
+            dep_entry: Entry[IssueRead] = Entry(
+                id=dep.id,
+                type="issue",
+                attributes=IssueRead.from_orm(dep),
+            )
+            included.append(dep_entry)
+
+            rel = Relationship(data=RelationshipData(type="issue", id=dep.id))
+            dependency_relationship = get_issue_relationship(i.id)
+            if not dependency_relationship.dependencies:
+                dependency_relationship.dependencies = []
+            dependency_relationship.dependencies.append(rel)
 
     def issue_progress(issue: Issue) -> IssueStatus:
         if issue.issue_closed_at:
@@ -180,7 +205,7 @@ async def get_dashboard(
                 id=i.id,
                 type="issue",
                 attributes=IssueRead.from_orm(i),
-                relationships=issue_relationships.get(i.id, []),
+                relationships=issue_relationships.get(i.id, None),
             )
             for i in issues
         ],

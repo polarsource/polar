@@ -58,7 +58,8 @@ class OrganizationService(
         session: AsyncSession,
         *,
         platform: Platforms,
-        org_name: str,
+        org_name: str | None = None,
+        org_id: UUID | None = None,
         repo_name: str | None = None,
         user_id: UUID | None = None,
     ) -> Organization | None:
@@ -70,8 +71,17 @@ class OrganizationService(
         query = sql.select(Organization)
         filters = [
             Organization.platform == platform,
-            Organization.name == org_name,
         ]
+
+        if not (org_id or org_name):
+            raise ValueError(
+                "Must provide at least one relationship (org_id or org_name)"
+            )
+
+        if org_id:
+            filters.append(Organization.id == org_id)
+        if org_name:
+            filters.append(Organization.name == org_name)
 
         if user_id:
             query = query.join(UserOrganization)
@@ -102,6 +112,24 @@ class OrganizationService(
             session,
             platform=platform,
             org_name=org_name,
+            user_id=user_id,
+        )
+        if not org:
+            return None
+        return org
+
+    async def get_by_id_for_user(
+        self,
+        session: AsyncSession,
+        *,
+        platform: Platforms,
+        org_id: UUID,
+        user_id: UUID,
+    ) -> Organization | None:
+        org = await self._get_protected(
+            session,
+            platform=platform,
+            org_id=org_id,
             user_id=user_id,
         )
         if not org:

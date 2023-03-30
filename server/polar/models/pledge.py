@@ -16,12 +16,24 @@ class Pledge(RecordModel):
     payment_id: Mapped[str] = mapped_column(String, nullable=True, index=True)
     transfer_id: Mapped[str] = mapped_column(String, nullable=True)
 
-    email: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String, nullable=True, index=True, default=None)
 
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
     state: Mapped[str] = mapped_column(String, nullable=False, default="initiated")
 
     by_user_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID, ForeignKey("users.id"), nullable=True, index=True
+        PostgresUUID,
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True,
+        default=None,
+    )
+
+    by_organization_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("organizations.id"),
+        nullable=True,
+        index=True,
+        default=None,
     )

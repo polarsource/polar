@@ -56,6 +56,8 @@ class StripeService:
             },
             customer=customer.id,
             payment_method=customer.invoice_settings.default_payment_method,
+            confirm="true",
+            off_session="true",
         )
 
     def modify_intent(self, id: str, amount: int) -> stripe_lib.PaymentIntent:

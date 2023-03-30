@@ -22,8 +22,9 @@ class State(str, Enum):
 
 class PledgeCreate(Schema):
     issue_id: UUID
-    email: str
+    email: str | None = None
     amount: int
+    pledge_as_org: UUID | None = None
 
 
 class PledgeUpdate(Schema):

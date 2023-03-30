@@ -145,14 +145,12 @@ export function RepoSelection(props: {
     setOpen(false)
   })
 
-  // TODO: return better styling...
   if (!currentUser) {
-    return <div>Not authenticated</div>
+    return <Loading />
   }
-  if (userOrgQuery.isLoading) return <div>Loading...</div>
-  if (!userOrgQuery.isSuccess) return <div>Error</div>
-
-  if (!currentOrg) return null
+  if (userOrgQuery.isLoading) return <Loading />
+  if (!userOrgQuery.isSuccess) return <Loading />
+  if (!currentOrg) return <Loading />
 
   return (
     <div
@@ -340,5 +338,11 @@ function TopbarOrgRepo({
       </div>
       <ChevronUpDownIcon className="h-6 w-6 flex-shrink-0 text-black/50" />
     </div>
+  )
+}
+
+const Loading = () => {
+  return (
+    <div className="h-8 w-40 flex-shrink-0 animate-pulse rounded-md bg-gray-100"></div>
   )
 }

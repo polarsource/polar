@@ -12,6 +12,7 @@ import {
   useOrganization,
   useOrganizationSettingsMutation,
 } from 'polarkit/hooks'
+import { useStore } from 'polarkit/store'
 import { ReactElement, useEffect, useRef, useState } from 'react'
 
 const SettingsPage: NextLayoutComponentType = () => {
@@ -32,10 +33,14 @@ const SettingsPage: NextLayoutComponentType = () => {
 
   const didFirstSet = useRef(false)
 
+  const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
+
   useEffect(() => {
     if (!org) {
       return
     }
+
+    setCurrentOrgRepo(org, undefined)
 
     if (didFirstSet.current) {
       return

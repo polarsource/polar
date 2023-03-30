@@ -23,15 +23,12 @@ export const DashboardEnvironment = ({ children }) => {
 
   const currentOrg = useStore((state) => state.currentOrg)
   const currentRepo = useStore((state) => state.currentRepo)
-  const setCurrentOrg = useStore((state) => state.setCurrentOrg)
+  //const setCurrentOrg = useStore((state) => state.setCurrentOrg)
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
 
   const setIsOrganizationAccount = useStore(
     (state) => state.setIsOrganizationAccount,
   )
-
-  // TODO: Unless we're sending user-only events we should probably delay SSE
-  useSSE(currentOrg?.platform, currentOrg?.name, currentRepo?.name)
 
   const [filters, setFilters] = useState<DashboardFilters>({
     ...DefaultFilters,
@@ -40,7 +37,10 @@ export const DashboardEnvironment = ({ children }) => {
   const organizations = userOrgQuery.data
 
   // Setup accurate org and repo state
-  const { orgSlug, repoSlug } = router.query
+  const { organization: orgSlug, repo: repoSlug } = router.query
+
+  // TODO: Unless we're sending user-only events we should probably delay SSE
+  useSSE(currentOrg?.platform, currentOrg?.name, currentRepo?.name)
 
   useEffect(() => {
     const isOrganizationAccount = organizations && organizations.length > 0
@@ -64,14 +64,14 @@ export const DashboardEnvironment = ({ children }) => {
         if (repoSlug) {
           setCurrentOrgRepo(org, repo)
         } else {
-          setCurrentOrg(org)
+          setCurrentOrgRepo(org, undefined)
         }
       } else {
         // Set a default org if none is selected via URL
-        setCurrentOrg(organizations[0])
+        setCurrentOrgRepo(organizations[0], undefined)
       }
     }
-  }, [organizations])
+  }, [organizations, orgSlug, repoSlug, router])
 
   if (userOrgQuery.isLoading) return <div>Loading...</div>
 

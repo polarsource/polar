@@ -4,7 +4,6 @@ import {
 } from '@heroicons/react/20/solid'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { Command } from 'cmdk'
-import { useRouter } from 'next/router'
 import { CONFIG } from 'polarkit'
 import { OrganizationRead, RepositoryRead } from 'polarkit/api/client'
 import { requireAuth, useUserOrganizations } from 'polarkit/hooks'
@@ -21,7 +20,6 @@ export function RepoSelection(props: {
   const [value, setValue] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement | null>(null)
   const listRef = React.useRef(null)
-  const router = useRouter()
 
   const [open, setOpen] = React.useState(false)
 
@@ -30,7 +28,6 @@ export function RepoSelection(props: {
 
   const currentOrg = useStore((state) => state.currentOrg)
   const currentRepo = useStore((state) => state.currentRepo)
-  const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
 
   useEffect(() => {
     inputRef?.current?.focus()
@@ -53,7 +50,6 @@ export function RepoSelection(props: {
     if (props.showRepositories) {
       // Select org again, go to it!
       if (dropdownSelectedOrg && dropdownSelectedOrg.id === org.id) {
-        setCurrentOrgRepo(org, undefined)
         resetDropdown()
         props.onSelectOrg(org.name)
         return
@@ -71,7 +67,6 @@ export function RepoSelection(props: {
 
   const onSelectRepo = (org: OrganizationRead, repo: RepositoryRead) => {
     if (org && repo) {
-      setCurrentOrgRepo(org, repo)
       resetDropdown()
       props.onSelectRepo(org.name, repo.name)
     }

@@ -174,11 +174,11 @@ export function RepoSelection(props: {
 
       {open && (
         <>
-          <div className="relative">
+          <div className="w-max-[350px] relative w-min">
             <Command
               value={value}
               onValueChange={onValueChange}
-              className="!absolute -top-10 w-full max-w-[350px] rounded-md border-[1px] border-neutral-100 bg-white shadow-xl"
+              className="w-max-[350px] !absolute -top-10 w-max rounded-md border-[1px] border-neutral-100 bg-white shadow-xl"
             >
               <div className="flex items-center space-x-1 px-2">
                 {dropdownSelectedOrg && (

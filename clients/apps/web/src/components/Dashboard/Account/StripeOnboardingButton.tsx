@@ -1,6 +1,7 @@
 import { api } from 'polarkit'
 import { AccountType, Platforms } from 'polarkit/api/client'
 import { useStore } from 'polarkit/store'
+import BalanceBadgeBox from './BalanceBadgeBox'
 
 const StripeOnboardingButton = ({ stripeId }: { stripeId?: string }) => {
   const currentOrg = useStore((store) => store.currentOrg)
@@ -30,7 +31,11 @@ const StripeOnboardingButton = ({ stripeId }: { stripeId?: string }) => {
         onboard()
       }}
     >
-      {stripeId ? 'Finish Stripe onboarding' : 'Sign up with Stripe'}
+      <BalanceBadgeBox>
+        <span>
+          {stripeId ? 'Finish Stripe onboarding' : 'Sign up with Stripe'}
+        </span>
+      </BalanceBadgeBox>
     </a>
   )
 }

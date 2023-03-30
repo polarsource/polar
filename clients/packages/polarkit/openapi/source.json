@@ -2553,7 +2553,6 @@
                 "title": "PledgeCreate",
                 "required": [
                     "issue_id",
-                    "email",
                     "amount"
                 ],
                 "type": "object",
@@ -2570,6 +2569,11 @@
                     "amount": {
                         "title": "Amount",
                         "type": "integer"
+                    },
+                    "pledge_as_org": {
+                        "title": "Pledge As Org",
+                        "type": "string",
+                        "format": "uuid"
                     }
                 }
             },
@@ -2577,7 +2581,6 @@
                 "title": "PledgeRead",
                 "required": [
                     "issue_id",
-                    "email",
                     "amount",
                     "id",
                     "created_at",
@@ -2599,6 +2602,11 @@
                     "amount": {
                         "title": "Amount",
                         "type": "integer"
+                    },
+                    "pledge_as_org": {
+                        "title": "Pledge As Org",
+                        "type": "string",
+                        "format": "uuid"
                     },
                     "id": {
                         "title": "Id",

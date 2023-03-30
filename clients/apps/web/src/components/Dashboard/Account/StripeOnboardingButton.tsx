@@ -32,7 +32,7 @@ const StripeOnboardingButton = ({ stripeId }: { stripeId?: string }) => {
       }}
     >
       <BalanceBadgeBox>
-        <span>
+        <span className="whitespace-nowrap">
           {stripeId ? 'Finish Stripe onboarding' : 'Sign up with Stripe'}
         </span>
       </BalanceBadgeBox>

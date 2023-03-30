@@ -6,7 +6,7 @@ import { RefObject, useEffect } from 'react'
  * @param refs array of refs
  * @param handler a handler function to be called when clicked outside
  */
-export default function useOutsideClick(
+export function useOutsideClick(
   refs: Array<RefObject<HTMLElement> | undefined>,
   handler?: () => void,
 ) {

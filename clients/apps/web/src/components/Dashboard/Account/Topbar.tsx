@@ -12,7 +12,7 @@ const AccountTopbar = () => {
     <>
       {accountQuery.isLoading ? (
         <BalanceBadgeBox>
-          <div className="w-8"></div>
+          <div className="h-6 w-14"></div>
         </BalanceBadgeBox>
       ) : accounts?.length === 1 ? (
         <>

@@ -4,18 +4,19 @@ import {
 } from '@heroicons/react/20/solid'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { Command } from 'cmdk'
-import { CONFIG } from 'polarkit'
-import { OrganizationRead, RepositoryRead } from 'polarkit/api/client'
-import { requireAuth, useUserOrganizations } from 'polarkit/hooks'
-import { useStore } from 'polarkit/store'
 import React, { useEffect, useRef, useState } from 'react'
-import useOutsideClick from 'utils/useOutsideClick'
+import { OrganizationRead, RepositoryRead } from '../api/client'
+import { CONFIG } from '../config'
+import { requireAuth, useUserOrganizations } from '../hooks'
+import { useOutsideClick } from '../utils'
 
 export function RepoSelection(props: {
   showRepositories?: boolean
   showConnectMore?: boolean
   onSelectRepo?: (org: string, repo: string) => void
   onSelectOrg?: (org: string) => void
+  currentOrg?: OrganizationRead
+  currentRepo?: RepositoryRead
 }) {
   const [value, setValue] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement | null>(null)
@@ -25,9 +26,6 @@ export function RepoSelection(props: {
 
   const { currentUser } = requireAuth()
   const userOrgQuery = useUserOrganizations(currentUser)
-
-  const currentOrg = useStore((state) => state.currentOrg)
-  const currentRepo = useStore((state) => state.currentRepo)
 
   useEffect(() => {
     inputRef?.current?.focus()
@@ -51,7 +49,9 @@ export function RepoSelection(props: {
       // Select org again, go to it!
       if (dropdownSelectedOrg && dropdownSelectedOrg.id === org.id) {
         resetDropdown()
-        props.onSelectOrg(org.name)
+        if (props.onSelectOrg) {
+          props.onSelectOrg(org.name)
+        }
         return
       }
 
@@ -62,13 +62,17 @@ export function RepoSelection(props: {
 
     // If not show repositories, navigate straight away
     resetDropdown()
-    props.onSelectOrg(org.name)
+    if (props.onSelectOrg) {
+      props.onSelectOrg(org.name)
+    }
   }
 
   const onSelectRepo = (org: OrganizationRead, repo: RepositoryRead) => {
     if (org && repo) {
       resetDropdown()
-      props.onSelectRepo(org.name, repo.name)
+      if (props.onSelectRepo) {
+        props.onSelectRepo(org.name, repo.name)
+      }
     }
   }
 
@@ -96,13 +100,13 @@ export function RepoSelection(props: {
     }
   }
 
-  const [listOrgs, setListOrgs] = useState<OrganizationRead[]>()
+  const [listOrgs, setListOrgs] = useState<OrganizationRead[]>([])
 
   // Value in <input>
   const [inputValue, setInputValue] = useState('')
 
   useEffect(() => {
-    let orgs = []
+    let orgs: OrganizationRead[] = []
 
     // No selected org, and no search: show only orgs
     if (dropdownSelectedOrg === undefined && inputValue === '') {
@@ -113,7 +117,7 @@ export function RepoSelection(props: {
             repositories: [],
           }
         }) || []
-    } else if (dropdownSelectedOrg === undefined) {
+    } else if (dropdownSelectedOrg === undefined && organizations) {
       orgs = organizations
     } else if (dropdownSelectedOrg) {
       // selected org
@@ -134,7 +138,7 @@ export function RepoSelection(props: {
     setListOrgs(orgs)
   }, [dropdownSelectedOrg, organizations, inputValue, props.showRepositories])
 
-  const onInputValueChange = (e) => {
+  const onInputValueChange = (e: string) => {
     setValue(e)
     setInputValue(e)
   }
@@ -150,7 +154,6 @@ export function RepoSelection(props: {
   }
   if (userOrgQuery.isLoading) return <Loading />
   if (!userOrgQuery.isSuccess) return <Loading />
-  if (!currentOrg) return <Loading />
 
   return (
     <div
@@ -159,18 +162,23 @@ export function RepoSelection(props: {
         e.stopPropagation()
       }}
     >
-      <TopbarOrgRepo
-        org={currentOrg}
-        repo={currentRepo}
-        onClick={() => setOpen(true)}
-      />
+      {props.currentOrg && (
+        <SelectedOrgRepo
+          org={props.currentOrg}
+          repo={props.currentRepo}
+          onClick={() => setOpen(true)}
+        />
+      )}
+
+      {!props.currentOrg && <SelectedEmpty onClick={() => setOpen(true)} />}
+
       {open && (
         <>
-          <div>
+          <div className="relative">
             <Command
               value={value}
               onValueChange={onValueChange}
-              className="!absolute top-3  w-full max-w-[350px] rounded-md border-[1px] border-neutral-100 bg-white shadow-xl"
+              className="!absolute -top-10 w-full max-w-[350px] rounded-md border-[1px] border-neutral-100 bg-white shadow-xl"
             >
               <div className="flex items-center space-x-1 px-2">
                 {dropdownSelectedOrg && (
@@ -214,25 +222,26 @@ export function RepoSelection(props: {
                       <Avatar url={org.avatar_url} />
                       <Text>{org.name}</Text>
                     </Item>
-                    {org.repositories.map((r) => (
-                      <Item
-                        value={`${org.name}/${r.name}`}
-                        key={r.id}
-                        onSelect={() => onSelectRepo(org, r)}
-                      >
-                        <Icon>
-                          <CodeBracketIconSmall className="block h-5 w-5 text-[#B2B2B2]" />
-                        </Icon>
+                    {org.repositories &&
+                      org.repositories.map((r) => (
+                        <Item
+                          value={`${org.name}/${r.name}`}
+                          key={r.id}
+                          onSelect={() => onSelectRepo(org, r)}
+                        >
+                          <Icon>
+                            <CodeBracketIconSmall className="block h-5 w-5 text-[#B2B2B2]" />
+                          </Icon>
 
-                        {dropdownSelectedOrg && <Text>{r.name}</Text>}
+                          {dropdownSelectedOrg && <Text>{r.name}</Text>}
 
-                        {!dropdownSelectedOrg && (
-                          <Text>
-                            {org.name} / {r.name}
-                          </Text>
-                        )}
-                      </Item>
-                    ))}
+                          {!dropdownSelectedOrg && (
+                            <Text>
+                              {org.name} / {r.name}
+                            </Text>
+                          )}
+                        </Item>
+                      ))}
                   </React.Fragment>
                 ))}
 
@@ -303,7 +312,7 @@ function Icon({ children }: { children: React.ReactNode }) {
   )
 }
 
-function TopbarOrgRepo({
+function SelectedOrgRepo({
   org,
   repo,
   onClick,
@@ -313,29 +322,55 @@ function TopbarOrgRepo({
   onClick: () => void
 }) {
   return (
+    <SelectedBox onClick={onClick}>
+      <>
+        <img
+          src={org.avatar_url}
+          alt=""
+          className="h-6 w-6 flex-shrink-0 rounded-full"
+        />
+        <div className="flex items-center space-x-1 overflow-hidden ">
+          <span className="flex-shrink-0 font-medium text-black">
+            {org.name}
+          </span>
+
+          {repo && (
+            <>
+              <span className="text-black/20">/</span>
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap text-black/50">
+                {repo.name}
+              </span>
+            </>
+          )}
+        </div>
+      </>
+    </SelectedBox>
+  )
+}
+
+const SelectedEmpty = ({ onClick }: { onClick: () => void }) => {
+  return (
+    <SelectedBox onClick={onClick}>
+      <div className="text-black/50">Select a organization</div>
+    </SelectedBox>
+  )
+}
+
+const SelectedBox = ({
+  onClick,
+  children,
+}: {
+  onClick: () => void
+  children: React.ReactElement
+}) => {
+  return (
     <div
       className="flex max-w-[350px] cursor-pointer items-center space-x-2 rounded-md 
       p-2 text-sm
       hover:bg-neutral-100"
       onClick={onClick}
     >
-      <img
-        src={org.avatar_url}
-        alt=""
-        className="h-6 w-6 flex-shrink-0 rounded-full"
-      />
-      <div className="flex items-center space-x-1 overflow-hidden ">
-        <span className="flex-shrink-0 font-medium text-black">{org.name}</span>
-
-        {repo && (
-          <>
-            <span className="text-black/20">/</span>
-            <span className="overflow-hidden text-ellipsis whitespace-nowrap text-black/50">
-              {repo.name}
-            </span>
-          </>
-        )}
-      </div>
+      {children}
       <ChevronUpDownIcon className="h-6 w-6 flex-shrink-0 text-black/50" />
     </div>
   )

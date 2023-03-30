@@ -1,6 +1,5 @@
 import { InformationCircleIcon } from '@heroicons/react/24/outline'
 import { ArrowLeftIcon } from '@heroicons/react/24/solid'
-import RepoSelection from 'components/Dashboard/RepoSelection'
 import FakePullRequest from 'components/Settings/FakePullRequest'
 import PaymentSettings from 'components/Settings/PaymentSettings'
 import Spinner from 'components/Shared/Spinner'
@@ -8,6 +7,7 @@ import Topbar from 'components/Shared/Topbar'
 import { NextLayoutComponentType } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { RepoSelection } from 'polarkit/components'
 import {
   useOrganization,
   useOrganizationSettingsMutation,
@@ -261,6 +261,9 @@ const SettingsTopbar = () => {
   const router = useRouter()
   const { organization } = router.query
   const handle: string = typeof organization === 'string' ? organization : ''
+
+  const currentOrg = useStore((state) => state.currentOrg)
+
   return (
     <Topbar>
       {{
@@ -275,6 +278,7 @@ const SettingsTopbar = () => {
             <RepoSelection
               showRepositories={false}
               showConnectMore={false}
+              currentOrg={currentOrg}
               onSelectOrg={(org) => router.push(`/settings/${org}`)}
             />
             ,

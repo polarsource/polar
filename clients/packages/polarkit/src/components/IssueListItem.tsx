@@ -12,6 +12,7 @@ import IssueLabel, { LabelSchema } from './IssueLabel'
 import IssuePledge from './IssuePledge'
 import IssueProgress, { Progress } from './IssueProgress'
 import IssueReference from './IssueReference'
+import PledgeNow from './pledge/PledgeNow'
 
 const IssueListItem = (props: {
   org: OrganizationRead
@@ -91,6 +92,8 @@ const IssueListItem = (props: {
           </div>
 
           <IssueProgress progress={issueProgress} />
+
+          <PledgeNow />
         </div>
       </div>
 

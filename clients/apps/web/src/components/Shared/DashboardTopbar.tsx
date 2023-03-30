@@ -1,8 +1,8 @@
 import { Cog8ToothIcon } from '@heroicons/react/24/outline'
 import AccountTopbar from 'components/Dashboard/Account/Topbar'
-import RepoSelection from 'components/Dashboard/RepoSelection'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { RepoSelection } from 'polarkit/components'
 import { useStore } from 'polarkit/store'
 import Topbar from './Topbar'
 
@@ -28,6 +28,7 @@ const DashboardNav = () => {
   const isOrganizationAccount = useStore((state) => state.isOrganizationAccount)
   const router = useRouter()
   const currentOrg = useStore((state) => state.currentOrg)
+  const currentRepo = useStore((state) => state.currentRepo)
 
   return (
     <>
@@ -36,6 +37,8 @@ const DashboardNav = () => {
         showConnectMore={true}
         onSelectOrg={(org) => router.push(`/dashboard/${org}`)}
         onSelectRepo={(org, repo) => router.push(`/dashboard/${org}/${repo}`)}
+        currentOrg={currentOrg}
+        currentRepo={currentRepo}
       />
 
       {isOrganizationAccount && currentOrg && <AccountTopbar />}

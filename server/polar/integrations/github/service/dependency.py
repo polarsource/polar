@@ -46,7 +46,7 @@ class GitHubIssueDependenciesService:
         given a body of text, parse out the dependencies (i.e. issues in other repos
         that this body references)
         """
-        return [
+        dependencies = [
             GithubIssueDependency(
                 raw=m.group(0),
                 owner=m.group("owner") or m.group("owner2"),
@@ -55,6 +55,17 @@ class GitHubIssueDependenciesService:
             )
             for m in self.issue_re.finditer(body)
         ]
+
+        # Deduplicate the dependencies
+        seen_dependencies = set()
+        ret = []
+        for dependency in dependencies:
+            if dependency.canonical in seen_dependencies:
+                continue
+            seen_dependencies.add(dependency.canonical)
+            ret.append(dependency)
+
+        return ret
 
     async def sync_issue_dependencies(
         self, session: AsyncSession, org: Organization, repo: Repository, issue: Issue
@@ -76,6 +87,8 @@ class GitHubIssueDependenciesService:
 
         if issue.body:
             for dependency in self.parse_dependencies(issue.body):
+                print("DEP", dependency)
+
                 if (
                     dependency.owner is None
                     or dependency.owner == org.name
@@ -85,32 +98,31 @@ class GitHubIssueDependenciesService:
                     # sync it
                     continue
 
-                org_response = await client.rest.orgs.async_get(dependency.owner)
-                dependency_org = org_response.parsed_data
+                repo_response = await client.rest.repos.async_get(
+                    dependency.owner, dependency.repo
+                )
+                github_repo = repo_response.parsed_data
 
-                is_personal = dependency_org.type.lower() == "user"
+                owner = github_repo.owner
+
+                is_personal = owner.type.lower() == "user"
                 org_schema = OrganizationCreate(
                     platform=Platforms.github,
-                    name=dependency_org.login,  # TODO: correct field?
-                    external_id=dependency_org.id,  # TODO: correct field?
-                    avatar_url=dependency_org.avatar_url,
+                    name=owner.login,
+                    external_id=owner.id,
+                    avatar_url=owner.avatar_url,
                     is_personal=is_personal,
                 )
                 organization = await service.github_organization.upsert(
                     session, org_schema
                 )
 
-                repo_response = await client.rest.repos.async_get(
-                    dependency.owner, dependency.repo
-                )
-                dependency_repo = repo_response.parsed_data
-
                 repo_schema = RepositoryCreate(
                     platform=Platforms.github,
-                    external_id=dependency_repo.id,
+                    external_id=github_repo.id,
                     organization_id=organization.id,
-                    name=dependency_repo.name,
-                    is_private=dependency_repo.private,
+                    name=github_repo.name,
+                    is_private=github_repo.private,
                 )
                 repository = await service.github_repository.upsert(
                     session, repo_schema
@@ -119,10 +131,10 @@ class GitHubIssueDependenciesService:
                 issue_response = await client.rest.issues.async_get(
                     dependency.owner, dependency.repo, dependency.number
                 )
-                dependency_issue = issue_response.parsed_data
+                github_issue = issue_response.parsed_data
 
                 issue_schema = IssueCreate.from_github(
-                    dependency_issue,
+                    github_issue,
                     organization_id=organization.id,
                     repository_id=repository.id,
                 )

@@ -39,10 +39,7 @@ class Organization(RecordModel):
     avatar_url: Mapped[str | None] = mapped_column(String)
     is_personal: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
-    # TODO: Investigate what to do best with site_admin, i.e Github Enterprise
-    is_site_admin: Mapped[bool] = mapped_column(Boolean)
-
-    installation_id: Mapped[int] = mapped_column(Integer, unique=True)
+    installation_id: Mapped[int] = mapped_column(Integer, nullable=True, unique=True)
     installation_created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=True,
@@ -115,7 +112,6 @@ class Organization(RecordModel):
         "name",
         "avatar_url",
         "is_personal",
-        "is_site_admin",
         "installation_id",
         "installation_created_at",
         "installation_updated_at",

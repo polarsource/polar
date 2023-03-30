@@ -36,3 +36,10 @@ class GithubIssueDependency(Schema):
     owner: str | None = None
     repo: str | None = None
     number: int
+
+    @property
+    def canonical(self) -> str:
+        if self.owner and self.repo:
+            return f"{self.owner.lower()}/{self.repo.lower()}#{self.number}"
+        else:
+            return f"#{self.number}"

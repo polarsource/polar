@@ -43,3 +43,15 @@ def test_parse_multiple_dependencies() -> None:
         GithubIssueDependency(raw="#7", number=7),
         GithubIssueDependency(raw="#5653", number=5653),
     ]
+
+
+def test_parse_unique_dependencies() -> None:
+    assert github_dependency.parse_dependencies("#123 #123") == [
+        GithubIssueDependency(raw="#123", number=123)
+    ]
+    assert github_dependency.parse_dependencies(
+        "Some text #7 some more text #5653 and some more #7"
+    ) == [
+        GithubIssueDependency(raw="#7", number=7),
+        GithubIssueDependency(raw="#5653", number=5653),
+    ]

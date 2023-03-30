@@ -333,7 +333,6 @@ async def installation_created(
             external_id=account.id,
             avatar_url=account.avatar_url,
             is_personal=is_personal,
-            is_site_admin=account.site_admin,
             installation_id=event.installation.id,
             installation_created_at=event.installation.created_at,
             installation_updated_at=event.installation.updated_at,

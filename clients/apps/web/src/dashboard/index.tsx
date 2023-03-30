@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import { type OrganizationRead, type RepositoryRead } from 'polarkit/api/client'
 import { requireAuth, useSSE, useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { DashboardFilters } from './filters'
 
 export const DefaultFilters: DashboardFilters = {
@@ -39,40 +39,44 @@ export const DashboardEnvironment = ({ children }) => {
 
   const organizations = userOrgQuery.data
 
+  // Setup accurate org and repo state
+  const { orgSlug, repoSlug } = router.query
+
+  useEffect(() => {
+    const isOrganizationAccount = organizations && organizations.length > 0
+    setIsOrganizationAccount(isOrganizationAccount)
+
+    if (isOrganizationAccount) {
+      let org: OrganizationRead | undefined
+      let repo: RepositoryRead | undefined
+
+      if (orgSlug) {
+        const orgSearch = organizations.filter((o) => o.name === orgSlug)
+        org = orgSearch[0]
+      }
+
+      if (repoSlug) {
+        const repoSearch = org.repositories.filter((r) => r.name === repoSlug)
+        repo = repoSearch[0]
+      }
+
+      if (orgSlug) {
+        if (repoSlug) {
+          setCurrentOrgRepo(org, repo)
+        } else {
+          setCurrentOrg(org)
+        }
+      } else {
+        // Set a default org if none is selected via URL
+        setCurrentOrg(organizations[0])
+      }
+    }
+  }, [organizations])
+
   if (userOrgQuery.isLoading) return <div>Loading...</div>
 
   if (!userOrgQuery.isSuccess) return <div>Error</div>
 
-  const isOrganizationAccount = organizations.length > 0
-  setIsOrganizationAccount(isOrganizationAccount)
-
-  // Setup accurate org and repo state
-  const { orgSlug, repoSlug } = router.query
-  if (isOrganizationAccount) {
-    let org: OrganizationRead | undefined
-    let repo: RepositoryRead | undefined
-
-    if (orgSlug) {
-      const orgSearch = organizations.filter((o) => o.name === orgSlug)
-      org = orgSearch[0]
-    }
-
-    if (repoSlug) {
-      const repoSearch = org.repositories.filter((r) => r.name === repoSlug)
-      repo = repoSearch[0]
-    }
-
-    if (orgSlug) {
-      if (repoSlug) {
-        setCurrentOrgRepo(org, repo)
-      } else {
-        setCurrentOrg(org)
-      }
-    } else {
-      // Set a default org if none is selected via URL
-      setCurrentOrg(organizations[0])
-    }
-  }
   // Pass search filters to dynamic children
   const renderedChildren = React.Children.map(children, function (child) {
     return React.cloneElement(child, { filters })

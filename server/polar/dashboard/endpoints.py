@@ -113,8 +113,6 @@ async def get_dashboard(
 
     # start building issue relationships with pledges
     issue_relationships: Dict[UUID, IssueRelationship] = {}
-    # for i in issues:
-    #     issue_relationships[i.id] = IssueRelationship()
 
     def get_issue_relationship(issue_id: UUID) -> IssueRelationship:
         return issue_relationships.setdefault(issue_id, IssueRelationship())

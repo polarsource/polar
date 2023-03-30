@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router'
 import {
+  IssueRead,
   IssueReferenceRead,
   IssueStatus,
   type Entry_Any_,
@@ -60,6 +61,7 @@ const Organization = (props: { filters: DashboardFilters }) => {
   const [repos, setRepos] = useState<Map<string, RepositoryRead>>()
   const [references, setReferences] =
     useState<Map<string, IssueReferenceRead>>()
+  const [dependencies, setDependencies] = useState<Map<string, IssueRead>>()
 
   useEffect(() => {
     setIssues(dashboard?.data || [])
@@ -67,6 +69,7 @@ const Organization = (props: { filters: DashboardFilters }) => {
     setPledges(buildMapForType<PledgeRead>(dashboard, 'pledge'))
     setRepos(buildMapForType<RepositoryRead>(dashboard, 'repository'))
     setReferences(buildMapForType<IssueReferenceRead>(dashboard, 'reference'))
+    setDependencies(buildMapForType<IssueRead>(dashboard, 'issue'))
   }, [dashboard])
 
   return (
@@ -74,6 +77,7 @@ const Organization = (props: { filters: DashboardFilters }) => {
       <IssueList
         issues={issues}
         references={references}
+        dependencies={dependencies}
         pledges={pledges}
         orgs={orgs}
         repos={repos}

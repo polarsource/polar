@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   IssueReferenceRead,
   OrganizationRead,
+  Relationship,
   type Entry_IssueRead_,
   type IssueRead,
   type PledgeRead,
@@ -18,12 +19,12 @@ type IssueListItemData = {
 }
 
 const populateRelations = <T,>(
-  issue: Entry_IssueRead_,
+  relationships: Relationship[] | undefined,
   lookup: Map<string, T>,
   typ: string,
 ): T[] => {
   const r =
-    issue.relationships
+    relationships
       ?.filter((rel) => rel.data.type === typ)
       .map((rel) => lookup.get(rel.data.id))
       .filter(Boolean)
@@ -31,14 +32,22 @@ const populateRelations = <T,>(
   return r
 }
 
+const populateRelation = <T,>(
+  relationship: Relationship | undefined,
+  lookup: Map<string, T>,
+  typ: string,
+): T | undefined =>
+  relationship && populateRelations([relationship], lookup, typ)[0]
+
 const IssueList = (props: {
   orgs: Map<string, OrganizationRead>
   repos: Map<string, RepositoryRead>
   issues: Entry_IssueRead_[]
   references: Map<string, IssueReferenceRead>
+  dependencies: Map<string, IssueRead>
   pledges: Map<string, PledgeRead>
 }) => {
-  const { issues, references, pledges, orgs, repos } = props
+  const { issues, references, dependencies, pledges, orgs, repos } = props
 
   const [sortedIssues, setSortedIssues] = useState<IssueListItemData[]>([])
 
@@ -49,10 +58,31 @@ const IssueList = (props: {
     const sorted = issues.map((issue): IssueListItemData => {
       return {
         issue: issue.attributes,
-        references: populateRelations(issue, references, 'reference'),
-        pledges: populateRelations(issue, pledges, 'pledge'),
-        org: populateRelations(issue, orgs, 'organization')[0],
-        repo: populateRelations(issue, repos, 'repository')[0],
+        references: populateRelations(
+          issue.relationships?.references,
+          references,
+          'reference',
+        ),
+        dependencies: populateRelations(
+          issue.relationships?.dependencies,
+          dependencies,
+          'issue',
+        ),
+        pledges: populateRelations(
+          issue.relationships?.references,
+          pledges,
+          'pledge',
+        ),
+        org: populateRelation(
+          issue.relationships?.organization,
+          orgs,
+          'organization',
+        ),
+        repo: populateRelation(
+          issue.relationships?.repository,
+          repos,
+          'repository',
+        ),
       }
     })
     setSortedIssues(sorted)

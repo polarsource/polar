@@ -143,9 +143,40 @@ class GitHubIssueDependenciesService:
                 issue_dependency = IssueDependency(
                     dependent_issue_id=issue.id, dependency_issue_id=dependency_issue.id
                 )
-                session.add(issue_dependency)
+                await self.create_dependency(session, issue_dependency)
 
+    async def create_dependency(
+        self, session: AsyncSession, ref: IssueDependency
+    ) -> None:
+        nested = await session.begin_nested()
+        try:
+            session.add(ref)
+            await nested.commit()
             await session.commit()
+            log.info(
+                "issue.create_dependency.created",
+                ref=ref,
+            )
+            return
+        except IntegrityError as e:
+            log.info(
+                "issue.create_dependency.already_exists",
+                ref=ref,
+            )
+            await nested.rollback()
+
+        # Update (there are no columns to update, though)
+        stmt = (
+            sql.Update(IssueDependency)
+            .where(
+                IssueDependency.dependent_issue_id == ref.dependent_issue_id,
+                IssueDependency.dependency_issue_id == ref.dependency_issue_id,
+            )
+            .values()
+        )
+
+        await session.execute(stmt)
+        await session.commit()
 
 
 github_dependency = GitHubIssueDependenciesService()

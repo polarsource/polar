@@ -25,7 +25,6 @@ def upgrade() -> None:
         "issue_dependencies",
         sa.Column("dependent_issue_id", sa.UUID(), nullable=False),
         sa.Column("dependency_issue_id", sa.UUID(), nullable=False),
-        sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(
@@ -38,11 +37,10 @@ def upgrade() -> None:
             ["issues.id"],
             name=op.f("issue_dependencies_dependent_issue_id_fkey"),
         ),
-        sa.PrimaryKeyConstraint("id", name=op.f("issue_dependencies_pkey")),
-        sa.UniqueConstraint(
+        sa.PrimaryKeyConstraint(
             "dependent_issue_id",
             "dependency_issue_id",
-            name=op.f("issue_dependencies_dependent_issue_id_dependency_issue_id_key"),
+            name=op.f("issue_dependencies_pkey"),
         ),
     )
     # ### end Alembic commands ###

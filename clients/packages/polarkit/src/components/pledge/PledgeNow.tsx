@@ -1,8 +1,20 @@
-import { IssueRead } from 'api/client/index'
 import { useState, type MouseEvent } from 'react'
+import {
+  IssueRead,
+  OrganizationRead,
+  RepositoryRead,
+} from '../../api/client/index'
 import Overlay from './Overlay'
 
-const PledgeNow = ({ issue }: { issue: IssueRead }) => {
+const PledgeNow = ({
+  issue,
+  org,
+  repo,
+}: {
+  issue: IssueRead
+  org: OrganizationRead
+  repo: RepositoryRead
+}) => {
   const [open, setOpen] = useState(false)
 
   const openOverlay = (event: MouseEvent<HTMLButtonElement>) => {
@@ -18,7 +30,14 @@ const PledgeNow = ({ issue }: { issue: IssueRead }) => {
       >
         Pledge
       </button>
-      {open && <Overlay onClose={() => setOpen(false)} issue={issue} />}
+      {open && (
+        <Overlay
+          onClose={() => setOpen(false)}
+          issue={issue}
+          issueOrg={org}
+          issueRepo={repo}
+        />
+      )}
     </>
   )
 }

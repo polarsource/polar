@@ -1,9 +1,4 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import {
-  IssueRead,
-  OrganizationRead,
-  OrganizationStripeCustomerRead,
-} from 'api/client/index'
 import { RepoSelection } from 'polarkit/components'
 import {
   requireAuth,
@@ -12,15 +7,26 @@ import {
 } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/utils'
 import { useEffect, useState } from 'react'
-import { CONFIG } from '../../../index'
+import { api, CONFIG } from '../../../index'
+import {
+  IssueRead,
+  OrganizationRead,
+  OrganizationStripeCustomerRead,
+  RepositoryRead,
+} from '../../api/client/index'
 import { GreenBanner, PrimaryButton, RedBanner } from '../ui'
+import IssueCard from './IssueCard'
 
 const Overlay = ({
   onClose,
   issue,
+  issueOrg,
+  issueRepo,
 }: {
   onClose: () => void
   issue: IssueRead
+  issueOrg: OrganizationRead
+  issueRepo: RepositoryRead
 }) => {
   const { currentUser } = requireAuth()
   const userOrgQuery = useUserOrganizations(currentUser)
@@ -77,68 +83,119 @@ const Overlay = ({
     )
   }, [customer])
 
+  const [isDone, setIsDone] = useState(false)
+  const [loadingPledge, setLoadingPledge] = useState(false)
+
+  const createPledge = async () => {
+    if (!selectedOrg) {
+      return
+    }
+
+    setLoadingPledge(true)
+
+    await api.pledges.createPledge({
+      platform: issue.platform,
+      orgName: issueOrg.name,
+      repoName: issueRepo.name,
+      number: issue.number,
+      requestBody: {
+        issue_id: issue.id,
+        amount: amount,
+        pledge_as_org: selectedOrg.id,
+      },
+    })
+
+    setLoadingPledge(false)
+    setIsDone(true)
+  }
+
+  const onClickPledge = async (e) => {
+    e.preventDefault()
+    await createPledge()
+  }
+
   return (
     <Background>
-      <div className="z-0 h-1/2 w-1/2 rounded-md bg-white p-4">
-        <div className="flex w-full items-start justify-between">
-          <h1 className="font-md text-xl">Add a pledge to #{issue.number}</h1>
-          <XMarkIcon
-            className="h-6 w-6 cursor-pointer text-black/50 hover:text-black"
-            onClick={onClose}
-          />
-        </div>
-        <p>{issue.title}</p>
-        <div className="flex items-center">
-          <span>Pledge as</span>
-          <RepoSelection onSelectOrg={onSelectOrg} currentOrg={selectedOrg} />
-        </div>
-
-        {customer && (
-          <div>
-            <PaymentMethod customer={customer} />
+      <div className="h-full w-full p-8 md:h-min md:w-[800px] md:p-0">
+        <div className="z-0 flex h-full w-full flex-row rounded-md bg-white">
+          <div className="flex-1 bg-black/10 p-4">
+            <IssueCard issue={issue} bg="bg-white" />
           </div>
-        )}
 
-        {havePaymentMethod && (
-          <form className="z-0 flex flex-col space-y-3">
-            <label
-              htmlFor="amount"
-              className="text-sm font-medium text-gray-600"
-            >
-              Choose amount to pledge
-            </label>
-            <div className="flex flex-row items-center space-x-4">
-              <div className="relative w-2/3">
-                <input
-                  type="text"
-                  id="amount"
-                  name="amount"
-                  className="block w-full rounded-md border-gray-200 py-3 px-4 pl-9 pr-16 text-sm shadow-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500"
-                  onChange={onAmountChange}
-                  onBlur={onAmountChange}
-                  placeholder={getCentsInDollarString(MINIMUM_PLEDGE)}
-                />
-                <div className="pointer-events-none absolute inset-y-0 left-0 z-20 flex items-center pl-4">
-                  <span className="text-gray-500">$</span>
-                </div>
-                <div className="pointer-events-none absolute inset-y-0 right-0 z-20 flex items-center pr-4">
-                  <span className="text-gray-500">USD</span>
-                </div>
-              </div>
-              <p className="w-1/3 text-xs text-gray-500">
-                Minimum is ${getCentsInDollarString(MINIMUM_PLEDGE)}
-              </p>
+          <div className="flex-1 p-4 text-black/80">
+            <div className="flex w-full items-start justify-between">
+              <h1 className="text-xl font-normal">Complete your backing</h1>
+              <XMarkIcon
+                className="h-6 w-6 cursor-pointer text-black/50 hover:text-black"
+                onClick={onClose}
+              />
             </div>
 
-            {errorMessage}
+            <form className="z-0 flex flex-col space-y-3">
+              <label
+                htmlFor="pledge-as"
+                className="text-sm font-medium text-gray-600"
+              >
+                Pledge as
+              </label>
+              <div className="flex flex-row items-center space-x-4">
+                <div className="relative w-full">
+                  <RepoSelection
+                    onSelectOrg={onSelectOrg}
+                    currentOrg={selectedOrg}
+                  />
+                </div>
+              </div>
 
-            {amount && (
-              <PrimaryButton onClick={() => alert('click')}>
+              <label
+                htmlFor="amount"
+                className="text-sm font-medium text-gray-600"
+              >
+                Choose amount to pledge
+              </label>
+              <div className="flex flex-row items-center space-x-4">
+                <div className="relative w-2/3">
+                  <input
+                    type="text"
+                    id="amount"
+                    name="amount"
+                    className="block w-full rounded-md border-gray-200 py-3 px-4 pl-9 pr-16 text-sm shadow-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500"
+                    onChange={onAmountChange}
+                    onBlur={onAmountChange}
+                    placeholder={getCentsInDollarString(MINIMUM_PLEDGE)}
+                  />
+                  <div className="pointer-events-none absolute inset-y-0 left-0  flex items-center pl-4">
+                    <span className="text-gray-500">$</span>
+                  </div>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+                    <span className="text-gray-500">USD</span>
+                  </div>
+                </div>
+                <p className="w-1/3 text-xs text-gray-500">
+                  Minimum is ${getCentsInDollarString(MINIMUM_PLEDGE)}
+                </p>
+              </div>
+
+              {errorMessage}
+
+              {customer && (
+                <div>
+                  <PaymentMethod customer={customer} />
+                </div>
+              )}
+
+              <PrimaryButton
+                onClick={onClickPledge}
+                loading={loadingPledge}
+                disabled={!havePaymentMethod || !amount}
+              >
                 Pledge ${getCentsInDollarString(amount)}
               </PrimaryButton>
-            )}
-          </form>
-        )}
+
+              {isDone && <span>Thanks for pledging!</span>}
+            </form>
+          </div>
+        </div>
       </div>
     </Background>
   )
@@ -146,7 +203,7 @@ const Overlay = ({
 
 const Background = ({ children }: { children: React.ReactElement }) => {
   return (
-    <div className="fixed bottom-0 left-0 right-0 top-0 z-10 flex items-center justify-center bg-black/20">
+    <div className="fixed bottom-0 left-0 right-0 top-0 z-10 flex items-center justify-center bg-black/50">
       {children}
     </div>
   )

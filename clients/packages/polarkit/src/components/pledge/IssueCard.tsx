@@ -1,11 +1,11 @@
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
-import { type IssueRead } from 'polarkit/api/client'
 import TimeAgo from 'react-timeago'
+import { type IssueRead } from '../../api/client'
 
-const IssueCard = ({ issue }: { issue: IssueRead }) => {
+const IssueCard = ({ issue, bg }: { issue: IssueRead; bg: string }) => {
   return (
     <>
-      <div className="h-full rounded-lg border bg-purple-50 px-8 py-14 text-center">
+      <div className={`h-full rounded-lg border px-8 py-14 text-center ${bg}`}>
         <strong className="text-sm font-medium text-gray-600">
           Issue to be fixed
         </strong>

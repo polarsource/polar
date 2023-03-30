@@ -178,7 +178,7 @@ export function RepoSelection(props: {
             <Command
               value={value}
               onValueChange={onValueChange}
-              className="w-max-[350px] !absolute -top-10 w-max rounded-md border-[1px] border-neutral-100 bg-white shadow-xl"
+              className="w-max-[350px] !absolute -top-10 z-10 w-max rounded-md border-[1px] border-neutral-100 bg-white shadow-xl"
             >
               <div className="flex items-center space-x-1 px-2">
                 {dropdownSelectedOrg && (

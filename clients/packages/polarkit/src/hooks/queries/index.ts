@@ -190,13 +190,13 @@ export const useOrganizationSettingsMutation = () =>
     },
   })
 
-export const useOrganizationCustomer = (orgName: string) =>
+export const useOrganizationCustomer = (orgName?: string) =>
   useQuery(
     ['organization', orgName, 'stripeCustomer'],
     () =>
       api.organizations.getStripeCustomer({
         platform: Platforms.GITHUB,
-        orgName: orgName,
+        orgName: orgName ?? '',
       }),
     {
       enabled: !!orgName,

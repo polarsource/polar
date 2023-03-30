@@ -93,7 +93,7 @@ const IssueListItem = (props: {
 
           <IssueProgress progress={issueProgress} />
 
-          <PledgeNow />
+          <PledgeNow issue={props.issue} />
         </div>
       </div>
 

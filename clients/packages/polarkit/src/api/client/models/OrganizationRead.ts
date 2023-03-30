@@ -18,9 +18,8 @@ export type OrganizationRead = {
   external_id: number;
   avatar_url: string;
   is_personal: boolean;
-  is_site_admin: boolean;
-  installation_id: number;
-  installation_created_at: string;
+  installation_id?: number;
+  installation_created_at?: string;
   installation_updated_at?: string;
   installation_suspended_at?: string;
   onboarded_at?: string;

@@ -35,7 +35,6 @@ async def create_org(session: AsyncSession) -> Organization:
         external_id=123,
         avatar_url="account.avatar_url",
         is_personal=False,
-        is_site_admin=False,
         installation_id=123,
         installation_created_at=datetime.now(),
         installation_updated_at=datetime.now(),

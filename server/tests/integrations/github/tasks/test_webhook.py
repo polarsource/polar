@@ -67,7 +67,6 @@ async def create_org(
         external_id=account.id,
         avatar_url=account.avatar_url,
         is_personal=is_personal,
-        is_site_admin=account.site_admin,
         installation_id=event.installation.id,
         installation_created_at=utils.utc_now(),  # Or something else?
         installation_updated_at=utils.utc_now(),  # Or something else?

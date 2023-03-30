@@ -2324,9 +2324,6 @@
                     "external_id",
                     "avatar_url",
                     "is_personal",
-                    "is_site_admin",
-                    "installation_id",
-                    "installation_created_at",
                     "id",
                     "status",
                     "created_at"
@@ -2380,10 +2377,6 @@
                     },
                     "is_personal": {
                         "title": "Is Personal",
-                        "type": "boolean"
-                    },
-                    "is_site_admin": {
-                        "title": "Is Site Admin",
                         "type": "boolean"
                     },
                     "installation_id": {

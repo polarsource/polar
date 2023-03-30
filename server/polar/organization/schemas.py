@@ -34,11 +34,10 @@ class Base(Schema):
     external_id: int
     avatar_url: str
     is_personal: bool
-    is_site_admin: bool
-    installation_id: int
-    installation_created_at: datetime
-    installation_updated_at: datetime | None
-    installation_suspended_at: datetime | None
+    installation_id: int | None = None
+    installation_created_at: datetime | None = None
+    installation_updated_at: datetime | None = None
+    installation_suspended_at: datetime | None = None
     onboarded_at: datetime | None = None
 
 
@@ -54,7 +53,6 @@ class OrganizationCreate(Base):
             name = account.login
             avatar_url = account.avatar_url
             external_id = account.id
-            is_site_admin = account.site_admin
         else:
             raise Exception("Polar does not support GitHub Enterprise")
 
@@ -69,7 +67,6 @@ class OrganizationCreate(Base):
             external_id=external_id,
             avatar_url=avatar_url,
             is_personal=is_personal,
-            is_site_admin=is_site_admin,
             installation_id=installation.id,
             installation_created_at=installation.created_at,
             installation_updated_at=installation.updated_at,

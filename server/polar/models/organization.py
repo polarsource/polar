@@ -39,16 +39,21 @@ class Organization(RecordModel):
     avatar_url: Mapped[str | None] = mapped_column(String)
     is_personal: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
-    # TODO: Investigate what to do best with site_admin, i.e Github Enterprise
-    is_site_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-
-    installation_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
-    installation_created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
+    installation_id: Mapped[int] = mapped_column(Integer, nullable=True, unique=True)
+    installation_created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
+        default=None,
+    )
     installation_updated_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True)
+        TIMESTAMP(timezone=True),
+        nullable=True,
+        default=None,
     )
     installation_suspended_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True)
+        TIMESTAMP(timezone=True),
+        nullable=True,
+        default=None,
     )
     installation_suspended_by: Mapped[int | None] = mapped_column(Integer)
     installation_suspender: Mapped[UUID | None] = mapped_column(PostgresUUID)
@@ -111,7 +116,6 @@ class Organization(RecordModel):
         "name",
         "avatar_url",
         "is_personal",
-        "is_site_admin",
         "installation_id",
         "installation_created_at",
         "installation_updated_at",

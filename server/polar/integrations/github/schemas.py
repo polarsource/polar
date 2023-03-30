@@ -1,4 +1,5 @@
 from typing import Literal
+from uuid import UUID
 from polar.kit.schemas import Schema
 
 
@@ -29,3 +30,17 @@ class GithubBadgeRead(Schema):
     width: int = 445
     height: int = 44
     amount: BadgeAmount | None = None
+
+
+class GithubIssueDependency(Schema):
+    raw: str
+    owner: str | None = None
+    repo: str | None = None
+    number: int
+
+    @property
+    def canonical(self) -> str:
+        if self.owner and self.repo:
+            return f"{self.owner.lower()}/{self.repo.lower()}#{self.number}"
+        else:
+            return f"#{self.number}"

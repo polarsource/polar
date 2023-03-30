@@ -18,8 +18,7 @@ const Page: NextLayoutComponentType = () => {
 
   const orgSlug = typeof organization === 'string' ? organization : ''
 
-  if (userOrgQuery.isLoading) return <div>Loading...</div>
-
+  if (userOrgQuery.isLoading) return <div></div>
   if (!userOrgQuery.isSuccess) return <div>Error</div>
 
   if (!currentOrg || currentOrg.name !== orgSlug) {

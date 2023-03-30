@@ -73,8 +73,7 @@ export const DashboardEnvironment = ({ children }) => {
     }
   }, [organizations, orgSlug, repoSlug, router])
 
-  if (userOrgQuery.isLoading) return <div>Loading...</div>
-
+  if (userOrgQuery.isLoading) return <div></div>
   if (!userOrgQuery.isSuccess) return <div>Error</div>
 
   // Pass search filters to dynamic children

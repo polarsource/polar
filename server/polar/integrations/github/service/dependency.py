@@ -87,8 +87,6 @@ class GitHubIssueDependenciesService:
 
         if issue.body:
             for dependency in self.parse_dependencies(issue.body):
-                print("DEP", dependency)
-
                 if (
                     dependency.owner is None
                     or dependency.owner == org.name

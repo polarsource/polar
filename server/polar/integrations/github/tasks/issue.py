@@ -38,7 +38,9 @@ async def issue_sync_issue_references(
         issue = await github_issue.get(session, issue_id)
         if not issue or not issue.organization_id or not issue.repository_id:
             log.warning(
-                "github.issue.embed_badge", error="issue not found", issue_id=issue_id
+                "github.issue.sync.issue_references",
+                error="issue not found",
+                issue_id=issue_id,
             )
             return
 
@@ -47,6 +49,33 @@ async def issue_sync_issue_references(
         )
 
         await service.github_reference.sync_issue_references(
+            session,
+            org=organization,
+            repo=repository,
+            issue=issue,
+        )
+
+
+@task("github.issue.sync.issue_dependencies")
+async def issue_sync_issue_dependencies(
+    ctx: JobContext,
+    issue_id: UUID,
+) -> None:
+    async with AsyncSessionLocal() as session:
+        issue = await github_issue.get(session, issue_id)
+        if not issue or not issue.organization_id or not issue.repository_id:
+            log.warning(
+                "github.issue.sync.issue_dependencies",
+                error="issue not found",
+                issue_id=issue_id,
+            )
+            return
+
+        organization, repository = await get_organization_and_repo(
+            session, issue.organization_id, issue.repository_id
+        )
+
+        await service.github_dependency.sync_issue_dependencies(
             session,
             org=organization,
             repo=repository,

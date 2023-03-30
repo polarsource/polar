@@ -32,7 +32,7 @@ async def schedule_embed_badge_task(
 
 
 @github_issue_created.connect
-async def schedule_fetch_references(
+async def schedule_fetch_references_and_dependencies(
     sender: Any,
     *,
     organization: Organization,
@@ -40,10 +40,11 @@ async def schedule_fetch_references(
     issue: Issue,
 ) -> None:
     await enqueue_job("github.issue.sync.issue_references", issue.id)
+    await enqueue_job("github.issue.sync.issue_dependencies", issue.id)
 
 
 @github_issue_updated.connect
-async def schedule_updated_fetch_references(
+async def schedule_updated_fetch_references_and_dependencies(
     sender: Any,
     *,
     organization: Organization,
@@ -51,3 +52,4 @@ async def schedule_updated_fetch_references(
     issue: Issue,
 ) -> None:
     await enqueue_job("github.issue.sync.issue_references", issue.id)
+    await enqueue_job("github.issue.sync.issue_dependencies", issue.id)

@@ -1,8 +1,7 @@
 import { type PledgeResources } from 'polarkit/api/client'
-import { IssueCard } from 'polarkit/components/pledge'
+import { IssueCard, RepositoryCard } from 'polarkit/components/pledge'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
 import PledgeForm from './PledgeForm'
-import RepositoryCard from './RepositoryCard'
 
 const Pledge = ({
   organization,

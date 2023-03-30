@@ -16,6 +16,7 @@ import {
 } from '../../api/client/index'
 import { GreenBanner, PrimaryButton, RedBanner } from '../ui'
 import IssueCard from './IssueCard'
+import RepositoryCard from './RepositoryCard'
 
 const Overlay = ({
   onClose,
@@ -117,12 +118,15 @@ const Overlay = ({
   return (
     <Background>
       <div className="h-full w-full p-8 md:h-min md:w-[800px] md:p-0">
-        <div className="z-0 flex h-full w-full flex-row rounded-md bg-white">
-          <div className="flex-1 bg-black/10 p-4">
-            <IssueCard issue={issue} bg="bg-white" />
+        <div className="z-0 block flex h-full w-full flex-row rounded-md bg-white">
+          <div className="hidden flex-1 bg-black/10 p-4 md:block">
+            <div>
+              <IssueCard issue={issue} bg="bg-white" />
+            </div>
+            <RepositoryCard organization={issueOrg} repository={issueRepo} />
           </div>
 
-          <div className="flex-1 p-4 text-black/80">
+          <div className="flex min-h-full flex-1 flex-col space-y-3 p-4 text-black/80">
             <div className="flex w-full items-start justify-between">
               <h1 className="text-xl font-normal">Complete your backing</h1>
               <XMarkIcon
@@ -143,9 +147,16 @@ const Overlay = ({
                   <RepoSelection
                     onSelectOrg={onSelectOrg}
                     currentOrg={selectedOrg}
+                    fullWidth={true}
                   />
                 </div>
               </div>
+
+              {customer && (
+                <div>
+                  <PaymentMethod customer={customer} />
+                </div>
+              )}
 
               <label
                 htmlFor="amount"
@@ -176,14 +187,14 @@ const Overlay = ({
                 </p>
               </div>
 
-              {errorMessage}
-
-              {customer && (
-                <div>
-                  <PaymentMethod customer={customer} />
-                </div>
+              {errorMessage && (
+                <p className="text-xs text-red-500">{errorMessage}</p>
               )}
+            </form>
 
+            <div className="md:flex-1"></div>
+
+            {!isDone && (
               <PrimaryButton
                 onClick={onClickPledge}
                 loading={loadingPledge}
@@ -191,9 +202,13 @@ const Overlay = ({
               >
                 Pledge ${getCentsInDollarString(amount)}
               </PrimaryButton>
+            )}
 
-              {isDone && <span>Thanks for pledging!</span>}
-            </form>
+            {isDone && (
+              <span className="text-center text-lg">
+                Thanks for pledging! 🎉
+              </span>
+            )}
           </div>
         </div>
       </div>

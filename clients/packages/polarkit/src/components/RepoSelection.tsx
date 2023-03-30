@@ -17,6 +17,7 @@ export function RepoSelection(props: {
   onSelectOrg?: (org: string) => void
   currentOrg?: OrganizationRead
   currentRepo?: RepositoryRead
+  fullWidth?: boolean
 }) {
   const [value, setValue] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement | null>(null)
@@ -149,6 +150,11 @@ export function RepoSelection(props: {
     setOpen(false)
   })
 
+  const width = props.fullWidth ? 'min-w-full' : 'w-max-[350px]'
+  const placeholder = props.showRepositories
+    ? 'Search orgs and repos...'
+    : 'Search orgs...'
+
   if (!currentUser) {
     return <Loading />
   }
@@ -174,11 +180,11 @@ export function RepoSelection(props: {
 
       {open && (
         <>
-          <div className="w-max-[350px] relative w-min">
+          <div className={`${width} relative w-min`}>
             <Command
               value={value}
               onValueChange={onValueChange}
-              className="w-max-[350px] !absolute -top-10 z-10 w-max rounded-md border-[1px] border-neutral-100 bg-white shadow-xl"
+              className={`${width} !absolute -top-10 z-10 w-max rounded-md border-[1px] border-neutral-100 bg-white shadow-xl`}
             >
               <div className="flex items-center space-x-1 px-2">
                 {dropdownSelectedOrg && (
@@ -199,7 +205,7 @@ export function RepoSelection(props: {
                 <Command.Input
                   ref={inputRef}
                   autoFocus
-                  placeholder="Search orgs and repos..."
+                  placeholder={placeholder}
                   className="m-0 px-2 focus:border-0 focus:ring-0"
                   onKeyDown={onInputKeyUp}
                   value={inputValue}
@@ -323,7 +329,7 @@ function SelectedOrgRepo({
 }) {
   return (
     <SelectedBox onClick={onClick}>
-      <>
+      <div className="flex items-center justify-between space-x-2 ">
         <img
           src={org.avatar_url}
           alt=""
@@ -343,7 +349,7 @@ function SelectedOrgRepo({
             </>
           )}
         </div>
-      </>
+      </div>
     </SelectedBox>
   )
 }
@@ -365,9 +371,9 @@ const SelectedBox = ({
 }) => {
   return (
     <div
-      className="flex max-w-[350px] cursor-pointer items-center space-x-2 rounded-md 
-      p-2 text-sm
-      hover:bg-neutral-100"
+      className="flex max-w-[350px] cursor-pointer items-center justify-between space-x-2 
+      rounded-md p-2
+      text-sm hover:bg-neutral-100"
       onClick={onClick}
     >
       {children}

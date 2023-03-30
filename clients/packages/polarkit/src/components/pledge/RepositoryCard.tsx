@@ -1,5 +1,5 @@
-import { type OrganizationRead, type RepositoryRead } from 'polarkit/api/client'
-import { GrayCard } from 'polarkit/components/ui/Cards'
+import { type OrganizationRead, type RepositoryRead } from '../../api/client'
+import { GrayCard } from '../ui/Cards'
 
 const RepositoryCard = ({
   organization,

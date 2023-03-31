@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from uuid import UUID
-from typing import List, Sequence
+from typing import List, Sequence, Tuple
 
 import structlog
 
 from polar.kit.services import ResourceService
+from polar.models.organization import Organization
 from polar.models.user import User
 from polar.models.pledge import Pledge
 from polar.postgres import AsyncSession, sql
@@ -22,7 +23,12 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
     async def list_by_repository(
         self, session: AsyncSession, repository_id: UUID
     ) -> Sequence[Pledge]:
-        statement = sql.select(Pledge).where(Pledge.repository_id == repository_id)
+        statement = (
+            sql.select(Pledge)
+            .where(Pledge.repository_id == repository_id)
+            .join(Pledge.organization, isouter=True)
+            .join(Pledge.user, isouter=True)
+        )
         res = await session.execute(statement)
         issues = res.scalars().unique().all()
         return issues
@@ -34,7 +40,12 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
     ) -> Sequence[Pledge]:
         if not issue_ids:
             return []
-        statement = sql.select(Pledge).filter(Pledge.issue_id.in_(issue_ids))
+        statement = (
+            sql.select(Pledge)
+            .join(Pledge.organization, isouter=True)
+            .join(Pledge.user, isouter=True)
+            .filter(Pledge.issue_id.in_(issue_ids))
+        )
         res = await session.execute(statement)
         issues = res.scalars().unique().all()
         return issues

@@ -74,7 +74,7 @@ async def get_pledge_with_resources(
                 pledge_id=pledge_id,
                 for_repository=repo,
             )
-            included_pledge = PledgeRead.from_orm(pledge)
+            included_pledge = PledgeRead.from_db(pledge)
 
         included_org = None
         if "organization" in includes:
@@ -176,7 +176,7 @@ async def create_pledge_anonymous(
         payment_id=payment_intent.id,
     )
 
-    ret = PledgeRead.from_orm(created)
+    ret = PledgeRead.from_db(created)
     ret.client_secret = payment_intent.client_secret
 
     return ret
@@ -237,7 +237,7 @@ async def create_pledge_as_org(
         by_organization_id=peldge_as_org.id,
     )
 
-    ret = PledgeRead.from_orm(created)
+    ret = PledgeRead.from_db(created)
     # ret.client_secret = payment_intent.client_secret
 
     return ret
@@ -280,7 +280,7 @@ async def update_pledge(
 
     await pledge.save(session=session)
 
-    ret = PledgeRead.from_orm(pledge)
+    ret = PledgeRead.from_db(pledge)
     ret.client_secret = payment_intent.client_secret
 
     return ret
@@ -296,8 +296,9 @@ async def get_repository_pledges(
     repo_name: str,
     auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     session: AsyncSession = Depends(get_db_session),
-) -> Sequence[Pledge]:
+) -> Sequence[PledgeRead]:
     pledges = await pledge.list_by_repository(
         session=session, repository_id=auth.repository.id
     )
-    return pledges
+
+    return [PledgeRead.from_db(p) for p in pledges]

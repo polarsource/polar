@@ -118,7 +118,7 @@ async def get_dashboard(
     # add pledges to included
     for pled in pledges:
         included.append(
-            Entry(id=pled.id, type="pledge", attributes=PledgeRead.from_orm(pled))
+            Entry(id=pled.id, type="pledge", attributes=PledgeRead.from_db(pled))
         )
         # inject relationships
         rel = Relationship(data=RelationshipData(type="pledge", id=pled.id))

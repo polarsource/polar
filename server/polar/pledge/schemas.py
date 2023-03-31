@@ -5,6 +5,9 @@ from datetime import datetime
 from enum import Enum
 
 from polar.kit.schemas import Schema
+from polar.models.organization import Organization
+from polar.models.pledge import Pledge
+from polar.models.user import User
 from polar.organization.schemas import OrganizationRead
 from polar.repository.schemas import RepositoryRead
 from polar.issue.schemas import IssueRead
@@ -32,19 +35,46 @@ class PledgeUpdate(Schema):
     amount: int | None
 
 
-class PledgeRead(PledgeCreate):
+class PledgeRead(Schema):
     id: UUID
     created_at: datetime
+
+    issue_id: UUID
+    amount: int
 
     repository_id: UUID
     organization_id: UUID
 
     state: State
 
+    pledger_name: str | None
+    pledger_avatar: str | None
+
+    # TODO: Move to a different object? This is only used during the pledge creation flow
     client_secret: str | None
 
-    class Config:
-        orm_mode = True
+    @classmethod
+    def from_db(cls, o: Pledge) -> PledgeRead:
+        pledger_name = None
+        pledger_avatar = None
+        if o.user:
+            pledger_name = o.user.username
+            pledger_avatar = o.user.avatar_url
+        if o.organization:
+            pledger_name = o.organization.name
+            pledger_avatar = o.organization.avatar_url
+
+        return PledgeRead(
+            id=o.id,
+            created_at=o.created_at,
+            issue_id=o.issue_id,
+            repository_id=o.repository_id,
+            organization_id=o.organization_id,
+            amount=o.amount,
+            state=o.state,
+            pledger_name=pledger_name,
+            pledger_avatar=pledger_avatar,
+        )
 
 
 class PledgeResources(Schema):

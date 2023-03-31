@@ -1,10 +1,12 @@
 from uuid import UUID
 
 from sqlalchemy import String, BigInteger, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
+from polar.models.organization import Organization
+from polar.models.user import User
 
 
 class Pledge(RecordModel):
@@ -36,4 +38,10 @@ class Pledge(RecordModel):
         nullable=True,
         index=True,
         default=None,
+    )
+
+    user: Mapped[User] = relationship("User", foreign_keys=[by_user_id], lazy="joined")
+
+    organization: Mapped[Organization] = relationship(
+        "Organization", foreign_keys=[by_organization_id], lazy="joined"
     )

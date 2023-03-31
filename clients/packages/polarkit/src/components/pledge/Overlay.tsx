@@ -116,7 +116,7 @@ const Overlay = ({
   }
 
   return (
-    <Background>
+    <Background onClick={onClose}>
       <div className="h-full w-full p-8 md:h-min md:w-[800px] md:p-0">
         <div className="z-0 block flex h-full w-full flex-row rounded-md bg-white">
           <div className="hidden flex-1 bg-black/10 p-4 md:block">
@@ -216,9 +216,18 @@ const Overlay = ({
   )
 }
 
-const Background = ({ children }: { children: React.ReactElement }) => {
+const Background = ({
+  children,
+  onClick,
+}: {
+  children: React.ReactElement
+  onClick: () => void
+}) => {
   return (
-    <div className="fixed bottom-0 left-0 right-0 top-0 z-10 flex items-center justify-center bg-black/50">
+    <div
+      onClick={onClick}
+      className="fixed bottom-0 left-0 right-0 top-0 z-10 flex items-center justify-center bg-black/50"
+    >
       {children}
     </div>
   )

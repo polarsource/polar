@@ -37,13 +37,13 @@ export const DashboardEnvironment = ({ children }) => {
 
   const organizations = userOrgQuery.data
 
-  // Setup accurate org and repo state
-  const { organization: orgSlug, repo: repoSlug } = router.query
-
   // TODO: Unless we're sending user-only events we should probably delay SSE
   useSSE(currentOrg?.platform, currentOrg?.name, currentRepo?.name)
 
   useEffect(() => {
+    // Setup accurate org and repo state
+    const { organization: orgSlug, repo: repoSlug } = router.query
+
     const isOrganizationAccount = organizations && organizations.length > 0
     setIsOrganizationAccount(isOrganizationAccount)
 
@@ -72,7 +72,7 @@ export const DashboardEnvironment = ({ children }) => {
         setCurrentOrgRepo(organizations[0], undefined)
       }
     }
-  }, [organizations, orgSlug, repoSlug, router])
+  }, [organizations, router, setCurrentOrgRepo, setIsOrganizationAccount])
 
   if (userOrgQuery.isLoading) return <div></div>
   if (!userOrgQuery.isSuccess) return <div>Error</div>

@@ -8,7 +8,7 @@ import {
 } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/utils'
-import { useEffect, useState } from 'react'
+import { useRef, useState } from 'react'
 import PaymentForm from './PaymentForm'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY)
@@ -114,19 +114,21 @@ const PledgeForm = ({
 
     setErrorMessage(null)
     setAmount(amountInCents)
+    debouncedSync()
+  }
+
+  const syncTimeout = useRef(null)
+
+  const debouncedSync = () => {
+    clearTimeout(syncTimeout.current)
+    syncTimeout.current = setTimeout(synchronizePledge, 500)
   }
 
   const onEmailChange = (event) => {
     const email = event.target.value
     setEmail(email)
+    debouncedSync()
   }
-
-  // Debounce synchronization of pledge
-  useEffect(() => {
-    const sync = setTimeout(synchronizePledge, 500)
-
-    return () => clearTimeout(sync)
-  }, [amount, email])
 
   return (
     <>

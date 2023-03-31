@@ -112,18 +112,20 @@ const Header = (props: {
     })
   }
 
-  const title = {
-    newest: 'Newest',
-    pledged_amount_desc: 'Pledged amount',
-    relevance: 'Relevance',
-  }
+  const title = useMemo(() => {
+    return {
+      newest: 'Newest',
+      pledged_amount_desc: 'Pledged amount',
+      relevance: 'Relevance',
+    }
+  }, [])
 
   const options = ['newest', 'pledged_amount_desc', 'relevance']
 
   const width = useMemo(() => {
     const t = title[props.filters.sort] || 'Newest'
     return t.length * 9 + 35 // TODO(gustav): can we use the on-screen size instead somehow?
-  }, [props, props.filters, props.filters.sort])
+  }, [props.filters.sort, title])
 
   return (
     <div className="flex h-12 items-center justify-between">

@@ -65,11 +65,10 @@ const SettingsPage: NextLayoutComponentType = () => {
     )
 
     didFirstSet.current = true
-  }, [org])
+  }, [org, setCurrentOrgRepo])
 
   const mutation = useOrganizationSettingsMutation()
 
-  const [userChanged, setUserChanged] = useState(false)
   const [showDidSave, setShowDidSave] = useState(false)
 
   const didSaveTimeout = useRef<undefined | ReturnType<typeof setTimeout>>(
@@ -77,10 +76,6 @@ const SettingsPage: NextLayoutComponentType = () => {
   )
 
   const save = async () => {
-    if (!userChanged) {
-      return
-    }
-
     mutation.mutate({
       orgName: handle,
       body: {
@@ -108,16 +103,9 @@ const SettingsPage: NextLayoutComponentType = () => {
     }, 2000)
   }
 
-  useEffect(() => {
-    save()
-  }, [
-    badgeShowRaised,
-    badgeAddOldIssues,
-    emailIssueReceivesBacking,
-    emailIssueBranchCreated,
-    emailPullRequestCreated,
-    emailPullRequestMerged,
-  ])
+  const onChanged = async () => {
+    await save()
+  }
 
   // show spinner if still loading after 1s
   const [allowShowLoadingSpinner, setAllowShowLoadingSpinner] = useState(false)
@@ -186,7 +174,7 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={badgeAddOldIssues}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setBadgeAddOldIssues(e.target.checked)
-                  setUserChanged(true)
+                  onChanged()
                 }}
               />
               <Checkbox
@@ -195,7 +183,7 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={badgeShowRaised}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setBadgeShowRaised(e.target.checked)
-                  setUserChanged(true)
+                  onChanged()
                 }}
               />
             </Box>
@@ -213,7 +201,7 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={emailIssueReceivesBacking}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setEmailIssueReceivesBacking(e.target.checked)
-                  setUserChanged(true)
+                  onChanged()
                 }}
               />
               <Checkbox
@@ -222,7 +210,7 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={emailIssueBranchCreated}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setEmailIssueBranchCreated(e.target.checked)
-                  setUserChanged(true)
+                  onChanged()
                 }}
               />
               <Checkbox
@@ -231,7 +219,7 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={emailPullRequestCreated}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setEmailPullRequestCreated(e.target.checked)
-                  setUserChanged(true)
+                  onChanged()
                 }}
               />
               <Checkbox
@@ -240,7 +228,7 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={emailPullRequestMerged}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setEmailPullRequestMerged(e.target.checked)
-                  setUserChanged(true)
+                  onChanged()
                 }}
               />
             </Box>

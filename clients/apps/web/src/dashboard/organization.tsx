@@ -49,7 +49,7 @@ const Organization = (props: {
   let [statuses, setStatuses] = useState<Array<IssueStatus>>(
     buildStatusesFilter(filters),
   )
-  useEffect(() => setStatuses(buildStatusesFilter(filters)), [props])
+  useEffect(() => setStatuses(buildStatusesFilter(filters)), [props, filters])
 
   const orgSlug = typeof organization === 'string' ? organization : ''
   const repoSlug = typeof repo === 'string' ? repo : ''

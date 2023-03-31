@@ -18,6 +18,7 @@ export type RepositoryRead = {
   main_branch?: string;
   topics?: Array<string>;
   license?: string;
+  homepage?: string;
   repository_pushed_at?: string;
   repository_created_at?: string;
   repository_modified_at?: string;

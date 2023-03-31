@@ -2950,6 +2950,10 @@
                         "title": "License",
                         "type": "string"
                     },
+                    "homepage": {
+                        "title": "Homepage",
+                        "type": "string"
+                    },
                     "repository_pushed_at": {
                         "title": "Repository Pushed At",
                         "type": "string",

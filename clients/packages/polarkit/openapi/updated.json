@@ -822,7 +822,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/PledgeRead"
+                                    "$ref": "#/components/schemas/PledgeMutationResponse"
                                 }
                             }
                         }
@@ -910,7 +910,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/PledgeRead"
+                                    "$ref": "#/components/schemas/PledgeMutationResponse"
                                 }
                             }
                         }
@@ -2525,6 +2525,48 @@
                     }
                 }
             },
+            "PledgeMutationResponse": {
+                "title": "PledgeMutationResponse",
+                "required": [
+                    "issue_id",
+                    "amount",
+                    "id",
+                    "state"
+                ],
+                "type": "object",
+                "properties": {
+                    "issue_id": {
+                        "title": "Issue Id",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "email": {
+                        "title": "Email",
+                        "type": "string"
+                    },
+                    "amount": {
+                        "title": "Amount",
+                        "type": "integer"
+                    },
+                    "pledge_as_org": {
+                        "title": "Pledge As Org",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "id": {
+                        "title": "Id",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "state": {
+                        "$ref": "#/components/schemas/polar__pledge__schemas__State"
+                    },
+                    "client_secret": {
+                        "title": "Client Secret",
+                        "type": "string"
+                    }
+                }
+            },
             "PledgeRead": {
                 "title": "PledgeRead",
                 "required": [
@@ -2576,10 +2618,6 @@
                     },
                     "pledger_avatar": {
                         "title": "Pledger Avatar",
-                        "type": "string"
-                    },
-                    "client_secret": {
-                        "title": "Client Secret",
                         "type": "string"
                     }
                 }

@@ -37,6 +37,7 @@ export type { OrganizationStripeCustomerRead } from './models/OrganizationStripe
 export type { PaymentMethod } from './models/PaymentMethod';
 export { Platforms } from './models/Platforms';
 export type { PledgeCreate } from './models/PledgeCreate';
+export type { PledgeMutationResponse } from './models/PledgeMutationResponse';
 export type { PledgeRead } from './models/PledgeRead';
 export type { PledgeResources } from './models/PledgeResources';
 export type { PledgeUpdate } from './models/PledgeUpdate';

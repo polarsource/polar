@@ -22,6 +22,7 @@ class RepositoryCreate(Schema):
     main_branch: str | None = None
     topics: list[str] | None = None
     license: str | None = None
+    homepage: str | None = None
     repository_pushed_at: datetime | None = None
     repository_created_at: datetime | None = None
     repository_modified_at: datetime | None = None
@@ -41,6 +42,10 @@ class RepositoryCreate(Schema):
         if repo.topics:
             topics = repo.topics
 
+        license = None
+        if repo.license_ and repo.license_.name:
+            license = repo.license_.name
+
         return cls(
             platform=Platforms.github,
             external_id=repo.id,
@@ -53,7 +58,8 @@ class RepositoryCreate(Schema):
             watchers=repo.watchers_count,
             main_branch=repo.default_branch,
             topics=topics,
-            license=None,  # TODO: Store repo.license?
+            license=license,
+            homepage=repo.homepage,
             repository_pushed_at=repo.pushed_at,
             repository_created_at=repo.created_at,
             repository_modified_at=repo.updated_at,

@@ -10,6 +10,21 @@ from .utils import get_organization_and_repo
 log = structlog.get_logger()
 
 
+@task("github.repo.sync.repositories")
+async def sync_repositories(
+    ctx: JobContext,
+    organization_id: UUID,
+) -> None:
+    async with AsyncSessionLocal() as session:
+        organization = await service.github_organization.get(session, organization_id)
+        if not organization:
+            raise Exception("organization not found")
+
+        await service.github_repository.install_for_organization(
+            session, organization, organization.installation_id
+        )
+
+
 @task("github.repo.sync.issues")
 async def sync_repository_issues(
     ctx: JobContext,

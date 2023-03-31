@@ -63,6 +63,11 @@ async def trigger_issue_references_sync(
         typer.echo(f"Triggered issue references sync for {org.name}/{repository.name}")
 
 
+async def trigger_repositories_sync(session: AsyncSession, org: Organization) -> None:
+    await enqueue_job("github.repo.sync.repositories", org.id)
+    typer.echo(f"Triggered repo sync for {org.name}")
+
+
 ###############################################################################
 # Commands
 ###############################################################################
@@ -96,6 +101,17 @@ async def sync_references(org_name: str) -> None:
             raise RuntimeError(f"Organization {org_name} not found")
 
         await trigger_issue_references_sync(session, org)
+
+
+@cli.command()
+@typer_async
+async def sync_repos(org_name: str) -> None:
+    async with AsyncSessionLocal() as session:
+        org = await github_organization.get_by_name(session, Platforms.github, org_name)
+        if not org:
+            raise RuntimeError(f"Organization {org_name} not found")
+
+        await trigger_repositories_sync(session, org)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,10 @@ import { Elements } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { CONFIG } from 'polarkit'
 import { api } from 'polarkit/api'
-import { type PledgeRead, type PledgeResources } from 'polarkit/api/client'
+import {
+  PledgeMutationResponse,
+  type PledgeResources,
+} from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/utils'
 import { useEffect, useState } from 'react'
@@ -18,7 +21,7 @@ const PledgeForm = ({
 }: PledgeResources & {
   query: any // TODO: Investigate & fix type
 }) => {
-  const [pledge, setPledge] = useState<PledgeRead | null>(null)
+  const [pledge, setPledge] = useState<PledgeMutationResponse | null>(null)
   const [amount, setAmount] = useState(0)
   const [email, setEmail] = useState('')
   const [errorMessage, setErrorMessage] = useState(null)
@@ -81,7 +84,7 @@ const PledgeForm = ({
     }
 
     setSyncing(true)
-    let updatedPledge: PledgeRead
+    let updatedPledge: PledgeMutationResponse
     if (!pledge) {
       updatedPledge = await createPledge()
     } else {

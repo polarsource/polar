@@ -2,7 +2,7 @@
 
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { useRouter } from 'next/router'
-import { type PledgeRead } from 'polarkit/api/client'
+import { PledgeMutationResponse } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/utils'
 import { useState } from 'react'
@@ -13,7 +13,7 @@ const PaymentForm = ({
   setSyncing,
   setErrorMessage,
 }: {
-  pledge?: PledgeRead
+  pledge?: PledgeMutationResponse
   isSyncing: boolean
   setSyncing: (isLocked: boolean) => void
   setErrorMessage: (message: string) => void

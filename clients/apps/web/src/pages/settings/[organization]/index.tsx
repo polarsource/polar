@@ -7,6 +7,7 @@ import Topbar from 'components/Shared/Topbar'
 import { NextLayoutComponentType } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { OrganizationSettingsUpdate } from 'polarkit/api/client'
 import { RepoSelection } from 'polarkit/components'
 import {
   useOrganization,
@@ -75,20 +76,10 @@ const SettingsPage: NextLayoutComponentType = () => {
     undefined,
   )
 
-  const save = async () => {
+  const save = (set: OrganizationSettingsUpdate) => {
     mutation.mutate({
       orgName: handle,
-      body: {
-        funding_badge_show_amount: badgeShowRaised,
-        funding_badge_retroactive: badgeAddOldIssues,
-
-        email_notification_issue_receives_backing: emailIssueReceivesBacking,
-        email_notification_backed_issue_branch_created: emailIssueBranchCreated,
-        email_notification_backed_issue_pull_request_created:
-          emailPullRequestCreated,
-        email_notification_backed_issue_pull_request_merged:
-          emailPullRequestMerged,
-      },
+      body: { ...org, ...set },
     })
 
     setShowDidSave(true)
@@ -101,10 +92,6 @@ const SettingsPage: NextLayoutComponentType = () => {
     didSaveTimeout.current = setTimeout(() => {
       setShowDidSave(false)
     }, 2000)
-  }
-
-  const onChanged = async () => {
-    await save()
   }
 
   // show spinner if still loading after 1s
@@ -174,7 +161,7 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={badgeAddOldIssues}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setBadgeAddOldIssues(e.target.checked)
-                  onChanged()
+                  save({ funding_badge_retroactive: e.target.checked })
                 }}
               />
               <Checkbox
@@ -183,7 +170,7 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={badgeShowRaised}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setBadgeShowRaised(e.target.checked)
-                  onChanged()
+                  save({ funding_badge_show_amount: e.target.checked })
                 }}
               />
             </Box>
@@ -201,7 +188,9 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={emailIssueReceivesBacking}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setEmailIssueReceivesBacking(e.target.checked)
-                  onChanged()
+                  save({
+                    email_notification_issue_receives_backing: e.target.checked,
+                  })
                 }}
               />
               <Checkbox
@@ -210,7 +199,10 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={emailIssueBranchCreated}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setEmailIssueBranchCreated(e.target.checked)
-                  onChanged()
+                  save({
+                    email_notification_backed_issue_branch_created:
+                      e.target.checked,
+                  })
                 }}
               />
               <Checkbox
@@ -219,7 +211,10 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={emailPullRequestCreated}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setEmailPullRequestCreated(e.target.checked)
-                  onChanged()
+                  save({
+                    email_notification_backed_issue_pull_request_created:
+                      e.target.checked,
+                  })
                 }}
               />
               <Checkbox
@@ -228,7 +223,10 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={emailPullRequestMerged}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setEmailPullRequestMerged(e.target.checked)
-                  onChanged()
+                  save({
+                    email_notification_backed_issue_pull_request_merged:
+                      e.target.checked,
+                  })
                 }}
               />
             </Box>

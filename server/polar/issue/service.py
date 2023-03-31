@@ -77,6 +77,8 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         text: str | None = None,
         include_open: bool = True,
         include_closed: bool = False,
+        sort_by_newest: bool = False,
+        sort_by_relevance: bool = False,
     ) -> Sequence[Issue]:
         statement = sql.select(Issue).where(Issue.repository_id.in_(repository_ids))
 
@@ -112,9 +114,13 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             )
 
             # Sort results based on matching
-            statement = statement.order_by(
-                desc(func.ts_rank_cd(Issue.title_tsv, func.to_tsquery(search)))
-            )
+            if sort_by_relevance:
+                statement = statement.order_by(
+                    desc(func.ts_rank_cd(Issue.title_tsv, func.to_tsquery(search)))
+                )
+
+        if sort_by_newest:
+            statement = statement.order_by(desc(Issue.issue_created_at))
 
         res = await session.execute(statement)
         issues = res.scalars().unique().all()

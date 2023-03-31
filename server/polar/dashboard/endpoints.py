@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from polar.dashboard.schemas import (
     Entry,
     IssueListResponse,
+    IssueSortBy,
     IssueStatus,
     Relationship,
     RelationshipData,
@@ -36,6 +37,7 @@ async def get_dashboard(
     repo_name: Union[str, None] = Query(default=None),
     status: Union[List[IssueStatus], None] = Query(default=None),
     q: Union[str, None] = Query(default=None),
+    sort: Union[IssueSortBy, None] = Query(default=None),
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueListResponse:
@@ -78,6 +80,12 @@ async def get_dashboard(
             detail="Repository not found",
         )
 
+    # default sorting
+    if sort is None and q:
+        sort = IssueSortBy.relevance
+    if sort is None and not q:
+        sort = IssueSortBy.newest
+
     # get issues
     issues = await issue.list_by_repository_and_status(
         session,
@@ -85,6 +93,8 @@ async def get_dashboard(
         text=q,
         include_open=include_open,
         include_closed=include_closed,
+        sort_by_relevance=sort == IssueSortBy.relevance,
+        sort_by_newest=sort == IssueSortBy.newest,
     )
 
     # add org to included
@@ -173,6 +183,20 @@ async def get_dashboard(
         issues = [i for i in issues if issue_progress(i) in status]
 
     # TODO: only include related objects for issues in the response
+
+    def pledge_sum(issue: Issue) -> int:
+        return sum(p.amount for p in pledges if p.issue_id == issue.id)
+
+    if sort == IssueSortBy.pledged_amount_desc:
+        # calculate pledge sum
+        sum_by_issue: dict[UUID, int] = dict()
+        for i in issues:
+            sum_by_issue[i.id] = pledge_sum(i)
+
+        # issues is a sequence and can't be sorted on, quickly convert to a list
+        issues_list = [i for i in issues]
+        issues_list.sort(key=lambda i: sum_by_issue[i.id], reverse=True)
+        issues = issues_list
 
     return IssueListResponse(
         data=[

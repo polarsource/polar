@@ -1,8 +1,24 @@
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
 import TimeAgo from 'react-timeago'
-import { type IssueRead } from '../../api/client'
+import {
+  OrganizationRead,
+  RepositoryRead,
+  type IssueRead,
+} from '../../api/client'
 
-const IssueCard = ({ issue, bg }: { issue: IssueRead; bg: string }) => {
+const IssueCard = ({
+  issue,
+  bg,
+  organization,
+  repository,
+}: {
+  issue: IssueRead
+  bg: string
+  organization: OrganizationRead
+  repository: RepositoryRead
+}) => {
+  const url = `https://github.com/${organization.name}/${repository.name}/issues/${issue.number}`
+
   return (
     <>
       <div className={`h-full rounded-lg border px-8 py-14 text-center ${bg}`}>
@@ -11,7 +27,7 @@ const IssueCard = ({ issue, bg }: { issue: IssueRead; bg: string }) => {
         </strong>
         <h1 className="my-2.5 text-lg font-normal">{issue.title}</h1>
         <p className="text-sm font-normal text-gray-500">
-          #{issue.number} opened{' '}
+          <a href={url}>#{issue.number}</a> opened{' '}
           <TimeAgo date={new Date(issue.issue_created_at)} />
         </p>
         <div className="mt-6 flex flex-row justify-center space-x-4">

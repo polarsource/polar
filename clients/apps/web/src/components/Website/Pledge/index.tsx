@@ -19,7 +19,12 @@ const Pledge = ({
           padding={false}
         >
           <div className="w-1/2">
-            <IssueCard issue={issue} bg="bg-purple-50" />
+            <IssueCard
+              issue={issue}
+              bg="bg-purple-50"
+              organization={organization}
+              repository={repository}
+            />
           </div>
           <div className="w-1/2 text-left">
             <div className="py-5 px-6">

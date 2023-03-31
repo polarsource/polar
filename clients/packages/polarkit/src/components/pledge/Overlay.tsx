@@ -121,7 +121,12 @@ const Overlay = ({
         <div className="z-0 block flex h-full w-full flex-row rounded-md bg-white">
           <div className="hidden flex-1 bg-black/10 p-4 md:block">
             <div>
-              <IssueCard issue={issue} bg="bg-white" />
+              <IssueCard
+                issue={issue}
+                bg="bg-white"
+                organization={issueOrg}
+                repository={issueRepo}
+              />
             </div>
             <RepositoryCard organization={issueOrg} repository={issueRepo} />
           </div>

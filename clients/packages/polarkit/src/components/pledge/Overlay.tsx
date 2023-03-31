@@ -117,7 +117,12 @@ const Overlay = ({
 
   return (
     <Background onClick={onClose}>
-      <div className="h-full w-full p-8 md:h-min md:w-[800px] md:p-0">
+      <div
+        className="h-full w-full p-8 md:h-min md:w-[800px] md:p-0"
+        onClick={(e) => {
+          e.stopPropagation()
+        }}
+      >
         <div className="z-0 block flex h-full w-full flex-row rounded-md bg-white">
           <div className="hidden flex-1 bg-black/10 p-4 md:block">
             <div>

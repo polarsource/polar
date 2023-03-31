@@ -15,7 +15,14 @@ from polar.organization.service import organization as organization_service
 from polar.repository.schemas import RepositoryRead
 from polar.issue.schemas import IssueRead
 
-from .schemas import PledgeCreate, PledgeUpdate, PledgeRead, State, PledgeResources
+from .schemas import (
+    PledgeCreate,
+    PledgeMutationResponse,
+    PledgeUpdate,
+    PledgeRead,
+    State,
+    PledgeResources,
+)
 from .service import pledge
 
 router = APIRouter(tags=["pledges"])
@@ -103,7 +110,7 @@ async def get_pledge_with_resources(
 
 @router.post(
     "/{platform}/{org_name}/{repo_name}/issues/{number}/pledges",
-    response_model=PledgeRead,
+    response_model=PledgeMutationResponse,
 )
 async def create_pledge(
     platform: Platforms,
@@ -113,7 +120,7 @@ async def create_pledge(
     pledge: PledgeCreate,
     request: Request,
     session: AsyncSession = Depends(get_db_session),
-) -> PledgeRead:
+) -> PledgeMutationResponse:
     # Pre-authenticated pledge flow
     if pledge.pledge_as_org:
         return await create_pledge_as_org(
@@ -143,7 +150,7 @@ async def create_pledge_anonymous(
     number: int,
     pledge: PledgeCreate,
     session: AsyncSession,
-) -> PledgeRead:
+) -> PledgeMutationResponse:
     if not pledge.email:
         raise HTTPException(
             status_code=401, detail="pledge.email is required for anonymous pledges"
@@ -176,7 +183,7 @@ async def create_pledge_anonymous(
         payment_id=payment_intent.id,
     )
 
-    ret = PledgeRead.from_db(created)
+    ret = PledgeMutationResponse.from_orm(created)
     ret.client_secret = payment_intent.client_secret
 
     return ret
@@ -190,7 +197,7 @@ async def create_pledge_as_org(
     pledge: PledgeCreate,
     request: Request,
     session: AsyncSession,
-) -> PledgeRead:
+) -> PledgeMutationResponse:
     org, repo, issue = await organization_service.get_with_repo_and_issue(
         session=session,
         platform=platform,
@@ -237,15 +244,14 @@ async def create_pledge_as_org(
         by_organization_id=peldge_as_org.id,
     )
 
-    ret = PledgeRead.from_db(created)
-    # ret.client_secret = payment_intent.client_secret
+    ret = PledgeMutationResponse.from_orm(created)
 
     return ret
 
 
 @router.patch(
     "/{platform}/{org_name}/{repo_name}/issues/{number}/pledges/{pledge_id}",
-    response_model=PledgeRead,
+    response_model=PledgeMutationResponse,
 )
 async def update_pledge(
     platform: Platforms,
@@ -255,7 +261,7 @@ async def update_pledge(
     pledge_id: UUID,
     updates: PledgeUpdate,
     session: AsyncSession = Depends(get_db_session),
-) -> PledgeRead:
+) -> PledgeMutationResponse:
     org, repo, issue = await organization_service.get_with_repo_and_issue(
         session=session,
         platform=platform,
@@ -280,7 +286,7 @@ async def update_pledge(
 
     await pledge.save(session=session)
 
-    ret = PledgeRead.from_db(pledge)
+    ret = PledgeMutationResponse.from_orm(pledge)
     ret.client_secret = payment_intent.client_secret
 
     return ret

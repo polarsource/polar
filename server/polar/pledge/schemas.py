@@ -35,6 +35,15 @@ class PledgeUpdate(Schema):
     amount: int | None
 
 
+class PledgeMutationResponse(PledgeCreate):
+    id: UUID
+    state: State
+    client_secret: str | None = None
+
+    class Config:
+        orm_mode = True
+
+
 class PledgeRead(Schema):
     id: UUID
     created_at: datetime
@@ -49,9 +58,6 @@ class PledgeRead(Schema):
 
     pledger_name: str | None
     pledger_avatar: str | None
-
-    # TODO: Move to a different object? This is only used during the pledge creation flow
-    client_secret: str | None
 
     @classmethod
     def from_db(cls, o: Pledge) -> PledgeRead:

@@ -2510,34 +2510,16 @@
             "PledgeRead": {
                 "title": "PledgeRead",
                 "required": [
-                    "issue_id",
-                    "amount",
                     "id",
                     "created_at",
+                    "issue_id",
+                    "amount",
                     "repository_id",
                     "organization_id",
                     "state"
                 ],
                 "type": "object",
                 "properties": {
-                    "issue_id": {
-                        "title": "Issue Id",
-                        "type": "string",
-                        "format": "uuid"
-                    },
-                    "email": {
-                        "title": "Email",
-                        "type": "string"
-                    },
-                    "amount": {
-                        "title": "Amount",
-                        "type": "integer"
-                    },
-                    "pledge_as_org": {
-                        "title": "Pledge As Org",
-                        "type": "string",
-                        "format": "uuid"
-                    },
                     "id": {
                         "title": "Id",
                         "type": "string",
@@ -2547,6 +2529,15 @@
                         "title": "Created At",
                         "type": "string",
                         "format": "date-time"
+                    },
+                    "issue_id": {
+                        "title": "Issue Id",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "amount": {
+                        "title": "Amount",
+                        "type": "integer"
                     },
                     "repository_id": {
                         "title": "Repository Id",
@@ -2560,6 +2551,14 @@
                     },
                     "state": {
                         "$ref": "#/components/schemas/polar__pledge__schemas__State"
+                    },
+                    "pledger_name": {
+                        "title": "Pledger Name",
+                        "type": "string"
+                    },
+                    "pledger_avatar": {
+                        "title": "Pledger Avatar",
+                        "type": "string"
                     },
                     "client_secret": {
                         "title": "Client Secret",

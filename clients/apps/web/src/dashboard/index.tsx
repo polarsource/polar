@@ -13,6 +13,7 @@ export const DefaultFilters: DashboardFilters = {
   statusBuild: true,
   statusPullRequest: true,
   statusCompleted: false,
+  sort: undefined,
 }
 
 export const DashboardEnvironment = ({ children }) => {
@@ -78,7 +79,7 @@ export const DashboardEnvironment = ({ children }) => {
 
   // Pass search filters to dynamic children
   const renderedChildren = React.Children.map(children, function (child) {
-    return React.cloneElement(child, { filters })
+    return React.cloneElement(child, { filters, onSetFilters: setFilters })
   })
 
   return (

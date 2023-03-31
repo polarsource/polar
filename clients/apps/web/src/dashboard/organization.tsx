@@ -11,7 +11,7 @@ import {
 } from 'polarkit/api/client'
 import { IssueList } from 'polarkit/components'
 import { useDashboard } from 'polarkit/hooks'
-import { useEffect, useState } from 'react'
+import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import { DashboardFilters } from './filters'
 
 const buildStatusesFilter = (filters: DashboardFilters): Array<IssueStatus> => {
@@ -36,7 +36,10 @@ const buildMapForType = <T extends IDer>(
   return new Map<string, T>(list.map((r) => [r.id, r.attributes]))
 }
 
-const Organization = (props: { filters: DashboardFilters }) => {
+const Organization = (props: {
+  filters: DashboardFilters
+  onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
+}) => {
   const { filters } = props
 
   // const { orgSlug, repoSlug } = useParams()
@@ -51,7 +54,13 @@ const Organization = (props: { filters: DashboardFilters }) => {
   const orgSlug = typeof organization === 'string' ? organization : ''
   const repoSlug = typeof repo === 'string' ? repo : ''
 
-  const dashboardQuery = useDashboard(orgSlug, repoSlug, filters.q, statuses)
+  const dashboardQuery = useDashboard(
+    orgSlug,
+    repoSlug,
+    filters.q,
+    statuses,
+    filters.sort,
+  )
   const dashboard = dashboardQuery.data
 
   const [issues, setIssues] = useState<Entry_IssueRead_[]>()
@@ -77,6 +86,8 @@ const Organization = (props: { filters: DashboardFilters }) => {
         pledges={pledges}
         orgs={orgs}
         repos={repos}
+        filters={filters}
+        onSetFilters={props.onSetFilters}
       />
     </div>
   )

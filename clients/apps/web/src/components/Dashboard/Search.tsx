@@ -1,5 +1,6 @@
 import { MagnifyingGlassIcon } from '@heroicons/react/20/solid'
 import { DashboardFilters } from 'dashboard/filters'
+import { IssueSortBy } from 'polarkit/api/client'
 import { ChangeEvent, Dispatch, SetStateAction } from 'react'
 import Checkbox from './Checkbox'
 import Tab from './Tab'
@@ -12,7 +13,9 @@ const Search = (props: {
   const { filters, onSetFilters } = props
 
   const onQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
-    onSetFilters({ ...filters, q: event.target.value })
+    // if not set, set to relevance
+    const sort = filters.sort || IssueSortBy.RELEVANCE
+    onSetFilters({ ...filters, q: event.target.value, sort })
   }
 
   const onStatusChange = (event: ChangeEvent<HTMLInputElement>) => {

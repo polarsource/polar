@@ -9,7 +9,7 @@ import {
   type RepositoryRead,
 } from 'polarkit/api/client'
 import { IssueListItem } from 'polarkit/components'
-import { Dispatch, SetStateAction, useEffect, useState } from 'react'
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react'
 
 type IssueListItemData = {
   org: OrganizationRead
@@ -106,13 +106,24 @@ const Header = (props: {
       relevance: IssueSortBy.RELEVANCE,
     }[value]
 
-    console.log('new sort', sort)
-
     props.onSetFilters({
       ...props.filters,
       sort,
     })
   }
+
+  const title = {
+    newest: 'Newest',
+    pledged_amount_desc: 'Pledged amount',
+    relevance: 'Relevance',
+  }
+
+  const options = ['newest', 'pledged_amount_desc', 'relevance']
+
+  const width = useMemo(() => {
+    const t = title[props.filters.sort] || 'Newest'
+    return t.length * 9 + 35 // TODO(gustav): can we use the on-screen size instead somehow?
+  }, [props, props.filters, props.filters.sort])
 
   return (
     <div className="flex h-12 items-center justify-between">
@@ -122,15 +133,18 @@ const Header = (props: {
       </div>
 
       <div>
-        <span>Sort:</span>
+        <span className="mr-1 text-black/50">Sort:</span>
         <select
-          className="selected:border-0 border-0 ring-0"
+          className="m-0 w-48 border-0 p-0 font-medium ring-0 focus:border-0 focus:ring-0"
           onChange={onSelect}
-          defaultValue={props.filters?.sort}
+          style={{ width: `${width}px` }}
+          value={props.filters?.sort}
         >
-          <option value="newest">Newest</option>
-          <option value="pledged_amount_desc">Pledged amount</option>
-          <option value="relevance">Relevance</option>
+          {options.map((v) => (
+            <option key={v} value={v}>
+              {title[v]}
+            </option>
+          ))}
         </select>
       </div>
     </div>

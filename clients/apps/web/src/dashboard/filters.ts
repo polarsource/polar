@@ -7,5 +7,5 @@ export type DashboardFilters = {
   statusBuild: boolean
   statusPullRequest: boolean
   statusCompleted: boolean
-  sort: IssueSortBy
+  sort?: IssueSortBy
 }

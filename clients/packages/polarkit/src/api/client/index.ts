@@ -26,6 +26,7 @@ export type { IssueListResponse } from './models/IssueListResponse';
 export type { IssueRead } from './models/IssueRead';
 export type { IssueReferenceRead } from './models/IssueReferenceRead';
 export { IssueReferenceType } from './models/IssueReferenceType';
+export { IssueSortBy } from './models/IssueSortBy';
 export { IssueStatus } from './models/IssueStatus';
 export type { LoginResponse } from './models/LoginResponse';
 export type { LogoutResponse } from './models/LogoutResponse';

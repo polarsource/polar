@@ -1437,6 +1437,14 @@
                         },
                         "name": "q",
                         "in": "query"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/IssueSortBy"
+                        },
+                        "name": "sort",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2269,6 +2277,16 @@
                     "pull_request",
                     "external_github_pull_request",
                     "external_github_commit"
+                ],
+                "type": "string",
+                "description": "An enumeration."
+            },
+            "IssueSortBy": {
+                "title": "IssueSortBy",
+                "enum": [
+                    "newest",
+                    "pledged_amount_desc",
+                    "relevance"
                 ],
                 "type": "string",
                 "description": "An enumeration."

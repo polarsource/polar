@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { IssueListResponse } from '../models/IssueListResponse';
+import type { IssueSortBy } from '../models/IssueSortBy';
 import type { IssueStatus } from '../models/IssueStatus';
 import type { Platforms } from '../models/Platforms';
 
@@ -23,12 +24,14 @@ export class DashboardService {
     repoName,
     status,
     q,
+    sort,
   }: {
     platform: Platforms,
     orgName: string,
     repoName?: string,
     status?: Array<IssueStatus>,
     q?: string,
+    sort?: IssueSortBy,
   }): CancelablePromise<IssueListResponse> {
     return this.httpRequest.request({
       method: 'GET',
@@ -41,6 +44,7 @@ export class DashboardService {
         'repo_name': repoName,
         'status': status,
         'q': q,
+        'sort': sort,
       },
       errors: {
         422: `Validation Error`,

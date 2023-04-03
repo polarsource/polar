@@ -57,6 +57,7 @@ const Organization = (props: {
   const dashboardQuery = useDashboard(
     orgSlug,
     repoSlug,
+    filters.tab,
     filters.q,
     statuses,
     filters.sort,

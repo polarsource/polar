@@ -9,6 +9,6 @@ export type Entry_IssueRead_ = {
   type: string;
   id: string;
   attributes: IssueRead;
-  relationships?: Array<Relationship>;
+  relationships?: Record<string, Relationship>;
 };
 

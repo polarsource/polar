@@ -5,6 +5,6 @@
 import type { RelationshipData } from './RelationshipData';
 
 export type Relationship = {
-  data: RelationshipData;
+  data: (RelationshipData | Array<RelationshipData>);
 };
 

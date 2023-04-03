@@ -3,6 +3,7 @@ import {
   IssueReferenceRead,
   IssueSortBy,
   OrganizationRead,
+  Relationship,
   type Entry_IssueRead_,
   type IssueRead,
   type PledgeRead,
@@ -20,14 +21,20 @@ type IssueListItemData = {
 }
 
 const populateRelations = <T,>(
-  issue: Entry_IssueRead_,
+  relationships: Relationship | undefined,
   lookup: Map<string, T>,
   typ: string,
 ): T[] => {
+  const data =
+    relationships !== undefined
+      ? Array.isArray(relationships.data)
+        ? relationships.data
+        : [relationships.data]
+      : []
   const r =
-    issue.relationships
-      ?.filter((rel) => rel.data.type === typ)
-      .map((rel) => lookup.get(rel.data.id))
+    data
+      .filter((rel) => rel.type === typ)
+      .map((rel) => lookup.get(rel.id))
       .filter(Boolean)
       .map((r) => r as T) || []
   return r
@@ -53,10 +60,26 @@ const IssueList = (props: {
     const sorted = issues.map((issue): IssueListItemData => {
       return {
         issue: issue.attributes,
-        references: populateRelations(issue, references, 'reference'),
-        pledges: populateRelations(issue, pledges, 'pledge'),
-        org: populateRelations(issue, orgs, 'organization')[0],
-        repo: populateRelations(issue, repos, 'repository')[0],
+        references: populateRelations(
+          issue.relationships?.references,
+          references,
+          'reference',
+        ),
+        pledges: populateRelations(
+          issue.relationships?.pledges,
+          pledges,
+          'pledge',
+        ),
+        org: populateRelations(
+          issue.relationships?.organization,
+          orgs,
+          'organization',
+        )[0],
+        repo: populateRelations(
+          issue.relationships?.repository,
+          repos,
+          'repository',
+        )[0],
       }
     })
     setSortedIssues(sorted)

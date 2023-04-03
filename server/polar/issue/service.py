@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from uuid import UUID
-from typing import List, Sequence
-from sqlalchemy import desc, func, or_
+from typing import List, Sequence, Tuple
+from sqlalchemy import Select, desc, func, or_
 
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
+from polar.dashboard.schemas import IssueListType
 
 from polar.kit.services import ResourceService
 from polar.models.issue import Issue
 from polar.enums import Platforms
+from polar.models.issue_dependency import IssueDependency
 from polar.models.issue_reference import IssueReference
 from polar.models.pull_request import PullRequest
 from polar.postgres import AsyncSession, sql
@@ -70,17 +72,32 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         issues = res.scalars().unique().all()
         return issues
 
-    async def list_by_repository_and_status(
+    async def list_by_repository_type_and_status(
         self,
         session: AsyncSession,
         repository_ids: List[UUID],
+        issue_list_type: IssueListType,
         text: str | None = None,
         include_open: bool = True,
         include_closed: bool = False,
         sort_by_newest: bool = False,
         sort_by_relevance: bool = False,
     ) -> Sequence[Issue]:
-        statement = sql.select(Issue).where(Issue.repository_id.in_(repository_ids))
+        statement: Select[Tuple[Issue]] | None = None
+
+        if issue_list_type == IssueListType.issues:
+            statement = sql.select(Issue).where(Issue.repository_id.in_(repository_ids))
+        elif issue_list_type == IssueListType.following:
+            statement = (
+                sql.select(Issue)
+                .join(
+                    IssueDependency,
+                    IssueDependency.dependency_issue_id == Issue.id,
+                )
+                .where(IssueDependency.repository_id.in_(repository_ids))
+            )
+        else:
+            raise ValueError(f"Unknown issue list type: {issue_list_type}")
 
         filters = []
         if include_open:
@@ -124,6 +141,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
 
         res = await session.execute(statement)
         issues = res.scalars().unique().all()
+
         return issues
 
     async def list_issue_references(
@@ -145,6 +163,25 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         res = await session.execute(stmt)
         refs = res.scalars().unique().all()
         return refs
+
+    async def list_dependency_issues(
+        self,
+        session: AsyncSession,
+        issue: Issue,
+    ) -> Sequence[Issue]:
+        stmt = (
+            sql.select(Issue)
+            .join(
+                IssueDependency,
+                IssueDependency.dependency_issue_id == Issue.id,
+            )
+            .where(
+                IssueDependency.dependent_issue_id == issue.id,
+            )
+        )
+        res = await session.execute(stmt)
+        deps = res.scalars().unique().all()
+        return deps
 
 
 issue = IssueService(Issue)

@@ -6,6 +6,11 @@ from pydantic.generics import GenericModel
 from enum import Enum
 
 
+class IssueListType(str, Enum):
+    issues = "issues"
+    following = "following"
+
+
 class IssueStatus(str, Enum):
     backlog = "backlog"
     building = "building"
@@ -32,14 +37,17 @@ class RelationshipData(Schema):
 
 class Relationship(Schema):
     # TODO: links?
-    data: RelationshipData
+    data: RelationshipData | List[RelationshipData]
+
+
+IssueRelationship = dict[str, Relationship]
 
 
 class Entry(GenericModel, Generic[DataT]):
     type: str
     id: str | UUID
     attributes: DataT
-    relationships: List[Relationship] = []
+    relationships: IssueRelationship | None = None
 
 
 class ListResponse(GenericModel, Generic[DataT]):

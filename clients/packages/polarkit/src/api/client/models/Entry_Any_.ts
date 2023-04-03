@@ -8,6 +8,6 @@ export type Entry_Any_ = {
   type: string;
   id: string;
   attributes?: any;
-  relationships?: Array<Relationship>;
+  relationships?: Record<string, Relationship>;
 };
 

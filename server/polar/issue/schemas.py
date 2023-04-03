@@ -301,3 +301,11 @@ class IssueReferenceRead(Schema):
                     )
 
         raise Exception("unable to convert IssueReference to IssueReferenceRead")
+
+
+class IssueDependencyRead(Schema):
+    dependent_issue_id: UUID
+    dependency_issue_id: UUID
+
+    class Config:
+        orm_mode = True

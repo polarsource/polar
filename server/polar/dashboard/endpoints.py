@@ -1,28 +1,33 @@
 from typing import Any, Dict, List, Sequence, Set, Union
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
+import sqlalchemy
 
 from polar.dashboard.schemas import (
     Entry,
     IssueListResponse,
+    IssueListType,
+    IssueRelationship,
     IssueSortBy,
     IssueStatus,
     Relationship,
     RelationshipData,
 )
 from polar.enums import Platforms
-from polar.issue.schemas import IssueRead, IssueReferenceRead
+from polar.issue.schemas import IssueRead, IssueReferenceRead, IssueDependencyRead
 from polar.models.issue import Issue
+from polar.models.organization import Organization
 from polar.models.issue_reference import ReferenceType
 from polar.models.repository import Repository
 from polar.organization.schemas import OrganizationRead
 from polar.repository.schemas import RepositoryRead
 from polar.issue.service import issue
+from polar.organization.service import organization
 from polar.pledge.schemas import PledgeRead
 from polar.pledge.service import pledge
 from polar.repository.service import repository
 from polar.auth.dependencies import Auth
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import AsyncSession, get_db_session, sql
 
 router = APIRouter(tags=["dashboard"])
 
@@ -35,6 +40,7 @@ async def get_dashboard(
     platform: Platforms,
     org_name: str,
     repo_name: Union[str, None] = Query(default=None),
+    issue_list_type: IssueListType = IssueListType.issues,
     status: Union[List[IssueStatus], None] = Query(default=None),
     q: Union[str, None] = Query(default=None),
     sort: Union[IssueSortBy, None] = Query(default=None),
@@ -87,9 +93,10 @@ async def get_dashboard(
         sort = IssueSortBy.newest
 
     # get issues
-    issues = await issue.list_by_repository_and_status(
+    issues = await issue.list_by_repository_type_and_status(
         session,
         [r.id for r in repositories],
+        issue_list_type=issue_list_type,
         text=q,
         include_open=include_open,
         include_closed=include_closed,
@@ -97,55 +104,87 @@ async def get_dashboard(
         sort_by_newest=sort == IssueSortBy.newest,
     )
 
-    # add org to included
-    included: List[Entry[Any]] = [
-        Entry(
-            id=auth.organization.id,
-            type="organization",
-            attributes=OrganizationRead.from_orm(auth.organization),
-        ),
-    ]
-
-    # add repos to included
-    for r in repositories:
-        included.append(
-            Entry(
-                id=r.id,
-                type="repository",
-                attributes=RepositoryRead.from_orm(r),
+    issue_organizations = (
+        (
+            await session.execute(
+                sql.select(Organization).where(
+                    Organization.id.in_([i.organization_id for i in issues])
+                )
             )
         )
+        .scalars()
+        .unique()
+        .all()
+    )
+    issue_repositories = (
+        (
+            await session.execute(
+                sql.select(Repository).where(
+                    Repository.id.in_([i.repository_id for i in issues])
+                )
+            )
+        )
+        .scalars()
+        .unique()
+        .all()
+    )
+
+    included: dict[str, Entry[Any]] = {}
 
     # get pledges
     issue_ids = [i.id for i in issues]
     pledges = await pledge.get_by_issue_ids(session, issue_ids)
 
     # start building issue relationships with pledges
-    issue_relationships: Dict[UUID, List[Relationship]] = {}
+    issue_relationships: Dict[UUID, IssueRelationship] = {}
+
+    def issue_relationship(
+        issue_id: UUID, key: str, default: RelationshipData | List[RelationshipData]
+    ) -> Relationship:
+        return issue_relationships.setdefault(issue_id, IssueRelationship()).setdefault(
+            key, Relationship(data=default)
+        )
+
+    # Add repository and organization relationships to issues, and to included data
     for i in issues:
-        issue_relationships[i.id] = []
+        # add org to included
+        included[str(i.organization_id)] = Entry(
+            id=i.organization_id,
+            type="organization",
+            attributes=OrganizationRead.from_orm(
+                [o for o in issue_organizations if o.id == i.organization_id][0]
+            ),
+        )
+
+        # add repos to included
+        included[str(i.repository_id)] = Entry(
+            id=i.repository_id,
+            type="repository",
+            attributes=RepositoryRead.from_orm(
+                [r for r in issue_repositories if r.id == i.repository_id][0]
+            ),
+        )
+
+        org_data = RelationshipData(type="organization", id=i.organization_id)
+        issue_relationship(i.id, "organization", org_data)
+
+        if i.repository_id:
+            issue_relationship(
+                i.id,
+                "repository",
+                RelationshipData(type="repository", id=i.repository_id),
+            )
 
     # add pledges to included
     for pled in pledges:
-        included.append(
-            Entry(id=pled.id, type="pledge", attributes=PledgeRead.from_db(pled))
+        included[str(pled.id)] = Entry(
+            id=pled.id, type="pledge", attributes=PledgeRead.from_db(pled)
         )
+
         # inject relationships
-        rel = Relationship(data=RelationshipData(type="pledge", id=pled.id))
-        issue_relationships[pled.issue_id].append(rel)
-
-    # Add repository and organization relationships to issues
-    for i in issues:
-        orgRel = Relationship(
-            data=RelationshipData(type="organization", id=auth.organization.id)
-        )
-        issue_relationships[i.id].append(orgRel)
-
-        if i.repository_id:
-            repoRel = Relationship(
-                data=RelationshipData(type="repository", id=i.repository_id)
-            )
-            issue_relationships[i.id].append(repoRel)
+        pledge_relationship = issue_relationship(pled.issue_id, "pledges", [])
+        if isinstance(pledge_relationship.data, list):  # it always is
+            pledge_relationship.data.append(RelationshipData(type="pledge", id=pled.id))
 
     issues_with_prs: Set[UUID] = set()
 
@@ -153,17 +192,16 @@ async def get_dashboard(
     for i in issues:
         refs = await issue.list_issue_references(session, i)
         for ref in refs:
-            entry: Entry[IssueReferenceRead] = Entry(
+            ref_entry: Entry[IssueReferenceRead] = Entry(
                 id=ref.external_id,
                 type="reference",
                 attributes=IssueReferenceRead.from_model(ref),
             )
-            included.append(entry)
+            included[ref.external_id] = ref_entry
 
-            rel = Relationship(
-                data=RelationshipData(type="reference", id=ref.external_id)
-            )
-            issue_relationships[i.id].append(rel)
+            ir = issue_relationship(ref.issue_id, "references", [])
+            if isinstance(ir.data, list):  # it always is
+                ir.data.append(RelationshipData(type="reference", id=ref.external_id))
 
             if (
                 ref.reference_type == ReferenceType.PULL_REQUEST
@@ -204,9 +242,9 @@ async def get_dashboard(
                 id=i.id,
                 type="issue",
                 attributes=IssueRead.from_orm(i),
-                relationships=issue_relationships.get(i.id, []),
+                relationships=issue_relationships.get(i.id, None),
             )
             for i in issues
         ],
-        included=included,
+        included=list(included.values()),
     )

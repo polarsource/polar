@@ -1,6 +1,13 @@
-const Tab = (props: { active: boolean; children: React.ReactNode }) => {
+import { MouseEventHandler } from 'react'
+
+const Tab = (props: {
+  active: boolean
+  children: React.ReactNode
+  onClick?: MouseEventHandler
+}) => {
   return (
     <div
+      onClick={props.onClick}
       className={
         'cursor-pointer rounded-md py-1 px-3 text-sm transition-all duration-100 ' +
         (props.active

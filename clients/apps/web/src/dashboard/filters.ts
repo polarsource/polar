@@ -1,8 +1,8 @@
-import { IssueSortBy } from 'polarkit/api/client'
+import { IssueListType, IssueSortBy } from 'polarkit/api/client'
 
 export type DashboardFilters = {
   q: string
-  tab: 'issues' | 'contributing' | 'following'
+  tab: IssueListType
   statusBacklog: boolean
   statusBuild: boolean
   statusPullRequest: boolean

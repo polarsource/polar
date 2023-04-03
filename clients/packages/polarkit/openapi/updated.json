@@ -1421,6 +1421,19 @@
                     {
                         "required": false,
                         "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/IssueListType"
+                                }
+                            ],
+                            "default": "issues"
+                        },
+                        "name": "issue_list_type",
+                        "in": "query"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
                             "type": "array",
                             "items": {
                                 "$ref": "#/components/schemas/IssueStatus"
@@ -1832,11 +1845,10 @@
                     },
                     "relationships": {
                         "title": "Relationships",
-                        "type": "array",
-                        "items": {
+                        "type": "object",
+                        "additionalProperties": {
                             "$ref": "#/components/schemas/Relationship"
-                        },
-                        "default": []
+                        }
                     }
                 }
             },
@@ -1870,11 +1882,10 @@
                     },
                     "relationships": {
                         "title": "Relationships",
-                        "type": "array",
-                        "items": {
+                        "type": "object",
+                        "additionalProperties": {
                             "$ref": "#/components/schemas/Relationship"
-                        },
-                        "default": []
+                        }
                     }
                 }
             },
@@ -2048,6 +2059,15 @@
                         "default": []
                     }
                 }
+            },
+            "IssueListType": {
+                "title": "IssueListType",
+                "enum": [
+                    "issues",
+                    "following"
+                ],
+                "type": "string",
+                "description": "An enumeration."
             },
             "IssueRead": {
                 "title": "IssueRead",
@@ -2912,7 +2932,18 @@
                 "type": "object",
                 "properties": {
                     "data": {
-                        "$ref": "#/components/schemas/RelationshipData"
+                        "title": "Data",
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/RelationshipData"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/RelationshipData"
+                                }
+                            }
+                        ]
                     }
                 }
             },

@@ -16,6 +16,14 @@ from polar.models.pull_request import PullRequest
 class IssueDependency(TimestampedModel):
     __tablename__ = "issue_dependencies"
 
+    organization_id: Mapped[UUID] = mapped_column(
+        PostgresUUID, ForeignKey("organizations.id"), nullable=False
+    )
+
+    repository_id: Mapped[UUID] = mapped_column(
+        PostgresUUID, ForeignKey("repositories.id"), nullable=False
+    )
+
     dependent_issue_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
         ForeignKey("issues.id"),

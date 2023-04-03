@@ -46,7 +46,7 @@ const RepositoryCard = ({
           {repository.description}
         </p>
         <div className="flex flex-row items-center justify-center space-x-4">
-          {repository.stars && (
+          {typeof repository.stars === 'number' && (
             <p className="inline-flex items-center space-x-1 text-sm text-gray-600">
               <span className="font-medium">{abbrStars(repository.stars)}</span>
               <span>stars</span>

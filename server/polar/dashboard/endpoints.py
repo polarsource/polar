@@ -114,8 +114,12 @@ async def get_dashboard(
     # start building issue relationships with pledges
     issue_relationships: Dict[UUID, IssueRelationship] = {}
 
-    def get_issue_relationship(issue_id: UUID) -> IssueRelationship:
-        return issue_relationships.setdefault(issue_id, IssueRelationship())
+    def issue_relationship(
+        issue_id: UUID, key: str, default: RelationshipData | List[RelationshipData]
+    ) -> Relationship:
+        return issue_relationships.setdefault(issue_id, IssueRelationship()).setdefault(
+            key, Relationship(data=default)
+        )
 
     # add pledges to included
     for pled in pledges:
@@ -123,24 +127,21 @@ async def get_dashboard(
             Entry(id=pled.id, type="pledge", attributes=PledgeRead.from_orm(pled))
         )
         # inject relationships
-        rel = Relationship(data=RelationshipData(type="pledge", id=pled.id))
-        pledge_relationship = get_issue_relationship(pled.issue_id)
-        if not pledge_relationship.pledges:
-            pledge_relationship.pledges = []
-        pledge_relationship.pledges.append(rel)
+        pledge_relationship = issue_relationship(pled.issue_id, "pledges", [])
+        if isinstance(pledge_relationship.data, list):  # it always is
+            pledge_relationship.data.append(RelationshipData(type="pledge", id=pled.id))
 
     # Add repository and organization relationships to issues
     for i in issues:
-        orgRel = Relationship(
-            data=RelationshipData(type="organization", id=auth.organization.id)
-        )
-        get_issue_relationship(i.id).organization = orgRel
+        org_data = RelationshipData(type="organization", id=auth.organization.id)
+        issue_relationship(i.id, "organization", org_data)
 
         if i.repository_id:
-            repoRel = Relationship(
-                data=RelationshipData(type="repository", id=i.repository_id)
+            issue_relationship(
+                i.id,
+                "repository",
+                RelationshipData(type="repository", id=i.repository_id),
             )
-            get_issue_relationship(i.id).repository = repoRel
 
     issues_with_prs: Set[UUID] = set()
 
@@ -155,11 +156,9 @@ async def get_dashboard(
             )
             included.append(ref_entry)
 
-            rel = Relationship(data=RelationshipData(type="reference", id=ref_entry.id))
-            reference_relationship = get_issue_relationship(ref.issue_id)
-            if not reference_relationship.references:
-                reference_relationship.references = []
-            reference_relationship.references.append(rel)
+            ir = issue_relationship(ref.issue_id, "references", [])
+            if isinstance(ir.data, list):  # it always is
+                ir.data.append(RelationshipData(type="reference", id=ref.external_id))
 
             if (
                 ref.reference_type == ReferenceType.PULL_REQUEST
@@ -178,11 +177,10 @@ async def get_dashboard(
             )
             included.append(dep_entry)
 
-            rel = Relationship(data=RelationshipData(type="issue", id=dep.id))
-            dependency_relationship = get_issue_relationship(i.id)
-            if not dependency_relationship.dependencies:
-                dependency_relationship.dependencies = []
-            dependency_relationship.dependencies.append(rel)
+            dep_data = RelationshipData(type="issue", id=dep.id)
+            dependency_relationship = issue_relationship(i.id, "dependencies", [])
+            if isinstance(dependency_relationship.data, list):  # it always is
+                dependency_relationship.data.append(dep_data)
 
     def issue_progress(issue: Issue) -> IssueStatus:
         if issue.issue_closed_at:

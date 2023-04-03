@@ -29,12 +29,7 @@ class Relationship(Schema):
     data: RelationshipData | List[RelationshipData]
 
 
-class IssueRelationship(Schema):
-    pledges: List[Relationship] | None = None
-    organization: Relationship | None = None
-    repository: Relationship | None = None
-    references: List[Relationship] | None = None
-    dependencies: List[Relationship] | None = None
+IssueRelationship = dict[str, Relationship]
 
 
 class Entry(GenericModel, Generic[DataT]):

@@ -1823,7 +1823,11 @@
                         "title": "Attributes"
                     },
                     "relationships": {
-                        "$ref": "#/components/schemas/IssueRelationship"
+                        "title": "Relationships",
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/Relationship"
+                        }
                     }
                 }
             },
@@ -1856,7 +1860,11 @@
                         "$ref": "#/components/schemas/IssueRead"
                     },
                     "relationships": {
-                        "$ref": "#/components/schemas/IssueRelationship"
+                        "title": "Relationships",
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/Relationship"
+                        }
                     }
                 }
             },
@@ -2262,39 +2270,6 @@
                 ],
                 "type": "string",
                 "description": "An enumeration."
-            },
-            "IssueRelationship": {
-                "title": "IssueRelationship",
-                "type": "object",
-                "properties": {
-                    "pledges": {
-                        "title": "Pledges",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/Relationship"
-                        }
-                    },
-                    "organization": {
-                        "$ref": "#/components/schemas/Relationship"
-                    },
-                    "repository": {
-                        "$ref": "#/components/schemas/Relationship"
-                    },
-                    "references": {
-                        "title": "References",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/Relationship"
-                        }
-                    },
-                    "dependencies": {
-                        "title": "Dependencies",
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/Relationship"
-                        }
-                    }
-                }
             },
             "IssueStatus": {
                 "title": "IssueStatus",

@@ -2,12 +2,12 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import type { IssueRelationship } from './IssueRelationship';
+import type { Relationship } from './Relationship';
 
 export type Entry_Any_ = {
   type: string;
   id: string;
   attributes?: any;
-  relationships?: IssueRelationship;
+  relationships?: Record<string, Relationship>;
 };
 

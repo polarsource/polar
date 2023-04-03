@@ -11,11 +11,11 @@ export class NotificationsService {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
-   * Get Repository Pull Requests
+   * Get
    * @returns NotificationRead Successful Response
    * @throws ApiError
    */
-  public getRepositoryPullRequests(): CancelablePromise<Array<NotificationRead>> {
+  public get(): CancelablePromise<Array<NotificationRead>> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/notifications',

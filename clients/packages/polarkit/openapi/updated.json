@@ -1719,15 +1719,15 @@
                 "tags": [
                     "notifications"
                 ],
-                "summary": "Get Repository Pull Requests",
-                "operationId": "get_repository_pull_requests",
+                "summary": "Get",
+                "operationId": "get",
                 "responses": {
                     "200": {
                         "description": "Successful Response",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "title": "Response Notifications:Get Repository Pull Requests",
+                                    "title": "Response Notifications:Get",
                                     "type": "array",
                                     "items": {
                                         "$ref": "#/components/schemas/NotificationRead"
@@ -2323,9 +2323,20 @@
                         "format": "uuid"
                     },
                     "type": {
-                        "$ref": "#/components/schemas/Type"
+                        "$ref": "#/components/schemas/NotificationType"
                     }
                 }
+            },
+            "NotificationType": {
+                "title": "NotificationType",
+                "enum": [
+                    "issue_pledge_created",
+                    "issue_pledged_branch_created",
+                    "issue_pledged_pull_request_created",
+                    "issue_pledged_pull_request_merged"
+                ],
+                "type": "string",
+                "description": "An enumeration."
             },
             "OrganizationRead": {
                 "title": "OrganizationRead",
@@ -3151,17 +3162,6 @@
                     "active",
                     "suspended"
                 ],
-                "description": "An enumeration."
-            },
-            "Type": {
-                "title": "Type",
-                "enum": [
-                    "issue_pledge_created",
-                    "issue_pledged_branch_created",
-                    "issue_pledged_pull_request_created",
-                    "issue_pledged_pull_request_merged"
-                ],
-                "type": "string",
                 "description": "An enumeration."
             },
             "UserRead": {

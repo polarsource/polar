@@ -210,9 +210,6 @@ class OrganizationService(
         else:
             issue_obj = await issue_service.get_by_id(
                 session,
-                platform=platform,
-                organization_id=organization.id,
-                repository_id=repository.id,
                 id=issue,
             )
         if not issue_obj:

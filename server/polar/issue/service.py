@@ -35,16 +35,16 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
     async def get_by_id(
         self,
         session: AsyncSession,
-        platform: Platforms,
-        organization_id: UUID,
-        repository_id: UUID,
+        # platform: Platforms,
+        # organization_id: UUID,
+        # repository_id: UUID,
         id: UUID,
     ) -> Issue | None:
         return await self.get_by(
             session,
-            platform=platform,
-            organization_id=organization_id,
-            repository_id=repository_id,
+            # platform=platform,
+            # organization_id=organization_id,
+            # repository_id=repository_id,
             id=id,
         )
 

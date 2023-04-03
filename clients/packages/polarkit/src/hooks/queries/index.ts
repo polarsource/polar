@@ -1,4 +1,5 @@
 import { useMutation, useQuery, UseQueryResult } from '@tanstack/react-query'
+import { IssueListType } from 'api/client/models/IssueListType'
 import {
   ApiError,
   IssueSortBy,
@@ -127,6 +128,7 @@ export const useRepositoryPledges = (repoOwner: string, repoName: string) =>
 export const useDashboard = (
   orgName: string,
   repoName?: string,
+  tab?: IssueListType,
   q?: string,
   status?: Array<IssueStatus>,
   sort?: IssueSortBy,
@@ -137,6 +139,7 @@ export const useDashboard = (
       'repo',
       orgName,
       repoName,
+      tab,
       q,
       JSON.stringify(status), // Array as cache key,
       sort,
@@ -146,6 +149,7 @@ export const useDashboard = (
         platform: Platforms.GITHUB,
         orgName: orgName,
         repoName: repoName,
+        issueListType: tab,
         q: q,
         status: status,
         sort: sort,

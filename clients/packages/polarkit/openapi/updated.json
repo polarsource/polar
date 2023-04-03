@@ -1421,6 +1421,19 @@
                     {
                         "required": false,
                         "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/IssueListType"
+                                }
+                            ],
+                            "default": "issues"
+                        },
+                        "name": "issue_list_type",
+                        "in": "query"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
                             "type": "array",
                             "items": {
                                 "$ref": "#/components/schemas/IssueStatus"
@@ -2046,6 +2059,15 @@
                         "default": []
                     }
                 }
+            },
+            "IssueListType": {
+                "title": "IssueListType",
+                "enum": [
+                    "issues",
+                    "following"
+                ],
+                "type": "string",
+                "description": "An enumeration."
             },
             "IssueRead": {
                 "title": "IssueRead",

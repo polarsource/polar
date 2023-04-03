@@ -6,6 +6,11 @@ from pydantic.generics import GenericModel
 from enum import Enum
 
 
+class IssueListType(str, Enum):
+    issues = "issues"
+    following = "following"
+
+
 class IssueStatus(str, Enum):
     backlog = "backlog"
     building = "building"

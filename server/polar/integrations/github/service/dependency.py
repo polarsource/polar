@@ -141,7 +141,10 @@ class GitHubIssueDependenciesService:
                 )
 
                 issue_dependency = IssueDependency(
-                    dependent_issue_id=issue.id, dependency_issue_id=dependency_issue.id
+                    organization_id=org.id,
+                    repository_id=repo.id,
+                    dependent_issue_id=issue.id,
+                    dependency_issue_id=dependency_issue.id,
                 )
                 await self.create_dependency(session, issue_dependency)
 

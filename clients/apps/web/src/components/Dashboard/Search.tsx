@@ -12,6 +12,10 @@ const Search = (props: {
 }) => {
   const { filters, onSetFilters } = props
 
+  const onTabChange = (tab: 'issues' | 'contributing' | 'following') => {
+    onSetFilters({ ...filters, tab })
+  }
+
   const onQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
     event.preventDefault()
     event.stopPropagation()
@@ -48,9 +52,19 @@ const Search = (props: {
   return (
     <div className="flex w-full flex-col space-y-2">
       <Tabs>
-        <Tab active={true}>Issues</Tab>
+        <Tab
+          active={filters.tab === 'issues'}
+          onClick={() => onTabChange('issues')}
+        >
+          Issues
+        </Tab>
         <Tab active={false}>Contributing</Tab>
-        <Tab active={false}>Following</Tab>
+        <Tab
+          active={filters.tab === 'following'}
+          onClick={() => onTabChange('following')}
+        >
+          Following
+        </Tab>
       </Tabs>
       <form className="space-y-2" onSubmit={onSubmit}>
         <div>

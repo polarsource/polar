@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from polar.dashboard.schemas import (
     Entry,
     IssueListResponse,
+    IssueListType,
     IssueRelationship,
     IssueSortBy,
     IssueStatus,
@@ -36,6 +37,7 @@ async def get_dashboard(
     platform: Platforms,
     org_name: str,
     repo_name: Union[str, None] = Query(default=None),
+    issue_list_type: IssueListType = IssueListType.issues,
     status: Union[List[IssueStatus], None] = Query(default=None),
     q: Union[str, None] = Query(default=None),
     sort: Union[IssueSortBy, None] = Query(default=None),
@@ -88,9 +90,10 @@ async def get_dashboard(
         sort = IssueSortBy.newest
 
     # get issues
-    issues = await issue.list_by_repository_and_status(
+    issues = await issue.list_by_repository_type_and_status(
         session,
         [r.id for r in repositories],
+        issue_list_type=issue_list_type,
         text=q,
         include_open=include_open,
         include_closed=include_closed,

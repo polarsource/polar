@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { IssueListResponse } from '../models/IssueListResponse';
+import type { IssueListType } from '../models/IssueListType';
 import type { IssueSortBy } from '../models/IssueSortBy';
 import type { IssueStatus } from '../models/IssueStatus';
 import type { Platforms } from '../models/Platforms';
@@ -22,6 +23,7 @@ export class DashboardService {
     platform,
     orgName,
     repoName,
+    issueListType,
     status,
     q,
     sort,
@@ -29,6 +31,7 @@ export class DashboardService {
     platform: Platforms,
     orgName: string,
     repoName?: string,
+    issueListType?: IssueListType,
     status?: Array<IssueStatus>,
     q?: string,
     sort?: IssueSortBy,
@@ -42,6 +45,7 @@ export class DashboardService {
       },
       query: {
         'repo_name': repoName,
+        'issue_list_type': issueListType,
         'status': status,
         'q': q,
         'sort': sort,

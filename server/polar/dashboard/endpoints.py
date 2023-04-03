@@ -101,24 +101,7 @@ async def get_dashboard(
         sort_by_newest=sort == IssueSortBy.newest,
     )
 
-    # add org to included
-    included: List[Entry[Any]] = [
-        Entry(
-            id=auth.organization.id,
-            type="organization",
-            attributes=OrganizationRead.from_orm(auth.organization),
-        ),
-    ]
-
-    # add repos to included
-    for r in repositories:
-        included.append(
-            Entry(
-                id=r.id,
-                type="repository",
-                attributes=RepositoryRead.from_orm(r),
-            )
-        )
+    included: List[Entry[Any]] = []
 
     # get pledges
     issue_ids = [i.id for i in issues]
@@ -144,9 +127,27 @@ async def get_dashboard(
         if isinstance(pledge_relationship.data, list):  # it always is
             pledge_relationship.data.append(RelationshipData(type="pledge", id=pled.id))
 
-    # Add repository and organization relationships to issues
+    # Add repository and organization relationships to issues, and to included data
     for i in issues:
-        org_data = RelationshipData(type="organization", id=auth.organization.id)
+        # add org to included
+        included.append(
+            Entry(
+                id=i.organization_id,  # TODO: unique
+                type="organization",
+                attributes=OrganizationRead.from_orm(auth.organization),
+            )
+        )
+
+        # add repos to included
+        included.append(
+            Entry(
+                id=i.repository_id,  # TODO: unique
+                type="repository",
+                attributes=RepositoryRead.from_orm(repositories[0]),
+            )
+        )
+
+        org_data = RelationshipData(type="organization", id=i.organization_id)
         issue_relationship(i.id, "organization", org_data)
 
         if i.repository_id:

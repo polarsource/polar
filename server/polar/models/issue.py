@@ -38,14 +38,16 @@ class IssueFields:
     external_id: Mapped[int] = mapped_column(Integer, nullable=False)
 
     @declared_attr
-    def organization_id(cls) -> MappedColumn[UUID | None]:
+    def organization_id(cls) -> MappedColumn[UUID]:
         return mapped_column(
-            PostgresUUID, ForeignKey("organizations.id"), nullable=True
+            PostgresUUID, ForeignKey("organizations.id"), nullable=False
         )
 
     @declared_attr
-    def repository_id(cls) -> MappedColumn[UUID | None]:
-        return mapped_column(PostgresUUID, ForeignKey("repositories.id"), nullable=True)
+    def repository_id(cls) -> MappedColumn[UUID]:
+        return mapped_column(
+            PostgresUUID, ForeignKey("repositories.id"), nullable=False
+        )
 
     number: Mapped[int] = mapped_column(Integer, nullable=False)
 

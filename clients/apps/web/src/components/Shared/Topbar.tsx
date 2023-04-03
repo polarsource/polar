@@ -1,5 +1,6 @@
 import { CubeIcon } from '@heroicons/react/24/outline'
 import { classNames } from 'polarkit/utils'
+import Popover from '../Notifications/Popover'
 import Profile from './Profile'
 
 const Topbar = (props: {
@@ -35,6 +36,7 @@ const Topbar = (props: {
         )}
 
         <div className="flex flex-shrink-0 justify-end space-x-4 md:flex-1">
+          <Popover />
           <Profile />
         </div>
       </div>

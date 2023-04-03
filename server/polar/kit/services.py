@@ -34,12 +34,6 @@ class ResourceService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         query = sql.select(self.model).filter_by(**clauses)
         return await self.get_by_query(session, query)
 
-    async def get_by_criteria(
-        self, session: AsyncSession, criteria: Any
-    ) -> ModelType | None:
-        query = sql.select(self.model).filter(criteria)
-        return await self.get_by_query(session, query)
-
     async def get_by_query(
         self, session: AsyncSession, query: sql.Select
     ) -> ModelType | None:

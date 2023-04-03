@@ -1,7 +1,7 @@
 import { MagnifyingGlassIcon } from '@heroicons/react/20/solid'
 import { DashboardFilters } from 'dashboard/filters'
 import { IssueSortBy } from 'polarkit/api/client'
-import { ChangeEvent, Dispatch, SetStateAction } from 'react'
+import { ChangeEvent, Dispatch, FormEvent, SetStateAction } from 'react'
 import Checkbox from './Checkbox'
 import Tab from './Tab'
 import Tabs from './Tabs'
@@ -13,16 +13,26 @@ const Search = (props: {
   const { filters, onSetFilters } = props
 
   const onQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+
     // if not set, set to relevance
     const sort = filters.sort || IssueSortBy.RELEVANCE
     onSetFilters({ ...filters, q: event.target.value, sort })
   }
 
   const onStatusChange = (event: ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+
     const id = event.target.id
     let f = { ...filters }
     f[id] = event.target.checked
     onSetFilters(f)
+  }
+
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
   }
 
   const resetStatus = () => {
@@ -42,7 +52,7 @@ const Search = (props: {
         <Tab active={false}>Contributing</Tab>
         <Tab active={false}>Following</Tab>
       </Tabs>
-      <form className="space-y-2">
+      <form className="space-y-2" onSubmit={onSubmit}>
         <div>
           <div className="relative mt-2 rounded-md shadow-sm">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">

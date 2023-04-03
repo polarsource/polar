@@ -21,7 +21,7 @@ class IssueDependency(TimestampedModel):
     )
 
     repository_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("repository.id"), nullable=False
+        PostgresUUID, ForeignKey("repositories.id"), nullable=False
     )
 
     dependent_issue_id: Mapped[UUID] = mapped_column(

@@ -102,5 +102,13 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         pledge.transfer_id = transfer_id
         await pledge.save(session=session)
 
+    async def get_by_payment_id(
+        self, session: AsyncSession, payment_id: str
+    ) -> Pledge | None:
+        return await Pledge.find_by(
+            session=session,
+            payment_id=payment_id,
+        )
+
 
 pledge = PledgeService(Pledge)

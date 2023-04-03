@@ -7,6 +7,7 @@ from polar.auth.dependencies import Auth, current_active_user
 from polar.models import Pledge, Repository
 from polar.exceptions import ResourceNotFound
 from polar.enums import Platforms
+from polar.notifications.schemas import NotificationType
 from polar.postgres import AsyncSession, get_db_session
 
 from polar.integrations.stripe.service import stripe
@@ -14,6 +15,10 @@ from polar.organization.schemas import OrganizationRead
 from polar.organization.service import organization as organization_service
 from polar.repository.schemas import RepositoryRead
 from polar.issue.schemas import IssueRead
+from polar.notifications.service import (
+    PartialNotification,
+    notifications as notification_service,
+)
 
 from .schemas import (
     PledgeCreate,
@@ -242,6 +247,17 @@ async def create_pledge_as_org(
         state=State.created,  # created == polar has received the money
         payment_id=payment_intent.id,
         by_organization_id=peldge_as_org.id,
+    )
+
+    # Trigger notifications
+    await notification_service.create_for_issue(
+        session,
+        issue,
+        NotificationType.ISSUE_PLEDGE_CREATED,
+        notif=PartialNotification(
+            issue_id=issue.id,
+            pledge_id=created.id,
+        ),
     )
 
     ret = PledgeMutationResponse.from_orm(created)

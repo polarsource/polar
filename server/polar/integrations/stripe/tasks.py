@@ -1,18 +1,36 @@
 import stripe
+from polar.notifications.schemas import NotificationType
 
 from polar.worker import JobContext, task
 from polar.postgres import AsyncSessionLocal
-from polar.models import Pledge
 from polar.pledge.schemas import State
+from polar.notifications.service import (
+    PartialNotification,
+    notifications as notification_service,
+)
+from polar.issue.service import issue as issue_service
+from polar.pledge.service import pledge as pledge_service
 
 
 @task("stripe.webhook.payment_intent.succeeded")
 async def payment_intent_succeeded(ctx: JobContext, event: stripe.Event) -> None:
     async with AsyncSessionLocal() as session:
-        print(event)
-        pledge = await Pledge.find_by(
-            session=session, payment_id=event["data"]["object"]["id"]
+        pledge = await pledge_service.get_by_payment_id(
+            session, event["data"]["object"]["id"]
         )
         if pledge and pledge.state == State.initiated:
             pledge.state = State.created
             await pledge.save(session=session)
+
+            issue = await issue_service.get_by_id(session, pledge.issue_id)
+            if issue:
+                # Trigger notifications
+                await notification_service.create_for_issue(
+                    session,
+                    issue,
+                    NotificationType.ISSUE_PLEDGE_CREATED,
+                    notif=PartialNotification(
+                        issue_id=issue.id,
+                        pledge_id=pledge.id,
+                    ),
+                )

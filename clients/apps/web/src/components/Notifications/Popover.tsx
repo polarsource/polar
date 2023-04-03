@@ -1,12 +1,15 @@
 import { BellIcon } from '@heroicons/react/24/outline'
+import { useNotifications } from 'polarkit/hooks'
 import { useState } from 'react'
 
 const Popover = () => {
-  const [show, setShow] = useState(false)
+  const [show, setShow] = useState(true)
 
   const clickBell = () => {
     setShow(!show)
   }
+
+  const notifs = useNotifications()
 
   return (
     <>
@@ -29,6 +32,8 @@ const Popover = () => {
               <div className="mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white"></div>
               <div className="w-full max-w-md">
                 <div className="pointer-events-auto w-full  overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                  {JSON.stringify(notifs.data)}
+
                   <PledgePayout />
                   <PledgePayout />
                   <PledgePayout />

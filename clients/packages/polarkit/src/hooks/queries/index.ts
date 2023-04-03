@@ -238,3 +238,8 @@ export const useOrganizationSetDefaultPaymentMethod = () =>
       )
     },
   })
+
+export const useNotifications = () =>
+  useQuery(['notifications'], () => api.notifications.get(), {
+    retry: defaultRetry,
+  })

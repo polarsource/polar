@@ -1,6 +1,6 @@
 import { MagnifyingGlassIcon } from '@heroicons/react/20/solid'
 import { DashboardFilters } from 'dashboard/filters'
-import { IssueSortBy } from 'polarkit/api/client'
+import { IssueListType, IssueSortBy } from 'polarkit/api/client'
 import { ChangeEvent, Dispatch, FormEvent, SetStateAction } from 'react'
 import Checkbox from './Checkbox'
 import Tab from './Tab'
@@ -12,7 +12,7 @@ const Search = (props: {
 }) => {
   const { filters, onSetFilters } = props
 
-  const onTabChange = (tab: 'issues' | 'contributing' | 'following') => {
+  const onTabChange = (tab: IssueListType) => {
     onSetFilters({ ...filters, tab })
   }
 
@@ -53,15 +53,15 @@ const Search = (props: {
     <div className="flex w-full flex-col space-y-2">
       <Tabs>
         <Tab
-          active={filters.tab === 'issues'}
-          onClick={() => onTabChange('issues')}
+          active={filters.tab === IssueListType.ISSUES}
+          onClick={() => onTabChange(IssueListType.ISSUES)}
         >
           Issues
         </Tab>
         <Tab active={false}>Contributing</Tab>
         <Tab
-          active={filters.tab === 'following'}
-          onClick={() => onTabChange('following')}
+          active={filters.tab === IssueListType.FOLLOWING}
+          onClick={() => onTabChange(IssueListType.FOLLOWING)}
         >
           Following
         </Tab>

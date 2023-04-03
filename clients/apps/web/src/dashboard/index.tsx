@@ -1,13 +1,17 @@
 import DashboardLayout from 'components/Layout/DashboardLayout'
 import { useRouter } from 'next/router'
-import { type OrganizationRead, type RepositoryRead } from 'polarkit/api/client'
+import {
+  IssueListType,
+  type OrganizationRead,
+  type RepositoryRead,
+} from 'polarkit/api/client'
 import { requireAuth, useSSE, useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import React, { useEffect, useState } from 'react'
 import { DashboardFilters } from './filters'
 
 export const DefaultFilters: DashboardFilters = {
-  tab: 'issues',
+  tab: IssueListType.ISSUES,
   q: '',
   statusBacklog: true,
   statusBuild: true,

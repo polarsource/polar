@@ -2,10 +2,10 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import type { Type } from './Type';
+import type { NotificationType } from './NotificationType';
 
 export type NotificationRead = {
   id: string;
-  type: Type;
+  type: NotificationType;
 };
 

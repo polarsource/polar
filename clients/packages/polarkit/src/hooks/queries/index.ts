@@ -1,5 +1,4 @@
 import { useMutation, useQuery, UseQueryResult } from '@tanstack/react-query'
-import { IssueListType } from 'api/client/models/IssueListType'
 import {
   ApiError,
   IssueSortBy,
@@ -10,6 +9,7 @@ import {
 } from 'polarkit/api/client'
 import { api, queryClient } from '../../api'
 import { IssueListResponse, IssueStatus, Platforms } from '../../api/client'
+import { IssueListType } from '../../api/client/models/IssueListType'
 
 export type RepoListItem = RepositoryRead & {
   organization: OrganizationRead

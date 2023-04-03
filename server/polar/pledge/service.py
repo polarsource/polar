@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from uuid import UUID
-from typing import List, Sequence, Tuple
+from typing import List, Sequence
 
 import structlog
 
 from polar.kit.services import ResourceService
-from polar.models.organization import Organization
 from polar.models.user import User
 from polar.models.pledge import Pledge
 from polar.postgres import AsyncSession, sql

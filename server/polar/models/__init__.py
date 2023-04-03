@@ -10,6 +10,7 @@ from .user import OAuthAccount, User
 from .user_organization import UserOrganization
 from .issue_reference import IssueReference
 from .issue_dependency import IssueDependency
+from .notification import Notification
 
 __all__ = [
     "Model",
@@ -27,4 +28,5 @@ __all__ = [
     "Pledge",
     "IssueReference",
     "IssueDependency",
+    "Notification",
 ]

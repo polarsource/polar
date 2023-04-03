@@ -1,7 +1,10 @@
 from __future__ import annotations
 from uuid import UUID
+from polar.issue.schemas import IssueRead
 from polar.kit.schemas import Schema
 from enum import Enum
+
+from polar.pledge.schemas import PledgeRead
 
 
 class NotificationType(str, Enum):
@@ -16,6 +19,5 @@ class NotificationType(str, Enum):
 class NotificationRead(Schema):
     id: UUID
     type: NotificationType
-
-    class Config:
-        orm_mode = True
+    pledge: PledgeRead | None = None
+    issue: IssueRead | None = None

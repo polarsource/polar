@@ -1713,6 +1713,31 @@
                     }
                 }
             }
+        },
+        "/api/v1/notifications": {
+            "get": {
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Get Repository Pull Requests",
+                "operationId": "get_repository_pull_requests",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "title": "Response Notifications:Get Repository Pull Requests",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NotificationRead"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -2281,6 +2306,24 @@
                     "success": {
                         "title": "Success",
                         "type": "boolean"
+                    }
+                }
+            },
+            "NotificationRead": {
+                "title": "NotificationRead",
+                "required": [
+                    "id",
+                    "type"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "title": "Id",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/Type"
                     }
                 }
             },
@@ -3108,6 +3151,17 @@
                     "active",
                     "suspended"
                 ],
+                "description": "An enumeration."
+            },
+            "Type": {
+                "title": "Type",
+                "enum": [
+                    "issue_pledge_created",
+                    "issue_pledged_branch_created",
+                    "issue_pledged_pull_request_created",
+                    "issue_pledged_pull_request_merged"
+                ],
+                "type": "string",
                 "description": "An enumeration."
             },
             "UserRead": {

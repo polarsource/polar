@@ -3,6 +3,7 @@
 /* eslint-disable */
 import type { Platforms } from '../models/Platforms';
 import type { PledgeCreate } from '../models/PledgeCreate';
+import type { PledgeMutationResponse } from '../models/PledgeMutationResponse';
 import type { PledgeRead } from '../models/PledgeRead';
 import type { PledgeResources } from '../models/PledgeResources';
 import type { PledgeUpdate } from '../models/PledgeUpdate';
@@ -55,7 +56,7 @@ export class PledgesService {
 
   /**
    * Create Pledge
-   * @returns PledgeRead Successful Response
+   * @returns PledgeMutationResponse Successful Response
    * @throws ApiError
    */
   public createPledge({
@@ -70,7 +71,7 @@ export class PledgesService {
     repoName: string,
     number: number,
     requestBody: PledgeCreate,
-  }): CancelablePromise<PledgeRead> {
+  }): CancelablePromise<PledgeMutationResponse> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}/pledges',
@@ -90,7 +91,7 @@ export class PledgesService {
 
   /**
    * Update Pledge
-   * @returns PledgeRead Successful Response
+   * @returns PledgeMutationResponse Successful Response
    * @throws ApiError
    */
   public updatePledge({
@@ -107,7 +108,7 @@ export class PledgesService {
     number: number,
     pledgeId: string,
     requestBody: PledgeUpdate,
-  }): CancelablePromise<PledgeRead> {
+  }): CancelablePromise<PledgeMutationResponse> {
     return this.httpRequest.request({
       method: 'PATCH',
       url: '/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}/pledges/{pledge_id}',

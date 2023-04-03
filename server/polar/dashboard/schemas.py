@@ -13,6 +13,12 @@ class IssueStatus(str, Enum):
     completed = "completed"
 
 
+class IssueSortBy(str, Enum):
+    newest = "newest"
+    pledged_amount_desc = "pledged_amount_desc"
+    relevance = "relevance"  # best search match
+
+
 # JSON:API types below
 # TODO: Move this to a separate package if we use it elsewhere
 

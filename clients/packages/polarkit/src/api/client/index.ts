@@ -26,6 +26,7 @@ export type { IssueListResponse } from './models/IssueListResponse';
 export type { IssueRead } from './models/IssueRead';
 export type { IssueReferenceRead } from './models/IssueReferenceRead';
 export { IssueReferenceType } from './models/IssueReferenceType';
+export { IssueSortBy } from './models/IssueSortBy';
 export { IssueStatus } from './models/IssueStatus';
 export type { LoginResponse } from './models/LoginResponse';
 export type { LogoutResponse } from './models/LogoutResponse';
@@ -36,6 +37,7 @@ export type { OrganizationStripeCustomerRead } from './models/OrganizationStripe
 export type { PaymentMethod } from './models/PaymentMethod';
 export { Platforms } from './models/Platforms';
 export type { PledgeCreate } from './models/PledgeCreate';
+export type { PledgeMutationResponse } from './models/PledgeMutationResponse';
 export type { PledgeRead } from './models/PledgeRead';
 export type { PledgeResources } from './models/PledgeResources';
 export type { PledgeUpdate } from './models/PledgeUpdate';

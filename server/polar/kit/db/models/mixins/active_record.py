@@ -94,7 +94,7 @@ class ActiveRecordMixin(Generic[ModelType]):
     ) -> ModelType | None:
         query = sql.select(cls).filter_by(**params)
         res = await session.execute(query)
-        return res.scalars().one_or_none()
+        return res.scalars().unique().one_or_none()
 
     @classmethod
     async def create(

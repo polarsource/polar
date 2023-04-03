@@ -54,6 +54,7 @@ class Repository(RecordModel):
     topics: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=list)
 
     license: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    homepage: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
     repository_pushed_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
@@ -100,6 +101,7 @@ class Repository(RecordModel):
         "main_branch",
         "topics",
         "license",
+        "homepage",
         "repository_pushed_at",
         "repository_modified_at",
         "is_private",

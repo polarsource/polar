@@ -14,9 +14,8 @@ const IssuePledge = (props: { pledge: PledgeRead }) => {
         </span>
         <span className="text-sm text-gray-500">
           contributed by{' '}
-          <span className="border-2 border-pink-800 text-purple-500">
-            Google
-          </span>
+          {pledge.pledger_name && <span>{pledge.pledger_name}</span>}
+          {!pledge.pledger_name && <span>anonymous</span>}
         </span>
       </div>
 

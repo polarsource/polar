@@ -1,6 +1,5 @@
 import { InformationCircleIcon } from '@heroicons/react/24/outline'
 import { ArrowLeftIcon } from '@heroicons/react/24/solid'
-import RepoSelection from 'components/Dashboard/RepoSelection'
 import FakePullRequest from 'components/Settings/FakePullRequest'
 import PaymentSettings from 'components/Settings/PaymentSettings'
 import Spinner from 'components/Shared/Spinner'
@@ -8,6 +7,8 @@ import Topbar from 'components/Shared/Topbar'
 import { NextLayoutComponentType } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { OrganizationSettingsUpdate } from 'polarkit/api/client'
+import { RepoSelection } from 'polarkit/components'
 import {
   useOrganization,
   useOrganizationSettingsMutation,
@@ -65,35 +66,20 @@ const SettingsPage: NextLayoutComponentType = () => {
     )
 
     didFirstSet.current = true
-  }, [org])
+  }, [org, setCurrentOrgRepo])
 
   const mutation = useOrganizationSettingsMutation()
 
-  const [userChanged, setUserChanged] = useState(false)
   const [showDidSave, setShowDidSave] = useState(false)
 
   const didSaveTimeout = useRef<undefined | ReturnType<typeof setTimeout>>(
     undefined,
   )
 
-  const save = async () => {
-    if (!userChanged) {
-      return
-    }
-
+  const save = (set: OrganizationSettingsUpdate) => {
     mutation.mutate({
       orgName: handle,
-      body: {
-        funding_badge_show_amount: badgeShowRaised,
-        funding_badge_retroactive: badgeAddOldIssues,
-
-        email_notification_issue_receives_backing: emailIssueReceivesBacking,
-        email_notification_backed_issue_branch_created: emailIssueBranchCreated,
-        email_notification_backed_issue_pull_request_created:
-          emailPullRequestCreated,
-        email_notification_backed_issue_pull_request_merged:
-          emailPullRequestMerged,
-      },
+      body: { ...org, ...set },
     })
 
     setShowDidSave(true)
@@ -107,17 +93,6 @@ const SettingsPage: NextLayoutComponentType = () => {
       setShowDidSave(false)
     }, 2000)
   }
-
-  useEffect(() => {
-    save()
-  }, [
-    badgeShowRaised,
-    badgeAddOldIssues,
-    emailIssueReceivesBacking,
-    emailIssueBranchCreated,
-    emailPullRequestCreated,
-    emailPullRequestMerged,
-  ])
 
   // show spinner if still loading after 1s
   const [allowShowLoadingSpinner, setAllowShowLoadingSpinner] = useState(false)
@@ -186,7 +161,7 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={badgeAddOldIssues}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setBadgeAddOldIssues(e.target.checked)
-                  setUserChanged(true)
+                  save({ funding_badge_retroactive: e.target.checked })
                 }}
               />
               <Checkbox
@@ -195,7 +170,7 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={badgeShowRaised}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setBadgeShowRaised(e.target.checked)
-                  setUserChanged(true)
+                  save({ funding_badge_show_amount: e.target.checked })
                 }}
               />
             </Box>
@@ -213,7 +188,9 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={emailIssueReceivesBacking}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setEmailIssueReceivesBacking(e.target.checked)
-                  setUserChanged(true)
+                  save({
+                    email_notification_issue_receives_backing: e.target.checked,
+                  })
                 }}
               />
               <Checkbox
@@ -222,7 +199,10 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={emailIssueBranchCreated}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setEmailIssueBranchCreated(e.target.checked)
-                  setUserChanged(true)
+                  save({
+                    email_notification_backed_issue_branch_created:
+                      e.target.checked,
+                  })
                 }}
               />
               <Checkbox
@@ -231,7 +211,10 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={emailPullRequestCreated}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setEmailPullRequestCreated(e.target.checked)
-                  setUserChanged(true)
+                  save({
+                    email_notification_backed_issue_pull_request_created:
+                      e.target.checked,
+                  })
                 }}
               />
               <Checkbox
@@ -240,7 +223,10 @@ const SettingsPage: NextLayoutComponentType = () => {
                 isChecked={emailPullRequestMerged}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setEmailPullRequestMerged(e.target.checked)
-                  setUserChanged(true)
+                  save({
+                    email_notification_backed_issue_pull_request_merged:
+                      e.target.checked,
+                  })
                 }}
               />
             </Box>
@@ -261,6 +247,9 @@ const SettingsTopbar = () => {
   const router = useRouter()
   const { organization } = router.query
   const handle: string = typeof organization === 'string' ? organization : ''
+
+  const currentOrg = useStore((state) => state.currentOrg)
+
   return (
     <Topbar>
       {{
@@ -275,6 +264,7 @@ const SettingsTopbar = () => {
             <RepoSelection
               showRepositories={false}
               showConnectMore={false}
+              currentOrg={currentOrg}
               onSelectOrg={(org) => router.push(`/settings/${org}`)}
             />
             ,

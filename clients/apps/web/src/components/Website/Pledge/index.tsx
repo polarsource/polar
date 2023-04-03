@@ -1,8 +1,7 @@
 import { type PledgeResources } from 'polarkit/api/client'
+import { IssueCard, RepositoryCard } from 'polarkit/components/pledge'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
-import IssueCard from './IssueCard'
 import PledgeForm from './PledgeForm'
-import RepositoryCard from './RepositoryCard'
 
 const Pledge = ({
   organization,
@@ -20,7 +19,12 @@ const Pledge = ({
           padding={false}
         >
           <div className="w-1/2">
-            <IssueCard issue={issue} />
+            <IssueCard
+              issue={issue}
+              bg="bg-purple-50"
+              organization={organization}
+              repository={repository}
+            />
           </div>
           <div className="w-1/2 text-left">
             <div className="py-5 px-6">

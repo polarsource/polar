@@ -1,6 +1,7 @@
 import { useMutation, useQuery, UseQueryResult } from '@tanstack/react-query'
 import {
   ApiError,
+  IssueSortBy,
   OrganizationSettingsUpdate,
   type OrganizationRead,
   type RepositoryRead,
@@ -128,6 +129,7 @@ export const useDashboard = (
   repoName?: string,
   q?: string,
   status?: Array<IssueStatus>,
+  sort?: IssueSortBy,
 ): UseQueryResult<IssueListResponse> =>
   useQuery(
     [
@@ -136,7 +138,8 @@ export const useDashboard = (
       orgName,
       repoName,
       q,
-      JSON.stringify(status), // Array as cache key
+      JSON.stringify(status), // Array as cache key,
+      sort,
     ],
     ({ signal }) => {
       const promise = api.dashboard.getDashboard({
@@ -145,6 +148,7 @@ export const useDashboard = (
         repoName: repoName,
         q: q,
         status: status,
+        sort: sort,
       })
 
       signal?.addEventListener('abort', () => {
@@ -190,13 +194,13 @@ export const useOrganizationSettingsMutation = () =>
     },
   })
 
-export const useOrganizationCustomer = (orgName: string) =>
+export const useOrganizationCustomer = (orgName?: string) =>
   useQuery(
     ['organization', orgName, 'stripeCustomer'],
     () =>
       api.organizations.getStripeCustomer({
         platform: Platforms.GITHUB,
-        orgName: orgName,
+        orgName: orgName ?? '',
       }),
     {
       enabled: !!orgName,

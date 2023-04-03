@@ -6,7 +6,7 @@ import { ReactElement } from 'react'
 const Page: NextLayoutComponentType = () => {
   return (
     <DashboardEnvironment>
-      <Organization filters={DefaultFilters} />
+      <Organization filters={DefaultFilters} onSetFilters={() => {}} />
     </DashboardEnvironment>
   )
 }

@@ -4,7 +4,8 @@
 
 export type PledgeCreate = {
   issue_id: string;
-  email: string;
+  email?: string;
   amount: number;
+  pledge_as_org?: string;
 };
 

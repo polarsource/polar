@@ -822,7 +822,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/PledgeRead"
+                                    "$ref": "#/components/schemas/PledgeMutationResponse"
                                 }
                             }
                         }
@@ -910,7 +910,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/PledgeRead"
+                                    "$ref": "#/components/schemas/PledgeMutationResponse"
                                 }
                             }
                         }
@@ -1436,6 +1436,14 @@
                             "type": "string"
                         },
                         "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/IssueSortBy"
+                        },
+                        "name": "sort",
                         "in": "query"
                     }
                 ],
@@ -2271,6 +2279,16 @@
                 "type": "string",
                 "description": "An enumeration."
             },
+            "IssueSortBy": {
+                "title": "IssueSortBy",
+                "enum": [
+                    "newest",
+                    "pledged_amount_desc",
+                    "relevance"
+                ],
+                "type": "string",
+                "description": "An enumeration."
+            },
             "IssueStatus": {
                 "title": "IssueStatus",
                 "enum": [
@@ -2551,7 +2569,6 @@
                 "title": "PledgeCreate",
                 "required": [
                     "issue_id",
-                    "email",
                     "amount"
                 ],
                 "type": "object",
@@ -2568,19 +2585,20 @@
                     "amount": {
                         "title": "Amount",
                         "type": "integer"
+                    },
+                    "pledge_as_org": {
+                        "title": "Pledge As Org",
+                        "type": "string",
+                        "format": "uuid"
                     }
                 }
             },
-            "PledgeRead": {
-                "title": "PledgeRead",
+            "PledgeMutationResponse": {
+                "title": "PledgeMutationResponse",
                 "required": [
                     "issue_id",
-                    "email",
                     "amount",
                     "id",
-                    "created_at",
-                    "repository_id",
-                    "organization_id",
                     "state"
                 ],
                 "type": "object",
@@ -2598,6 +2616,38 @@
                         "title": "Amount",
                         "type": "integer"
                     },
+                    "pledge_as_org": {
+                        "title": "Pledge As Org",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "id": {
+                        "title": "Id",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "state": {
+                        "$ref": "#/components/schemas/polar__pledge__schemas__State"
+                    },
+                    "client_secret": {
+                        "title": "Client Secret",
+                        "type": "string"
+                    }
+                }
+            },
+            "PledgeRead": {
+                "title": "PledgeRead",
+                "required": [
+                    "id",
+                    "created_at",
+                    "issue_id",
+                    "amount",
+                    "repository_id",
+                    "organization_id",
+                    "state"
+                ],
+                "type": "object",
+                "properties": {
                     "id": {
                         "title": "Id",
                         "type": "string",
@@ -2607,6 +2657,15 @@
                         "title": "Created At",
                         "type": "string",
                         "format": "date-time"
+                    },
+                    "issue_id": {
+                        "title": "Issue Id",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "amount": {
+                        "title": "Amount",
+                        "type": "integer"
                     },
                     "repository_id": {
                         "title": "Repository Id",
@@ -2621,8 +2680,12 @@
                     "state": {
                         "$ref": "#/components/schemas/polar__pledge__schemas__State"
                     },
-                    "client_secret": {
-                        "title": "Client Secret",
+                    "pledger_name": {
+                        "title": "Pledger Name",
+                        "type": "string"
+                    },
+                    "pledger_avatar": {
+                        "title": "Pledger Avatar",
                         "type": "string"
                     }
                 }
@@ -3139,6 +3202,10 @@
                     },
                     "license": {
                         "title": "License",
+                        "type": "string"
+                    },
+                    "homepage": {
+                        "title": "Homepage",
                         "type": "string"
                     },
                     "repository_pushed_at": {

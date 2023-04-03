@@ -1,17 +1,33 @@
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
-import { type IssueRead } from 'polarkit/api/client'
 import TimeAgo from 'react-timeago'
+import {
+  OrganizationRead,
+  RepositoryRead,
+  type IssueRead,
+} from '../../api/client'
 
-const IssueCard = ({ issue }: { issue: IssueRead }) => {
+const IssueCard = ({
+  issue,
+  bg,
+  organization,
+  repository,
+}: {
+  issue: IssueRead
+  bg: string
+  organization: OrganizationRead
+  repository: RepositoryRead
+}) => {
+  const url = `https://github.com/${organization.name}/${repository.name}/issues/${issue.number}`
+
   return (
     <>
-      <div className="h-full rounded-lg border bg-purple-50 px-8 py-14 text-center">
+      <div className={`h-full rounded-lg border px-8 py-14 text-center ${bg}`}>
         <strong className="text-sm font-medium text-gray-600">
           Issue to be fixed
         </strong>
         <h1 className="my-2.5 text-lg font-normal">{issue.title}</h1>
         <p className="text-sm font-normal text-gray-500">
-          #{issue.number} opened{' '}
+          <a href={url}>#{issue.number}</a> opened{' '}
           <TimeAgo date={new Date(issue.issue_created_at)} />
         </p>
         <div className="mt-6 flex flex-row justify-center space-x-4">

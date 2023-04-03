@@ -166,22 +166,6 @@ async def get_dashboard(
             ):
                 issues_with_prs.add(i.id)
 
-    # add issue dependencies
-    for i in issues:
-        deps = await issue.list_dependency_issues(session, i)
-        for dep in deps:
-            dep_entry: Entry[IssueRead] = Entry(
-                id=dep.id,
-                type="issue",
-                attributes=IssueRead.from_orm(dep),
-            )
-            included.append(dep_entry)
-
-            dep_data = RelationshipData(type="issue", id=dep.id)
-            dependency_relationship = issue_relationship(i.id, "dependencies", [])
-            if isinstance(dependency_relationship.data, list):  # it always is
-                dependency_relationship.data.append(dep_data)
-
     def issue_progress(issue: Issue) -> IssueStatus:
         if issue.issue_closed_at:
             return IssueStatus.completed

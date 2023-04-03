@@ -11,6 +11,7 @@ from polar.user.endpoints.users import router as user_router
 from polar.organization.endpoints import router as organization_router
 from polar.dashboard.endpoints import router as dashboard_router
 from polar.account.endpoints import router as accounts_router
+from polar.notifications.endpoints import router as notifications_router
 
 router = APIRouter(prefix="/api/v1")
 # /users
@@ -36,3 +37,5 @@ router.include_router(organization_router)
 router.include_router(dashboard_router)
 # /{platform}/{org_name}/{repo_name}/accounts
 router.include_router(accounts_router)
+# /notifications
+router.include_router(notifications_router)

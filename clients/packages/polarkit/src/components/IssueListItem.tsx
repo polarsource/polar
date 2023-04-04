@@ -19,6 +19,7 @@ const IssueListItem = (props: {
   repo: RepositoryRead
   issue: IssueRead
   references: IssueReferenceRead[]
+  dependents: IssueRead[]
   pledges: PledgeRead[]
 }) => {
   const {

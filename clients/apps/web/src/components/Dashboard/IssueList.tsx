@@ -17,6 +17,7 @@ type IssueListItemData = {
   repo: RepositoryRead
   issue: IssueRead
   references: IssueReferenceRead[]
+  dependents: IssueRead[]
   pledges: PledgeRead[]
 }
 
@@ -45,11 +46,12 @@ const IssueList = (props: {
   repos: Map<string, RepositoryRead>
   issues: Entry_IssueRead_[]
   references: Map<string, IssueReferenceRead>
+  dependents: Map<string, IssueRead>
   pledges: Map<string, PledgeRead>
   filters: DashboardFilters
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
 }) => {
-  const { issues, references, pledges, orgs, repos } = props
+  const { issues, references, dependents, pledges, orgs, repos } = props
 
   const [sortedIssues, setSortedIssues] = useState<IssueListItemData[]>([])
 
@@ -64,6 +66,11 @@ const IssueList = (props: {
           issue.relationships?.references,
           references,
           'reference',
+        ),
+        dependents: populateRelations(
+          issue.relationships?.dependents,
+          dependents,
+          'issue',
         ),
         pledges: populateRelations(
           issue.relationships?.pledges,
@@ -102,6 +109,7 @@ const IssueList = (props: {
           <IssueListItem
             issue={i.issue}
             references={i.references}
+            dependents={i.dependents}
             pledges={i.pledges}
             org={i.org}
             repo={i.repo}

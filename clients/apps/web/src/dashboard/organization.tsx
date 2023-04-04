@@ -13,7 +13,11 @@ import {
 import { IssueList } from 'polarkit/components'
 import { useDashboard } from 'polarkit/hooks'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
+import yayson from 'yayson'
 import { DashboardFilters } from './filters'
+
+const y = yayson({ adapter: 'default' })
+const store = new y.Store()
 
 const buildStatusesFilter = (filters: DashboardFilters): Array<IssueStatus> => {
   const next = []
@@ -81,6 +85,12 @@ const Organization = (props: {
     setReferences(buildMapForType<IssueReferenceRead>(dashboard, 'reference'))
     // TDOO: if we start referring to issues in more ways, this will need to change
     setDependents(buildMapForType<IssueRead>(dashboard, 'issue'))
+
+    if (dashboard) {
+      console.log('DASHBOARD', dashboard)
+      const data = store.sync(dashboard)
+      console.log('YAYSON', data)
+    }
   }, [dashboard])
 
   return (

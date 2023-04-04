@@ -85,7 +85,7 @@ const IssueListItem = (props: {
           {haveDependents && (
             <div className="text-xs text-gray-500">
               {props.dependents.map((dep: IssueRead) => (
-                <p>
+                <p key={dep.id}>
                   Mentioned in #{dep.number} {dep.title}
                 </p>
               ))}

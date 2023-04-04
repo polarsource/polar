@@ -2383,7 +2383,8 @@
                 "title": "NotificationRead",
                 "required": [
                     "id",
-                    "type"
+                    "type",
+                    "created_at"
                 ],
                 "type": "object",
                 "properties": {
@@ -2394,6 +2395,17 @@
                     },
                     "type": {
                         "$ref": "#/components/schemas/NotificationType"
+                    },
+                    "created_at": {
+                        "title": "Created At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "pledge": {
+                        "$ref": "#/components/schemas/PledgeRead"
+                    },
+                    "issue": {
+                        "$ref": "#/components/schemas/IssueRead"
                     }
                 }
             },

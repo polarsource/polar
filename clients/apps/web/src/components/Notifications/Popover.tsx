@@ -1,15 +1,37 @@
 import { BellIcon } from '@heroicons/react/24/outline'
+import { NotificationRead, PledgeRead } from 'polarkit/api/client'
 import { useNotifications } from 'polarkit/hooks'
-import { useState } from 'react'
+import { getCentsInDollarString, useOutsideClick } from 'polarkit/utils'
+import { useEffect, useRef, useState } from 'react'
+import ReactTimeago from 'react-timeago'
 
 const Popover = () => {
-  const [show, setShow] = useState(true)
-
-  const clickBell = () => {
-    setShow(!show)
-  }
+  const [show, setShow] = useState(false)
+  const [showBadge, setShowBadge] = useState(false)
 
   const notifs = useNotifications()
+
+  const clickBell = () => {
+    if (!show && notifs.data) {
+      setShow(true)
+    }
+
+    if (show) {
+      setShow(false)
+    }
+  }
+
+  const ref = useRef(null)
+
+  useOutsideClick([ref], () => {
+    setShow(false)
+  })
+
+  useEffect(() => {
+    if (notifs.data.length > 0) {
+      setShowBadge(true)
+    }
+  }, [notifs, notifs.data])
 
   return (
     <>
@@ -19,12 +41,18 @@ const Popover = () => {
           aria-hidden="true"
           onClick={clickBell}
         />
-        <div className="-ml-3 h-3 w-3 rounded-full border-2 border-white bg-[#9171D9]"></div>
+        {showBadge && (
+          <div className="-ml-3 h-3 w-3 rounded-full border-2 border-white bg-[#9171D9]"></div>
+        )}
       </div>
 
       <div
         aria-live="assertive"
         className="pointer-events-none fixed inset-0 top-6 flex items-end px-4 py-6 sm:items-start sm:p-6"
+        ref={ref}
+        onClick={(e) => {
+          e.stopPropagation()
+        }}
       >
         <div className="flex w-full flex-col items-center space-y-4 sm:items-end">
           {show && (
@@ -32,12 +60,9 @@ const Popover = () => {
               <div className="mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white"></div>
               <div className="w-full max-w-md">
                 <div className="pointer-events-auto w-full  overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
-                  {JSON.stringify(notifs.data)}
-
-                  <PledgePayout />
-                  <PledgePayout />
-                  <PledgePayout />
-                  <PledgePayout />
+                  {notifs.data.map((n) => {
+                    return <Notification n={n} />
+                  })}
                 </div>
               </div>
             </>
@@ -53,8 +78,10 @@ export default Popover
 const Item = ({
   title,
   children,
+  timestamp,
 }: {
   title: string
+  timestamp: string
   children: React.ReactElement
 }) => {
   return (
@@ -64,7 +91,9 @@ const Item = ({
       </div>
       <div>
         <div className="font-medium">{title}</div>
-        <div className="text-black/50">Yesterday</div>
+        <div className="text-black/50">
+          <ReactTimeago date={timestamp} />
+        </div>
       </div>
     </div>
   )
@@ -72,10 +101,30 @@ const Item = ({
 
 const PledgePayout = () => {
   return (
-    <Item title="$150 paid out for issue #1233">
+    <Item title="$150 paid out for issue #1233" timestamp={'123'}>
       <DollarSignIcon />
     </Item>
   )
+}
+
+type withPledge = NotificationRead & { pledge: PledgeRead }
+
+const IssuePledgeCreated = ({ n }: { n: withPledge }) => {
+  const title = `Issue #${n.issue.number} received \$${getCentsInDollarString(
+    n.pledge.amount,
+  )} in backing`
+  return (
+    <Item title={title} timestamp={n.created_at}>
+      <DollarSignIcon />
+    </Item>
+  )
+}
+
+const Notification = ({ n }: { n: NotificationRead }) => {
+  if (n.type === 'issue_pledge_created' && n.pledge) {
+    return <IssuePledgeCreated n={n as withPledge} />
+  }
+  return <></>
 }
 
 const DollarSignIcon = () => {

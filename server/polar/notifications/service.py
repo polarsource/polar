@@ -3,6 +3,7 @@ from uuid import UUID
 from pydantic import BaseModel
 from sqlalchemy import desc
 import structlog
+from polar.exceptions import IntegrityError
 from polar.kit.extensions.sqlalchemy import sql
 from polar.models.pledge import Pledge
 from polar.pledge.service import pledge
@@ -18,6 +19,7 @@ log = structlog.get_logger()
 class PartialNotification(BaseModel):
     issue_id: UUID | None = None
     pledge_id: UUID | None = None
+    pull_request_id: UUID | None = None
 
 
 class NotificationsService:
@@ -47,15 +49,38 @@ class NotificationsService:
         org_id: UUID,
         typ: NotificationType,
         notif: PartialNotification,
-    ):
-        await Notification.create(
-            session=session,
-            organization_id=org_id,
-            type=typ,
-            issue_id=notif.issue_id,
-            pledge_id=notif.pledge_id,
+    ) -> bool:
+
+        dedup_key: str = "/".join(
+            [
+                str(org_id),
+                str(typ),
+                str(notif.issue_id) if notif.issue_id else "",
+                str(notif.pledge_id) if notif.pledge_id else "",
+                str(notif.pull_request_id) if notif.pull_request_id else "",
+            ]
         )
-        return
+
+        nested = await session.begin_nested()
+
+        try:
+            session.add(
+                Notification(
+                    organization_id=org_id,
+                    type=typ,
+                    issue_id=notif.issue_id,
+                    pledge_id=notif.pledge_id,
+                    pull_request_id=notif.pull_request_id,
+                    dedup_key=dedup_key,
+                )
+            )
+            await nested.commit()
+            await session.commit()
+            return True
+        except IntegrityError as e:
+            await nested.rollback()
+            await session.commit()
+            return False
 
     async def create_for_issue(
         self,

@@ -1,14 +1,8 @@
 import stripe
-from polar.notifications.schemas import NotificationType
 
 from polar.worker import JobContext, task
 from polar.postgres import AsyncSessionLocal
 from polar.pledge.schemas import State
-from polar.notifications.service import (
-    PartialNotification,
-    notifications as notification_service,
-)
-from polar.issue.service import issue as issue_service
 from polar.pledge.service import pledge as pledge_service
 
 

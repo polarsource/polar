@@ -23,9 +23,9 @@ async def test_create_pledge_from_created(
 
     pledge = await Pledge.create(
         session=session,
-        issue_id=str(issue.id),
-        repository_id=str(repository.id),
-        organization_id=str(organization.id),
+        issue_id=issue.id,
+        repository_id=repository.id,
+        organization_id=organization.id,
         amount=12300,
         by_organization_id=organization.id,
         state="created",
@@ -57,9 +57,9 @@ async def test_create_pledge_initiated_then_created(
 
     pledge = await Pledge.create(
         session=session,
-        issue_id=str(issue.id),
-        repository_id=str(repository.id),
-        organization_id=str(organization.id),
+        issue_id=issue.id,
+        repository_id=repository.id,
+        organization_id=organization.id,
         amount=12300,
         by_organization_id=organization.id,
         state="initiated",

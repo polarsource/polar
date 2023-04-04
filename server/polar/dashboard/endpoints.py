@@ -74,7 +74,8 @@ async def get_dashboard(
         repositories = [repo]
     else:
         # if no repo name is set, use all repositories in the organization
-        # TODO: Once we support it: Only show repositories that the user can see on GitHub
+        # TODO: Once we support it: Only show repositories that the user can see on
+        # GitHub
         repositories = await repository.list_by_organization(
             session,
             organization_id=auth.organization.id,

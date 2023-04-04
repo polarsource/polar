@@ -279,7 +279,7 @@ class GitHubIssueReferencesService:
             return None
 
         # Parse org name and repo from url
-        # Example: "https://api.github.com/repos/zegl/polarforkotest/commits/471f58636e9b66228141d5e2c76be24f20f1553f"
+        # Example: "https://api.github.com/repos/zegl/polarforkotest/commits/471f58636e9b66228141d5e2c76be24f20f1553f"  # noqa: E501
 
         parts = event.commit_url.split("/")
         if len(parts) < 6:

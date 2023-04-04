@@ -188,8 +188,6 @@ __all__ = [
     "get_app_client",
     "get_app_installation_client",
     "get_user_client",
-    "patch_unset",
-    "WebhookEvent",
     "webhooks",
     "rest",
 ]

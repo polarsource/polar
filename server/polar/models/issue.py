@@ -22,7 +22,7 @@ from polar.enums import Platforms
 from polar.types import JSONDict, JSONList
 
 import sqlalchemy as sa
-from sqlalchemy_utils.types.ts_vector import TSVectorType
+from sqlalchemy_utils.types.ts_vector import TSVectorType  # type: ignore
 
 
 class Platform(enum.Enum):

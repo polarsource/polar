@@ -1,4 +1,4 @@
-from blinker import Namespace
+from blinker import Namespace  # type: ignore
 
 signal = Namespace().signal
 

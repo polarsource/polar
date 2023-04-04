@@ -7,7 +7,7 @@ from polar.models.pledge import Pledge
 from polar.pledge.schemas import PledgeRead
 from polar.postgres import AsyncSession, get_db_session
 
-from .schemas import NotificationRead
+from .schemas import NotificationRead, NotificationType
 from .service import notifications
 
 router = APIRouter(tags=["notifications"])
@@ -23,7 +23,7 @@ async def get(
     def decorate(n: Notification) -> NotificationRead:
         return NotificationRead(
             id=n.id,
-            type=n.type,
+            type=NotificationType.from_str(n.type),
             created_at=n.created_at,
             pledge=PledgeRead.from_db(n.pledge) if n.pledge else None,
             issue=IssueRead.from_orm(n.issue) if n.issue else None,

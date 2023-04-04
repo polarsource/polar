@@ -22,6 +22,10 @@ class State(str, Enum):
     # Alpha flow: initiated -> created -> pending -> paid
     # In the future, we might have a "disputed", "refunded", "cancelled" states etc...
 
+    @classmethod
+    def from_str(cls, s: str) -> State:
+        return State.__members__[s]
+
 
 class PledgeCreate(Schema):
     issue_id: UUID
@@ -77,7 +81,7 @@ class PledgeRead(Schema):
             repository_id=o.repository_id,
             organization_id=o.organization_id,
             amount=o.amount,
-            state=o.state,
+            state=State.from_str(o.state),
             pledger_name=pledger_name,
             pledger_avatar=pledger_avatar,
         )

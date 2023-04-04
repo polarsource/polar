@@ -33,7 +33,7 @@ def verify_app_configuration() -> None:
         if getattr(permissions, perm) == expected_permissions[perm]:
             continue
         log.error(
-            "github.verify-app.unexpected-permission - you might need to update the GitHub App",
+            "github.verify-app.unexpected-permission - you might need to update the GitHub App",  # noqa: E501
             key=perm,
             expected=expected_permissions[perm],
             got=getattr(permissions, perm),

@@ -1,18 +1,14 @@
 import { useRouter } from 'next/router'
-import {
-  IssueReferenceRead,
-  IssueStatus,
-  type Entry_Any_,
-  type Entry_IssueRead_,
-  type IssueListResponse,
-  type OrganizationRead,
-  type PledgeRead,
-  type RepositoryRead,
-} from 'polarkit/api/client'
+import { IssueStatus } from 'polarkit/api/client'
+import { IssueReadWithRelations } from 'polarkit/api/types'
 import { IssueList } from 'polarkit/components'
 import { useDashboard } from 'polarkit/hooks'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
+import yayson from 'yayson'
 import { DashboardFilters } from './filters'
+
+const y = yayson({ adapter: 'default' })
+const store = new y.Store()
 
 const buildStatusesFilter = (filters: DashboardFilters): Array<IssueStatus> => {
   const next = []
@@ -25,15 +21,6 @@ const buildStatusesFilter = (filters: DashboardFilters): Array<IssueStatus> => {
 
 interface IDer {
   id: string
-}
-
-const buildMapForType = <T extends IDer>(
-  dashboard: IssueListResponse,
-  typ: string,
-): Map<string, T> => {
-  const list: Entry_Any_[] =
-    dashboard?.included.filter((i: Entry_Any_) => i.type === typ) || []
-  return new Map<string, T>(list.map((r) => [r.id, r.attributes]))
 }
 
 const Organization = (props: {
@@ -64,29 +51,19 @@ const Organization = (props: {
   )
   const dashboard = dashboardQuery.data
 
-  const [issues, setIssues] = useState<Entry_IssueRead_[]>()
-  const [orgs, setOrgs] = useState<Map<string, OrganizationRead>>()
-  const [pledges, setPledges] = useState<Map<string, PledgeRead>>()
-  const [repos, setRepos] = useState<Map<string, RepositoryRead>>()
-  const [references, setReferences] =
-    useState<Map<string, IssueReferenceRead>>()
+  const [issues, setIssues] = useState<IssueReadWithRelations[]>()
 
   useEffect(() => {
-    setIssues(dashboard?.data || [])
-    setOrgs(buildMapForType<OrganizationRead>(dashboard, 'organization'))
-    setPledges(buildMapForType<PledgeRead>(dashboard, 'pledge'))
-    setRepos(buildMapForType<RepositoryRead>(dashboard, 'repository'))
-    setReferences(buildMapForType<IssueReferenceRead>(dashboard, 'reference'))
+    if (dashboard) {
+      const issues: IssueReadWithRelations[] = store.sync(dashboard)
+      setIssues(issues)
+    }
   }, [dashboard])
 
   return (
     <div>
       <IssueList
         issues={issues}
-        references={references}
-        pledges={pledges}
-        orgs={orgs}
-        repos={repos}
         filters={filters}
         onSetFilters={props.onSetFilters}
       />

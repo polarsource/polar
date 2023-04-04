@@ -10,6 +10,7 @@ from polar.dashboard.schemas import IssueListType
 
 from polar.kit.services import ResourceService
 from polar.models.issue import Issue
+from polar.models.repository import Repository
 from polar.enums import Platforms
 from polar.models.issue_dependency import IssueDependency
 from polar.models.issue_reference import IssueReference
@@ -164,19 +165,22 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         refs = res.scalars().unique().all()
         return refs
 
-    async def list_dependency_issues(
+    async def list_issue_dependencies_for_repositories(
         self,
         session: AsyncSession,
-        issue: Issue,
-    ) -> Sequence[Issue]:
+        repos: Sequence[Repository],
+    ) -> Sequence[IssueDependency]:
+        """
+        Returns a dict of issue_id -> list of issues dependent on that issue
+        """
         stmt = (
-            sql.select(Issue)
+            sql.select(IssueDependency)
             .join(
-                IssueDependency,
-                IssueDependency.dependency_issue_id == Issue.id,
+                Issue,
+                IssueDependency.dependent_issue_id == Issue.id,
             )
             .where(
-                IssueDependency.dependent_issue_id == issue.id,
+                IssueDependency.repository_id.in_([r.id for r in repos]),
             )
         )
         res = await session.execute(stmt)

@@ -8,6 +8,7 @@ import {
   RepositoryRead,
   type PullRequestReference,
 } from '../api/client'
+import { githubPullReqeustUrl } from '../utils/github'
 import GitBranchIcon from './icons/GitBranchIcon'
 import GitMergeIcon from './icons/GitMergeIcon'
 import GitPullRequestClosedIcon from './icons/GitPullRequestClosedIcon'
@@ -158,7 +159,11 @@ const IssueReferenceExternalGitHubPullRequest = (props: {
 
   const isMerged = pr.state === 'closed'
 
-  const href = `https://github.com/${pr.organization_name}/${pr.repository_name}/pull/${pr.number}`
+  const href = githubPullReqeustUrl(
+    pr.organization_name,
+    pr.repository_name,
+    pr.number,
+  )
 
   return (
     <>
@@ -197,7 +202,7 @@ const IssueReferencePullRequest = (props: {
   const isClosed = !isMerged && pr.state === 'closed'
   const isOpen = !isMerged && !isClosed
 
-  const href = `https://github.com/${props.org.name}/${props.repo.name}/pull/${pr.number}`
+  const href = githubPullReqeustUrl(props.org.name, props.repo.name, pr.number)
 
   return (
     <>

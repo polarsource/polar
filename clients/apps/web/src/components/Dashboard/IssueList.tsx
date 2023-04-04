@@ -1,111 +1,36 @@
 import { DashboardFilters } from 'dashboard/filters'
-import {
-  IssueReferenceRead,
-  IssueSortBy,
-  OrganizationRead,
-  Relationship,
-  type Entry_IssueRead_,
-  type IssueRead,
-  type PledgeRead,
-  type RepositoryRead,
-} from 'polarkit/api/client'
+import { IssueSortBy } from 'polarkit/api/client'
+import { IssueReadWithRelations } from 'polarkit/api/types'
 import { IssueListItem } from 'polarkit/components'
-import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react'
-
-type IssueListItemData = {
-  org: OrganizationRead
-  repo: RepositoryRead
-  issue: IssueRead
-  references: IssueReferenceRead[]
-  pledges: PledgeRead[]
-}
-
-const populateRelations = <T,>(
-  relationships: Relationship | undefined,
-  lookup: Map<string, T>,
-  typ: string,
-): T[] => {
-  const data =
-    relationships !== undefined
-      ? Array.isArray(relationships.data)
-        ? relationships.data
-        : [relationships.data]
-      : []
-  const r =
-    data
-      .filter((rel) => rel.type === typ)
-      .map((rel) => lookup.get(rel.id))
-      .filter(Boolean)
-      .map((r) => r as T) || []
-  return r
-}
+import { Dispatch, SetStateAction, useMemo } from 'react'
 
 const IssueList = (props: {
-  orgs: Map<string, OrganizationRead>
-  repos: Map<string, RepositoryRead>
-  issues: Entry_IssueRead_[]
-  references: Map<string, IssueReferenceRead>
-  pledges: Map<string, PledgeRead>
+  issues: IssueReadWithRelations[]
   filters: DashboardFilters
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
 }) => {
-  const { issues, references, pledges, orgs, repos } = props
-
-  const [sortedIssues, setSortedIssues] = useState<IssueListItemData[]>([])
-
-  useEffect(() => {
-    if (!issues) {
-      return
-    }
-    const sorted = issues.map((issue): IssueListItemData => {
-      return {
-        issue: issue.attributes,
-        references: populateRelations(
-          issue.relationships?.references,
-          references,
-          'reference',
-        ),
-        pledges: populateRelations(
-          issue.relationships?.pledges,
-          pledges,
-          'pledge',
-        ),
-        org: populateRelations(
-          issue.relationships?.organization,
-          orgs,
-          'organization',
-        )[0],
-        repo: populateRelations(
-          issue.relationships?.repository,
-          repos,
-          'repository',
-        )[0],
-      }
-    })
-    setSortedIssues(sorted)
-  }, [issues, references, pledges, orgs, repos])
+  const { issues } = props
 
   if (!issues) return <div>Loading issues...</div>
-  if (!references) return <div>Loading references...</div>
-  if (!pledges) return <div>Loading pledges...</div>
 
   return (
     <div className="space-y-2 divide-y divide-gray-200">
       <Header
-        count={sortedIssues.length}
+        count={issues.length}
         filters={props.filters}
         onSetFilters={props.onSetFilters}
       />
 
-      {sortedIssues.map((i) => {
+      {issues.map((issue) => {
         return (
           <IssueListItem
-            issue={i.issue}
-            references={i.references}
-            pledges={i.pledges}
-            org={i.org}
-            repo={i.repo}
-            key={i.issue.id}
+            issue={issue}
+            references={issue.references}
+            dependents={issue.dependents}
+            pledges={issue.pledges}
+            org={issue.organization}
+            repo={issue.repository}
+            key={issue.id}
           />
         )
       })}

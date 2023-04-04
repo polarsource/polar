@@ -49,6 +49,7 @@ importers:
       tailwindcss: ^3.1.8
       tsconfig: workspace:*
       typescript: 4.8.3
+      yayson: ^3.0.0
     dependencies:
       '@headlessui/react': 1.7.11_biqbaboplfbrettd7655fr4n2y
       '@heroicons/react': 2.0.16_react@18.2.0
@@ -65,6 +66,7 @@ importers:
       react-timeago: 7.1.0_react@18.2.0
       sass: 1.59.3
       satori: 0.0.44
+      yayson: 3.0.0
     devDependencies:
       '@types/node': 18.7.16
       '@types/react': 18.0.18
@@ -4083,6 +4085,11 @@ packages:
   /yaml/1.10.2:
     resolution: {integrity: sha512-r3vXyErRCYJ7wg28yvBY5VSoAF8ZvlcW9/BwUzEtUsjvX/DKs24dIkuwjtuprwJJHsbyUbLApepYTR1BN4uHrg==}
     engines: {node: '>= 6'}
+
+  /yayson/3.0.0:
+    resolution: {integrity: sha512-r3og9+qCtj7afqAQWOFzos369EaZqjJMxtkAXfn3kgjEwWcB1Z9Wm+6dcKU7fGA+MMdYUg/T7OZDA01Jp/cBcg==}
+    engines: {node: '>=14', npm: '>=6'}
+    dev: false
 
   /yocto-queue/0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}

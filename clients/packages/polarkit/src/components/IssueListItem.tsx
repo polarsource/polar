@@ -6,6 +6,8 @@ import {
   type IssueRead,
   type PledgeRead,
 } from '../api/client'
+import { IssueReadWithRelations } from '../api/types'
+import { githubIssueUrl } from '../utils'
 import IconCounter from './IconCounter'
 import IssueActivityBox from './IssueActivityBox'
 import IssueLabel, { LabelSchema } from './IssueLabel'
@@ -19,6 +21,7 @@ const IssueListItem = (props: {
   repo: RepositoryRead
   issue: IssueRead
   references: IssueReferenceRead[]
+  dependents?: IssueReadWithRelations[]
   pledges: PledgeRead[]
 }) => {
   const {
@@ -31,13 +34,13 @@ const IssueListItem = (props: {
     issue_closed_at,
   } = props.issue
 
-  const href = `https://github.com/${props.org.name}/${props.repo.name}/issues/${number}`
   const createdAt = new Date(issue_created_at)
   const closedAt = new Date(issue_created_at)
 
   const havePledge = props.pledges && props.pledges.length > 0
   const haveReference = props.references && props.references?.length > 0
   const havePledgeOrReference = havePledge || haveReference
+  const haveDependents = props.dependents && props.dependents.length > 0
 
   const showCommentsCount = !!(comments && comments > 0)
   const showReactionsThumbs = !!(reactions.plus_one > 0)
@@ -58,7 +61,10 @@ const IssueListItem = (props: {
       <div className="flex items-center justify-between gap-4 py-4">
         <div className="flex flex-col gap-1">
           <div className="flex items-start gap-4">
-            <a className="font-medium" href={href}>
+            <a
+              className="font-medium"
+              href={githubIssueUrl(props.org.name, props.repo.name, number)}
+            >
               {title}
             </a>
             <div className="flex items-center gap-2">
@@ -80,6 +86,24 @@ const IssueListItem = (props: {
               </p>
             )}
           </div>
+          {haveDependents && (
+            <div className="text-xs text-gray-500">
+              {props.dependents?.map((dep: IssueReadWithRelations) => (
+                <p key={dep.id}>
+                  Mentioned in{' '}
+                  <a
+                    href={githubIssueUrl(
+                      dep.organization.name,
+                      dep.repository.name,
+                      dep.number,
+                    )}
+                  >
+                    #{dep.number} {dep.title}
+                  </a>
+                </p>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-12">
           <div className="flex items-center gap-6">

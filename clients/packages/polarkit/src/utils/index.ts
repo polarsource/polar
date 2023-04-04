@@ -1,4 +1,5 @@
 export * from './dom'
+export * from './github'
 export * from './useOutsideClick'
 
 export const getServerURL = (path?: string): string => {

@@ -105,7 +105,7 @@ async def get_dashboard(
         sort_by_newest=sort == IssueSortBy.newest,
     )
 
-    issue_organizations = (
+    issue_organizations = list(
         (
             await session.execute(
                 sql.select(Organization).where(
@@ -116,8 +116,8 @@ async def get_dashboard(
         .scalars()
         .unique()
         .all()
-    )
-    issue_repositories = (
+    ) + [auth.organization]
+    issue_repositories = list(
         (
             await session.execute(
                 sql.select(Repository).where(
@@ -128,7 +128,7 @@ async def get_dashboard(
         .scalars()
         .unique()
         .all()
-    )
+    ) + list(repositories)
 
     included: dict[str, Entry[Any]] = {}
 
@@ -209,6 +209,66 @@ async def get_dashboard(
                 or ref.reference_type == ReferenceType.EXTERNAL_GITHUB_PULL_REQUEST
             ):
                 issues_with_prs.add(i.id)
+
+    # get dependents
+    if issue_list_type == IssueListType.following:
+        issue_deps = await issue.list_issue_dependencies_for_repositories(
+            session, repositories
+        )
+
+        for dep in issue_deps:
+            dependent_issue = dep.dependent_issue
+
+            # add org to included
+            included[str(dependent_issue.organization_id)] = Entry(
+                id=dependent_issue.organization_id,
+                type="organization",
+                attributes=OrganizationRead.from_orm(
+                    [
+                        o
+                        for o in issue_organizations
+                        if o.id == dependent_issue.organization_id
+                    ][0]
+                ),
+            )
+
+            # add repos to included
+            included[str(dependent_issue.repository_id)] = Entry(
+                id=dependent_issue.repository_id,
+                type="repository",
+                attributes=RepositoryRead.from_orm(
+                    [
+                        r
+                        for r in issue_repositories
+                        if r.id == dependent_issue.repository_id
+                    ][0]
+                ),
+            )
+
+            # and to relationships
+            org_data = RelationshipData(
+                type="organization", id=dependent_issue.organization_id
+            )
+            issue_relationship(dependent_issue.id, "organization", org_data)
+
+            issue_relationship(
+                dependent_issue.id,
+                "repository",
+                RelationshipData(type="repository", id=dependent_issue.repository_id),
+            )
+
+            # add dependent issue to included
+            dep_entry: Entry[IssueRead] = Entry(
+                id=dependent_issue.id,
+                type="issue",
+                attributes=IssueRead.from_orm(dependent_issue),
+                relationships=issue_relationships.get(dependent_issue.id, {}),
+            )
+            included[str(dependent_issue.id)] = dep_entry
+
+            ir = issue_relationship(dep.dependency_issue.id, "dependents", [])
+            if isinstance(ir.data, list):  # it always is
+                ir.data.append(RelationshipData(type="issue", id=dependent_issue.id))
 
     def issue_progress(issue: Issue) -> IssueStatus:
         if issue.issue_closed_at:

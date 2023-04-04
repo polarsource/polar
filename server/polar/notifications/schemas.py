@@ -1,4 +1,4 @@
-from __future__ import annotations
+from datetime import datetime
 from uuid import UUID
 from polar.issue.schemas import IssueRead
 from polar.kit.schemas import Schema
@@ -13,11 +13,10 @@ class NotificationType(str, Enum):
     ISSUE_PLEDGED_PULL_REQUEST_CREATED = "issue_pledged_pull_request_created"
     ISSUE_PLEDGED_PULL_REQUEST_MERGED = "issue_pledged_pull_request_merged"
 
-    # PLEDGE_PAID_OUT = "pledge_paid_out"
-
 
 class NotificationRead(Schema):
     id: UUID
     type: NotificationType
+    created_at: datetime
     pledge: PledgeRead | None = None
     issue: IssueRead | None = None

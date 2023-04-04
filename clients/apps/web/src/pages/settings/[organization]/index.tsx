@@ -267,7 +267,6 @@ const SettingsTopbar = () => {
               currentOrg={currentOrg}
               onSelectOrg={(org) => router.push(`/settings/${org}`)}
             />
-            ,
           </div>
         ),
       }}

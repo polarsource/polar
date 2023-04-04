@@ -28,7 +28,7 @@ const Popover = () => {
   })
 
   useEffect(() => {
-    if (notifs.data.length > 0) {
+    if (notifs.data && notifs.data.length > 0) {
       setShowBadge(true)
     }
   }, [notifs, notifs.data])

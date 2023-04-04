@@ -3,14 +3,14 @@ from uuid import UUID
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.kit.db.models import TimestampedModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.schemas import Schema
-from sqlalchemy.dialects.postgresql import JSONB
-
 from polar.models.pull_request import PullRequest
+from polar.issue.signals import issue_reference_created, issue_reference_updated
 
 
 class ExternalGitHubPullRequestReference(Schema):
@@ -88,3 +88,6 @@ class IssueReference(TimestampedModel):
     external_source: Mapped[
         ExternalGitHubPullRequestReference | ExternalGitHubCommitReference | None
     ] = mapped_column(JSONB, nullable=True, default=None)
+
+    on_created_signal = issue_reference_created
+    on_updated_signal = issue_reference_updated

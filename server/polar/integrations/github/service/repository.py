@@ -2,7 +2,7 @@ from typing import Literal, Callable, Any, Coroutine, Sequence
 
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
-from blinker import Signal
+from blinker import Signal  # type: ignore
 from githubkit import Paginator
 
 from polar.models import Organization, Repository, Issue, PullRequest

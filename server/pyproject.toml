@@ -51,6 +51,7 @@ worker = { cmd = "arq run_worker.WorkerSettings --watch polar", help = "run arq 
 test = { cmd = "POLAR_ENV=testing coverage run --source polar -m pytest && coverage report -m", help = "run all tests" }
 lint = { cmd = "task lint_ruff & task lint_black", help = "run all linters" }
 lint_ruff = { cmd = "ruff check .", help = "run ruff linter" }
+lint_ruff_polar = { cmd = "ruff check polar", help = "run ruff linter" }
 lint_black = { cmd = "black .", help = "run black linter" }
 lint_types = { cmd = "mypy polar scripts tests", help = "run mypy type verify" }
 db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade" }

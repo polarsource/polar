@@ -71,6 +71,10 @@ jobs:
         working-directory: ./server
         run:  poetry run task lint_types
 
+      - name: 🐶 Type Check Server (ruff)
+        working-directory: ./server
+        run:  poetry run task lint_ruff_polar
+
       - name: 🐍 Run tests (pytest)
         working-directory: ./server
         run: poetry run pytest

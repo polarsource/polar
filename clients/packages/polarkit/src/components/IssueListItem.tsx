@@ -6,6 +6,7 @@ import {
   type IssueRead,
   type PledgeRead,
 } from '../api/client'
+import { IssueReadWithRelations } from '../api/types'
 import IconCounter from './IconCounter'
 import IssueActivityBox from './IssueActivityBox'
 import IssueLabel, { LabelSchema } from './IssueLabel'
@@ -19,7 +20,7 @@ const IssueListItem = (props: {
   repo: RepositoryRead
   issue: IssueRead
   references: IssueReferenceRead[]
-  dependents: IssueRead[]
+  dependents?: IssueReadWithRelations[]
   pledges: PledgeRead[]
 }) => {
   const {
@@ -84,7 +85,7 @@ const IssueListItem = (props: {
           </div>
           {haveDependents && (
             <div className="text-xs text-gray-500">
-              {props.dependents.map((dep: IssueRead) => (
+              {props.dependents?.map((dep: IssueReadWithRelations) => (
                 <p key={dep.id}>
                   Mentioned in #{dep.number} {dep.title} {dep.organization.name}
                 </p>

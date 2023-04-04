@@ -253,7 +253,7 @@ async def create_pledge_as_org(
     await notification_service.create_for_issue(
         session,
         issue,
-        NotificationType.ISSUE_PLEDGE_CREATED,
+        NotificationType.issue_pledge_created,
         notif=PartialNotification(
             issue_id=issue.id,
             pledge_id=created.id,

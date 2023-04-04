@@ -8,10 +8,10 @@ from polar.pledge.schemas import PledgeRead
 
 
 class NotificationType(str, Enum):
-    ISSUE_PLEDGE_CREATED = "issue_pledge_created"
-    ISSUE_PLEDGED_BRANCH_CREATED = "issue_pledged_branch_created"
-    ISSUE_PLEDGED_PULL_REQUEST_CREATED = "issue_pledged_pull_request_created"
-    ISSUE_PLEDGED_PULL_REQUEST_MERGED = "issue_pledged_pull_request_merged"
+    issue_pledge_created = "issue_pledge_created"
+    issue_pledged_branch_created = "issue_pledged_branch_created"
+    issue_pledged_pull_request_created = "issue_pledged_pull_request_created"
+    issue_pledged_pull_request_merged = "issue_pledged_pull_request_merged"
 
     @classmethod
     def from_str(cls, s: str) -> NotificationType:

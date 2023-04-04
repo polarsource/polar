@@ -7,6 +7,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.organization import Organization
 from polar.models.user import User
+from polar.pledge.signals import pledge_created, pledge_updated
 
 
 class Pledge(RecordModel):
@@ -45,3 +46,6 @@ class Pledge(RecordModel):
     organization: Mapped[Organization] = relationship(
         "Organization", foreign_keys=[by_organization_id], lazy="joined"
     )
+
+    on_created_signal = pledge_created
+    on_updated_signal = pledge_updated

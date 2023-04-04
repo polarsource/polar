@@ -21,16 +21,3 @@ async def payment_intent_succeeded(ctx: JobContext, event: stripe.Event) -> None
         if pledge and pledge.state == State.initiated:
             pledge.state = State.created
             await pledge.save(session=session)
-
-            issue = await issue_service.get_by_id(session, pledge.issue_id)
-            if issue:
-                # Trigger notifications
-                await notification_service.create_for_issue(
-                    session,
-                    issue,
-                    NotificationType.issue_pledge_created,
-                    notif=PartialNotification(
-                        issue_id=issue.id,
-                        pledge_id=pledge.id,
-                    ),
-                )

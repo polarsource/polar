@@ -5,6 +5,7 @@ import {
   RepositoryRead,
   type IssueRead,
 } from '../../api/client'
+import { githubIssueUrl } from '../../utils/github'
 
 const IssueCard = ({
   issue,
@@ -17,7 +18,7 @@ const IssueCard = ({
   organization: OrganizationRead
   repository: RepositoryRead
 }) => {
-  const url = `https://github.com/${organization.name}/${repository.name}/issues/${issue.number}`
+  const url = githubIssueUrl(organization.name, repository.name, issue.number)
 
   return (
     <>

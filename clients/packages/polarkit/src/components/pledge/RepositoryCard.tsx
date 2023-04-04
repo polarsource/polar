@@ -1,4 +1,5 @@
 import { type OrganizationRead, type RepositoryRead } from '../../api/client'
+import { githubRepoUrl } from '../../utils/github'
 import { GrayCard } from '../ui/Cards'
 
 const abbrStars = (stars: number): string => {
@@ -27,7 +28,7 @@ const RepositoryCard = ({
   organization: OrganizationRead
   repository: RepositoryRead
 }) => {
-  const repoURL = `https://github.com/${organization.name}/${repository.name}`
+  const repoURL = githubRepoUrl(organization.name, repository.name)
 
   return (
     <>

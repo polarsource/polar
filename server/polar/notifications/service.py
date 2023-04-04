@@ -69,10 +69,10 @@ class NotificationsService:
         # send to owning org
         if issue.organization_id:
             await self.create_for_org(
-                session,
-                issue.organization_id,
-                typ,
-                notif,
+                session=session,
+                org_id=issue.organization_id,
+                typ=typ,
+                notif=notif,
             )
             sent_to.add(issue.organization_id)
 
@@ -86,10 +86,10 @@ class NotificationsService:
                         continue
 
                     await self.create_for_org(
-                        session,
-                        p.by_organization_id,
-                        typ,
-                        notif,
+                        session=session,
+                        org_id=p.by_organization_id,
+                        typ=typ,
+                        notif=notif,
                     )
 
                     sent_to.add(p.by_organization_id)

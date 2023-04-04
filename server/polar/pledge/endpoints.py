@@ -249,17 +249,6 @@ async def create_pledge_as_org(
         by_organization_id=peldge_as_org.id,
     )
 
-    # Trigger notifications
-    await notification_service.create_for_issue(
-        session,
-        issue,
-        NotificationType.issue_pledge_created,
-        notif=PartialNotification(
-            issue_id=issue.id,
-            pledge_id=created.id,
-        ),
-    )
-
     ret = PledgeMutationResponse.from_orm(created)
 
     return ret

@@ -7,7 +7,7 @@ import {
 } from 'polarkit/api/client'
 import { requireAuth, useSSE, useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { DashboardFilters } from './filters'
 
 export const DefaultFilters: DashboardFilters = {
@@ -20,6 +20,13 @@ export const DefaultFilters: DashboardFilters = {
   sort: undefined,
 }
 
+const getTab = (tab: string): IssueListType => {
+  if (tab === 'following') {
+    return IssueListType.FOLLOWING
+  }
+  return IssueListType.ISSUES
+}
+
 export const DashboardEnvironment = ({ children }) => {
   const { currentUser } = requireAuth()
   const userOrgQuery = useUserOrganizations(currentUser)
@@ -28,16 +35,19 @@ export const DashboardEnvironment = ({ children }) => {
 
   const currentOrg = useStore((state) => state.currentOrg)
   const currentRepo = useStore((state) => state.currentRepo)
-  //const setCurrentOrg = useStore((state) => state.setCurrentOrg)
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
 
   const setIsOrganizationAccount = useStore(
     (state) => state.setIsOrganizationAccount,
   )
 
-  const [filters, setFilters] = useState<DashboardFilters>({
+  const initFilters = {
     ...DefaultFilters,
-  })
+  }
+
+  const didSetFiltersFromURL = useRef(false)
+
+  const [filters, setFilters] = useState<DashboardFilters>(initFilters)
 
   const organizations = userOrgQuery.data
 
@@ -45,6 +55,28 @@ export const DashboardEnvironment = ({ children }) => {
   useSSE(currentOrg?.platform, currentOrg?.name, currentRepo?.name)
 
   useEffect(() => {
+    // Parse URL and use it to populate filters
+    // TODO: can we do this on the initial load instead to avoid the effect / and ref
+    if (!didSetFiltersFromURL.current) {
+      didSetFiltersFromURL.current = true
+      const s = new URLSearchParams(window.location.search)
+
+      const f = {
+        ...DefaultFilters,
+        q: s.get('q'),
+        tab: getTab(s.get('tab')),
+      }
+      if (s.has('statuses')) {
+        const statuses = s.get('statuses').split(',')
+        f.statusBacklog = statuses.includes('backlog')
+        f.statusBuild = statuses.includes('build')
+        f.statusPullRequest = statuses.includes('pull_request')
+        f.statusCompleted = statuses.includes('completed')
+      }
+
+      setFilters(f)
+    }
+
     // Setup accurate org and repo state
     const { organization: orgSlug, repo: repoSlug } = router.query
 
@@ -76,7 +108,7 @@ export const DashboardEnvironment = ({ children }) => {
         setCurrentOrgRepo(organizations[0], undefined)
       }
     }
-  }, [organizations, router, setCurrentOrgRepo, setIsOrganizationAccount])
+  }, [organizations, router.query, setCurrentOrgRepo, setIsOrganizationAccount])
 
   if (userOrgQuery.isLoading) return <div></div>
   if (!userOrgQuery.isSuccess) return <div>Error</div>

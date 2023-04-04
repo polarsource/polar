@@ -1,5 +1,6 @@
 import { MagnifyingGlassIcon } from '@heroicons/react/20/solid'
 import { DashboardFilters } from 'dashboard/filters'
+import { useRouter } from 'next/router'
 import { IssueListType, IssueSortBy } from 'polarkit/api/client'
 import { ChangeEvent, Dispatch, FormEvent, SetStateAction } from 'react'
 import Checkbox from './Checkbox'
@@ -13,7 +14,9 @@ const Search = (props: {
   const { filters, onSetFilters } = props
 
   const onTabChange = (tab: IssueListType) => {
-    onSetFilters({ ...filters, tab })
+    const f = { ...filters, tab }
+    onSetFilters(f)
+    navigate(f)
   }
 
   const onQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -22,21 +25,61 @@ const Search = (props: {
 
     // if not set, set to relevance
     const sort = filters.sort || IssueSortBy.RELEVANCE
-    onSetFilters({ ...filters, q: event.target.value, sort })
+    const f = { ...filters, q: event.target.value, sort }
+    onSetFilters(f)
+
+    navigate(f)
   }
 
   const onStatusChange = (event: ChangeEvent<HTMLInputElement>) => {
-    event.preventDefault()
     event.stopPropagation()
 
     const id = event.target.id
     let f = { ...filters }
     f[id] = event.target.checked
     onSetFilters(f)
+    navigate(f)
   }
+
+  const navigate = (filters: DashboardFilters) => {
+    const params = new URLSearchParams()
+
+    const statuses = []
+    if (filters.statusBacklog) {
+      statuses.push('backlog')
+    }
+    if (filters.statusBuild) {
+      statuses.push('build')
+    }
+    if (filters.statusPullRequest) {
+      statuses.push('pull_request')
+    }
+    if (filters.statusCompleted) {
+      statuses.push('completed')
+    }
+
+    params.set('statuses', statuses.join(','))
+
+    if (filters.q) {
+      params.set('q', filters.q)
+    }
+    if (filters.tab) {
+      params.set('tab', filters.tab)
+    }
+    if (filters.sort) {
+      params.set('sort', filters.sort)
+    }
+
+    const url = new URL(window.location.href)
+    const newPath = `${url.pathname}?${params.toString()}`
+    router.push(url.pathname, newPath)
+  }
+
+  const router = useRouter()
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    navigate(filters)
   }
 
   const resetStatus = () => {
@@ -82,6 +125,7 @@ const Search = (props: {
               className="block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#9171D9] sm:text-sm sm:leading-6"
               placeholder="Search issues"
               onChange={onQueryChange}
+              value={filters.q}
             />
           </div>
         </div>

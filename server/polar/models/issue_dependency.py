@@ -11,6 +11,7 @@ from polar.kit.schemas import Schema
 from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.models.pull_request import PullRequest
+from polar.models.issue import Issue
 
 
 class IssueDependency(TimestampedModel):
@@ -36,4 +37,12 @@ class IssueDependency(TimestampedModel):
         ForeignKey("issues.id"),
         primary_key=True,
         nullable=False,
+    )
+
+    dependent_issue: "Mapped[Issue]" = relationship(
+        "Issue", uselist=False, lazy="joined", foreign_keys=[dependent_issue_id]
+    )
+
+    dependency_issue: "Mapped[Issue]" = relationship(
+        "Issue", uselist=False, lazy="joined", foreign_keys=[dependency_issue_id]
     )

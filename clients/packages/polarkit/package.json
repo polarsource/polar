@@ -9,6 +9,7 @@
     },
     "./api/client": "./src/api/client/index.ts",
     "./api": "./src/api/index.ts",
+    "./api/types": "./src/api/types.ts",
     "./store": "./src/store/index.ts",
     "./hooks": "./src/hooks/index.ts",
     "./utils": "./src/utils/index.ts",

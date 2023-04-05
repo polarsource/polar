@@ -5,6 +5,7 @@ from polar.issue.schemas import IssueRead
 from polar.kit.schemas import Schema
 from enum import Enum
 from polar.pledge.schemas import PledgeRead
+from polar.pull_request.schemas import PullRequestRead
 
 
 class NotificationType(str, Enum):
@@ -31,3 +32,4 @@ class NotificationRead(Schema):
     created_at: datetime
     pledge: PledgeRead | None = None
     issue: IssueRead | None = None
+    pull_request: PullRequestRead | None = None

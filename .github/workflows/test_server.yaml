@@ -13,6 +13,44 @@ on:
       - '.github/**'
 
 jobs:
+  linters:
+    name: "Linters"
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11"]
+        poetry-version: ["1.3.2"]
+        os: [ubuntu-20.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install poetry
+        run: pipx install poetry
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "poetry"
+      - name: 🔧 poetry install
+        working-directory: ./server
+        run: poetry install --no-root
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            server/.mypy_cache
+            server/.pytest_cache
+          key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.poetry-version }}
+
+      - name: 🛟 Type Check Server (mypy)
+        working-directory: ./server
+        run:  poetry run task lint_types
+
+      - name: 🐶 Type Check Server (ruff)
+        working-directory: ./server
+        run:  poetry run task lint_ruff_polar
+
+
   test:
     strategy:
       fail-fast: false
@@ -21,6 +59,7 @@ jobs:
         poetry-version: ["1.3.2"]
         os: [ubuntu-20.04]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
 
     services:
       postgres:
@@ -66,14 +105,6 @@ jobs:
             server/.mypy_cache
             server/.pytest_cache
           key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.poetry-version }}
-
-      - name: 🛟 Type Check Server (mypy)
-        working-directory: ./server
-        run:  poetry run task lint_types
-
-      - name: 🐶 Type Check Server (ruff)
-        working-directory: ./server
-        run:  poetry run task lint_ruff_polar
 
       - name: ⚗️ alembic migrate
         working-directory: ./server

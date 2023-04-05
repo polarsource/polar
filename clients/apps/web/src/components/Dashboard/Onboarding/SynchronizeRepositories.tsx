@@ -121,8 +121,9 @@ export const SynchronizeRepositories = ({
           )
         })}
       </ul>
-      {progress.percentage > 40 ||
-        (debug && <OnboardingControls onClickContinue={onContinue} />)}
+      {(progress.percentage > 40 || debug) && (
+        <OnboardingControls onClickContinue={onContinue} />
+      )}
     </>
   )
 }

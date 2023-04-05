@@ -47,20 +47,20 @@ class GithubBadge:
         if organization.onboarded_at is None:
             return (False, "org_not_onboarded")
 
-        is_not_retroactive = issue.issue_created_at > organization.onboarded_at
-        if is_not_retroactive:
+        is_retroactive = issue.issue_created_at < organization.onboarded_at
+        if not is_retroactive:
             return (True, "new_issue_post_onboarding")
 
         if setting_retroactive_override is False:
             return (False, "retroactive_disabled_by_override")
 
         if setting_retroactive_override is True:
-            return (False, "retroactive_enforced_by_override")
+            return (True, "retroactive_enforced_by_override")
 
         if organization.funding_badge_retroactive:
             return (True, "org_enabled_retroactive_embed")
 
-        return (True, "org_disabled_retroactive_embed")
+        return (False, "org_disabled_retroactive_embed")
 
     def generate_svg_url(self) -> str:
         return "{base}/api/github/{org}/{repo}/issues/{number}/funding.svg".format(

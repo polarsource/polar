@@ -54,7 +54,7 @@ def seed() -> None:
 
 
 if __name__ == "__main__":
-    if not settings.is_development() or settings.is_testing():
-        raise RuntimeError("DANGER! You cannot run this script in {settings.env}!")
+    if not (settings.is_development() or settings.is_testing()):
+        raise RuntimeError(f"DANGER! You cannot run this script in {settings.ENV}!")
 
     cli()

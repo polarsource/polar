@@ -14,6 +14,7 @@ from polar.notifications.tasks.email import (
     MetadataMaintainerPledgeCreated,
     MetadataPledgedIssuePullRequestCreated,
     email_metadata,
+    render_email,
 )
 from polar.postgres import AsyncSession
 
@@ -47,6 +48,15 @@ async def test_maintainer_pledge_created_metadata(
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
         pledge_amount="123.45",
+    )
+
+    # render it
+    rendered = render_email(res)
+    assert (
+        rendered
+        == """Hi foobar,
+
+pledging_org has pledged $123.45 to <a href="https://github.com/testorg/testrepo/issues/123">issue title</a>."""  # noqa: E501
     )
 
 
@@ -83,4 +93,16 @@ async def test_pledger_pull_request_created(
         pull_request_url="https://github.com/testorg/testrepo/pull/5555",
         pull_request_title="PR Title",
         pull_request_creator_username="pr_creator_login",
+        repo_owner="testorg",
+        repo_name="testrepo",
+    )
+
+    # render it
+    rendered = render_email(res)
+    assert (
+        rendered
+        == """Hi foobar,
+
+pr_creator_login just opened a <a href="https://github.com/testorg/testrepo/pull/5555">pull request</a> to testorg/testrepo that might solve
+the issue <a href="https://github.com/testorg/testrepo/issues/123">issue title</a> that you've backed!"""  # noqa: E501
     )

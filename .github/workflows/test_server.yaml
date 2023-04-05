@@ -75,6 +75,14 @@ jobs:
         working-directory: ./server
         run:  poetry run task lint_ruff_polar
 
+      - name: ⚗️ alembic migrate
+        working-directory: ./server
+        run:  poetry run task db_migrate
+
+      - name: ⚗️ alembic check
+        working-directory: ./server
+        run:  poetry run alembic check
+
       - name: 🐍 Run tests (pytest)
         working-directory: ./server
         run: poetry run pytest

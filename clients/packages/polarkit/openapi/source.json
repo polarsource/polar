@@ -2406,6 +2406,9 @@
                     },
                     "issue": {
                         "$ref": "#/components/schemas/IssueRead"
+                    },
+                    "pull_request": {
+                        "$ref": "#/components/schemas/PullRequestRead"
                     }
                 }
             },

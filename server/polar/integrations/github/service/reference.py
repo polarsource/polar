@@ -443,6 +443,9 @@ class GitHubIssueReferencesService:
                 "issue.create_reference.created",
                 ref=ref,
             )
+            if ref.on_created_signal:
+                await ref.on_created_signal.send_async(ref, session=session)
+
             return
         except IntegrityError as e:
             log.info(
@@ -464,6 +467,9 @@ class GitHubIssueReferencesService:
 
         await session.execute(stmt)
         await session.commit()
+
+        if ref.on_updated_signal:
+            await ref.on_updated_signal.send_async(ref, session=session)
 
 
 github_reference = GitHubIssueReferencesService()

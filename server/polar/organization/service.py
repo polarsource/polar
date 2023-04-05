@@ -273,6 +273,7 @@ class OrganizationService(
     ) -> Organization:
         # Leverage .update() in case we expand this with additional settings
         enabled_funding_badge_retroactive = False
+        disabled_funding_badge_retroactive = False
 
         if settings.funding_badge_retroactive is not None:
             if (
@@ -280,6 +281,12 @@ class OrganizationService(
                 and settings.funding_badge_retroactive
             ):
                 enabled_funding_badge_retroactive = True
+            elif (
+                organization.funding_badge_retroactive
+                and not settings.funding_badge_retroactive
+            ):
+                disabled_funding_badge_retroactive = True
+
             organization.funding_badge_retroactive = settings.funding_badge_retroactive
 
         if settings.funding_badge_show_amount is not None:
@@ -319,6 +326,8 @@ class OrganizationService(
             await enqueue_job(
                 "github.badge.embed_retroactively_on_organization", organization.id
             )
+        elif disabled_funding_badge_retroactive:
+            await enqueue_job("github.badge.remove_on_organization", organization.id)
 
         return updated
 

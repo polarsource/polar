@@ -9,6 +9,7 @@ from .exceptions import (
     GithubBadgeAlreadyEmbedded,
     GithubBadgeNotEmbeddable,
     GithubBadgeEmbeddingDisabled,
+    GithubBadgeNotEmbedded,
 )
 
 
@@ -78,14 +79,21 @@ class GithubBadge:
             number=self.issue.number,
         )
 
-    def generate_body_with_badge(self, body: str) -> str:
+    def _badge_markdown(self) -> str:
         svg_url = self.generate_svg_url()
         funding_url = self.generate_funding_url()
-
-        # TODO: Improve alt state
         svg_markdown = f"![Funding with Polar]({svg_url})"
-        badge_markdown = f"[{svg_markdown}]({funding_url})"
-        return f"{body}\n\n{badge_markdown}"
+        return f"[{svg_markdown}]({funding_url})"
+
+    def generate_body_with_badge(self, body: str) -> str:
+        return f"{body}\n\n{self._badge_markdown()}"
+
+    def generate_body_without_badge(self, body: str) -> str:
+        badge_markdown = self._badge_markdown()
+        if body.endswith(badge_markdown):
+            # TODO: Be better at finding the badge in the body.
+            return body[: -len(badge_markdown)].rstrip()
+        return body
 
     def badge_is_embedded(self, body: str) -> bool:
         svg_url = self.generate_svg_url()
@@ -138,4 +146,16 @@ class GithubBadge:
 
         body_with_badge = self.generate_body_with_badge(body)
         updated = await self.update_body(client, body_with_badge)
+        return updated
+
+    async def remove(self) -> github.rest.Issue:
+        client = github.get_app_installation_client(self.organization.installation_id)
+
+        body = await self.get_current_body(client)
+        if not self.badge_is_embedded(body):
+            self.embedded = False
+            raise GithubBadgeNotEmbedded()
+
+        body_without_badge = self.generate_body_without_badge(body)
+        updated = await self.update_body(client, body_without_badge)
         return updated

@@ -67,3 +67,38 @@ async def embed_badge_retroactively_on_repository(
             await github_issue.embed_badge(
                 session, organization=organization, repository=repository, issue=i
             )
+
+
+@task("github.badge.remove_on_organization")
+async def remove_badges_on_organization(ctx: JobContext, organization_id: UUID) -> None:
+    async with AsyncSessionLocal() as session:
+        repos = await repository.list_by_organization(session, organization_id)
+        for repo in repos:
+            await enqueue_job(
+                "github.badge.remove_on_repository",
+                organization_id,
+                repo.id,
+            )
+
+
+@task("github.badge.remove_on_repository")
+async def remove_badges_on_repository(
+    ctx: JobContext, organization_id: UUID, repository_id: UUID
+) -> None:
+    async with AsyncSessionLocal() as session:
+        organization, repository = await get_organization_and_repo(
+            session, organization_id, repository_id
+        )
+
+        issues = await issue.list_by_repository_type_and_status(
+            session=session,
+            repository_ids=[repository.id],
+            issue_list_type=IssueListType.issues,
+            include_closed=True,  # Remove badge on closed issues too
+            sort_by_recently_updated=True,
+        )
+
+        for i in reversed(issues):
+            await github_issue.remove_badge(
+                session, organization=organization, repository=repository, issue=i
+            )

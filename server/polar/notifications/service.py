@@ -6,6 +6,7 @@ import structlog
 from polar.exceptions import IntegrityError
 from polar.kit.extensions.sqlalchemy import sql
 from polar.models.pledge import Pledge
+from polar.models.pull_request import PullRequest
 from polar.pledge.service import pledge
 from polar.models.notification import Notification
 from polar.models.user_organization import UserOrganization
@@ -35,6 +36,11 @@ class NotificationsService:
             )
             .join(Pledge, Pledge.id == Notification.pledge_id, isouter=True)
             .join(Issue, Issue.id == Notification.issue_id, isouter=True)
+            .join(
+                PullRequest,
+                PullRequest.id == Notification.pull_request_id,
+                isouter=True,
+            )
             .where(UserOrganization.user_id == user_id)
             .order_by(desc(Notification.created_at))
             .limit(100)

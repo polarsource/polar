@@ -6,6 +6,7 @@ from polar.models.notification import Notification
 from polar.models.pledge import Pledge
 from polar.pledge.schemas import PledgeRead
 from polar.postgres import AsyncSession, get_db_session
+from polar.pull_request.schemas import PullRequestRead
 
 from .schemas import NotificationRead, NotificationType
 from .service import notifications
@@ -27,6 +28,9 @@ async def get(
             created_at=n.created_at,
             pledge=PledgeRead.from_db(n.pledge) if n.pledge else None,
             issue=IssueRead.from_orm(n.issue) if n.issue else None,
+            pull_request=PullRequestRead.from_orm(n.pull_request)
+            if n.pull_request
+            else None,
         )
 
     return [decorate(n) for n in notifs]

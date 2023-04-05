@@ -133,7 +133,7 @@ const IssuePledgeCreated = ({ n }: { n: withPledge }) => {
   )
 }
 
-const IssuePledgedPullRequestCreated = ({ n }: { n: withPullRequest }) => {
+const PullRequestCreatedNotification = ({ n }: { n: withPullRequest }) => {
   const title = `${n.pull_request.author.login} created a PR for issue #${n.issue.number}`
   return (
     <Item title={title} timestamp={n.created_at} iconBg="bg-[#DFEFE4]">
@@ -142,11 +142,19 @@ const IssuePledgedPullRequestCreated = ({ n }: { n: withPullRequest }) => {
   )
 }
 
-const IssuePledgedPullRequestMerged = ({ n }: { n: withPullRequest }) => {
+const PullRequestMergedNotification = ({ n }: { n: withPullRequest }) => {
   const title = `${n.pull_request.author.login} merged a PR for issue #${n.issue.number}`
   return (
     <Item title={title} timestamp={n.created_at} iconBg="bg-[#E8DEFC]">
       <PullRequestMergedIcon />
+    </Item>
+  )
+}
+const BranchCreatedNotification = ({ n }: { n: withPullRequest }) => {
+  const title = `${n.pull_request.author.login} started working on issue #${n.issue.number}`
+  return (
+    <Item title={title} timestamp={n.created_at} iconBg="bg-[#ECECEC]">
+      <BranchCreatedIcon />
     </Item>
   )
 }
@@ -155,12 +163,27 @@ const Notification = ({ n }: { n: NotificationRead }) => {
   if (n.type === 'issue_pledge_created' && n.pledge) {
     return <IssuePledgeCreated n={n as withPledge} />
   }
+
+  if (n.type === 'issue_pledged_branch_created' && n.pull_request) {
+    return <BranchCreatedNotification n={n as withPullRequest} />
+  }
   if (n.type === 'issue_pledged_pull_request_created' && n.pull_request) {
-    return <IssuePledgedPullRequestCreated n={n as withPullRequest} />
+    return <PullRequestCreatedNotification n={n as withPullRequest} />
   }
   if (n.type === 'issue_pledged_pull_request_merged' && n.pull_request) {
-    return <IssuePledgedPullRequestMerged n={n as withPullRequest} />
+    return <PullRequestMergedNotification n={n as withPullRequest} />
   }
+
+  if (n.type === 'maintainer_issue_branch_created' && n.pull_request) {
+    return <BranchCreatedNotification n={n as withPullRequest} />
+  }
+  if (n.type === 'maintainer_issue_pull_request_created' && n.pull_request) {
+    return <PullRequestCreatedNotification n={n as withPullRequest} />
+  }
+  if (n.type === 'maintainer_issue_pull_request_merged' && n.pull_request) {
+    return <PullRequestMergedNotification n={n as withPullRequest} />
+  }
+
   return <></>
 }
 

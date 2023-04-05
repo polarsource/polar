@@ -13,6 +13,7 @@ from polar.models.user_organization import UserOrganization
 from polar.models.issue import Issue
 from polar.notifications.schemas import NotificationType
 from polar.postgres import AsyncSession
+from polar.worker import enqueue_job
 
 log = structlog.get_logger()
 
@@ -70,18 +71,18 @@ class NotificationsService:
         nested = await session.begin_nested()
 
         try:
-            session.add(
-                Notification(
-                    organization_id=org_id,
-                    type=typ,
-                    issue_id=notif.issue_id,
-                    pledge_id=notif.pledge_id,
-                    pull_request_id=notif.pull_request_id,
-                    dedup_key=dedup_key,
-                )
+            notification = Notification(
+                organization_id=org_id,
+                type=typ,
+                issue_id=notif.issue_id,
+                pledge_id=notif.pledge_id,
+                pull_request_id=notif.pull_request_id,
+                dedup_key=dedup_key,
             )
+            session.add(notification)
             await nested.commit()
             await session.commit()
+            await enqueue_job("notifications.send", notification_id=notification.id)
             return True
         except IntegrityError as e:
             await nested.rollback()

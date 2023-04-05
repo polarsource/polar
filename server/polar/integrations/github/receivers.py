@@ -27,8 +27,8 @@ async def schedule_embed_badge_task(
     if not should_embed:
         return
 
-    log.info("github.issue.embed_badge:scheduled", issue_id=issue.id)
-    await enqueue_job("github.issue.embed_badge", issue.id)
+    log.info("github.badge.embed_on_issue:scheduled", issue_id=issue.id)
+    await enqueue_job("github.badge.embed_on_issue", issue.id)
 
 
 @github_issue_created.connect

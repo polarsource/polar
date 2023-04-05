@@ -19,6 +19,7 @@ from ..exceptions import (
     GithubBadgeNotEmbeddable,
     GithubBadgeAlreadyEmbedded,
     GithubBadgeEmbeddingDisabled,
+    GithubBadgeNotEmbedded,
 )
 
 log = structlog.get_logger()
@@ -146,6 +147,35 @@ class GithubIssueService(IssueService):
                 issue_id=issue.id,
             )
 
+        return False
+
+    async def remove_badge(
+        self,
+        session: AsyncSession,
+        *,
+        organization: Organization,
+        repository: Repository,
+        issue: Issue,
+    ) -> bool:
+        try:
+            badge = GithubBadge(
+                organization=organization, repository=repository, issue=issue
+            )
+            await badge.remove()
+            # Why only save the timestamp vs. updated body/issue?
+            # There's a race condition here since we updated the issue and it will
+            # trigger a webhook upon which we'll update the entire issue except for this
+            # timestamp. So we leave the updating of the issue to our webhook handler.
+            issue.funding_badge_embedded_at = None
+            await issue.save(session)
+            return True
+        except GithubBadgeNotEmbedded:
+            log.info(
+                "github.issue.remove_badge",
+                embedded=False,
+                reason="not_embedded",
+                issue_id=issue.id,
+            )
         return False
 
 

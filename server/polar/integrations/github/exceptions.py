@@ -6,5 +6,9 @@ class GithubBadgeAlreadyEmbedded(Exception):
     ...
 
 
+class GithubBadgeNotEmbedded(Exception):
+    ...
+
+
 class GithubBadgeEmbeddingDisabled(Exception):
     ...

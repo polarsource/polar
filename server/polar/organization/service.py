@@ -13,6 +13,7 @@ from polar.models import Organization, User, UserOrganization, Repository, Issue
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, sql
 from polar.issue.service import issue as issue_service
+from polar.worker import enqueue_job
 
 from .schemas import (
     OrganizationCreate,
@@ -271,8 +272,21 @@ class OrganizationService(
         settings: OrganizationSettingsUpdate,
     ) -> Organization:
         # Leverage .update() in case we expand this with additional settings
+        enabled_funding_badge_retroactive = False
+        disabled_funding_badge_retroactive = False
 
         if settings.funding_badge_retroactive is not None:
+            if (
+                not organization.funding_badge_retroactive
+                and settings.funding_badge_retroactive
+            ):
+                enabled_funding_badge_retroactive = True
+            elif (
+                organization.funding_badge_retroactive
+                and not settings.funding_badge_retroactive
+            ):
+                disabled_funding_badge_retroactive = True
+
             organization.funding_badge_retroactive = settings.funding_badge_retroactive
 
         if settings.funding_badge_show_amount is not None:
@@ -307,6 +321,14 @@ class OrganizationService(
             organization_id=organization.id,
             settings=settings.dict(),
         )
+
+        if enabled_funding_badge_retroactive:
+            await enqueue_job(
+                "github.badge.embed_retroactively_on_organization", organization.id
+            )
+        elif disabled_funding_badge_retroactive:
+            await enqueue_job("github.badge.remove_on_organization", organization.id)
+
         return updated
 
 

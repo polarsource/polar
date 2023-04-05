@@ -82,6 +82,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         include_open: bool = True,
         include_closed: bool = False,
         sort_by_newest: bool = False,
+        sort_by_recently_updated: bool = False,
         sort_by_relevance: bool = False,
     ) -> Sequence[Issue]:
         statement: Select[Tuple[Issue]] | None = None
@@ -139,6 +140,8 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
 
         if sort_by_newest:
             statement = statement.order_by(desc(Issue.issue_created_at))
+        if sort_by_recently_updated:
+            statement = statement.order_by(desc(Issue.issue_modified_at))
 
         res = await session.execute(statement)
         issues = res.scalars().unique().all()

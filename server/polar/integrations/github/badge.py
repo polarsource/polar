@@ -91,9 +91,12 @@ class GithubBadge:
     def generate_body_without_badge(self, body: str) -> str:
         badge_markdown = self._badge_markdown()
         if body.endswith(badge_markdown):
-            # TODO: Be better at finding the badge in the body.
+            # If the badge is at the end of the body, we remove it plus any trailing
+            # whitespace (as we added some)
             return body[: -len(badge_markdown)].rstrip()
-        return body
+        else:
+            # Otherwise, we just remove the (first) badge markdown
+            return body.replace(badge_markdown, "", 1)
 
     def badge_is_embedded(self, body: str) -> bool:
         svg_url = self.generate_svg_url()

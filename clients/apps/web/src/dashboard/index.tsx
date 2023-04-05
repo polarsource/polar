@@ -87,12 +87,12 @@ export const DashboardEnvironment = ({ children }) => {
       let org: OrganizationRead | undefined
       let repo: RepositoryRead | undefined
 
-      if (orgSlug) {
+      if (orgSlug && organizations) {
         const orgSearch = organizations.filter((o) => o.name === orgSlug)
         org = orgSearch[0]
       }
 
-      if (repoSlug) {
+      if (repoSlug && org?.repositories) {
         const repoSearch = org.repositories.filter((r) => r.name === repoSlug)
         repo = repoSearch[0]
       }

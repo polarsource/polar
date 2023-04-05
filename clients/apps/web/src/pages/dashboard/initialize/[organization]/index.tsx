@@ -21,12 +21,10 @@ const Page: NextLayoutComponentType = () => {
   if (userOrgQuery.isLoading) return <div></div>
   if (!userOrgQuery.isSuccess) return <div>Error</div>
 
-  if (!currentOrg || currentOrg.name !== orgSlug) {
-    const org = userOrgQuery.data.find(
-      (org: OrganizationRead) => org.name === orgSlug,
-    )
-    setCurrentOrg(org)
-  }
+  const org = userOrgQuery.data.find(
+    (org: OrganizationRead) => org.name === orgSlug,
+  )
+  setCurrentOrg(org)
 
   if (!currentOrg) {
     return <div>Loading org...</div>

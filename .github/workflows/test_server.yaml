@@ -52,6 +52,7 @@ jobs:
 
 
   test:
+    name: "Tests"
     strategy:
       fail-fast: false
       matrix:
@@ -108,10 +109,14 @@ jobs:
 
       - name: ⚗️ alembic migrate
         working-directory: ./server
+        env:
+          POLAR_ENV: testing
         run:  poetry run task db_migrate
 
       - name: ⚗️ alembic check
         working-directory: ./server
+        env:
+          POLAR_ENV: testing
         run:  poetry run alembic check
 
       - name: 🐍 Run tests (pytest)

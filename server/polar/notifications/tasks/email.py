@@ -1,4 +1,5 @@
 from uuid import UUID
+from jinja2 import StrictUndefined
 from pydantic import BaseModel
 import structlog
 
@@ -74,6 +75,8 @@ class MetadataPledgedIssuePullRequestCreated(BaseModel):
     pull_request_url: str
     pull_request_title: str
     pull_request_creator_username: str
+    repo_owner: str
+    repo_name: str
 
 
 async def email_metadata(
@@ -162,23 +165,30 @@ async def email_metadata(
             pull_request_creator_username=pr.author["login"],
             pull_request_title=pr.title,
             pull_request_url=pr_url,
+            repo_owner=org.name,
+            repo_name=repo.name,
         )
 
     return None
 
 
-async def render_email(meta: MetadataMaintainerPledgeCreated) -> str | None:
-    env = NativeEnvironment()
-    t = env.from_string(MAINTAINER_PLEDGE_CREATED)
+def render_email(
+    meta: MetadataMaintainerPledgeCreated | MetadataPledgedIssuePullRequestCreated,
+) -> str | None:
+
+    template = None
+    if isinstance(meta, MetadataMaintainerPledgeCreated):
+        template = MAINTAINER_PLEDGE_CREATED
+    if isinstance(meta, MetadataPledgedIssuePullRequestCreated):
+        template = PLEDGER_ISSUE_PULL_REQUEST_CREATED
+
+    if not template:
+        return None
+
+    env = NativeEnvironment(undefined=StrictUndefined)
+    t = env.from_string(template)
     res = t.render(meta)
     return res
-
-
-MAINTAINER_PLEDGE_CREATED = """
-Hi {{username}},
-
-{{pledger_name}} has pledged <a href="{{issue_url}}">{{issue_title}}</a> with ${{pledge_amount}}.
-"""  # noqa: E501
 
 
 def get_cents_in_dollar_string(cents: int) -> str:
@@ -186,3 +196,15 @@ def get_cents_in_dollar_string(cents: int) -> str:
     if cents % 100 == 0:
         return "%d" % round(dollars)
     return "%.2f" % round(dollars, 2)
+
+
+MAINTAINER_PLEDGE_CREATED = """Hi {{username}},
+
+{{pledger_name}} has pledged ${{pledge_amount}} to <a href="{{issue_url}}">{{issue_title}}</a>.
+"""  # noqa: E501
+
+PLEDGER_ISSUE_PULL_REQUEST_CREATED = """Hi {{username}},
+
+{{pull_request_creator_username}} just opened a <a href="{{pull_request_url}}">pull request</a> to {{repo_owner}}/{{repo_name}} that might solve
+the issue <a href="{{issue_url}}">{{issue_title}}</a> that you've backed!
+"""  # noqa: E501

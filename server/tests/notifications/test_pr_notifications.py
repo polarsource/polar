@@ -63,17 +63,25 @@ async def test_pledged_issue_pull_request_created(
         external_id=str(pr.id),
     )
 
-    assert m.call_count == 2
-    m.assert_called_with(
+    assert m.call_count == 3
+    m.assert_any_call(
         session=ANY,
         org_id=ANY,
         typ=NotificationType.issue_pledged_pull_request_created,
         notif=PartialNotification(
             issue_id=issue.id,
+            pull_request_id=pr.id,
         ),
     )
-
-    # TODO: only send if the issue has a peldge!
+    m.assert_any_call(
+        session=ANY,
+        org_id=ANY,
+        typ=NotificationType.maintainer_issue_pull_request_created,
+        notif=PartialNotification(
+            issue_id=issue.id,
+            pull_request_id=pr.id,
+        ),
+    )
 
 
 @pytest.mark.asyncio
@@ -126,14 +134,22 @@ async def test_pledged_issue_pull_request_merged(
         external_id=str(pr.id),
     )
 
-    assert m.call_count == 2
-    m.assert_called_with(
+    assert m.call_count == 3
+    m.assert_any_call(
         session=ANY,
         org_id=ANY,
         typ=NotificationType.issue_pledged_pull_request_merged,
         notif=PartialNotification(
             issue_id=issue.id,
+            pull_request_id=pr.id,
         ),
     )
-
-    # TODO: only send if the issue has a peldge!
+    m.assert_any_call(
+        session=ANY,
+        org_id=ANY,
+        typ=NotificationType.maintainer_issue_pull_request_merged,
+        notif=PartialNotification(
+            issue_id=issue.id,
+            pull_request_id=pr.id,
+        ),
+    )

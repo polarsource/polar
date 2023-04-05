@@ -38,9 +38,19 @@ async def issue_reference_notifications(ref: IssueReference, session: AsyncSessi
             await notification_service.create_for_issue(
                 session=session,
                 issue=issue,
+                typ=NotificationType.maintainer_issue_pull_request_created,
+                notif=PartialNotification(
+                    issue_id=issue.id,
+                    pull_request_id=pr.id,
+                ),
+            )
+            await notification_service.create_for_issue_pledgers(
+                session=session,
+                issue=issue,
                 typ=NotificationType.issue_pledged_pull_request_created,
                 notif=PartialNotification(
                     issue_id=issue.id,
+                    pull_request_id=pr.id,
                 ),
             )
 
@@ -48,8 +58,40 @@ async def issue_reference_notifications(ref: IssueReference, session: AsyncSessi
             await notification_service.create_for_issue(
                 session=session,
                 issue=issue,
+                typ=NotificationType.maintainer_issue_pull_request_merged,
+                notif=PartialNotification(
+                    issue_id=issue.id,
+                    pull_request_id=pr.id,
+                ),
+            )
+            await notification_service.create_for_issue_pledgers(
+                session=session,
+                issue=issue,
                 typ=NotificationType.issue_pledged_pull_request_merged,
                 notif=PartialNotification(
                     issue_id=issue.id,
+                    pull_request_id=pr.id,
                 ),
             )
+
+    if ref.reference_type == ReferenceType.EXTERNAL_GITHUB_COMMIT:
+        issue = await issue_service.get_by_id(session, ref.issue_id)
+        if not issue:
+            return
+
+        await notification_service.create_for_issue(
+            session=session,
+            issue=issue,
+            typ=NotificationType.maintainer_issue_branch_created,
+            notif=PartialNotification(
+                issue_id=issue.id,
+            ),
+        )
+        await notification_service.create_for_issue_pledgers(
+            session=session,
+            issue=issue,
+            typ=NotificationType.issue_pledged_branch_created,
+            notif=PartialNotification(
+                issue_id=issue.id,
+            ),
+        )

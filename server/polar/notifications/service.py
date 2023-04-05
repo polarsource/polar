@@ -89,8 +89,6 @@ class NotificationsService:
         typ: NotificationType,
         notif: PartialNotification,
     ):
-        sent_to: set[UUID] = set()
-
         # send to owning org
         if issue.organization_id:
             await self.create_for_org(
@@ -99,7 +97,15 @@ class NotificationsService:
                 typ=typ,
                 notif=notif,
             )
-            sent_to.add(issue.organization_id)
+
+    async def create_for_issue_pledgers(
+        self,
+        session: AsyncSession,
+        issue: Issue,
+        typ: NotificationType,
+        notif: PartialNotification,
+    ):
+        sent_to: set[UUID] = set()
 
         # send to pledgers
         pledges = await pledge.get_by_issue_ids(session, [issue.id])

@@ -2,12 +2,11 @@ from uuid import UUID
 import structlog
 from polar.integrations.github import service
 
-from polar.worker import JobContext, enqueue_job, task
+from polar.worker import JobContext, task
 from polar.postgres import AsyncSessionLocal
 
 from .utils import get_organization_and_repo
 from ..service.issue import github_issue
-from polar.repository.service import repository
 
 log = structlog.get_logger()
 

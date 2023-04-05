@@ -1,3 +1,3 @@
-from . import repo, webhook, issue
+from . import badge, repo, webhook, issue
 
-__all__ = ["repo", "webhook", "issue"]
+__all__ = ["badge", "repo", "webhook", "issue"]

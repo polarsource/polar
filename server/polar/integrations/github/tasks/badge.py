@@ -60,8 +60,7 @@ async def embed_badge_retroactively_on_repository(
             session=session,
             repository_ids=[repository.id],
             issue_list_type=IssueListType.issues,
-            # TODO: Reverse order by created at is ok?
-            sort_by_newest=True,
+            sort_by_recently_updated=True,
         )
 
         for i in reversed(issues):

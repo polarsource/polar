@@ -79,6 +79,17 @@ class MetadataPledgedIssuePullRequestCreated(BaseModel):
     repo_name: str
 
 
+class MetadataPledgedIssuePullRequestMerged(MetadataPledgedIssuePullRequestCreated):
+    username: str
+    issue_url: str
+    issue_title: str
+    pull_request_url: str
+    pull_request_title: str
+    pull_request_creator_username: str
+    repo_owner: str
+    repo_name: str
+
+
 async def email_metadata(
     session: AsyncSession, user: User, notif: Notification
 ) -> MetadataMaintainerPledgeCreated | MetadataPledgedIssuePullRequestCreated | None:
@@ -123,11 +134,18 @@ async def email_metadata(
 
     if notif.type == NotificationType.issue_pledge_created:
         # Build pledger name
-        pledger_name = "anonymous"
+        pledger_name = None
         if notif.pledge and notif.pledge.organization:
             pledger_name = notif.pledge.organization.name
         elif notif.pledge and notif.pledge.user:
             pledger_name = notif.pledge.user.username
+        if not pledger_name:
+            log.warning(
+                "render_email.no_pledger_name",
+                typ=notif.type,
+                id=notif.id,
+            )
+            return None
 
         return MetadataMaintainerPledgeCreated(
             username=user.username,
@@ -138,7 +156,6 @@ async def email_metadata(
         )
 
     if notif.type == NotificationType.issue_pledged_pull_request_created:
-
         pr = notif.pull_request
         if not pr:
             log.warning(
@@ -169,11 +186,44 @@ async def email_metadata(
             repo_name=repo.name,
         )
 
+    if notif.type == NotificationType.issue_pledged_pull_request_merged:
+        pr = notif.pull_request
+        if not pr:
+            log.warning(
+                "render_email.no_pr",
+                typ=notif.type,
+                id=notif.id,
+            )
+            return None
+
+        pr_url = f"https://github.com/{org.name}/{repo.name}/pull/{pr.number}"
+
+        if not pr.author or not pr.author.get("login"):
+            log.warning(
+                "render_email.no_pr_author",
+                typ=notif.type,
+                id=notif.id,
+            )
+            return None
+
+        return MetadataPledgedIssuePullRequestMerged(
+            username=user.username,
+            issue_url=issue_url,
+            issue_title=notif.issue.title,
+            pull_request_creator_username=pr.author["login"],
+            pull_request_title=pr.title,
+            pull_request_url=pr_url,
+            repo_owner=org.name,
+            repo_name=repo.name,
+        )
+
     return None
 
 
 def render_email(
-    meta: MetadataMaintainerPledgeCreated | MetadataPledgedIssuePullRequestCreated,
+    meta: MetadataMaintainerPledgeCreated
+    | MetadataPledgedIssuePullRequestCreated
+    | MetadataPledgedIssuePullRequestMerged,
 ) -> str | None:
 
     template = None
@@ -181,6 +231,8 @@ def render_email(
         template = MAINTAINER_PLEDGE_CREATED
     if isinstance(meta, MetadataPledgedIssuePullRequestCreated):
         template = PLEDGER_ISSUE_PULL_REQUEST_CREATED
+    if isinstance(meta, MetadataPledgedIssuePullRequestMerged):
+        template = PLEDGER_ISSUE_PULL_REQUEST_MERGED
 
     if not template:
         return None
@@ -205,6 +257,14 @@ MAINTAINER_PLEDGE_CREATED = """Hi {{username}},
 
 PLEDGER_ISSUE_PULL_REQUEST_CREATED = """Hi {{username}},
 
-{{pull_request_creator_username}} just opened a <a href="{{pull_request_url}}">pull request</a> to {{repo_owner}}/{{repo_name}} that might solve
+{{pull_request_creator_username}} just opened a <a href="{{pull_request_url}}">pull request</a> to {{repo_owner}}/{{repo_name}} that solves
 the issue <a href="{{issue_url}}">{{issue_title}}</a> that you've backed!
+"""  # noqa: E501
+
+PLEDGER_ISSUE_PULL_REQUEST_MERGED = """Hi {{username}},
+
+{{pull_request_creator_username}} just merged a <a href="{{pull_request_url}}">pull request</a> to {{repo_owner}}/{{repo_name}} that solves
+the issue <a href="{{issue_url}}">{{issue_title}}</a> that you've backed!
+
+The money will soon be paid out to {{repo_owner}}.
 """  # noqa: E501

@@ -13,6 +13,7 @@ from polar.notifications.schemas import NotificationType
 from polar.notifications.tasks.email import (
     MetadataMaintainerPledgeCreated,
     MetadataPledgedIssuePullRequestCreated,
+    MetadataPledgedIssuePullRequestMerged,
     email_metadata,
     render_email,
 )
@@ -103,6 +104,56 @@ async def test_pledger_pull_request_created(
         rendered
         == """Hi foobar,
 
-pr_creator_login just opened a <a href="https://github.com/testorg/testrepo/pull/5555">pull request</a> to testorg/testrepo that might solve
+pr_creator_login just opened a <a href="https://github.com/testorg/testrepo/pull/5555">pull request</a> to testorg/testrepo that solves
 the issue <a href="https://github.com/testorg/testrepo/issues/123">issue title</a> that you've backed!"""  # noqa: E501
+    )
+
+
+@pytest.mark.asyncio
+async def test_pledger_pull_request_merged(
+    session: AsyncSession,
+    organization: Organization,
+    pledging_organization: Organization,
+    repository: Repository,
+    issue: Issue,
+    user: User,
+    pledge_as_org: Pledge,
+    pull_request: PullRequest,
+) -> None:
+
+    notif = await Notification.create(
+        session=session,
+        id=uuid.uuid4(),
+        organization_id=pledging_organization.id,
+        issue_id=issue.id,
+        type=NotificationType.issue_pledged_pull_request_merged,
+        dedup_key="test3",
+        pledge_id=pledge_as_org.id,
+        pull_request_id=pull_request.id,
+    )
+
+    res = await email_metadata(session, user, notif)
+
+    assert res is not None
+    assert res == MetadataPledgedIssuePullRequestMerged(
+        username="foobar",
+        issue_url="https://github.com/testorg/testrepo/issues/123",
+        issue_title="issue title",
+        pull_request_url="https://github.com/testorg/testrepo/pull/5555",
+        pull_request_title="PR Title",
+        pull_request_creator_username="pr_creator_login",
+        repo_owner="testorg",
+        repo_name="testrepo",
+    )
+
+    # render it
+    rendered = render_email(res)
+    assert (
+        rendered
+        == """Hi foobar,
+
+pr_creator_login just merged a <a href="https://github.com/testorg/testrepo/pull/5555">pull request</a> to testorg/testrepo that solves
+the issue <a href="https://github.com/testorg/testrepo/issues/123">issue title</a> that you've backed!
+
+The money will soon be paid out to testorg."""  # noqa: E501
     )

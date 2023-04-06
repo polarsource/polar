@@ -5,6 +5,7 @@ from sqlalchemy import desc
 import structlog
 from polar.exceptions import IntegrityError
 from polar.kit.extensions.sqlalchemy import sql
+from polar.models.issue_reference import IssueReference
 from polar.models.pledge import Pledge
 from polar.models.pull_request import PullRequest
 from polar.pledge.service import pledge
@@ -22,6 +23,7 @@ class PartialNotification(BaseModel):
     issue_id: UUID | None = None
     pledge_id: UUID | None = None
     pull_request_id: UUID | None = None
+    issue_reference_id: UUID | None = None
 
 
 class NotificationsService:

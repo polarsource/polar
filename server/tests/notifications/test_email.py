@@ -12,6 +12,7 @@ from polar.models.user import User
 from polar.notifications.schemas import NotificationType
 from polar.notifications.tasks.email import (
     MetadataMaintainerPledgeCreated,
+    MetadataPledgedIssueBranchCreated,
     MetadataPledgedIssuePullRequestCreated,
     MetadataPledgedIssuePullRequestMerged,
     email_metadata,
@@ -144,6 +145,50 @@ async def test_pledger_pull_request_merged(
         pull_request_creator_username="pr_creator_login",
         repo_owner="testorg",
         repo_name="testrepo",
+    )
+
+    # render it
+    rendered = render_email(res)
+    assert (
+        rendered
+        == """Hi foobar,
+
+pr_creator_login just merged a <a href="https://github.com/testorg/testrepo/pull/5555">pull request</a> to testorg/testrepo that solves
+the issue <a href="https://github.com/testorg/testrepo/issues/123">issue title</a> that you've backed!
+
+The money will soon be paid out to testorg."""  # noqa: E501
+    )
+
+
+@pytest.mark.asyncio
+async def test_pledger_branch_created(
+    session: AsyncSession,
+    organization: Organization,
+    pledging_organization: Organization,
+    repository: Repository,
+    issue: Issue,
+    user: User,
+    pledge_as_org: Pledge,
+) -> None:
+
+    notif = await Notification.create(
+        session=session,
+        id=uuid.uuid4(),
+        organization_id=pledging_organization.id,
+        issue_id=issue.id,
+        type=NotificationType.issue_pledged_branch_created,
+        dedup_key="test4",
+        pledge_id=pledge_as_org.id,
+    )
+
+    res = await email_metadata(session, user, notif)
+
+    assert res is not None
+    assert res == MetadataPledgedIssueBranchCreated(
+        username="foobar",
+        issue_url="https://github.com/testorg/testrepo/issues/123",
+        issue_title="issue title",
+        branch_creator_username="happy_coder",
     )
 
     # render it

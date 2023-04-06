@@ -1,3 +1,4 @@
+from typing import Union
 from uuid import UUID
 from jinja2 import StrictUndefined
 from pydantic import BaseModel
@@ -57,7 +58,25 @@ async def sync_repositories(
                 log.warning("notifications.send.user_no_email", user_id=user.id)
                 continue
 
-            sender.send_to_user(user.email, "HELLO EMAIL:" + str(notif.id))
+            meta = await email_metadata(session, user, notif)
+            if not meta:
+                log.error(
+                    "notifications.send.could_not_build_metadata",
+                    user=user,
+                    notif=notif,
+                )
+                continue
+
+            txt = render_email(meta)
+            if not txt:
+                log.error(
+                    "notifications.send.could_not_render",
+                    user=user,
+                    notif=notif,
+                )
+                continue
+
+            sender.send_to_user(user.email, txt)
 
 
 class MetadataMaintainerPledgeCreated(BaseModel):
@@ -79,7 +98,7 @@ class MetadataPledgedIssuePullRequestCreated(BaseModel):
     repo_name: str
 
 
-class MetadataPledgedIssuePullRequestMerged(MetadataPledgedIssuePullRequestCreated):
+class MetadataPledgedIssuePullRequestMerged(BaseModel):
     username: str
     issue_url: str
     issue_title: str
@@ -90,9 +109,22 @@ class MetadataPledgedIssuePullRequestMerged(MetadataPledgedIssuePullRequestCreat
     repo_name: str
 
 
+class MetadataPledgedIssueBranchCreated(BaseModel):
+    username: str
+    issue_url: str
+    issue_title: str
+    branch_creator_username: str
+
+
 async def email_metadata(
     session: AsyncSession, user: User, notif: Notification
-) -> MetadataMaintainerPledgeCreated | MetadataPledgedIssuePullRequestCreated | None:
+) -> Union[
+    MetadataMaintainerPledgeCreated,
+    MetadataPledgedIssuePullRequestCreated,
+    MetadataPledgedIssuePullRequestMerged,
+    MetadataPledgedIssueBranchCreated,
+    None,
+]:
 
     if not notif.issue:
         log.warning(
@@ -223,7 +255,8 @@ async def email_metadata(
 def render_email(
     meta: MetadataMaintainerPledgeCreated
     | MetadataPledgedIssuePullRequestCreated
-    | MetadataPledgedIssuePullRequestMerged,
+    | MetadataPledgedIssuePullRequestMerged
+    | MetadataPledgedIssueBranchCreated,
 ) -> str | None:
 
     template = None
@@ -233,6 +266,8 @@ def render_email(
         template = PLEDGER_ISSUE_PULL_REQUEST_CREATED
     if isinstance(meta, MetadataPledgedIssuePullRequestMerged):
         template = PLEDGER_ISSUE_PULL_REQUEST_MERGED
+    if isinstance(meta, MetadataPledgedIssueBranchCreated):
+        template = PLEDGER_ISSUE_BRANCH_CREATED
 
     if not template:
         return None
@@ -267,4 +302,9 @@ PLEDGER_ISSUE_PULL_REQUEST_MERGED = """Hi {{username}},
 the issue <a href="{{issue_url}}">{{issue_title}}</a> that you've backed!
 
 The money will soon be paid out to {{repo_owner}}.
+"""  # noqa: E501
+
+PLEDGER_ISSUE_BRANCH_CREATED = """Hi {{username}},
+
+Polar has detected that {{branch_creator_username}} has started to work on a fix to <a href="{{issue_url}}">{{issue_title}}</a> that you've backed.
 """  # noqa: E501

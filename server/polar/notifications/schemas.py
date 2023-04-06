@@ -1,6 +1,9 @@
 from __future__ import annotations
 from datetime import datetime
+from typing import Union
 from uuid import UUID
+
+from pydantic import BaseModel
 from polar.issue.schemas import IssueRead
 from polar.kit.schemas import Schema
 from enum import Enum
@@ -33,3 +36,58 @@ class NotificationRead(Schema):
     pledge: PledgeRead | None = None
     issue: IssueRead | None = None
     pull_request: PullRequestRead | None = None
+    payload: Union[
+        MetadataMaintainerPledgeCreated,
+        MetadataPledgedIssuePullRequestCreated,
+        MetadataPledgedIssuePullRequestMerged,
+        MetadataPledgedIssueBranchCreated,
+    ]
+
+
+class NotificationPayload(BaseModel):
+    ...
+
+
+class MetadataMaintainerPledgeCreated(NotificationPayload):
+    pledger_name: str
+    issue_url: str
+    issue_title: str
+    pledge_amount: str
+
+
+class MetadataPledgedIssuePullRequestCreated(NotificationPayload):
+    issue_url: str
+    issue_title: str
+    pull_request_url: str
+    pull_request_title: str
+    pull_request_creator_username: str
+    repo_owner: str
+    repo_name: str
+
+
+class MetadataMaintainerIssuePullRequestCreated(MetadataPledgedIssuePullRequestCreated):
+    ...
+
+
+class MetadataPledgedIssuePullRequestMerged(NotificationPayload):
+    issue_url: str
+    issue_title: str
+    pull_request_url: str
+    pull_request_title: str
+    pull_request_creator_username: str
+    repo_owner: str
+    repo_name: str
+
+
+class MetadataMaintainerIssuePullRequestMerged(MetadataPledgedIssuePullRequestMerged):
+    ...
+
+
+class MetadataPledgedIssueBranchCreated(NotificationPayload):
+    issue_url: str
+    issue_title: str
+    branch_creator_username: str
+
+
+class MetadataMaintainerIssueBranchCreated(MetadataPledgedIssueBranchCreated):
+    ...

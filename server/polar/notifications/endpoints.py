@@ -31,6 +31,7 @@ async def get(
             pull_request=PullRequestRead.from_orm(n.pull_request)
             if n.pull_request
             else None,
+            payload=notifications.parse_payload(n),
         )
 
     return [decorate(n) for n in notifs]

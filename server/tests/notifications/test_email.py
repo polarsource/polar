@@ -9,13 +9,13 @@ from polar.models.pledge import Pledge
 from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
 from polar.models.user import User
+from polar.notifications.service import PartialNotification, notifications
 from polar.notifications.schemas import NotificationType
 from polar.notifications.tasks.email import (
     MetadataMaintainerPledgeCreated,
     MetadataPledgedIssueBranchCreated,
     MetadataPledgedIssuePullRequestCreated,
     MetadataPledgedIssuePullRequestMerged,
-    email_metadata,
     render_email,
 )
 from polar.postgres import AsyncSession
@@ -31,21 +31,17 @@ async def test_maintainer_pledge_created_metadata(
     user: User,
     pledge_as_org: Pledge,
 ) -> None:
-    notif = await Notification.create(
-        session=session,
-        id=uuid.uuid4(),
-        organization_id=organization.id,
-        issue_id=issue.id,
-        type=NotificationType.issue_pledge_created,
-        dedup_key="test1",
-        pledge_id=pledge_as_org.id,
+    res = await notifications.create_payload(
+        session,
+        issue,
+        NotificationType.issue_pledge_created,
+        notif=PartialNotification(
+            pledge_id=pledge_as_org.id,
+        ),
     )
-
-    res = await email_metadata(session, user, notif)
 
     assert res is not None
     assert res == MetadataMaintainerPledgeCreated(
-        username="foobar",
         pledger_name="pledging_org",
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
@@ -53,7 +49,7 @@ async def test_maintainer_pledge_created_metadata(
     )
 
     # render it
-    rendered = render_email(res)
+    rendered = render_email(user, res)
     assert (
         rendered
         == """Hi foobar,
@@ -73,23 +69,18 @@ async def test_pledger_pull_request_created(
     pledge_as_org: Pledge,
     pull_request: PullRequest,
 ) -> None:
-
-    notif = await Notification.create(
-        session=session,
-        id=uuid.uuid4(),
-        organization_id=pledging_organization.id,
-        issue_id=issue.id,
-        type=NotificationType.issue_pledged_pull_request_created,
-        dedup_key="test2",
-        pledge_id=pledge_as_org.id,
-        pull_request_id=pull_request.id,
+    res = await notifications.create_payload(
+        session,
+        issue,
+        NotificationType.issue_pledged_pull_request_created,
+        notif=PartialNotification(
+            pledge_id=pledge_as_org.id,
+            pull_request_id=pull_request.id,
+        ),
     )
-
-    res = await email_metadata(session, user, notif)
 
     assert res is not None
     assert res == MetadataPledgedIssuePullRequestCreated(
-        username="foobar",
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
         pull_request_url="https://github.com/testorg/testrepo/pull/5555",
@@ -100,7 +91,7 @@ async def test_pledger_pull_request_created(
     )
 
     # render it
-    rendered = render_email(res)
+    rendered = render_email(user, res)
     assert (
         rendered
         == """Hi foobar,
@@ -122,22 +113,18 @@ async def test_pledger_pull_request_merged(
     pull_request: PullRequest,
 ) -> None:
 
-    notif = await Notification.create(
-        session=session,
-        id=uuid.uuid4(),
-        organization_id=pledging_organization.id,
-        issue_id=issue.id,
-        type=NotificationType.issue_pledged_pull_request_merged,
-        dedup_key="test3",
-        pledge_id=pledge_as_org.id,
-        pull_request_id=pull_request.id,
+    res = await notifications.create_payload(
+        session,
+        issue,
+        NotificationType.issue_pledged_pull_request_merged,
+        notif=PartialNotification(
+            pledge_id=pledge_as_org.id,
+            pull_request_id=pull_request.id,
+        ),
     )
-
-    res = await email_metadata(session, user, notif)
 
     assert res is not None
     assert res == MetadataPledgedIssuePullRequestMerged(
-        username="foobar",
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
         pull_request_url="https://github.com/testorg/testrepo/pull/5555",
@@ -148,7 +135,7 @@ async def test_pledger_pull_request_merged(
     )
 
     # render it
-    rendered = render_email(res)
+    rendered = render_email(user, res)
     assert (
         rendered
         == """Hi foobar,
@@ -170,29 +157,28 @@ async def test_pledger_branch_created(
     user: User,
     pledge_as_org: Pledge,
 ) -> None:
+    # res = await email_metadata(session, user, notif)
 
-    notif = await Notification.create(
-        session=session,
-        id=uuid.uuid4(),
-        organization_id=pledging_organization.id,
-        issue_id=issue.id,
-        type=NotificationType.issue_pledged_branch_created,
-        dedup_key="test4",
-        pledge_id=pledge_as_org.id,
+    res = await notifications.create_payload(
+        session,
+        issue,
+        NotificationType.issue_pledged_branch_created,
+        notif=PartialNotification(
+            pledge_id=pledge_as_org.id,
+            # pull_request_id=pull_request.id,
+        ),
     )
-
-    res = await email_metadata(session, user, notif)
 
     assert res is not None
     assert res == MetadataPledgedIssueBranchCreated(
-        username="foobar",
+        # username="foobar",
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
         branch_creator_username="happy_coder",
     )
 
     # render it
-    rendered = render_email(res)
+    rendered = render_email(user, res)
     assert (
         rendered
         == """Hi foobar,

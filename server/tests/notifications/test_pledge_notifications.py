@@ -42,6 +42,7 @@ async def test_create_pledge_from_created(
         notif=PartialNotification(
             issue_id=issue.id,
             pledge_id=pledge.id,
+            payload=ANY,
         ),
     )
 
@@ -82,6 +83,7 @@ async def test_create_pledge_initiated_then_created(
         notif=PartialNotification(
             issue_id=issue.id,
             pledge_id=pledge.id,
+            payload=ANY,
         ),
     )
 

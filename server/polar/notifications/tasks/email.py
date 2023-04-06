@@ -1,11 +1,14 @@
-from typing import Union
 from uuid import UUID
 from jinja2 import StrictUndefined
-from pydantic import BaseModel
 import structlog
-
 from polar.models.user import User
-from polar.notifications.schemas import NotificationType
+
+from polar.notifications.schemas import (
+    MetadataMaintainerPledgeCreated,
+    MetadataPledgedIssueBranchCreated,
+    MetadataPledgedIssuePullRequestCreated,
+    MetadataPledgedIssuePullRequestMerged,
+)
 from polar.worker import JobContext, task
 from polar.postgres import AsyncSessionLocal
 from polar.models.notification import Notification
@@ -14,10 +17,7 @@ from polar.user_organization.service import (
 )
 from polar.user.service import user as user_service
 from polar.notifications.sender import get_email_sender
-from polar.pledge.service import pledge as pledge_service
-from polar.organization.service import organization as organization_service
-from polar.repository.service import repository as repository_service
-from polar.postgres import AsyncSession
+from polar.notifications.service import notifications
 
 from jinja2.nativetypes import NativeEnvironment
 
@@ -58,16 +58,9 @@ async def sync_repositories(
                 log.warning("notifications.send.user_no_email", user_id=user.id)
                 continue
 
-            meta = await email_metadata(session, user, notif)
-            if not meta:
-                log.error(
-                    "notifications.send.could_not_build_metadata",
-                    user=user,
-                    notif=notif,
-                )
-                continue
+            meta = notifications.parse_payload(notif)
 
-            txt = render_email(meta)
+            txt = render_email(user, meta)
             if not txt:
                 log.error(
                     "notifications.send.could_not_render",
@@ -79,180 +72,8 @@ async def sync_repositories(
             sender.send_to_user(user.email, txt)
 
 
-class MetadataMaintainerPledgeCreated(BaseModel):
-    username: str
-    pledger_name: str
-    issue_url: str
-    issue_title: str
-    pledge_amount: str
-
-
-class MetadataPledgedIssuePullRequestCreated(BaseModel):
-    username: str
-    issue_url: str
-    issue_title: str
-    pull_request_url: str
-    pull_request_title: str
-    pull_request_creator_username: str
-    repo_owner: str
-    repo_name: str
-
-
-class MetadataPledgedIssuePullRequestMerged(BaseModel):
-    username: str
-    issue_url: str
-    issue_title: str
-    pull_request_url: str
-    pull_request_title: str
-    pull_request_creator_username: str
-    repo_owner: str
-    repo_name: str
-
-
-class MetadataPledgedIssueBranchCreated(BaseModel):
-    username: str
-    issue_url: str
-    issue_title: str
-    branch_creator_username: str
-
-
-async def email_metadata(
-    session: AsyncSession, user: User, notif: Notification
-) -> Union[
-    MetadataMaintainerPledgeCreated,
-    MetadataPledgedIssuePullRequestCreated,
-    MetadataPledgedIssuePullRequestMerged,
-    MetadataPledgedIssueBranchCreated,
-    None,
-]:
-
-    if not notif.issue:
-        log.warning(
-            "render_email.no_issue",
-            typ=notif.type,
-            id=notif.id,
-        )
-        return None
-    if not notif.pledge:
-        log.warning(
-            "render_email.no_pledge",
-            typ=notif.type,
-            id=notif.id,
-        )
-        return None
-
-    org = await organization_service.get(session, notif.issue.organization_id)
-    repo = await repository_service.get(session, notif.issue.repository_id)
-
-    if not org:
-        log.warning(
-            "render_email.no_org",
-            typ=notif.type,
-            id=notif.id,
-            org_id=notif.issue.organization_id,
-        )
-        return None
-
-    if not repo:
-        log.warning(
-            "render_email.no_repo",
-            typ=notif.type,
-            id=notif.id,
-            repo_id=notif.issue.repository_id,
-        )
-        return None
-
-    issue_url = f"https://github.com/{org.name}/{repo.name}/issues/{notif.issue.number}"
-
-    if notif.type == NotificationType.issue_pledge_created:
-        # Build pledger name
-        pledger_name = None
-        if notif.pledge and notif.pledge.organization:
-            pledger_name = notif.pledge.organization.name
-        elif notif.pledge and notif.pledge.user:
-            pledger_name = notif.pledge.user.username
-        if not pledger_name:
-            log.warning(
-                "render_email.no_pledger_name",
-                typ=notif.type,
-                id=notif.id,
-            )
-            return None
-
-        return MetadataMaintainerPledgeCreated(
-            username=user.username,
-            pledger_name=pledger_name,
-            issue_url=issue_url,
-            issue_title=notif.issue.title,
-            pledge_amount=get_cents_in_dollar_string(notif.pledge.amount),
-        )
-
-    if notif.type == NotificationType.issue_pledged_pull_request_created:
-        pr = notif.pull_request
-        if not pr:
-            log.warning(
-                "render_email.no_pr",
-                typ=notif.type,
-                id=notif.id,
-            )
-            return None
-
-        pr_url = f"https://github.com/{org.name}/{repo.name}/pull/{pr.number}"
-
-        if not pr.author or not pr.author.get("login"):
-            log.warning(
-                "render_email.no_pr_author",
-                typ=notif.type,
-                id=notif.id,
-            )
-            return None
-
-        return MetadataPledgedIssuePullRequestCreated(
-            username=user.username,
-            issue_url=issue_url,
-            issue_title=notif.issue.title,
-            pull_request_creator_username=pr.author["login"],
-            pull_request_title=pr.title,
-            pull_request_url=pr_url,
-            repo_owner=org.name,
-            repo_name=repo.name,
-        )
-
-    if notif.type == NotificationType.issue_pledged_pull_request_merged:
-        pr = notif.pull_request
-        if not pr:
-            log.warning(
-                "render_email.no_pr",
-                typ=notif.type,
-                id=notif.id,
-            )
-            return None
-
-        pr_url = f"https://github.com/{org.name}/{repo.name}/pull/{pr.number}"
-
-        if not pr.author or not pr.author.get("login"):
-            log.warning(
-                "render_email.no_pr_author",
-                typ=notif.type,
-                id=notif.id,
-            )
-            return None
-
-        return MetadataPledgedIssuePullRequestMerged(
-            username=user.username,
-            issue_url=issue_url,
-            issue_title=notif.issue.title,
-            pull_request_creator_username=pr.author["login"],
-            pull_request_title=pr.title,
-            pull_request_url=pr_url,
-            repo_owner=org.name,
-            repo_name=repo.name,
-        )
-
-    return None
-
-
 def render_email(
+    user: User,
     meta: MetadataMaintainerPledgeCreated
     | MetadataPledgedIssuePullRequestCreated
     | MetadataPledgedIssuePullRequestMerged
@@ -272,17 +93,13 @@ def render_email(
     if not template:
         return None
 
+    m: dict[str, str] = meta.dict()
+    m["username"] = user.username
+
     env = NativeEnvironment(undefined=StrictUndefined)
     t = env.from_string(template)
-    res = t.render(meta)
+    res = t.render(m)
     return res
-
-
-def get_cents_in_dollar_string(cents: int) -> str:
-    dollars = cents / 100
-    if cents % 100 == 0:
-        return "%d" % round(dollars)
-    return "%.2f" % round(dollars, 2)
 
 
 MAINTAINER_PLEDGE_CREATED = """Hi {{username}},

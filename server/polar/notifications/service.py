@@ -12,6 +12,7 @@ from polar.models.notification import Notification
 from polar.models.user_organization import UserOrganization
 from polar.models.issue import Issue
 from polar.notifications.schemas import (
+    MetadataMaintainerIssueBranchCreated,
     MetadataMaintainerIssuePullRequestCreated,
     MetadataMaintainerIssuePullRequestMerged,
     MetadataMaintainerPledgeCreated,
@@ -81,6 +82,8 @@ class NotificationsService:
         typ: NotificationType,
         notif: PartialNotification,
     ) -> bool:
+
+        log.warning("zegl create for org", typ=typ, notif=notif)
 
         dedup_key: str = "/".join(
             [
@@ -202,79 +205,110 @@ class NotificationsService:
                 pledge_amount=get_cents_in_dollar_string(pledge.amount),
             )
 
-        if not notif.pull_request_id:
-            raise Exception("no pull_request_id")
-        pr = await pull_request_service.get(session, notif.pull_request_id)
-        if not pr:
-            raise Exception("no pull request found")
+        if typ in [
+            NotificationType.issue_pledged_pull_request_created,
+            NotificationType.issue_pledged_pull_request_merged,
+            NotificationType.maintainer_issue_pull_request_created,
+            NotificationType.maintainer_issue_pull_request_merged,
+        ]:
+            if not notif.pull_request_id:
+                raise Exception("no pull_request_id")
+            pr = await pull_request_service.get(session, notif.pull_request_id)
+            if not pr:
+                raise Exception("no pull request found")
 
-        pr_url = f"https://github.com/{org.name}/{repo.name}/pull/{pr.number}"
+            pr_url = f"https://github.com/{org.name}/{repo.name}/pull/{pr.number}"
 
-        log.error("zegl pr", pr=pr)
+            log.error("zegl pr", pr=pr)
 
-        if not pr.author:
-            raise Exception("no pr author found")
-        pull_request_creator_username = pr.author.get("login")
-        if not pull_request_creator_username:
-            raise Exception("no pr author username found")
+            if not pr.author:
+                raise Exception("no pr author found")
+            pull_request_creator_username = pr.author.get("login")
+            if not pull_request_creator_username:
+                raise Exception("no pr author username found")
 
-        if typ == NotificationType.issue_pledged_pull_request_created:
-            return MetadataPledgedIssuePullRequestCreated(
-                issue_url=issue_url,
-                issue_title=issue.title,
-                pull_request_creator_username=pull_request_creator_username,
-                pull_request_title=pr.title,
-                pull_request_url=pr_url,
-                repo_owner=org.name,
-                repo_name=repo.name,
-            )
+            if typ == NotificationType.issue_pledged_pull_request_created:
+                return MetadataPledgedIssuePullRequestCreated(
+                    issue_url=issue_url,
+                    issue_title=issue.title,
+                    pull_request_creator_username=pull_request_creator_username,
+                    pull_request_title=pr.title,
+                    pull_request_url=pr_url,
+                    repo_owner=org.name,
+                    repo_name=repo.name,
+                )
 
-        if typ == NotificationType.maintainer_issue_pull_request_created:
-            return MetadataMaintainerIssuePullRequestCreated(
-                issue_url=issue_url,
-                issue_title=issue.title,
-                pull_request_creator_username=pull_request_creator_username,
-                pull_request_title=pr.title,
-                pull_request_url=pr_url,
-                repo_owner=org.name,
-                repo_name=repo.name,
-            )
+            if typ == NotificationType.maintainer_issue_pull_request_created:
+                return MetadataMaintainerIssuePullRequestCreated(
+                    issue_url=issue_url,
+                    issue_title=issue.title,
+                    pull_request_creator_username=pull_request_creator_username,
+                    pull_request_title=pr.title,
+                    pull_request_url=pr_url,
+                    repo_owner=org.name,
+                    repo_name=repo.name,
+                )
 
-        if typ == NotificationType.issue_pledged_pull_request_merged:
-            return MetadataPledgedIssuePullRequestMerged(
-                issue_url=issue_url,
-                issue_title=issue.title,
-                pull_request_creator_username=pull_request_creator_username,
-                pull_request_title=pr.title,
-                pull_request_url=pr_url,
-                repo_owner=org.name,
-                repo_name=repo.name,
-            )
+            if typ == NotificationType.issue_pledged_pull_request_merged:
+                return MetadataPledgedIssuePullRequestMerged(
+                    issue_url=issue_url,
+                    issue_title=issue.title,
+                    pull_request_creator_username=pull_request_creator_username,
+                    pull_request_title=pr.title,
+                    pull_request_url=pr_url,
+                    repo_owner=org.name,
+                    repo_name=repo.name,
+                )
 
-        if typ == NotificationType.maintainer_issue_pull_request_merged:
-            return MetadataMaintainerIssuePullRequestMerged(
-                issue_url=issue_url,
-                issue_title=issue.title,
-                pull_request_creator_username=pull_request_creator_username,
-                pull_request_title=pr.title,
-                pull_request_url=pr_url,
-                repo_owner=org.name,
-                repo_name=repo.name,
-            )
+            if typ == NotificationType.maintainer_issue_pull_request_merged:
+                return MetadataMaintainerIssuePullRequestMerged(
+                    issue_url=issue_url,
+                    issue_title=issue.title,
+                    pull_request_creator_username=pull_request_creator_username,
+                    pull_request_title=pr.title,
+                    pull_request_url=pr_url,
+                    repo_owner=org.name,
+                    repo_name=repo.name,
+                )
+
+        # Use externally constructed payloads
+        if typ in [
+            NotificationType.issue_pledged_branch_created,
+            NotificationType.maintainer_issue_branch_created,
+        ]:
+            if typ == NotificationType.issue_pledged_branch_created and isinstance(
+                notif.payload, MetadataPledgedIssueBranchCreated
+            ):
+                return notif.payload
+            if typ == NotificationType.maintainer_issue_branch_created and isinstance(
+                notif.payload, MetadataMaintainerIssueBranchCreated
+            ):
+                return notif.payload
 
         raise Exception("failed to generate notification payload")
 
-    def parse_payload(cls, n: Notification) -> TNotificationPayloads:
+    def parse_payload(self, n: Notification) -> TNotificationPayloads:
         tt = NotificationType.from_str(n.type)
         match tt:
             case NotificationType.issue_pledge_created:
                 return parse_obj_as(MetadataMaintainerPledgeCreated, n.payload)
+
             case NotificationType.issue_pledged_branch_created:
                 return parse_obj_as(MetadataPledgedIssueBranchCreated, n.payload)
             case NotificationType.issue_pledged_pull_request_created:
                 return parse_obj_as(MetadataPledgedIssuePullRequestCreated, n.payload)
             case NotificationType.issue_pledged_pull_request_merged:
                 return parse_obj_as(MetadataPledgedIssuePullRequestMerged, n.payload)
+
+            case NotificationType.maintainer_issue_branch_created:
+                return parse_obj_as(MetadataMaintainerIssueBranchCreated, n.payload)
+            case NotificationType.maintainer_issue_pull_request_created:
+                return parse_obj_as(
+                    MetadataMaintainerIssuePullRequestCreated, n.payload
+                )
+            case NotificationType.maintainer_issue_pull_request_merged:
+                return parse_obj_as(MetadataMaintainerIssuePullRequestMerged, n.payload)
+
         raise Exception(f"unknown type={tt}")
 
 

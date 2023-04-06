@@ -87,6 +87,7 @@ class MetadataPledgedIssueBranchCreated(NotificationPayload):
     issue_url: str
     issue_title: str
     branch_creator_username: str
+    commit_link: str
 
 
 class MetadataMaintainerIssueBranchCreated(MetadataPledgedIssueBranchCreated):

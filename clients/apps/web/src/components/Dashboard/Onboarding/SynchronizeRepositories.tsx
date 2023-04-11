@@ -85,7 +85,6 @@ export const SynchronizeRepositories = ({
       }
     })
     setProgress((prev) => {
-      // TODO: Due to PRs in issues this can be less than 100%
       const percentage = (data.processed / data.expected) * 100
       const ret = { ...prev, processed, percentage }
       return ret

@@ -1,11 +1,18 @@
 import { BellIcon } from '@heroicons/react/24/outline'
 import {
+  IssuePledgeCreated,
+  IssuePledgedBranchCreated,
+  IssuePledgedPullRequestCreated,
+  IssuePledgedPullRequestMerged,
+  MaintainerIssueBranchCreated,
+  MaintainerIssuePullRequestCreated,
+  MaintainerIssuePullRequestMerged,
   NotificationRead,
   PledgeRead,
   PullRequestRead,
 } from 'polarkit/api/client'
 import { useNotifications } from 'polarkit/hooks'
-import { getCentsInDollarString, useOutsideClick } from 'polarkit/utils'
+import { useOutsideClick } from 'polarkit/utils'
 import { useEffect, useRef, useState } from 'react'
 import ReactTimeago from 'react-timeago'
 
@@ -127,10 +134,14 @@ const PledgePayout = () => {
 type withPledge = NotificationRead & { pledge: PledgeRead }
 type withPullRequest = NotificationRead & { pull_request: PullRequestRead }
 
-const IssuePledgeCreated = ({ n }: { n: withPledge }) => {
-  const title = `Issue #${n.issue.number} received \$${getCentsInDollarString(
-    n.pledge.amount,
-  )} in backing`
+const IssuePledgeCreated = ({
+  n,
+  payload,
+}: {
+  n: NotificationRead
+  payload: IssuePledgeCreated
+}) => {
+  const title = `Issue #${payload.issue_number} received \$${payload.pledge_amount} in backing`
   return (
     <Item title={title} timestamp={n.created_at} iconBg="bg-[#F9E18F]">
       <DollarSignIcon />
@@ -138,8 +149,14 @@ const IssuePledgeCreated = ({ n }: { n: withPledge }) => {
   )
 }
 
-const PullRequestCreatedNotification = ({ n }: { n: withPullRequest }) => {
-  const title = `${n.pull_request.author.login} created a PR for issue #${n.issue.number}`
+const PullRequestCreatedNotification = ({
+  n,
+  payload,
+}: {
+  n: NotificationRead
+  payload: IssuePledgedPullRequestCreated | MaintainerIssuePullRequestCreated
+}) => {
+  const title = `${payload.pull_request_creator_username} created a PR for issue #${payload.pull_request_number}`
   return (
     <Item title={title} timestamp={n.created_at} iconBg="bg-[#DFEFE4]">
       <PullRequestCreatedIcon />
@@ -147,16 +164,29 @@ const PullRequestCreatedNotification = ({ n }: { n: withPullRequest }) => {
   )
 }
 
-const PullRequestMergedNotification = ({ n }: { n: withPullRequest }) => {
-  const title = `${n.pull_request.author.login} merged a PR for issue #${n.issue.number}`
+const PullRequestMergedNotification = ({
+  n,
+  payload,
+}: {
+  n: NotificationRead
+  payload: IssuePledgedPullRequestMerged | MaintainerIssuePullRequestMerged
+}) => {
+  const title = `${payload.pull_request_creator_username} merged a PR for issue #${payload.issue_number}`
   return (
     <Item title={title} timestamp={n.created_at} iconBg="bg-[#E8DEFC]">
       <PullRequestMergedIcon />
     </Item>
   )
 }
-const BranchCreatedNotification = ({ n }: { n: withPullRequest }) => {
-  const title = `${n.pull_request.author.login} started working on issue #${n.issue.number}`
+
+const BranchCreatedNotification = ({
+  n,
+  payload,
+}: {
+  n: NotificationRead
+  payload: IssuePledgedBranchCreated | MaintainerIssueBranchCreated
+}) => {
+  const title = `${payload.branch_creator_username} started working on issue #${payload.issue_number}`
   return (
     <Item title={title} timestamp={n.created_at} iconBg="bg-[#ECECEC]">
       <BranchCreatedIcon />
@@ -165,28 +195,61 @@ const BranchCreatedNotification = ({ n }: { n: withPullRequest }) => {
 }
 
 const Notification = ({ n }: { n: NotificationRead }) => {
-  if (n.type === 'issue_pledge_created' && n.pledge) {
-    return <IssuePledgeCreated n={n as withPledge} />
+  if (n.type === 'issue_pledge_created') {
+    return (
+      <IssuePledgeCreated n={n} payload={n.payload as IssuePledgeCreated} />
+    )
   }
 
-  if (n.type === 'issue_pledged_branch_created' && n.pull_request) {
-    return <BranchCreatedNotification n={n as withPullRequest} />
+  if (n.type === 'issue_pledged_branch_created') {
+    return (
+      <BranchCreatedNotification
+        n={n}
+        payload={n.payload as IssuePledgedBranchCreated}
+      />
+    )
   }
-  if (n.type === 'issue_pledged_pull_request_created' && n.pull_request) {
-    return <PullRequestCreatedNotification n={n as withPullRequest} />
+  if (n.type === 'issue_pledged_pull_request_created') {
+    return (
+      <PullRequestCreatedNotification
+        n={n}
+        payload={n.payload as IssuePledgedPullRequestCreated}
+      />
+    )
   }
-  if (n.type === 'issue_pledged_pull_request_merged' && n.pull_request) {
-    return <PullRequestMergedNotification n={n as withPullRequest} />
+  if (n.type === 'issue_pledged_pull_request_merged') {
+    return (
+      <PullRequestMergedNotification
+        n={n}
+        payload={n.payload as IssuePledgedPullRequestMerged}
+      />
+    )
+  }
+  if (n.type === 'maintainer_issue_branch_created') {
+    return (
+      <BranchCreatedNotification
+        n={n}
+        payload={n.payload as MaintainerIssueBranchCreated}
+      />
+    )
   }
 
-  if (n.type === 'maintainer_issue_branch_created' && n.pull_request) {
-    return <BranchCreatedNotification n={n as withPullRequest} />
+  if (n.type === 'maintainer_issue_pull_request_created') {
+    return (
+      <PullRequestCreatedNotification
+        n={n}
+        payload={n.payload as MaintainerIssuePullRequestCreated}
+      />
+    )
   }
-  if (n.type === 'maintainer_issue_pull_request_created' && n.pull_request) {
-    return <PullRequestCreatedNotification n={n as withPullRequest} />
-  }
-  if (n.type === 'maintainer_issue_pull_request_merged' && n.pull_request) {
-    return <PullRequestMergedNotification n={n as withPullRequest} />
+
+  if (n.type === 'maintainer_issue_pull_request_merged') {
+    return (
+      <PullRequestMergedNotification
+        n={n}
+        payload={n.payload as MaintainerIssuePullRequestMerged}
+      />
+    )
   }
 
   return <></>

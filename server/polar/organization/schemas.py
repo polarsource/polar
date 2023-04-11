@@ -3,6 +3,8 @@ from __future__ import annotations
 from uuid import UUID
 from datetime import datetime
 
+from pydantic import BaseModel
+
 from polar.integrations.github import client as github
 from polar.kit.schemas import Schema
 from polar.models.organization import Organization
@@ -10,10 +12,14 @@ from polar.enums import Platforms
 from polar.repository.schemas import RepositoryRead
 
 
-class OrganizationSettingsRead(Schema):
+class OrganizationSettingsRead(BaseModel):
     funding_badge_retroactive: bool = False
     funding_badge_show_amount: bool = False
-    email_notification_issue_receives_backing: bool = False
+
+    email_notification_maintainer_issue_receives_backing: bool = False
+    email_notification_maintainer_issue_branch_created: bool = False
+    email_notification_maintainer_pull_request_created: bool = False
+    email_notification_maintainer_pull_request_merged: bool = False
     email_notification_backed_issue_branch_created: bool = False
     email_notification_backed_issue_pull_request_created: bool = False
     email_notification_backed_issue_pull_request_merged: bool = False
@@ -22,7 +28,11 @@ class OrganizationSettingsRead(Schema):
 class OrganizationSettingsUpdate(Schema):
     funding_badge_retroactive: bool | None = None
     funding_badge_show_amount: bool | None = None
-    email_notification_issue_receives_backing: bool | None = None
+
+    email_notification_maintainer_issue_receives_backing: bool | None = None
+    email_notification_maintainer_issue_branch_created: bool | None = None
+    email_notification_maintainer_pull_request_created: bool | None = None
+    email_notification_maintainer_pull_request_merged: bool | None = None
     email_notification_backed_issue_branch_created: bool | None = None
     email_notification_backed_issue_pull_request_created: bool | None = None
     email_notification_backed_issue_pull_request_merged: bool | None = None

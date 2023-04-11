@@ -1,12 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 import structlog
-import stripe as stripe_lib
 
 from polar.auth.dependencies import Auth
 from polar.models import Organization
 from polar.enums import Platforms
+from polar.models.user import User
 from polar.postgres import AsyncSession, get_db_session
 from polar.integrations.stripe.service import stripe
+from polar.user_organization.schemas import UserOrganizationSettingsUpdate
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 
 from .schemas import (
     OrganizationRead,
@@ -27,9 +31,41 @@ async def get(
     platform: Platforms,
     org_name: str,
     auth: Auth = Depends(Auth.user_with_org_access),
-) -> Organization:
-    org = auth.organization
-    return org
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationRead:
+    return await _get_org_for_user(session, auth.organization, auth.user)
+
+
+async def _get_org_for_user(
+    session: AsyncSession, org: Organization, user: User
+) -> OrganizationRead:
+    res = OrganizationRead.from_orm(org)
+
+    # Get personal settings
+    settings = await user_organization_service.get_settings(session, user.id, org.id)
+    res.email_notification_maintainer_issue_receives_backing = (
+        settings.email_notification_maintainer_issue_receives_backing
+    )
+    res.email_notification_maintainer_issue_branch_created = (
+        settings.email_notification_maintainer_issue_branch_created
+    )
+    res.email_notification_maintainer_pull_request_created = (
+        settings.email_notification_maintainer_pull_request_created
+    )
+    res.email_notification_maintainer_pull_request_merged = (
+        settings.email_notification_maintainer_pull_request_merged
+    )
+    res.email_notification_backed_issue_branch_created = (
+        settings.email_notification_backed_issue_branch_created
+    )
+    res.email_notification_backed_issue_pull_request_created = (
+        settings.email_notification_backed_issue_pull_request_created
+    )
+    res.email_notification_backed_issue_pull_request_merged = (
+        settings.email_notification_backed_issue_pull_request_merged
+    )
+
+    return res
 
 
 @router.put("/{platform}/{organization_name}/settings", response_model=OrganizationRead)
@@ -39,9 +75,24 @@ async def update_settings(
     settings: OrganizationSettingsUpdate,
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
-) -> Organization:
+) -> OrganizationRead:
     updated = await organization.update_settings(session, auth.organization, settings)
-    return updated
+
+    # update user settings
+    user_settings = UserOrganizationSettingsUpdate(
+        email_notification_maintainer_issue_receives_backing=settings.email_notification_maintainer_issue_receives_backing,
+        email_notification_maintainer_issue_branch_created=settings.email_notification_maintainer_issue_branch_created,
+        email_notification_maintainer_pull_request_created=settings.email_notification_maintainer_pull_request_created,
+        email_notification_maintainer_pull_request_merged=settings.email_notification_maintainer_pull_request_merged,
+        email_notification_backed_issue_branch_created=settings.email_notification_backed_issue_branch_created,
+        email_notification_backed_issue_pull_request_created=settings.email_notification_backed_issue_pull_request_created,
+        email_notification_backed_issue_pull_request_merged=settings.email_notification_backed_issue_pull_request_merged,
+    )
+    await user_organization_service.update_settings(
+        session, auth.user.id, auth.organization.id, user_settings
+    )
+
+    return await _get_org_for_user(session, updated, auth.user)
 
 
 @router.get(

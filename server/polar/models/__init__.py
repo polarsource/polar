@@ -11,6 +11,7 @@ from .user_organization import UserOrganization
 from .issue_reference import IssueReference
 from .issue_dependency import IssueDependency
 from .notification import Notification
+from .user_organization_settings import UserOrganizationSettings
 
 __all__ = [
     "Model",
@@ -22,6 +23,7 @@ __all__ = [
     "Account",
     "Organization",
     "UserOrganization",
+    "UserOrganizationSettings",
     "Repository",
     "Issue",
     "PullRequest",

@@ -72,22 +72,6 @@ class Organization(RecordModel):
         Boolean, nullable=False, default=False
     )
 
-    email_notification_issue_receives_backing: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
-
-    email_notification_backed_issue_branch_created: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
-
-    email_notification_backed_issue_pull_request_created: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
-
-    email_notification_backed_issue_pull_request_merged: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
-
     onboarded_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
     users: "Mapped[User]" = relationship(
@@ -123,8 +107,4 @@ class Organization(RecordModel):
         "status",
         "funding_badge_retroactive",
         "funding_badge_show_amount",
-        "email_notification_issue_receives_backing",
-        "email_notification_backed_issue_branch_created",
-        "email_notification_backed_issue_pull_request_created",
-        "email_notification_backed_issue_pull_request_merged",
     }

@@ -83,11 +83,6 @@ export const SynchronizeRepositories = ({
         },
       }
     })
-    setProgress({
-      processed: processed,
-      expected: data.expected,
-      percentage: (processed / data.expected) * 100,
-    })
   }
 
   useEffect(() => {
@@ -107,6 +102,18 @@ export const SynchronizeRepositories = ({
       emitter.off('issue.sync.completed', onIssueSyncCompleted)
     }
   }, [emitter])
+
+  useEffect(() => {
+    const repos = Object.values(syncingRepos)
+    const totalProcessed = repos.reduce((acc, repo) => acc + repo.processed, 0)
+    const totalExpected = repos.reduce((acc, repo) => acc + repo.expected, 0)
+
+    setProgress({
+      processed: totalProcessed,
+      expected: totalExpected,
+      percentage: (totalProcessed / totalExpected) * 100,
+    })
+  }, [syncingRepos])
 
   // Show continue button after a few seconds
   useEffect(() => {

@@ -3,7 +3,11 @@ from uuid import UUID
 import structlog
 from polar.postgres import AsyncSession, sql
 from polar.models import UserOrganization, UserOrganizationSettings
-from polar.user_organization.schemas import UserOrganizationSettingsUpdate
+from polar.user_organization.schemas import (
+    UserOrganizationSettingsRead,
+    UserOrganizationSettingsUpdate,
+)
+from sqlalchemy.exc import NoResultFound
 
 
 log = structlog.get_logger()
@@ -24,14 +28,18 @@ class UserOrganizationervice:
         session: AsyncSession,
         user_id: UUID,
         org_id: UUID,
-    ) -> UserOrganizationSettings:
+    ) -> UserOrganizationSettingsRead:
         stmt = sql.select(UserOrganizationSettings).where(
             UserOrganizationSettings.user_id == user_id,
             UserOrganizationSettings.organization_id == org_id,
         )
-        # TODO: create if not exists
-        res = await session.execute(stmt)
-        return res.scalar_one()
+
+        try:
+            res = await session.execute(stmt)
+            return UserOrganizationSettingsRead.from_orm(res.scalar_one())
+        except NoResultFound:
+            # If no custom settings found, use defaults
+            return UserOrganizationSettingsRead()
 
     async def update_settings(
         self,
@@ -44,6 +52,8 @@ class UserOrganizationervice:
             UserOrganizationSettings.user_id == user_id,
             UserOrganizationSettings.organization_id == org_id,
         )
+
+        # TODO: or insert
 
         values: dict[str, bool] = {}
 

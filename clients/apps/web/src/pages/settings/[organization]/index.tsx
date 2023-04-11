@@ -1,5 +1,6 @@
 import { ArrowLeftIcon } from '@heroicons/react/24/solid'
 import { BadgeSettings } from 'components/Settings/BadgeSettings'
+import { Box } from 'components/Settings/Box'
 import PaymentSettings from 'components/Settings/PaymentSettings'
 import { SettingsCheckbox } from 'components/Settings/SettingsCheckbox'
 import Spinner from 'components/Shared/Spinner'
@@ -292,11 +293,4 @@ const SectionDescription = ({ title, description }) => {
   )
 }
 
-const Box = ({ children }) => {
-  return (
-    <div className=" w-full rounded-md bg-white p-5 shadow-[0_0_20px_-5px_rgba(0,0,0,0.3)]">
-      <form className="flex flex-col space-y-4">{children}</form>
-    </div>
-  )
-}
 export default SettingsPage

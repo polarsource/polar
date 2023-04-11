@@ -1,6 +1,6 @@
 from __future__ import annotations
 from datetime import datetime
-from typing import Union
+from typing import Any, Union
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -36,12 +36,13 @@ class NotificationRead(Schema):
     pledge: PledgeRead | None = None
     issue: IssueRead | None = None
     pull_request: PullRequestRead | None = None
-    payload: Union[
-        MetadataMaintainerPledgeCreated,
-        MetadataPledgedIssuePullRequestCreated,
-        MetadataPledgedIssuePullRequestMerged,
-        MetadataPledgedIssueBranchCreated,
-    ]
+    payload: Any  # https://github.com/tiangolo/fastapi/issues/2082
+    #  payload: Union[
+    #     MetadataMaintainerPledgeCreated,
+    #     MetadataPledgedIssuePullRequestCreated,
+    #     MetadataPledgedIssuePullRequestMerged,
+    #     MetadataPledgedIssueBranchCreated,
+    #  ]
 
 
 class NotificationPayload(BaseModel):

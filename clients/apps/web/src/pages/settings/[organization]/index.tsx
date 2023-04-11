@@ -1,7 +1,8 @@
-import { InformationCircleIcon } from '@heroicons/react/24/outline'
 import { ArrowLeftIcon } from '@heroicons/react/24/solid'
-import FakePullRequest from 'components/Settings/FakePullRequest'
+import { BadgeSettings } from 'components/Settings/BadgeSettings'
+import { Box } from 'components/Settings/Box'
 import PaymentSettings from 'components/Settings/PaymentSettings'
+import { SettingsCheckbox } from 'components/Settings/SettingsCheckbox'
 import Spinner from 'components/Shared/Spinner'
 import Topbar from 'components/Shared/Topbar'
 import { NextLayoutComponentType } from 'next'
@@ -153,24 +154,16 @@ const SettingsPage: NextLayoutComponentType = () => {
             />
 
             <Box>
-              <FakePullRequest showAmount={badgeShowRaised} />
-              <Checkbox
-                id="add-old-issues"
-                title="Add badge to old issues as well"
-                description="Could impact sorting on GitHub"
-                isChecked={badgeAddOldIssues}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setBadgeAddOldIssues(e.target.checked)
-                  save({ funding_badge_retroactive: e.target.checked })
+              <BadgeSettings
+                badgeAddOldIssues={badgeAddOldIssues}
+                badgeShowRaised={badgeShowRaised}
+                setBadgeAddOldIssues={(value) => {
+                  setBadgeAddOldIssues(value)
+                  save({ funding_badge_retroactive: value })
                 }}
-              />
-              <Checkbox
-                id="show-raised"
-                title="Show amount raised"
-                isChecked={badgeShowRaised}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setBadgeShowRaised(e.target.checked)
-                  save({ funding_badge_show_amount: e.target.checked })
+                setBadgeShowRaised={(value) => {
+                  setBadgeShowRaised(value)
+                  save({ funding_badge_show_amount: value })
                 }}
               />
             </Box>
@@ -182,7 +175,7 @@ const SettingsPage: NextLayoutComponentType = () => {
             />
 
             <Box>
-              <Checkbox
+              <SettingsCheckbox
                 id="email-backing"
                 title="Issue receives backing"
                 isChecked={emailIssueReceivesBacking}
@@ -193,7 +186,7 @@ const SettingsPage: NextLayoutComponentType = () => {
                   })
                 }}
               />
-              <Checkbox
+              <SettingsCheckbox
                 id="email-branch-created"
                 title="Branch created for issue with backing"
                 isChecked={emailIssueBranchCreated}
@@ -205,7 +198,7 @@ const SettingsPage: NextLayoutComponentType = () => {
                   })
                 }}
               />
-              <Checkbox
+              <SettingsCheckbox
                 id="email-pr-created"
                 title="Pull request created for issue with backing"
                 isChecked={emailPullRequestCreated}
@@ -217,7 +210,7 @@ const SettingsPage: NextLayoutComponentType = () => {
                   })
                 }}
               />
-              <Checkbox
+              <SettingsCheckbox
                 id="email-pr-merged"
                 title="Pull request merged for issue with backing"
                 isChecked={emailPullRequestMerged}
@@ -296,57 +289,6 @@ const SectionDescription = ({ title, description }) => {
     <div className="flex-shrink-0 md:w-60">
       <h2 className="text-[#101828]">{title}</h2>
       <p className="text-black/50">{description}</p>
-    </div>
-  )
-}
-
-const Box = ({ children }) => {
-  return (
-    <div className=" w-full rounded-md bg-white p-5 shadow-[0_0_20px_-5px_rgba(0,0,0,0.3)]">
-      <form className="flex flex-col space-y-4">{children}</form>
-    </div>
-  )
-}
-const Checkbox = ({
-  id,
-  title,
-  isChecked,
-  onChange,
-  description = undefined,
-}: {
-  id: string
-  title: string
-  description?: string
-  isChecked: boolean
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-}) => {
-  return (
-    <div className="relative flex items-start">
-      <div className="flex h-6 items-center">
-        <input
-          id={id}
-          aria-describedby={`${id}-description`}
-          name={id}
-          type="checkbox"
-          onChange={onChange}
-          checked={isChecked}
-          className="h-4 w-4 rounded border-gray-300 text-[#8A63F9] focus:ring-[#8A63F9]"
-        />
-      </div>
-      <div className="ml-3 inline-flex items-center space-x-4 text-sm leading-6 ">
-        <label htmlFor={id} className="font-medium text-black">
-          {title}
-        </label>{' '}
-        {description && (
-          <span
-            id={`${id}-description`}
-            className="inline-flex items-center space-x-2 text-black/50"
-          >
-            <InformationCircleIcon className="h-6 w-6" />
-            <span>{description}</span>
-          </span>
-        )}
-      </div>
     </div>
   )
 }

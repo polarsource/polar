@@ -6,6 +6,8 @@ import { type RepoSyncState, type SyncEvent } from './types'
 import OnboardingControls from './OnboardingControls'
 import SynchronizeRepository from './SynchronizeRepository'
 
+const continueTimeoutSeconds = 10
+
 const getInitializedSyncState = (
   org: OrganizationRead,
 ): {
@@ -50,6 +52,8 @@ export const SynchronizeRepositories = ({
     expected: totalExpected,
     percentage: 0.0,
   })
+  const [continueTimeoutReached, setContinueTimeoutReached] =
+    useState<boolean>(false)
 
   const sync = ({
     data,
@@ -107,6 +111,15 @@ export const SynchronizeRepositories = ({
     }
   }, [emitter])
 
+  // Show continue button after a few seconds
+  useEffect(() => {
+    const timeout = setTimeout(
+      () => setContinueTimeoutReached(true),
+      continueTimeoutSeconds * 1000,
+    )
+    return () => clearTimeout(timeout)
+  }, [])
+
   return (
     <>
       <h1 className="my-11 text-center text-xl font-normal text-gray-600 drop-shadow-md">
@@ -121,8 +134,9 @@ export const SynchronizeRepositories = ({
           )
         })}
       </ul>
-      {progress.percentage > 40 ||
-        (debug && <OnboardingControls onClickContinue={onContinue} />)}
+      {(progress.percentage > 40 || continueTimeoutReached || debug) && (
+        <OnboardingControls onClickContinue={onContinue} />
+      )}
     </>
   )
 }

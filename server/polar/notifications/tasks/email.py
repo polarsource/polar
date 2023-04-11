@@ -5,10 +5,13 @@ from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 
 from polar.notifications.schemas import (
-    MetadataMaintainerPledgeCreated,
-    MetadataPledgedIssueBranchCreated,
-    MetadataPledgedIssuePullRequestCreated,
-    MetadataPledgedIssuePullRequestMerged,
+    IssuePledgeCreated,
+    IssuePledgedBranchCreated,
+    IssuePledgedPullRequestCreated,
+    IssuePledgedPullRequestMerged,
+    MaintainerIssueBranchCreated,
+    MaintainerIssuePullRequestCreated,
+    MaintainerIssuePullRequestMerged,
     NotificationType,
 )
 from polar.worker import JobContext, task
@@ -112,37 +115,37 @@ async def should_send(
 
 def get_template(type: NotificationType, meta: TNotificationPayloads) -> str | None:
     if type == NotificationType.issue_pledge_created and isinstance(
-        meta, MetadataMaintainerPledgeCreated
+        meta, IssuePledgeCreated
     ):
         return MAINTAINER_PLEDGE_CREATED
 
     if type == NotificationType.issue_pledged_branch_created and isinstance(
-        meta, MetadataPledgedIssueBranchCreated
+        meta, IssuePledgedBranchCreated
     ):
         return PLEDGER_ISSUE_BRANCH_CREATED
 
     if type == NotificationType.issue_pledged_pull_request_created and isinstance(
-        meta, MetadataPledgedIssuePullRequestCreated
+        meta, IssuePledgedPullRequestCreated
     ):
         return PLEDGER_ISSUE_PULL_REQUEST_CREATED
 
     if type == NotificationType.issue_pledged_pull_request_merged and isinstance(
-        meta, MetadataPledgedIssuePullRequestMerged
+        meta, IssuePledgedPullRequestMerged
     ):
         return PLEDGER_ISSUE_PULL_REQUEST_MERGED
 
     if type == NotificationType.maintainer_issue_branch_created and isinstance(
-        meta, MetadataPledgedIssueBranchCreated
+        meta, MaintainerIssueBranchCreated
     ):
         return MAINTAINER_ISSUE_BRANCH_CREATED
 
     if type == NotificationType.maintainer_issue_pull_request_created and isinstance(
-        meta, MetadataPledgedIssuePullRequestCreated
+        meta, MaintainerIssuePullRequestCreated
     ):
         return MAINTAINER_ISSUE_PULL_REQUEST_CREATED
 
     if type == NotificationType.maintainer_issue_pull_request_merged and isinstance(
-        meta, MetadataPledgedIssuePullRequestMerged
+        meta, MaintainerIssuePullRequestMerged
     ):
         return MAINTAINER_ISSUE_PULL_REQUEST_MERGED
 

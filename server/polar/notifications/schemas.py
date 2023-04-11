@@ -1,14 +1,10 @@
-from __future__ import annotations
 from datetime import datetime
-from typing import Any, Union
+from typing import Self, Union
 from uuid import UUID
 
 from pydantic import BaseModel
-from polar.issue.schemas import IssueRead
 from polar.kit.schemas import Schema
 from enum import Enum
-from polar.pledge.schemas import PledgeRead
-from polar.pull_request.schemas import PullRequestRead
 
 
 class NotificationType(str, Enum):
@@ -25,71 +21,76 @@ class NotificationType(str, Enum):
     maintainer_issue_pull_request_merged = "maintainer_issue_pull_request_merged"
 
     @classmethod
-    def from_str(cls, s: str) -> NotificationType:
-        return NotificationType.__members__[s]
+    def from_str(cls, s: str) -> Self:
+        return cls.__members__[s]
+
+
+class NotificationPayload(Schema):
+    pass
+
+
+class IssuePledgeCreated(BaseModel):
+    pledger_name: str
+    issue_url: str
+    issue_title: str
+    issue_number: int
+    pledge_amount: str
+
+
+class IssuePledgedBranchCreated(NotificationPayload):
+    issue_url: str
+    issue_title: str
+    issue_number: int
+    branch_creator_username: str
+    commit_link: str
+
+
+class MaintainerIssueBranchCreated(IssuePledgedBranchCreated):
+    pass
+
+
+class IssuePledgedPullRequestCreated(NotificationPayload):
+    issue_url: str
+    issue_title: str
+    issue_number: int
+    pull_request_url: str
+    pull_request_title: str
+    pull_request_creator_username: str
+    pull_request_number: int
+    repo_owner: str
+    repo_name: str
+
+
+class MaintainerIssuePullRequestCreated(IssuePledgedPullRequestCreated):
+    pass
+
+
+class IssuePledgedPullRequestMerged(NotificationPayload):
+    issue_url: str
+    issue_title: str
+    issue_number: int
+    pull_request_url: str
+    pull_request_title: str
+    pull_request_creator_username: str
+    pull_request_number: int
+    repo_owner: str
+    repo_name: str
+
+
+class MaintainerIssuePullRequestMerged(IssuePledgedPullRequestMerged):
+    pass
 
 
 class NotificationRead(Schema):
     id: UUID
     type: NotificationType
     created_at: datetime
-    pledge: PledgeRead | None = None
-    issue: IssueRead | None = None
-    pull_request: PullRequestRead | None = None
-    payload: Any  # https://github.com/tiangolo/fastapi/issues/2082
-    #  payload: Union[
-    #     MetadataMaintainerPledgeCreated,
-    #     MetadataPledgedIssuePullRequestCreated,
-    #     MetadataPledgedIssuePullRequestMerged,
-    #     MetadataPledgedIssueBranchCreated,
-    #  ]
-
-
-class NotificationPayload(BaseModel):
-    ...
-
-
-class MetadataMaintainerPledgeCreated(NotificationPayload):
-    pledger_name: str
-    issue_url: str
-    issue_title: str
-    pledge_amount: str
-
-
-class MetadataPledgedIssuePullRequestCreated(NotificationPayload):
-    issue_url: str
-    issue_title: str
-    pull_request_url: str
-    pull_request_title: str
-    pull_request_creator_username: str
-    repo_owner: str
-    repo_name: str
-
-
-class MetadataMaintainerIssuePullRequestCreated(MetadataPledgedIssuePullRequestCreated):
-    ...
-
-
-class MetadataPledgedIssuePullRequestMerged(NotificationPayload):
-    issue_url: str
-    issue_title: str
-    pull_request_url: str
-    pull_request_title: str
-    pull_request_creator_username: str
-    repo_owner: str
-    repo_name: str
-
-
-class MetadataMaintainerIssuePullRequestMerged(MetadataPledgedIssuePullRequestMerged):
-    ...
-
-
-class MetadataPledgedIssueBranchCreated(NotificationPayload):
-    issue_url: str
-    issue_title: str
-    branch_creator_username: str
-    commit_link: str
-
-
-class MetadataMaintainerIssueBranchCreated(MetadataPledgedIssueBranchCreated):
-    ...
+    payload: Union[
+        IssuePledgeCreated,
+        IssuePledgedBranchCreated,
+        IssuePledgedPullRequestCreated,
+        IssuePledgedPullRequestMerged,
+        MaintainerIssueBranchCreated,
+        MaintainerIssuePullRequestCreated,
+        MaintainerIssuePullRequestMerged,
+    ]

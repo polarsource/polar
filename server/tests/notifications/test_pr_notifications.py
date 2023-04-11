@@ -14,8 +14,8 @@ from polar.models.pledge import Pledge
 from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
 from polar.notifications.schemas import (
-    MetadataMaintainerIssueBranchCreated,
-    MetadataPledgedIssueBranchCreated,
+    IssuePledgedBranchCreated,
+    MaintainerIssueBranchCreated,
     NotificationType,
 )
 from polar.notifications.service import (
@@ -240,9 +240,10 @@ async def test_pledged_issue_branch_created(
                 typ=NotificationType.maintainer_issue_branch_created,
                 notif=PartialNotification(
                     issue_id=issue.id,
-                    payload=MetadataMaintainerIssueBranchCreated(
-                        issue_url="https://github.com/TODO",
+                    payload=MaintainerIssueBranchCreated(
+                        issue_url="https://github.com/testorg/testrepo/issue/123",
                         issue_title=issue.title,
+                        issue_number=123,
                         branch_creator_username="ext_login",
                         commit_link="https://github.com/ext_orgname/ext_reponame/commit/abc123",
                     ),
@@ -255,9 +256,10 @@ async def test_pledged_issue_branch_created(
                 typ=NotificationType.issue_pledged_branch_created,
                 notif=PartialNotification(
                     issue_id=issue.id,
-                    payload=MetadataPledgedIssueBranchCreated(
-                        issue_url="https://github.com/TODO",
+                    payload=IssuePledgedBranchCreated(
+                        issue_url="https://github.com/testorg/testrepo/issue/123",
                         issue_title=issue.title,
+                        issue_number=123,
                         branch_creator_username="ext_login",
                         commit_link="https://github.com/ext_orgname/ext_reponame/commit/abc123",
                     ),

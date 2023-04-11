@@ -31,11 +31,6 @@ async def get(
                 id=n.id,
                 type=NotificationType.from_str(n.type),
                 created_at=n.created_at,
-                pledge=PledgeRead.from_db(n.pledge) if n.pledge else None,
-                issue=IssueRead.from_orm(n.issue) if n.issue else None,
-                pull_request=PullRequestRead.from_orm(n.pull_request)
-                if n.pull_request
-                else None,
                 payload=notifications.parse_payload(n),
             )
         except Exception as e:

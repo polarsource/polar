@@ -10,12 +10,14 @@ from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.notifications.service import PartialNotification, notifications
-from polar.notifications.schemas import NotificationType
+from polar.notifications.schemas import (
+    IssuePledgeCreated,
+    IssuePledgedBranchCreated,
+    IssuePledgedPullRequestCreated,
+    IssuePledgedPullRequestMerged,
+    NotificationType,
+)
 from polar.notifications.tasks.email import (
-    MetadataMaintainerPledgeCreated,
-    MetadataPledgedIssueBranchCreated,
-    MetadataPledgedIssuePullRequestCreated,
-    MetadataPledgedIssuePullRequestMerged,
     render_email,
 )
 from polar.postgres import AsyncSession
@@ -41,10 +43,11 @@ async def test_maintainer_pledge_created_metadata(
     )
 
     assert res is not None
-    assert res == MetadataMaintainerPledgeCreated(
+    assert res == IssuePledgeCreated(
         pledger_name="pledging_org",
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
+        issue_number=123,
         pledge_amount="123.45",
     )
 
@@ -80,11 +83,13 @@ async def test_pledger_pull_request_created(
     )
 
     assert res is not None
-    assert res == MetadataPledgedIssuePullRequestCreated(
+    assert res == IssuePledgedPullRequestCreated(
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
+        issue_number=123,
         pull_request_url="https://github.com/testorg/testrepo/pull/5555",
         pull_request_title="PR Title",
+        pull_request_number=5555,
         pull_request_creator_username="pr_creator_login",
         repo_owner="testorg",
         repo_name="testrepo",
@@ -125,11 +130,13 @@ async def test_pledger_pull_request_merged(
     )
 
     assert res is not None
-    assert res == MetadataPledgedIssuePullRequestMerged(
+    assert res == IssuePledgedPullRequestMerged(
         issue_url="https://github.com/testorg/testrepo/issues/123",
         issue_title="issue title",
+        issue_number=123,
         pull_request_url="https://github.com/testorg/testrepo/pull/5555",
         pull_request_title="PR Title",
+        pull_request_number=5555,
         pull_request_creator_username="pr_creator_login",
         repo_owner="testorg",
         repo_name="testrepo",
@@ -158,9 +165,10 @@ async def test_pledger_branch_created(
     rendered = render_email(
         user,
         NotificationType.issue_pledged_branch_created,
-        MetadataPledgedIssueBranchCreated(
+        IssuePledgedBranchCreated(
             issue_url="https://github.com/testorg/testrepo/issues/123",
             issue_title="issue title",
+            issue_number=123,
             branch_creator_username="happy_coder",
             commit_link="https://github.com/testorg/testrepo/commit/abc123",
         ),

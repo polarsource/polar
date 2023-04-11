@@ -49,7 +49,7 @@ async def test_maintainer_pledge_created_metadata(
     )
 
     # render it
-    rendered = render_email(user, res)
+    rendered = render_email(user, NotificationType.issue_pledge_created, res)
     assert (
         rendered
         == """Hi foobar,
@@ -91,7 +91,9 @@ async def test_pledger_pull_request_created(
     )
 
     # render it
-    rendered = render_email(user, res)
+    rendered = render_email(
+        user, NotificationType.issue_pledged_pull_request_created, res
+    )
     assert (
         rendered
         == """Hi foobar,
@@ -134,7 +136,9 @@ async def test_pledger_pull_request_merged(
     )
 
     # render it
-    rendered = render_email(user, res)
+    rendered = render_email(
+        user, NotificationType.issue_pledged_pull_request_merged, res
+    )
     assert (
         rendered
         == """Hi foobar,
@@ -153,6 +157,7 @@ async def test_pledger_branch_created(
     # render email, payload generation is tested elsewhere
     rendered = render_email(
         user,
+        NotificationType.issue_pledged_branch_created,
         MetadataPledgedIssueBranchCreated(
             issue_url="https://github.com/testorg/testrepo/issues/123",
             issue_title="issue title",

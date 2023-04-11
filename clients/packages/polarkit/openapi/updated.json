@@ -2339,6 +2339,9 @@
                     },
                     "pull_request": {
                         "$ref": "#/components/schemas/PullRequestRead"
+                    },
+                    "payload": {
+                        "title": "Payload"
                     }
                 }
             },
@@ -2380,8 +2383,23 @@
                         "type": "boolean",
                         "default": false
                     },
-                    "email_notification_issue_receives_backing": {
-                        "title": "Email Notification Issue Receives Backing",
+                    "email_notification_maintainer_issue_receives_backing": {
+                        "title": "Email Notification Maintainer Issue Receives Backing",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "email_notification_maintainer_issue_branch_created": {
+                        "title": "Email Notification Maintainer Issue Branch Created",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "email_notification_maintainer_pull_request_created": {
+                        "title": "Email Notification Maintainer Pull Request Created",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "email_notification_maintainer_pull_request_merged": {
+                        "title": "Email Notification Maintainer Pull Request Merged",
                         "type": "boolean",
                         "default": false
                     },
@@ -2482,8 +2500,20 @@
                         "title": "Funding Badge Show Amount",
                         "type": "boolean"
                     },
-                    "email_notification_issue_receives_backing": {
-                        "title": "Email Notification Issue Receives Backing",
+                    "email_notification_maintainer_issue_receives_backing": {
+                        "title": "Email Notification Maintainer Issue Receives Backing",
+                        "type": "boolean"
+                    },
+                    "email_notification_maintainer_issue_branch_created": {
+                        "title": "Email Notification Maintainer Issue Branch Created",
+                        "type": "boolean"
+                    },
+                    "email_notification_maintainer_pull_request_created": {
+                        "title": "Email Notification Maintainer Pull Request Created",
+                        "type": "boolean"
+                    },
+                    "email_notification_maintainer_pull_request_merged": {
+                        "title": "Email Notification Maintainer Pull Request Merged",
                         "type": "boolean"
                     },
                     "email_notification_backed_issue_branch_created": {

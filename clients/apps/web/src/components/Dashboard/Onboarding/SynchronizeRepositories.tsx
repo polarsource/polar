@@ -65,10 +65,9 @@ export const SynchronizeRepositories = ({
     let processed = data.processed
     if (completed) {
       /*
-       * TODO
-       * We should always do this in case of the completed event, but...
-       * Currently, it's a hack since PRs count as issues leading to more
-       * expected than we'll ever sync.
+       * We only get updated processed counts when an issue is synced, but
+       * there may be skipped issues in the end etc, so when we're finished,
+       * we still need to update the processed count to the expected count.
        */
       processed = data.expected
     }

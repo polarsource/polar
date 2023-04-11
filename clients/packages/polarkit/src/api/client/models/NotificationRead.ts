@@ -2,18 +2,19 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import type { IssueRead } from './IssueRead';
+import type { IssuePledgeCreated } from './IssuePledgeCreated';
+import type { IssuePledgedBranchCreated } from './IssuePledgedBranchCreated';
+import type { IssuePledgedPullRequestCreated } from './IssuePledgedPullRequestCreated';
+import type { IssuePledgedPullRequestMerged } from './IssuePledgedPullRequestMerged';
+import type { MaintainerIssueBranchCreated } from './MaintainerIssueBranchCreated';
+import type { MaintainerIssuePullRequestCreated } from './MaintainerIssuePullRequestCreated';
+import type { MaintainerIssuePullRequestMerged } from './MaintainerIssuePullRequestMerged';
 import type { NotificationType } from './NotificationType';
-import type { PledgeRead } from './PledgeRead';
-import type { PullRequestRead } from './PullRequestRead';
 
 export type NotificationRead = {
   id: string;
   type: NotificationType;
   created_at: string;
-  pledge?: PledgeRead;
-  issue?: IssueRead;
-  pull_request?: PullRequestRead;
-  payload?: any;
+  payload: (IssuePledgeCreated | IssuePledgedBranchCreated | IssuePledgedPullRequestCreated | IssuePledgedPullRequestMerged | MaintainerIssueBranchCreated | MaintainerIssuePullRequestCreated | MaintainerIssuePullRequestMerged);
 };
 

@@ -2094,6 +2094,178 @@
                 "type": "string",
                 "description": "An enumeration."
             },
+            "IssuePledgeCreated": {
+                "title": "IssuePledgeCreated",
+                "required": [
+                    "pledger_name",
+                    "issue_url",
+                    "issue_title",
+                    "issue_number",
+                    "pledge_amount"
+                ],
+                "type": "object",
+                "properties": {
+                    "pledger_name": {
+                        "title": "Pledger Name",
+                        "type": "string"
+                    },
+                    "issue_url": {
+                        "title": "Issue Url",
+                        "type": "string"
+                    },
+                    "issue_title": {
+                        "title": "Issue Title",
+                        "type": "string"
+                    },
+                    "issue_number": {
+                        "title": "Issue Number",
+                        "type": "integer"
+                    },
+                    "pledge_amount": {
+                        "title": "Pledge Amount",
+                        "type": "string"
+                    }
+                }
+            },
+            "IssuePledgedBranchCreated": {
+                "title": "IssuePledgedBranchCreated",
+                "required": [
+                    "issue_url",
+                    "issue_title",
+                    "issue_number",
+                    "branch_creator_username",
+                    "commit_link"
+                ],
+                "type": "object",
+                "properties": {
+                    "issue_url": {
+                        "title": "Issue Url",
+                        "type": "string"
+                    },
+                    "issue_title": {
+                        "title": "Issue Title",
+                        "type": "string"
+                    },
+                    "issue_number": {
+                        "title": "Issue Number",
+                        "type": "integer"
+                    },
+                    "branch_creator_username": {
+                        "title": "Branch Creator Username",
+                        "type": "string"
+                    },
+                    "commit_link": {
+                        "title": "Commit Link",
+                        "type": "string"
+                    }
+                }
+            },
+            "IssuePledgedPullRequestCreated": {
+                "title": "IssuePledgedPullRequestCreated",
+                "required": [
+                    "issue_url",
+                    "issue_title",
+                    "issue_number",
+                    "pull_request_url",
+                    "pull_request_title",
+                    "pull_request_creator_username",
+                    "pull_request_number",
+                    "repo_owner",
+                    "repo_name"
+                ],
+                "type": "object",
+                "properties": {
+                    "issue_url": {
+                        "title": "Issue Url",
+                        "type": "string"
+                    },
+                    "issue_title": {
+                        "title": "Issue Title",
+                        "type": "string"
+                    },
+                    "issue_number": {
+                        "title": "Issue Number",
+                        "type": "integer"
+                    },
+                    "pull_request_url": {
+                        "title": "Pull Request Url",
+                        "type": "string"
+                    },
+                    "pull_request_title": {
+                        "title": "Pull Request Title",
+                        "type": "string"
+                    },
+                    "pull_request_creator_username": {
+                        "title": "Pull Request Creator Username",
+                        "type": "string"
+                    },
+                    "pull_request_number": {
+                        "title": "Pull Request Number",
+                        "type": "integer"
+                    },
+                    "repo_owner": {
+                        "title": "Repo Owner",
+                        "type": "string"
+                    },
+                    "repo_name": {
+                        "title": "Repo Name",
+                        "type": "string"
+                    }
+                }
+            },
+            "IssuePledgedPullRequestMerged": {
+                "title": "IssuePledgedPullRequestMerged",
+                "required": [
+                    "issue_url",
+                    "issue_title",
+                    "issue_number",
+                    "pull_request_url",
+                    "pull_request_title",
+                    "pull_request_creator_username",
+                    "pull_request_number",
+                    "repo_owner",
+                    "repo_name"
+                ],
+                "type": "object",
+                "properties": {
+                    "issue_url": {
+                        "title": "Issue Url",
+                        "type": "string"
+                    },
+                    "issue_title": {
+                        "title": "Issue Title",
+                        "type": "string"
+                    },
+                    "issue_number": {
+                        "title": "Issue Number",
+                        "type": "integer"
+                    },
+                    "pull_request_url": {
+                        "title": "Pull Request Url",
+                        "type": "string"
+                    },
+                    "pull_request_title": {
+                        "title": "Pull Request Title",
+                        "type": "string"
+                    },
+                    "pull_request_creator_username": {
+                        "title": "Pull Request Creator Username",
+                        "type": "string"
+                    },
+                    "pull_request_number": {
+                        "title": "Pull Request Number",
+                        "type": "integer"
+                    },
+                    "repo_owner": {
+                        "title": "Repo Owner",
+                        "type": "string"
+                    },
+                    "repo_name": {
+                        "title": "Repo Name",
+                        "type": "string"
+                    }
+                }
+            },
             "IssueRead": {
                 "title": "IssueRead",
                 "required": [
@@ -2379,12 +2551,152 @@
                     }
                 }
             },
+            "MaintainerIssueBranchCreated": {
+                "title": "MaintainerIssueBranchCreated",
+                "required": [
+                    "issue_url",
+                    "issue_title",
+                    "issue_number",
+                    "branch_creator_username",
+                    "commit_link"
+                ],
+                "type": "object",
+                "properties": {
+                    "issue_url": {
+                        "title": "Issue Url",
+                        "type": "string"
+                    },
+                    "issue_title": {
+                        "title": "Issue Title",
+                        "type": "string"
+                    },
+                    "issue_number": {
+                        "title": "Issue Number",
+                        "type": "integer"
+                    },
+                    "branch_creator_username": {
+                        "title": "Branch Creator Username",
+                        "type": "string"
+                    },
+                    "commit_link": {
+                        "title": "Commit Link",
+                        "type": "string"
+                    }
+                }
+            },
+            "MaintainerIssuePullRequestCreated": {
+                "title": "MaintainerIssuePullRequestCreated",
+                "required": [
+                    "issue_url",
+                    "issue_title",
+                    "issue_number",
+                    "pull_request_url",
+                    "pull_request_title",
+                    "pull_request_creator_username",
+                    "pull_request_number",
+                    "repo_owner",
+                    "repo_name"
+                ],
+                "type": "object",
+                "properties": {
+                    "issue_url": {
+                        "title": "Issue Url",
+                        "type": "string"
+                    },
+                    "issue_title": {
+                        "title": "Issue Title",
+                        "type": "string"
+                    },
+                    "issue_number": {
+                        "title": "Issue Number",
+                        "type": "integer"
+                    },
+                    "pull_request_url": {
+                        "title": "Pull Request Url",
+                        "type": "string"
+                    },
+                    "pull_request_title": {
+                        "title": "Pull Request Title",
+                        "type": "string"
+                    },
+                    "pull_request_creator_username": {
+                        "title": "Pull Request Creator Username",
+                        "type": "string"
+                    },
+                    "pull_request_number": {
+                        "title": "Pull Request Number",
+                        "type": "integer"
+                    },
+                    "repo_owner": {
+                        "title": "Repo Owner",
+                        "type": "string"
+                    },
+                    "repo_name": {
+                        "title": "Repo Name",
+                        "type": "string"
+                    }
+                }
+            },
+            "MaintainerIssuePullRequestMerged": {
+                "title": "MaintainerIssuePullRequestMerged",
+                "required": [
+                    "issue_url",
+                    "issue_title",
+                    "issue_number",
+                    "pull_request_url",
+                    "pull_request_title",
+                    "pull_request_creator_username",
+                    "pull_request_number",
+                    "repo_owner",
+                    "repo_name"
+                ],
+                "type": "object",
+                "properties": {
+                    "issue_url": {
+                        "title": "Issue Url",
+                        "type": "string"
+                    },
+                    "issue_title": {
+                        "title": "Issue Title",
+                        "type": "string"
+                    },
+                    "issue_number": {
+                        "title": "Issue Number",
+                        "type": "integer"
+                    },
+                    "pull_request_url": {
+                        "title": "Pull Request Url",
+                        "type": "string"
+                    },
+                    "pull_request_title": {
+                        "title": "Pull Request Title",
+                        "type": "string"
+                    },
+                    "pull_request_creator_username": {
+                        "title": "Pull Request Creator Username",
+                        "type": "string"
+                    },
+                    "pull_request_number": {
+                        "title": "Pull Request Number",
+                        "type": "integer"
+                    },
+                    "repo_owner": {
+                        "title": "Repo Owner",
+                        "type": "string"
+                    },
+                    "repo_name": {
+                        "title": "Repo Name",
+                        "type": "string"
+                    }
+                }
+            },
             "NotificationRead": {
                 "title": "NotificationRead",
                 "required": [
                     "id",
                     "type",
-                    "created_at"
+                    "created_at",
+                    "payload"
                 ],
                 "type": "object",
                 "properties": {
@@ -2401,17 +2713,31 @@
                         "type": "string",
                         "format": "date-time"
                     },
-                    "pledge": {
-                        "$ref": "#/components/schemas/PledgeRead"
-                    },
-                    "issue": {
-                        "$ref": "#/components/schemas/IssueRead"
-                    },
-                    "pull_request": {
-                        "$ref": "#/components/schemas/PullRequestRead"
-                    },
                     "payload": {
-                        "title": "Payload"
+                        "title": "Payload",
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/IssuePledgeCreated"
+                            },
+                            {
+                                "$ref": "#/components/schemas/IssuePledgedBranchCreated"
+                            },
+                            {
+                                "$ref": "#/components/schemas/IssuePledgedPullRequestCreated"
+                            },
+                            {
+                                "$ref": "#/components/schemas/IssuePledgedPullRequestMerged"
+                            },
+                            {
+                                "$ref": "#/components/schemas/MaintainerIssueBranchCreated"
+                            },
+                            {
+                                "$ref": "#/components/schemas/MaintainerIssuePullRequestCreated"
+                            },
+                            {
+                                "$ref": "#/components/schemas/MaintainerIssuePullRequestMerged"
+                            }
+                        ]
                     }
                 }
             },

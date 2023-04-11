@@ -295,25 +295,25 @@ class OrganizationService(
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(timezone.utc)
 
-        if settings.email_notification_issue_receives_backing is not None:
-            organization.email_notification_issue_receives_backing = (
-                settings.email_notification_issue_receives_backing
-            )
-
-        if settings.email_notification_backed_issue_branch_created is not None:
-            organization.email_notification_backed_issue_branch_created = (
-                settings.email_notification_backed_issue_branch_created
-            )
-
-        if settings.email_notification_backed_issue_pull_request_created is not None:
-            organization.email_notification_backed_issue_pull_request_created = (
-                settings.email_notification_backed_issue_pull_request_created
-            )
-
-        if settings.email_notification_backed_issue_pull_request_merged is not None:
-            organization.email_notification_backed_issue_pull_request_merged = (
-                settings.email_notification_backed_issue_pull_request_merged
-            )
+        # if settings.email_notification_issue_receives_backing is not None:
+        #     organization.email_notification_issue_receives_backing = (
+        #         settings.email_notification_issue_receives_backing
+        #     )
+        #
+        # if settings.email_notification_backed_issue_branch_created is not None:
+        #     organization.email_notification_backed_issue_branch_created = (
+        #         settings.email_notification_backed_issue_branch_created
+        #     )
+        #
+        # if settings.email_notification_backed_issue_pull_request_created is not None:
+        #     organization.email_notification_backed_issue_pull_request_created = (
+        #         settings.email_notification_backed_issue_pull_request_created
+        #     )
+        #
+        # if settings.email_notification_backed_issue_pull_request_merged is not None:
+        #     organization.email_notification_backed_issue_pull_request_merged = (
+        #         settings.email_notification_backed_issue_pull_request_merged
+        #     )
 
         updated = await organization.save(session)
         log.info(

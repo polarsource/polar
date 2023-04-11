@@ -1,5 +1,5 @@
 import FakePullRequest from './FakePullRequest'
-import { SettingsCheckbox } from './SettingsCheckbox'
+import SettingsCheckbox from './SettingsCheckbox'
 
 export const BadgeSettings = ({
   badgeShowRaised,
@@ -21,7 +21,6 @@ export const BadgeSettings = ({
       isChecked={badgeAddOldIssues}
       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
         setBadgeAddOldIssues(e.target.checked)
-        // save({ funding_badge_retroactive: e.target.checked })
       }}
     />
     <SettingsCheckbox
@@ -30,7 +29,6 @@ export const BadgeSettings = ({
       isChecked={badgeShowRaised}
       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
         setBadgeShowRaised(e.target.checked)
-        // save({ funding_badge_show_amount: e.target.checked })
       }}
     />
   </>

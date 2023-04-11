@@ -1,6 +1,6 @@
 import { InformationCircleIcon } from '@heroicons/react/24/outline'
 
-export const SettingsCheckbox = ({
+const SettingsCheckbox = ({
   id,
   title,
   isChecked,
@@ -43,3 +43,5 @@ export const SettingsCheckbox = ({
     </div>
   )
 }
+
+export default SettingsCheckbox

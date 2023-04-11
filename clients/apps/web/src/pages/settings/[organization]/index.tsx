@@ -1,8 +1,10 @@
 import { ArrowLeftIcon } from '@heroicons/react/24/solid'
 import { BadgeSettings } from 'components/Settings/BadgeSettings'
-import { Box } from 'components/Settings/Box'
+import Box from 'components/Settings/Box'
+import NotificationSettings, {
+  type Settings as NotificationSettingsValues,
+} from 'components/Settings/NotificationSettings'
 import PaymentSettings from 'components/Settings/PaymentSettings'
-import { SettingsCheckbox } from 'components/Settings/SettingsCheckbox'
 import Spinner from 'components/Shared/Spinner'
 import Topbar from 'components/Shared/Topbar'
 import { NextLayoutComponentType } from 'next'
@@ -27,14 +29,10 @@ const SettingsPage: NextLayoutComponentType = () => {
   const [badgeShowRaised, setBadgeShowRaised] = useState(false)
   const [badgeAddOldIssues, setBadgeAddOldIssues] = useState(false)
 
-  const [emailIssueReceivesBacking, setEmailIssueReceivesBacking] =
-    useState(false)
-  const [emailIssueBranchCreated, setEmailIssueBranchCreated] = useState(false)
-  const [emailPullRequestCreated, setEmailPullRequestCreated] = useState(false)
-  const [emailPullRequestMerged, setEmailPullRequestMerged] = useState(false)
+  const [notificationSettings, setNotificationSettings] =
+    useState<NotificationSettingsValues>()
 
-  const didFirstSet = useRef(false)
-
+  const didFirstSetForOrg = useRef<string>('')
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
 
   useEffect(() => {
@@ -44,7 +42,8 @@ const SettingsPage: NextLayoutComponentType = () => {
 
     setCurrentOrgRepo(org, undefined)
 
-    if (didFirstSet.current) {
+    // If org changes, or if this is the first time we load this org, build states
+    if (didFirstSetForOrg.current === org.id) {
       return
     }
 
@@ -53,20 +52,24 @@ const SettingsPage: NextLayoutComponentType = () => {
     setBadgeAddOldIssues(!!org.funding_badge_retroactive)
     setBadgeShowRaised(!!org.funding_badge_show_amount)
 
-    setEmailIssueReceivesBacking(
-      !!org.email_notification_issue_receives_backing,
-    )
-    setEmailIssueBranchCreated(
-      !!org.email_notification_backed_issue_branch_created,
-    )
-    setEmailPullRequestCreated(
-      !!org.email_notification_backed_issue_pull_request_created,
-    )
-    setEmailPullRequestMerged(
-      !!org.email_notification_backed_issue_pull_request_merged,
-    )
+    setNotificationSettings({
+      email_notification_maintainer_issue_receives_backing:
+        org.email_notification_maintainer_issue_receives_backing,
+      email_notification_maintainer_issue_branch_created:
+        org.email_notification_maintainer_issue_branch_created,
+      email_notification_maintainer_pull_request_created:
+        org.email_notification_maintainer_pull_request_created,
+      email_notification_maintainer_pull_request_merged:
+        org.email_notification_maintainer_pull_request_merged,
+      email_notification_backed_issue_branch_created:
+        org.email_notification_backed_issue_branch_created,
+      email_notification_backed_issue_pull_request_created:
+        org.email_notification_backed_issue_pull_request_created,
+      email_notification_backed_issue_pull_request_merged:
+        org.email_notification_backed_issue_pull_request_merged,
+    })
 
-    didFirstSet.current = true
+    didFirstSetForOrg.current = org.id
   }, [org, setCurrentOrgRepo])
 
   const mutation = useOrganizationSettingsMutation()
@@ -100,6 +103,11 @@ const SettingsPage: NextLayoutComponentType = () => {
   setTimeout(() => {
     setAllowShowLoadingSpinner(true)
   }, 1000)
+
+  const onNotificationSettingsUpdated = (val: NotificationSettingsValues) => {
+    save(val)
+    setNotificationSettings(val)
+  }
 
   if (orgData.isError) {
     return (
@@ -175,52 +183,10 @@ const SettingsPage: NextLayoutComponentType = () => {
             />
 
             <Box>
-              <SettingsCheckbox
-                id="email-backing"
-                title="Issue receives backing"
-                isChecked={emailIssueReceivesBacking}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setEmailIssueReceivesBacking(e.target.checked)
-                  save({
-                    email_notification_issue_receives_backing: e.target.checked,
-                  })
-                }}
-              />
-              <SettingsCheckbox
-                id="email-branch-created"
-                title="Branch created for issue with backing"
-                isChecked={emailIssueBranchCreated}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setEmailIssueBranchCreated(e.target.checked)
-                  save({
-                    email_notification_backed_issue_branch_created:
-                      e.target.checked,
-                  })
-                }}
-              />
-              <SettingsCheckbox
-                id="email-pr-created"
-                title="Pull request created for issue with backing"
-                isChecked={emailPullRequestCreated}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setEmailPullRequestCreated(e.target.checked)
-                  save({
-                    email_notification_backed_issue_pull_request_created:
-                      e.target.checked,
-                  })
-                }}
-              />
-              <SettingsCheckbox
-                id="email-pr-merged"
-                title="Pull request merged for issue with backing"
-                isChecked={emailPullRequestMerged}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setEmailPullRequestMerged(e.target.checked)
-                  save({
-                    email_notification_backed_issue_pull_request_merged:
-                      e.target.checked,
-                  })
-                }}
+              <NotificationSettings
+                settings={notificationSettings}
+                orgName={org.name}
+                onUpdated={onNotificationSettingsUpdated}
               />
             </Box>
           </Section>

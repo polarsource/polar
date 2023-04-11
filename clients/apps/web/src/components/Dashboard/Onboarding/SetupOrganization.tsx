@@ -4,7 +4,7 @@ import { useStore } from 'polarkit/store'
 import { useState } from 'react'
 
 import { BadgeSettings } from 'components/Settings/BadgeSettings'
-import { Box } from 'components/Settings/Box'
+import Box from 'components/Settings/Box'
 import { useRouter } from 'next/router'
 import OnboardingControls from './OnboardingControls'
 

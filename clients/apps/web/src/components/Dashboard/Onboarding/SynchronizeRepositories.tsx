@@ -21,7 +21,7 @@ const getInitializedSyncState = (
       id: repo.id,
       avatar_url: org.avatar_url,
       name: repo.name,
-      processed: 0,
+      synced: 0,
       expected: repo.open_issues,
       completed: false,
     }
@@ -44,11 +44,11 @@ export const SynchronizeRepositories = ({
     [id: string]: RepoSyncState
   }>(initialSyncStates)
   const [progress, setProgress] = useState<{
-    processed: number
+    synced: number
     expected: number
     percentage: number
   }>({
-    processed: 0,
+    synced: 0,
     expected: totalExpected,
     percentage: 0.0,
   })
@@ -62,14 +62,15 @@ export const SynchronizeRepositories = ({
     data: SyncEvent
     completed?: boolean
   }) => {
-    let processed = data.processed
+    let synced = data.synced
     if (completed) {
       /*
-       * We only get updated processed counts when an issue is synced, but
-       * there may be skipped issues in the end etc, so when we're finished,
-       * we still need to update the processed count to the expected count.
+       * TODO
+       * We should always do this in case of the completed event, but...
+       * Currently, it's a hack since PRs count as issues leading to more
+       * expected than we'll ever sync.
        */
-      processed = data.expected
+      synced = data.expected
     }
     setSyncingRepos((prev) => {
       const repo = prev[data.repository_id]
@@ -77,16 +78,18 @@ export const SynchronizeRepositories = ({
         ...prev,
         [data.repository_id]: {
           ...repo,
-          processed,
+          synced,
           expected: data.expected,
           completed,
         },
       }
     })
-    setProgress({
-      processed: processed,
-      expected: data.expected,
-      percentage: (processed / data.expected) * 100,
+    setProgress((prev) => {
+      // TODO: Due to PRs in issues this can be less than 100%
+      const synced = prev.synced + 1
+      const percentage = (synced / prev.expected) * 100
+      const ret = { ...prev, synced, percentage }
+      return ret
     })
   }
 
@@ -96,7 +99,7 @@ export const SynchronizeRepositories = ({
     }
 
     const onIssueSynced = (data: SyncEvent) => {
-      sync({ data, completed: data.processed === data.expected })
+      sync({ data, completed: data.synced === data.expected })
     }
 
     emitter.on('issue.synced', onIssueSynced)

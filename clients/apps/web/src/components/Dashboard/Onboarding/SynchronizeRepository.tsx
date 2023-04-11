@@ -56,7 +56,7 @@ export const SynchronizeRepository = ({ repo }: { repo: RepoSyncState }) => {
         </div>
         <div className="my-auto basis-2/6">
           <p className="text-xs">
-            {repo.processed}{' '}
+            {repo.synced}{' '}
             <span className="text-gray-500">
               / {repo.expected} issues fetched
             </span>
@@ -64,7 +64,7 @@ export const SynchronizeRepository = ({ repo }: { repo: RepoSyncState }) => {
         </div>
         <div className="my-auto basis-2/6">
           <ProgressBar
-            progress={repo.processed}
+            progress={repo.synced}
             target={repo.expected}
             completed={repo.completed}
           />

@@ -1,5 +1,6 @@
-from typing import Sequence
+from typing import Any, Sequence
 from uuid import UUID
+from sqlalchemy import and_
 import structlog
 from polar.postgres import AsyncSession, sql
 from polar.models import UserOrganization, UserOrganizationSettings
@@ -48,22 +49,32 @@ class UserOrganizationervice:
         org_id: UUID,
         set: UserOrganizationSettingsUpdate,
     ) -> None:
-        stmt = sql.update(UserOrganizationSettings).where(
-            UserOrganizationSettings.user_id == user_id,
-            UserOrganizationSettings.organization_id == org_id,
-        )
 
-        # TODO: or insert
-
-        values: dict[str, bool] = {}
-
+        values: dict[str, Any] = {"user_id": user_id, "organization_id": org_id}
         for k, v in set.dict().items():
             if v is not None:
                 values[k] = v
 
-        stmt.values(values)
+        stmt = (
+            sql.insert(UserOrganizationSettings)
+            .values(
+                values,
+            )
+            .on_conflict_do_update(
+                set_=values,
+                index_elements=[
+                    UserOrganizationSettings.user_id,
+                    UserOrganizationSettings.organization_id,
+                ],
+                where=and_(
+                    UserOrganizationSettings.user_id == user_id,
+                    UserOrganizationSettings.organization_id == org_id,
+                ),
+            )
+        )
 
         await session.execute(stmt)
+        await session.commit()
 
 
 user_organization = UserOrganizationervice()

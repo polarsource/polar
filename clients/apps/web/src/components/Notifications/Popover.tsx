@@ -8,8 +8,6 @@ import {
   MaintainerIssuePullRequestCreated,
   MaintainerIssuePullRequestMerged,
   NotificationRead,
-  PledgeRead,
-  PullRequestRead,
 } from 'polarkit/api/client'
 import { useNotifications } from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
@@ -68,8 +66,8 @@ const Popover = () => {
         <div className="flex w-full flex-col items-center space-y-4 sm:items-end">
           {show && (
             <>
-              <div className="mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white"></div>
-              <div className="w-full max-w-md">
+              <div className="z-10 mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white"></div>
+              <div className="z-20 w-full max-w-md">
                 <div className="pointer-events-auto w-full  overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
                   {notifs.data.length === 0 && (
                     <div className="p-4 text-black/60">
@@ -94,16 +92,19 @@ export default Popover
 const Item = ({
   title,
   children,
-  timestamp,
+  n,
   iconBg,
 }: {
   title: string
-  timestamp: string
   iconBg: string
+  n: NotificationRead
   children: React.ReactElement
 }) => {
   return (
-    <div className="flex space-x-4 p-4">
+    <a
+      className=" flex space-x-4 p-4 transition-colors duration-100 hover:bg-gray-100"
+      href={n.payload.issue_url}
+    >
       <div
         className={`inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md ${iconBg}`}
       >
@@ -112,28 +113,12 @@ const Item = ({
       <div>
         <div className="font-medium">{title}</div>
         <div className="text-black/50">
-          <ReactTimeago date={timestamp} />
+          <ReactTimeago date={n.created_at} />
         </div>
       </div>
-    </div>
+    </a>
   )
 }
-
-const PledgePayout = () => {
-  return (
-    <Item
-      title="$150 paid out for issue #1233"
-      timestamp={'123'}
-      iconBg="bg-[#F9E18F]"
-    >
-      <DollarSignIcon />
-    </Item>
-  )
-}
-
-type withPledge = NotificationRead & { pledge: PledgeRead }
-type withPullRequest = NotificationRead & { pull_request: PullRequestRead }
-
 const IssuePledgeCreated = ({
   n,
   payload,
@@ -143,7 +128,7 @@ const IssuePledgeCreated = ({
 }) => {
   const title = `Issue #${payload.issue_number} received \$${payload.pledge_amount} in backing`
   return (
-    <Item title={title} timestamp={n.created_at} iconBg="bg-[#F9E18F]">
+    <Item title={title} n={n} iconBg="bg-[#F9E18F]">
       <DollarSignIcon />
     </Item>
   )
@@ -158,7 +143,7 @@ const PullRequestCreatedNotification = ({
 }) => {
   const title = `${payload.pull_request_creator_username} created a PR for issue #${payload.pull_request_number}`
   return (
-    <Item title={title} timestamp={n.created_at} iconBg="bg-[#DFEFE4]">
+    <Item title={title} n={n} iconBg="bg-[#DFEFE4]">
       <PullRequestCreatedIcon />
     </Item>
   )
@@ -173,7 +158,7 @@ const PullRequestMergedNotification = ({
 }) => {
   const title = `${payload.pull_request_creator_username} merged a PR for issue #${payload.issue_number}`
   return (
-    <Item title={title} timestamp={n.created_at} iconBg="bg-[#E8DEFC]">
+    <Item title={title} n={n} iconBg="bg-[#E8DEFC]">
       <PullRequestMergedIcon />
     </Item>
   )
@@ -188,7 +173,7 @@ const BranchCreatedNotification = ({
 }) => {
   const title = `${payload.branch_creator_username} started working on issue #${payload.issue_number}`
   return (
-    <Item title={title} timestamp={n.created_at} iconBg="bg-[#ECECEC]">
+    <Item title={title} n={n} iconBg="bg-[#ECECEC]">
       <BranchCreatedIcon />
     </Item>
   )

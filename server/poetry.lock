@@ -179,7 +179,7 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "blinker"
-version = "1.5"
+version = "1.6.1"
 description = "Fast, simple object-to-object and broadcast signaling"
 category = "main"
 optional = false
@@ -187,11 +187,14 @@ python-versions = ">=3.7"
 files = []
 develop = false
 
+[package.dependencies]
+typing-extensions = ">=4.2"
+
 [package.source]
 type = "git"
 url = "https://github.com/pallets-eco/blinker.git"
 reference = "HEAD"
-resolved_reference = "5ed9c956aaf68a8e2defa9722109aa2c7bcf7ae1"
+resolved_reference = "11b46cf60db28c0dede87a93d62a2578c4cdca7d"
 
 [[package]]
 name = "certifi"

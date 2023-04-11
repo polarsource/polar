@@ -14,5 +14,6 @@ export type NotificationRead = {
   pledge?: PledgeRead;
   issue?: IssueRead;
   pull_request?: PullRequestRead;
+  payload?: any;
 };
 

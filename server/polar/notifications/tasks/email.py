@@ -2,12 +2,14 @@ from uuid import UUID
 from jinja2 import StrictUndefined
 import structlog
 from polar.models.user import User
+from polar.models.user_organization import UserOrganization
 
 from polar.notifications.schemas import (
     MetadataMaintainerPledgeCreated,
     MetadataPledgedIssueBranchCreated,
     MetadataPledgedIssuePullRequestCreated,
     MetadataPledgedIssuePullRequestMerged,
+    NotificationType,
 )
 from polar.worker import JobContext, task
 from polar.postgres import AsyncSessionLocal
@@ -18,6 +20,7 @@ from polar.user_organization.service import (
 from polar.user.service import user as user_service
 from polar.notifications.sender import get_email_sender
 from polar.notifications.service import notifications
+from polar.postgres import AsyncSession
 
 from jinja2.nativetypes import NativeEnvironment
 
@@ -46,6 +49,9 @@ async def sync_repositories(
             return
 
         for user_org in users:
+            if not await should_send(session, user_org, notif):
+                continue
+
             user = await user_service.get(session, user_org.user_id)
 
             if not user:
@@ -70,6 +76,38 @@ async def sync_repositories(
                 continue
 
             sender.send_to_user(user.email, txt)
+
+
+async def should_send(
+    session: AsyncSession, user: UserOrganization, notif: Notification
+) -> bool:
+    settings = await user_organization_service.get_settings(
+        session, user_id=user.user_id, org_id=user.organization_id
+    )
+
+    match notif.type:
+        case NotificationType.issue_pledge_created:
+            return settings.email_notification_maintainer_issue_receives_backing
+
+        case NotificationType.issue_pledged_branch_created:
+            return settings.email_notification_backed_issue_branch_created
+
+        case NotificationType.issue_pledged_pull_request_created:
+            return settings.email_notification_backed_issue_pull_request_created
+
+        case NotificationType.issue_pledged_pull_request_merged:
+            return settings.email_notification_backed_issue_pull_request_merged
+
+        case NotificationType.maintainer_issue_branch_created:
+            return settings.email_notification_maintainer_issue_branch_created
+
+        case NotificationType.maintainer_issue_pull_request_created:
+            return settings.email_notification_maintainer_pull_request_created
+
+        case NotificationType.maintainer_issue_pull_request_merged:
+            return settings.email_notification_maintainer_pull_request_merged
+
+    return False
 
 
 def render_email(

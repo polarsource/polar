@@ -19,7 +19,7 @@ from polar.user_organization.service import (
 )
 from polar.user.service import user as user_service
 from polar.notifications.sender import get_email_sender
-from polar.notifications.service import notifications
+from polar.notifications.service import TNotificationPayloads, notifications
 from polar.postgres import AsyncSession
 
 from jinja2.nativetypes import NativeEnvironment
@@ -66,7 +66,7 @@ async def sync_repositories(
 
             meta = notifications.parse_payload(notif)
 
-            txt = render_email(user, meta)
+            txt = render_email(user, NotificationType.from_str(notif.type), meta)
             if not txt:
                 log.error(
                     "notifications.send.could_not_render",
@@ -110,25 +110,53 @@ async def should_send(
     return False
 
 
+def get_template(type: NotificationType, meta: TNotificationPayloads) -> str | None:
+    if type == NotificationType.issue_pledge_created and isinstance(
+        meta, MetadataMaintainerPledgeCreated
+    ):
+        return MAINTAINER_PLEDGE_CREATED
+
+    if type == NotificationType.issue_pledged_branch_created and isinstance(
+        meta, MetadataPledgedIssueBranchCreated
+    ):
+        return PLEDGER_ISSUE_BRANCH_CREATED
+
+    if type == NotificationType.issue_pledged_pull_request_created and isinstance(
+        meta, MetadataPledgedIssuePullRequestCreated
+    ):
+        return PLEDGER_ISSUE_PULL_REQUEST_CREATED
+
+    if type == NotificationType.issue_pledged_pull_request_merged and isinstance(
+        meta, MetadataPledgedIssuePullRequestMerged
+    ):
+        return PLEDGER_ISSUE_PULL_REQUEST_MERGED
+
+    if type == NotificationType.maintainer_issue_branch_created and isinstance(
+        meta, MetadataPledgedIssueBranchCreated
+    ):
+        return MAINTAINER_ISSUE_BRANCH_CREATED
+
+    if type == NotificationType.maintainer_issue_pull_request_created and isinstance(
+        meta, MetadataPledgedIssuePullRequestCreated
+    ):
+        return MAINTAINER_ISSUE_PULL_REQUEST_CREATED
+
+    if type == NotificationType.maintainer_issue_pull_request_merged and isinstance(
+        meta, MetadataPledgedIssuePullRequestMerged
+    ):
+        return MAINTAINER_ISSUE_PULL_REQUEST_MERGED
+
+    return None
+
+
 def render_email(
     user: User,
-    meta: MetadataMaintainerPledgeCreated
-    | MetadataPledgedIssuePullRequestCreated
-    | MetadataPledgedIssuePullRequestMerged
-    | MetadataPledgedIssueBranchCreated,
+    type: NotificationType,
+    meta: TNotificationPayloads,
 ) -> str | None:
-
-    template = None
-    if isinstance(meta, MetadataMaintainerPledgeCreated):
-        template = MAINTAINER_PLEDGE_CREATED
-    if isinstance(meta, MetadataPledgedIssuePullRequestCreated):
-        template = PLEDGER_ISSUE_PULL_REQUEST_CREATED
-    if isinstance(meta, MetadataPledgedIssuePullRequestMerged):
-        template = PLEDGER_ISSUE_PULL_REQUEST_MERGED
-    if isinstance(meta, MetadataPledgedIssueBranchCreated):
-        template = PLEDGER_ISSUE_BRANCH_CREATED
-
+    template = get_template(type, meta)
     if not template:
+        log.error("email.no_template_found", typ=type)
         return None
 
     m: dict[str, str] = meta.dict()
@@ -162,4 +190,24 @@ The money will soon be paid out to {{repo_owner}}.
 PLEDGER_ISSUE_BRANCH_CREATED = """Hi {{username}},
 
 Polar has detected that {{branch_creator_username}} has started to work on a fix to <a href="{{issue_url}}">{{issue_title}}</a> that you've backed.
+"""  # noqa: E501
+
+
+MAINTAINER_ISSUE_PULL_REQUEST_CREATED = """Hi {{username}},
+
+{{pull_request_creator_username}} just opened a <a href="{{pull_request_url}}">pull request</a> to {{repo_owner}}/{{repo_name}} that solves
+the issue <a href="{{issue_url}}">{{issue_title}}</a> that has been pledged on Polar.
+"""  # noqa: E501
+
+MAINTAINER_ISSUE_PULL_REQUEST_MERGED = """Hi {{username}},
+
+{{pull_request_creator_username}} just merged a <a href="{{pull_request_url}}">pull request</a> to {{repo_owner}}/{{repo_name}} that solves
+the issue <a href="{{issue_url}}">{{issue_title}}</a> that has been pledged on Polar.
+
+Check <a href="https://polar.sh/">polar.sh</a> to manage your payout details.
+"""  # noqa: E501
+
+MAINTAINER_ISSUE_BRANCH_CREATED = """Hi {{username}},
+
+Polar has detected that {{branch_creator_username}} has started to work on a fix to <a href="{{issue_url}}">{{issue_title}}</a> that has been pledged on Polar.
 """  # noqa: E501

@@ -1,5 +1,5 @@
 export interface SyncEvent {
-  synced: number
+  processed: number
   expected: number
   repository_id: string
 }

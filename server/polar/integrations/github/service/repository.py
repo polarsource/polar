@@ -52,12 +52,14 @@ class GithubRepositoryService(RepositoryService):
         on_sync_signal: Signal | None = None,
         on_completed_signal: Signal | None = None,
     ) -> tuple[SyncedCount, ErrorCount]:
-        count, synced, errors = 0, 0, 0
+        processed, synced, skipped, errors = 0, 0, 0, 0
         async for data in paginator:
+            processed += 1
+
             if skip_condition and skip_condition(data):
+                skipped += 1
                 continue
 
-            count += 1
             record = await store_resource_method(
                 session,
                 data=data,
@@ -91,6 +93,7 @@ class GithubRepositoryService(RepositoryService):
                 organization=organization,
                 record=record,
                 created=record.was_created,
+                processed=processed,
                 synced=synced,
             )
 
@@ -98,6 +101,8 @@ class GithubRepositoryService(RepositoryService):
             f"{resource_type}.sync.completed",
             organization_id=organization.id,
             repository_id=repository.id,
+            processed=processed,
+            skipped=skipped,
             synced=synced,
             errors=errors,
         )
@@ -106,6 +111,7 @@ class GithubRepositoryService(RepositoryService):
                 session,
                 repository=repository,
                 organization=organization,
+                processed=processed,
                 synced=synced,
             )
 

@@ -12,6 +12,7 @@ from polar.organization.endpoints import router as organization_router
 from polar.dashboard.endpoints import router as dashboard_router
 from polar.account.endpoints import router as accounts_router
 from polar.notifications.endpoints import router as notifications_router
+from polar.backoffice.endpoints import router as backoffice_router
 
 router = APIRouter(prefix="/api/v1")
 # /users
@@ -22,6 +23,8 @@ router.include_router(user_organization_router)
 router.include_router(github_router)
 # /integrations/stripe
 router.include_router(stripe_router)
+# /backoffice
+router.include_router(backoffice_router)
 # /{platform}/{org_name}/{repo_name}/pulls
 router.include_router(pull_request_router)
 # /{platform}/{org_name}/{repo_name}/issues

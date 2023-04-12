@@ -1,20 +1,14 @@
-name: Test Client ☕️ 
+name: Client
  
 on:
   push:
     branches: ["main"]
-    paths: 
-      - 'clients/**'
-      - '.github/**'
   pull_request:
     types: [opened, synchronize]
-    paths: 
-      - 'clients/**'
-      - '.github/**'
  
 jobs:
   build:
-      name: Build and Test
+      name: "Client: Tests 🎨"
       timeout-minutes: 15
       runs-on: ubuntu-latest
  

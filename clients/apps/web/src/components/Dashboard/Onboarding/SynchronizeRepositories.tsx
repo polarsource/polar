@@ -10,10 +10,7 @@ const continueTimeoutSeconds = 10
 
 const getInitializedSyncState = (
   org: OrganizationRead,
-): {
-  totalExpected: number
-  initialSyncStates: { [id: string]: RepoSyncState }
-} => {
+): { [id: string]: RepoSyncState } => {
   let totalExpected = 0
   let initialSyncStates = {}
   for (let repo of org.repositories) {
@@ -25,9 +22,8 @@ const getInitializedSyncState = (
       expected: repo.open_issues,
       completed: false,
     }
-    totalExpected += repo.open_issues
   }
-  return { totalExpected, initialSyncStates }
+  return initialSyncStates
 }
 
 export const SynchronizeRepositories = ({
@@ -37,21 +33,12 @@ export const SynchronizeRepositories = ({
   org: OrganizationRead
   onContinue: () => void
 }) => {
-  let { totalExpected, initialSyncStates } = getInitializedSyncState(org)
+  let initialSyncStates = getInitializedSyncState(org)
   const [debug] = useState<boolean>(false) // ?
   const emitter = useSSE(org.platform, org.name)
   const [syncingRepos, setSyncingRepos] = useState<{
     [id: string]: RepoSyncState
   }>(initialSyncStates)
-  const [progress, setProgress] = useState<{
-    processed: number
-    expected: number
-    percentage: number
-  }>({
-    processed: 0,
-    expected: totalExpected,
-    percentage: 0.0,
-  })
   const [continueTimeoutReached, setContinueTimeoutReached] =
     useState<boolean>(false)
 
@@ -71,6 +58,14 @@ export const SynchronizeRepositories = ({
        */
       processed = data.expected
     }
+    console.log(
+      'SYNC',
+      data,
+      data.repository_id,
+      processed,
+      data.expected,
+      completed,
+    )
     setSyncingRepos((prev) => {
       const repo = prev[data.repository_id]
       return {
@@ -103,18 +98,6 @@ export const SynchronizeRepositories = ({
     }
   }, [emitter])
 
-  useEffect(() => {
-    const repos = Object.values(syncingRepos)
-    const totalProcessed = repos.reduce((acc, repo) => acc + repo.processed, 0)
-    const totalExpected = repos.reduce((acc, repo) => acc + repo.expected, 0)
-
-    setProgress({
-      processed: totalProcessed,
-      expected: totalExpected,
-      percentage: (totalProcessed / totalExpected) * 100,
-    })
-  }, [syncingRepos])
-
   // Show continue button after a few seconds
   useEffect(() => {
     const timeout = setTimeout(
@@ -123,6 +106,10 @@ export const SynchronizeRepositories = ({
     )
     return () => clearTimeout(timeout)
   }, [])
+
+  const repos = Object.values(syncingRepos)
+  const totalProcessed = repos.reduce((acc, repo) => acc + repo.processed, 0)
+  const totalExpected = repos.reduce((acc, repo) => acc + repo.expected, 0)
 
   return (
     <>
@@ -138,9 +125,9 @@ export const SynchronizeRepositories = ({
           )
         })}
       </ul>
-      {(progress.percentage > 40 || continueTimeoutReached || debug) && (
-        <OnboardingControls onClickContinue={onContinue} />
-      )}
+      {(totalProcessed / totalExpected > 0.4 ||
+        continueTimeoutReached ||
+        debug) && <OnboardingControls onClickContinue={onContinue} />}
     </>
   )
 }

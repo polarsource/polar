@@ -374,6 +374,7 @@ async def installation_delete(
         )
         if org:
             await service.github_organization.remove(session, org.id)
+
         return dict(success=True)
 
 

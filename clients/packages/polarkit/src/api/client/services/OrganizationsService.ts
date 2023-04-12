@@ -28,11 +28,9 @@ export class OrganizationsService {
   }): CancelablePromise<OrganizationRead> {
     return this.httpRequest.request({
       method: 'GET',
-      url: '/api/v1/{platform}/{organization_name}',
+      url: '/api/v1/{platform}/{org_name}',
       path: {
         'platform': platform,
-      },
-      query: {
         'org_name': orgName,
       },
       errors: {
@@ -57,11 +55,9 @@ export class OrganizationsService {
   }): CancelablePromise<OrganizationRead> {
     return this.httpRequest.request({
       method: 'PUT',
-      url: '/api/v1/{platform}/{organization_name}/settings',
+      url: '/api/v1/{platform}/{org_name}/settings',
       path: {
         'platform': platform,
-      },
-      query: {
         'org_name': orgName,
       },
       body: requestBody,
@@ -86,11 +82,9 @@ export class OrganizationsService {
   }): CancelablePromise<OrganizationStripeCustomerRead> {
     return this.httpRequest.request({
       method: 'GET',
-      url: '/api/v1/{platform}/{organization_name}/stripe_customer',
+      url: '/api/v1/{platform}/{org_name}/stripe_customer',
       path: {
         'platform': platform,
-      },
-      query: {
         'org_name': orgName,
       },
       errors: {
@@ -113,11 +107,9 @@ export class OrganizationsService {
   }): CancelablePromise<OrganizationSetupIntentRead> {
     return this.httpRequest.request({
       method: 'POST',
-      url: '/api/v1/{platform}/{organization_name}/setup_intent',
+      url: '/api/v1/{platform}/{org_name}/setup_intent',
       path: {
         'platform': platform,
-      },
-      query: {
         'org_name': orgName,
       },
       errors: {
@@ -142,12 +134,12 @@ export class OrganizationsService {
   }): CancelablePromise<OrganizationStripeCustomerRead> {
     return this.httpRequest.request({
       method: 'POST',
-      url: '/api/v1/{platform}/{organization_name}/set_default_payment_method',
+      url: '/api/v1/{platform}/{org_name}/set_default_payment_method',
       path: {
         'platform': platform,
+        'org_name': orgName,
       },
       query: {
-        'org_name': orgName,
         'payment_method_id': paymentMethodId,
       },
       errors: {

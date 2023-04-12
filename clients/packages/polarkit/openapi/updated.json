@@ -1115,7 +1115,7 @@
                 }
             }
         },
-        "/api/v1/{platform}/{organization_name}": {
+        "/api/v1/{platform}/{org_name}": {
             "get": {
                 "tags": [
                     "organizations"
@@ -1138,7 +1138,7 @@
                             "type": "string"
                         },
                         "name": "org_name",
-                        "in": "query"
+                        "in": "path"
                     }
                 ],
                 "responses": {
@@ -1165,7 +1165,7 @@
                 }
             }
         },
-        "/api/v1/{platform}/{organization_name}/settings": {
+        "/api/v1/{platform}/{org_name}/settings": {
             "put": {
                 "tags": [
                     "organizations"
@@ -1188,7 +1188,7 @@
                             "type": "string"
                         },
                         "name": "org_name",
-                        "in": "query"
+                        "in": "path"
                     }
                 ],
                 "requestBody": {
@@ -1225,7 +1225,7 @@
                 }
             }
         },
-        "/api/v1/{platform}/{organization_name}/stripe_customer": {
+        "/api/v1/{platform}/{org_name}/stripe_customer": {
             "get": {
                 "tags": [
                     "organizations"
@@ -1248,7 +1248,7 @@
                             "type": "string"
                         },
                         "name": "org_name",
-                        "in": "query"
+                        "in": "path"
                     }
                 ],
                 "responses": {
@@ -1275,7 +1275,7 @@
                 }
             }
         },
-        "/api/v1/{platform}/{organization_name}/setup_intent": {
+        "/api/v1/{platform}/{org_name}/setup_intent": {
             "post": {
                 "tags": [
                     "organizations"
@@ -1298,7 +1298,7 @@
                             "type": "string"
                         },
                         "name": "org_name",
-                        "in": "query"
+                        "in": "path"
                     }
                 ],
                 "responses": {
@@ -1325,7 +1325,7 @@
                 }
             }
         },
-        "/api/v1/{platform}/{organization_name}/set_default_payment_method": {
+        "/api/v1/{platform}/{org_name}/set_default_payment_method": {
             "post": {
                 "tags": [
                     "organizations"
@@ -1348,7 +1348,7 @@
                             "type": "string"
                         },
                         "name": "org_name",
-                        "in": "query"
+                        "in": "path"
                     },
                     {
                         "required": true,

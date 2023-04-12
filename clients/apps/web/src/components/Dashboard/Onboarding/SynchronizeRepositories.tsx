@@ -10,10 +10,7 @@ const continueTimeoutSeconds = 10
 
 const getInitializedSyncState = (
   org: OrganizationRead,
-): {
-  totalExpected: number
-  initialSyncStates: { [id: string]: RepoSyncState }
-} => {
+): { [id: string]: RepoSyncState } => {
   let totalExpected = 0
   let initialSyncStates = {}
   for (let repo of org.repositories) {
@@ -21,13 +18,12 @@ const getInitializedSyncState = (
       id: repo.id,
       avatar_url: org.avatar_url,
       name: repo.name,
-      synced: 0,
+      processed: 0,
       expected: repo.open_issues,
       completed: false,
     }
-    totalExpected += repo.open_issues
   }
-  return { totalExpected, initialSyncStates }
+  return initialSyncStates
 }
 
 export const SynchronizeRepositories = ({
@@ -37,21 +33,12 @@ export const SynchronizeRepositories = ({
   org: OrganizationRead
   onContinue: () => void
 }) => {
-  let { totalExpected, initialSyncStates } = getInitializedSyncState(org)
+  let initialSyncStates = getInitializedSyncState(org)
   const [debug] = useState<boolean>(false) // ?
   const emitter = useSSE(org.platform, org.name)
   const [syncingRepos, setSyncingRepos] = useState<{
     [id: string]: RepoSyncState
   }>(initialSyncStates)
-  const [progress, setProgress] = useState<{
-    synced: number
-    expected: number
-    percentage: number
-  }>({
-    synced: 0,
-    expected: totalExpected,
-    percentage: 0.0,
-  })
   const [continueTimeoutReached, setContinueTimeoutReached] =
     useState<boolean>(false)
 
@@ -62,15 +49,14 @@ export const SynchronizeRepositories = ({
     data: SyncEvent
     completed?: boolean
   }) => {
-    let synced = data.synced
+    let processed = data.processed
     if (completed) {
       /*
-       * TODO
-       * We should always do this in case of the completed event, but...
-       * Currently, it's a hack since PRs count as issues leading to more
-       * expected than we'll ever sync.
+       * We only get updated processed counts when an issue is synced, but
+       * there may be skipped issues in the end etc, so when we're finished,
+       * we still need to update the processed count to the expected count.
        */
-      synced = data.expected
+      processed = data.expected
     }
     setSyncingRepos((prev) => {
       const repo = prev[data.repository_id]
@@ -78,18 +64,11 @@ export const SynchronizeRepositories = ({
         ...prev,
         [data.repository_id]: {
           ...repo,
-          synced,
+          processed,
           expected: data.expected,
           completed,
         },
       }
-    })
-    setProgress((prev) => {
-      // TODO: Due to PRs in issues this can be less than 100%
-      const synced = prev.synced + 1
-      const percentage = (synced / prev.expected) * 100
-      const ret = { ...prev, synced, percentage }
-      return ret
     })
   }
 
@@ -99,7 +78,7 @@ export const SynchronizeRepositories = ({
     }
 
     const onIssueSynced = (data: SyncEvent) => {
-      sync({ data, completed: data.synced === data.expected })
+      sync({ data, completed: data.processed === data.expected })
     }
 
     emitter.on('issue.synced', onIssueSynced)
@@ -120,6 +99,10 @@ export const SynchronizeRepositories = ({
     return () => clearTimeout(timeout)
   }, [])
 
+  const repos = Object.values(syncingRepos)
+  const totalProcessed = repos.reduce((acc, repo) => acc + repo.processed, 0)
+  const totalExpected = repos.reduce((acc, repo) => acc + repo.expected, 0)
+
   return (
     <>
       <h1 className="my-11 text-center text-xl font-normal text-gray-600 drop-shadow-md">
@@ -134,9 +117,9 @@ export const SynchronizeRepositories = ({
           )
         })}
       </ul>
-      {(progress.percentage > 40 || continueTimeoutReached || debug) && (
-        <OnboardingControls onClickContinue={onContinue} />
-      )}
+      {(totalProcessed / totalExpected > 0.4 ||
+        continueTimeoutReached ||
+        debug) && <OnboardingControls onClickContinue={onContinue} />}
     </>
   )
 }

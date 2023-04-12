@@ -243,3 +243,8 @@ export const useNotifications = () =>
   useQuery(['notifications'], () => api.notifications.get(), {
     retry: defaultRetry,
   })
+
+export const useBackofficeAllPledges = () =>
+  useQuery(['backofficeAllPledges'], () => api.backoffice.pledges(), {
+    retry: defaultRetry,
+  })

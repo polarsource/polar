@@ -192,7 +192,16 @@ async def test_webhook_installation_delete(
 
     async with AsyncSessionLocal() as session:
         fetched = await service.github_organization.get_by(session, external_id=org_id)
-        assert fetched is None
+        assert fetched is not None
+        assert fetched.deleted_at is not None
+
+        # Normal get should fail
+        fetched_get = await service.github_organization.get(session, fetched.id)
+        assert fetched_get is None
+
+        # un-delete (fixes other tests)
+        fetched.deleted_at = None
+        await fetched.save(session)
 
 
 @pytest.mark.asyncio
@@ -232,7 +241,11 @@ async def test_webhook_repositories_removed(
     repo = await service.github_repository.get_by_external_id(
         session, delete_repo["id"]
     )
-    assert repo is None
+    assert repo is not None
+    assert repo.deleted_at is not None
+
+    repo_get = await service.github_repository.get(session, repo.id)
+    assert repo_get is None
 
 
 @pytest.mark.asyncio

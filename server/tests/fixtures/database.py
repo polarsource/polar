@@ -7,11 +7,11 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.utils import generate_uuid
 from polar.kit.extensions.sqlalchemy import PostgresUUID
-from polar.models import Model, StatusMixin
+from polar.models import Model
 from polar.postgres import AsyncEngineLocal, AsyncSession, AsyncSessionLocal
 
 
-class TestModel(StatusMixin, Model):
+class TestModel(Model):
     __test__ = False  # This is a base class, not a test
 
     __tablename__ = "test_model"

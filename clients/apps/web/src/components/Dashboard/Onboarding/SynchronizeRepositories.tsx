@@ -58,14 +58,6 @@ export const SynchronizeRepositories = ({
        */
       processed = data.expected
     }
-    console.log(
-      'SYNC',
-      data,
-      data.repository_id,
-      processed,
-      data.expected,
-      completed,
-    )
     setSyncingRepos((prev) => {
       const repo = prev[data.repository_id]
       return {

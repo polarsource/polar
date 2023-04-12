@@ -102,3 +102,19 @@ class Auth:
                 status_code=404,
                 detail="Organization/repository combination not found for user",
             )
+
+    @classmethod
+    async def backoffice_user(
+        cls,
+        *,
+        user: User = Depends(current_active_user),
+    ) -> "Auth":
+        allowed = ["zegl"]
+
+        if user.username not in allowed:
+            raise HTTPException(
+                status_code=404,
+                detail="Not Found",
+            )
+
+        return Auth(user=user)

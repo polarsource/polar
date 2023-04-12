@@ -22,7 +22,7 @@ const ProgressBar = ({
           className={classNames(
             completed
               ? 'bg-gray-400 dark:bg-gray-700'
-              : 'bg-purple-600 dark:bg-purple-500',
+              : 'bg-blue-600 dark:bg-blue-500',
             'h-2.5 rounded-full',
           )}
           style={{ width: `${percent}%` }}

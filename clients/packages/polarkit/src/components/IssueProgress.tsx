@@ -33,7 +33,7 @@ const Progress50 = () => (
     />
     <path
       d="M15.5 8C16.4849 8 17.4602 8.19399 18.3701 8.5709C19.2801 8.94781 20.1069 9.50026 20.8033 10.1967C21.4997 10.8931 22.0522 11.7199 22.4291 12.6299C22.806 13.5398 23 14.5151 23 15.5C23 16.4849 22.806 17.4602 22.4291 18.3701C22.0522 19.2801 21.4997 20.1069 20.8033 20.8033C20.1069 21.4997 19.2801 22.0522 18.3701 22.4291C17.4602 22.806 16.4849 23 15.5 23"
-      stroke="#9171D9"
+      stroke="#5A82D7"
       strokeWidth="3"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -58,14 +58,14 @@ const Progress75 = () => (
     />
     <path
       d="M15.5 8C16.4849 8 17.4602 8.19399 18.3701 8.5709C19.2801 8.94781 20.1069 9.50026 20.8033 10.1967C21.4997 10.8931 22.0522 11.7199 22.4291 12.6299C22.806 13.5398 23 14.5151 23 15.5C23 16.4849 22.806 17.4602 22.4291 18.3701C22.0522 19.2801 21.4997 20.1069 20.8033 20.8033C20.1069 21.4997 19.2801 22.0522 18.3701 22.4291C17.4602 22.806 16.4849 23 15.5 23"
-      stroke="#9171D9"
+      stroke="#5A82D7"
       strokeWidth="3"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
     <path
       d="M23 15.5C23 16.4849 22.806 17.4602 22.4291 18.3701C22.0522 19.2801 21.4997 20.1069 20.8033 20.8033C20.1069 21.4997 19.2801 22.0522 18.3701 22.4291C17.4602 22.806 16.4849 23 15.5 23C14.5151 23 13.5398 22.806 12.6299 22.4291C11.7199 22.0522 10.8931 21.4997 10.1967 20.8033C9.50026 20.1069 8.94781 19.2801 8.5709 18.3701C8.19399 17.4602 8 16.4849 8 15.5"
-      stroke="#9171D9"
+      stroke="#5A82D7"
       strokeWidth="3"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -88,7 +88,7 @@ const Progress100 = () => (
       strokeLinecap="round"
       strokeLinejoin="round"
     />
-    <circle cx="15.5" cy="15.5" r="8.5" fill="#9171D9" stroke="#9171D9" />
+    <circle cx="15.5" cy="15.5" r="8.5" fill="#5A82D7" stroke="#5A82D7" />
     <path
       d="M19.1667 13.25L14.125 18.2917L11.8333 16"
       stroke="white"
@@ -105,8 +105,8 @@ const IssueProgress = (props: { progress: Progress }) => {
   const { progress } = props
   const pretty = progress.replace('_', ' ')
   return (
-    <div className="flex items-center text-black/50">
-      <span className="capitalize">{pretty}</span>
+    <div className="flex items-center text-gray-500">
+      <span className="text-sm capitalize">{pretty}</span>
       {progress === 'backlog' && <Progress0 />}
       {progress === 'building' && <Progress50 />}
       {progress === 'pull_request' && <Progress75 />}

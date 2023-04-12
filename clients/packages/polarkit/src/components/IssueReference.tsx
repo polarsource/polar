@@ -257,7 +257,7 @@ const IssueReferencePullRequest = (props: {
         {isMerged && (
           <a
             href="#"
-            className="rounded-md bg-[#9171D9] py-1 px-2 text-sm text-white"
+            className="rounded-md bg-blue-500 py-1 px-2 text-sm text-white"
           >
             Reward
           </a>

@@ -30,7 +30,7 @@ const BalanceBadge = ({ account }: { account: AccountRead }) => {
         <>
           <span>${getCentsInDollarString(account.balance)}</span>
           <SolidArrowRightCircleIcon
-            className="-mr-10 h-6 w-6 text-[#9171D9]"
+            className="-mr-10 h-6 w-6 text-blue-500"
             aria-hidden="true"
           />
         </>

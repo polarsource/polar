@@ -123,12 +123,12 @@ const Overlay = ({
           e.stopPropagation()
         }}
       >
-        <div className="z-0 block flex h-full w-full flex-row rounded-md bg-white">
-          <div className="hidden flex-1 bg-black/10 p-4 md:block">
+        <div className="z-0 block flex h-full w-full flex-row overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div className="bg-gray-75 hidden flex-1 border-r border-gray-200/50 p-5 md:block">
             <div>
               <IssueCard
                 issue={issue}
-                bg="bg-white"
+                className="border-0 bg-white shadow"
                 organization={issueOrg}
                 repository={issueRepo}
               />
@@ -136,29 +136,31 @@ const Overlay = ({
             <RepositoryCard organization={issueOrg} repository={issueRepo} />
           </div>
 
-          <div className="flex min-h-full flex-1 flex-col space-y-3 p-4 text-black/80">
+          <div className="flex min-h-full flex-1 flex-col space-y-3 p-5 text-black/80">
             <div className="flex w-full items-start justify-between">
-              <h1 className="text-xl font-normal">Complete your backing</h1>
+              <h1 className="text-2xl font-normal">Complete your backing</h1>
               <XMarkIcon
                 className="h-6 w-6 cursor-pointer text-black/50 hover:text-black"
                 onClick={onClose}
               />
             </div>
 
-            <form className="z-0 flex flex-col space-y-3">
-              <label
-                htmlFor="pledge-as"
-                className="text-sm font-medium text-gray-600"
-              >
-                Pledge as
-              </label>
-              <div className="flex flex-row items-center space-x-4">
-                <div className="relative w-full">
-                  <RepoSelection
-                    onSelectOrg={onSelectOrg}
-                    currentOrg={selectedOrg}
-                    fullWidth={true}
-                  />
+            <form className="z-0 flex flex-col space-y-4">
+              <div className="space-y-2">
+                <label
+                  htmlFor="pledge-as"
+                  className="text-sm font-medium text-gray-600"
+                >
+                  Pledge as
+                </label>
+                <div className="flex flex-row items-center space-x-4">
+                  <div className="relative w-full rounded-lg border border-gray-200">
+                    <RepoSelection
+                      onSelectOrg={onSelectOrg}
+                      currentOrg={selectedOrg}
+                      fullWidth={true}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -167,34 +169,35 @@ const Overlay = ({
                   <PaymentMethod customer={customer} />
                 </div>
               )}
-
-              <label
-                htmlFor="amount"
-                className="text-sm font-medium text-gray-600"
-              >
-                Choose amount to pledge
-              </label>
-              <div className="flex flex-row items-center space-x-4">
-                <div className="relative w-2/3">
-                  <input
-                    type="text"
-                    id="amount"
-                    name="amount"
-                    className="block w-full rounded-md border-gray-200 py-3 px-4 pl-9 pr-16 text-sm shadow-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500"
-                    onChange={onAmountChange}
-                    onBlur={onAmountChange}
-                    placeholder={getCentsInDollarString(MINIMUM_PLEDGE)}
-                  />
-                  <div className="pointer-events-none absolute inset-y-0 left-0  flex items-center pl-4">
-                    <span className="text-gray-500">$</span>
+              <div className="space-y-2">
+                <label
+                  htmlFor="amount"
+                  className="text-sm font-medium text-gray-600"
+                >
+                  Choose amount to pledge
+                </label>
+                <div className="flex flex-row items-center space-x-4">
+                  <div className="relative w-40">
+                    <input
+                      type="number"
+                      id="amount"
+                      name="amount"
+                      className="font-display block w-full rounded-lg border-gray-200 py-2 px-4 pl-8 pr-12 text-xl shadow-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500"
+                      onChange={onAmountChange}
+                      onBlur={onAmountChange}
+                      placeholder={getCentsInDollarString(MINIMUM_PLEDGE)}
+                    />
+                    <div className="font-display pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-xl">
+                      <span className="text-gray-500">$</span>
+                    </div>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+                      <span className="text-xs text-gray-500">USD</span>
+                    </div>
                   </div>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
-                    <span className="text-gray-500">USD</span>
-                  </div>
+                  <p className="w-1/3 text-xs text-gray-500">
+                    Minimum is ${getCentsInDollarString(MINIMUM_PLEDGE)}
+                  </p>
                 </div>
-                <p className="w-1/3 text-xs text-gray-500">
-                  Minimum is ${getCentsInDollarString(MINIMUM_PLEDGE)}
-                </p>
               </div>
 
               {errorMessage && (

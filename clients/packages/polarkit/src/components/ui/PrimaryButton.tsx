@@ -3,9 +3,7 @@ import { classNames } from '../../utils/dom'
 
 const LoadingSpinner = (props: { disabled: boolean }) => {
   const classes = classNames(
-    props.disabled
-      ? 'fill-gray-300 text-gray-200'
-      : 'fill-white text-purple-300',
+    props.disabled ? 'fill-gray-300 text-gray-200' : 'fill-white text-blue-300',
     'inline h-6 w-6 animate-spin',
   )
 
@@ -47,10 +45,10 @@ const PrimaryButton = (props: ButtonProps) => {
   const disabled = props.disabled ? props.disabled : false
   let classes = 'm-auto w-full rounded-lg p-2 text-center text-sm font-medium'
   if (props.loading && !disabled) {
-    classes = classNames('bg-purple-400 text-white', classes)
+    classes = classNames('bg-blue-400 text-white', classes)
   } else {
     classes = classNames(
-      disabled ? 'bg-gray-100 text-gray-400' : 'bg-purple-500 text-white',
+      disabled ? 'bg-gray-200/75 text-gray-400' : 'bg-blue-600 text-white',
       classes,
     )
   }

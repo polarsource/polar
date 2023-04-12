@@ -9,10 +9,10 @@ const Tab = (props: {
     <div
       onClick={props.onClick}
       className={
-        'cursor-pointer rounded-md py-1 px-3 text-sm transition-all duration-100 ' +
+        'cursor-pointer rounded-md py-1.5 px-3 text-sm transition-all duration-100 ' +
         (props.active
-          ? 'bg-white text-black drop-shadow '
-          : 'bg-transparent text-black/50 hover:bg-white/50 hover:text-black/80')
+          ? 'bg-white text-gray-900 drop-shadow '
+          : 'bg-transparent text-gray-500 hover:bg-white/50 hover:text-gray-900')
       }
     >
       {props.children}

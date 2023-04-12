@@ -253,8 +253,8 @@ const Section = ({ children }) => {
 const SectionDescription = ({ title, description }) => {
   return (
     <div className="flex-shrink-0 md:w-60">
-      <h2 className="text-[#101828]">{title}</h2>
-      <p className="text-black/50">{description}</p>
+      <h2 className="mb-2 font-medium text-gray-900">{title}</h2>
+      <p className="text-sm text-gray-500">{description}</p>
     </div>
   )
 }

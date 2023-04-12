@@ -9,12 +9,12 @@ import { githubIssueUrl } from '../../utils/github'
 
 const IssueCard = ({
   issue,
-  bg,
+  className,
   organization,
   repository,
 }: {
   issue: IssueRead
-  bg: string
+  className: string
   organization: OrganizationRead
   repository: RepositoryRead
 }) => {
@@ -22,7 +22,9 @@ const IssueCard = ({
 
   return (
     <>
-      <div className={`h-full rounded-lg border px-8 py-14 text-center ${bg}`}>
+      <div
+        className={`h-full rounded-lg border border-gray-200 px-8 py-14 text-center ${className}`}
+      >
         <strong className="text-sm font-medium text-gray-600">
           Issue to be fixed
         </strong>

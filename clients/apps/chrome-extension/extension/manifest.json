@@ -6,5 +6,11 @@
     "action": {
         "default_title": "Polar",
         "default_popup": "index.html"
-    }
+    },
+    "content_scripts": [
+        {
+            "js": ["content.js"],
+            "matches": ["https://github.com/*/*/issues/*"]
+        }
+    ]
 }

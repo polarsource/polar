@@ -1,0 +1,10 @@
+{
+    "name": "Polar",
+    "description": "Polar Chrome Extension",
+    "version": "0.0.1",
+    "manifest_version": 3,
+    "action": {
+        "default_title": "Polar",
+        "default_popup": "index.html"
+    }
+}

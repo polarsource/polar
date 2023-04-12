@@ -184,9 +184,9 @@ export function RepoSelection(props: {
             <Command
               value={value}
               onValueChange={onValueChange}
-              className={`${width} !absolute -top-10 z-10 w-max rounded-md border-[1px] border-neutral-100 bg-white shadow-xl`}
+              className={`${width} !absolute -top-10 z-10 w-max rounded-lg bg-white shadow-lg`}
             >
-              <div className="flex items-center space-x-1 px-2">
+              <div className="flex items-center px-2">
                 {dropdownSelectedOrg && (
                   <>
                     <div
@@ -199,14 +199,14 @@ export function RepoSelection(props: {
                     >
                       {dropdownSelectedOrg.name}
                     </div>
-                    <div className="flex-shrink-0">/</div>
+                    <div className="flex-shrink-0 text-gray-400">/</div>
                   </>
                 )}
                 <Command.Input
                   ref={inputRef}
                   autoFocus
                   placeholder={placeholder}
-                  className="m-0 px-2 focus:border-0 focus:ring-0"
+                  className="m-0 px-2 py-3 !text-sm focus:border-0 focus:ring-0"
                   onKeyDown={onInputKeyUp}
                   value={inputValue}
                   onValueChange={onInputValueChange}
@@ -217,7 +217,9 @@ export function RepoSelection(props: {
                 ref={listRef}
                 className="max-h-[500px] overflow-auto overscroll-contain px-2 pb-2"
               >
-                <Command.Empty>No results found.</Command.Empty>
+                <Command.Empty className="p !h-auto !justify-start !p-2 !pt-3">
+                  No results found.
+                </Command.Empty>
 
                 {listOrgs.map((org) => (
                   <React.Fragment key={org.id}>
@@ -226,7 +228,14 @@ export function RepoSelection(props: {
                       onSelect={() => onSelectOrg(org)}
                     >
                       <Avatar url={org.avatar_url} />
-                      <Text>{org.name}</Text>
+                      <Text>
+                        {org.name}
+                        {dropdownSelectedOrg && (
+                          <span className="ml-2 text-xs italic text-gray-500">
+                            Entire org
+                          </span>
+                        )}
+                      </Text>
                     </Item>
                     {org.repositories &&
                       org.repositories.map((r) => (
@@ -258,7 +267,7 @@ export function RepoSelection(props: {
                       window.location.replace(CONFIG.GITHUB_INSTALLATION_URL)
                     }}
                   >
-                    <div className="flex items-center space-x-2 text-purple-800">
+                    <div className="flex items-center space-x-2 text-blue-600">
                       <Icon>
                         <PlusIcon className="block h-6 w-6" />
                       </Icon>
@@ -299,12 +308,12 @@ function Item({
 
 function Avatar(props: { url: string }) {
   const { url } = props
-  return <img src={url} className="h-6 w-6 rounded-full" />
+  return <img src={url} className="h-5 w-5 rounded-full" />
 }
 
 function Text({ children }: { children: React.ReactNode }) {
   return (
-    <span className="overflow-hidden text-ellipsis whitespace-nowrap text-sm text-black">
+    <span className="overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-900">
       {children}
     </span>
   )
@@ -312,7 +321,7 @@ function Text({ children }: { children: React.ReactNode }) {
 
 function Icon({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex-0 inline-flex h-6 w-6 flex-shrink-0 items-center justify-center">
+    <div className="flex-0 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center">
       {children}
     </div>
   )
@@ -336,14 +345,14 @@ function SelectedOrgRepo({
           className="h-6 w-6 flex-shrink-0 rounded-full"
         />
         <div className="flex items-center space-x-1 overflow-hidden ">
-          <span className="flex-shrink-0 font-medium text-black">
+          <span className="flex-shrink-0 font-medium text-gray-900">
             {org.name}
           </span>
 
           {repo && (
             <>
-              <span className="text-black/20">/</span>
-              <span className="overflow-hidden text-ellipsis whitespace-nowrap text-black/50">
+              <span className="text-gray-400">/</span>
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap text-gray-900">
                 {repo.name}
               </span>
             </>
@@ -357,7 +366,7 @@ function SelectedOrgRepo({
 const SelectedEmpty = ({ onClick }: { onClick: () => void }) => {
   return (
     <SelectedBox onClick={onClick}>
-      <div className="text-black/50">Select a organization</div>
+      <div className="text-gray-500">Select a organization</div>
     </SelectedBox>
   )
 }
@@ -371,13 +380,13 @@ const SelectedBox = ({
 }) => {
   return (
     <div
-      className="flex max-w-[350px] cursor-pointer items-center justify-between space-x-2 
-      rounded-md p-2
+      className="flex max-w-[360px] cursor-pointer items-center justify-between space-x-2 
+      rounded-lg p-2
       text-sm hover:bg-neutral-100"
       onClick={onClick}
     >
       {children}
-      <ChevronUpDownIcon className="h-6 w-6 flex-shrink-0 text-black/50" />
+      <ChevronUpDownIcon className="h-6 w-6 flex-shrink-0 text-gray-500" />
     </div>
   )
 }

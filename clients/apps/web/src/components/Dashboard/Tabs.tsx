@@ -1,6 +1,6 @@
 const Tabs = ({ children }) => {
   return (
-    <div className="flex w-full justify-between rounded-lg border-2 border-[#EDEDED] bg-[#EDEDED] p-2">
+    <div className="flex w-full justify-between rounded-lg bg-gray-200/75 p-1.5">
       {children}
     </div>
   )

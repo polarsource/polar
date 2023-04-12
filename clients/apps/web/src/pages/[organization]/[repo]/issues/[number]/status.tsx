@@ -19,7 +19,7 @@ const PledgeStatusPage: NextLayoutComponentType = ({
       <div className="mx-auto mt-24 w-[768px]">
         <div className="flex flex-row items-center">
           <h1 className="w-1/2 text-2xl font-normal text-gray-800">
-            <CheckCircleIcon className="inline-block h-10 w-10 text-purple-500" />{' '}
+            <CheckCircleIcon className="inline-block h-10 w-10 text-blue-500" />{' '}
             Thank you!
           </h1>
           <p className="w-1/2 text-right align-middle text-sm font-normal text-gray-600">

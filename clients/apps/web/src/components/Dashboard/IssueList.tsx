@@ -14,7 +14,7 @@ const IssueList = (props: {
   if (!issues) return <div>Loading issues...</div>
 
   return (
-    <div className="space-y-2 divide-y divide-gray-200">
+    <div className="divide-y">
       <Header
         count={issues.length}
         filters={props.filters}
@@ -72,20 +72,20 @@ const Header = (props: {
 
   const width = useMemo(() => {
     const t = title[props.filters.sort] || 'Newest'
-    return t.length * 9 + 35 // TODO(gustav): can we use the on-screen size instead somehow?
+    return t.length * 7.5 + 35 // TODO(gustav): can we use the on-screen size instead somehow?
   }, [props.filters.sort, title])
 
   return (
-    <div className="flex h-12 items-center justify-between">
+    <div className="flex h-12 items-center justify-between px-2">
       <div className="text-sm">
         <strong className="font-medium">{props.count}</strong>{' '}
-        <span className="text-black/50">issues</span>
+        <span className="text-gray-500">issues</span>
       </div>
 
       <div>
-        <span className="mr-1 text-black/50">Sort:</span>
+        <span className="mr-2 text-sm text-gray-500">Sort:</span>
         <select
-          className="m-0 w-48 border-0 p-0 font-medium ring-0 focus:border-0 focus:ring-0"
+          className="m-0 w-48 border-0 bg-right p-0 text-sm font-medium ring-0 focus:border-0 focus:ring-0"
           onChange={onSelect}
           style={{ width: `${width}px` }}
           value={props.filters?.sort}

@@ -25,7 +25,7 @@ export const OnboardingControls = ({
     <>
       <div className="flex flex-col justify-center">
         <button
-          className="m-auto w-32 rounded-lg bg-purple-500 p-2 text-center text-white"
+          className="m-auto w-32 rounded-lg bg-blue-500 p-2 text-center text-white"
           onClick={clickedContinue}
         >
           Continue
@@ -33,7 +33,7 @@ export const OnboardingControls = ({
         {skippable && (
           <a
             href="#"
-            className="mt-2 text-center font-medium text-purple-600"
+            className="mt-2 text-center font-medium text-blue-600"
             onClick={clickedSkip}
           >
             Skip

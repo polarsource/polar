@@ -46,12 +46,12 @@ const Popover = () => {
     <>
       <div className="flex">
         <BellIcon
-          className="h-6 w-6 cursor-pointer text-gray-400 transition-colors duration-100 hover:text-gray-800"
+          className="h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-100 hover:text-gray-900"
           aria-hidden="true"
           onClick={clickBell}
         />
         {showBadge && (
-          <div className="-ml-3 h-3 w-3 rounded-full border-2 border-white bg-[#9171D9]"></div>
+          <div className="-ml-3 h-3 w-3 rounded-full border-2 border-white bg-blue-500"></div>
         )}
       </div>
 

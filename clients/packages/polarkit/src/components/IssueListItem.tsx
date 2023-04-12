@@ -58,11 +58,11 @@ const IssueListItem = (props: {
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-4 py-4">
+      <div className="hover:bg-gray-75 group flex items-center justify-between gap-4 py-4 px-2 pb-5">
         <div className="flex flex-col gap-1">
           <div className="flex items-start gap-4">
             <a
-              className="font-medium"
+              className="text-md font-medium"
               href={githubIssueUrl(props.org.name, props.repo.name, number)}
             >
               {title}
@@ -105,7 +105,7 @@ const IssueListItem = (props: {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-12">
+        <div className="flex items-center gap-6">
           <div className="flex items-center gap-6">
             {showCommentsCount && (
               <IconCounter icon="comments" count={comments} />
@@ -117,7 +117,9 @@ const IssueListItem = (props: {
 
           <IssueProgress progress={issueProgress} />
 
-          <PledgeNow issue={props.issue} org={props.org} repo={props.repo} />
+          <div className="group-hover:delay-0 -ml-6 w-0 overflow-hidden opacity-0 delay-150 duration-100 group-hover:ml-0 group-hover:w-20 group-hover:opacity-100 group-hover:transition-all group-hover:duration-200 group-hover:ease-in-out">
+            <PledgeNow issue={props.issue} org={props.org} repo={props.repo} />
+          </div>
         </div>
       </div>
 

@@ -18,7 +18,7 @@ const Logout = () => {
     <a
       href="#"
       onClick={handleLogout}
-      className="text-gray-400 transition-colors duration-100 hover:text-gray-600 "
+      className="text-gray-500 transition-colors duration-100 hover:text-gray-900 "
     >
       <ArrowRightOnRectangleIcon className="h-6 w-6" aria-hidden="true" />
     </a>

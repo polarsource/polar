@@ -14,7 +14,7 @@ const DashboardLayout = (props: {
       <DashboardTopbar />
       <div>
         <Sidebar filters={filters} onSetFilters={onSetFilters} />
-        <div className="flex min-h-screen flex-1 flex-col bg-white pt-16 md:pl-80">
+        <div className="flex min-h-screen flex-1 flex-col bg-gray-50 pt-16 md:pl-80">
           <main className="flex-1">
             <div className="py-6">
               <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">

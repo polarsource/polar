@@ -84,8 +84,12 @@ async def remove_repositories(
 ) -> int:
     count = 0
     for repo in repositories:
-        res = await service.github_repository.soft_delete(session, external_id=repo.id)
-        if res:
+        if not repo.id:
+            continue
+        r = await service.github_repository.get_by_external_id(session, repo.id)
+        if not r:
+            continue
+        if await service.github_repository.soft_delete(session, r.id):
             count += 1
     return count
 

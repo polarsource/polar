@@ -34,9 +34,11 @@ class TimestampedModel(Model):
         TIMESTAMP(timezone=True), nullable=False, default=utc_now
     )
     modified_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), onupdate=utc_now
+        TIMESTAMP(timezone=True), onupdate=utc_now, nullable=True, default=None
     )
-    deleted_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
 
 
 class RecordModel(TimestampedModel):

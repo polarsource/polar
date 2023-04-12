@@ -324,8 +324,14 @@ async def installation_created(
                 event.installation.updated_at
             )
 
-        # TODO: Move this into its own schema helper
         account = event.installation.account
+
+        # If the org is previously deleted, un-delete it
+        prev = await service.github_organization.get_by_external_id(session, account.id)
+        if prev and prev.deleted_at is not None:
+            prev.deleted_at = None
+            await prev.save(session)
+
         is_personal = account.type.lower() == "user"
         create_schema = OrganizationCreate(
             platform=Platforms.github,
@@ -363,7 +369,11 @@ async def installation_delete(
         raise Exception("unexpected webhook payload")
 
     async with AsyncSessionLocal() as session:
-        await service.github_organization.remove(session, event.installation.id)
+        org = await service.github_organization.get_by_external_id(
+            session, event.installation.account.id
+        )
+        if org:
+            await service.github_organization.remove(session, org.id)
         return dict(success=True)
 
 

@@ -34,11 +34,13 @@ class OrganizationService(
     async def get_by_platform(
         self, session: AsyncSession, platform: Platforms, external_id: int
     ) -> Organization | None:
+        # TODO: deleted_at is none?
         return await self.get_by(session, platform=platform, external_id=external_id)
 
     async def get_by_name(
         self, session: AsyncSession, platform: Platforms, name: str
     ) -> Organization | None:
+        # TODO: deleted_at is none?
         return await self.get_by(session, platform=platform, name=name)
 
     async def get_all_org_repos_by_user_id(
@@ -48,7 +50,9 @@ class OrganizationService(
             sql.select(Organization)
             .join(UserOrganization)
             .join(Organization.repos)
-            .where(UserOrganization.user_id == user_id)
+            .where(
+                UserOrganization.user_id == user_id, Organization.deleted_at.is_(None)
+            )
         )
         res = await session.execute(statement)
         orgs = res.scalars().unique().all()
@@ -72,6 +76,7 @@ class OrganizationService(
         query = sql.select(Organization)
         filters = [
             Organization.platform == platform,
+            Organization.deleted_at.is_(None),
         ]
 
         if not (org_id or org_name):
@@ -93,6 +98,7 @@ class OrganizationService(
             # Need to do contains_eager to load a custom filtered collection of repo
             query = query.options(contains_eager(Organization.repos))
             filters.append(Repository.name == repo_name)
+            filters.append(Repository.deleted_at.is_(None))
 
         query = query.where(and_(*filters))
         res = await session.execute(query)

@@ -118,9 +118,7 @@ class GithubOrganizationService(OrganizationService):
         return True
 
     async def remove(self, session: AsyncSession, installation_id: int) -> bool:
-        # TODO: Add security re: installation ownership?
-        # TODO: Soft deletes at least OR even versioning
-        return await self.delete(session, installation_id=installation_id)
+        return await self.soft_delete(session, installation_id=installation_id)
 
 
 github_organization = GithubOrganizationService(Organization)

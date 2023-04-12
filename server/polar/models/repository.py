@@ -17,9 +17,6 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class Repository(RecordModel):
-    class Status(Enum):
-        ...
-
     class Visibility(Enum):
         PUBLIC = "public"
         PRIVATE = "private"

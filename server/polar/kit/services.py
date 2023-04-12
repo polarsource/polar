@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import datetime
 
 from uuid import UUID
 from typing import Any, Generic, Sequence, TypeVar
@@ -26,8 +27,14 @@ class ResourceService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def upsert_constraints(self) -> list[InstrumentedAttribute[Any]]:
         return [self.model.id]
 
-    async def get(self, session: AsyncSession, id: UUID) -> ModelType | None:
+    async def get(
+        self, session: AsyncSession, id: UUID, allow_deleted=False
+    ) -> ModelType | None:
         query = sql.select(self.model).where(self.model.id == id)
+
+        if not allow_deleted:
+            query = query.where(self.model.deleted_at.is_(None))
+
         return await self.get_by_query(session, query)
 
     async def get_by(self, session: AsyncSession, **clauses: Any) -> ModelType | None:
@@ -102,11 +109,14 @@ class ResourceService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             **update_schema.dict(),
         )
 
-    async def delete(self, session: AsyncSession, **clauses: Any) -> bool:
+    async def soft_delete(self, session: AsyncSession, **clauses: Any) -> bool:
         # TODO: Return object for external invokation to leverage + verify?
         obj = await self.get_by(session, **clauses)
         if not obj:
             return False
 
-        await obj.delete(session)
+        obj.deleted_at = datetime.utcnow()
+        await obj.save(session)
+
+        # await obj.delete(session)
         return True

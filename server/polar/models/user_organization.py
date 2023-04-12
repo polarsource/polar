@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from polar.kit.db.models import StatusMixin, TimestampedModel
+from polar.kit.db.models import TimestampedModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -12,7 +12,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from polar.models.user import User
 
 
-class UserOrganization(TimestampedModel, StatusMixin):
+class UserOrganization(TimestampedModel):
     __tablename__ = "user_organizations"
 
     user_id: Mapped[UUID] = mapped_column(

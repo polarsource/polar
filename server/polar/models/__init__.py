@@ -1,4 +1,4 @@
-from polar.kit.db.models import Model, StatusFlag, StatusMixin, TimestampedModel
+from polar.kit.db.models import Model, TimestampedModel
 
 from .account import Account
 from .issue import Issue
@@ -16,8 +16,6 @@ from .user_organization_settings import UserOrganizationSettings
 __all__ = [
     "Model",
     "TimestampedModel",
-    "StatusFlag",
-    "StatusMixin",
     "User",
     "OAuthAccount",
     "Account",

@@ -1,5 +1,4 @@
 import enum
-from typing import Self
 from uuid import UUID
 from datetime import datetime
 
@@ -37,6 +36,7 @@ class TimestampedModel(Model):
     modified_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), onupdate=utc_now
     )
+    deleted_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
 
 class RecordModel(TimestampedModel):
@@ -44,15 +44,4 @@ class RecordModel(TimestampedModel):
 
     id: MappedColumn[UUID] = mapped_column(
         PostgresUUID, primary_key=True, default=generate_uuid
-    )
-
-
-class StatusFlag(enum.Enum):
-    DISABLED = 0
-    ACTIVE = 1
-
-
-class StatusMixin:
-    status: Mapped[int] = mapped_column(
-        IntEnum(StatusFlag), nullable=False, default=StatusFlag.DISABLED
     )

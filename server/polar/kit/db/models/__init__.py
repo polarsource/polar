@@ -1,4 +1,4 @@
-from .base import Model, RecordModel, StatusFlag, StatusMixin, TimestampedModel
+from .base import Model, RecordModel, TimestampedModel
 from .mixins import ActiveRecordMixin, SerializeMixin
 
 __all__ = [
@@ -6,7 +6,6 @@ __all__ = [
     "TimestampedModel",
     "RecordModel",
     "StatusFlag",
-    "StatusMixin",
     "ActiveRecordMixin",
     "SerializeMixin",
 ]

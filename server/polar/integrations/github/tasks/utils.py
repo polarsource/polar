@@ -58,6 +58,14 @@ async def add_repositories(
         )
         schemas.append(create_schema)
 
+        # un-delete if previously deleted
+        prev = await service.github_repository.get_by_external_id(
+            session, external_id=repo.id
+        )
+        if prev and prev.deleted_at is not None:
+            prev.deleted_at = None
+            await prev.save(session)
+
     log.debug("github.repositories.upsert_many", repos=schemas)
     instances = await service.github_repository.upsert_many(session, schemas)
     return instances
@@ -74,11 +82,9 @@ async def remove_repositories(
         ]
     ],
 ) -> int:
-    # TODO: Implement delete many to avoid N*2 db calls
     count = 0
     for repo in repositories:
-        # TODO: All true now, but that will change
-        res = await service.github_repository.delete(session, external_id=repo.id)
+        res = await service.github_repository.soft_delete(session, external_id=repo.id)
         if res:
             count += 1
     return count

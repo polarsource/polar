@@ -264,7 +264,7 @@ export function RepoSelection(props: {
                   <Item
                     value="Connect a repository"
                     onSelect={() => {
-                      window.location.replace(CONFIG.GITHUB_INSTALLATION_URL)
+                      window.open(CONFIG.GITHUB_INSTALLATION_URL, '_blank')
                     }}
                   >
                     <div className="flex items-center space-x-2 text-blue-600">

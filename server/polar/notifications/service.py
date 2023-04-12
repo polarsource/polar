@@ -83,9 +83,6 @@ class NotificationsService:
         typ: NotificationType,
         notif: PartialNotification,
     ) -> bool:
-
-        log.warning("zegl create for org", typ=typ, notif=notif)
-
         dedup_key: str = "/".join(
             [
                 str(org_id),
@@ -220,8 +217,6 @@ class NotificationsService:
                 raise Exception("no pull request found")
 
             pr_url = f"https://github.com/{org.name}/{repo.name}/pull/{pr.number}"
-
-            log.error("zegl pr", pr=pr)
 
             if not pr.author:
                 raise Exception("no pr author found")

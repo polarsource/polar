@@ -205,6 +205,66 @@ async def test_webhook_installation_delete(
 
 
 @pytest.mark.asyncio
+async def test_webhook_installation_create_delete_create(
+    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
+) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("arq.connections.ArqRedis.enqueue_job")
+
+    hook = github_webhook.create("installation.created")
+    installation_id = hook["installation"]["id"]
+    account = hook["installation"]["account"]
+
+    # Create
+    await webhook_tasks.installation_created(
+        FAKE_CTX, "installation", "created", hook.json
+    )
+
+    org = await service.github_organization.get_by(
+        session, installation_id=installation_id
+    )
+
+    assert org is not None
+    assert org.external_id == account["id"]
+    assert org.deleted_at is None
+
+    # Delete
+    hook_deleted = github_webhook.create("installation.deleted")
+    await webhook_tasks.installation_delete(
+        FAKE_CTX, "installation", "deleted", hook_deleted.json
+    )
+
+    session.expunge_all()
+    session.expire_all()
+
+    org_deleted_get = await service.github_organization.get(
+        session, org.id, allow_deleted=False
+    )
+    assert org_deleted_get is None
+
+    org_post_delete = await service.github_organization.get(
+        session, org.id, allow_deleted=True
+    )
+    assert org_post_delete is not None
+    assert org_post_delete.deleted_at is not None
+
+    session.expunge_all()
+    session.expire_all()
+
+    # Create
+    await webhook_tasks.installation_created(
+        FAKE_CTX, "installation", "created", hook.json
+    )
+
+    org_post_recreate = await service.github_organization.get_by(
+        session, installation_id=installation_id
+    )
+
+    assert org_post_recreate is not None
+    assert org_post_recreate.deleted_at is None
+
+
+@pytest.mark.asyncio
 async def test_webhook_repositories_added(
     mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
 ) -> None:

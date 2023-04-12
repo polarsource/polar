@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 import structlog
 
@@ -117,8 +118,8 @@ class GithubOrganizationService(OrganizationService):
         )
         return True
 
-    async def remove(self, session: AsyncSession, installation_id: int) -> bool:
-        return await self.soft_delete(session, installation_id=installation_id)
+    async def remove(self, session: AsyncSession, org_id: UUID) -> bool:
+        return await self.soft_delete(session, id=org_id)
 
 
 github_organization = GithubOrganizationService(Organization)

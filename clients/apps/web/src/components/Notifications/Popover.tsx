@@ -71,7 +71,7 @@ const Popover = () => {
                 <div className="pointer-events-auto w-full  overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
                   {notifs.data.length === 0 && (
                     <div className="p-4 text-black/60">
-                      You don't have any notifications... yet!
+                      You don&apos;t have any notifications... yet!
                     </div>
                   )}
                   {notifs.data.map((n) => {

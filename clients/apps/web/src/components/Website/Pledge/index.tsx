@@ -21,7 +21,7 @@ const Pledge = ({
           <div className="w-1/2">
             <IssueCard
               issue={issue}
-              bg="bg-blue-50"
+              className="bg-blue-50"
               organization={organization}
               repository={repository}
             />

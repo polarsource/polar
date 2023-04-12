@@ -23,6 +23,7 @@ async def get_user_organizations(
     # See https://github.com/tiangolo/fastapi/issues/1645
     def expand_children(org: Organization) -> OrganizationRead:
         o = OrganizationRead.from_orm(org)
+
         o.repositories = [
             RepositoryRead.from_orm(repo)
             for repo in org.repos

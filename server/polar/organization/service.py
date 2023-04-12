@@ -5,7 +5,10 @@ from datetime import datetime, timezone
 import structlog
 from sqlalchemy import and_
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import InstrumentedAttribute, contains_eager
+from sqlalchemy.orm import (
+    InstrumentedAttribute,
+    contains_eager,
+)
 
 from polar.kit.services import ResourceService
 from polar.exceptions import ResourceNotFound
@@ -48,6 +51,7 @@ class OrganizationService(
             sql.select(Organization)
             .join(UserOrganization)
             .join(Organization.repos)
+            .options(contains_eager(Organization.repos))
             .where(
                 UserOrganization.user_id == user_id,
                 Organization.deleted_at.is_(None),

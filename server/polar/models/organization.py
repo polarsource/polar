@@ -88,12 +88,11 @@ class Organization(RecordModel):
         String(length=50), nullable=True, unique=True, default=None
     )
 
-    # TODO: Given service.organization.get_with_repo_by_name can we drop lazy=joined
-    # to be more explicit about the join?
     repos: "Mapped[list[Repository]]" = relationship(
         "Repository",
         back_populates="organization",
-        lazy="joined",
+        uselist=True,
+        lazy="raise",
     )
 
     __mutables__ = {

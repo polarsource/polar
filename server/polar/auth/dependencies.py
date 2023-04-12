@@ -109,7 +109,7 @@ class Auth:
         *,
         user: User = Depends(current_active_user),
     ) -> "Auth":
-        allowed = ["zegl"]
+        allowed = ["zegl", "birkjernstrom", "hult", "petterheterjag"]
 
         if user.username not in allowed:
             raise HTTPException(

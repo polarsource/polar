@@ -26,7 +26,7 @@ log = structlog.get_logger()
 router = APIRouter(tags=["organizations"])
 
 
-@router.get("/{platform}/{organization_name}", response_model=OrganizationRead)
+@router.get("/{platform}/{org_name}", response_model=OrganizationRead)
 async def get(
     platform: Platforms,
     org_name: str,
@@ -68,7 +68,7 @@ async def _get_org_for_user(
     return res
 
 
-@router.put("/{platform}/{organization_name}/settings", response_model=OrganizationRead)
+@router.put("/{platform}/{org_name}/settings", response_model=OrganizationRead)
 async def update_settings(
     platform: Platforms,
     org_name: str,
@@ -96,7 +96,7 @@ async def update_settings(
 
 
 @router.get(
-    "/{platform}/{organization_name}/stripe_customer",
+    "/{platform}/{org_name}/stripe_customer",
     response_model=OrganizationStripeCustomerRead,
 )
 async def get_stripe_customer(
@@ -133,7 +133,7 @@ async def get_stripe_customer(
 
 
 @router.post(
-    "/{platform}/{organization_name}/setup_intent",
+    "/{platform}/{org_name}/setup_intent",
     response_model=OrganizationSetupIntentRead,
 )
 async def create_setup_intent(
@@ -156,7 +156,7 @@ async def create_setup_intent(
 
 
 @router.post(
-    "/{platform}/{organization_name}/set_default_payment_method",
+    "/{platform}/{org_name}/set_default_payment_method",
     response_model=OrganizationStripeCustomerRead,
 )
 async def set_default_payment_method(

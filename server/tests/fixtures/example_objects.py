@@ -10,6 +10,7 @@ from polar.models.pledge import Pledge
 from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
 from polar.models.user import User
+from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import OrganizationCreate
 from polar.postgres import AsyncSession
 
@@ -157,3 +158,20 @@ async def pull_request(
 
     await session.commit()
     return pr
+
+
+@pytest_asyncio.fixture(scope="module")
+async def user_organization(
+    session: AsyncSession,
+    organization: Organization,
+    user: User,
+) -> UserOrganization:
+    a = await UserOrganization.create(
+        session=session,
+        id=uuid.uuid4(),
+        user_id=user.id,
+        organization_id=organization.id,
+    )
+
+    await session.commit()
+    return a

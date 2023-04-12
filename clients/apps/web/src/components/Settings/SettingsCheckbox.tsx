@@ -23,17 +23,17 @@ const SettingsCheckbox = ({
           type="checkbox"
           onChange={onChange}
           checked={isChecked}
-          className="h-4 w-4 rounded border-gray-300 text-[#8A63F9] focus:ring-[#8A63F9]"
+          className="h-4 w-4 rounded border-gray-300 p-2 text-blue-500 focus:ring-blue-500"
         />
       </div>
-      <div className="ml-3 inline-flex items-center space-x-4 text-sm leading-6 ">
-        <label htmlFor={id} className="font-medium text-black">
+      <div className="ml-2.5 inline-flex items-center space-x-4 text-sm leading-6 ">
+        <label htmlFor={id} className="text-gray-900">
           {title}
         </label>{' '}
         {description && (
           <span
             id={`${id}-description`}
-            className="inline-flex items-center space-x-2 text-black/50"
+            className="inline-flex items-center space-x-1 text-gray-500"
           >
             <InformationCircleIcon className="h-6 w-6" />
             <span>{description}</span>

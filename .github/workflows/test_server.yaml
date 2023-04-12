@@ -1,20 +1,14 @@
-name: Test Server 🐍
+name: Server
 
 on:
   push:
     branches: ["main"]
-    paths: 
-      - 'server/**'
-      - '.github/**'
   pull_request:
     types: [opened, synchronize]
-    paths: 
-      - 'server/**'
-      - '.github/**'
 
 jobs:
   linters:
-    name: "Linters"
+    name: "Server: Linters 📝"
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -52,7 +46,7 @@ jobs:
 
 
   test:
-    name: "Tests"
+    name: "Server: Tests 🐍"
     strategy:
       fail-fast: false
       matrix:

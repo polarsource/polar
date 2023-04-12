@@ -228,6 +228,11 @@ async def test_webhook_installation_create_delete_create(
     assert org.external_id == account["id"]
     assert org.deleted_at is None
 
+    # repos
+    pre_delete_repos = await service.github_repository.list_by_organization(
+        session, org.id
+    )
+
     # Delete
     hook_deleted = github_webhook.create("installation.deleted")
     await webhook_tasks.installation_delete(
@@ -251,6 +256,14 @@ async def test_webhook_installation_create_delete_create(
     session.expunge_all()
     session.expire_all()
 
+    post_delete_repos = await service.github_repository.list_by_organization(
+        session, org.id
+    )
+
+    # check that repos where deleted
+    assert len(pre_delete_repos) == 1
+    assert len(post_delete_repos) == 0
+
     # Create
     await webhook_tasks.installation_created(
         FAKE_CTX, "installation", "created", hook.json
@@ -262,6 +275,12 @@ async def test_webhook_installation_create_delete_create(
 
     assert org_post_recreate is not None
     assert org_post_recreate.deleted_at is None
+
+    # check that repos where re-installed
+    post_recreate_repos = await service.github_repository.list_by_organization(
+        session, org.id
+    )
+    assert len(post_recreate_repos) == 1
 
 
 @pytest.mark.asyncio

@@ -26,7 +26,8 @@ class RepositoryService(
         organization_id: UUID,
     ) -> Sequence[Repository]:
         statement = sql.select(Repository).where(
-            Repository.organization_id == organization_id
+            Repository.organization_id == organization_id,
+            Repository.deleted_at.is_(None),
         )
         res = await session.execute(statement)
         return res.scalars().unique().all()

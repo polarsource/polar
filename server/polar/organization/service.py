@@ -34,13 +34,11 @@ class OrganizationService(
     async def get_by_platform(
         self, session: AsyncSession, platform: Platforms, external_id: int
     ) -> Organization | None:
-        # TODO: deleted_at is none?
         return await self.get_by(session, platform=platform, external_id=external_id)
 
     async def get_by_name(
         self, session: AsyncSession, platform: Platforms, name: str
     ) -> Organization | None:
-        # TODO: deleted_at is none?
         return await self.get_by(session, platform=platform, name=name)
 
     async def get_all_org_repos_by_user_id(
@@ -51,7 +49,9 @@ class OrganizationService(
             .join(UserOrganization)
             .join(Organization.repos)
             .where(
-                UserOrganization.user_id == user_id, Organization.deleted_at.is_(None)
+                UserOrganization.user_id == user_id,
+                Organization.deleted_at.is_(None),
+                Repository.deleted_at.is_(None),
             )
         )
         res = await session.execute(statement)

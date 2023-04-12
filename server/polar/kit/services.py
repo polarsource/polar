@@ -112,25 +112,8 @@ class ResourceService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     async def soft_delete(self, session: AsyncSession, id: UUID) -> bool:
         obj = await self.get(session, id)
         if not obj:
-            print("ZEGL not mark")
             return False
-
-        print("ZEGL MARK deleted_At")
 
         obj.deleted_at = datetime.utcnow()
         await obj.save(session)
-        await session.flush()
-        session.expire_all()
-
-        # TODO: Return object for external invokation to leverage + verify?
-        # obj = await self.get_by(session, **clauses)
-        # if not obj:
-        #    return False
-
-        # obj.deleted_at = datetime.utcnow()
-        # await obj.save(session)
-
-        # await session.commit()
-
-        # await obj.delete(session)
         return True

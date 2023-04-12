@@ -66,6 +66,7 @@ export type { ValidationError } from './models/ValidationError';
 export { Visibility } from './models/Visibility';
 
 export { AccountsService } from './services/AccountsService';
+export { BackofficeService } from './services/BackofficeService';
 export { DashboardService } from './services/DashboardService';
 export { IntegrationsService } from './services/IntegrationsService';
 export { IssuesService } from './services/IssuesService';

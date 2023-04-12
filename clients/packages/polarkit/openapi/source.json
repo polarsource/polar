@@ -1738,6 +1738,31 @@
                     }
                 }
             }
+        },
+        "/api/v1/backoffice/pledges": {
+            "get": {
+                "tags": [
+                    "backoffice"
+                ],
+                "summary": "Pledges",
+                "operationId": "backoffice:pledges",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "title": "Response Backoffice:Pledges",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PledgeRead"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {

@@ -15,34 +15,97 @@ const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
     : null
 }
 
-const IssueLabel = (props: { label: LabelSchema }) => {
-  const { name, color } = props.label
-  const style = {
-    backgroundColor: `#${color}`,
-    color: '#000000',
+function HSVtoRGB(
+  h: number,
+  s: number,
+  v: number,
+): { r: number; g: number; b: number } | null {
+  var r, g, b, i, f, p, q, t
+  i = Math.floor(h * 6)
+  f = h * 6 - i
+  p = v * (1 - s)
+  q = v * (1 - f * s)
+  t = v * (1 - (1 - f) * s)
+  switch (i % 6) {
+    case 0:
+      ;(r = v), (g = t), (b = p)
+      break
+    case 1:
+      ;(r = q), (g = v), (b = p)
+      break
+    case 2:
+      ;(r = p), (g = v), (b = t)
+      break
+    case 3:
+      ;(r = p), (g = q), (b = v)
+      break
+    case 4:
+      ;(r = t), (g = p), (b = v)
+      break
+    case 5:
+      ;(r = v), (g = p), (b = q)
+      break
   }
 
-  let sum = 0
+  return r && g && b
+    ? { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) }
+    : null
+}
 
-  // Generate text color based on background color
+function RGBtoHSV(
+  r: number,
+  g: number,
+  b: number,
+): { h: number; s: number; v: number } | null {
+  var max = Math.max(r, g, b),
+    min = Math.min(r, g, b),
+    d = max - min,
+    h,
+    s = max === 0 ? 0 : d / max,
+    v = max / 255
+
+  switch (max) {
+    case min:
+      h = 0
+      break
+    case r:
+      h = g - b + d * (g < b ? 6 : 0)
+      h /= 6 * d
+      break
+    case g:
+      h = b - r + d * 2
+      h /= 6 * d
+      break
+    case b:
+      h = r - g + d * 4
+      h /= 6 * d
+      break
+  }
+
+  return h && s && v ? { h: h, s: s, v: v } : null
+}
+
+const IssueLabel = (props: { label: LabelSchema }) => {
+  const { name, color } = props.label
+
   const rgb = hexToRgb(color)
-  if (rgb) {
-    const { r, g, b } = rgb
-    sum = r + g + b
+  const hsv = rgb ? RGBtoHSV(rgb.r, rgb.g, rgb.b) : null
+  const bgColor = HSVtoRGB(hsv ? hsv.h : 0, 0.1, 0.93)
+  const textColor = HSVtoRGB(hsv ? hsv.h : 0, 0.25, 0.4)
 
-    if (sum < (255 * 3) / 2) {
-      // Very dark, use white
-      style.color = '#ffffff'
-    } else {
-      // Very light, use black
-      style.color = '#000000'
-    }
+  const style = {
+    backgroundColor: bgColor
+      ? `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`
+      : `rgb(200, 200, 200)`,
+    color: textColor
+      ? `rgb(${textColor.r}, ${textColor.g}, ${textColor.b})`
+      : `rgb(50, 50, 50)`,
   }
 
   return (
     <>
       <div
-        className="whitespace-nowrap rounded-xl px-2 py-0.5 text-sm"
+        className="whitespace-nowrap rounded-xl px-2.5 py-1 text-xs font-medium"
         style={style}
       >
         {name}

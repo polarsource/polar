@@ -1,6 +1,12 @@
 import { PledgeRead } from 'polarkit/api/client'
-import { useBackofficeAllPledges } from 'polarkit/hooks'
+import { PrimaryButton } from 'polarkit/components/ui'
+import {
+  useBackofficeAllPledges,
+  useBackofficePledgeApprove,
+  useBackofficePledgeMarkPending,
+} from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/utils'
+import { useState, type MouseEvent } from 'react'
 
 const Pledges = () => {
   const pledges = useBackofficeAllPledges()
@@ -26,7 +32,19 @@ const Pledges = () => {
               scope="col"
               className="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
             >
+              Issue ID
+            </th>
+            <th
+              scope="col"
+              className="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
               Amount
+            </th>
+            <th
+              scope="col"
+              className="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
+            >
+              Time
             </th>
             <th
               scope="col"
@@ -47,6 +65,26 @@ const Pledges = () => {
 export default Pledges
 
 const PledgeItem = ({ pledge }: { pledge: PledgeRead }) => {
+  const approver = useBackofficePledgeApprove()
+  const markPending = useBackofficePledgeMarkPending()
+
+  const [isLoadingApprove, setIsLoadingApprove] = useState(false)
+  const [isLoadingPending, setIsLoadingPending] = useState(false)
+
+  const clickApprove = async (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    setIsLoadingApprove(true)
+    await approver.mutateAsync({ pledgeId: pledge.id })
+    setIsLoadingApprove(false)
+  }
+
+  const clickMarkPending = async (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    setIsLoadingPending(true)
+    await markPending.mutateAsync({ pledgeId: pledge.id })
+    setIsLoadingPending(false)
+  }
+
   return (
     <tr>
       <td className="whitespace-nowrap px-2 py-2 text-sm font-medium text-gray-900">
@@ -57,17 +95,67 @@ const PledgeItem = ({ pledge }: { pledge: PledgeRead }) => {
           </a>
         </div>
       </td>
-      <td>{pledge.state}</td>
+      <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-500">
+        <div className="flex flex-col">
+          {pledge.state}
+          <Pills state={pledge.state} />
+        </div>
+      </td>
+      <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-500">
+        {pledge.issue_id.substring(0, 8)}
+      </td>
       <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-500">
         ${getCentsInDollarString(pledge.amount)}
       </td>
+      <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-500">
+        {pledge.created_at.substring(0, 19)}
+      </td>
       <td className="relative whitespace-nowrap py-2 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
         {pledge.state === 'pending' && (
-          <a href="#" className="text-indigo-600 hover:text-indigo-900">
-            Approve
-          </a>
+          <>
+            <PrimaryButton onClick={clickApprove} loading={isLoadingApprove}>
+              Approve
+            </PrimaryButton>
+          </>
+        )}
+
+        {pledge.state === 'created' && (
+          <>
+            <PrimaryButton
+              onClick={clickMarkPending}
+              loading={isLoadingPending}
+            >
+              Mark Pending
+            </PrimaryButton>
+          </>
         )}
       </td>
     </tr>
+  )
+}
+
+const Pill = ({ className }: { className: string }) => (
+  <div className={`h-2 w-2 rounded-full ${className}`}></div>
+)
+
+const Pills = ({ state }: { state: string }) => {
+  const nums = {
+    created: 1,
+    pending: 2,
+    paid: 3,
+  }
+  const n = nums[state] || 0
+  const filled = [...Array(n)]
+  const pending = [...Array(4 - n)]
+
+  return (
+    <div className="flex items-center space-x-1">
+      {filled.map(() => (
+        <Pill className="bg-blue-400" />
+      ))}
+      {pending.map(() => (
+        <Pill className="bg-gray-200" />
+      ))}
+    </div>
   )
 }

@@ -6,7 +6,7 @@ from polar.app import app
 from polar.config import settings
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture(scope="function")
 async def auth_jwt(
     user: User,
 ) -> str:

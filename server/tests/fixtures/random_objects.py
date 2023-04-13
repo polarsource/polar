@@ -1,4 +1,6 @@
 from datetime import datetime
+import random
+import string
 import uuid
 
 import pytest_asyncio
@@ -21,15 +23,19 @@ from polar.integrations.github.service import (
 from polar.repository.schemas import RepositoryCreate
 
 
-@pytest_asyncio.fixture(scope="module")
+def rstr(prefix: str) -> str:
+    return prefix + "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+
+@pytest_asyncio.fixture(scope="function")
 async def organization(session: AsyncSession) -> Organization:
     create_schema = OrganizationCreate(
         platform=Platforms.github,
-        name="testorg",
-        external_id=123,
-        avatar_url="account.avatar_url",
+        name=rstr("testorg"),
+        external_id=random.randrange(5000),
+        avatar_url="http://avatar_url",
         is_personal=False,
-        installation_id=123,
+        installation_id=random.randrange(5000),
         installation_created_at=datetime.now(),
         installation_updated_at=datetime.now(),
         installation_suspended_at=None,
@@ -41,15 +47,15 @@ async def organization(session: AsyncSession) -> Organization:
     return org
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture(scope="function")
 async def pledging_organization(session: AsyncSession) -> Organization:
     create_schema = OrganizationCreate(
         platform=Platforms.github,
-        name="pledging_org",
-        external_id=444,
-        avatar_url="account.avatar_url",
+        name=rstr("pledging_org"),
+        external_id=random.randrange(5000),
+        avatar_url="http://avatar_url",
         is_personal=False,
-        installation_id=444,
+        installation_id=random.randrange(5000),
         installation_created_at=datetime.now(),
         installation_updated_at=datetime.now(),
         installation_suspended_at=None,
@@ -61,13 +67,13 @@ async def pledging_organization(session: AsyncSession) -> Organization:
     return org
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture(scope="function")
 async def repository(session: AsyncSession, organization: Organization) -> Repository:
     create_schema = RepositoryCreate(
         platform=Platforms.github,
-        name="testrepo",
+        name=rstr("testrepo"),
         organization_id=organization.id,
-        external_id=12345,
+        external_id=random.randrange(5000),
         is_private=True,
     )
     repo = await github_repository.upsert(session, create_schema)
@@ -76,7 +82,7 @@ async def repository(session: AsyncSession, organization: Organization) -> Repos
     return repo
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture(scope="function")
 async def issue(
     session: AsyncSession, organization: Organization, repository: Repository
 ) -> Issue:
@@ -86,9 +92,9 @@ async def issue(
         organization_id=organization.id,
         repository_id=repository.id,
         title="issue title",
-        number=123,
+        number=random.randrange(5000),
         platform=Platforms.github,
-        external_id=99999,
+        external_id=random.randrange(5000),
         state="open",
         issue_created_at=datetime.now(),
         issue_updated_at=datetime.now(),
@@ -98,22 +104,22 @@ async def issue(
     return issue
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture(scope="function")
 async def user(
     session: AsyncSession,
 ) -> User:
     user = await User.create(
         session=session,
         id=uuid.uuid4(),
-        username="foobar",
-        email="test@example.com",
+        username=rstr("testuser"),
+        email=rstr("test") + "@example.com",
     )
 
     await session.commit()
     return user
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture(scope="function")
 async def pledge_as_org(
     session: AsyncSession,
     organization: Organization,
@@ -135,7 +141,7 @@ async def pledge_as_org(
     return pledge
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture(scope="function")
 async def pull_request(
     session: AsyncSession,
     organization: Organization,
@@ -146,8 +152,8 @@ async def pull_request(
         id=uuid.uuid4(),
         repository_id=repository.id,
         organization_id=organization.id,
-        number=5555,
-        external_id=5951111,
+        number=random.randrange(5000),
+        external_id=random.randrange(5000),
         title="PR Title",
         author={"login": "pr_creator_login"},
         platform=Platforms.github,
@@ -160,7 +166,7 @@ async def pull_request(
     return pr
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture(scope="function")
 async def user_organization(
     session: AsyncSession,
     organization: Organization,

@@ -433,6 +433,31 @@
                 }
             }
         },
+        "/api/v1/backoffice/pledges/non_customers": {
+            "get": {
+                "tags": [
+                    "backoffice"
+                ],
+                "summary": "Pledges Non Customers",
+                "operationId": "pledges_non_customers",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "title": "Response Backoffice:Pledges Non Customers",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/BackofficePledgeRead"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/backoffice/pledges/approve/{pledge_id}": {
             "post": {
                 "tags": [

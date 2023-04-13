@@ -217,6 +217,15 @@ export const useBackofficeAllPledges = () =>
     retry: defaultRetry,
   })
 
+export const useBackofficeAllNonCustomerPledges = () =>
+  useQuery(
+    ['backofficeAllNonCustomerPledges'],
+    () => api.backoffice.pledgesNonCustomers(),
+    {
+      retry: defaultRetry,
+    },
+  )
+
 export const useBackofficePledgeApprove = () =>
   useMutation({
     mutationFn: (variables: { pledgeId: string }) => {

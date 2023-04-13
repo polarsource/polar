@@ -23,7 +23,15 @@ async def pledges(
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> list[BackofficePledgeRead]:
-    return await bo_pledges_service.list_pledges(session)
+    return await bo_pledges_service.list_pledges(session, customers=True)
+
+
+@router.get("/pledges/non_customers", response_model=list[BackofficePledgeRead])
+async def pledges_non_customers(
+    auth: Auth = Depends(Auth.backoffice_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> list[BackofficePledgeRead]:
+    return await bo_pledges_service.list_pledges(session, customers=False)
 
 
 async def get_pledge(session: AsyncSession, pledge_id: UUID) -> BackofficePledgeRead:

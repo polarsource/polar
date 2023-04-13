@@ -1,13 +1,16 @@
-import Pledges from 'components/Backoffice/Pledges'
 import type { NextLayoutComponentType } from 'next'
+import Link from 'next/link'
 import { ReactElement } from 'react'
 import Topbar from '../../components/Shared/Topbar'
 
 const Page: NextLayoutComponentType = () => {
   return (
-    <div>
-      <h2 className="text-2xl">Pledges</h2>
-      <Pledges />
+    <div className="flex flex-col">
+      <h1 className="text-2xl font-bold">Pick-a-feature</h1>
+      <Link href="/backoffice/pledges">Pledges</Link>
+      <Link href="/backoffice/pledges_non_customers">
+        Pledges to non customers
+      </Link>
     </div>
   )
 }

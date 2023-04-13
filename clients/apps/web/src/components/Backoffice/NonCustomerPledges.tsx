@@ -1,8 +1,8 @@
-import { useBackofficeAllPledges } from 'polarkit/hooks'
+import { useBackofficeAllNonCustomerPledges } from 'polarkit/hooks'
 import PledgeItem from './PledgeItem'
 
-const Pledges = () => {
-  const pledges = useBackofficeAllPledges()
+const NonCustomerPledges = () => {
+  const pledges = useBackofficeAllNonCustomerPledges()
   const data = pledges.data
   return (
     <>
@@ -45,18 +45,12 @@ const Pledges = () => {
             >
               Time
             </th>
-            <th
-              scope="col"
-              className="relative whitespace-nowrap py-3.5 pl-3 pr-4 sm:pr-0"
-            >
-              <span className="sr-only">Edit</span>
-            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200 bg-white">
           {data &&
             data.map((p) => (
-              <PledgeItem pledge={p} key={p.id} showActions={true} />
+              <PledgeItem pledge={p} key={p.id} showActions={false} />
             ))}
         </tbody>
       </table>
@@ -64,4 +58,4 @@ const Pledges = () => {
   )
 }
 
-export default Pledges
+export default NonCustomerPledges

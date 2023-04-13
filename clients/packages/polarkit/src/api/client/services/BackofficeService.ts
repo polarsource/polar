@@ -23,6 +23,18 @@ export class BackofficeService {
   }
 
   /**
+   * Pledges Non Customers
+   * @returns BackofficePledgeRead Successful Response
+   * @throws ApiError
+   */
+  public pledgesNonCustomers(): CancelablePromise<Array<BackofficePledgeRead>> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/backoffice/pledges/non_customers',
+    });
+  }
+
+  /**
    * Pledge Approve
    * @returns BackofficePledgeRead Successful Response
    * @throws ApiError

@@ -19,10 +19,6 @@ const buildStatusesFilter = (filters: DashboardFilters): Array<IssueStatus> => {
   return next
 }
 
-interface IDer {
-  id: string
-}
-
 const Organization = (props: {
   filters: DashboardFilters
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
@@ -63,6 +59,7 @@ const Organization = (props: {
   return (
     <div>
       <IssueList
+        loading={dashboardQuery.isLoading}
         issues={issues}
         filters={filters}
         onSetFilters={props.onSetFilters}

@@ -4,6 +4,7 @@ import {
   IssueSortBy,
   OrganizationSettingsUpdate,
   type OrganizationRead,
+  type PledgeRead,
   type RepositoryRead,
   type UserRead,
 } from 'polarkit/api/client'
@@ -247,4 +248,40 @@ export const useNotifications = () =>
 export const useBackofficeAllPledges = () =>
   useQuery(['backofficeAllPledges'], () => api.backoffice.pledges(), {
     retry: defaultRetry,
+  })
+
+export const useBackofficePledgeApprove = () =>
+  useMutation({
+    mutationFn: (variables: { pledgeId: string }) => {
+      return api.backoffice.pledgeApprove({
+        pledgeId: variables.pledgeId,
+      })
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.setQueryData<Array<PledgeRead> | undefined>(
+        ['backofficeAllPledges'],
+        (oldData) =>
+          oldData
+            ? oldData.map((p) => (p.id === result.id ? result : p))
+            : oldData,
+      )
+    },
+  })
+
+export const useBackofficePledgeMarkPending = () =>
+  useMutation({
+    mutationFn: (variables: { pledgeId: string }) => {
+      return api.backoffice.pledgeMarkPending({
+        pledgeId: variables.pledgeId,
+      })
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.setQueryData<Array<PledgeRead> | undefined>(
+        ['backofficeAllPledges'],
+        (oldData) =>
+          oldData
+            ? oldData.map((p) => (p.id === result.id ? result : p))
+            : oldData,
+      )
+    },
   })

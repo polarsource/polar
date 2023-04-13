@@ -1039,69 +1039,6 @@
                 }
             }
         },
-        "/api/v1/{platform}/{org_name}/{repo_name}/pledges": {
-            "get": {
-                "tags": [
-                    "pledges"
-                ],
-                "summary": "Get Repository Pledges",
-                "operationId": "get_repository_pledges",
-                "parameters": [
-                    {
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/Platforms"
-                        },
-                        "name": "platform",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Org Name",
-                            "type": "string"
-                        },
-                        "name": "org_name",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Repo Name",
-                            "type": "string"
-                        },
-                        "name": "repo_name",
-                        "in": "path"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "title": "Response Pledges:Get Repository Pledges",
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/PledgeRead"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/user/stream": {
             "get": {
                 "tags": [

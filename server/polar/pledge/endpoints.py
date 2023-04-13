@@ -1,13 +1,10 @@
-from typing import Sequence
 from uuid import UUID
-
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from polar.auth.dependencies import Auth, current_active_user
+from polar.auth.dependencies import current_active_user
 from polar.models import Pledge, Repository
 from polar.exceptions import ResourceNotFound
 from polar.enums import Platforms
-from polar.notifications.schemas import NotificationType
 from polar.postgres import AsyncSession, get_db_session
 
 from polar.integrations.stripe.service import stripe
@@ -15,10 +12,6 @@ from polar.organization.schemas import OrganizationRead
 from polar.organization.service import organization as organization_service
 from polar.repository.schemas import RepositoryRead
 from polar.issue.schemas import IssueRead
-from polar.notifications.service import (
-    PartialNotification,
-    notifications as notification_service,
-)
 
 from .schemas import (
     PledgeCreate,
@@ -28,7 +21,7 @@ from .schemas import (
     State,
     PledgeResources,
 )
-from .service import pledge
+from .service import pledge as pledge_service
 
 router = APIRouter(tags=["pledges"])
 
@@ -39,7 +32,7 @@ async def get_pledge_or_404(
     pledge_id: UUID,
     for_repository: Repository,
 ) -> Pledge:
-    pledge = await Pledge.find(session=session, id=pledge_id)
+    pledge = await pledge_service.get_with_loaded(session=session, pledge_id=pledge_id)
 
     if not pledge:
         raise HTTPException(
@@ -295,21 +288,3 @@ async def update_pledge(
     ret.client_secret = payment_intent.client_secret
 
     return ret
-
-
-@router.get(
-    "/{platform}/{org_name}/{repo_name}/pledges",
-    response_model=list[PledgeRead],
-)
-async def get_repository_pledges(
-    platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
-    session: AsyncSession = Depends(get_db_session),
-) -> Sequence[PledgeRead]:
-    pledges = await pledge.list_by_repository(
-        session=session, repository_id=auth.repository.id
-    )
-
-    return [PledgeRead.from_db(p) for p in pledges]

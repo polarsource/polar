@@ -93,39 +93,6 @@ export const useRepositoryIssues = (repoOwner: string, repoName: string) =>
     },
   )
 
-export const useRepositoryPullRequests = (
-  repoOwner: string,
-  repoName: string,
-) =>
-  useQuery(
-    ['pull_requests', 'repo', repoOwner, repoName],
-    () =>
-      api.pullRequests.getRepositoryPullRequests({
-        platform: Platforms.GITHUB,
-        orgName: repoOwner,
-        repoName: repoName,
-      }),
-    {
-      enabled: !!repoOwner && !!repoName,
-      retry: defaultRetry,
-    },
-  )
-
-export const useRepositoryPledges = (repoOwner: string, repoName: string) =>
-  useQuery(
-    ['pledges', 'repo', repoOwner, repoName],
-    () =>
-      api.pledges.getRepositoryPledges({
-        platform: Platforms.GITHUB,
-        orgName: repoOwner,
-        repoName: repoName,
-      }),
-    {
-      enabled: !!repoOwner && !!repoName,
-      retry: defaultRetry,
-    },
-  )
-
 export const useDashboard = (
   orgName: string,
   repoName?: string,

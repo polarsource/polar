@@ -1,12 +1,12 @@
-import Link from 'next/link'
 import { useAuth } from 'polarkit/hooks'
+import GithubLoginButton from './GithubLoginButton'
 import Logout from './Logout'
 
 const Profile = () => {
-  const { authenticated, currentUser, logout } = useAuth()
+  const { authenticated } = useAuth()
 
   if (!authenticated) {
-    return <Link href="/login">Login</Link>
+    return <GithubLoginButton />
   }
 
   return (

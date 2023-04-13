@@ -1,3 +1,4 @@
+import { useAuth } from 'polarkit/hooks'
 import { classNames } from 'polarkit/utils'
 import Popover from '../Notifications/Popover'
 import Profile from './Profile'
@@ -17,6 +18,8 @@ const Topbar = (props: {
 
   const hasLeft = !!props?.children?.left
   const hasMid = !!props?.children?.center
+
+  const { authenticated } = useAuth()
 
   return (
     <>
@@ -42,7 +45,7 @@ const Topbar = (props: {
         )}
 
         <div className="flex flex-shrink-0 justify-end space-x-4 md:flex-1">
-          <Popover />
+          {authenticated && <Popover />}
           <Profile />
         </div>
       </div>

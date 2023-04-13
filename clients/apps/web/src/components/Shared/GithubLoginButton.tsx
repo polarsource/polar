@@ -1,9 +1,6 @@
 import { api } from 'polarkit'
 
 const GithubLoginButton = (props: { pledgeId?: string }) => {
-  const githubSigninUrl =
-    process.env.NEXT_PUBLIC_API_URL + '/apps/github/signin'
-
   const signin = async () => {
     await api.integrations
       .githubAuthorize({
@@ -17,16 +14,16 @@ const GithubLoginButton = (props: { pledgeId?: string }) => {
   }
 
   return (
-    <a
-      href="#"
+    <button
       onClick={(e) => {
         e.preventDefault()
         signin()
       }}
-      className="group inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-gray-200 transition duration-300 ease-in-out hover:bg-slate-700"
+      className="flex items-center space-x-2 rounded-lg border border-gray-200 px-3 py-1  text-gray-900 transition-colors duration-100 hover:bg-gray-100"
     >
+      <span>Sign in with GitHub</span>
       <svg
-        className="mr-3 h-5 w-5 text-gray-400"
+        className="mr-3 h-5 w-5"
         aria-hidden="true"
         fill="currentColor"
         viewBox="0 0 20 20"
@@ -37,25 +34,7 @@ const GithubLoginButton = (props: { pledgeId?: string }) => {
           clipRule="evenodd"
         />
       </svg>
-      Signin
-      <svg
-        className="mt-0.5 ml-2 -mr-1 stroke-gray-400 stroke-2"
-        fill="none"
-        width="10"
-        height="10"
-        viewBox="0 0 10 10"
-        aria-hidden="true"
-      >
-        <path
-          className="opacity-0 transition group-hover:opacity-100"
-          d="M0 5h7"
-        ></path>
-        <path
-          className="transition group-hover:translate-x-[3px]"
-          d="M1 1l4 4-4 4"
-        ></path>
-      </svg>
-    </a>
+    </button>
   )
 }
 

@@ -90,8 +90,8 @@ const IssueLabel = (props: { label: LabelSchema }) => {
 
   const rgb = hexToRgb(color)
   const hsv = rgb ? RGBtoHSV(rgb.r, rgb.g, rgb.b) : null
-  const bgColor = HSVtoRGB(hsv ? hsv.h : 0, 0.1, 0.93)
-  const textColor = HSVtoRGB(hsv ? hsv.h : 0, 0.25, 0.4)
+  const bgColor = HSVtoRGB(hsv ? hsv.h : 0, 0.17, 0.94)
+  const textColor = HSVtoRGB(hsv ? hsv.h : 0, 0.25, 0.35)
 
   const style = {
     backgroundColor: bgColor

@@ -54,7 +54,6 @@ class NotificationsService:
     async def get_for_user(
         self, session: AsyncSession, user_id: UUID
     ) -> Sequence[Notification]:
-
         stmt = (
             sql.select(Notification)
             .join(
@@ -149,7 +148,6 @@ class NotificationsService:
         if pledges:
             for p in pledges:
                 if p.by_organization_id:
-
                     if p.by_organization_id in sent_to:
                         continue
 
@@ -183,7 +181,7 @@ class NotificationsService:
         if typ == NotificationType.issue_pledge_created:
             if not notif.pledge_id:
                 raise Exception("no pledge_id set")
-            pledge = await pledge_service.get(session, notif.pledge_id)
+            pledge = await pledge_service.get_with_loaded(session, notif.pledge_id)
             if not pledge:
                 raise Exception("no pledge found")
 

@@ -1,7 +1,10 @@
 import pytest
 
 from polar.kit.utils import generate_uuid
+from polar.models.issue import Issue
+from polar.models.organization import Organization
 from polar.models.pledge import Pledge
+from polar.models.repository import Repository
 from polar.postgres import AsyncSession
 
 
@@ -10,14 +13,20 @@ from polar.postgres import AsyncSession
     "test_amount",
     [1010, 12345678999],
 )
-async def test_pledge(session: AsyncSession, test_amount: str) -> None:
+async def test_pledge(
+    session: AsyncSession,
+    test_amount: str,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+) -> None:
     email = "alice@polar.sh"
 
     created = await Pledge.create(
         session,
-        issue_id=generate_uuid(),
-        repository_id=generate_uuid(),
-        organization_id=generate_uuid(),
+        issue_id=issue.id,
+        repository_id=repository.id,
+        organization_id=organization.id,
         email=email,
         amount=int(test_amount),
     )

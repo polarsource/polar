@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { PledgeRead } from '../models/PledgeRead';
+import type { BackofficePledgeRead } from '../models/BackofficePledgeRead';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -12,10 +12,10 @@ export class BackofficeService {
 
   /**
    * Pledges
-   * @returns PledgeRead Successful Response
+   * @returns BackofficePledgeRead Successful Response
    * @throws ApiError
    */
-  public pledges(): CancelablePromise<Array<PledgeRead>> {
+  public pledges(): CancelablePromise<Array<BackofficePledgeRead>> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/backoffice/pledges',
@@ -24,14 +24,14 @@ export class BackofficeService {
 
   /**
    * Pledge Approve
-   * @returns PledgeRead Successful Response
+   * @returns BackofficePledgeRead Successful Response
    * @throws ApiError
    */
   public pledgeApprove({
     pledgeId,
   }: {
     pledgeId: string,
-  }): CancelablePromise<PledgeRead> {
+  }): CancelablePromise<BackofficePledgeRead> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/backoffice/pledges/approve/{pledge_id}',
@@ -46,14 +46,14 @@ export class BackofficeService {
 
   /**
    * Pledge Mark Pending
-   * @returns PledgeRead Successful Response
+   * @returns BackofficePledgeRead Successful Response
    * @throws ApiError
    */
   public pledgeMarkPending({
     pledgeId,
   }: {
     pledgeId: string,
-  }): CancelablePromise<PledgeRead> {
+  }): CancelablePromise<BackofficePledgeRead> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/backoffice/pledges/mark_pending/{pledge_id}',

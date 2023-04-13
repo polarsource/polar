@@ -120,7 +120,7 @@ async def user(
 
 
 @pytest_asyncio.fixture(scope="function")
-async def pledge_as_org(
+async def pledge(
     session: AsyncSession,
     organization: Organization,
     repository: Repository,

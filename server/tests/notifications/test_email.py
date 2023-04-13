@@ -31,14 +31,14 @@ async def test_maintainer_pledge_created_metadata(
     predictable_repository: Repository,
     predictable_issue: Issue,
     predictable_user: User,
-    predictable_pledge_as_org: Pledge,
+    predictable_pledge: Pledge,
 ) -> None:
     res = await notifications.create_payload(
         session,
         predictable_issue,
         NotificationType.issue_pledge_created,
         notif=PartialNotification(
-            pledge_id=predictable_pledge_as_org.id,
+            pledge_id=predictable_pledge.id,
         ),
     )
 
@@ -71,7 +71,7 @@ async def test_pledger_pull_request_created(
     predictable_repository: Repository,
     predictable_issue: Issue,
     predictable_user: User,
-    predictable_pledge_as_org: Pledge,
+    predictable_pledge: Pledge,
     predictable_pull_request: PullRequest,
 ) -> None:
     res = await notifications.create_payload(
@@ -79,7 +79,7 @@ async def test_pledger_pull_request_created(
         predictable_issue,
         NotificationType.issue_pledged_pull_request_created,
         notif=PartialNotification(
-            pledge_id=predictable_pledge_as_org.id,
+            pledge_id=predictable_pledge.id,
             pull_request_id=predictable_pull_request.id,
         ),
     )
@@ -118,7 +118,7 @@ async def test_pledger_pull_request_merged(
     predictable_repository: Repository,
     predictable_issue: Issue,
     predictable_user: User,
-    predictable_pledge_as_org: Pledge,
+    predictable_pledge: Pledge,
     predictable_pull_request: PullRequest,
 ) -> None:
     res = await notifications.create_payload(
@@ -126,7 +126,7 @@ async def test_pledger_pull_request_merged(
         predictable_issue,
         NotificationType.issue_pledged_pull_request_merged,
         notif=PartialNotification(
-            pledge_id=predictable_pledge_as_org.id,
+            pledge_id=predictable_pledge.id,
             pull_request_id=predictable_pull_request.id,
         ),
     )

@@ -26,19 +26,19 @@ from polar.postgres import AsyncSession
 @pytest.mark.asyncio
 async def test_maintainer_pledge_created_metadata(
     session: AsyncSession,
-    organization: Organization,
-    pledging_organization: Organization,
-    repository: Repository,
-    issue: Issue,
-    user: User,
-    pledge_as_org: Pledge,
+    predictable_organization: Organization,
+    predictable_pledging_organization: Organization,
+    predictable_repository: Repository,
+    predictable_issue: Issue,
+    predictable_user: User,
+    predictable_pledge_as_org: Pledge,
 ) -> None:
     res = await notifications.create_payload(
         session,
-        issue,
+        predictable_issue,
         NotificationType.issue_pledge_created,
         notif=PartialNotification(
-            pledge_id=pledge_as_org.id,
+            pledge_id=predictable_pledge_as_org.id,
         ),
     )
 
@@ -52,7 +52,9 @@ async def test_maintainer_pledge_created_metadata(
     )
 
     # render it
-    rendered = render_email(user, NotificationType.issue_pledge_created, res)
+    rendered = render_email(
+        predictable_user, NotificationType.issue_pledge_created, res
+    )
     assert (
         rendered
         == """Hi foobar,
@@ -64,21 +66,21 @@ pledging_org has pledged $123.45 to <a href="https://github.com/testorg/testrepo
 @pytest.mark.asyncio
 async def test_pledger_pull_request_created(
     session: AsyncSession,
-    organization: Organization,
-    pledging_organization: Organization,
-    repository: Repository,
-    issue: Issue,
-    user: User,
-    pledge_as_org: Pledge,
-    pull_request: PullRequest,
+    predictable_organization: Organization,
+    predictable_pledging_organization: Organization,
+    predictable_repository: Repository,
+    predictable_issue: Issue,
+    predictable_user: User,
+    predictable_pledge_as_org: Pledge,
+    predictable_pull_request: PullRequest,
 ) -> None:
     res = await notifications.create_payload(
         session,
-        issue,
+        predictable_issue,
         NotificationType.issue_pledged_pull_request_created,
         notif=PartialNotification(
-            pledge_id=pledge_as_org.id,
-            pull_request_id=pull_request.id,
+            pledge_id=predictable_pledge_as_org.id,
+            pull_request_id=predictable_pull_request.id,
         ),
     )
 
@@ -97,7 +99,7 @@ async def test_pledger_pull_request_created(
 
     # render it
     rendered = render_email(
-        user, NotificationType.issue_pledged_pull_request_created, res
+        predictable_user, NotificationType.issue_pledged_pull_request_created, res
     )
     assert (
         rendered
@@ -111,21 +113,21 @@ the issue <a href="https://github.com/testorg/testrepo/issues/123">issue title</
 @pytest.mark.asyncio
 async def test_pledger_pull_request_merged(
     session: AsyncSession,
-    organization: Organization,
-    pledging_organization: Organization,
-    repository: Repository,
-    issue: Issue,
-    user: User,
-    pledge_as_org: Pledge,
-    pull_request: PullRequest,
+    predictable_organization: Organization,
+    predictable_pledging_organization: Organization,
+    predictable_repository: Repository,
+    predictable_issue: Issue,
+    predictable_user: User,
+    predictable_pledge_as_org: Pledge,
+    predictable_pull_request: PullRequest,
 ) -> None:
     res = await notifications.create_payload(
         session,
-        issue,
+        predictable_issue,
         NotificationType.issue_pledged_pull_request_merged,
         notif=PartialNotification(
-            pledge_id=pledge_as_org.id,
-            pull_request_id=pull_request.id,
+            pledge_id=predictable_pledge_as_org.id,
+            pull_request_id=predictable_pull_request.id,
         ),
     )
 
@@ -144,7 +146,7 @@ async def test_pledger_pull_request_merged(
 
     # render it
     rendered = render_email(
-        user, NotificationType.issue_pledged_pull_request_merged, res
+        predictable_user, NotificationType.issue_pledged_pull_request_merged, res
     )
     assert (
         rendered
@@ -159,11 +161,11 @@ The money will soon be paid out to testorg."""  # noqa: E501
 
 @pytest.mark.asyncio
 async def test_pledger_branch_created(
-    user: User,
+    predictable_user: User,
 ) -> None:
     # render email, payload generation is tested elsewhere
     rendered = render_email(
-        user,
+        predictable_user,
         NotificationType.issue_pledged_branch_created,
         IssuePledgedBranchCreated(
             issue_url="https://github.com/testorg/testrepo/issues/123",

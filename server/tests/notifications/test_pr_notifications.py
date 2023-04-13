@@ -187,28 +187,28 @@ async def test_pledged_issue_pull_request_merged(
 @pytest.mark.asyncio
 async def test_pledged_issue_branch_created(
     session: AsyncSession,
-    organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    predictable_organization: Organization,
+    predictable_repository: Repository,
+    predictable_issue: Issue,
     mocker: MockerFixture,
-    pledging_organization: Organization,
+    predictable_pledging_organization: Organization,
 ) -> None:
     m = mocker.spy(NotificationsService, "create_for_org")
 
     pledge = await Pledge.create(
         session=session,
-        issue_id=issue.id,
-        repository_id=repository.id,
-        organization_id=organization.id,
+        issue_id=predictable_issue.id,
+        repository_id=predictable_repository.id,
+        organization_id=predictable_organization.id,
         amount=12300,
-        by_organization_id=pledging_organization.id,
+        by_organization_id=predictable_pledging_organization.id,
         state="created",
     )
 
     # Create issue reference
     await IssueReference.create(
         session=session,
-        issue_id=issue.id,
+        issue_id=predictable_issue.id,
         reference_type=ReferenceType.EXTERNAL_GITHUB_COMMIT,
         external_id="xxx",
         external_source=jsonable_encoder(
@@ -229,7 +229,7 @@ async def test_pledged_issue_branch_created(
             call(
                 self=ANY,
                 session=ANY,
-                org_id=organization.id,
+                org_id=predictable_organization.id,
                 typ=NotificationType.issue_pledge_created,
                 notif=ANY,  # deep check is checked elsewhere
             ),
@@ -239,10 +239,10 @@ async def test_pledged_issue_branch_created(
                 org_id=ANY,
                 typ=NotificationType.maintainer_issue_branch_created,
                 notif=PartialNotification(
-                    issue_id=issue.id,
+                    issue_id=predictable_issue.id,
                     payload=MaintainerIssueBranchCreated(
                         issue_url="https://github.com/testorg/testrepo/issue/123",
-                        issue_title=issue.title,
+                        issue_title=predictable_issue.title,
                         issue_number=123,
                         branch_creator_username="ext_login",
                         commit_link="https://github.com/ext_orgname/ext_reponame/commit/abc123",
@@ -255,10 +255,10 @@ async def test_pledged_issue_branch_created(
                 org_id=ANY,
                 typ=NotificationType.issue_pledged_branch_created,
                 notif=PartialNotification(
-                    issue_id=issue.id,
+                    issue_id=predictable_issue.id,
                     payload=IssuePledgedBranchCreated(
                         issue_url="https://github.com/testorg/testrepo/issue/123",
-                        issue_title=issue.title,
+                        issue_title=predictable_issue.title,
                         issue_number=123,
                         branch_creator_username="ext_login",
                         commit_link="https://github.com/ext_orgname/ext_reponame/commit/abc123",

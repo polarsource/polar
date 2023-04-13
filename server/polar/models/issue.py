@@ -12,13 +12,21 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, MappedColumn, declared_attr, mapped_column
+from sqlalchemy.orm import (
+    Mapped,
+    MappedColumn,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 
 from polar.issue.signals import issue_created, issue_updated
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 from polar.enums import Platforms
+from polar.models.organization import Organization
+from polar.models.repository import Repository
 from polar.types import JSONDict, JSONList
 
 import sqlalchemy as sa
@@ -44,10 +52,18 @@ class IssueFields:
         )
 
     @declared_attr
+    def organization(cls) -> Mapped[Organization]:
+        return relationship("Organization", lazy="raise")
+
+    @declared_attr
     def repository_id(cls) -> MappedColumn[UUID]:
         return mapped_column(
             PostgresUUID, ForeignKey("repositories.id"), nullable=False
         )
+
+    @declared_attr
+    def repository(cls) -> Mapped[Repository]:
+        return relationship("Repository", lazy="raise")
 
     number: Mapped[int] = mapped_column(Integer, nullable=False)
 

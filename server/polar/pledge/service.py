@@ -9,6 +9,9 @@ from polar.kit.services import ResourceService
 from polar.models.user import User
 from polar.models.pledge import Pledge
 from polar.postgres import AsyncSession, sql
+from sqlalchemy.orm import (
+    joinedload,
+)
 from polar.organization.service import organization as organization_service
 from polar.account.service import account as account_service
 from polar.exceptions import ResourceNotFound, NotPermitted
@@ -19,14 +22,32 @@ log = structlog.get_logger()
 
 
 class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
+    async def get_with_loaded(
+        self,
+        session: AsyncSession,
+        pledge_id: UUID,
+    ) -> Pledge | None:
+        statement = (
+            sql.select(Pledge)
+            .options(
+                joinedload(Pledge.user),
+                joinedload(Pledge.organization),
+            )
+            .filter(Pledge.id == pledge_id)
+        )
+        res = await session.execute(statement)
+        return res.scalars().unique().one_or_none()
+
     async def list_by_repository(
         self, session: AsyncSession, repository_id: UUID
     ) -> Sequence[Pledge]:
         statement = (
             sql.select(Pledge)
             .where(Pledge.repository_id == repository_id)
-            .join(Pledge.organization, isouter=True)
-            .join(Pledge.user, isouter=True)
+            .options(
+                joinedload(Pledge.user),
+                joinedload(Pledge.organization),
+            )
         )
         res = await session.execute(statement)
         issues = res.scalars().unique().all()
@@ -41,8 +62,10 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             return []
         statement = (
             sql.select(Pledge)
-            .join(Pledge.organization, isouter=True)
-            .join(Pledge.user, isouter=True)
+            .options(
+                joinedload(Pledge.user),
+                joinedload(Pledge.organization),
+            )
             .filter(Pledge.issue_id.in_(issue_ids))
         )
         res = await session.execute(statement)

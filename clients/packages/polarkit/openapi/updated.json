@@ -424,7 +424,7 @@
                                     "title": "Response Backoffice:Pledges",
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/PledgeRead"
+                                        "$ref": "#/components/schemas/BackofficePledgeRead"
                                     }
                                 }
                             }
@@ -458,7 +458,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/PledgeRead"
+                                    "$ref": "#/components/schemas/BackofficePledgeRead"
                                 }
                             }
                         }
@@ -501,7 +501,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/PledgeRead"
+                                    "$ref": "#/components/schemas/BackofficePledgeRead"
                                 }
                             }
                         }
@@ -1930,6 +1930,84 @@
                 "properties": {
                     "authorization_url": {
                         "title": "Authorization Url",
+                        "type": "string"
+                    }
+                }
+            },
+            "BackofficePledgeRead": {
+                "title": "BackofficePledgeRead",
+                "required": [
+                    "id",
+                    "created_at",
+                    "issue_id",
+                    "amount",
+                    "repository_id",
+                    "organization_id",
+                    "state",
+                    "receiver_org_name",
+                    "issue_title",
+                    "issue_url"
+                ],
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "title": "Id",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "created_at": {
+                        "title": "Created At",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "issue_id": {
+                        "title": "Issue Id",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "amount": {
+                        "title": "Amount",
+                        "type": "integer"
+                    },
+                    "repository_id": {
+                        "title": "Repository Id",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "organization_id": {
+                        "title": "Organization Id",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "state": {
+                        "$ref": "#/components/schemas/polar__pledge__schemas__State"
+                    },
+                    "pledger_name": {
+                        "title": "Pledger Name",
+                        "type": "string"
+                    },
+                    "pledger_avatar": {
+                        "title": "Pledger Avatar",
+                        "type": "string"
+                    },
+                    "payment_id": {
+                        "title": "Payment Id",
+                        "type": "string"
+                    },
+                    "transfer_id": {
+                        "title": "Transfer Id",
+                        "type": "string"
+                    },
+                    "receiver_org_name": {
+                        "title": "Receiver Org Name",
+                        "type": "string"
+                    },
+                    "issue_title": {
+                        "title": "Issue Title",
+                        "type": "string"
+                    },
+                    "issue_url": {
+                        "title": "Issue Url",
                         "type": "string"
                     }
                 }

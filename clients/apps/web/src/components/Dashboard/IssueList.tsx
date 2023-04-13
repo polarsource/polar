@@ -1,3 +1,4 @@
+import Spinner from 'components/Shared/Spinner'
 import { DashboardFilters } from 'dashboard/filters'
 import { IssueSortBy } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
@@ -7,11 +8,12 @@ import { Dispatch, SetStateAction, useMemo } from 'react'
 const IssueList = (props: {
   issues: IssueReadWithRelations[]
   filters: DashboardFilters
+  loading: boolean
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
 }) => {
   const { issues } = props
 
-  if (!issues) return <div>Loading issues...</div>
+  if (!issues) return <></>
 
   return (
     <div className="divide-y">
@@ -21,19 +23,26 @@ const IssueList = (props: {
         onSetFilters={props.onSetFilters}
       />
 
-      {issues.map((issue) => {
-        return (
-          <IssueListItem
-            issue={issue}
-            references={issue.references}
-            dependents={issue.dependents}
-            pledges={issue.pledges}
-            org={issue.organization}
-            repo={issue.repository}
-            key={issue.id}
-          />
-        )
-      })}
+      {props.loading && (
+        <div className="flex justify-around py-8">
+          <Spinner />
+        </div>
+      )}
+
+      {!props.loading &&
+        issues.map((issue) => {
+          return (
+            <IssueListItem
+              issue={issue}
+              references={issue.references}
+              dependents={issue.dependents}
+              pledges={issue.pledges}
+              org={issue.organization}
+              repo={issue.repository}
+              key={issue.id}
+            />
+          )
+        })}
     </div>
   )
 }

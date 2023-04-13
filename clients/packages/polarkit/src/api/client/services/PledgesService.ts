@@ -4,7 +4,6 @@
 import type { Platforms } from '../models/Platforms';
 import type { PledgeCreate } from '../models/PledgeCreate';
 import type { PledgeMutationResponse } from '../models/PledgeMutationResponse';
-import type { PledgeRead } from '../models/PledgeRead';
 import type { PledgeResources } from '../models/PledgeResources';
 import type { PledgeUpdate } from '../models/PledgeUpdate';
 
@@ -121,34 +120,6 @@ export class PledgesService {
       },
       body: requestBody,
       mediaType: 'application/json',
-      errors: {
-        422: `Validation Error`,
-      },
-    });
-  }
-
-  /**
-   * Get Repository Pledges
-   * @returns PledgeRead Successful Response
-   * @throws ApiError
-   */
-  public getRepositoryPledges({
-    platform,
-    orgName,
-    repoName,
-  }: {
-    platform: Platforms,
-    orgName: string,
-    repoName: string,
-  }): CancelablePromise<Array<PledgeRead>> {
-    return this.httpRequest.request({
-      method: 'GET',
-      url: '/api/v1/{platform}/{org_name}/{repo_name}/pledges',
-      path: {
-        'platform': platform,
-        'org_name': orgName,
-        'repo_name': repoName,
-      },
       errors: {
         422: `Validation Error`,
       },

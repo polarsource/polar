@@ -117,7 +117,7 @@ async def predictable_user(
 
 
 @pytest_asyncio.fixture(scope="module")
-async def predictable_pledge_as_org(
+async def predictable_pledge(
     session: AsyncSession,
     predictable_organization: Organization,
     predictable_repository: Repository,

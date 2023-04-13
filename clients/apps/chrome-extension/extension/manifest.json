@@ -9,7 +9,13 @@
     },
     "content_scripts": [
         {
-            "js": ["content.js"],
+            "js": [
+                "./next/static/chunks/polyfills-c67a75d1b6f99dc8.js",
+                "./next/static/chunks/webpack-8fa1640cc84ba8fe.js",
+                "./next/static/chunks/framework-ffffd4e8198d9762.js",
+                "./next/static/chunks/main-01078d9c97ceacb1.js",
+                "./next/static/chunks/content-4849e5d3fe46dedc.js"
+            ],
             "matches": ["https://github.com/*/*/issues/*"]
         }
     ]

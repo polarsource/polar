@@ -74,6 +74,17 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         await session.execute(statement)
         await session.commit()
 
+    async def mark_pending_by_pledge_id(
+        self, session: AsyncSession, pledge_id: UUID
+    ) -> None:
+        statement = (
+            sql.update(Pledge)
+            .where(Pledge.id == pledge_id, Pledge.state == State.created)
+            .values(state=State.pending)
+        )
+        await session.execute(statement)
+        await session.commit()
+
     async def transfer(self, session: AsyncSession, pledge_id: UUID) -> None:
         pledge = await self.get(session, id=pledge_id)
         if not pledge:

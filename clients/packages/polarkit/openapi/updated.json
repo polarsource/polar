@@ -408,6 +408,117 @@
                 }
             }
         },
+        "/api/v1/backoffice/pledges": {
+            "get": {
+                "tags": [
+                    "backoffice"
+                ],
+                "summary": "Pledges",
+                "operationId": "pledges",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "title": "Response Backoffice:Pledges",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PledgeRead"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/backoffice/pledges/approve/{pledge_id}": {
+            "post": {
+                "tags": [
+                    "backoffice"
+                ],
+                "summary": "Pledge Approve",
+                "operationId": "pledge_approve",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Pledge Id",
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "name": "pledge_id",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PledgeRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/backoffice/pledges/mark_pending/{pledge_id}": {
+            "post": {
+                "tags": [
+                    "backoffice"
+                ],
+                "summary": "Pledge Mark Pending",
+                "operationId": "pledge_mark_pending",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Pledge Id",
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "name": "pledge_id",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PledgeRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/{platform}/{org_name}/{repo_name}/pulls": {
             "get": {
                 "tags": [
@@ -1731,31 +1842,6 @@
                                     "type": "array",
                                     "items": {
                                         "$ref": "#/components/schemas/NotificationRead"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/backoffice/pledges": {
-            "get": {
-                "tags": [
-                    "backoffice"
-                ],
-                "summary": "Pledges",
-                "operationId": "pledges",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "title": "Response Backoffice:Pledges",
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/PledgeRead"
                                     }
                                 }
                             }

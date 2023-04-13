@@ -1,5 +1,5 @@
-import { PledgeRead } from 'polarkit/api/client'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { BackofficePledgeRead } from 'polarkit/api/client'
+import { ThinButton } from 'polarkit/components/ui'
 import {
   useBackofficeAllPledges,
   useBackofficePledgeApprove,
@@ -24,6 +24,12 @@ const Pledges = () => {
             </th>
             <th
               scope="col"
+              className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
+            >
+              Receiver
+            </th>
+            <th
+              scope="col"
               className="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
             >
               State
@@ -32,7 +38,7 @@ const Pledges = () => {
               scope="col"
               className="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
             >
-              Issue ID
+              Issue
             </th>
             <th
               scope="col"
@@ -64,7 +70,7 @@ const Pledges = () => {
 
 export default Pledges
 
-const PledgeItem = ({ pledge }: { pledge: PledgeRead }) => {
+const PledgeItem = ({ pledge }: { pledge: BackofficePledgeRead }) => {
   const approver = useBackofficePledgeApprove()
   const markPending = useBackofficePledgeMarkPending()
 
@@ -95,6 +101,11 @@ const PledgeItem = ({ pledge }: { pledge: PledgeRead }) => {
           </a>
         </div>
       </td>
+      <td className="whitespace-nowrap px-2 py-2 text-sm font-medium text-gray-900">
+        <a href={`https://github.com/${pledge.receiver_org_name}`}>
+          {pledge.receiver_org_name}
+        </a>
+      </td>
       <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-500">
         <div className="flex flex-col">
           {pledge.state}
@@ -102,7 +113,9 @@ const PledgeItem = ({ pledge }: { pledge: PledgeRead }) => {
         </div>
       </td>
       <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-500">
-        {pledge.issue_id.substring(0, 8)}
+        <a className="underline" href={pledge.issue_url}>
+          {pledge.issue_title}
+        </a>
       </td>
       <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-500">
         ${getCentsInDollarString(pledge.amount)}
@@ -110,23 +123,38 @@ const PledgeItem = ({ pledge }: { pledge: PledgeRead }) => {
       <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-500">
         {pledge.created_at.substring(0, 19)}
       </td>
-      <td className="relative whitespace-nowrap py-2 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+      <td className="relative flex items-center space-x-1 whitespace-nowrap py-2 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+        {pledge.payment_id && (
+          <ThinButton
+            color="gray"
+            href={`https://dashboard.stripe.com/payments/${pledge.payment_id}`}
+          >
+            Payment
+          </ThinButton>
+        )}
+
+        {pledge.transfer_id && (
+          <ThinButton
+            color="gray"
+            href={`https://dashboard.stripe.com/connect/transfers/${pledge.transfer_id}`}
+          >
+            Transfer
+          </ThinButton>
+        )}
+
         {pledge.state === 'pending' && (
           <>
-            <PrimaryButton onClick={clickApprove} loading={isLoadingApprove}>
+            <ThinButton onClick={clickApprove} loading={isLoadingApprove}>
               Approve
-            </PrimaryButton>
+            </ThinButton>
           </>
         )}
 
         {pledge.state === 'created' && (
           <>
-            <PrimaryButton
-              onClick={clickMarkPending}
-              loading={isLoadingPending}
-            >
+            <ThinButton onClick={clickMarkPending} loading={isLoadingPending}>
               Mark Pending
-            </PrimaryButton>
+            </ThinButton>
           </>
         )}
       </td>

@@ -31,25 +31,100 @@ const LoadingSpinner = (props: { disabled: boolean }) => {
   )
 }
 
+type Color = 'blue' | 'gray' | 'red' | 'green'
+
 type ButtonProps = {
   children: React.ReactNode
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void
+  href: string | undefined
+  color: Color
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
 } & typeof defaultProps
 
 const defaultProps = {
   disabled: false,
   loading: false,
+  href: undefined,
+  color: 'blue',
+}
+
+const bg = (color: Color, loading: boolean, disabled: boolean) => {
+  if (disabled) {
+    return 'bg-gray-200/75'
+  }
+
+  if (loading) {
+    switch (color) {
+      case 'blue':
+        return 'bg-blue-400'
+      case 'red':
+        return 'bg-red-400'
+      case 'green':
+        return 'bg-green-400'
+      case 'gray':
+        return 'bg-gray-400'
+    }
+  }
+
+  switch (color) {
+    case 'blue':
+      return 'bg-blue-600 hover:bg-blue-500'
+    case 'red':
+      return 'bg-red-600 hover:bg-blue-500'
+    case 'green':
+      return 'bg-green-600 hover:bg-green-500'
+    case 'gray':
+      return 'bg-gray-600 hover:bg-gray-500'
+  }
+}
+
+const text = (color: Color, loading: boolean, disabled: boolean) => {
+  if (loading) {
+    return 'text-gray-400'
+  }
+  if (loading) {
+    return 'text-white'
+  }
+  return 'text-white'
 }
 
 const PrimaryButton = (props: ButtonProps) => {
   const disabled = props.disabled ? props.disabled : false
-  let classes = 'm-auto w-full rounded-lg p-2 text-center text-sm font-medium'
-  if (props.loading && !disabled) {
-    classes = classNames('bg-blue-400 text-white', classes)
-  } else {
-    classes = classNames(
-      disabled ? 'bg-gray-200/75 text-gray-400' : 'bg-blue-600 text-white',
-      classes,
+  let classes = classNames(
+    bg(props.color, props.loading, disabled),
+    text(props.color, props.loading, disabled),
+    'm-auto w-full rounded-lg p-2 text-center text-sm font-medium',
+  )
+
+  return (
+    <>
+      <button className={classes} onClick={props.onClick} disabled={disabled}>
+        {props.loading && <LoadingSpinner disabled={disabled} />}
+        {!props.loading && props.children}
+      </button>
+    </>
+  )
+}
+
+PrimaryButton.defaultProps = defaultProps
+
+export default PrimaryButton
+
+export const ThinButton = (props: ButtonProps) => {
+  const disabled = props.disabled ? props.disabled : false
+  let classes = classNames(
+    bg(props.color, props.loading, disabled),
+    text(props.color, props.loading, disabled),
+    'rounded px-2 py-1 text-xs font-semibold',
+  )
+
+  if (props.href) {
+    return (
+      <>
+        <a className={classes} href={props.href} target="_blank">
+          {props.loading && <LoadingSpinner disabled={disabled} />}
+          {!props.loading && props.children}
+        </a>
+      </>
     )
   }
 
@@ -62,6 +137,5 @@ const PrimaryButton = (props: ButtonProps) => {
     </>
   )
 }
-PrimaryButton.defaultProps = defaultProps
 
-export default PrimaryButton
+ThinButton.defaultProps = defaultProps

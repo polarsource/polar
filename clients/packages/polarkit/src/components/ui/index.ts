@@ -1,4 +1,4 @@
 import { GreenBanner, RedBanner } from './Banner'
-import PrimaryButton from './PrimaryButton'
+import PrimaryButton, { ThinButton } from './PrimaryButton'
 
-export { PrimaryButton, GreenBanner, RedBanner }
+export { PrimaryButton, ThinButton, GreenBanner, RedBanner }

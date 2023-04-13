@@ -16,7 +16,7 @@ Page.getLayout = (page: ReactElement) => {
   return (
     <>
       <Topbar customLogoTitle="Backoffice"></Topbar>
-      <div className="mx-auto max-w-4xl p-4">{page}</div>
+      <div className="mx-auto max-w-7xl p-4">{page}</div>
     </>
   )
 }

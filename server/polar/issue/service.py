@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from uuid import UUID
-from typing import List, Sequence, Tuple
-from sqlalchemy import Select, desc, func, or_
+from typing import List, Literal, Sequence, Tuple
+from sqlalchemy import Select, desc, func, or_, ColumnElement
 
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
@@ -10,6 +10,7 @@ from polar.dashboard.schemas import IssueListType
 
 from polar.kit.services import ResourceService
 from polar.models.issue import Issue
+from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.enums import Platforms
 from polar.models.issue_dependency import IssueDependency
@@ -36,16 +37,10 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
     async def get_by_id(
         self,
         session: AsyncSession,
-        # platform: Platforms,
-        # organization_id: UUID,
-        # repository_id: UUID,
         id: UUID,
     ) -> Issue | None:
         return await self.get_by(
             session,
-            # platform=platform,
-            # organization_id=organization_id,
-            # repository_id=repository_id,
             id=id,
         )
 
@@ -84,6 +79,10 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         sort_by_newest: bool = False,
         sort_by_recently_updated: bool = False,
         sort_by_relevance: bool = False,
+        pledged_by_org: UUID
+        | None = None,  # Only include issues that have been pledged by this org
+        pledged_by_user: UUID
+        | None = None,  # Only include issues that have been pledged by this user
     ) -> Sequence[Issue]:
         statement: Select[Tuple[Issue]] | None = None
 
@@ -97,6 +96,22 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                     IssueDependency.dependency_issue_id == Issue.id,
                 )
                 .where(IssueDependency.repository_id.in_(repository_ids))
+            )
+        elif issue_list_type == IssueListType.pledged:
+            if not pledged_by_org and not pledged_by_user:
+                raise ValueError("no pledge_by criteria specified")
+
+            crits: list[ColumnElement[bool]] = []
+            if pledged_by_org:
+                crits.append(Pledge.by_organization_id == pledged_by_org)
+
+            if pledged_by_user:
+                crits.append(Pledge.by_user_id == pledged_by_user)
+
+            statement = (
+                sql.select(Issue)
+                .join(Pledge, Pledge.issue_id == Issue.id)
+                .where(or_(*crits))
             )
         else:
             raise ValueError(f"Unknown issue list type: {issue_list_type}")

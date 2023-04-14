@@ -9,6 +9,7 @@ from enum import Enum
 class IssueListType(str, Enum):
     issues = "issues"
     following = "following"
+    pledged = "pledged"
 
 
 class IssueStatus(str, Enum):

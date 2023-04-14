@@ -8,7 +8,6 @@ const Page: NextLayoutComponentType = () => {
       key="dashboard-parsonal"
       org={undefined}
       repo={undefined}
-      haveOrgs={true}
       isPersonal={true}
     />
   )

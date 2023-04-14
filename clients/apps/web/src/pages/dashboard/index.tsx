@@ -22,7 +22,7 @@ const Page: NextLayoutComponentType = () => {
 
   if (!haveOrgs) {
     return (
-      <DashboardLayout showSidebar={false}>
+      <DashboardLayout showSidebar={false} isPersonalDashboard={false}>
         <OnboardingConnectReposToGetStarted />
       </DashboardLayout>
     )
@@ -40,7 +40,7 @@ const Page: NextLayoutComponentType = () => {
       key="dashboard-root"
       org={undefined}
       repo={undefined}
-      haveOrgs={haveOrgs}
+      isPersonal={false}
     />
   )
 }

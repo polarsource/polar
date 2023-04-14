@@ -1,7 +1,6 @@
 from typing import Any, Dict, List, Sequence, Set, Union
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
-import sqlalchemy
 
 from polar.dashboard.schemas import (
     Entry,
@@ -103,6 +102,8 @@ async def get_dashboard(
         include_closed=include_closed,
         sort_by_relevance=sort == IssueSortBy.relevance,
         sort_by_newest=sort == IssueSortBy.newest,
+        pledged_by_org=auth.organization.id if IssueListType.pledged else None,
+        pledged_by_user=auth.user.id if IssueListType.pledged else None,
     )
 
     issue_organizations = list(

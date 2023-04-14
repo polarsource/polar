@@ -25,7 +25,7 @@ const SettingsLink = ({ orgSlug }: { orgSlug?: string }) => {
 }
 
 const DashboardNav = () => {
-  const isOrganizationAccount = useStore((state) => state.isOrganizationAccount)
+  const userHaveOrgs = useStore((state) => state.userHaveOrgs)
   const router = useRouter()
   const currentOrg = useStore((state) => state.currentOrg)
   const currentRepo = useStore((state) => state.currentRepo)
@@ -39,14 +39,13 @@ const DashboardNav = () => {
         onSelectRepo={(org, repo) => router.push(`/dashboard/${org}/${repo}`)}
         currentOrg={currentOrg}
         currentRepo={currentRepo}
+        showUserInDropdownFallback={true}
       />
 
-      {isOrganizationAccount && currentOrg && <AccountTopbar />}
+      {currentOrg && <AccountTopbar />}
 
-      {!isOrganizationAccount && <SettingsLink />}
-      {isOrganizationAccount && currentOrg && (
-        <SettingsLink orgSlug={currentOrg.name} />
-      )}
+      {!userHaveOrgs && <SettingsLink />}
+      {currentOrg && <SettingsLink orgSlug={currentOrg.name} />}
     </>
   )
 }

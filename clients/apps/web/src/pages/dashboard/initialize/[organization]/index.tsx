@@ -1,34 +1,12 @@
 import SetupOrganization from 'components/Dashboard/Onboarding/SetupOrganization'
 import SynchronizeRepositories from 'components/Dashboard/Onboarding/SynchronizeRepositories'
 import { NextLayoutComponentType } from 'next'
-import { useRouter } from 'next/router'
-import { OrganizationRead } from 'polarkit/api/client'
-import { requireAuth, useUserOrganizations } from 'polarkit/hooks'
-import { useStore } from 'polarkit/store'
+import { useCurrentOrgAndRepoFromURL } from 'polarkit/hooks'
 import { useState } from 'react'
 
 const Page: NextLayoutComponentType = () => {
-  const router = useRouter()
-  const { organization } = router.query
-  const { currentUser } = requireAuth()
   const [showSetup, setShowSetup] = useState(false)
-  const userOrgQuery = useUserOrganizations(currentUser)
-  const currentOrg = useStore((state) => state.currentOrg)
-  const setCurrentOrg = useStore((state) => state.setCurrentOrg)
-
-  const orgSlug = typeof organization === 'string' ? organization : ''
-
-  if (userOrgQuery.isLoading) return <div></div>
-  if (!userOrgQuery.isSuccess) return <div>Error</div>
-
-  const org = userOrgQuery.data.find(
-    (org: OrganizationRead) => org.name === orgSlug,
-  )
-  setCurrentOrg(org)
-
-  if (!currentOrg) {
-    return <div>Loading org...</div>
-  }
+  const [currentOrg, currentRepo] = useCurrentOrgAndRepoFromURL()
 
   return (
     <>

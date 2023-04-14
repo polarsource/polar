@@ -25,7 +25,10 @@ export interface ContextState {
   setIsOrganizationAccount: (isOrganizationAccount: boolean) => void
   setCurrentOrg: (org: OrganizationRead) => void
   setCurrentRepo: (repo: RepositoryRead) => void
-  setCurrentOrgRepo: (org: OrganizationRead, repo: RepositoryRead) => void
+  setCurrentOrgRepo: (
+    org: OrganizationRead | undefined,
+    repo: RepositoryRead | undefined,
+  ) => void
 }
 
 export interface UserContextState extends UserState, ContextState {}
@@ -78,9 +81,13 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
     set({ isOrganizationAccount: true, currentRepo: repo })
   },
   setCurrentOrgRepo: (
-    org: OrganizationRead,
+    org: OrganizationRead | undefined,
     repo: RepositoryRead | undefined,
   ) => {
-    set({ isOrganizationAccount: true, currentOrg: org, currentRepo: repo })
+    set({
+      isOrganizationAccount: org !== undefined,
+      currentOrg: org,
+      currentRepo: repo,
+    })
   },
 })

@@ -1,12 +1,7 @@
 import DashboardLayout from 'components/Layout/DashboardLayout'
 import { useRouter } from 'next/router'
-import {
-  IssueListType,
-  type OrganizationRead,
-  type RepositoryRead,
-} from 'polarkit/api/client'
-import { requireAuth, useSSE, useUserOrganizations } from 'polarkit/hooks'
-import { useStore } from 'polarkit/store'
+import { IssueListType } from 'polarkit/api/client'
+import { useCurrentOrgAndRepoFromURL, useSSE } from 'polarkit/hooks'
 import React, { useEffect, useRef, useState } from 'react'
 import { DashboardFilters } from './filters'
 
@@ -28,18 +23,8 @@ const getTab = (tab: string): IssueListType => {
 }
 
 export const DashboardEnvironment = ({ children }) => {
-  const { currentUser } = requireAuth()
-  const userOrgQuery = useUserOrganizations(currentUser)
-
   const router = useRouter()
-
-  const currentOrg = useStore((state) => state.currentOrg)
-  const currentRepo = useStore((state) => state.currentRepo)
-  const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
-
-  const setIsOrganizationAccount = useStore(
-    (state) => state.setIsOrganizationAccount,
-  )
+  const { org, repo, isLoaded, haveOrgs } = useCurrentOrgAndRepoFromURL()
 
   const initFilters = {
     ...DefaultFilters,
@@ -49,10 +34,8 @@ export const DashboardEnvironment = ({ children }) => {
 
   const [filters, setFilters] = useState<DashboardFilters>(initFilters)
 
-  const organizations = userOrgQuery.data
-
   // TODO: Unless we're sending user-only events we should probably delay SSE
-  useSSE(currentOrg?.platform, currentOrg?.name, currentRepo?.name)
+  useSSE(org?.platform, org?.name, org?.name)
 
   useEffect(() => {
     // Parse URL and use it to populate filters
@@ -76,42 +59,31 @@ export const DashboardEnvironment = ({ children }) => {
 
       setFilters(f)
     }
+  }, [router.query])
 
-    // Setup accurate org and repo state
-    const { organization: orgSlug, repo: repoSlug } = router.query
+  if (!isLoaded) {
+    return (
+      <DashboardLayout
+        filters={filters}
+        onSetFilters={setFilters}
+        showSidebar={true}
+      >
+        Loading...
+      </DashboardLayout>
+    )
+  }
 
-    const isOrganizationAccount = organizations && organizations.length > 0
-    setIsOrganizationAccount(isOrganizationAccount)
-
-    if (isOrganizationAccount) {
-      let org: OrganizationRead | undefined
-      let repo: RepositoryRead | undefined
-
-      if (orgSlug && organizations) {
-        const orgSearch = organizations.filter((o) => o.name === orgSlug)
-        org = orgSearch[0]
-      }
-
-      if (repoSlug && org?.repositories) {
-        const repoSearch = org.repositories.filter((r) => r.name === repoSlug)
-        repo = repoSearch[0]
-      }
-
-      if (orgSlug) {
-        if (repoSlug) {
-          setCurrentOrgRepo(org, repo)
-        } else {
-          setCurrentOrgRepo(org, undefined)
-        }
-      } else {
-        // Set a default org if none is selected via URL
-        setCurrentOrgRepo(organizations[0], undefined)
-      }
-    }
-  }, [organizations, router.query, setCurrentOrgRepo, setIsOrganizationAccount])
-
-  if (userOrgQuery.isLoading) return <div></div>
-  if (!userOrgQuery.isSuccess) return <div>Error</div>
+  if (!org) {
+    return (
+      <DashboardLayout
+        filters={filters}
+        onSetFilters={setFilters}
+        showSidebar={false}
+      >
+        User have no orgs
+      </DashboardLayout>
+    )
+  }
 
   // Pass search filters to dynamic children
   const renderedChildren = React.Children.map(children, function (child) {
@@ -120,7 +92,11 @@ export const DashboardEnvironment = ({ children }) => {
 
   return (
     <>
-      <DashboardLayout filters={filters} onSetFilters={setFilters}>
+      <DashboardLayout
+        filters={filters}
+        onSetFilters={setFilters}
+        showSidebar={true}
+      >
         {renderedChildren}
       </DashboardLayout>
     </>

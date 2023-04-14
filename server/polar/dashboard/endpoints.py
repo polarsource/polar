@@ -13,11 +13,12 @@ from polar.dashboard.schemas import (
     RelationshipData,
 )
 from polar.enums import Platforms
-from polar.issue.schemas import IssueRead, IssueReferenceRead, IssueDependencyRead
+from polar.issue.schemas import IssueRead, IssueReferenceRead
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.issue_reference import ReferenceType
 from polar.models.repository import Repository
+from polar.models.user import User
 from polar.organization.schemas import OrganizationRead
 from polar.repository.schemas import RepositoryRead
 from polar.issue.service import issue
@@ -32,7 +33,31 @@ router = APIRouter(tags=["dashboard"])
 
 
 @router.get(
-    "/{platform}/{org_name}/dashboard",
+    "/dashboard/personal",
+    response_model=IssueListResponse,
+)
+async def get_personal_dashboard(
+    issue_list_type: IssueListType = IssueListType.issues,
+    status: Union[List[IssueStatus], None] = Query(default=None),
+    q: Union[str, None] = Query(default=None),
+    sort: Union[IssueSortBy, None] = Query(default=None),
+    auth: Auth = Depends(Auth.current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> IssueListResponse:
+    print("xxx")
+    return await dashboard(
+        session=session,
+        issue_list_type=issue_list_type,
+        status=status,
+        q=q,
+        sort=sort,
+        in_repos=[],
+        for_user=auth.user,
+    )
+
+
+@router.get(
+    "/dashboard/{platform}/{org_name}",
     response_model=IssueListResponse,
 )
 async def get_dashboard(
@@ -46,18 +71,6 @@ async def get_dashboard(
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueListResponse:
-    include_open = False
-    if status:
-        include_open = (
-            IssueStatus.backlog in status
-            or IssueStatus.building in status
-            or IssueStatus.pull_request in status
-        )
-
-    include_closed = False
-    if status:
-        include_closed = IssueStatus.completed in status
-
     repositories: Sequence[Repository] = []
 
     # if repo name is set, use that repository
@@ -86,6 +99,39 @@ async def get_dashboard(
             detail="Repository not found",
         )
 
+    return await dashboard(
+        session=session,
+        in_repos=repositories,
+        issue_list_type=issue_list_type,
+        status=status,
+        q=q,
+        sort=sort,
+        for_org=auth.organization,
+    )
+
+
+async def dashboard(
+    session: AsyncSession,
+    in_repos: Sequence[Repository] = [],
+    issue_list_type: IssueListType = IssueListType.issues,
+    status: Union[List[IssueStatus], None] = None,
+    q: Union[str, None] = None,
+    sort: Union[IssueSortBy, None] = None,
+    for_org: Organization | None = None,
+    for_user: User | None = None,
+) -> IssueListResponse:
+    include_open = False
+    if status:
+        include_open = (
+            IssueStatus.backlog in status
+            or IssueStatus.building in status
+            or IssueStatus.pull_request in status
+        )
+
+    include_closed = False
+    if status:
+        include_closed = IssueStatus.completed in status
+
     # default sorting
     if sort is None and q:
         sort = IssueSortBy.relevance
@@ -95,15 +141,15 @@ async def get_dashboard(
     # get issues
     issues = await issue.list_by_repository_type_and_status(
         session,
-        [r.id for r in repositories],
+        [r.id for r in in_repos],
         issue_list_type=issue_list_type,
         text=q,
         include_open=include_open,
         include_closed=include_closed,
         sort_by_relevance=sort == IssueSortBy.relevance,
         sort_by_newest=sort == IssueSortBy.newest,
-        pledged_by_org=auth.organization.id if IssueListType.pledged else None,
-        pledged_by_user=auth.user.id if IssueListType.pledged else None,
+        pledged_by_org=for_org.id if for_org and IssueListType.pledged else None,
+        pledged_by_user=for_user.id if for_user and IssueListType.pledged else None,
     )
 
     issue_organizations = list(
@@ -117,7 +163,10 @@ async def get_dashboard(
         .scalars()
         .unique()
         .all()
-    ) + [auth.organization]
+    )
+    if for_org:
+        issue_organizations.append(for_org)
+
     issue_repositories = list(
         (
             await session.execute(
@@ -129,7 +178,7 @@ async def get_dashboard(
         .scalars()
         .unique()
         .all()
-    ) + list(repositories)
+    ) + list(in_repos)
 
     included: dict[str, Entry[Any]] = {}
 
@@ -214,7 +263,7 @@ async def get_dashboard(
     # get dependents
     if issue_list_type == IssueListType.following:
         issue_deps = await issue.list_issue_dependencies_for_repositories(
-            session, repositories
+            session, in_repos
         )
 
         for dep in issue_deps:

@@ -16,7 +16,7 @@ const Page: NextLayoutComponentType = () => {
     router.push('/dashboard')
     return
   }
-  return <Dashboard key={key} org={org} repo={undefined} haveOrgs={haveOrgs} />
+  return <Dashboard key={key} org={org} repo={undefined} isPersonal={false} />
 }
 
 Page.getLayout = (page: ReactElement) => {

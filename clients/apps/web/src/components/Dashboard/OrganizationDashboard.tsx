@@ -52,6 +52,7 @@ const OrganizationDashboard = ({
       filters={filters}
       onSetFilters={onSetFilters}
       showSidebar={true}
+      isPersonalDashboard={false}
     >
       <div>
         {showOnboardConnectPopup && <OnboardingConnectReposToGetStarted />}

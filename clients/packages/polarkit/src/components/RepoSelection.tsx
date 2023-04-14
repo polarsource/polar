@@ -19,6 +19,7 @@ export function RepoSelection(props: {
   currentRepo?: RepositoryRead
   fullWidth?: boolean
   showUserInDropdownFallback?: boolean
+  defaultToUser?: boolean
 }) {
   const [value, setValue] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement | null>(null)
@@ -107,8 +108,6 @@ export function RepoSelection(props: {
   // Value in <input>
   const [inputValue, setInputValue] = useState('')
 
-  const [memberOfAtLeastOneOrg, setMemberOfAtLeastOneOrg] = useState(false)
-
   useEffect(() => {
     let orgs: OrganizationRead[] = []
 
@@ -140,7 +139,6 @@ export function RepoSelection(props: {
     }
 
     setListOrgs(orgs)
-    setMemberOfAtLeastOneOrg(!!(organizations && organizations.length > 0))
   }, [dropdownSelectedOrg, organizations, inputValue, props.showRepositories])
 
   const onInputValueChange = (e: string) => {
@@ -180,19 +178,16 @@ export function RepoSelection(props: {
         />
       )}
 
-      {!props.currentOrg &&
-        (memberOfAtLeastOneOrg || !props.showUserInDropdownFallback) && (
-          <SelectedEmpty onClick={() => setOpen(true)} />
-        )}
+      {!props.currentOrg && !props.defaultToUser && (
+        <SelectedEmpty onClick={() => setOpen(true)} />
+      )}
 
-      {!props.currentOrg &&
-        props.showUserInDropdownFallback &&
-        !memberOfAtLeastOneOrg && (
-          <SelectedEmptySelfUserPlaceholder
-            onClick={() => setOpen(true)}
-            user={currentUser}
-          />
-        )}
+      {!props.currentOrg && props.defaultToUser && (
+        <SelectedEmptySelfUserPlaceholder
+          onClick={() => setOpen(true)}
+          user={currentUser}
+        />
+      )}
 
       {open && (
         <>

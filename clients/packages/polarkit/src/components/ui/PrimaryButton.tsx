@@ -31,7 +31,7 @@ const LoadingSpinner = (props: { disabled: boolean }) => {
   )
 }
 
-type Color = 'blue' | 'gray' | 'red' | 'green'
+type Color = 'blue' | 'gray' | 'red' | 'green' | 'lightblue'
 
 type ButtonProps = {
   children: React.ReactNode
@@ -56,6 +56,8 @@ const bg = (color: Color, loading: boolean, disabled: boolean) => {
     switch (color) {
       case 'blue':
         return 'bg-blue-400'
+      case 'lightblue':
+        return 'bg-blue-400'
       case 'red':
         return 'bg-red-400'
       case 'green':
@@ -68,6 +70,8 @@ const bg = (color: Color, loading: boolean, disabled: boolean) => {
   switch (color) {
     case 'blue':
       return 'bg-blue-600 hover:bg-blue-500'
+    case 'lightblue':
+      return 'bg-blue-500 hover:bg-blue-600'
     case 'red':
       return 'bg-red-600 hover:bg-blue-500'
     case 'green':
@@ -92,7 +96,7 @@ const PrimaryButton = (props: ButtonProps) => {
   let classes = classNames(
     bg(props.color, props.loading, disabled),
     text(props.color, props.loading, disabled),
-    'm-auto w-full rounded-lg p-2 text-center text-sm font-medium',
+    'm-auto w-full rounded-lg p-2 text-center text-sm font-medium inline-flex items-center space-x-2 transition-colors duration-100',
   )
 
   return (
@@ -114,7 +118,7 @@ export const ThinButton = (props: ButtonProps) => {
   let classes = classNames(
     bg(props.color, props.loading, disabled),
     text(props.color, props.loading, disabled),
-    'rounded px-2 py-1 text-xs font-semibold',
+    'rounded px-2 py-1 text-xs font-semibold transition-colors duration-100',
   )
 
   if (props.href) {

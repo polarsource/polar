@@ -10,6 +10,7 @@
     "./api/client": "./src/api/client/index.ts",
     "./api": "./src/api/index.ts",
     "./api/types": "./src/api/types.ts",
+    "./config": "./src/config.ts",
     "./store": "./src/store/index.ts",
     "./hooks": "./src/hooks/index.ts",
     "./utils": "./src/utils/index.ts",

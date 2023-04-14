@@ -25,11 +25,9 @@ const SettingsLink = ({ orgSlug }: { orgSlug?: string }) => {
 }
 
 const DashboardNav = () => {
-  const userHaveOrgs = useStore((state) => state.userHaveOrgs)
   const router = useRouter()
   const currentOrg = useStore((state) => state.currentOrg)
   const currentRepo = useStore((state) => state.currentRepo)
-
   return (
     <>
       <RepoSelection
@@ -41,9 +39,7 @@ const DashboardNav = () => {
         currentRepo={currentRepo}
         showUserInDropdownFallback={true}
       />
-
       {currentOrg && <AccountTopbar />}
-
       {!currentOrg && <SettingsLink />}
       {currentOrg && <SettingsLink orgSlug={currentOrg.name} />}
     </>

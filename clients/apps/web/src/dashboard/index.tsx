@@ -1,4 +1,5 @@
 import DashboardLayout from 'components/Layout/DashboardLayout'
+import OnboardingConnectReposToGetStarted from 'components/Onboarding/OnboardingConnectReposToGetStarted'
 import { useRouter } from 'next/router'
 import { IssueListType } from 'polarkit/api/client'
 import { useCurrentOrgAndRepoFromURL, useSSE } from 'polarkit/hooks'
@@ -80,7 +81,7 @@ export const DashboardEnvironment = ({ children }) => {
         onSetFilters={setFilters}
         showSidebar={false}
       >
-        User have no orgs
+        <OnboardingConnectReposToGetStarted />
       </DashboardLayout>
     )
   }

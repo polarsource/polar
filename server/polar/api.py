@@ -25,6 +25,8 @@ router.include_router(github_router)
 router.include_router(stripe_router)
 # /backoffice
 router.include_router(backoffice_router)
+# /dashboard
+router.include_router(dashboard_router)
 # /{platform}/{org_name}/{repo_name}/pulls
 router.include_router(pull_request_router)
 # /{platform}/{org_name}/{repo_name}/issues
@@ -36,8 +38,6 @@ router.include_router(pledge_router)
 router.include_router(stream_router)
 # /{platform}/{org_name}/
 router.include_router(organization_router)
-# /{platform}/{org_name}/{repo_name}/dashboard
-router.include_router(dashboard_router)
 # /{platform}/{org_name}/{repo_name}/accounts
 router.include_router(accounts_router)
 # /notifications

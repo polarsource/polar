@@ -9,6 +9,8 @@ const AccountTopbar = () => {
   const accountQuery = useOrganizationAccounts(currentOrg?.name)
   const accounts = accountQuery.data
 
+  return <></>
+
   if (accountQuery.isLoading) {
     return (
       <BalanceBadgeBox>

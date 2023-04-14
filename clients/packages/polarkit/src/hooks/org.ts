@@ -51,6 +51,8 @@ export const useCurrentOrgAndRepoFromURL = (): {
 
     setHaveOrgs(nextUserHaveOrgs)
 
+    console.log('set current org in hook', nextOrg?.name)
+
     // global stores
     setCurrentOrgRepo(nextOrg, nextRepo)
     setUserHaveOrgs(nextUserHaveOrgs)

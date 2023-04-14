@@ -135,6 +135,39 @@ export const useDashboard = (
     },
   )
 
+export const usePersonalDashboard = (
+  tab?: IssueListType,
+  q?: string,
+  status?: Array<IssueStatus>,
+  sort?: IssueSortBy,
+): UseQueryResult<IssueListResponse> =>
+  useQuery(
+    [
+      'personalDashboard',
+      tab,
+      q,
+      JSON.stringify(status), // Array as cache key,
+      sort,
+    ],
+    ({ signal }) => {
+      const promise = api.dashboard.getPersonalDashboard({
+        issueListType: tab,
+        q: q,
+        status: status,
+        sort: sort,
+      })
+
+      signal?.addEventListener('abort', () => {
+        promise.cancel()
+      })
+
+      return promise
+    },
+    {
+      retry: defaultRetry,
+    },
+  )
+
 export const useOrganization = (orgName: string) =>
   useQuery(
     ['organization', orgName],

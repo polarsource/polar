@@ -1,5 +1,3 @@
-import DashboardLayout from 'components/Layout/DashboardLayout'
-import OnboardingConnectReposToGetStarted from 'components/Onboarding/OnboardingConnectReposToGetStarted'
 import { useRouter } from 'next/router'
 import {
   IssueListType,
@@ -7,15 +5,11 @@ import {
   OrganizationRead,
   RepositoryRead,
 } from 'polarkit/api/client'
-import { IssueReadWithRelations } from 'polarkit/api/types'
-import { useDashboard, useSSE } from 'polarkit/hooks'
+import { useSSE } from 'polarkit/hooks'
 import { useEffect, useRef, useState } from 'react'
-import yayson from 'yayson'
 import { DashboardFilters } from './filters'
-import IssueList from './IssueList'
-
-const y = yayson({ adapter: 'default' })
-const store = new y.Store()
+import OrganizationDashboard from './OrganizationDashboard'
+import PersonalDashboard from './PersonalDashboard'
 
 const buildStatusesFilter = (filters: DashboardFilters): Array<IssueStatus> => {
   const next = []
@@ -49,11 +43,11 @@ const getTab = (tab: string): IssueListType => {
 const Dashboard = ({
   org,
   repo,
-  haveOrgs,
+  isPersonal,
 }: {
   org: OrganizationRead | undefined
   repo: RepositoryRead | undefined
-  haveOrgs: boolean
+  isPersonal: boolean
 }) => {
   const router = useRouter()
 
@@ -98,68 +92,24 @@ const Dashboard = ({
 
   useEffect(() => setStatuses(buildStatusesFilter(filters)), [filters])
 
-  const dashboardQuery = useDashboard(
-    org?.name,
-    repo?.name,
-    filters.tab,
-    filters.q,
-    statuses,
-    filters.sort,
-  )
-  const dashboard = dashboardQuery.data
-
-  const [issues, setIssues] = useState<IssueReadWithRelations[]>()
-
-  useEffect(() => {
-    if (dashboard) {
-      const issues: IssueReadWithRelations[] = store.sync(dashboard)
-      setIssues(issues)
-    } else {
-      setIssues([])
-    }
-  }, [dashboard])
-
-  const [showOnboardConnectTakeover, setShowOnboardConnectTakeover] =
-    useState(false)
-  const [showOnboardConnectPopup, setShowOnboardConnectPopup] = useState(false)
-
-  useEffect(() => {
-    setShowOnboardConnectTakeover(
-      !haveOrgs && dashboard?.data && dashboard.data.length === 0,
-    )
-    setShowOnboardConnectPopup(
-      !haveOrgs && dashboard?.data && dashboard.data.length > 0,
-    )
-  }, [haveOrgs, dashboard])
-
-  if (showOnboardConnectTakeover) {
+  if (isPersonal) {
     return (
-      <DashboardLayout
+      <PersonalDashboard
         filters={filters}
         onSetFilters={setFilters}
-        showSidebar={false}
-      >
-        <OnboardingConnectReposToGetStarted />
-      </DashboardLayout>
+        statuses={statuses}
+      />
     )
   }
 
   return (
-    <DashboardLayout
+    <OrganizationDashboard
       filters={filters}
       onSetFilters={setFilters}
-      showSidebar={true}
-    >
-      <div>
-        {showOnboardConnectPopup && <OnboardingConnectReposToGetStarted />}
-        <IssueList
-          loading={dashboardQuery.isLoading}
-          issues={issues}
-          filters={filters}
-          onSetFilters={setFilters}
-        />
-      </div>
-    </DashboardLayout>
+      statuses={statuses}
+      orgName={org.name}
+      repoName={repo?.name}
+    />
   )
 }
 

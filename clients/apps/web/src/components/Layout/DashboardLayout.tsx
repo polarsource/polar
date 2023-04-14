@@ -1,4 +1,4 @@
-import { DashboardFilters } from 'dashboard/filters'
+import { DashboardFilters } from 'components/Dashboard/filters'
 import { classNames } from 'polarkit/utils'
 import { Dispatch, SetStateAction } from 'react'
 import Sidebar from '../Dashboard/Sidebar'
@@ -6,9 +6,9 @@ import DashboardTopbar from '../Shared/DashboardTopbar'
 
 const DashboardLayout = (props: {
   children: any
-  filters: DashboardFilters
+  filters?: DashboardFilters
   showSidebar: boolean
-  onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
+  onSetFilters?: Dispatch<SetStateAction<DashboardFilters>>
 }) => {
   const { filters, onSetFilters, children, showSidebar } = props
 

@@ -1,6 +1,6 @@
-import { OrganizationRead, RepositoryRead } from 'api/client'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import type { OrganizationRead, RepositoryRead } from '../api/client'
 import { useStore } from '../store'
 import { requireAuth } from './auth'
 import { useUserOrganizations } from './queries'
@@ -51,7 +51,7 @@ export const useCurrentOrgAndRepoFromURL = (): {
     // global stores
     setCurrentOrgRepo(nextOrg, nextRepo)
     setUserHaveOrgs(nextUserHaveOrgs)
-  })
+  }, [userOrgQuery, setCurrentOrgRepo, setUserHaveOrgs])
 
   return {
     org,

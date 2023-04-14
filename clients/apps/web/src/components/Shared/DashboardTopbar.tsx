@@ -44,7 +44,7 @@ const DashboardNav = () => {
 
       {currentOrg && <AccountTopbar />}
 
-      {!userHaveOrgs && <SettingsLink />}
+      {!currentOrg && <SettingsLink />}
       {currentOrg && <SettingsLink orgSlug={currentOrg.name} />}
     </>
   )

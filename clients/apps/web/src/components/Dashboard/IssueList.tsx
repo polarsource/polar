@@ -1,5 +1,5 @@
+import { DashboardFilters } from 'components/Dashboard/filters'
 import Spinner from 'components/Shared/Spinner'
-import { DashboardFilters } from 'dashboard/filters'
 import { IssueSortBy } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
 import { IssueListItem } from 'polarkit/components'

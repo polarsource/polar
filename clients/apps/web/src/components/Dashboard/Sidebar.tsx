@@ -1,4 +1,4 @@
-import { DashboardFilters } from 'dashboard/filters'
+import { DashboardFilters } from 'components/Dashboard/filters'
 import { Dispatch, SetStateAction } from 'react'
 import Search from './Search'
 

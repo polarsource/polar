@@ -6,16 +6,20 @@ import { useState } from 'react'
 
 const Page: NextLayoutComponentType = () => {
   const [showSetup, setShowSetup] = useState(false)
-  const [currentOrg, currentRepo] = useCurrentOrgAndRepoFromURL()
+  const { org } = useCurrentOrgAndRepoFromURL()
+
+  if (!org) {
+    return <></>
+  }
 
   return (
     <>
       <div className="flex h-screen">
         <div className="m-auto w-[700px]">
-          {showSetup && <SetupOrganization org={currentOrg} />}
+          {showSetup && <SetupOrganization org={org} />}
           {!showSetup && (
             <SynchronizeRepositories
-              org={currentOrg}
+              org={org}
               onContinue={() => {
                 setShowSetup(true)
               }}

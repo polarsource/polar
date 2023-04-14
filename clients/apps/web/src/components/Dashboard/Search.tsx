@@ -1,5 +1,5 @@
 import { MagnifyingGlassIcon } from '@heroicons/react/20/solid'
-import { DashboardFilters } from 'dashboard/filters'
+import { DashboardFilters } from 'components/Dashboard/filters'
 import { useRouter } from 'next/router'
 import { IssueListType, IssueSortBy } from 'polarkit/api/client'
 import { ChangeEvent, Dispatch, FormEvent, SetStateAction } from 'react'
@@ -101,7 +101,12 @@ const Search = (props: {
         >
           Issues
         </Tab>
-        <Tab active={false}>Contributing</Tab>
+        <Tab
+          active={filters.tab === IssueListType.PLEDGED}
+          onClick={() => onTabChange(IssueListType.PLEDGED)}
+        >
+          Pledged
+        </Tab>
         <Tab
           active={filters.tab === IssueListType.FOLLOWING}
           onClick={() => onTabChange(IssueListType.FOLLOWING)}

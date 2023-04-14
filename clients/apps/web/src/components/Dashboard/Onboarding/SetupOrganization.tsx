@@ -1,6 +1,5 @@
 import { api } from 'polarkit/api'
 import { type OrganizationRead } from 'polarkit/api/client'
-import { useStore } from 'polarkit/store'
 import { useState } from 'react'
 
 import { BadgeSettings } from 'components/Settings/BadgeSettings'
@@ -11,12 +10,10 @@ import OnboardingControls from './OnboardingControls'
 export const SetupOrganization = ({ org }: { org: OrganizationRead }) => {
   const [badgeAddOldIssues, setBadgeAddOldIssues] = useState(true)
   const [badgeShowRaised, setBadgeShowRaised] = useState(true)
-  const setCurrentOrg = useStore((state) => state.setCurrentOrg)
   const router = useRouter()
 
-  const redirectToFirstRepo = () => {
-    const firstRepo = org.repositories[0]
-    router.push(`/dashboard/${org.name}/${firstRepo.name}`)
+  const redirectToOrg = () => {
+    router.push(`/dashboard/${org.name}`)
   }
 
   const onClickContinue = async () => {
@@ -30,8 +27,7 @@ export const SetupOrganization = ({ org }: { org: OrganizationRead }) => {
         },
       })
       .then((updatedOrg: OrganizationRead) => {
-        setCurrentOrg(updatedOrg)
-        redirectToFirstRepo()
+        redirectToOrg()
       })
   }
 
@@ -53,7 +49,7 @@ export const SetupOrganization = ({ org }: { org: OrganizationRead }) => {
       <OnboardingControls
         onClickContinue={onClickContinue}
         skippable={true}
-        onClickSkip={redirectToFirstRepo}
+        onClickSkip={redirectToOrg}
       />
     </>
   )

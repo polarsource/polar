@@ -14,9 +14,11 @@ const Page: NextLayoutComponentType = () => {
   }
   if (isLoaded && !org && !repo) {
     router.push('/dashboard')
+    return
   }
   if (isLoaded && org && !repo) {
     router.push(`/dashboard/${org.name}`)
+    return
   }
   return <Dashboard key={key} org={org} repo={undefined} haveOrgs={haveOrgs} />
 }

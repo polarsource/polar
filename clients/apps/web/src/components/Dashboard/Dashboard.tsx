@@ -69,10 +69,12 @@ const Dashboard = ({
       didSetFiltersFromURL.current = true
       const s = new URLSearchParams(window.location.search)
 
+      const useTab = isPersonal ? IssueListType.PLEDGED : getTab(s.get('tab'))
+
       const f = {
         ...DefaultFilters,
         q: s.get('q'),
-        tab: getTab(s.get('tab')),
+        tab: useTab,
       }
       if (s.has('statuses')) {
         const statuses = s.get('statuses').split(',')

@@ -28,6 +28,11 @@ const DashboardNav = () => {
   const router = useRouter()
   const currentOrg = useStore((state) => state.currentOrg)
   const currentRepo = useStore((state) => state.currentRepo)
+
+  if (!currentOrg) {
+    return <></>
+  }
+
   return (
     <>
       <RepoSelection
@@ -37,11 +42,28 @@ const DashboardNav = () => {
         onSelectRepo={(org, repo) => router.push(`/dashboard/${org}/${repo}`)}
         currentOrg={currentOrg}
         currentRepo={currentRepo}
-        showUserInDropdownFallback={true}
       />
-      {currentOrg && <AccountTopbar />}
-      {!currentOrg && <SettingsLink />}
-      {currentOrg && <SettingsLink orgSlug={currentOrg.name} />}
+      <AccountTopbar />
+      <SettingsLink orgSlug={currentOrg.name} />
+    </>
+  )
+}
+
+const PersonalDashboardNav = () => {
+  const router = useRouter()
+  return (
+    <>
+      <RepoSelection
+        showRepositories={true}
+        showConnectMore={true}
+        onSelectOrg={(org) => router.push(`/dashboard/${org}`)}
+        onSelectRepo={(org, repo) => router.push(`/dashboard/${org}/${repo}`)}
+        currentOrg={undefined}
+        currentRepo={undefined}
+        showUserInDropdownFallback={true}
+        defaultToUser={true}
+      />
+      <SettingsLink />
     </>
   )
 }
@@ -51,6 +73,16 @@ const DashboardTopbar = () => {
     <Topbar isFixed={true}>
       {{
         left: <DashboardNav />,
+      }}
+    </Topbar>
+  )
+}
+
+export const PersonalDashboardTopbar = () => {
+  return (
+    <Topbar isFixed={true}>
+      {{
+        left: <PersonalDashboardNav />,
       }}
     </Topbar>
   )

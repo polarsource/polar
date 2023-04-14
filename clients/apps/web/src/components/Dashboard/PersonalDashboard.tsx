@@ -43,6 +43,7 @@ const PersonalDashboard = ({
       filters={filters}
       onSetFilters={onSetFilters}
       showSidebar={true}
+      isPersonalDashboard={true}
     >
       <div>
         <IssueList

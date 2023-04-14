@@ -9,9 +9,10 @@ import Tabs from './Tabs'
 
 const Search = (props: {
   filters: DashboardFilters
+  showTabs: IssueListType[]
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
 }) => {
-  const { filters, onSetFilters } = props
+  const { filters, onSetFilters, showTabs } = props
 
   const onTabChange = (tab: IssueListType) => {
     const f = { ...filters, tab }
@@ -95,24 +96,32 @@ const Search = (props: {
   return (
     <div className="flex w-full flex-col space-y-3">
       <Tabs>
-        <Tab
-          active={filters.tab === IssueListType.ISSUES}
-          onClick={() => onTabChange(IssueListType.ISSUES)}
-        >
-          Issues
-        </Tab>
-        <Tab
-          active={filters.tab === IssueListType.PLEDGED}
-          onClick={() => onTabChange(IssueListType.PLEDGED)}
-        >
-          Pledged
-        </Tab>
-        <Tab
-          active={filters.tab === IssueListType.FOLLOWING}
-          onClick={() => onTabChange(IssueListType.FOLLOWING)}
-        >
-          Following
-        </Tab>
+        {showTabs.includes(IssueListType.ISSUES) && (
+          <Tab
+            active={filters.tab === IssueListType.ISSUES}
+            onClick={() => onTabChange(IssueListType.ISSUES)}
+          >
+            Issues
+          </Tab>
+        )}
+
+        {showTabs.includes(IssueListType.PLEDGED) && (
+          <Tab
+            active={filters.tab === IssueListType.PLEDGED}
+            onClick={() => onTabChange(IssueListType.PLEDGED)}
+          >
+            Pledged
+          </Tab>
+        )}
+
+        {showTabs.includes(IssueListType.ISSUES) && (
+          <Tab
+            active={filters.tab === IssueListType.FOLLOWING}
+            onClick={() => onTabChange(IssueListType.FOLLOWING)}
+          >
+            Following
+          </Tab>
+        )}
       </Tabs>
       <form className="space-y-4" onSubmit={onSubmit}>
         <div>

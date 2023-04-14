@@ -1,13 +1,17 @@
 import { DashboardFilters } from 'components/Dashboard/filters'
+import { IssueListType } from 'polarkit/api/client'
 import { classNames } from 'polarkit/utils'
 import { Dispatch, SetStateAction } from 'react'
 import Sidebar from '../Dashboard/Sidebar'
-import DashboardTopbar from '../Shared/DashboardTopbar'
+import DashboardTopbar, {
+  PersonalDashboardTopbar,
+} from '../Shared/DashboardTopbar'
 
 const DashboardLayout = (props: {
   children: any
   filters?: DashboardFilters
   showSidebar: boolean
+  isPersonalDashboard: boolean
   onSetFilters?: Dispatch<SetStateAction<DashboardFilters>>
 }) => {
   const { filters, onSetFilters, children, showSidebar } = props
@@ -17,12 +21,21 @@ const DashboardLayout = (props: {
     showSidebar ? 'md:pl-80' : '',
   )
 
+  const showTabs = props.isPersonalDashboard
+    ? [IssueListType.PLEDGED]
+    : [IssueListType.PLEDGED, IssueListType.FOLLOWING, IssueListType.ISSUES]
+
   return (
     <div className="">
-      <DashboardTopbar />
+      {props.isPersonalDashboard && <PersonalDashboardTopbar />}
+      {!props.isPersonalDashboard && <DashboardTopbar />}
       <div>
         {showSidebar && (
-          <Sidebar filters={filters} onSetFilters={onSetFilters} />
+          <Sidebar
+            filters={filters}
+            onSetFilters={onSetFilters}
+            showTabs={showTabs}
+          />
         )}
         <div className={bodyClasses}>
           <main className="flex-1">

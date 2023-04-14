@@ -1,9 +1,11 @@
 import { DashboardFilters } from 'components/Dashboard/filters'
+import { IssueListType } from 'polarkit/api/client'
 import { Dispatch, SetStateAction } from 'react'
 import Search from './Search'
 
 const Sidebar = (props: {
   filters: DashboardFilters
+  showTabs: IssueListType[]
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
 }) => {
   const { filters, onSetFilters } = props
@@ -13,7 +15,11 @@ const Sidebar = (props: {
         <div className="flex min-h-0 flex-1 flex-col border-r border-[#EDEDED]">
           <div className="flex flex-1 flex-col overflow-y-auto pt-6 pb-4">
             <div className="flex flex-shrink-0 items-center px-5">
-              <Search filters={filters} onSetFilters={onSetFilters} />
+              <Search
+                filters={filters}
+                onSetFilters={onSetFilters}
+                showTabs={props.showTabs}
+              />
             </div>
           </div>
         </div>

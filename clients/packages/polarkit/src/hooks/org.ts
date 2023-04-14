@@ -20,6 +20,7 @@ export const useCurrentOrgAndRepoFromURL = (): {
   const [haveOrgs, setHaveOrgs] = useState(false)
 
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
+  const setUserHaveOrgs = useStore((state) => state.setUserHaveOrgs)
 
   useEffect(() => {
     const orgSlug = typeof queryOrg === 'string' ? queryOrg : ''
@@ -40,10 +41,16 @@ export const useCurrentOrgAndRepoFromURL = (): {
     // local state
     setOrg(nextOrg)
     setRepo(nextRepo)
-    setHaveOrgs(!!(userOrgQuery.data && userOrgQuery.data.length > 0))
 
-    // store
+    const nextUserHaveOrgs = !!(
+      userOrgQuery.data && userOrgQuery.data.length > 0
+    )
+
+    setHaveOrgs(nextUserHaveOrgs)
+
+    // global stores
     setCurrentOrgRepo(nextOrg, nextRepo)
+    setUserHaveOrgs(nextUserHaveOrgs)
   })
 
   return {

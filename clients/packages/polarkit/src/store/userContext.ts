@@ -19,12 +19,10 @@ export interface UserState {
 }
 
 export interface ContextState {
-  isOrganizationAccount: boolean
+  userHaveOrgs: boolean
   currentOrg: OrganizationRead | undefined
   currentRepo: RepositoryRead | undefined
-  setIsOrganizationAccount: (isOrganizationAccount: boolean) => void
-  setCurrentOrg: (org: OrganizationRead) => void
-  setCurrentRepo: (repo: RepositoryRead) => void
+  setUserHaveOrgs: (userHaveOrgs: boolean) => void
   setCurrentOrgRepo: (
     org: OrganizationRead | undefined,
     repo: RepositoryRead | undefined,
@@ -36,7 +34,7 @@ export interface UserContextState extends UserState, ContextState {}
 const emptyState = {
   authenticated: false,
   currentUser: undefined,
-  isOrganizationAccount: false,
+  userHaveOrgs: false,
   currentOrg: undefined,
   currentRepo: undefined,
 }
@@ -71,21 +69,14 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
     })
     return request
   },
-  setIsOrganizationAccount: (isOrganizationAccount: boolean) => {
-    set({ isOrganizationAccount })
-  },
-  setCurrentOrg: (org: OrganizationRead) => {
-    set({ isOrganizationAccount: true, currentOrg: org })
-  },
-  setCurrentRepo: (repo: RepositoryRead) => {
-    set({ isOrganizationAccount: true, currentRepo: repo })
+  setUserHaveOrgs: (userHaveOrgs: boolean) => {
+    set({ userHaveOrgs })
   },
   setCurrentOrgRepo: (
     org: OrganizationRead | undefined,
     repo: RepositoryRead | undefined,
   ) => {
     set({
-      isOrganizationAccount: org !== undefined,
       currentOrg: org,
       currentRepo: repo,
     })

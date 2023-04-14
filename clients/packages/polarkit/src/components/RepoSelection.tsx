@@ -5,7 +5,7 @@ import {
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { Command } from 'cmdk'
 import React, { useEffect, useRef, useState } from 'react'
-import { OrganizationRead, RepositoryRead } from '../api/client'
+import { OrganizationRead, RepositoryRead, UserRead } from '../api/client'
 import { CONFIG } from '../config'
 import { requireAuth, useUserOrganizations } from '../hooks'
 import { useOutsideClick } from '../utils'
@@ -18,6 +18,7 @@ export function RepoSelection(props: {
   currentOrg?: OrganizationRead
   currentRepo?: RepositoryRead
   fullWidth?: boolean
+  showUserInDropdownFallback?: boolean
 }) {
   const [value, setValue] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement | null>(null)
@@ -106,6 +107,8 @@ export function RepoSelection(props: {
   // Value in <input>
   const [inputValue, setInputValue] = useState('')
 
+  const [memberOfAtLeastOneOrg, setMemberOfAtLeastOneOrg] = useState(false)
+
   useEffect(() => {
     let orgs: OrganizationRead[] = []
 
@@ -137,6 +140,7 @@ export function RepoSelection(props: {
     }
 
     setListOrgs(orgs)
+    setMemberOfAtLeastOneOrg(!!(organizations && organizations.length > 0))
   }, [dropdownSelectedOrg, organizations, inputValue, props.showRepositories])
 
   const onInputValueChange = (e: string) => {
@@ -176,7 +180,19 @@ export function RepoSelection(props: {
         />
       )}
 
-      {!props.currentOrg && <SelectedEmpty onClick={() => setOpen(true)} />}
+      {!props.currentOrg &&
+        (memberOfAtLeastOneOrg || !props.showUserInDropdownFallback) && (
+          <SelectedEmpty onClick={() => setOpen(true)} />
+        )}
+
+      {!props.currentOrg &&
+        props.showUserInDropdownFallback &&
+        !memberOfAtLeastOneOrg && (
+          <SelectedEmptySelfUserPlaceholder
+            onClick={() => setOpen(true)}
+            user={currentUser}
+          />
+        )}
 
       {open && (
         <>
@@ -367,6 +383,31 @@ const SelectedEmpty = ({ onClick }: { onClick: () => void }) => {
   return (
     <SelectedBox onClick={onClick}>
       <div className="text-gray-500">Select a organization</div>
+    </SelectedBox>
+  )
+}
+
+const SelectedEmptySelfUserPlaceholder = ({
+  onClick,
+  user,
+}: {
+  onClick: () => void
+  user: UserRead
+}) => {
+  return (
+    <SelectedBox onClick={onClick}>
+      <div className="flex items-center justify-between space-x-2 ">
+        <img
+          src={user.avatar_url}
+          alt=""
+          className="h-6 w-6 flex-shrink-0 rounded-full"
+        />
+        <div className="flex items-center space-x-1 overflow-hidden ">
+          <span className="flex-shrink-0 font-medium text-gray-900">
+            {user.username}
+          </span>
+        </div>
+      </div>
     </SelectedBox>
   )
 }

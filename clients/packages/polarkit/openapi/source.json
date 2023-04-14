@@ -2240,7 +2240,8 @@
                 "title": "IssueListType",
                 "enum": [
                     "issues",
-                    "following"
+                    "following",
+                    "pledged"
                 ],
                 "type": "string",
                 "description": "An enumeration."

@@ -15,6 +15,37 @@ export class DashboardService {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
+   * Get Personal Dashboard
+   * @returns IssueListResponse Successful Response
+   * @throws ApiError
+   */
+  public getPersonalDashboard({
+    issueListType,
+    status,
+    q,
+    sort,
+  }: {
+    issueListType?: IssueListType,
+    status?: Array<IssueStatus>,
+    q?: string,
+    sort?: IssueSortBy,
+  }): CancelablePromise<IssueListResponse> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/dashboard/personal',
+      query: {
+        'issue_list_type': issueListType,
+        'status': status,
+        'q': q,
+        'sort': sort,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
    * Get Dashboard
    * @returns IssueListResponse Successful Response
    * @throws ApiError
@@ -38,7 +69,7 @@ export class DashboardService {
   }): CancelablePromise<IssueListResponse> {
     return this.httpRequest.request({
       method: 'GET',
-      url: '/api/v1/{platform}/{org_name}/dashboard',
+      url: '/api/v1/dashboard/{platform}/{org_name}',
       path: {
         'platform': platform,
         'org_name': orgName,

@@ -18,6 +18,7 @@ export const useCurrentOrgAndRepoFromURL = (): {
   const [org, setOrg] = useState<OrganizationRead | undefined>(undefined)
   const [repo, setRepo] = useState<RepositoryRead | undefined>(undefined)
   const [haveOrgs, setHaveOrgs] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(false)
 
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
   const setUserHaveOrgs = useStore((state) => state.setUserHaveOrgs)
@@ -42,6 +43,8 @@ export const useCurrentOrgAndRepoFromURL = (): {
     setOrg(nextOrg)
     setRepo(nextRepo)
 
+    setIsLoaded(userOrgQuery.isSuccess)
+
     const nextUserHaveOrgs = !!(
       userOrgQuery.data && userOrgQuery.data.length > 0
     )
@@ -56,7 +59,7 @@ export const useCurrentOrgAndRepoFromURL = (): {
   return {
     org,
     repo,
-    isLoaded: userOrgQuery.isSuccess,
+    isLoaded,
     haveOrgs,
   }
 }

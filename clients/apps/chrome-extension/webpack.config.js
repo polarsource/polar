@@ -17,6 +17,24 @@ module.exports = {
         ],
         exclude: /node_modules/,
       },
+      {
+        test: /\.css?$/,
+        use: [
+          {
+            loader: "css-loader",
+          },
+        ],
+        exclude: /node_modules/,
+      },
+      {
+        test: /\.svg?$/,
+        use: [
+          {
+            loader: "svg-loader",
+          },
+        ],
+        exclude: /node_modules/,
+      },
     ],
   },
   resolve: {

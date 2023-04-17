@@ -18,7 +18,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "react-scripts build && webpack --config webpack.config.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -41,6 +41,8 @@
     ]
   },
   "devDependencies": {
+    "css-loader": "^6.7.3",
+    "svg-loader": "^0.0.2",
     "ts-loader": "^9.4.2",
     "webpack": "^5.79.0",
     "webpack-cli": "^5.0.1"

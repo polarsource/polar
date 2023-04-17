@@ -1,15 +1,18 @@
 import type { NextPage } from 'next'
 import { useRouter } from 'next/router'
-import { requireAuth } from 'polarkit/hooks'
+import { useAuth } from 'polarkit/hooks'
+import { useEffect } from 'react'
 
 const Home: NextPage = () => {
-  const { currentUser } = requireAuth()
+  const { currentUser } = useAuth()
   const router = useRouter()
 
-  if (currentUser) {
-    router.push('/dashboard')
-    return
-  }
+  useEffect(() => {
+    if (currentUser) {
+      router.push('/dashboard')
+      return
+    }
+  }, [currentUser])
 
   return <></>
 }

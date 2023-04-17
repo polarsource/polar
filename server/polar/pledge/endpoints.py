@@ -1,7 +1,7 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from polar.auth.dependencies import current_active_user
+from polar.auth.dependencies import Auth, current_active_user
 from polar.models import Pledge, Repository
 from polar.exceptions import ResourceNotFound
 from polar.enums import Platforms
@@ -288,3 +288,15 @@ async def update_pledge(
     ret.client_secret = payment_intent.client_secret
 
     return ret
+
+
+@router.get(
+    "/me/pledges",
+    response_model=list[PledgeRead],
+)
+async def list_personal_pledges(
+    auth: Auth = Depends(Auth.current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> list[PledgeRead]:
+    pledges = await pledge_service.list_by_pledging_user(session, auth.user.id)
+    return [PledgeRead.from_db(p) for p in pledges]

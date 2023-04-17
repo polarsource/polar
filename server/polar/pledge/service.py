@@ -53,6 +53,21 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         issues = res.scalars().unique().all()
         return issues
 
+    async def list_by_pledging_user(
+        self, session: AsyncSession, user_id: UUID
+    ) -> Sequence[Pledge]:
+        statement = (
+            sql.select(Pledge)
+            .where(Pledge.by_user_id == user_id)
+            .options(
+                joinedload(Pledge.user),
+                joinedload(Pledge.organization),
+            )
+        )
+        res = await session.execute(statement)
+        issues = res.scalars().unique().all()
+        return issues
+
     async def get_by_issue_ids(
         self,
         session: AsyncSession,

@@ -44,7 +44,6 @@ async def get_personal_dashboard(
     auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueListResponse:
-    print("xxx")
     return await dashboard(
         session=session,
         issue_list_type=issue_list_type,

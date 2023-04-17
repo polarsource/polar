@@ -21,7 +21,7 @@ async def test_get(
 ) -> None:
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.get(
-            f"/api/v1/github/{organization.name}/dashboard",
+            f"/api/v1/dashboard/github/{organization.name}",
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 
@@ -29,6 +29,20 @@ async def test_get(
     res = response.json()
     assert len(res["data"]) == 1
     assert res["data"][0]["id"] == str(issue.id)
+
+
+@pytest.mark.asyncio
+async def test_get_personal(
+    user: User,
+    auth_jwt: str,
+) -> None:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            "/api/v1/dashboard/personal",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
 
 
 @pytest.mark.asyncio
@@ -41,7 +55,7 @@ async def test_get_no_member(
 ) -> None:
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.get(
-            f"/api/v1/github/{organization.name}/dashboard",
+            f"/api/v1/dashboard/github/{organization.name}",
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 
@@ -61,7 +75,7 @@ async def test_get_with_pledge(
 ) -> None:
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.get(
-            f"/api/v1/github/{organization.name}/dashboard",
+            f"/api/v1/dashboard/github/{organization.name}",
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 

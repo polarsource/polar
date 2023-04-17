@@ -4,6 +4,7 @@
 import type { Platforms } from '../models/Platforms';
 import type { PledgeCreate } from '../models/PledgeCreate';
 import type { PledgeMutationResponse } from '../models/PledgeMutationResponse';
+import type { PledgeRead } from '../models/PledgeRead';
 import type { PledgeResources } from '../models/PledgeResources';
 import type { PledgeUpdate } from '../models/PledgeUpdate';
 
@@ -123,6 +124,18 @@ export class PledgesService {
       errors: {
         422: `Validation Error`,
       },
+    });
+  }
+
+  /**
+   * List Personal Pledges
+   * @returns PledgeRead Successful Response
+   * @throws ApiError
+   */
+  public listPersonalPledges(): CancelablePromise<Array<PledgeRead>> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/me/pledges',
     });
   }
 

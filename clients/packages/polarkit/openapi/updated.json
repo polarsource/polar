@@ -1238,6 +1238,31 @@
                 }
             }
         },
+        "/api/v1/me/pledges": {
+            "get": {
+                "tags": [
+                    "pledges"
+                ],
+                "summary": "List Personal Pledges",
+                "operationId": "list_personal_pledges",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "title": "Response Pledges:List Personal Pledges",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PledgeRead"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/user/stream": {
             "get": {
                 "tags": [

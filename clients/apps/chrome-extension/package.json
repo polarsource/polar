@@ -3,9 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@testing-library/jest-dom": "^5.14.1",
-    "@testing-library/react": "^13.0.0",
-    "@testing-library/user-event": "^13.2.1",
     "@types/jest": "^27.0.1",
     "@types/node": "^16.7.13",
     "@types/react": "^18.0.0",
@@ -18,7 +15,8 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && webpack --config webpack.config.js && mv dist/content.js ./extension",
+    "build": "react-scripts build",
+    "buildf": "react-scripts build && webpack --config webpack.config.js && mv dist/content.js ./extension",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -41,6 +39,9 @@
     ]
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^5.14.1",
+    "@testing-library/react": "^13.0.0",
+    "@testing-library/user-event": "^13.2.1",
     "css-loader": "^6.7.3",
     "svg-inline-loader": "^0.8.2",
     "ts-loader": "^9.4.2",

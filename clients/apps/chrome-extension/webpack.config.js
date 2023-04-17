@@ -18,7 +18,7 @@ module.exports = {
         exclude: /node_modules/,
       },
       {
-        test: /\.css?$/,
+        test: /\.css$/,
         use: [
           {
             loader: "css-loader",
@@ -27,10 +27,10 @@ module.exports = {
         exclude: /node_modules/,
       },
       {
-        test: /\.svg?$/,
+        test: /\.svg$/,
         use: [
           {
-            loader: "svg-loader",
+            loader: "url-loader",
           },
         ],
         exclude: /node_modules/,
@@ -42,6 +42,6 @@ module.exports = {
   },
   output: {
     filename: "content.js",
-    path: path.resolve(__dirname, "..", "extension"),
+    // path: path.resolve(__dirname, "..", "extension"),
   },
 }

@@ -37,6 +37,7 @@ type ButtonProps = {
   children: React.ReactNode
   href: string | undefined
   color: Color
+  fullWidth: boolean
   onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
 } & typeof defaultProps
 
@@ -45,6 +46,7 @@ const defaultProps = {
   loading: false,
   href: undefined,
   color: 'blue',
+  fullWidth: true,
 }
 
 const bg = (color: Color, loading: boolean, disabled: boolean) => {
@@ -96,7 +98,8 @@ const PrimaryButton = (props: ButtonProps) => {
   let classes = classNames(
     bg(props.color, props.loading, disabled),
     text(props.color, props.loading, disabled),
-    'm-auto w-full rounded-lg p-2 text-center text-sm font-medium inline-flex items-center space-x-2 transition-colors duration-100',
+    props.fullWidth ? 'w-full' : '',
+    'rounded-lg p-2 px-3 text-center text-sm font-medium inline-flex items-center space-x-2 transition-colors duration-100',
   )
 
   return (

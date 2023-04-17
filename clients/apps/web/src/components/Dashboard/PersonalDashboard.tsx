@@ -1,4 +1,5 @@
 import DashboardLayout from 'components/Layout/DashboardLayout'
+import OnboardingConnectPersonalDashboard from 'components/Onboarding/OnboardingConnectDashboard'
 import { IssueStatus } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
 import { usePersonalDashboard } from 'polarkit/hooks'
@@ -45,7 +46,8 @@ const PersonalDashboard = ({
       showSidebar={true}
       isPersonalDashboard={true}
     >
-      <div>
+      <div className="space-y-4">
+        <OnboardingConnectPersonalDashboard />
         <IssueList
           loading={dashboardQuery.isLoading}
           issues={issues}

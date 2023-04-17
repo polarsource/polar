@@ -1,30 +1,21 @@
-import { useMutation, useQuery, UseQueryResult } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import {
-  ApiError,
-  IssueSortBy,
   OrganizationSettingsUpdate,
   type OrganizationRead,
-  type PledgeRead,
   type RepositoryRead,
   type UserRead,
 } from 'polarkit/api/client'
 import { api, queryClient } from '../../api'
-import { IssueListResponse, IssueStatus, Platforms } from '../../api/client'
-import { IssueListType } from '../../api/client/models/IssueListType'
+import { Platforms } from '../../api/client'
+import { defaultRetry } from './retry'
 
 export type RepoListItem = RepositoryRead & {
   organization: OrganizationRead
 }
 
-const defaultRetry = (failureCount: number, error: ApiError): boolean => {
-  if (error.status === 404) {
-    return false
-  }
-  if (failureCount > 2) {
-    return false
-  }
-  return true
-}
+export * from './backoffice'
+export * from './dashboard'
+export * from './pledges'
 
 export const useUserOrganizations = (currentUser: UserRead | undefined) => {
   const userId = currentUser?.id
@@ -89,81 +80,6 @@ export const useRepositoryIssues = (repoOwner: string, repoName: string) =>
       }),
     {
       enabled: !!repoOwner && !!repoName,
-      retry: defaultRetry,
-    },
-  )
-
-export const useDashboard = (
-  orgName: string,
-  repoName?: string,
-  tab?: IssueListType,
-  q?: string,
-  status?: Array<IssueStatus>,
-  sort?: IssueSortBy,
-): UseQueryResult<IssueListResponse> =>
-  useQuery(
-    [
-      'dashboard',
-      'repo',
-      orgName,
-      repoName,
-      tab,
-      q,
-      JSON.stringify(status), // Array as cache key,
-      sort,
-    ],
-    ({ signal }) => {
-      const promise = api.dashboard.getDashboard({
-        platform: Platforms.GITHUB,
-        orgName: orgName,
-        repoName: repoName,
-        issueListType: tab,
-        q: q,
-        status: status,
-        sort: sort,
-      })
-
-      signal?.addEventListener('abort', () => {
-        promise.cancel()
-      })
-
-      return promise
-    },
-    {
-      enabled: !!orgName,
-      retry: defaultRetry,
-    },
-  )
-
-export const usePersonalDashboard = (
-  tab?: IssueListType,
-  q?: string,
-  status?: Array<IssueStatus>,
-  sort?: IssueSortBy,
-): UseQueryResult<IssueListResponse> =>
-  useQuery(
-    [
-      'personalDashboard',
-      tab,
-      q,
-      JSON.stringify(status), // Array as cache key,
-      sort,
-    ],
-    ({ signal }) => {
-      const promise = api.dashboard.getPersonalDashboard({
-        issueListType: tab,
-        q: q,
-        status: status,
-        sort: sort,
-      })
-
-      signal?.addEventListener('abort', () => {
-        promise.cancel()
-      })
-
-      return promise
-    },
-    {
       retry: defaultRetry,
     },
   )
@@ -243,54 +159,4 @@ export const useOrganizationSetDefaultPaymentMethod = () =>
 export const useNotifications = () =>
   useQuery(['notifications'], () => api.notifications.get(), {
     retry: defaultRetry,
-  })
-
-export const useBackofficeAllPledges = () =>
-  useQuery(['backofficeAllPledges'], () => api.backoffice.pledges(), {
-    retry: defaultRetry,
-  })
-
-export const useBackofficeAllNonCustomerPledges = () =>
-  useQuery(
-    ['backofficeAllNonCustomerPledges'],
-    () => api.backoffice.pledgesNonCustomers(),
-    {
-      retry: defaultRetry,
-    },
-  )
-
-export const useBackofficePledgeApprove = () =>
-  useMutation({
-    mutationFn: (variables: { pledgeId: string }) => {
-      return api.backoffice.pledgeApprove({
-        pledgeId: variables.pledgeId,
-      })
-    },
-    onSuccess: (result, variables, ctx) => {
-      queryClient.setQueryData<Array<PledgeRead> | undefined>(
-        ['backofficeAllPledges'],
-        (oldData) =>
-          oldData
-            ? oldData.map((p) => (p.id === result.id ? result : p))
-            : oldData,
-      )
-    },
-  })
-
-export const useBackofficePledgeMarkPending = () =>
-  useMutation({
-    mutationFn: (variables: { pledgeId: string }) => {
-      return api.backoffice.pledgeMarkPending({
-        pledgeId: variables.pledgeId,
-      })
-    },
-    onSuccess: (result, variables, ctx) => {
-      queryClient.setQueryData<Array<PledgeRead> | undefined>(
-        ['backofficeAllPledges'],
-        (oldData) =>
-          oldData
-            ? oldData.map((p) => (p.id === result.id ? result : p))
-            : oldData,
-      )
-    },
   })

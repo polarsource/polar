@@ -67,5 +67,6 @@ export const requireAuth = (
   if (!session.authenticated && session.hasChecked) {
     router.push(redirectTo)
   }
+
   return session
 }

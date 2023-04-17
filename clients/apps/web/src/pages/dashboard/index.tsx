@@ -9,7 +9,7 @@ import {
   useListPersonalPledges,
   useUserOrganizations,
 } from 'polarkit/hooks'
-import { ReactElement } from 'react'
+import { ReactElement, useEffect } from 'react'
 
 const Page: NextLayoutComponentType = () => {
   const { isLoaded, haveOrgs } = useCurrentOrgAndRepoFromURL()
@@ -20,16 +20,26 @@ const Page: NextLayoutComponentType = () => {
 
   const router = useRouter()
 
+  useEffect(() => {
+    const havePersonalPledges =
+      (personalPledges?.data && personalPledges?.data.length > 0) || false
+
+    // Show personal dashboard
+    if (!haveOrgs && havePersonalPledges) {
+      router.push(`/dashboard/personal`)
+      return
+    }
+
+    // redirect to first org
+    if (haveOrgs && userOrgQuery?.data && userOrgQuery.data.length > 0) {
+      const gotoOrg = userOrgQuery.data[0]
+      router.push(`/dashboard/${gotoOrg.name}`)
+      return
+    }
+  })
+
   if (!isLoaded) {
     return <></>
-  }
-
-  const havePersonalPledges = personalPledges?.data.length > 0
-
-  // Show personal dashboard
-  if (!haveOrgs && havePersonalPledges) {
-    router.push(`/dashboard/personal`)
-    return
   }
 
   if (!haveOrgs) {
@@ -38,13 +48,6 @@ const Page: NextLayoutComponentType = () => {
         <OnboardingConnectReposToGetStarted />
       </DashboardLayout>
     )
-  }
-
-  // redirect to first org
-  if (haveOrgs && userOrgQuery?.data && userOrgQuery.data.length > 0) {
-    const gotoOrg = userOrgQuery.data[0]
-    router.push(`/dashboard/${gotoOrg.name}`)
-    return
   }
 
   return (

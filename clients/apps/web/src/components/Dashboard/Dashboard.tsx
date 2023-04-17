@@ -104,6 +104,10 @@ const Dashboard = ({
     )
   }
 
+  if (!org || !org.name) {
+    return <></>
+  }
+
   return (
     <OrganizationDashboard
       filters={filters}

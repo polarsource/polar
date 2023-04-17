@@ -19,3 +19,8 @@ yarn build
 ```
 
 Then press the little reload button on the extension on chrome://extensions.
+
+## TODO
+
+- Uses webpack in addition to `react-scripts build` to output a single `extension/content.js` bundle
+- Exludes `*.test.ts*` in `tsconfig.json` because `jest-dom` isn't imported at build time, breaking the DOM additions it makes (`.toBeInTheDocument()` etc) in tests

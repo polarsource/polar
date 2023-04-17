@@ -15,7 +15,7 @@ Edit some code.
 Run
 
 ```bash
-yarn build
+pnpm build
 ```
 
 Then press the little reload button on the extension on chrome://extensions.

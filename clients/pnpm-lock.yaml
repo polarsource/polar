@@ -33,6 +33,7 @@ importers:
       react: ^18.2.0
       react-dom: ^18.2.0
       react-scripts: 5.0.1
+      style-loader: ^3.3.2
       svg-inline-loader: ^0.8.2
       ts-loader: ^9.4.2
       typescript: ^4.4.2
@@ -55,6 +56,7 @@ importers:
       '@testing-library/react': 13.4.0_biqbaboplfbrettd7655fr4n2y
       '@testing-library/user-event': 13.5.0_@testing-library+dom@9.2.0
       css-loader: 6.7.3_webpack@5.79.0
+      style-loader: 3.3.2_webpack@5.79.0
       svg-inline-loader: 0.8.2
       ts-loader: 9.4.2_bitnw3uor4ak5gvyywq3dtezji
       url-loader: 4.1.1_webpack@5.79.0
@@ -10708,7 +10710,6 @@ packages:
       webpack: ^5.0.0
     dependencies:
       webpack: 5.79.0_webpack-cli@5.0.1
-    dev: false
 
   /styled-jsx/5.1.1_react@18.2.0:
     resolution: {integrity: sha512-pW7uC1l4mBZ8ugbiZrcIsiIvVx1UmTfw7UkC3Um2tmfUq9Bhk8IiyEIPl6F8agHgjzku6j0xQEZbfA5uSgSaCw==}

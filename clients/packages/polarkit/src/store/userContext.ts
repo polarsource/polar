@@ -18,6 +18,11 @@ export interface UserState {
   ) => CancelablePromise<any>
 }
 
+export interface OnboardingState {
+  onboardingDashboardSkip: boolean
+  setOnboardingDashboardSkip: (skip: boolean) => void
+}
+
 export interface ContextState {
   userHaveOrgs: boolean
   currentOrg: OrganizationRead | undefined
@@ -29,11 +34,15 @@ export interface ContextState {
   ) => void
 }
 
-export interface UserContextState extends UserState, ContextState {}
+export interface UserContextState
+  extends UserState,
+    ContextState,
+    OnboardingState {}
 
 const emptyState = {
   authenticated: false,
   currentUser: undefined,
+  onboardingDashboardSkip: false,
   userHaveOrgs: false,
   currentOrg: undefined,
   currentRepo: undefined,
@@ -79,6 +88,11 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
     set({
       currentOrg: org,
       currentRepo: repo,
+    })
+  },
+  setOnboardingDashboardSkip: (skip: boolean) => {
+    set({
+      onboardingDashboardSkip: skip,
     })
   },
 })

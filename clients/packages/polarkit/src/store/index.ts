@@ -21,6 +21,7 @@ const useStore = create<UserContextState>()(
         partialize: (state) => ({
           authenticated: state.authenticated,
           currentUser: state.currentUser,
+          onboardingDashboardSkip: state.onboardingDashboardSkip,
         }),
       },
     ),

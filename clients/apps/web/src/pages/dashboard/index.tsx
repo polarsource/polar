@@ -6,18 +6,30 @@ import { useRouter } from 'next/router'
 import {
   requireAuth,
   useCurrentOrgAndRepoFromURL,
+  useListPersonalPledges,
   useUserOrganizations,
 } from 'polarkit/hooks'
 import { ReactElement } from 'react'
 
 const Page: NextLayoutComponentType = () => {
-  const { org, repo, isLoaded, haveOrgs } = useCurrentOrgAndRepoFromURL()
+  const { isLoaded, haveOrgs } = useCurrentOrgAndRepoFromURL()
   const { currentUser } = requireAuth()
+
   const userOrgQuery = useUserOrganizations(currentUser)
+  const personalPledges = useListPersonalPledges()
+
   const router = useRouter()
 
   if (!isLoaded) {
     return <></>
+  }
+
+  const havePersonalPledges = personalPledges?.data.length > 0
+
+  // Show personal dashboard
+  if (!haveOrgs && havePersonalPledges) {
+    router.push(`/dashboard/personal`)
+    return
   }
 
   if (!haveOrgs) {

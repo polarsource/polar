@@ -30,6 +30,7 @@ importers:
       '@types/react': ^18.0.0
       '@types/react-dom': ^18.0.0
       css-loader: ^6.7.3
+      polarkit: workspace:*
       react: ^18.2.0
       react-dom: ^18.2.0
       react-scripts: 5.0.1
@@ -46,6 +47,7 @@ importers:
       '@types/node': 16.18.23
       '@types/react': 18.0.28
       '@types/react-dom': 18.0.11
+      polarkit: link:../../packages/polarkit
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
       react-scripts: 5.0.1_ymzavq4rb6um24zpthes3ix3wa

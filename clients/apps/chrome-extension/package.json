@@ -7,6 +7,7 @@
     "@types/node": "^16.7.13",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
+    "polarkit": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
@@ -15,7 +16,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && webpack --config webpack.config.js && mv dist/content.js ./extension",
+    "build": "webpack --config webpack.config.js && mv dist/content.js ./extension",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

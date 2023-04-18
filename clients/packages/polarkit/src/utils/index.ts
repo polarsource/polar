@@ -4,7 +4,7 @@ export * from './useOutsideClick'
 
 export const getServerURL = (path?: string): string => {
   path = path !== undefined ? path : ''
-  const baseURL = process?.env?.NEXT_PUBLIC_API_URL
+  const baseURL = 'http://127.0.0.1:8000' // process?.env?.NEXT_PUBLIC_API_URL
   const baseWithPath = `${baseURL}${path}`
   return baseWithPath
 }

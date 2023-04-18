@@ -82,8 +82,8 @@ const main = async (schemaUrl, sourceFilename, generatedFilename) => {
     save(generatedFilename, schema)
 }
 
-const argv = process.argv.slice(2)
-if (argv.length !== 3) {
-    throw new Error('Args: <remoteSchemaUrl> <saveOriginalAs> <saveUpdatedAs>')
-}
-main(argv[0], argv[1], argv[2])
+// const argv = process.argv.slice(2)
+// if (argv.length !== 3) {
+//     throw new Error('Args: <remoteSchemaUrl> <saveOriginalAs> <saveUpdatedAs>')
+// }
+// main(argv[0], argv[1], argv[2])

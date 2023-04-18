@@ -40,8 +40,11 @@ const DashboardNav = () => {
         showConnectMore={true}
         onSelectOrg={(org) => router.push(`/dashboard/${org}`)}
         onSelectRepo={(org, repo) => router.push(`/dashboard/${org}/${repo}`)}
+        onSelectUser={() => router.push('/dashboard/personal')}
         currentOrg={currentOrg}
         currentRepo={currentRepo}
+        showUserInDropdown={true}
+        showOrganizationRepositoryCount={true}
       />
       <AccountTopbar />
       <SettingsLink orgSlug={currentOrg.name} />
@@ -58,10 +61,12 @@ const PersonalDashboardNav = () => {
         showConnectMore={true}
         onSelectOrg={(org) => router.push(`/dashboard/${org}`)}
         onSelectRepo={(org, repo) => router.push(`/dashboard/${org}/${repo}`)}
+        onSelectUser={() => router.push('/dashboard/personal')}
         currentOrg={undefined}
         currentRepo={undefined}
-        showUserInDropdownFallback={true}
+        showUserInDropdown={true}
         defaultToUser={true}
+        showOrganizationRepositoryCount={true}
       />
       <SettingsLink />
     </>

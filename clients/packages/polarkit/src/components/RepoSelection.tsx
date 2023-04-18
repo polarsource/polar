@@ -10,16 +10,25 @@ import { CONFIG } from '../config'
 import { requireAuth, useUserOrganizations } from '../hooks'
 import { useOutsideClick } from '../utils'
 
+const plural = (num: number, singular: string, plural: string): string => {
+  if (num === 1) {
+    return singular
+  }
+  return plural
+}
+
 export function RepoSelection(props: {
   showRepositories?: boolean
   showConnectMore?: boolean
   onSelectRepo?: (org: string, repo: string) => void
   onSelectOrg?: (org: string) => void
+  onSelectUser?: () => void
   currentOrg?: OrganizationRead
   currentRepo?: RepositoryRead
   fullWidth?: boolean
-  showUserInDropdownFallback?: boolean
+  showUserInDropdown?: boolean
   defaultToUser?: boolean
+  showOrganizationRepositoryCount?: boolean
 }) {
   const [value, setValue] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement | null>(null)
@@ -79,6 +88,12 @@ export function RepoSelection(props: {
     }
   }
 
+  const onSelectUser = () => {
+    if (props.onSelectUser) {
+      props.onSelectUser()
+    }
+  }
+
   const onValueChange = (search: string) => {
     setValue(search)
   }
@@ -103,13 +118,15 @@ export function RepoSelection(props: {
     }
   }
 
-  const [listOrgs, setListOrgs] = useState<OrganizationRead[]>([])
+  type ListOrg = OrganizationRead & { unfilteredRepositoryCount: number }
+
+  const [listOrgs, setListOrgs] = useState<ListOrg[]>([])
 
   // Value in <input>
   const [inputValue, setInputValue] = useState('')
 
   useEffect(() => {
-    let orgs: OrganizationRead[] = []
+    let orgs: ListOrg[] = []
 
     // No selected org, and no search: show only orgs
     if (dropdownSelectedOrg === undefined && inputValue === '') {
@@ -118,13 +135,27 @@ export function RepoSelection(props: {
           return {
             ...o,
             repositories: [],
+            unfilteredRepositoryCount: o.repositories?.length || 0,
           }
         }) || []
     } else if (dropdownSelectedOrg === undefined && organizations) {
-      orgs = organizations
+      orgs = organizations.map((o) => {
+        return {
+          ...o,
+          unfilteredRepositoryCount: o.repositories?.length || 0,
+        }
+      })
     } else if (dropdownSelectedOrg) {
       // selected org
-      orgs = organizations?.filter((o) => o.id === dropdownSelectedOrg.id) || []
+      orgs =
+        organizations
+          ?.filter((o) => o.id === dropdownSelectedOrg.id)
+          .map((o) => {
+            return {
+              ...o,
+              unfilteredRepositoryCount: o.repositories?.length || 0,
+            }
+          }) || []
     } else {
       orgs = []
     }
@@ -152,7 +183,27 @@ export function RepoSelection(props: {
     setOpen(false)
   })
 
-  const width = props.fullWidth ? 'min-w-full' : 'w-max-[350px]'
+  const [showUserInDropdown, setShowUserInDropdown] = useState(false)
+
+  useEffect(() => {
+    const haveSelfOrg = organizations?.find(
+      (o) => o.name === currentUser?.username,
+    )
+    setShowUserInDropdown(
+      !haveSelfOrg &&
+        !!props.showUserInDropdown &&
+        dropdownSelectedOrg === undefined,
+    )
+  }, [
+    props.showUserInDropdown,
+    organizations,
+    currentUser,
+    dropdownSelectedOrg,
+  ])
+
+  const width = props.fullWidth
+    ? 'min-w-full max-w-full w-full'
+    : 'min-w-[320px] max-w-[500px]'
   const placeholder = props.showRepositories
     ? 'Search orgs and repos...'
     : 'Search orgs...'
@@ -191,7 +242,7 @@ export function RepoSelection(props: {
 
       {open && (
         <>
-          <div className={`${width} relative w-min`}>
+          <div className={`relative bg-red-200`}>
             <Command
               value={value}
               onValueChange={onValueChange}
@@ -238,15 +289,30 @@ export function RepoSelection(props: {
                       value={`${org.name}`}
                       onSelect={() => onSelectOrg(org)}
                     >
-                      <Avatar url={org.avatar_url} />
-                      <Text>
-                        {org.name}
-                        {dropdownSelectedOrg && (
-                          <span className="ml-2 text-xs italic text-gray-500">
-                            Entire org
-                          </span>
+                      <Left>
+                        <Avatar url={org.avatar_url} />
+                        <Text>{org.name}</Text>
+                      </Left>
+
+                      {dropdownSelectedOrg && (
+                        <span className="ml-2 text-xs italic text-gray-500">
+                          Entire org
+                        </span>
+                      )}
+
+                      {!dropdownSelectedOrg &&
+                        props.showOrganizationRepositoryCount && (
+                          <Subtitle>
+                            <Badge>{org.unfilteredRepositoryCount}</Badge>{' '}
+                            <span>
+                              {plural(
+                                org.unfilteredRepositoryCount,
+                                'repo',
+                                'repos',
+                              )}
+                            </span>
+                          </Subtitle>
                         )}
-                      </Text>
                     </Item>
                     {org.repositories &&
                       org.repositories.map((r) => (
@@ -255,21 +321,39 @@ export function RepoSelection(props: {
                           key={r.id}
                           onSelect={() => onSelectRepo(org, r)}
                         >
-                          <Icon>
-                            <CodeBracketIconSmall className="block h-5 w-5 text-[#B2B2B2]" />
-                          </Icon>
+                          <Left>
+                            <Icon>
+                              <CodeBracketIconSmall className="block h-5 w-5 text-[#B2B2B2]" />
+                            </Icon>
 
-                          {dropdownSelectedOrg && <Text>{r.name}</Text>}
+                            {dropdownSelectedOrg && <Text>{r.name}</Text>}
 
-                          {!dropdownSelectedOrg && (
-                            <Text>
-                              {org.name} / {r.name}
-                            </Text>
-                          )}
+                            {!dropdownSelectedOrg && (
+                              <Text>
+                                {org.name} / {r.name}
+                              </Text>
+                            )}
+                          </Left>
                         </Item>
                       ))}
                   </React.Fragment>
                 ))}
+
+                {showUserInDropdown && (
+                  <Item
+                    value={`${currentUser.username}`}
+                    key={currentUser.id}
+                    onSelect={onSelectUser}
+                  >
+                    <Left>
+                      {currentUser.avatar_url && (
+                        <Avatar url={currentUser.avatar_url} />
+                      )}
+                      <Text>{currentUser.username}</Text>
+                    </Left>
+                    <Subtitle>profile</Subtitle>
+                  </Item>
+                )}
 
                 {props.showConnectMore && (
                   <Item
@@ -310,9 +394,11 @@ function Item({
     <Command.Item
       value={value}
       onSelect={onSelect}
-      className="py-4rounded-md flex  h-10 cursor-pointer select-none items-center rounded-md p-2 transition-colors duration-100 first:mt-2 aria-selected:bg-neutral-100"
+      className="py-4rounded-md flex h-10 cursor-pointer select-none items-center rounded-md p-2 transition-colors duration-100 first:mt-2 aria-selected:bg-neutral-100"
     >
-      <div className="flex max-w-full items-center space-x-2">{children}</div>
+      <div className="flex w-full max-w-full items-center justify-between space-x-2">
+        {children}
+      </div>
     </Command.Item>
   )
 }
@@ -325,6 +411,30 @@ function Avatar(props: { url: string }) {
 function Text({ children }: { children: React.ReactNode }) {
   return (
     <span className="overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-900">
+      {children}
+    </span>
+  )
+}
+
+function Left({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="flex items-center space-x-2 overflow-hidden">
+      {children}
+    </span>
+  )
+}
+
+function Subtitle({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex space-x-2 overflow-hidden text-xs italic text-gray-500">
+      {children}
+    </span>
+  )
+}
+
+function Badge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-full border border-gray-200 bg-gray-100 px-2">
       {children}
     </span>
   )

@@ -1,4 +1,4 @@
-import { useRouter } from 'next/router'
+// import { useRouter } from 'next/router'
 import { CancelablePromise, type UserRead } from 'polarkit/api/client'
 import { useEffect, useState } from 'react'
 import { UserState, useStore } from '../store'
@@ -61,11 +61,11 @@ export const requireAuth = (
   isChecking: boolean
 } => {
   // TODO: Change this to be given by the app. Currently forcing next router
-  const router = useRouter()
+  // const router = useRouter()
   const session = useAuth()
 
   if (!session.authenticated && session.hasChecked) {
-    router.push(redirectTo)
+    // router.push(redirectTo)
   }
 
   return session

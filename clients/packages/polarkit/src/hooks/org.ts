@@ -1,4 +1,4 @@
-import { useRouter } from 'next/router'
+// import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import type { OrganizationRead, RepositoryRead } from '../api/client'
 import { useStore } from '../store'
@@ -11,8 +11,11 @@ export const useCurrentOrgAndRepoFromURL = (): {
   isLoaded: boolean
   haveOrgs: boolean
 } => {
-  const router = useRouter()
-  const { organization: queryOrg, repo: queryRepo } = router.query
+  // const router = useRouter()
+  const { organization: queryOrg, repo: queryRepo } = {
+    organization: 'hult',
+    repo: 'dotfiles',
+  } // router.query
   const { currentUser } = requireAuth()
   const userOrgQuery = useUserOrganizations(currentUser)
   const [org, setOrg] = useState<OrganizationRead | undefined>(undefined)

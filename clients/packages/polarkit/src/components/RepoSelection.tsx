@@ -4,7 +4,7 @@ import {
 } from '@heroicons/react/20/solid'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { Command } from 'cmdk'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { OrganizationRead, RepositoryRead, UserRead } from '../api/client'
 import { CONFIG } from '../config'
 import { requireAuth, useUserOrganizations } from '../hooks'
@@ -86,9 +86,9 @@ export function RepoSelection(props: {
   const [orgIsBackspaceHighlighted, setOrgIsBackspaceHighlighted] =
     useState(false)
 
-  const onInputKeyUp = (e) => {
+  const onInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     // Backspace once to select, backspace again to delete
-    if (e.code === 'Backspace' && e.target.value === '') {
+    if (e.code === 'Backspace' && inputValue === '') {
       if (orgIsBackspaceHighlighted) {
         setDropdowndropdownSelectedOrg(undefined)
         setOrgIsBackspaceHighlighted(false)
@@ -218,7 +218,7 @@ export function RepoSelection(props: {
                   autoFocus
                   placeholder={placeholder}
                   className="m-0 px-2 py-3 !text-sm focus:border-0 focus:ring-0"
-                  onKeyDown={onInputKeyUp}
+                  onKeyDown={onInputKeyDown}
                   value={inputValue}
                   onValueChange={onInputValueChange}
                 />

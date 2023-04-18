@@ -98,6 +98,12 @@ async def get_dashboard(
             detail="Repository not found",
         )
 
+    # If the authenticated user is viewing the org dashboard for their own "org",
+    # also show pledges made by their user.
+    show_pledges_for_user: User | None = None
+    if auth.user.username == org_name:
+        show_pledges_for_user = auth.user
+
     return await dashboard(
         session=session,
         in_repos=repositories,
@@ -106,6 +112,7 @@ async def get_dashboard(
         q=q,
         sort=sort,
         for_org=auth.organization,
+        for_user=show_pledges_for_user,
     )
 
 

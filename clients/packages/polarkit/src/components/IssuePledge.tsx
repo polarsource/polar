@@ -20,10 +20,15 @@ const IssuePledge = (props: { pledge: PledgeRead }) => {
       </div>
 
       <div>
-        <span className="text-gray-300">(state={pledge.state}) </span>
-        <a href="#" className="border-2 border-pink-800 text-sm text-gray-500">
-          Reward Details &rsaquo;
-        </a>
+        {pledge.state === 'created' && (
+          <span className="text-gray-300">Awaiting fix</span>
+        )}
+        {pledge.state === 'pending' && (
+          <span className="text-gray-300">Pending payout</span>
+        )}
+        {pledge.state === 'paid' && (
+          <span className="text-gray-300">Paid to maintainer</span>
+        )}
       </div>
     </div>
   )

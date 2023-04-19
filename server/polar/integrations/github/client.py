@@ -17,6 +17,7 @@ from githubkit import (
 
 from polar.config import settings
 from polar.enums import Platforms
+from polar.integrations.github.cache import RedisCache
 from polar.models.user import User
 from polar.postgres import AsyncSession
 
@@ -165,6 +166,7 @@ def get_app_client() -> GitHub[AppAuthStrategy]:
             private_key=settings.GITHUB_APP_PRIVATE_KEY,
             client_id=settings.GITHUB_CLIENT_ID,
             client_secret=settings.GITHUB_CLIENT_SECRET,
+            cache=RedisCache(),
         )
     )
 
@@ -172,6 +174,9 @@ def get_app_client() -> GitHub[AppAuthStrategy]:
 def get_app_installation_client(
     installation_id: int,
 ) -> GitHub[AppInstallationAuthStrategy]:
+    # Using the RedisCache() below to cache generated JWTs
+    # This improves ETag/If-None-Match cache hits over the default in-memory cache, as
+    # they can be reused across restarts of the python process and by multiple workers.
     return GitHub(
         AppInstallationAuthStrategy(
             app_id=settings.GITHUB_APP_IDENTIFIER,
@@ -179,6 +184,7 @@ def get_app_installation_client(
             installation_id=installation_id,
             client_id=settings.GITHUB_CLIENT_ID,
             client_secret=settings.GITHUB_CLIENT_SECRET,
+            cache=RedisCache(),
         )
     )
 

@@ -1,7 +1,14 @@
+import { useEffect } from 'react'
 import './App.css'
 import logo from './logo.svg'
 
 function App() {
+  useEffect(() => {
+    chrome.storage.onChanged.addListener((changes: object, areaName: string) =>
+      console.log('STORAGE CHANGES', changes, areaName),
+    )
+  })
+
   return (
     <div className="App">
       <header className="App-header">

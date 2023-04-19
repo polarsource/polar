@@ -13,8 +13,10 @@ from polar.dashboard.endpoints import router as dashboard_router
 from polar.account.endpoints import router as accounts_router
 from polar.notifications.endpoints import router as notifications_router
 from polar.backoffice.endpoints import router as backoffice_router
+from polar.health.endpoints import router as health_router
 
 router = APIRouter(prefix="/api/v1")
+
 # /users
 router.include_router(user_router)
 # /user/organizations

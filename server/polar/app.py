@@ -7,6 +7,7 @@ from polar import receivers  # noqa
 from polar.api import router
 from polar.config import settings
 from polar.logging import configure as configure_logging
+from polar.health.endpoints import router as health_router
 
 log = structlog.get_logger()
 
@@ -31,6 +32,10 @@ def generate_unique_openapi_id(route: APIRoute) -> str:
 def create_app() -> FastAPI:
     app = FastAPI(generate_unique_id_function=generate_unique_openapi_id)
     configure_cors(app)
+
+    # /healthz and /readyz
+    app.include_router(health_router)
+
     app.include_router(router)
     return app
 

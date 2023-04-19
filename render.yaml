@@ -1,0 +1,113 @@
+services:
+  # Frontend
+  - type: web
+    name: web
+    env: node
+    buildCommand: pnpm install; pnpm build
+    startCommand: pnpm start -p 10000
+    branch: render-hosting
+    rootDir: clients/apps/web
+    numInstances: 1
+    healthCheckPath: /
+    envVars:
+      - key: NEXT_PUBLIC_STRIPE_KEY
+        value: "pk_test_51Mo5SjLDfyYwjoMW825niva8LKZpVUZU0a9Dn47oHADJzZwwHbxdIJqjhucmueSRoLTBBctAD7mKyyNlzb3nmTBc00mzGtKVsD"
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: server
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: NEXT_PUBLIC_GITHUB_INSTALLATION_URL
+        value: "https://github.com/apps/polar-sh/installations/new"
+
+  # FastAPI Backend
+  - type: web
+    name: server
+    #env: python # run as native python
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: ./
+    dockerCommand: "poetry run uvicorn polar.app:app --host 0.0.0.0 --port 10000"
+    region: ohio
+    plan: free
+    branch: render-hosting
+    rootDir: server
+    numInstances: 1
+    healthCheckPath: /readyz
+    envVars:
+      # CORS
+      - key: POLAR_CORS_ORIGINS
+        value: '["https://web-oly6.onrender.com", "https://dash.polar.sh"]'
+      
+      # GitHub
+      - key: POLAR_GITHUB_REDIRECT_URL
+        value: "https://web-oly6.onrender.com/github/session"
+
+      # Redis
+      - key: POLAR_REDIS_HOST
+        fromService:
+          type: redis
+          name: polar-tasks
+          property: host
+      - key: POLAR_REDIS_PORT
+        fromService:
+          type: redis
+          name: polar-tasks
+          property: port
+      
+      # PostgreSQL
+      - key: POLAR_POSTGRES_USER
+        fromDatabase:
+          name: polar
+          property: user
+      - key: POLAR_POSTGRES_PWD
+        fromDatabase:
+          name: polar
+          property: password
+      - key: POLAR_POSTGRES_DATABASE
+        fromDatabase:
+          name: polar
+          property: database
+      - key: POLAR_POSTGRES_PORT
+        fromDatabase:
+          name: polar
+          property: port
+      - key: POLAR_POSTGRES_HOST
+        fromDatabase:
+          name: polar
+          property: host
+      
+      - fromGroup: github-production
+
+  - type: redis
+    name: polar-tasks
+    ipAllowList: # TODO: lock down to internal connections only?
+      - source: 0.0.0.0/0
+        description: everywhere
+    plan: free
+    maxmemoryPolicy: noeviction # no-eviciton for our queue
+
+databases:
+  - name: polar
+    databaseName: polar
+    user: polar
+
+
+envVarGroups:
+- name: github-production
+  envVars:
+    - key: POLAR_GITHUB_APP_IDENTIFIER
+      # value: 321094
+      sync: false
+    - key: POLAR_GITHUB_APP_PRIVATE_KEY
+      # value: "-----BEGIN RSA PRIVATE KEY-----\nEXAMPLE\n-----END RSA PRIVATE KEY-----"
+      sync: false
+    - key: POLAR_GITHUB_APP_WEBHOOK_SECRET
+      # value: "xxx"
+      sync: false
+    - key: POLAR_GITHUB_CLIENT_ID
+      # value: "Iv1.17a5bded25063199"
+      sync: false
+    - key: POLAR_GITHUB_CLIENT_SECRET
+      # value: "xxx"
+      sync: false

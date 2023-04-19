@@ -287,40 +287,52 @@ class GitHubIssueReferencesService:
 
         log.info("github.sync_issue_references", issue_id=issue.id)
 
-        res = await self.async_list_events_for_timeline_with_headers(
-            client,
-            owner=org.name,
-            repo=repo.name,
-            issue_number=issue.number,
-            page=1,  # TODO: fetch more pages if no etag
-            per_page=100,
-            etag=issue.github_timeline_etag,
-        )
+        # TODO: if the first page is a cache miss, we're currently re-crawling all pages
+        # A nice improvement would be to figure out if we can stop crawling early.
+        for page in range(1, 100):
+            first_page = page == 1
 
-        # No changes, mark as successful
-        if res.status_code == 304 or res.status_code == 200:
-            issue.github_timeline_fetched_at = datetime.utcnow()
-            issue.github_timeline_etag = res.headers.get("etag", None)
-            await issue.save(session)
-
-        if res.status_code == 304:
-            log.info("github.sync_issue_references.etag_cache_hit", issue_id=issue.id)
-            return
-
-        log.info("github.sync_issue_references.etag_cache_miss", issue_id=issue.id)
-
-        for event in res.parsed_data:
-            ref = await self.parse_issue_timeline_event(
-                session, org, repo, issue, event
+            res = await self.async_list_events_for_timeline_with_headers(
+                client,
+                owner=org.name,
+                repo=repo.name,
+                issue_number=issue.number,
+                page=page,
+                per_page=100,
+                etag=issue.github_timeline_etag if first_page else None,
             )
-            if ref:
-                # add data missing from github api
-                ref = await self.annotate(session, org, ref)
 
-                # persist
-                await self.create_reference(session, ref)
+            # Cache hit, nothing new
+            if first_page and res.status_code == 304:
+                log.info(
+                    "github.sync_issue_references.etag_cache_hit", issue_id=issue.id
+                )
+                return
 
-        return
+            # Save ETag of the first page
+            if first_page and res.status_code == 200:
+                log.info(
+                    "github.sync_issue_references.etag_cache_miss", issue_id=issue.id
+                )
+
+                issue.github_timeline_fetched_at = datetime.utcnow()
+                issue.github_timeline_etag = res.headers.get("etag", None)
+                await issue.save(session)
+
+            for event in res.parsed_data:
+                ref = await self.parse_issue_timeline_event(
+                    session, org, repo, issue, event
+                )
+                if ref:
+                    # add data missing from github api
+                    ref = await self.annotate(session, org, ref)
+
+                    # persist
+                    await self.create_reference(session, ref)
+
+            # No more pages
+            if len(res.parsed_data) < 100:
+                return
 
     async def parse_issue_timeline_event(
         self,

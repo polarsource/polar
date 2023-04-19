@@ -4,11 +4,12 @@ from datetime import datetime
 from typing import Any, TypedDict, ParamSpec, TypeVar, Awaitable, Callable
 
 import structlog
-from arq import func
+from arq import func, cron
 from arq.connections import RedisSettings, ArqRedis, create_pool as arq_create_pool
 from arq.jobs import Job
 from arq.worker import Function
-from arq.typing import SecondsTimedelta
+from arq.typing import SecondsTimedelta, OptionType
+from arq.cron import CronJob
 
 from polar.config import settings
 
@@ -30,6 +31,8 @@ class JobContext(WorkerContext):
 
 class WorkerSettings:
     functions: list[Function | types.CoroutineType] = []
+    cron_jobs: list[CronJob] = []
+
     redis_settings = RedisSettings().from_dsn(settings.redis_url)
 
     @staticmethod
@@ -93,6 +96,30 @@ def task(
             max_tries=max_tries,
         )
         WorkerSettings.functions.append(new_task)
+
+        @functools.wraps(f)
+        async def wrapper(*args: Params.args, **kwargs: Params.kwargs) -> ReturnValue:
+            return await f(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def interval(
+    *,
+    minute: OptionType = None,
+    second: OptionType = None,
+) -> Callable[
+    [Callable[Params, Awaitable[ReturnValue]]], Callable[Params, Awaitable[ReturnValue]]
+]:
+    def decorator(
+        f: Callable[Params, Awaitable[ReturnValue]]
+    ) -> Callable[Params, Awaitable[ReturnValue]]:
+        new_cron = cron(
+            f, minute=minute, second=second, run_at_startup=True  # type: ignore
+        )
+        WorkerSettings.cron_jobs.append(new_cron)
 
         @functools.wraps(f)
         async def wrapper(*args: Params.args, **kwargs: Params.kwargs) -> ReturnValue:

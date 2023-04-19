@@ -1,8 +1,7 @@
 from __future__ import annotations
-import asyncio
-from typing import Any, List, Set, Union
+from typing import List, Set, Union
 from uuid import UUID
-from githubkit import Response
+from githubkit import GitHub, Response
 from pydantic import parse_obj_as
 
 import structlog
@@ -25,6 +24,35 @@ from polar.postgres import AsyncSession, sql
 from polar.worker import enqueue_job
 from fastapi.encoders import jsonable_encoder
 
+from datetime import datetime
+
+from githubkit.utils import UNSET, exclude_unset
+
+from githubkit.rest.models import (
+    BasicError,
+    LockedIssueEvent,
+    LabeledIssueEvent,
+    RenamedIssueEvent,
+    UnlabeledIssueEvent,
+    MilestonedIssueEvent,
+    TimelineCommentEvent,
+    StateChangeIssueEvent,
+    TimelineReviewedEvent,
+    DemilestonedIssueEvent,
+    TimelineCommittedEvent,
+    AddedToProjectIssueEvent,
+    ReviewDismissedIssueEvent,
+    ReviewRequestedIssueEvent,
+    TimelineAssignedIssueEvent,
+    TimelineLineCommentedEvent,
+    RemovedFromProjectIssueEvent,
+    TimelineCommitCommentedEvent,
+    TimelineCrossReferencedEvent,
+    TimelineUnassignedIssueEvent,
+    ConvertedNoteToIssueIssueEvent,
+    MovedColumnInProjectIssueEvent,
+    ReviewRequestRemovedIssueEvent,
+)
 
 log = structlog.get_logger()
 
@@ -151,6 +179,95 @@ class GitHubIssueReferencesService:
 
         return res
 
+    # Support for custom headers
+    # TODO: https://github.com/yanyongyu/githubkit/issues/29
+    # client.rest.issues.async_list_events_for_timeline,
+    async def async_list_events_for_timeline_with_headers(
+        self,
+        client: GitHub,
+        owner: str,
+        repo: str,
+        issue_number: int,
+        per_page: int = 30,
+        page: int = 1,
+        etag: str | None = None,
+    ) -> Response[
+        List[
+            Union[
+                LabeledIssueEvent,
+                UnlabeledIssueEvent,
+                MilestonedIssueEvent,
+                DemilestonedIssueEvent,
+                RenamedIssueEvent,
+                ReviewRequestedIssueEvent,
+                ReviewRequestRemovedIssueEvent,
+                ReviewDismissedIssueEvent,
+                LockedIssueEvent,
+                AddedToProjectIssueEvent,
+                MovedColumnInProjectIssueEvent,
+                RemovedFromProjectIssueEvent,
+                ConvertedNoteToIssueIssueEvent,
+                TimelineCommentEvent,
+                TimelineCrossReferencedEvent,
+                TimelineCommittedEvent,
+                TimelineReviewedEvent,
+                TimelineLineCommentedEvent,
+                TimelineCommitCommentedEvent,
+                TimelineAssignedIssueEvent,
+                TimelineUnassignedIssueEvent,
+                StateChangeIssueEvent,
+            ]
+        ]
+    ]:
+        url = f"/repos/{owner}/{repo}/issues/{issue_number}/timeline"
+
+        params = {
+            "per_page": per_page,
+            "page": page,
+        }
+
+        headers = {
+            "If-None-Match": etag if etag else UNSET,
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+
+        return await client.arequest(
+            "GET",
+            url,
+            params=exclude_unset(params),
+            headers=exclude_unset(headers),
+            response_model=List[
+                Union[
+                    LabeledIssueEvent,
+                    UnlabeledIssueEvent,
+                    MilestonedIssueEvent,
+                    DemilestonedIssueEvent,
+                    RenamedIssueEvent,
+                    ReviewRequestedIssueEvent,
+                    ReviewRequestRemovedIssueEvent,
+                    ReviewDismissedIssueEvent,
+                    LockedIssueEvent,
+                    AddedToProjectIssueEvent,
+                    MovedColumnInProjectIssueEvent,
+                    RemovedFromProjectIssueEvent,
+                    ConvertedNoteToIssueIssueEvent,
+                    TimelineCommentEvent,
+                    TimelineCrossReferencedEvent,
+                    TimelineCommittedEvent,
+                    TimelineReviewedEvent,
+                    TimelineLineCommentedEvent,
+                    TimelineCommitCommentedEvent,
+                    TimelineAssignedIssueEvent,
+                    TimelineUnassignedIssueEvent,
+                    StateChangeIssueEvent,
+                ]
+            ],
+            error_models={
+                "404": BasicError,
+                "410": BasicError,
+            },
+        )
+
     async def sync_issue_references(
         self,
         session: AsyncSession,
@@ -162,21 +279,37 @@ class GitHubIssueReferencesService:
         sync_issue_references uses the GitHub Timeline API to find CrossReference events
         and creates IssueReferences
         """
+
+        if not org.installation_id:
+            return
+
         client = get_app_installation_client(org.installation_id)
 
-        log.info(
-            "github.sync_issue_references",
-            id=repo.id,
-            name=repo.name,
-            issue_number=issue.number,
-        )
+        log.info("github.sync_issue_references", issue_id=issue.id)
 
-        async for event in client.paginate(
-            client.rest.issues.async_list_events_for_timeline,
+        res = await self.async_list_events_for_timeline_with_headers(
+            client,
             owner=org.name,
             repo=repo.name,
             issue_number=issue.number,
-        ):
+            page=1,  # TODO: fetch more pages if no etag
+            per_page=100,
+            etag=issue.github_timeline_etag,
+        )
+
+        # No changes, mark as successful
+        if res.status_code == 304 or res.status_code == 200:
+            issue.github_timeline_fetched_at = datetime.utcnow()
+            issue.github_timeline_etag = res.headers.get("etag", None)
+            await issue.save(session)
+
+        if res.status_code == 304:
+            log.info("github.sync_issue_references.etag_cache_hit", issue_id=issue.id)
+            return
+
+        log.info("github.sync_issue_references.etag_cache_miss", issue_id=issue.id)
+
+        for event in res.parsed_data:
             ref = await self.parse_issue_timeline_event(
                 session, org, repo, issue, event
             )

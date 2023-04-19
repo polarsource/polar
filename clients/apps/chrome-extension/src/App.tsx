@@ -4,10 +4,13 @@ import logo from './logo.svg'
 
 function App() {
   useEffect(() => {
-    chrome.storage.onChanged.addListener((changes: object, areaName: string) =>
-      console.log('STORAGE CHANGES', changes, areaName),
-    )
-  })
+    ;(async () => {
+      const result = await chrome.storage.local.get(['token'])
+      if (result && result.token) {
+        alert(result.token)
+      }
+    })()
+  }, [])
 
   return (
     <div className="App">

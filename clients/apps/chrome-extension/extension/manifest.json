@@ -5,6 +5,9 @@
     "action": {
         "default_popup": "options.html"
     },
+    "permissions": [
+        "storage"
+    ],
     "content_scripts": [
         {
             "js": ["content.js"],

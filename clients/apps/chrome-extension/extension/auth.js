@@ -4,6 +4,7 @@ window.addEventListener("load", function () {
         if (tokenElem && tokenElem.innerText) {
             alert('FOUND TOKEN ' + tokenElem.innerText)
             clearInterval(interval)
+            chrome.storage.local.set({token: tokenElem.innerText})
         }    
     }, 1000)
 })

@@ -41,6 +41,7 @@
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^13.0.0",
     "@testing-library/user-event": "^13.2.1",
+    "@types/chrome": "^0.0.233",
     "css-loader": "^6.7.3",
     "style-loader": "^3.3.2",
     "svg-inline-loader": "^0.8.2",

@@ -1,8 +1,9 @@
 from uuid import UUID
 import structlog
 from polar.integrations.github import service
+from polar.kit.extensions.sqlalchemy import sql
 
-from polar.worker import JobContext, task
+from polar.worker import JobContext, enqueue_job, interval, task
 from polar.postgres import AsyncSessionLocal
 
 from .utils import get_organization_and_repo
@@ -63,3 +64,20 @@ async def issue_sync_issue_dependencies(
             repo=repository,
             issue=issue,
         )
+
+
+@interval(
+    minute={0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55},
+    second=0,
+)
+async def cron_refresh_issue_timelines(ctx: JobContext) -> None:
+    async with AsyncSessionLocal() as session:
+        issues = await github_issue.list_issues_to_crawl_timeline(session)
+
+        log.info(
+            "github.issue.sync.cron_refresh_issue_timelines",
+            found_count=len(issues),
+        )
+
+        for issue in issues:
+            await enqueue_job("github.issue.sync.issue_references", issue.id)

@@ -1,22 +1,37 @@
-import redis.asyncio as _redis
+import redis.asyncio as _async_redis
+import redis as _sync_redis
 
 from polar.config import settings
 
 
-def create_connection_pool():
-    return _redis.ConnectionPool.from_url(settings.redis_url, decode_responses=True)
+def create_async_connection_pool():
+    return _async_redis.ConnectionPool.from_url(
+        settings.redis_url, decode_responses=True
+    )
 
 
-pool = create_connection_pool()
+async_pool = create_async_connection_pool()
 
 
-def get_redis() -> _redis.Redis:
-    return _redis.Redis(connection_pool=pool)
+def create_sync_connection_pool():
+    return _sync_redis.ConnectionPool.from_url(
+        settings.redis_url, decode_responses=True
+    )
+
+
+sync_pool = create_sync_connection_pool()
+
+
+def get_redis() -> _async_redis.Redis:
+    return _async_redis.Redis(connection_pool=async_pool)
+
+
+def get_sync_redis() -> _sync_redis.Redis:
+    return _sync_redis.Redis(connection_pool=sync_pool)
 
 
 redis = get_redis()
-Redis = _redis.Redis
-PubSub = _redis.client.PubSub
+Redis = _async_redis.Redis
+sync_redis = get_sync_redis()
 
-
-__all__ = ["get_redis", "pool", "Redis", "redis"]
+__all__ = ["redis", "sync_redis", "Redis"]

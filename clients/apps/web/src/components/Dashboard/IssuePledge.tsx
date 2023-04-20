@@ -1,5 +1,5 @@
-import { type PledgeRead } from '../api/client'
-import { getCentsInDollarString } from '../utils'
+import { PledgeRead } from 'polarkit/api/client'
+import { getCentsInDollarString } from 'polarkit/utils'
 
 const IssuePledge = (props: { pledge: PledgeRead }) => {
   const { pledge } = props

@@ -2,8 +2,8 @@ import { DashboardFilters } from 'components/Dashboard/filters'
 import Spinner from 'components/Shared/Spinner'
 import { IssueSortBy } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
-import { IssueListItem } from 'polarkit/components'
 import { Dispatch, SetStateAction, useMemo } from 'react'
+import IssueListItem from './IssueListItem'
 
 const IssueList = (props: {
   issues: IssueReadWithRelations[]

@@ -3,7 +3,7 @@ from __future__ import annotations
 from uuid import UUID
 from typing import List, Literal, Sequence, Tuple
 from sqlalchemy import Select, desc, func, or_, ColumnElement
-
+from sqlalchemy.orm import joinedload
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
 from polar.dashboard.schemas import IssueListType
@@ -71,8 +71,11 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
     async def list_by_repository_and_numbers(
         self, session: AsyncSession, repository_id: UUID, numbers: List[int]
     ) -> Sequence[Issue]:
-        statement = sql.select(Issue).where(Issue.repository_id == repository_id).where(
-            Issue.number.in_(numbers))
+        statement = (
+            sql.select(Issue)
+            .where(Issue.repository_id == repository_id)
+            .where(Issue.number.in_(numbers))
+        )
         res = await session.execute(statement)
         issues = res.scalars().unique().all()
         return issues
@@ -179,14 +182,24 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
     ) -> Sequence[IssueReference]:
         stmt = (
             sql.select(IssueReference)
-            .join(
-                PullRequest,
-                IssueReference.pull_request_id == PullRequest.id,
-                isouter=True,
-            )
             .where(
                 IssueReference.issue_id == issue.id,
             )
+            .options(joinedload(IssueReference.pull_request))
+        )
+        res = await session.execute(stmt)
+        refs = res.scalars().unique().all()
+        return refs
+
+    async def list_issue_references_for_issues(
+        self, session: AsyncSession, issue_ids: list[UUID]
+    ) -> Sequence[IssueReference]:
+        stmt = (
+            sql.select(IssueReference)
+            .where(
+                IssueReference.issue_id.in_(issue_ids),
+            )
+            .options(joinedload(IssueReference.pull_request))
         )
         res = await session.execute(stmt)
         refs = res.scalars().unique().all()
@@ -202,12 +215,12 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         """
         stmt = (
             sql.select(IssueDependency)
-            .join(
-                Issue,
-                IssueDependency.dependent_issue_id == Issue.id,
-            )
             .where(
                 IssueDependency.repository_id.in_([r.id for r in repos]),
+            )
+            .options(
+                joinedload(IssueDependency.dependent_issue),
+                joinedload(IssueDependency.dependency_issue),
             )
         )
         res = await session.execute(stmt)

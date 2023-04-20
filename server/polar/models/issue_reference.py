@@ -81,7 +81,7 @@ class IssueReference(TimestampedModel):
 
     pull_request: Mapped[PullRequest | None] = relationship(
         "PullRequest",
-        lazy="joined",
+        lazy="raise",
     )
 
     # If referenced by an external resource

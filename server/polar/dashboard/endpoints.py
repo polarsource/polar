@@ -245,9 +245,13 @@ async def dashboard(
 
     issues_with_prs: Set[UUID] = set()
 
+    issue_references = await issue.list_issue_references_for_issues(
+        session, [i.id for i in issues]
+    )
+
     # get linked pull requests
     for i in issues:
-        refs = await issue.list_issue_references(session, i)
+        refs = [r for r in issue_references if r.issue_id == i.id]
         for ref in refs:
             ref_entry: Entry[IssueReferenceRead] = Entry(
                 id=ref.external_id,

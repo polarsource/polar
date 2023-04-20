@@ -1,4 +1,5 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
+import RepoSelection from 'components/Dashboard/RepoSelection'
 import { api, CONFIG } from 'polarkit'
 import {
   IssueRead,
@@ -6,7 +7,6 @@ import {
   OrganizationStripeCustomerRead,
   RepositoryRead,
 } from 'polarkit/api/client'
-import { RepoSelection } from 'polarkit/components'
 import { IssueCard, RepositoryCard } from 'polarkit/components/pledge'
 import { GreenBanner, PrimaryButton, RedBanner } from 'polarkit/components/ui'
 import { useOrganizationCustomer, useUserOrganizations } from 'polarkit/hooks'

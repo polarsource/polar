@@ -1,8 +1,8 @@
 import { Cog8ToothIcon } from '@heroicons/react/24/outline'
 import AccountTopbar from 'components/Dashboard/Account/Topbar'
+import RepoSelection from 'components/Dashboard/RepoSelection'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { RepoSelection } from 'polarkit/components'
 import { useStore } from 'polarkit/store'
 import Topbar from './Topbar'
 

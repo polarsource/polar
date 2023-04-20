@@ -210,9 +210,6 @@ importers:
       eventemitter3:
         specifier: ^5.0.0
         version: 5.0.0
-      next:
-        specifier: latest
-        version: 13.2.4(react-dom@18.2.0)(react@18.2.0)(sass@1.59.3)
       react:
         specifier: ^18.2.0
         version: 18.2.0

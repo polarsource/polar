@@ -36,8 +36,8 @@ if (orgName && repoName) {
           const root = createRoot(badge)
           root.render(
             <React.StrictMode>
-              {extensionIssue.number} -{' '}
-              {getCentsInDollarString(extensionIssue.amount_pledged)}
+              ${getCentsInDollarString(extensionIssue.amount_pledged)} pledged
+              towards issue #{extensionIssue.number}
             </React.StrictMode>,
           )
         }

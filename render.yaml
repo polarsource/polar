@@ -9,6 +9,8 @@ services:
     rootDir: clients/apps/web
     numInstances: 1
     healthCheckPath: /
+    region: ohio
+    plan: standard
     envVars:
       - key: NEXT_PUBLIC_STRIPE_KEY
         value: "pk_test_51Mo5SjLDfyYwjoMW825niva8LKZpVUZU0a9Dn47oHADJzZwwHbxdIJqjhucmueSRoLTBBctAD7mKyyNlzb3nmTBc00mzGtKVsD"
@@ -22,13 +24,12 @@ services:
   # FastAPI Backend
   - type: web
     name: server
-    #env: python # run as native python
     env: docker
     dockerfilePath: ./Dockerfile
     dockerContext: ./
     dockerCommand: "poetry run uvicorn polar.app:app --host 0.0.0.0 --port 10000"
     region: ohio
-    plan: free
+    plan: standard
     branch: render-hosting
     rootDir: server
     numInstances: 1
@@ -44,6 +45,56 @@ services:
       - key: POLAR_GITHUB_REDIRECT_URL
         value: "https://dashboard.polar.sh/github/session"
 
+      # Redis
+      - key: POLAR_REDIS_HOST
+        fromService:
+          type: redis
+          name: polar-tasks
+          property: host
+      - key: POLAR_REDIS_PORT
+        fromService:
+          type: redis
+          name: polar-tasks
+          property: port
+      
+      # PostgreSQL
+      - key: POLAR_POSTGRES_USER
+        fromDatabase:
+          name: polar
+          property: user
+      - key: POLAR_POSTGRES_PWD
+        fromDatabase:
+          name: polar
+          property: password
+      - key: POLAR_POSTGRES_DATABASE
+        fromDatabase:
+          name: polar
+          property: database
+      - key: POLAR_POSTGRES_PORT
+        fromDatabase:
+          name: polar
+          property: port
+      - key: POLAR_POSTGRES_HOST
+        fromDatabase:
+          name: polar
+          property: host
+      
+      - fromGroup: github-production
+
+
+  # Worker
+  - type: web
+    name: worker
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: ./
+    dockerCommand: "arq run_worker.WorkerSettings"
+    region: ohio
+    plan: standard
+    branch: render-hosting
+    rootDir: server
+    numInstances: 1
+    envVars:
       # Redis
       - key: POLAR_REDIS_HOST
         fromService:

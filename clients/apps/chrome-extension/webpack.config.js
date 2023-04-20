@@ -1,7 +1,11 @@
 const path = require("path")
 
 module.exports = {
-  entry: "./src/index.tsx",
+  entry: {
+    content: "./src/index.tsx",
+    auth: "./src/auth.tsx",
+    popup: "./src/popup.tsx",
+  },
   mode: "production",
   module: {
     rules: [
@@ -44,7 +48,7 @@ module.exports = {
     extensions: [".tsx", ".ts", ".js"],
   },
   output: {
-    filename: "content.js",
+    filename: "[name].js",
     // path: path.resolve(__dirname, "..", "extension"),
   },
 }

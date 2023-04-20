@@ -11,11 +11,12 @@
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "typescript": "^4.4.2",
+    "use-chrome-storage": "^1.2.1",
     "web-vitals": "^2.1.0"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && webpack --config webpack.config.js && mv dist/content.js ./extension",
+    "build": "react-scripts build && webpack --config webpack.config.js && mv dist/content.js ./extension && mv dist/auth.js ./extension && mv dist/popup.js ./extension",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -41,6 +42,7 @@
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^13.0.0",
     "@testing-library/user-event": "^13.2.1",
+    "@types/chrome": "^0.0.233",
     "css-loader": "^6.7.3",
     "style-loader": "^3.3.2",
     "svg-inline-loader": "^0.8.2",

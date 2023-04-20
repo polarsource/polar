@@ -23,4 +23,4 @@ yarn-debug.log*
 yarn-error.log*
 
 # Extension generated stuff
-/extension/content.js
+/extension/*.js

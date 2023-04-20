@@ -1,7 +1,17 @@
+import { useEffect } from 'react'
 import './App.css'
 import logo from './logo.svg'
 
 function App() {
+  useEffect(() => {
+    ;(async () => {
+      const result = await chrome.storage.local.get(['token'])
+      if (result && result.token) {
+        alert(result.token)
+      }
+    })()
+  }, [])
+
   return (
     <div className="App">
       <header className="App-header">

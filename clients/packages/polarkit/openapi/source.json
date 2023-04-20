@@ -26,6 +26,27 @@
                 }
             }
         },
+        "/api/v1/users/me/token": {
+            "post": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Create Token",
+                "operationId": "users:create_token",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LoginResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/logout": {
             "get": {
                 "tags": [
@@ -2786,6 +2807,10 @@
                         "title": "Expires At",
                         "type": "string",
                         "format": "date-time"
+                    },
+                    "token": {
+                        "title": "Token",
+                        "type": "string"
                     }
                 }
             },

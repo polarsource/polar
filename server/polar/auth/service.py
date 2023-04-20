@@ -16,6 +16,7 @@ log = structlog.get_logger()
 class LoginResponse(Schema):
     success: bool
     expires_at: datetime
+    token: str | None = None
 
 
 class LogoutResponse(Schema):
@@ -39,19 +40,32 @@ class AuthService:
         )
 
     @classmethod
-    def generate_login_response(
-        cls, *, response: Response, user: User
-    ) -> LoginResponse:
+    def generate_token(
+        cls, user: User
+    ) -> tuple[str, datetime]:
         expires_at = jwt.create_expiration_dt(seconds=settings.AUTH_COOKIE_TTL_SECONDS)
-        token = jwt.encode(
+        return (jwt.encode(
             data={
                 "user_id": str(user.id),
             },
             secret=settings.SECRET,
             expires_at=expires_at,
-        )
+        ), expires_at)
+
+    @classmethod
+    def generate_login_cookie_response(
+        cls, *, response: Response, user: User
+    ) -> LoginResponse:
+        (token, expires_at) = cls.generate_token(user=user)
         cls.set_auth_cookie(response=response, value=token, expires_at=expires_at)
         return LoginResponse(success=True, expires_at=expires_at)
+
+    @classmethod
+    def generate_login_json_response(
+        cls, *, user: User
+    ) -> LoginResponse:
+        (token, expires_at) = cls.generate_token(user=user)
+        return LoginResponse(success=True, token=token, expires_at=expires_at)
 
     @classmethod
     async def get_user_from_auth_cookie(

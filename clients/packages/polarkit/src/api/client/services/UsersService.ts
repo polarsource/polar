@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { LoginResponse } from '../models/LoginResponse';
 import type { LogoutResponse } from '../models/LogoutResponse';
 import type { UserRead } from '../models/UserRead';
 
@@ -20,6 +21,18 @@ export class UsersService {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/users/me',
+    });
+  }
+
+  /**
+   * Create Token
+   * @returns LoginResponse Successful Response
+   * @throws ApiError
+   */
+  public createToken(): CancelablePromise<LoginResponse> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/users/me/token',
     });
   }
 

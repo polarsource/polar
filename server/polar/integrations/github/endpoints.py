@@ -98,7 +98,7 @@ async def github_callback(
     if pledge_id:
         await pledge_service.connect_backer(session, pledge_id=pledge_id, backer=user)
 
-    return AuthService.generate_login_response(response=response, user=user)
+    return AuthService.generate_login_cookie_response(response=response, user=user)
 
 
 ###############################################################################

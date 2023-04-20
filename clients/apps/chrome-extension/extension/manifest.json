@@ -2,10 +2,20 @@
     "name": "Polar Chrome Extension",
     "version": "0.0.1",
     "manifest_version": 3,
+    "action": {
+        "default_popup": "popup.html"
+    },
+    "permissions": [
+        "storage"
+    ],
     "content_scripts": [
         {
             "js": ["content.js"],
             "matches": ["https://github.com/*/*/issues/*"]
+        },
+        {
+            "js": ["auth.js"],
+            "matches": ["http://127.0.0.1:3000/settings/extension"]
         }
     ]
 }

@@ -178,3 +178,5 @@ envVarGroups:
     value: 0
   - key: POLAR_DEBUG
     value: 0
+  - key: POLAR_FRONTEND_BASE_URL
+    value: "https://dashboard.polar.sh"

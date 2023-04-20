@@ -93,7 +93,10 @@ async def get_issue_references(
     refs = await issue_service.list_issue_references(session, issue)
     return [IssueReferenceRead.from_model(r) for r in refs]
 
-@router.get("/{platform}/{org_name}/{repo_name}/issues-for-extension", response_model=list[IssueExtensionRead])
+@router.get(
+    "/{platform}/{org_name}/{repo_name}/issues-for-extension",
+    response_model=list[IssueExtensionRead]
+)
 async def list_issues_for_extension(
     platform: Platforms,
     org_name: str,
@@ -102,5 +105,6 @@ async def list_issues_for_extension(
     auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> list[IssueExtensionRead]:
-    ret = [IssueExtensionRead(number=int(number), title=number) for number in numbers.split(",") if int(number) % 3 == 0]
+    ret = [IssueExtensionRead(number=int(number), title=number)
+           for number in numbers.split(",") if int(number) % 3 == 0]
     return ret

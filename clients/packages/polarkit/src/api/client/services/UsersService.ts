@@ -25,14 +25,14 @@ export class UsersService {
   }
 
   /**
-   * Get Token
+   * Create Token
    * @returns LoginResponse Successful Response
    * @throws ApiError
    */
-  public getToken(): CancelablePromise<LoginResponse> {
+  public createToken(): CancelablePromise<LoginResponse> {
     return this.httpRequest.request({
-      method: 'GET',
-      url: '/api/v1/users/token',
+      method: 'POST',
+      url: '/api/v1/users/me/token',
     });
   }
 

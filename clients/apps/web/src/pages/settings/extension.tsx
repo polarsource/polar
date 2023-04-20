@@ -8,7 +8,7 @@ const ExtensionSettingsPage: NextPageWithLayout = () => {
 
   useEffect(() => {
     ;(async () => {
-      const response = await api.users.getToken()
+      const response = await api.users.createToken()
       if (response.token) {
         setToken(response.token)
       }

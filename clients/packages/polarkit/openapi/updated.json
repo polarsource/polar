@@ -26,13 +26,13 @@
                 }
             }
         },
-        "/api/v1/users/token": {
-            "get": {
+        "/api/v1/users/me/token": {
+            "post": {
                 "tags": [
                     "users"
                 ],
-                "summary": "Get Token",
-                "operationId": "get_token",
+                "summary": "Create Token",
+                "operationId": "create_token",
                 "responses": {
                     "200": {
                         "description": "Successful Response",

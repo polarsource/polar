@@ -1,8 +1,21 @@
 import { Badge } from 'polarkit/components'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import api from './api'
 import './index.css'
 import reportWebVitals from './reportWebVitals'
+
+const MyComponent = () => {
+  const [name, setName] = useState<string>('')
+  useEffect(() => {
+    ;(async () => {
+      const user = await api.users.getAuthenticated()
+      setName(user.username)
+    })()
+  }, [])
+
+  return <div>Hello {name}</div>
+}
 
 const taskLists = document.querySelector('task-lists')
 if (taskLists) {
@@ -12,6 +25,7 @@ if (taskLists) {
   root.render(
     <React.StrictMode>
       <Badge />
+      <MyComponent />
     </React.StrictMode>,
   )
 }

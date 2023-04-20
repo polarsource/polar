@@ -13,7 +13,7 @@ async def current_active_user(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
 ) -> User:
-    user = await AuthService.get_user_from_auth_cookie(session, request=request)
+    user = await AuthService.get_user_from_request(session, request=request)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     return user

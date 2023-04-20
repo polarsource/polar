@@ -1,4 +1,4 @@
-import { useAuth } from 'polarkit/hooks'
+import { useAuth } from '../../hooks'
 import GithubLoginButton from './GithubLoginButton'
 import Logout from './Logout'
 

@@ -1,7 +1,7 @@
 import type { NextPage } from 'next'
 import { useRouter } from 'next/router'
-import { useAuth } from 'polarkit/hooks'
 import { useEffect } from 'react'
+import { useAuth } from '../hooks'
 
 const Home: NextPage = () => {
   const { currentUser } = useAuth()

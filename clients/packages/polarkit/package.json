@@ -33,7 +33,6 @@
     "axios": "^0.27.2",
     "cmdk": "^0.2.0",
     "eventemitter3": "^5.0.0",
-    "next": "latest",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-timeago": "^7.1.0",

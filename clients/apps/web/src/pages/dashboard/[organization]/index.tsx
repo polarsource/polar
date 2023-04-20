@@ -1,8 +1,8 @@
 import Dashboard from 'components/Dashboard/Dashboard'
 import type { NextLayoutComponentType } from 'next'
 import { useRouter } from 'next/router'
-import { useCurrentOrgAndRepoFromURL } from 'polarkit/hooks'
 import { ReactElement, useEffect } from 'react'
+import { useCurrentOrgAndRepoFromURL } from '../../../hooks'
 
 const Page: NextLayoutComponentType = () => {
   const router = useRouter()

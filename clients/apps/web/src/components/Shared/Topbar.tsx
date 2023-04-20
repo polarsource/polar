@@ -1,5 +1,5 @@
-import { useAuth } from 'polarkit/hooks'
 import { classNames } from 'polarkit/utils'
+import { useAuth } from '../../hooks'
 import Popover from '../Notifications/Popover'
 import Profile from './Profile'
 

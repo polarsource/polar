@@ -1,4 +1,5 @@
 import TimeAgo from 'react-timeago'
+import PledgeNow from '../../../../apps/web/src/components/Pledge/PledgeNow'
 import {
   IssueReferenceRead,
   OrganizationRead,
@@ -14,7 +15,6 @@ import IssueLabel, { LabelSchema } from './IssueLabel'
 import IssuePledge from './IssuePledge'
 import IssueProgress, { Progress } from './IssueProgress'
 import IssueReference from './IssueReference'
-import PledgeNow from './pledge/PledgeNow'
 
 const IssueListItem = (props: {
   org: OrganizationRead

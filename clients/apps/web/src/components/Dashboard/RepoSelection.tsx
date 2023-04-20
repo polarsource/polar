@@ -4,11 +4,12 @@ import {
 } from '@heroicons/react/20/solid'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { Command } from 'cmdk'
+import { useRequireAuth } from 'hooks'
+import { OrganizationRead, RepositoryRead, UserRead } from 'polarkit/api/client'
+import { CONFIG } from 'polarkit/config'
+import { useUserOrganizations } from 'polarkit/hooks'
+import { useOutsideClick } from 'polarkit/utils'
 import React, { KeyboardEvent, useEffect, useRef, useState } from 'react'
-import { OrganizationRead, RepositoryRead, UserRead } from '../api/client'
-import { CONFIG } from '../config'
-import { requireAuth, useUserOrganizations } from '../hooks'
-import { useOutsideClick } from '../utils'
 
 const plural = (num: number, singular: string, plural: string): string => {
   if (num === 1) {
@@ -36,7 +37,7 @@ export function RepoSelection(props: {
 
   const [open, setOpen] = React.useState(false)
 
-  const { currentUser } = requireAuth()
+  const { currentUser } = useRequireAuth()
   const userOrgQuery = useUserOrganizations(currentUser)
 
   useEffect(() => {

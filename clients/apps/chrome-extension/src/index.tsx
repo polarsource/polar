@@ -1,4 +1,3 @@
-import { Badge } from 'polarkit/components'
 import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import api from './api'
@@ -17,18 +16,18 @@ const MyComponent = () => {
   return <div>Hello {name}</div>
 }
 
-const taskLists = document.querySelector('task-lists')
-if (taskLists) {
+const issues = document.querySelectorAll("div a[id^='issue_']")
+issues.forEach((issue) => {
   const badge = document.createElement('div')
-  taskLists.insertAdjacentElement('afterend', badge)
+  issue.insertAdjacentElement('afterend', badge)
   const root = createRoot(badge)
   root.render(
     <React.StrictMode>
-      <Badge />
+      {/* <Badge /> */}
       <MyComponent />
     </React.StrictMode>,
   )
-}
+})
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

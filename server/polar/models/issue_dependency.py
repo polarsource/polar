@@ -40,9 +40,9 @@ class IssueDependency(TimestampedModel):
     )
 
     dependent_issue: "Mapped[Issue]" = relationship(
-        "Issue", uselist=False, lazy="joined", foreign_keys=[dependent_issue_id]
+        "Issue", uselist=False, lazy="raise", foreign_keys=[dependent_issue_id]
     )
 
     dependency_issue: "Mapped[Issue]" = relationship(
-        "Issue", uselist=False, lazy="joined", foreign_keys=[dependency_issue_id]
+        "Issue", uselist=False, lazy="raise", foreign_keys=[dependency_issue_id]
     )

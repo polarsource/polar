@@ -37,11 +37,11 @@ services:
     envVars:
       # CORS
       - key: POLAR_CORS_ORIGINS
-        value: '["https://web-oly6.onrender.com", "https://dash.polar.sh"]'
+        value: '["https://dashboard.polar.sh"]'
       
       # GitHub
       - key: POLAR_GITHUB_REDIRECT_URL
-        value: "https://web-oly6.onrender.com/github/session"
+        value: "https://dashboard.polar.sh/github/session"
 
       # Redis
       - key: POLAR_REDIS_HOST

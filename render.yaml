@@ -15,7 +15,9 @@ services:
       - key: NEXT_PUBLIC_API_URL
         value: "https://api.polar.sh"
       - key: NEXT_PUBLIC_GITHUB_INSTALLATION_URL
-        value: "https://github.com/apps/polar-sh/installations/new"
+      value: "https://github.com/apps/polar-sh/installations/new"
+    domains:
+      - dashboard.polar.sh
 
   # FastAPI Backend
   - type: web
@@ -31,6 +33,8 @@ services:
     rootDir: server
     numInstances: 1
     healthCheckPath: /readyz
+    domains:
+      - api.polar.sh
     envVars:
       # CORS
       - key: POLAR_CORS_ORIGINS

@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs'
 import TopbarLayout from 'components/Layout/TopbarLayout'
 import type { AppProps } from 'next/app'
 import { queryClient, QueryClientProvider } from 'polarkit/api'
@@ -14,6 +15,15 @@ const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
   if (!Component.getLayout) {
     getLayout = (page: ReactElement) => <TopbarLayout>{page}</TopbarLayout>
   }
+
+  Sentry.init({
+    dsn: 'https://5c83772133524f94a19b90d594db97f9@o4505046560538624.ingest.sentry.io/4505047079976960',
+
+    // Set tracesSampleRate to 1.0 to capture 100%
+    // of transactions for performance monitoring.
+    // We recommend adjusting this value in production
+    tracesSampleRate: 1.0,
+  })
 
   return (
     <QueryClientProvider client={queryClient}>

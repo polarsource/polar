@@ -66,6 +66,9 @@ class Settings(BaseSettings):
     # Stripe webhook secret
     STRIPE_WEBHOOK_SECRET: str = ""
 
+    # Sentry
+    SENTRY_DSN: str | None = None
+
     # Application behaviours
 
     GITHUB_BADGE_EMBED: bool = False

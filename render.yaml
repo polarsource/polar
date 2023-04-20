@@ -83,7 +83,7 @@ services:
 
 
   # Worker
-  - type: web
+  - type: worker
     name: worker
     env: docker
     dockerfilePath: ./Dockerfile

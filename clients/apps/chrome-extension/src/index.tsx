@@ -1,6 +1,6 @@
+import { Badge } from 'polarkit/components'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import App from './App'
 import './index.css'
 import reportWebVitals from './reportWebVitals'
 
@@ -11,7 +11,7 @@ if (taskLists) {
   const root = createRoot(badge)
   root.render(
     <React.StrictMode>
-      <App />
+      <Badge />
     </React.StrictMode>,
   )
 }

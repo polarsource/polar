@@ -1,4 +1,5 @@
 import { ArrowLeftIcon } from '@heroicons/react/24/solid'
+import RepoSelection from 'components/Dashboard/RepoSelection'
 import { BadgeSettings } from 'components/Settings/BadgeSettings'
 import Box from 'components/Settings/Box'
 import NotificationSettings, {
@@ -11,7 +12,6 @@ import { NextLayoutComponentType } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { OrganizationSettingsUpdate } from 'polarkit/api/client'
-import { RepoSelection } from 'polarkit/components'
 import {
   useOrganization,
   useOrganizationSettingsMutation,

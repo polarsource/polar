@@ -180,3 +180,6 @@ envVarGroups:
     value: 0
   - key: POLAR_FRONTEND_BASE_URL
     value: "https://dashboard.polar.sh"
+  - key: POLAR_SENTRY_DSN
+    # value: "xxx"
+    sync: false

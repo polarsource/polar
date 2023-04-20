@@ -45,41 +45,9 @@ services:
       - key: POLAR_GITHUB_REDIRECT_URL
         value: "https://dashboard.polar.sh/github/session"
 
-      # Redis
-      - key: POLAR_REDIS_HOST
-        fromService:
-          type: redis
-          name: polar-tasks
-          property: host
-      - key: POLAR_REDIS_PORT
-        fromService:
-          type: redis
-          name: polar-tasks
-          property: port
-      
-      # PostgreSQL
-      - key: POLAR_POSTGRES_USER
-        fromDatabase:
-          name: polar
-          property: user
-      - key: POLAR_POSTGRES_PWD
-        fromDatabase:
-          name: polar
-          property: password
-      - key: POLAR_POSTGRES_DATABASE
-        fromDatabase:
-          name: polar
-          property: database
-      - key: POLAR_POSTGRES_PORT
-        fromDatabase:
-          name: polar
-          property: port
-      - key: POLAR_POSTGRES_HOST
-        fromDatabase:
-          name: polar
-          property: host
-      
       - fromGroup: github-production
+      - fromGroup: postgres-production
+      - fromGroup: redis-tasks-production
 
 
   # Worker
@@ -94,42 +62,10 @@ services:
     branch: main
     rootDir: server
     numInstances: 1
-    envVars:
-      # Redis
-      - key: POLAR_REDIS_HOST
-        fromService:
-          type: redis
-          name: polar-tasks
-          property: host
-      - key: POLAR_REDIS_PORT
-        fromService:
-          type: redis
-          name: polar-tasks
-          property: port
-      
-      # PostgreSQL
-      - key: POLAR_POSTGRES_USER
-        fromDatabase:
-          name: polar
-          property: user
-      - key: POLAR_POSTGRES_PWD
-        fromDatabase:
-          name: polar
-          property: password
-      - key: POLAR_POSTGRES_DATABASE
-        fromDatabase:
-          name: polar
-          property: database
-      - key: POLAR_POSTGRES_PORT
-        fromDatabase:
-          name: polar
-          property: port
-      - key: POLAR_POSTGRES_HOST
-        fromDatabase:
-          name: polar
-          property: host
-      
+    envVars:      
       - fromGroup: github-production
+      - fromGroup: postgres-production
+      - fromGroup: redis-tasks-production
 
   - type: redis
     name: polar-tasks
@@ -162,3 +98,39 @@ envVarGroups:
     - key: POLAR_GITHUB_CLIENT_SECRET
       # value: "xxx"
       sync: false
+
+- name: postgres-production
+  envVars:
+  - key: POLAR_POSTGRES_USER
+    fromDatabase:
+      name: polar
+      property: user
+  - key: POLAR_POSTGRES_PWD
+    fromDatabase:
+      name: polar
+      property: password
+  - key: POLAR_POSTGRES_DATABASE
+    fromDatabase:
+      name: polar
+      property: database
+  - key: POLAR_POSTGRES_PORT
+    fromDatabase:
+      name: polar
+      property: port
+  - key: POLAR_POSTGRES_HOST
+    fromDatabase:
+      name: polar
+      property: host
+
+- name: redis-tasks-production
+  envVars:
+  - key: POLAR_REDIS_HOST
+    fromService:
+      type: redis
+      name: polar-tasks
+      property: host
+  - key: POLAR_REDIS_PORT
+    fromService:
+      type: redis
+      name: polar-tasks
+      property: port

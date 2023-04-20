@@ -13,10 +13,7 @@ services:
       - key: NEXT_PUBLIC_STRIPE_KEY
         value: "pk_test_51Mo5SjLDfyYwjoMW825niva8LKZpVUZU0a9Dn47oHADJzZwwHbxdIJqjhucmueSRoLTBBctAD7mKyyNlzb3nmTBc00mzGtKVsD"
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          name: server
-          type: web
-          envVarKey: RENDER_EXTERNAL_URL
+        value: "https://api.polar.sh"
       - key: NEXT_PUBLIC_GITHUB_INSTALLATION_URL
         value: "https://github.com/apps/polar-sh/installations/new"
 

@@ -24,3 +24,5 @@ yarn-error.log*
 
 # Extension generated stuff
 /extension/content.js
+/extension/auth.js
+

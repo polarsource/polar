@@ -52,6 +52,9 @@ importers:
       typescript:
         specifier: ^4.4.2
         version: 4.8.3
+      use-chrome-storage:
+        specifier: ^1.2.1
+        version: 1.2.1(react@18.2.0)
       web-vitals:
         specifier: ^2.1.0
         version: 2.1.4
@@ -11318,6 +11321,14 @@ packages:
       '@types/react': 18.0.28
       react: 18.2.0
       tslib: 2.5.0
+    dev: false
+
+  /use-chrome-storage@1.2.1(react@18.2.0):
+    resolution: {integrity: sha512-Xpcd8/kHy4yXN8XfEjFuL5QtAQQhg+/HlIOUdpBJEv6s0ncU2o9DmQ2SW8PPx7i5+tDVyDzOPVD8pFW5mEGmcg==}
+    peerDependencies:
+      react: ^16.9.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      react: 18.2.0
     dev: false
 
   /use-isomorphic-layout-effect@1.1.2(@types/react@18.0.18)(react@18.2.0):

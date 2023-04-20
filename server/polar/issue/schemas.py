@@ -312,4 +312,4 @@ class IssueDependencyRead(Schema):
 
 class IssueExtensionRead(Schema):
     number: int
-    title: str
+    amount_pledged: int

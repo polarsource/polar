@@ -68,6 +68,15 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         issues = res.scalars().unique().all()
         return issues
 
+    async def list_by_repository_and_numbers(
+        self, session: AsyncSession, repository_id: UUID, numbers: List[int]
+    ) -> Sequence[Issue]:
+        statement = sql.select(Issue).where(Issue.repository_id == repository_id).where(
+            Issue.number.in_(numbers))
+        res = await session.execute(statement)
+        issues = res.scalars().unique().all()
+        return issues
+
     async def list_by_repository_type_and_status(
         self,
         session: AsyncSession,

@@ -4,6 +4,6 @@
 
 export type IssueExtensionRead = {
   number: number;
-  title: string;
+  amount_pledged: number;
 };
 

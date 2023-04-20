@@ -1,4 +1,5 @@
 import { Platforms } from 'polarkit/api/client'
+import { getCentsInDollarString } from 'polarkit/utils'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import api from './api'
@@ -17,8 +18,8 @@ issues.forEach((issue) => {
 api.issues
   .listIssuesForExtension({
     platform: Platforms.GITHUB,
-    orgName: 'polarsource',
-    repoName: 'polar',
+    orgName: 'polarsource', // TODO
+    repoName: 'testing', // TODO
     numbers: issueNumbers.join(','),
   })
   .then((extensionIssues) => {
@@ -32,7 +33,8 @@ api.issues
         const root = createRoot(badge)
         root.render(
           <React.StrictMode>
-            {extensionIssue.title} - {extensionIssue.number}
+            {extensionIssue.number} -{' '}
+            {getCentsInDollarString(extensionIssue.amount_pledged)}
           </React.StrictMode>,
         )
       }

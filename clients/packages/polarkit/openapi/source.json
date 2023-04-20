@@ -2458,7 +2458,7 @@
                 "title": "IssueExtensionRead",
                 "required": [
                     "number",
-                    "title"
+                    "amount_pledged"
                 ],
                 "type": "object",
                 "properties": {
@@ -2466,9 +2466,9 @@
                         "title": "Number",
                         "type": "integer"
                     },
-                    "title": {
-                        "title": "Title",
-                        "type": "string"
+                    "amount_pledged": {
+                        "title": "Amount Pledged",
+                        "type": "integer"
                     }
                 }
             },

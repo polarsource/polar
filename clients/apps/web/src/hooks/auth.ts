@@ -1,8 +1,8 @@
 import { useRouter } from 'next/router'
 import { CancelablePromise, type UserRead } from 'polarkit/api/client'
+import { useHasHydrated } from 'polarkit/hooks'
+import { UserState, useStore } from 'polarkit/store'
 import { useEffect, useState } from 'react'
-import { UserState, useStore } from '../store'
-import { useHasHydrated } from './hydration'
 
 export const useAuth = (): UserState & {
   hasChecked: boolean
@@ -54,7 +54,7 @@ export const useAuth = (): UserState & {
   return { authenticated, currentUser, hasChecked, isChecking, login, logout }
 }
 
-export const requireAuth = (
+export const useRequireAuth = (
   redirectTo: string = '/',
 ): UserState & {
   hasChecked: boolean

@@ -3,17 +3,13 @@ import DashboardLayout from 'components/Layout/DashboardLayout'
 import OnboardingConnectReposToGetStarted from 'components/Onboarding/OnboardingConnectReposToGetStarted'
 import type { NextLayoutComponentType } from 'next'
 import { useRouter } from 'next/router'
-import {
-  requireAuth,
-  useCurrentOrgAndRepoFromURL,
-  useListPersonalPledges,
-  useUserOrganizations,
-} from 'polarkit/hooks'
+import { useListPersonalPledges, useUserOrganizations } from 'polarkit/hooks'
 import { ReactElement, useEffect } from 'react'
+import { useCurrentOrgAndRepoFromURL, useRequireAuth } from '../../hooks'
 
 const Page: NextLayoutComponentType = () => {
   const { isLoaded, haveOrgs } = useCurrentOrgAndRepoFromURL()
-  const { currentUser } = requireAuth()
+  const { currentUser } = useRequireAuth()
 
   const userOrgQuery = useUserOrganizations(currentUser)
   const personalPledges = useListPersonalPledges()

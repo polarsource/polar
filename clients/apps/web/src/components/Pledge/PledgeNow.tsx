@@ -1,9 +1,9 @@
-import { useState, type MouseEvent } from 'react'
 import {
   IssueRead,
   OrganizationRead,
   RepositoryRead,
-} from '../../api/client/index'
+} from 'polarkit/api/client'
+import { useState, type MouseEvent } from 'react'
 import Overlay from './Overlay'
 
 const PledgeNow = ({

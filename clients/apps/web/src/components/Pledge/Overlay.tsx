@@ -1,22 +1,18 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { RepoSelection } from 'polarkit/components'
-import {
-  requireAuth,
-  useOrganizationCustomer,
-  useUserOrganizations,
-} from 'polarkit/hooks'
-import { getCentsInDollarString } from 'polarkit/utils'
-import { useEffect, useState } from 'react'
-import { api, CONFIG } from '../../../index'
+import { api, CONFIG } from 'polarkit'
 import {
   IssueRead,
   OrganizationRead,
   OrganizationStripeCustomerRead,
   RepositoryRead,
-} from '../../api/client/index'
-import { GreenBanner, PrimaryButton, RedBanner } from '../ui'
-import IssueCard from './IssueCard'
-import RepositoryCard from './RepositoryCard'
+} from 'polarkit/api/client'
+import { RepoSelection } from 'polarkit/components'
+import { IssueCard, RepositoryCard } from 'polarkit/components/pledge'
+import { GreenBanner, PrimaryButton, RedBanner } from 'polarkit/components/ui'
+import { useOrganizationCustomer, useUserOrganizations } from 'polarkit/hooks'
+import { getCentsInDollarString } from 'polarkit/utils'
+import { useEffect, useState } from 'react'
+import { useRequireAuth } from '../../hooks'
 
 const Overlay = ({
   onClose,
@@ -29,7 +25,7 @@ const Overlay = ({
   issueOrg: OrganizationRead
   issueRepo: RepositoryRead
 }) => {
-  const { currentUser } = requireAuth()
+  const { currentUser } = useRequireAuth()
   const userOrgQuery = useUserOrganizations(currentUser)
 
   const [pledgeAs, setPledgeAs] = useState('')
@@ -261,7 +257,7 @@ const PaymentMethod = ({
   if (!customer.default_payment_method) {
     return (
       <RedBanner>
-        <span>Organization doesn't have any saved payment methods.</span>
+        <span>Organization doesn&apos;t have any saved payment methods.</span>
       </RedBanner>
     )
   }

@@ -1,8 +1,8 @@
 import SetupOrganization from 'components/Dashboard/Onboarding/SetupOrganization'
 import SynchronizeRepositories from 'components/Dashboard/Onboarding/SynchronizeRepositories'
 import { NextLayoutComponentType } from 'next'
-import { useCurrentOrgAndRepoFromURL } from 'polarkit/hooks'
 import { useState } from 'react'
+import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
 
 const Page: NextLayoutComponentType = () => {
   const [showSetup, setShowSetup] = useState(false)

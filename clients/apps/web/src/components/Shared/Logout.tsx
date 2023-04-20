@@ -1,5 +1,5 @@
-import { useAuth } from 'polarkit/hooks'
 import React from 'react'
+import { useAuth } from '../../hooks'
 
 import { ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline'
 

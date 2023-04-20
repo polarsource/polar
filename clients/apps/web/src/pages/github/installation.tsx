@@ -2,10 +2,10 @@ import EmptyLayout from 'components/Layout/EmptyLayout'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit'
 import { InstallationCreate, OrganizationRead } from 'polarkit/api/client'
-import { useAuth } from 'polarkit/hooks'
 import type { ReactElement } from 'react'
 import { useEffect, useState } from 'react'
 import { NextPageWithLayout } from 'utils/next'
+import { useAuth } from '../../hooks'
 
 const GithubInstallationPage: NextPageWithLayout = () => {
   const router = useRouter()

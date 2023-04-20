@@ -1,9 +1,9 @@
 import { useRouter } from 'next/router'
+import type { OrganizationRead, RepositoryRead } from 'polarkit/api/client'
+import { useUserOrganizations } from 'polarkit/hooks'
+import { useStore } from 'polarkit/store'
 import { useEffect, useState } from 'react'
-import type { OrganizationRead, RepositoryRead } from '../api/client'
-import { useStore } from '../store'
-import { requireAuth } from './auth'
-import { useUserOrganizations } from './queries'
+import { useRequireAuth } from './auth'
 
 export const useCurrentOrgAndRepoFromURL = (): {
   org: OrganizationRead | undefined
@@ -13,7 +13,7 @@ export const useCurrentOrgAndRepoFromURL = (): {
 } => {
   const router = useRouter()
   const { organization: queryOrg, repo: queryRepo } = router.query
-  const { currentUser } = requireAuth()
+  const { currentUser } = useRequireAuth()
   const userOrgQuery = useUserOrganizations(currentUser)
   const [org, setOrg] = useState<OrganizationRead | undefined>(undefined)
   const [repo, setRepo] = useState<RepositoryRead | undefined>(undefined)

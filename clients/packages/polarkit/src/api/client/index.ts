@@ -23,6 +23,7 @@ export type { ExternalGitHubPullRequestReference } from './models/ExternalGitHub
 export { GithubBadgeRead } from './models/GithubBadgeRead';
 export type { HTTPValidationError } from './models/HTTPValidationError';
 export { InstallationCreate } from './models/InstallationCreate';
+export type { IssueExtensionRead } from './models/IssueExtensionRead';
 export type { IssueListResponse } from './models/IssueListResponse';
 export { IssueListType } from './models/IssueListType';
 export type { IssuePledgeCreated } from './models/IssuePledgeCreated';
@@ -69,6 +70,7 @@ export { Visibility } from './models/Visibility';
 export { AccountsService } from './services/AccountsService';
 export { BackofficeService } from './services/BackofficeService';
 export { DashboardService } from './services/DashboardService';
+export { HealthService } from './services/HealthService';
 export { IntegrationsService } from './services/IntegrationsService';
 export { IssuesService } from './services/IssuesService';
 export { NotificationsService } from './services/NotificationsService';

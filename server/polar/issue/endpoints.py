@@ -10,7 +10,7 @@ from polar.exceptions import ResourceNotFound
 
 from polar.organization.service import organization as organization_service
 
-from .schemas import IssueRead, IssueReferenceRead
+from .schemas import IssueExtensionRead, IssueRead, IssueReferenceRead
 from .service import issue as issue_service
 
 router = APIRouter(tags=["issues"])
@@ -92,3 +92,15 @@ async def get_issue_references(
 
     refs = await issue_service.list_issue_references(session, issue)
     return [IssueReferenceRead.from_model(r) for r in refs]
+
+@router.get("/{platform}/{org_name}/{repo_name}/issues-for-extension", response_model=list[IssueExtensionRead])
+async def list_issues_for_extension(
+    platform: Platforms,
+    org_name: str,
+    repo_name: str,
+    numbers: str,
+    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
+    session: AsyncSession = Depends(get_db_session),
+) -> list[IssueExtensionRead]:
+    ret = [IssueExtensionRead(number=int(number), title=number) for number in numbers.split(",") if int(number) % 3 == 0]
+    return ret

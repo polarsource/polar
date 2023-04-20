@@ -141,7 +141,7 @@ databases:
   - name: polar
     databaseName: polar
     user: polar
-    # TODO: once we have db migrations in place, lock down to only allow internal connections
+    ipAllowList: [] # allow only internal connections
 
 
 envVarGroups:

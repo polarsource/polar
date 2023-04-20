@@ -27,7 +27,7 @@ services:
     env: docker
     dockerfilePath: ./Dockerfile
     dockerContext: ./
-    dockerCommand: "poetry run uvicorn polar.app:app --host 0.0.0.0 --port 10000"
+    dockerCommand: "./hack/production_run_server.sh"
     region: ohio
     plan: standard
     branch: main
@@ -48,6 +48,7 @@ services:
       - fromGroup: github-production
       - fromGroup: postgres-production
       - fromGroup: redis-tasks-production
+      - fromGroup: server-common
 
 
   # Worker
@@ -66,6 +67,7 @@ services:
       - fromGroup: github-production
       - fromGroup: postgres-production
       - fromGroup: redis-tasks-production
+      - fromGroup: server-common
 
   - type: redis
     name: polar-tasks
@@ -134,3 +136,16 @@ envVarGroups:
       type: redis
       name: polar-tasks
       property: port
+
+- name: server-common
+  envVars:
+  - key: POLAR_GITHUB_BADGE_EMBED
+    value: 1
+  - key: POLAR_ENV
+    value: production
+  - key: POLAR_LOG_LEVEL
+    value: INFO
+  - key: POLAR_TESTING
+    value: 0
+  - key: POLAR_DEBUG
+    value: 0

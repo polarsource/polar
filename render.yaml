@@ -5,7 +5,7 @@ services:
     env: node
     buildCommand: pnpm install; pnpm build
     startCommand: pnpm start -p 10000
-    branch: render-hosting
+    branch: main
     rootDir: clients/apps/web
     numInstances: 1
     healthCheckPath: /
@@ -30,7 +30,7 @@ services:
     dockerCommand: "poetry run uvicorn polar.app:app --host 0.0.0.0 --port 10000"
     region: ohio
     plan: standard
-    branch: render-hosting
+    branch: main
     rootDir: server
     numInstances: 1
     healthCheckPath: /readyz
@@ -91,7 +91,7 @@ services:
     dockerCommand: "poetry run arq run_worker.WorkerSettings"
     region: ohio
     plan: standard
-    branch: render-hosting
+    branch: main
     rootDir: server
     numInstances: 1
     envVars:

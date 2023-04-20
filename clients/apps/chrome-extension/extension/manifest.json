@@ -11,7 +11,7 @@
     "content_scripts": [
         {
             "js": ["content.js"],
-            "matches": ["https://github.com/*/*/issues/*"]
+            "matches": ["https://github.com/*/*/issues"]
         },
         {
             "js": ["auth.js"],

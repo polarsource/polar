@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { IssueExtensionRead } from '../models/IssueExtensionRead';
 import type { IssueRead } from '../models/IssueRead';
 import type { IssueReferenceRead } from '../models/IssueReferenceRead';
 import type { Platforms } from '../models/Platforms';
@@ -95,6 +96,39 @@ export class IssuesService {
         'org_name': orgName,
         'repo_name': repoName,
         'number': number,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * List Issues For Extension
+   * @returns IssueExtensionRead Successful Response
+   * @throws ApiError
+   */
+  public listIssuesForExtension({
+    platform,
+    orgName,
+    repoName,
+    numbers,
+  }: {
+    platform: Platforms,
+    orgName: string,
+    repoName: string,
+    numbers: string,
+  }): CancelablePromise<Array<IssueExtensionRead>> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/issues-for-extension',
+      path: {
+        'platform': platform,
+        'org_name': orgName,
+        'repo_name': repoName,
+      },
+      query: {
+        'numbers': numbers,
       },
       errors: {
         422: `Validation Error`,

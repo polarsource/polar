@@ -309,3 +309,7 @@ class IssueDependencyRead(Schema):
 
     class Config:
         orm_mode = True
+
+class IssueExtensionRead(Schema):
+    number: int
+    amount_pledged: int

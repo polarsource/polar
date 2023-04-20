@@ -68,18 +68,39 @@ class AuthService:
         return LoginResponse(success=True, token=token, expires_at=expires_at)
 
     @classmethod
-    async def get_user_from_auth_cookie(
+    async def get_user_from_request(
         cls, session: AsyncSession, *, request: Request
     ) -> User | None:
-        auth_cookie = request.cookies.get(settings.AUTH_COOKIE_KEY)
-        if not auth_cookie:
-            return None
+        token = cls.get_token_from_auth_cookie(request=request)
+        if not token:
+            token = cls.get_token_from_auth_header(request=request)
+            if not token:
+                return None
 
         try:
-            token = jwt.decode(token=auth_cookie, secret=settings.SECRET)
-            return await user_service.get(session, id=token["user_id"])
+            decoded = jwt.decode(token=token, secret=settings.SECRET)
+            return await user_service.get(session, id=decoded["user_id"])
         except jwt.DecodeError:
             return None
+
+
+    @classmethod
+    def get_token_from_auth_cookie(
+        cls, *, request: Request
+    ) -> str | None:
+        return request.cookies.get(settings.AUTH_COOKIE_KEY)
+
+    @classmethod
+    def get_token_from_auth_header(
+        cls, *, request: Request
+    ) -> str | None:
+        auhtorization = request.headers.get("Authorization")
+        if not auhtorization:
+            return None
+        method, token = auhtorization.split(" ", 1)
+        if method != "Bearer":
+            return None
+        return token
 
     @classmethod
     def generate_logout_response(cls, *, response: Response) -> LogoutResponse:

@@ -88,7 +88,7 @@ services:
     env: docker
     dockerfilePath: ./Dockerfile
     dockerContext: ./
-    dockerCommand: "arq run_worker.WorkerSettings"
+    dockerCommand: "poetry run arq run_worker.WorkerSettings"
     region: ohio
     plan: standard
     branch: render-hosting

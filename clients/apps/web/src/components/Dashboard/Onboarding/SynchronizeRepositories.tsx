@@ -26,6 +26,13 @@ const getInitializedSyncState = (
   return initialSyncStates
 }
 
+const max = (a: number, b: number): number => {
+  if (a > b) {
+    return a
+  }
+  return b
+}
+
 export const SynchronizeRepositories = ({
   org,
   onContinue,
@@ -34,7 +41,6 @@ export const SynchronizeRepositories = ({
   onContinue: () => void
 }) => {
   let initialSyncStates = getInitializedSyncState(org)
-  const [debug] = useState<boolean>(false) // ?
   const emitter = useSSE(org.platform, org.name)
   const [syncingRepos, setSyncingRepos] = useState<{
     [id: string]: RepoSyncState
@@ -64,7 +70,8 @@ export const SynchronizeRepositories = ({
         ...prev,
         [data.repository_id]: {
           ...repo,
-          processed,
+          // Make sure that processed doesn't decrease
+          processed: max(processed, repo.processed),
           expected: data.expected,
           completed,
         },
@@ -117,9 +124,9 @@ export const SynchronizeRepositories = ({
           )
         })}
       </ul>
-      {(totalProcessed / totalExpected > 0.4 ||
-        continueTimeoutReached ||
-        debug) && <OnboardingControls onClickContinue={onContinue} />}
+      {(totalProcessed / totalExpected > 0.4 || continueTimeoutReached) && (
+        <OnboardingControls onClickContinue={onContinue} />
+      )}
     </>
   )
 }

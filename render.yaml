@@ -15,7 +15,7 @@ services:
       - key: NEXT_PUBLIC_API_URL
         value: "https://api.polar.sh"
       - key: NEXT_PUBLIC_GITHUB_INSTALLATION_URL
-      value: "https://github.com/apps/polar-sh/installations/new"
+        value: "https://github.com/apps/polar-sh/installations/new"
     domains:
       - dashboard.polar.sh
 

@@ -82,9 +82,7 @@ services:
 
   - type: redis
     name: polar-tasks
-    ipAllowList: # TODO: lock down to internal connections only?
-      - source: 0.0.0.0/0
-        description: everywhere
+    ipAllowList: [] # allow only internal connections
     plan: free
     maxmemoryPolicy: noeviction # no-eviciton for our queue
 
@@ -92,6 +90,7 @@ databases:
   - name: polar
     databaseName: polar
     user: polar
+    # TODO: once we have db migrations in place, lock down to only allow internal connections
 
 
 envVarGroups:

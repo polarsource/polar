@@ -8,6 +8,7 @@ from polar.api import router
 from polar.config import settings
 from polar.logging import configure as configure_logging
 from polar.health.endpoints import router as health_router
+from polar.sentry import configure_sentry
 
 log = structlog.get_logger()
 
@@ -41,5 +42,7 @@ def create_app() -> FastAPI:
 
 
 configure_logging()
+configure_sentry()
+
 log.info("Starting Polar API")
 app = create_app()

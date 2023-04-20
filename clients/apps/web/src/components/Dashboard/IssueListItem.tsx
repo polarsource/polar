@@ -1,14 +1,14 @@
-import TimeAgo from 'react-timeago'
-import PledgeNow from '../../../../apps/web/src/components/Pledge/PledgeNow'
 import {
   IssueReferenceRead,
   OrganizationRead,
   RepositoryRead,
   type IssueRead,
   type PledgeRead,
-} from '../api/client'
-import { IssueReadWithRelations } from '../api/types'
-import { githubIssueUrl } from '../utils'
+} from 'polarkit/api/client'
+import { IssueReadWithRelations } from 'polarkit/api/types'
+import { githubIssueUrl } from 'polarkit/utils'
+import TimeAgo from 'react-timeago'
+import PledgeNow from '../Pledge/PledgeNow'
 import IconCounter from './IconCounter'
 import IssueActivityBox from './IssueActivityBox'
 import IssueLabel, { LabelSchema } from './IssueLabel'

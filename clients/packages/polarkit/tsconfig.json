@@ -4,6 +4,6 @@
     "baseUrl": "src/",
     "allowSyntheticDefaultImports": true
   },
-  "include": ["."],
+  "include": [".", "../../apps/web/src/components/Dashboard/IssueActivityBox.tsx"],
   "exclude": ["dist", "build", "node_modules", "openapi", "scripts"]
 }

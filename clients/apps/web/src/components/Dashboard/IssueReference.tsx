@@ -1,4 +1,3 @@
-import TimeAgo from 'react-timeago'
 import {
   ExternalGitHubCommitReference,
   ExternalGitHubPullRequestReference,
@@ -7,12 +6,15 @@ import {
   OrganizationRead,
   RepositoryRead,
   type PullRequestReference,
-} from '../api/client'
-import { githubPullReqeustUrl } from '../utils/github'
-import GitBranchIcon from './icons/GitBranchIcon'
-import GitMergeIcon from './icons/GitMergeIcon'
-import GitPullRequestClosedIcon from './icons/GitPullRequestClosedIcon'
-import GitPullRequestIcon from './icons/GitPullRequestIcon'
+} from 'polarkit/api/client'
+import {
+  GitBranchIcon,
+  GitMergeIcon,
+  GitPullRequestClosedIcon,
+  GitPullRequestIcon,
+} from 'polarkit/components/icons'
+import { githubPullReqeustUrl } from 'polarkit/utils'
+import TimeAgo from 'react-timeago'
 
 const IssueReference = (props: {
   org: OrganizationRead

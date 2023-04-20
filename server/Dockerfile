@@ -13,5 +13,7 @@ ADD polar polar
 ADD scripts scripts
 ADD run_worker.py .
 
+ADD hack hack
+
 ADD migrations migrations
 ADD alembic.ini .

@@ -10,11 +10,6 @@ from polar.config import settings
 cli = typer.Typer()
 
 
-def seed_issues() -> None:
-    # Keeping this as a no-op if we decide to use it
-    ...
-
-
 def get_sync_postgres_dsn() -> str:
     # TODO: Dirty and quick hack. Change this later to drop unnecessary dependency.
     async_dsn = str(settings.postgres_dsn)
@@ -29,6 +24,8 @@ def _upgrade(revision: str = "head") -> None:
 
 
 def _recreate() -> None:
+    assert_dev_or_testing()
+
     if database_exists(get_sync_postgres_dsn()):
         drop_database(get_sync_postgres_dsn())
 
@@ -45,16 +42,14 @@ def upgrade(
 
 @cli.command()
 def recreate() -> None:
+    assert_dev_or_testing()
     _recreate()
 
 
-@cli.command()
-def seed() -> None:
-    seed_issues()
-
-
-if __name__ == "__main__":
+def assert_dev_or_testing():
     if not (settings.is_development() or settings.is_testing()):
         raise RuntimeError(f"DANGER! You cannot run this script in {settings.ENV}!")
 
+
+if __name__ == "__main__":
     cli()

@@ -7,6 +7,7 @@ from polar.auth.dependencies import Auth
 from polar.models import Issue
 from polar.enums import Platforms
 from polar.models.pledge import Pledge
+from polar.pledge.schemas import State
 from polar.postgres import AsyncSession, get_db_session
 from polar.exceptions import ResourceNotFound
 
@@ -125,7 +126,8 @@ async def list_issues_for_extension(
         if pledges_by_issue_id.get(issue.id):
             issue_extension = IssueExtensionRead(
                 number=issue.number,
-                amount_pledged=sum([p.amount for p in pledges_by_issue_id[issue.id]])
+                amount_pledged=sum([p.amount for p in pledges_by_issue_id[issue.id]
+                                    if p.state == State.paid])
             )
             ret.append(issue_extension)
 

@@ -15,31 +15,35 @@ issues.forEach((issue) => {
   issueNumbers.push(issue.id.replace('issue_', ''))
 })
 
-api.issues
-  .listIssuesForExtension({
-    platform: Platforms.GITHUB,
-    orgName: 'polarsource', // TODO
-    repoName: 'testing', // TODO
-    numbers: issueNumbers.join(','),
-  })
-  .then((extensionIssues) => {
-    issues.forEach((issue) => {
-      const extensionIssue = extensionIssues.find(
-        (e) => e.number === parseInt(issue.id.replace('issue_', '')),
-      )
-      if (extensionIssue) {
-        const badge = document.createElement('div')
-        issue.insertAdjacentElement('afterend', badge)
-        const root = createRoot(badge)
-        root.render(
-          <React.StrictMode>
-            {extensionIssue.number} -{' '}
-            {getCentsInDollarString(extensionIssue.amount_pledged)}
-          </React.StrictMode>,
-        )
-      }
+const [, orgName, repoName] = window.location.pathname.split('/')
+
+if (orgName && repoName) {
+  api.issues
+    .listIssuesForExtension({
+      platform: Platforms.GITHUB,
+      orgName,
+      repoName,
+      numbers: issueNumbers.join(','),
     })
-  })
+    .then((extensionIssues) => {
+      issues.forEach((issue) => {
+        const extensionIssue = extensionIssues.find(
+          (e) => e.number === parseInt(issue.id.replace('issue_', '')),
+        )
+        if (extensionIssue) {
+          const badge = document.createElement('div')
+          issue.insertAdjacentElement('afterend', badge)
+          const root = createRoot(badge)
+          root.render(
+            <React.StrictMode>
+              {extensionIssue.number} -{' '}
+              {getCentsInDollarString(extensionIssue.amount_pledged)}
+            </React.StrictMode>,
+          )
+        }
+      })
+    })
+}
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

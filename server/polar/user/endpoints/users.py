@@ -13,9 +13,11 @@ router = APIRouter(prefix="/users", tags=["users"])
 async def get_authenticated(auth: Auth = Depends(Auth.current_user)) -> User:
     return auth.user
 
+
 @router.post("/me/token")
 async def create_token(auth: Auth = Depends(Auth.current_user)) -> LoginResponse:
     return AuthService.generate_login_json_response(user=auth.user)
+
 
 @router.get("/logout")
 async def logout(

@@ -7,6 +7,7 @@ from polar.exceptions import IntegrityError
 from polar.kit.extensions.sqlalchemy import sql
 from polar.models.pledge import Pledge
 from polar.models.pull_request import PullRequest
+from polar.models.user_notification import UserNotification
 from polar.pledge.service import pledge
 from polar.models.notification import Notification
 from polar.models.user_organization import UserOrganization
@@ -311,6 +312,29 @@ class NotificationsService:
                 return parse_obj_as(MaintainerIssuePullRequestMerged, n.payload)
 
         raise Exception(f"unknown type={tt}")
+
+    async def get_user_last_read(
+        self, session: AsyncSession, user_id: UUID
+    ) -> UUID | None:
+        stmt = sql.select(UserNotification).where(UserNotification.user_id == user_id)
+        res = await session.execute(stmt)
+        user_notif = res.scalar_one_or_none()
+        return user_notif.last_read_notification_id if user_notif else None
+
+    async def set_user_last_read(
+        self, session: AsyncSession, user_id: UUID, notification_id: UUID
+    ) -> None:
+        stmt = (
+            sql.insert(UserNotification)
+            .values(user_id=user_id, last_read_notification_id=notification_id)
+            .on_conflict_do_update(
+                index_elements=[UserNotification.user_id],
+                set_={"last_read_notification_id": notification_id},
+            )
+        )
+        res = await session.execute(stmt)
+        await session.commit()
+        # print(res.)
 
 
 def get_cents_in_dollar_string(cents: int) -> str:

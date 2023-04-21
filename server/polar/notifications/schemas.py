@@ -94,3 +94,12 @@ class NotificationRead(Schema):
         MaintainerIssuePullRequestCreated,
         MaintainerIssuePullRequestMerged,
     ]
+
+
+class NotificationsList(Schema):
+    notifications: list[NotificationRead]
+    last_read_notification_id: UUID | None
+
+
+class NotificationsMarkRead(Schema):
+    notification_id: UUID

@@ -51,7 +51,9 @@ async def sync_repository_pull_requests(
             session, organization_id, repository_id
         )
         await service.github_repository.sync_pull_requests(
-            session, organization=organization, repository=repository
+            session,
+            organization=organization,
+            repository=repository,
         )
         await enqueue_job(
             "github.repo.sync.issue_references", organization.id, repository.id

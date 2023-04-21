@@ -21,13 +21,13 @@ async def subscribe(redis: Redis, channels: list[str]):
         await pubsub.subscribe(*channels)
 
         while True:
-            message = await pubsub.get_message(ignore_subscribe_messages=True)
+            message = await pubsub.get_message(
+                ignore_subscribe_messages=True, timeout=30.0
+            )
+
             if message is not None:
                 log.info("redis.pubsub", message=message["data"])
                 yield message["data"]
-
-            # TODO: Move this to a configuration setting
-            await asyncio.sleep(0.1)
 
 
 @router.get("/user/stream")

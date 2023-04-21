@@ -9,7 +9,7 @@ import {
   MaintainerIssuePullRequestMerged,
   NotificationRead,
 } from 'polarkit/api/client'
-import { useNotifications } from 'polarkit/hooks'
+import { useNotifications, useNotificationsMarkRead } from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
 import { useEffect, useRef, useState } from 'react'
 import ReactTimeago from 'react-timeago'
@@ -19,10 +19,20 @@ const Popover = () => {
   const [showBadge, setShowBadge] = useState(false)
 
   const notifs = useNotifications()
+  const markRead = useNotificationsMarkRead()
+
+  const markLatest = () => {
+    if (!notifs || !notifs.data || notifs.data.notifications.length === 0) {
+      return
+    }
+    const first = notifs.data.notifications[0]
+    markRead.mutate({ notification_id: first.id })
+  }
 
   const clickBell = () => {
     if (!show && notifs.data) {
       setShow(true)
+      markLatest()
     }
 
     if (show) {
@@ -37,9 +47,18 @@ const Popover = () => {
   })
 
   useEffect(() => {
-    if (notifs.data && notifs.data.length > 0) {
-      setShowBadge(true)
-    }
+    const haveNotifications =
+      notifs.data && notifs.data.notifications.length > 0
+    const noReadNotifications =
+      haveNotifications && !notifs.data.last_read_notification_id
+    const lastNotificationIsUnread =
+      haveNotifications &&
+      notifs.data.last_read_notification_id !== notifs.data.notifications[0].id
+
+    const showBadge =
+      haveNotifications && (noReadNotifications || lastNotificationIsUnread)
+
+    setShowBadge(showBadge)
   }, [notifs, notifs.data])
 
   return (
@@ -69,12 +88,12 @@ const Popover = () => {
               <div className="z-10 mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white"></div>
               <div className="z-20 w-full max-w-md">
                 <div className="pointer-events-auto w-full  overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
-                  {notifs.data.length === 0 && (
+                  {notifs.data.notifications.length === 0 && (
                     <div className="p-4 text-black/60">
                       You don&apos;t have any notifications... yet!
                     </div>
                   )}
-                  {notifs.data.map((n) => {
+                  {notifs.data.notifications.map((n) => {
                     return <Notification n={n} key={n.id} />
                   })}
                 </div>

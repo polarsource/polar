@@ -160,3 +160,17 @@ export const useNotifications = () =>
   useQuery(['notifications'], () => api.notifications.get(), {
     retry: defaultRetry,
   })
+
+export const useNotificationsMarkRead = () =>
+  useMutation({
+    mutationFn: (variables: { notification_id: string }) => {
+      return api.notifications.markRead({
+        requestBody: {
+          notification_id: variables.notification_id,
+        },
+      })
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.invalidateQueries(['notifications'])
+    },
+  })

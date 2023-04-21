@@ -15,7 +15,7 @@ alembic = "^1.9.2"
 sqlalchemy = {extras = ["asyncio"], version = "^2.0.9"}
 greenlet = "^2.0.2"  # Need to be explicit, M1 Mac issue (https://github.com/python-poetry/poetry/issues/5429)
 structlog = "^22.3.0"
-githubkit = {extras = ["auth-app"], version = "^0.9.4"}
+githubkit = {extras = ["auth-app"], git="https://github.com/polarsource/githubkit.git", branch="master"}
 redis = "^4.4.2"
 sse-starlette = "^1.2.1"
 blinker = {git = "https://github.com/pallets-eco/blinker.git"}

@@ -2042,11 +2042,46 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "title": "Response Notifications:Get",
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/NotificationRead"
-                                    }
+                                    "$ref": "#/components/schemas/NotificationsList"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/read": {
+            "post": {
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Mark Read",
+                "operationId": "notifications:mark_read",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/NotificationsMarkRead"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
                                 }
                             }
                         }
@@ -3170,6 +3205,41 @@
                 ],
                 "type": "string",
                 "description": "An enumeration."
+            },
+            "NotificationsList": {
+                "title": "NotificationsList",
+                "required": [
+                    "notifications"
+                ],
+                "type": "object",
+                "properties": {
+                    "notifications": {
+                        "title": "Notifications",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/NotificationRead"
+                        }
+                    },
+                    "last_read_notification_id": {
+                        "title": "Last Read Notification Id",
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            },
+            "NotificationsMarkRead": {
+                "title": "NotificationsMarkRead",
+                "required": [
+                    "notification_id"
+                ],
+                "type": "object",
+                "properties": {
+                    "notification_id": {
+                        "title": "Notification Id",
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
             },
             "OrganizationRead": {
                 "title": "OrganizationRead",

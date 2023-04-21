@@ -41,6 +41,8 @@ export type { MaintainerIssueBranchCreated } from './models/MaintainerIssueBranc
 export type { MaintainerIssuePullRequestCreated } from './models/MaintainerIssuePullRequestCreated';
 export type { MaintainerIssuePullRequestMerged } from './models/MaintainerIssuePullRequestMerged';
 export type { NotificationRead } from './models/NotificationRead';
+export type { NotificationsList } from './models/NotificationsList';
+export type { NotificationsMarkRead } from './models/NotificationsMarkRead';
 export { NotificationType } from './models/NotificationType';
 export type { OrganizationRead } from './models/OrganizationRead';
 export type { OrganizationSettingsUpdate } from './models/OrganizationSettingsUpdate';

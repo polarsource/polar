@@ -52,12 +52,11 @@ class GithubRepositoryService(RepositoryService):
         on_sync_signal: Signal | None = None,
         on_completed_signal: Signal | None = None,
     ) -> tuple[SyncedCount, ErrorCount]:
-        processed, synced, skipped, errors = 0, 0, 0, 0
+        processed, errors = 0, 0
         async for data in paginator:
             processed += 1
 
             if skip_condition and skip_condition(data):
-                skipped += 1
                 continue
 
             record = await store_resource_method(
@@ -66,6 +65,7 @@ class GithubRepositoryService(RepositoryService):
                 organization=organization,
                 repository=repository,
             )
+
             if not record:
                 log.warning(
                     f"{resource_type}.sync.failed",
@@ -75,7 +75,6 @@ class GithubRepositoryService(RepositoryService):
                 errors += 1
                 continue
 
-            synced += 1
             log.debug(
                 f"{resource_type}.synced",
                 organization_id=organization.id,
@@ -84,38 +83,32 @@ class GithubRepositoryService(RepositoryService):
                 title=record.title,
             )
 
-            if not on_sync_signal:
-                continue
-
-            await on_sync_signal.send_async(
-                session,
-                repository=repository,
-                organization=organization,
-                record=record,
-                created=record.was_created,
-                processed=processed,
-                synced=synced,
-            )
+            if on_sync_signal:
+                await on_sync_signal.send_async(
+                    session,
+                    repository=repository,
+                    organization=organization,
+                    record=record,
+                    processed=processed,
+                )
 
         log.info(
             f"{resource_type}.sync.completed",
             organization_id=organization.id,
             repository_id=repository.id,
             processed=processed,
-            skipped=skipped,
-            synced=synced,
             errors=errors,
         )
+
         if on_completed_signal:
             await on_completed_signal.send_async(
                 session,
                 repository=repository,
                 organization=organization,
                 processed=processed,
-                synced=synced,
             )
 
-        return (synced, errors)
+        return (processed, errors)
 
     async def sync_issues(
         self,
@@ -184,7 +177,6 @@ class GithubRepositoryService(RepositoryService):
             store_resource_method=github_pull_request.store_simple,
             organization=organization,
             repository=repository,
-            on_sync_signal=repository_issue_synced,
             resource_type="pull_request",
         )
         return (synced, errors)

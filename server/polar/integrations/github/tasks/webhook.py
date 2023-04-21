@@ -41,7 +41,6 @@ async def repositories_changed(
     if not event.installation:
         return dict(success=False)
 
-    # TODO: Verify that this works even for personal Github accounts?
     organization = await service.github_organization.get_by_external_id(
         session, event.installation.account.id
     )
@@ -308,7 +307,6 @@ async def installation_created(
         raise Exception("unexpected webhook payload")
 
     async with AsyncSessionLocal() as session:
-
         # TODO: Remove this once the following issue is resolved:
         # https://github.com/yanyongyu/githubkit/issues/14
         if event.requester is None:

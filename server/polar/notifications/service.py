@@ -334,7 +334,6 @@ class NotificationsService:
         )
         res = await session.execute(stmt)
         await session.commit()
-        # print(res.)
 
 
 def get_cents_in_dollar_string(cents: int) -> str:

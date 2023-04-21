@@ -12,12 +12,10 @@ const Page: NextLayoutComponentType = () => {
 
   useEffect(() => {
     if (isLoaded && !org && !repo) {
-      console.log('org repo to /dash')
       router.push('/dashboard')
       return
     }
     if (isLoaded && org && !repo) {
-      console.log('/org repo to /org')
       router.push(`/dashboard/${org.name}`)
       return
     }
@@ -27,7 +25,7 @@ const Page: NextLayoutComponentType = () => {
     return <></>
   }
 
-  return <Dashboard key={key} org={org} repo={undefined} isPersonal={false} />
+  return <Dashboard key={key} org={org} repo={repo} isPersonal={false} />
 }
 
 Page.getLayout = (page: ReactElement) => {

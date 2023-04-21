@@ -408,6 +408,25 @@ async def test_webhook_pull_request_opened(
 
 
 @pytest.mark.asyncio
+async def test_webhook_pull_request_edited(
+    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
+) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("arq.connections.ArqRedis.enqueue_job")
+
+    hook = github_webhook.create("pull_request.edited")
+    pr_id = hook["pull_request"]["id"]
+
+    pr = await service.github_pull_request.get_by_external_id(session, pr_id)
+    assert pr is None
+
+    await create_repositories(github_webhook)
+    hook = github_webhook.create("pull_request.edited")
+    await webhook_tasks.pull_request_edited(
+        FAKE_CTX, "pull_request", "edited", hook.json
+    )
+
+@pytest.mark.asyncio
 async def test_webhook_pull_request_synchronize(
     mocker: MockerFixture,
     github_webhook: TestWebhookFactory,

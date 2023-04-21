@@ -379,7 +379,7 @@ export function RepoSelection(props: {
 
 export default RepoSelection
 
-function Item({
+const Item = ({
   children,
   value,
   onSelect = () => {},
@@ -387,7 +387,7 @@ function Item({
   children: React.ReactNode
   value: string
   onSelect?: () => void
-}) {
+}) => {
   return (
     <Command.Item
       value={value}
@@ -401,12 +401,12 @@ function Item({
   )
 }
 
-function Avatar(props: { url: string }) {
+const Avatar = (props: { url: string }) => {
   const { url } = props
   return <img src={url} className="h-5 w-5 rounded-full" />
 }
 
-function Text({ children }: { children: React.ReactNode }) {
+const Text = ({ children }: { children: React.ReactNode }) => {
   return (
     <span className="overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-900">
       {children}
@@ -414,7 +414,7 @@ function Text({ children }: { children: React.ReactNode }) {
   )
 }
 
-function Left({ children }: { children: React.ReactNode }) {
+const Left = ({ children }: { children: React.ReactNode }) => {
   return (
     <span className="flex items-center space-x-2 overflow-hidden">
       {children}
@@ -432,7 +432,7 @@ const Badge = ({ children }: { children: React.ReactNode }) => {
   )
 }
 
-function Icon({ children }: { children: React.ReactNode }) {
+const Icon = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex-0 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center">
       {children}
@@ -440,7 +440,7 @@ function Icon({ children }: { children: React.ReactNode }) {
   )
 }
 
-function SelectedOrgRepo({
+const SelectedOrgRepo = ({
   org,
   repo,
   onClick,
@@ -448,7 +448,7 @@ function SelectedOrgRepo({
   org: OrganizationRead
   repo: RepositoryRead | undefined
   onClick: () => void
-}) {
+}) => {
   return (
     <SelectedBox onClick={onClick}>
       <div className="flex items-center justify-between space-x-2 ">

@@ -303,16 +303,14 @@ export function RepoSelection(props: {
 
                       {!dropdownSelectedOrg &&
                         props.showOrganizationRepositoryCount && (
-                          <Subtitle>
-                            <Badge>{org.unfilteredRepositoryCount}</Badge>{' '}
-                            <span>
-                              {plural(
-                                org.unfilteredRepositoryCount,
-                                'repo',
-                                'repos',
-                              )}
-                            </span>
-                          </Subtitle>
+                          <Badge>
+                            {org.unfilteredRepositoryCount}{' '}
+                            {plural(
+                              org.unfilteredRepositoryCount,
+                              'repo',
+                              'repos',
+                            )}
+                          </Badge>
                         )}
                     </Item>
                     {org.repositories &&
@@ -352,7 +350,6 @@ export function RepoSelection(props: {
                       )}
                       <Text>{currentUser.username}</Text>
                     </Left>
-                    <Subtitle>profile</Subtitle>
                   </Item>
                 )}
 
@@ -425,19 +422,13 @@ function Left({ children }: { children: React.ReactNode }) {
   )
 }
 
-function Subtitle({ children }: { children: React.ReactNode }) {
+const Badge = ({ children }: { children: React.ReactNode }) => {
   return (
-    <span className="inline-flex space-x-2 overflow-hidden text-xs italic text-gray-500">
-      {children}
-    </span>
-  )
-}
-
-function Badge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded-full border border-gray-200 bg-gray-100 px-2">
-      {children}
-    </span>
+    <p className="inline-flex space-x-2 overflow-hidden text-xs text-gray-500">
+      <span className="rounded-full border border-gray-200 bg-gray-100 px-2">
+        {children}
+      </span>
+    </p>
   )
 }
 

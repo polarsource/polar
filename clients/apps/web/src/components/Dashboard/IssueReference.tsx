@@ -248,22 +248,6 @@ const IssueReferencePullRequest = (props: {
             <span className="text-red-400">-{pr.deletions}</span>
           )}
         </div>
-        {pr.state == 'open' && (
-          <a
-            href="#"
-            className="rounded-md bg-[#51AA6F] py-1 px-2 text-sm text-white"
-          >
-            Review
-          </a>
-        )}
-        {isMerged && (
-          <a
-            href="#"
-            className="rounded-md bg-blue-500 py-1 px-2 text-sm text-white"
-          >
-            Reward
-          </a>
-        )}
       </RightSide>
     </>
   )

@@ -28,7 +28,7 @@ export const useGithubOAuthCallback = (
     let request: ReturnType<typeof api.integrations.githubCallback>
 
     if (!code || !state) {
-      setError('We need both an OAuth code and state')
+      setError('Cannot authenticated without an OAuth code and state')
       return
     }
 

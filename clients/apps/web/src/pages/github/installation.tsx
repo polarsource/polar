@@ -1,4 +1,5 @@
-import EmptyLayout from 'components/Layout/EmptyLayout'
+import LoadingScreen from 'components/Dashboard/LoadingScreen'
+import Layout from 'components/Layout/EmptyLayout'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit'
 import { InstallationCreate, OrganizationRead } from 'polarkit/api/client'
@@ -46,17 +47,20 @@ const GithubInstallationPage: NextPageWithLayout = () => {
     }
   }, [query])
 
-  if (error) return <p>Error: {error}</p>
-
   if (installed) {
     router.replace(`/dashboard/initialize/${installed.name}`)
     return
   }
-  return <h1>Installing...</h1>
+
+  return (
+    <LoadingScreen error={error}>
+      Connecting your amazing repositories.
+    </LoadingScreen>
+  )
 }
 
 GithubInstallationPage.getLayout = (page: ReactElement) => {
-  return <EmptyLayout>{page}</EmptyLayout>
+  return <Layout>{page}</Layout>
 }
 
 export const getServerSideProps = async (context) => {

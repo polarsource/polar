@@ -1,6 +1,6 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { Settings } from './Settings'
+import { PopUp } from './components/PopUp'
 
 window.addEventListener('load', function () {
   const elem = document.getElementById('polar-popup')
@@ -8,7 +8,7 @@ window.addEventListener('load', function () {
     const root = createRoot(elem)
     root.render(
       <React.StrictMode>
-        <Settings />
+        <PopUp />
       </React.StrictMode>,
     )
   }

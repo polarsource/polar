@@ -6,15 +6,14 @@ import {
   type PledgeRead,
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
+import { IssueListItemDecoration } from 'polarkit/components'
 import { githubIssueUrl } from 'polarkit/utils'
 import TimeAgo from 'react-timeago'
 import PledgeNow from '../Pledge/PledgeNow'
 import IconCounter from './IconCounter'
 import IssueActivityBox from './IssueActivityBox'
 import IssueLabel, { LabelSchema } from './IssueLabel'
-import IssuePledge from './IssuePledge'
 import IssueProgress, { Progress } from './IssueProgress'
-import IssueReference from './IssueReference'
 
 const IssueListItem = (props: {
   org: OrganizationRead
@@ -125,22 +124,12 @@ const IssueListItem = (props: {
 
       {havePledgeOrReference && (
         <IssueActivityBox>
-          {props.pledges &&
-            props.pledges.map((pledge: PledgeRead) => {
-              return <IssuePledge pledge={pledge} key={pledge.id} />
-            })}
-
-          {props.references &&
-            props.references.map((r: IssueReferenceRead) => {
-              return (
-                <IssueReference
-                  org={props.org}
-                  repo={props.repo}
-                  reference={r}
-                  key={r.id}
-                />
-              )
-            })}
+          <IssueListItemDecoration
+            orgName={props.org.name}
+            repoName={props.repo.name}
+            pledges={props.pledges}
+            references={props.references}
+          />
         </IssueActivityBox>
       )}
     </div>

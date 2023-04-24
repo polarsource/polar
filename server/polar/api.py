@@ -10,6 +10,7 @@ from polar.user.endpoints.user_organization import router as user_organization_r
 from polar.user.endpoints.users import router as user_router
 from polar.organization.endpoints import router as organization_router
 from polar.dashboard.endpoints import router as dashboard_router
+from polar.extension.endpoints import router as extension_router
 from polar.account.endpoints import router as accounts_router
 from polar.notifications.endpoints import router as notifications_router
 from polar.backoffice.endpoints import router as backoffice_router
@@ -29,6 +30,8 @@ router.include_router(stripe_router)
 router.include_router(backoffice_router)
 # /dashboard
 router.include_router(dashboard_router)
+# /extension
+router.include_router(extension_router)
 # /{platform}/{org_name}/{repo_name}/pulls
 router.include_router(pull_request_router)
 # /{platform}/{org_name}/{repo_name}/issues

@@ -72,6 +72,7 @@ export { Visibility } from './models/Visibility';
 export { AccountsService } from './services/AccountsService';
 export { BackofficeService } from './services/BackofficeService';
 export { DashboardService } from './services/DashboardService';
+export { ExtensionService } from './services/ExtensionService';
 export { HealthService } from './services/HealthService';
 export { IntegrationsService } from './services/IntegrationsService';
 export { IssuesService } from './services/IssuesService';

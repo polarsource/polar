@@ -1,5 +1,5 @@
 import { Platforms } from 'polarkit/api/client'
-import { getCentsInDollarString } from 'polarkit/utils'
+import { IssueListItemDecoration } from 'polarkit/components'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import api from './api'
@@ -18,7 +18,7 @@ issues.forEach((issue) => {
 const [, orgName, repoName] = window.location.pathname.split('/')
 
 if (orgName && repoName) {
-  api.issues
+  api.extension
     .listIssuesForExtension({
       platform: Platforms.GITHUB,
       orgName,
@@ -36,8 +36,12 @@ if (orgName && repoName) {
           const root = createRoot(badge)
           root.render(
             <React.StrictMode>
-              ${getCentsInDollarString(extensionIssue.amount_pledged)} pledged
-              towards issue #{extensionIssue.number}
+              <IssueListItemDecoration
+                orgName={orgName}
+                repoName={repoName}
+                pledges={extensionIssue.pledges}
+                references={extensionIssue.references}
+              />
             </React.StrictMode>,
           )
         }

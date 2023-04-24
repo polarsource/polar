@@ -7,9 +7,9 @@ import {
 } from 'polarkit/api/client'
 import { useSSE } from 'polarkit/hooks'
 import { useEffect, useRef, useState } from 'react'
-import { DashboardFilters } from './filters'
 import OrganizationDashboard from './OrganizationDashboard'
 import PersonalDashboard from './PersonalDashboard'
+import { DashboardFilters } from './filters'
 
 const buildStatusesFilter = (filters: DashboardFilters): Array<IssueStatus> => {
   const next = []

@@ -8,6 +8,7 @@ import { AxiosHttpRequest } from './core/AxiosHttpRequest';
 import { AccountsService } from './services/AccountsService';
 import { BackofficeService } from './services/BackofficeService';
 import { DashboardService } from './services/DashboardService';
+import { ExtensionService } from './services/ExtensionService';
 import { HealthService } from './services/HealthService';
 import { IntegrationsService } from './services/IntegrationsService';
 import { IssuesService } from './services/IssuesService';
@@ -26,6 +27,7 @@ export class PolarAPI {
   public readonly accounts: AccountsService;
   public readonly backoffice: BackofficeService;
   public readonly dashboard: DashboardService;
+  public readonly extension: ExtensionService;
   public readonly health: HealthService;
   public readonly integrations: IntegrationsService;
   public readonly issues: IssuesService;
@@ -55,6 +57,7 @@ export class PolarAPI {
     this.accounts = new AccountsService(this.request);
     this.backoffice = new BackofficeService(this.request);
     this.dashboard = new DashboardService(this.request);
+    this.extension = new ExtensionService(this.request);
     this.health = new HealthService(this.request);
     this.integrations = new IntegrationsService(this.request);
     this.issues = new IssuesService(this.request);

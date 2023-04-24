@@ -1,7 +1,7 @@
 import { useChromeStorageLocal } from 'use-chrome-storage'
 import ExtensionLink from './ExtensionLink'
 
-export const Settings = () => {
+export const PopUp = () => {
   const [value, setValue, isPersistent, error, isInitialStateResolved] =
     useChromeStorageLocal('token')
 

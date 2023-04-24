@@ -3,7 +3,7 @@ import {
   OrganizationRead,
   PledgeRead,
   RepositoryRead,
-} from 'api/client'
+} from '../api/client'
 import IssuePledge from './IssuePledge'
 import IssueReference from './IssueReference'
 

@@ -26,12 +26,14 @@ if (orgName && repoName) {
       numbers: issueNumbers.join(','),
     })
     .then((extensionIssues) => {
+      // Add all the issues to chrome.storage
       const itemsToAdd = {}
       extensionIssues.forEach((issue) => {
         itemsToAdd[`issues/${orgName}/${repoName}/${issue.number}`] = issue
       })
       chrome.storage.local.set(itemsToAdd)
 
+      // Remove the issues we asked for but didn't get a response for from the cache
       const keysToRemove = issueNumbers.filter(
         (issueNumber) =>
           !extensionIssues.some(

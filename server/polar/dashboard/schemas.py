@@ -25,6 +25,7 @@ class IssueSortBy(str, Enum):
     dependencies_default = (
         "dependencies_default"  # (state, self pledged amount, updated at)
     )
+    issues_default = "issues_default"  # (total pledged amount, thumbs up, updated at)
 
 
 # JSON:API types below

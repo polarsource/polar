@@ -789,6 +789,78 @@
                 }
             }
         },
+        "/api/v1/extension/{platform}/{org_name}/{repo_name}/issues": {
+            "get": {
+                "tags": [
+                    "extension"
+                ],
+                "summary": "List Issues For Extension",
+                "operationId": "list_issues_for_extension",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Platforms"
+                        },
+                        "name": "platform",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Org Name",
+                            "type": "string"
+                        },
+                        "name": "org_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Repo Name",
+                            "type": "string"
+                        },
+                        "name": "repo_name",
+                        "in": "path"
+                    },
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Numbers",
+                            "type": "string"
+                        },
+                        "name": "numbers",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "title": "Response Extension:List Issues For Extension",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/IssueExtensionRead"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/{platform}/{org_name}/{repo_name}/pulls": {
             "get": {
                 "tags": [
@@ -1037,78 +1109,6 @@
                                     "type": "array",
                                     "items": {
                                         "$ref": "#/components/schemas/IssueReferenceRead"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/{platform}/{org_name}/{repo_name}/issues-for-extension": {
-            "get": {
-                "tags": [
-                    "issues"
-                ],
-                "summary": "List Issues For Extension",
-                "operationId": "list_issues_for_extension",
-                "parameters": [
-                    {
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/Platforms"
-                        },
-                        "name": "platform",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Org Name",
-                            "type": "string"
-                        },
-                        "name": "org_name",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Repo Name",
-                            "type": "string"
-                        },
-                        "name": "repo_name",
-                        "in": "path"
-                    },
-                    {
-                        "required": true,
-                        "schema": {
-                            "title": "Numbers",
-                            "type": "string"
-                        },
-                        "name": "numbers",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "title": "Response Issues:List Issues For Extension",
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/IssueExtensionRead"
                                     }
                                 }
                             }
@@ -2493,7 +2493,8 @@
                 "title": "IssueExtensionRead",
                 "required": [
                     "number",
-                    "amount_pledged"
+                    "pledges",
+                    "references"
                 ],
                 "type": "object",
                 "properties": {
@@ -2501,9 +2502,19 @@
                         "title": "Number",
                         "type": "integer"
                     },
-                    "amount_pledged": {
-                        "title": "Amount Pledged",
-                        "type": "integer"
+                    "pledges": {
+                        "title": "Pledges",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PledgeRead"
+                        }
+                    },
+                    "references": {
+                        "title": "References",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/IssueReferenceRead"
+                        }
                     }
                 }
             },

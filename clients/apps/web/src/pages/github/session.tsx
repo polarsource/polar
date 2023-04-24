@@ -1,3 +1,4 @@
+import LoadingScreen from 'components/Dashboard/LoadingScreen'
 import Layout from 'components/Layout/EmptyLayout'
 import { useRouter } from 'next/router'
 import type { ReactElement } from 'react'
@@ -20,9 +21,9 @@ const GithubAuthPage: NextPageWithLayout = ({
     return
   }
 
-  if (error) return <p>Error: {error}</p>
-
-  return <h1>Authenticating</h1>
+  return (
+    <LoadingScreen error={error}>Brewing a fresh access token.</LoadingScreen>
+  )
 }
 
 GithubAuthPage.getLayout = (page: ReactElement) => {

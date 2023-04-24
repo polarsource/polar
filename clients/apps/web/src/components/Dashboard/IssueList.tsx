@@ -1,7 +1,7 @@
 import { DashboardFilters, navigate } from 'components/Dashboard/filters'
 import Spinner from 'components/Shared/Spinner'
 import { useRouter } from 'next/router'
-import { IssueSortBy } from 'polarkit/api/client'
+import { IssueListType, IssueSortBy } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
 import { Dispatch, SetStateAction, useMemo } from 'react'
 import IssueListItem from './IssueListItem'
@@ -65,6 +65,7 @@ const Header = (props: {
       pledged_amount_desc: IssueSortBy.PLEDGED_AMOUNT_DESC,
       relevance: IssueSortBy.RELEVANCE,
       dependencies_default: IssueSortBy.DEPENDENCIES_DEFAULT,
+      issues_default: IssueSortBy.ISSUES_DEFAULT,
     }[value]
 
     const filters = {
@@ -82,15 +83,23 @@ const Header = (props: {
       pledged_amount_desc: 'Pledged amount',
       relevance: 'Relevance',
       dependencies_default: 'Default',
+      issues_default: 'Default',
     }
   }, [])
 
-  const options = [
+  const issuesTabFilters = ['issues_default']
+  const dependenciesTabFilters = ['dependencies_default']
+
+  const tabFilters =
+    props.filters.tab === IssueListType.ISSUES
+      ? issuesTabFilters
+      : dependenciesTabFilters
+
+  const options = [].concat(tabFilters, [
     'newest',
     'pledged_amount_desc',
     'relevance',
-    'dependencies_default',
-  ]
+  ])
 
   const width = useMemo(() => {
     const t = title[props.filters.sort] || 'Newest'

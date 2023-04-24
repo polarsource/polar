@@ -22,18 +22,19 @@ log = structlog.get_logger()
 async def on_issue_synced(
     sender: PolarContext,
     *,
-    item: Issue,
+    record: Issue,
     repository: Repository,
     organization: Organization,
     processed: int,
+    session: AsyncSession,
 ) -> None:
-    log.info("issue.synced", issue=item.id, title=item.title, processed=processed)
+    log.info("issue.synced", issue=record.id, title=record.title, processed=processed)
     await publish(
         "issue.synced",
         {
             "issue": {
-                "id": item.id,
-                "title": item.title,
+                "id": record.id,
+                "title": record.title,
             },
             "expected": repository.open_issues or 0,
             "processed": processed,
@@ -50,6 +51,7 @@ async def on_issue_sync_completed(
     repository: Repository,
     organization: Organization,
     processed: int,
+    session: AsyncSession,
 ) -> None:
     log.info("issue.sync.completed", repository=repository.id, processed=processed)
     await publish(

@@ -105,7 +105,7 @@ class GithubRepositoryService(RepositoryService):
         if on_completed_signal:
             await on_completed_signal.send_async(
                 PolarContext(),
-                sesion=session,
+                session=session,
                 repository=repository,
                 organization=organization,
                 processed=processed,

@@ -3,7 +3,7 @@ import structlog
 from polar.context import ExecutionContext
 
 from polar.integrations.github import service
-from polar.worker import JobContext, enqueue_job, task
+from polar.worker import JobContext, PolarWorkerContext, enqueue_job, task
 from polar.postgres import AsyncSessionLocal
 
 from .utils import get_organization_and_repo
@@ -15,8 +15,9 @@ log = structlog.get_logger()
 async def sync_repositories(
     ctx: JobContext,
     organization_id: UUID,
+    polar_context: PolarWorkerContext,
 ) -> None:
-    with ExecutionContext(is_during_installation=True) as context:
+    with polar_context.to_execution_context() as context:
         async with AsyncSessionLocal() as session:
             organization = await service.github_organization.get(
                 session, organization_id
@@ -34,8 +35,9 @@ async def sync_repository_issues(
     ctx: JobContext,
     organization_id: UUID,
     repository_id: UUID,
+    polar_context: PolarWorkerContext,
 ) -> None:
-    with ExecutionContext(is_during_installation=True) as context:
+    with polar_context.to_execution_context() as context:
         async with AsyncSessionLocal() as session:
             organization, repository = await get_organization_and_repo(
                 session, organization_id, repository_id
@@ -50,8 +52,9 @@ async def sync_repository_pull_requests(
     ctx: JobContext,
     organization_id: UUID,
     repository_id: UUID,
+    polar_context: PolarWorkerContext,
 ) -> None:
-    with ExecutionContext(is_during_installation=True) as context:
+    with polar_context.to_execution_context() as context:
         async with AsyncSessionLocal() as session:
             organization, repository = await get_organization_and_repo(
                 session, organization_id, repository_id
@@ -71,8 +74,9 @@ async def repo_sync_issue_references(
     ctx: JobContext,
     organization_id: UUID,
     repository_id: UUID,
+    polar_context: PolarWorkerContext,
 ) -> None:
-    with ExecutionContext(is_during_installation=True) as context:
+    with polar_context.to_execution_context() as context:
         async with AsyncSessionLocal() as session:
             organization, repository = await get_organization_and_repo(
                 session, organization_id, repository_id

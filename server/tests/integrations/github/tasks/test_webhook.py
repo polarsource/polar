@@ -15,7 +15,7 @@ from polar.organization.schemas import OrganizationCreate
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, AsyncSessionLocal
 from polar.integrations.github.tasks import webhook as webhook_tasks
-from polar.worker import JobContext
+from polar.worker import JobContext, PolarWorkerContext
 from tests.fixtures.webhook import TestWebhook, TestWebhookFactory
 
 FAKE_CTX: JobContext = {
@@ -84,7 +84,11 @@ async def create_repositories(github_webhook: TestWebhookFactory) -> TestWebhook
     await create_org(github_webhook, status=Organization.Status.ACTIVE)
     hook = github_webhook.create("installation_repositories.added")
     await webhook_tasks.repositories_added(
-        FAKE_CTX, "installation_repositories", "added", hook.json
+        FAKE_CTX,
+        "installation_repositories",
+        "added",
+        hook.json,
+        polar_context=PolarWorkerContext(),
     )
     return hook
 
@@ -92,7 +96,13 @@ async def create_repositories(github_webhook: TestWebhookFactory) -> TestWebhook
 async def create_issue(github_webhook: TestWebhookFactory) -> TestWebhook:
     await create_repositories(github_webhook)
     hook = github_webhook.create("issues.opened")
-    await webhook_tasks.issue_opened(FAKE_CTX, "issues", "opened", hook.json)
+    await webhook_tasks.issue_opened(
+        FAKE_CTX,
+        "issues",
+        "opened",
+        hook.json,
+        polar_context=PolarWorkerContext(),
+    )
     return hook
 
 
@@ -100,7 +110,11 @@ async def create_pr(github_webhook: TestWebhookFactory) -> TestWebhook:
     await create_repositories(github_webhook)
     hook = github_webhook.create("pull_request.opened")
     await webhook_tasks.pull_request_opened(
-        FAKE_CTX, "pull_request", "opened", hook.json
+        FAKE_CTX,
+        "pull_request",
+        "opened",
+        hook.json,
+        polar_context=PolarWorkerContext(),
     )
     return hook
 
@@ -116,7 +130,11 @@ async def test_webhook_installation_created(
     installation_id = hook["installation"]["id"]
     account = hook["installation"]["account"]
     await webhook_tasks.installation_created(
-        FAKE_CTX, "installation", "created", hook.json
+        FAKE_CTX,
+        "installation",
+        "created",
+        hook.json,
+        polar_context=PolarWorkerContext(),
     )
 
     org = await service.github_organization.get_by(
@@ -143,7 +161,11 @@ async def test_webhook_installation_suspend(
     hook = github_webhook.create("installation.suspend")
     org_id = hook["installation"]["account"]["id"]
     await webhook_tasks.installation_suspend(
-        FAKE_CTX, "installation", "suspend", hook.json
+        FAKE_CTX,
+        "installation",
+        "suspend",
+        hook.json,
+        polar_context=PolarWorkerContext(),
     )
 
     async with AsyncSessionLocal() as session:
@@ -164,7 +186,11 @@ async def test_webhook_installation_unsuspend(
     hook = github_webhook.create("installation.unsuspend")
     org_id = hook["installation"]["account"]["id"]
     await webhook_tasks.installation_unsuspend(
-        FAKE_CTX, "installation", "unsuspend", hook.json
+        FAKE_CTX,
+        "installation",
+        "unsuspend",
+        hook.json,
+        polar_context=PolarWorkerContext(),
     )
 
     async with AsyncSessionLocal() as session:
@@ -187,7 +213,11 @@ async def test_webhook_installation_delete(
     assert org.external_id == org_id
 
     await webhook_tasks.installation_delete(
-        FAKE_CTX, "installation", "deleted", hook.json
+        FAKE_CTX,
+        "installation",
+        "deleted",
+        hook.json,
+        polar_context=PolarWorkerContext(),
     )
 
     async with AsyncSessionLocal() as session:
@@ -217,7 +247,11 @@ async def test_webhook_installation_create_delete_create(
 
     # Create
     await webhook_tasks.installation_created(
-        FAKE_CTX, "installation", "created", hook.json
+        FAKE_CTX,
+        "installation",
+        "created",
+        hook.json,
+        polar_context=PolarWorkerContext(),
     )
 
     org = await service.github_organization.get_by(
@@ -236,7 +270,11 @@ async def test_webhook_installation_create_delete_create(
     # Delete
     hook_deleted = github_webhook.create("installation.deleted")
     await webhook_tasks.installation_delete(
-        FAKE_CTX, "installation", "deleted", hook_deleted.json
+        FAKE_CTX,
+        "installation",
+        "deleted",
+        hook_deleted.json,
+        polar_context=PolarWorkerContext(),
     )
 
     session.expunge_all()
@@ -266,7 +304,11 @@ async def test_webhook_installation_create_delete_create(
 
     # Create
     await webhook_tasks.installation_created(
-        FAKE_CTX, "installation", "created", hook.json
+        FAKE_CTX,
+        "installation",
+        "created",
+        hook.json,
+        polar_context=PolarWorkerContext(),
     )
 
     org_post_recreate = await service.github_organization.get_by(
@@ -314,7 +356,11 @@ async def test_webhook_repositories_removed(
     await assert_repository_exists(session, delete_repo)
 
     await webhook_tasks.repositories_removed(
-        FAKE_CTX, "installation_repositories", "removed", hook.json
+        FAKE_CTX,
+        "installation_repositories",
+        "removed",
+        hook.json,
+        polar_context=PolarWorkerContext(),
     )
 
     repo = await service.github_repository.get_by_external_id(
@@ -341,7 +387,13 @@ async def test_webhook_issues_opened(
     issue = await service.github_issue.get_by_external_id(session, issue_id)
     assert issue is None
 
-    await webhook_tasks.issue_opened(FAKE_CTX, "issues", "opened", hook.json)
+    await webhook_tasks.issue_opened(
+        FAKE_CTX,
+        "issues",
+        "opened",
+        hook.json,
+        polar_context=PolarWorkerContext(),
+    )
 
     issue = await service.github_issue.get_by_external_id(session, issue_id)
     assert issue is not None
@@ -355,7 +407,13 @@ async def test_webhook_issues_closed(
     mocker.patch("arq.connections.ArqRedis.enqueue_job")
 
     hook = github_webhook.create("issues.closed")
-    await webhook_tasks.issue_closed(FAKE_CTX, "issues", "closed", hook.json)
+    await webhook_tasks.issue_closed(
+        FAKE_CTX,
+        "issues",
+        "closed",
+        hook.json,
+        polar_context=PolarWorkerContext(),
+    )
     # TODO: Actually do a test here
 
 
@@ -376,7 +434,13 @@ async def test_webhook_issues_labeled(
         assert issue.labels is None
 
     hook = github_webhook.create("issues.labeled")
-    await webhook_tasks.issue_labeled(FAKE_CTX, "issues", "labeled", hook.json)
+    await webhook_tasks.issue_labeled(
+        FAKE_CTX,
+        "issues",
+        "labeled",
+        hook.json,
+        polar_context=PolarWorkerContext(),
+    )
 
     async with AsyncSessionLocal() as session:
         issue = await service.github_issue.get_by_external_id(session, issue_id)
@@ -423,8 +487,13 @@ async def test_webhook_pull_request_edited(
     await create_repositories(github_webhook)
     hook = github_webhook.create("pull_request.edited")
     await webhook_tasks.pull_request_edited(
-        FAKE_CTX, "pull_request", "edited", hook.json
+        FAKE_CTX,
+        "pull_request",
+        "edited",
+        hook.json,
+        polar_context=PolarWorkerContext(),
     )
+
 
 @pytest.mark.asyncio
 async def test_webhook_pull_request_synchronize(
@@ -444,7 +513,11 @@ async def test_webhook_pull_request_synchronize(
         assert pr.merge_commit_sha is None
 
     await webhook_tasks.pull_request_synchronize(
-        FAKE_CTX, "pull_request", "synchronize", hook.json
+        FAKE_CTX,
+        "pull_request",
+        "synchronize",
+        hook.json,
+        polar_context=PolarWorkerContext(),
     )
 
     async with AsyncSessionLocal() as session:

@@ -22,6 +22,9 @@ class IssueSortBy(str, Enum):
     newest = "newest"
     pledged_amount_desc = "pledged_amount_desc"
     relevance = "relevance"  # best search match
+    dependencies_default = (
+        "dependencies_default"  # (state, self pledged amount, updated at)
+    )
 
 
 # JSON:API types below

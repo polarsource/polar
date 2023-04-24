@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Sequence, Set, Union
+from typing import Any, Dict, List, Sequence, Set, Tuple, Union
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -17,6 +17,7 @@ from polar.issue.schemas import IssueRead, IssueReferenceRead
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.issue_reference import ReferenceType
+from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.organization.schemas import OrganizationRead
@@ -144,7 +145,9 @@ async def dashboard(
     if sort is None and not q:
         sort = IssueSortBy.newest
 
-    # get issues
+    #
+    # Select top level issues
+    #
     issues = await issue.list_by_repository_type_and_status(
         session,
         [r.id for r in in_repos],
@@ -332,31 +335,37 @@ async def dashboard(
             if isinstance(ir.data, list):  # it always is
                 ir.data.append(RelationshipData(type="issue", id=dependent_issue.id))
 
-    def issue_progress(issue: Issue) -> IssueStatus:
-        if issue.issue_closed_at:
-            return IssueStatus.completed
-        if issue.id in issues_with_prs:
-            return IssueStatus.pull_request
-        return IssueStatus.backlog
+    #
+    # Filtering
+    #
 
     # filter issues to only include issues with any of the expected statuses
     if status:
-        issues = [i for i in issues if issue_progress(i) in status]
+        issues = [i for i in issues if issue_progress(i, issues_with_prs) in status]
 
-    # TODO: only include related objects for issues in the response
-
-    def pledge_sum(issue: Issue) -> int:
-        return sum(p.amount for p in pledges if p.issue_id == issue.id)
+    #
+    # Sorting
+    #
 
     if sort == IssueSortBy.pledged_amount_desc:
         # calculate pledge sum
         sum_by_issue: dict[UUID, int] = dict()
         for i in issues:
-            sum_by_issue[i.id] = pledge_sum(i)
+            sum_by_issue[i.id] = pledge_sum(i, pledges)
 
         # issues is a sequence and can't be sorted on, quickly convert to a list
         issues_list = [i for i in issues]
         issues_list.sort(key=lambda i: sum_by_issue[i.id], reverse=True)
+        issues = issues_list
+
+    if sort == IssueSortBy.dependencies_default:
+        issues_list = [i for i in issues]
+        issues_list.sort(
+            key=lambda e: sort_dependencies_default(
+                e, pledges, for_org, for_user, issues_with_prs
+            ),
+            reverse=True,
+        )
         issues = issues_list
 
     return IssueListResponse(
@@ -371,3 +380,48 @@ async def dashboard(
         ],
         included=list(included.values()),
     )
+
+
+def issue_progress(issue: Issue, issues_with_prs: set[UUID]) -> IssueStatus:
+    if issue.issue_closed_at:
+        return IssueStatus.completed
+    if issue.id in issues_with_prs:
+        return IssueStatus.pull_request
+    return IssueStatus.backlog
+
+
+def status_sort_prio(status: IssueStatus) -> int:
+    return {
+        IssueStatus.backlog: 0,
+        IssueStatus.building: 1,
+        IssueStatus.pull_request: 2,
+        IssueStatus.completed: 3,
+    }.get(status, 0)
+
+
+def pledge_sum(issue: Issue, pledges: Sequence[Pledge]) -> int:
+    return sum(p.amount for p in pledges if p.issue_id == issue.id)
+
+
+def sort_dependencies_default(
+    i: Issue,
+    pledges: Sequence[Pledge],
+    for_org: Organization | None,
+    for_user: User | None,
+    issues_with_prs: set[UUID],
+) -> Tuple[int, int, int]:
+    self_pledged_amount = sum(
+        [
+            p.amount
+            for p in pledges
+            if (
+                (for_org and p.by_organization_id == for_org.id)
+                or (for_user and p.by_user_id == for_user.id)
+            )
+            and p.issue_id == i.id
+        ]
+    )
+
+    progress = status_sort_prio(issue_progress(i, issues_with_prs))
+
+    return (self_pledged_amount, progress, int(i.issue_created_at.timestamp()))

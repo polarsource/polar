@@ -1,5 +1,6 @@
-import { DashboardFilters } from 'components/Dashboard/filters'
+import { DashboardFilters, navigate } from 'components/Dashboard/filters'
 import Spinner from 'components/Shared/Spinner'
+import { useRouter } from 'next/router'
 import { IssueSortBy } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
 import { Dispatch, SetStateAction, useMemo } from 'react'
@@ -54,6 +55,8 @@ const Header = (props: {
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
   count: number
 }) => {
+  const router = useRouter()
+
   const onSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value
 
@@ -61,12 +64,16 @@ const Header = (props: {
       newest: IssueSortBy.NEWEST,
       pledged_amount_desc: IssueSortBy.PLEDGED_AMOUNT_DESC,
       relevance: IssueSortBy.RELEVANCE,
+      dependencies_default: IssueSortBy.DEPENDENCIES_DEFAULT,
     }[value]
 
-    props.onSetFilters({
+    const filters = {
       ...props.filters,
       sort,
-    })
+    }
+
+    props.onSetFilters(filters)
+    navigate(router, filters)
   }
 
   const title = useMemo(() => {
@@ -74,10 +81,16 @@ const Header = (props: {
       newest: 'Newest',
       pledged_amount_desc: 'Pledged amount',
       relevance: 'Relevance',
+      dependencies_default: 'Default',
     }
   }, [])
 
-  const options = ['newest', 'pledged_amount_desc', 'relevance']
+  const options = [
+    'newest',
+    'pledged_amount_desc',
+    'relevance',
+    'dependencies_default',
+  ]
 
   const width = useMemo(() => {
     const t = title[props.filters.sort] || 'Newest'

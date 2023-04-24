@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router'
 import {
   IssueListType,
+  IssueSortBy,
   IssueStatus,
   OrganizationRead,
   RepositoryRead,
@@ -35,6 +36,22 @@ const getTab = (tab: string): IssueListType => {
     return IssueListType.DEPENDENCIES
   }
   return IssueListType.ISSUES
+}
+
+const getSort = (sort: string): IssueSortBy => {
+  if (sort === 'newest') {
+    return IssueSortBy.NEWEST
+  }
+  if (sort === 'pledged_amount_desc') {
+    return IssueSortBy.PLEDGED_AMOUNT_DESC
+  }
+  if (sort === 'relevance') {
+    return IssueSortBy.RELEVANCE
+  }
+  if (sort === 'dependencies_default') {
+    return IssueSortBy.DEPENDENCIES_DEFAULT
+  }
+  return IssueSortBy.NEWEST
 }
 
 const Dashboard = ({
@@ -81,6 +98,9 @@ const Dashboard = ({
         f.statusBuild = statuses.includes('build')
         f.statusPullRequest = statuses.includes('pull_request')
         f.statusCompleted = statuses.includes('completed')
+      }
+      if (s.has('sort')) {
+        f.sort = getSort(s.get('sort'))
       }
 
       setFilters(f)

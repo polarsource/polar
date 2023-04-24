@@ -105,21 +105,12 @@ const Search = (props: {
           </Tab>
         )}
 
-        {showTabs.includes(IssueListType.PLEDGED) && (
+        {showTabs.includes(IssueListType.DEPENDENCIES) && (
           <Tab
-            active={filters.tab === IssueListType.PLEDGED}
-            onClick={() => onTabChange(IssueListType.PLEDGED)}
+            active={filters.tab === IssueListType.DEPENDENCIES}
+            onClick={() => onTabChange(IssueListType.DEPENDENCIES)}
           >
-            Pledged
-          </Tab>
-        )}
-
-        {showTabs.includes(IssueListType.ISSUES) && (
-          <Tab
-            active={filters.tab === IssueListType.FOLLOWING}
-            onClick={() => onTabChange(IssueListType.FOLLOWING)}
-          >
-            Following
+            Dependencies
           </Tab>
         )}
       </Tabs>

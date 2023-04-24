@@ -31,11 +31,8 @@ export const DefaultFilters: DashboardFilters = {
 }
 
 const getTab = (tab: string): IssueListType => {
-  if (tab === 'following') {
-    return IssueListType.FOLLOWING
-  }
-  if (tab === 'pledged') {
-    return IssueListType.PLEDGED
+  if (tab === 'dependencies') {
+    return IssueListType.DEPENDENCIES
   }
   return IssueListType.ISSUES
 }
@@ -69,7 +66,9 @@ const Dashboard = ({
       didSetFiltersFromURL.current = true
       const s = new URLSearchParams(window.location.search)
 
-      const useTab = isPersonal ? IssueListType.PLEDGED : getTab(s.get('tab'))
+      const useTab = isPersonal
+        ? IssueListType.DEPENDENCIES
+        : getTab(s.get('tab'))
 
       const f = {
         ...DefaultFilters,

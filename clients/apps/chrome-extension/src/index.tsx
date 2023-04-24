@@ -26,11 +26,22 @@ if (orgName && repoName) {
       numbers: issueNumbers.join(','),
     })
     .then((extensionIssues) => {
-      const items = {}
+      const itemsToAdd = {}
       extensionIssues.forEach((issue) => {
-        items[`issues/${orgName}/${repoName}/${issue.number}`] = issue
+        itemsToAdd[`issues/${orgName}/${repoName}/${issue.number}`] = issue
       })
-      chrome.storage.local.set(items)
+      chrome.storage.local.set(itemsToAdd)
+
+      const keysToRemove = issueNumbers.filter(
+        (issueNumber) =>
+          !extensionIssues.some(
+            (extensionIssue) =>
+              extensionIssue.number.toString() === issueNumber,
+          ),
+      )
+      chrome.storage.local.remove(
+        keysToRemove.map((k) => `issues/${orgName}/${repoName}/${k}`),
+      )
     })
 
   issues.forEach((issue) => {

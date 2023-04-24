@@ -1,2 +1,4 @@
 import Badge from './Badge'
-export { Badge }
+import IssueListItemDecoration from './IssueListItemDecoration'
+
+export { Badge, IssueListItemDecoration }

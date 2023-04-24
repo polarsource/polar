@@ -3,7 +3,7 @@ import structlog
 from polar.integrations.github import service
 from polar.kit.extensions.sqlalchemy import sql
 
-from polar.worker import JobContext, enqueue_job, interval, task
+from polar.worker import JobContext, PolarWorkerContext, enqueue_job, interval, task
 from polar.postgres import AsyncSessionLocal
 
 from .utils import get_organization_and_repo
@@ -16,54 +16,58 @@ log = structlog.get_logger()
 async def issue_sync_issue_references(
     ctx: JobContext,
     issue_id: UUID,
+    polar_context: PolarWorkerContext,
 ) -> None:
-    async with AsyncSessionLocal() as session:
-        issue = await github_issue.get(session, issue_id)
-        if not issue or not issue.organization_id or not issue.repository_id:
-            log.warning(
-                "github.issue.sync.issue_references",
-                error="issue not found",
-                issue_id=issue_id,
+    with polar_context.to_execution_context() as context:
+        async with AsyncSessionLocal() as session:
+            issue = await github_issue.get(session, issue_id)
+            if not issue or not issue.organization_id or not issue.repository_id:
+                log.warning(
+                    "github.issue.sync.issue_references",
+                    error="issue not found",
+                    issue_id=issue_id,
+                )
+                return
+
+            organization, repository = await get_organization_and_repo(
+                session, issue.organization_id, issue.repository_id
             )
-            return
 
-        organization, repository = await get_organization_and_repo(
-            session, issue.organization_id, issue.repository_id
-        )
-
-        await service.github_reference.sync_issue_references(
-            session,
-            org=organization,
-            repo=repository,
-            issue=issue,
-        )
+            await service.github_reference.sync_issue_references(
+                session,
+                org=organization,
+                repo=repository,
+                issue=issue,
+            )
 
 
 @task("github.issue.sync.issue_dependencies")
 async def issue_sync_issue_dependencies(
     ctx: JobContext,
     issue_id: UUID,
+    polar_context: PolarWorkerContext,
 ) -> None:
-    async with AsyncSessionLocal() as session:
-        issue = await github_issue.get(session, issue_id)
-        if not issue or not issue.organization_id or not issue.repository_id:
-            log.warning(
-                "github.issue.sync.issue_dependencies",
-                error="issue not found",
-                issue_id=issue_id,
+    with polar_context.to_execution_context() as context:
+        async with AsyncSessionLocal() as session:
+            issue = await github_issue.get(session, issue_id)
+            if not issue or not issue.organization_id or not issue.repository_id:
+                log.warning(
+                    "github.issue.sync.issue_dependencies",
+                    error="issue not found",
+                    issue_id=issue_id,
+                )
+                return
+
+            organization, repository = await get_organization_and_repo(
+                session, issue.organization_id, issue.repository_id
             )
-            return
 
-        organization, repository = await get_organization_and_repo(
-            session, issue.organization_id, issue.repository_id
-        )
-
-        await service.github_dependency.sync_issue_dependencies(
-            session,
-            org=organization,
-            repo=repository,
-            issue=issue,
-        )
+            await service.github_dependency.sync_issue_dependencies(
+                session,
+                org=organization,
+                repo=repository,
+                issue=issue,
+            )
 
 
 @interval(

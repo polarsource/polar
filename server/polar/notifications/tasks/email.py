@@ -14,7 +14,7 @@ from polar.notifications.schemas import (
     MaintainerIssuePullRequestMerged,
     NotificationType,
 )
-from polar.worker import JobContext, task
+from polar.worker import JobContext, PolarWorkerContext, task
 from polar.postgres import AsyncSessionLocal
 from polar.models.notification import Notification
 from polar.user_organization.service import (
@@ -33,52 +33,56 @@ sender = get_email_sender()
 
 
 @task("notifications.send")
-async def sync_repositories(
+async def notifications_send(
     ctx: JobContext,
     notification_id: UUID,
+    polar_context: PolarWorkerContext,
 ) -> None:
-    async with AsyncSessionLocal() as session:
-        notif: Notification | None = await Notification.find(session, notification_id)
-        if not notif:
-            log.warning("notifications.send.not_found")
-            return
+    with polar_context.to_execution_context() as context:
+        async with AsyncSessionLocal() as session:
+            notif: Notification | None = await Notification.find(
+                session, notification_id
+            )
+            if not notif:
+                log.warning("notifications.send.not_found")
+                return
 
-        # Get users to send to
-        users = await user_organization_service.list_by_org(
-            session, notif.organization_id
-        )
-        if not users:
-            log.warning("notifications.send.users_not_found")
-            return
+            # Get users to send to
+            users = await user_organization_service.list_by_org(
+                session, notif.organization_id
+            )
+            if not users:
+                log.warning("notifications.send.users_not_found")
+                return
 
-        for user_org in users:
-            if not await should_send(session, user_org, notif):
-                continue
+            for user_org in users:
+                if not await should_send(session, user_org, notif):
+                    continue
 
-            user = await user_service.get(session, user_org.user_id)
+                user = await user_service.get(session, user_org.user_id)
 
-            if not user:
-                log.warning(
-                    "notifications.send.user_not_found", user_id=user_org.user_id
-                )
-                continue
+                if not user:
+                    log.warning(
+                        "notifications.send.user_not_found", user_id=user_org.user_id
+                    )
+                    continue
 
-            if not user.email:
-                log.warning("notifications.send.user_no_email", user_id=user.id)
-                continue
+                if not user.email:
+                    log.warning("notifications.send.user_no_email", user_id=user.id)
+                    continue
 
-            meta = notifications.parse_payload(notif)
+                meta = notifications.parse_payload(notif)
 
-            txt = render_email(user, NotificationType.from_str(notif.type), meta)
-            if not txt:
-                log.error(
-                    "notifications.send.could_not_render",
-                    user=user,
-                    notif=notif,
-                )
-                continue
+                txt = render_email(user, NotificationType.from_str(notif.type), meta)
+                if not txt:
+                    log.error(
+                        "notifications.send.could_not_render",
+                        user=user,
+                        notif=notif,
+                    )
+                    continue
 
-            sender.send_to_user(user.email, txt)
+                sender.send_to_user(user.email, txt)
 
 
 async def should_send(

@@ -591,7 +591,7 @@ class GitHubIssueReferencesService:
             )
             if ref.on_created_signal:
                 await ref.on_created_signal.send_async(
-                    PolarContext(), self=ref, session=session
+                    PolarContext(), item=ref, session=session
                 )
 
             return
@@ -618,7 +618,7 @@ class GitHubIssueReferencesService:
 
         if ref.on_updated_signal:
             await ref.on_updated_signal.send_async(
-                PolarContext(), self=ref, session=session
+                PolarContext(), item=ref, session=session
             )
 
 

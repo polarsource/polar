@@ -23,5 +23,6 @@ class ExecutionContext:
 
     @staticmethod
     def current() -> "ExecutionContext":
-        """Returns the current ExecutionContext, or a clean one if there's no current context."""
+        """Returns the current ExecutionContext, or a clean one if there's no current
+        context."""
         return ExecutionContext._contextvar.get(ExecutionContext())

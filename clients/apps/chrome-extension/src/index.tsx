@@ -1,7 +1,7 @@
-import { api } from 'polarkit/api'
 import { Platforms } from 'polarkit/api/client'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
+import api from './api'
 import ExtensionIssueListItemDecoration from './components/ExtensionIssueListItemDecoration'
 import './index.css'
 import reportWebVitals from './reportWebVitals'

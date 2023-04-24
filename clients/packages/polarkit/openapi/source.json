@@ -2961,7 +2961,8 @@
                     "newest",
                     "pledged_amount_desc",
                     "relevance",
-                    "dependencies_default"
+                    "dependencies_default",
+                    "issues_default"
                 ],
                 "type": "string",
                 "description": "An enumeration."

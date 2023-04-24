@@ -16,7 +16,15 @@ const Search = (props: {
   const router = useRouter()
 
   const onTabChange = (tab: IssueListType) => {
-    const f = { ...filters, tab }
+    let sort = filters.sort
+    if (tab === IssueListType.ISSUES) {
+      sort = IssueSortBy.ISSUES_DEFAULT
+    }
+    if (tab === IssueListType.DEPENDENCIES) {
+      sort = IssueSortBy.DEPENDENCIES_DEFAULT
+    }
+
+    const f = { ...filters, tab, sort }
     onSetFilters(f)
     navigate(router, f)
   }

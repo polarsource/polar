@@ -10,4 +10,5 @@ export enum IssueSortBy {
   PLEDGED_AMOUNT_DESC = 'pledged_amount_desc',
   RELEVANCE = 'relevance',
   DEPENDENCIES_DEFAULT = 'dependencies_default',
+  ISSUES_DEFAULT = 'issues_default',
 }

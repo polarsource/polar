@@ -2,7 +2,7 @@ import { IssueExtensionRead } from 'polarkit/api/client'
 import { IssueListItemDecoration } from 'polarkit/components'
 import { useChromeStorageLocal } from 'use-chrome-storage'
 
-// The typing is a bit weird, so we need to provide an "empty" initial value
+// The typing is a bit weird, so we need to provide an "empty" initial value of the correct type
 const initialValue: IssueExtensionRead = {
   number: -1,
   pledges: [],
@@ -12,7 +12,7 @@ const initialValue: IssueExtensionRead = {
 /*
  * Render the issue list item decoration from chrome.storage.
  */
-const ExtensionIssueListItemDecoration = ({
+const CachedIssueListItemDecoration = ({
   orgName,
   repoName,
   number,
@@ -41,4 +41,4 @@ const ExtensionIssueListItemDecoration = ({
   }
 }
 
-export default ExtensionIssueListItemDecoration
+export default CachedIssueListItemDecoration

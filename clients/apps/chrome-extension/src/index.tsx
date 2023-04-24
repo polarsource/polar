@@ -2,7 +2,7 @@ import { Platforms } from 'polarkit/api/client'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import api from './api'
-import ExtensionIssueListItemDecoration from './components/ExtensionIssueListItemDecoration'
+import CachedIssueListItemDecoration from './components/CachedIssueListItemDecoration'
 import './index.css'
 import reportWebVitals from './reportWebVitals'
 
@@ -40,7 +40,7 @@ if (orgName && repoName) {
     const root = createRoot(badge)
     root.render(
       <React.StrictMode>
-        <ExtensionIssueListItemDecoration
+        <CachedIssueListItemDecoration
           orgName={orgName}
           repoName={repoName}
           number={issueNumber}

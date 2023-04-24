@@ -2,6 +2,7 @@ import types
 import functools
 from datetime import datetime
 from typing import Any, TypedDict, ParamSpec, TypeVar, Awaitable, Callable
+from pydantic import BaseModel
 
 import structlog
 from arq import func, cron
@@ -12,6 +13,7 @@ from arq.typing import SecondsTimedelta, OptionType
 from arq.cron import CronJob
 
 from polar.config import settings
+from polar.context import ExecutionContext
 
 log = structlog.get_logger()
 
@@ -27,6 +29,13 @@ class JobContext(WorkerContext):
     job_try: int
     enqueue_time: datetime
     score: int
+
+
+class PolarWorkerContext(BaseModel):
+    is_during_installation: bool = False
+
+    def to_execution_context(self) -> ExecutionContext:
+        return ExecutionContext(is_during_installation=self.is_during_installation)
 
 
 class WorkerSettings:
@@ -66,6 +75,10 @@ async def create_pool() -> ArqRedis:
 
 
 async def enqueue_job(name: str, *args: Any, **kwargs: Any) -> Job | None:
+    ctx = ExecutionContext.current()
+    kwargs["polar_context"] = PolarWorkerContext(
+        is_during_installation=ctx.is_during_installation,
+    )
     redis = await create_pool()
     return await redis.enqueue_job(name, *args, **kwargs)
 

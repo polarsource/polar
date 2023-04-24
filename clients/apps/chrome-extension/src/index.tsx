@@ -37,8 +37,8 @@ if (orgName && repoName) {
           root.render(
             <React.StrictMode>
               <IssueListItemDecoration
-                org={props.org}
-                repo={props.repo}
+                orgName={orgName}
+                repoName={repoName}
                 pledges={extensionIssue.pledges}
                 references={extensionIssue.references}
               />

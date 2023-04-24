@@ -125,8 +125,8 @@ const IssueListItem = (props: {
       {havePledgeOrReference && (
         <IssueActivityBox>
           <IssueListItemDecoration
-            org={props.org}
-            repo={props.repo}
+            orgName={props.org.name}
+            repoName={props.repo.name}
             pledges={props.pledges}
             references={props.references}
           />

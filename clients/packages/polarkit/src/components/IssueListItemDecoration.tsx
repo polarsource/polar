@@ -1,20 +1,15 @@
-import {
-  IssueReferenceRead,
-  OrganizationRead,
-  PledgeRead,
-  RepositoryRead,
-} from '../api/client'
+import { IssueReferenceRead, PledgeRead } from '../api/client'
 import IssuePledge from './IssuePledge'
 import IssueReference from './IssueReference'
 
 const IssueListItemDecoration = ({
-  org,
-  repo,
+  orgName,
+  repoName,
   pledges,
   references,
 }: {
-  org: OrganizationRead
-  repo: RepositoryRead
+  orgName: string
+  repoName: string
   pledges: PledgeRead[]
   references: IssueReferenceRead[]
 }) => (
@@ -26,7 +21,14 @@ const IssueListItemDecoration = ({
 
     {references &&
       references.map((r: IssueReferenceRead) => {
-        return <IssueReference org={org} repo={repo} reference={r} key={r.id} />
+        return (
+          <IssueReference
+            orgName={orgName}
+            repoName={repoName}
+            reference={r}
+            key={r.id}
+          />
+        )
       })}
   </>
 )

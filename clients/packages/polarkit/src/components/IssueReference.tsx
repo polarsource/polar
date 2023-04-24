@@ -3,8 +3,6 @@ import {
   ExternalGitHubPullRequestReference,
   IssueReferenceRead,
   IssueReferenceType,
-  OrganizationRead,
-  RepositoryRead,
   type PullRequestReference,
 } from 'polarkit/api/client'
 import {
@@ -17,8 +15,8 @@ import { githubPullReqeustUrl } from 'polarkit/utils'
 import TimeAgo from 'react-timeago'
 
 const IssueReference = (props: {
-  org: OrganizationRead
-  repo: RepositoryRead
+  orgName: string
+  repoName: string
   reference: IssueReferenceRead
 }) => {
   const { reference } = props
@@ -30,7 +28,11 @@ const IssueReference = (props: {
     const isOpen = !isClosed && !isMerged
     return (
       <Box isClosed={isClosed} isMerged={isMerged} isOpen={isOpen}>
-        <IssueReferencePullRequest org={props.org} repo={props.repo} pr={pr} />
+        <IssueReferencePullRequest
+          orgName={props.orgName}
+          repoName={props.repoName}
+          pr={pr}
+        />
       </Box>
     )
   }
@@ -42,7 +44,10 @@ const IssueReference = (props: {
     const commit = reference.payload as ExternalGitHubCommitReference
     return (
       <Box>
-        <IssueReferenceExternalGitHubCommit org={props.org} commit={commit} />
+        <IssueReferenceExternalGitHubCommit
+          orgName={props.orgName}
+          commit={commit}
+        />
       </Box>
     )
   }
@@ -107,7 +112,7 @@ const Avatar = (props: { src: string }) => {
 }
 
 const IssueReferenceExternalGitHubCommit = (props: {
-  org: OrganizationRead
+  orgName: string
   commit: ExternalGitHubCommitReference
 }) => {
   const commit = props.commit
@@ -118,7 +123,7 @@ const IssueReferenceExternalGitHubCommit = (props: {
 
   const commitHref = `${baseHref}/commit/${commit.sha}`
 
-  const isFork = props.org.name !== commit.organization_name
+  const isFork = props.orgName !== commit.organization_name
 
   return (
     <>
@@ -193,8 +198,8 @@ const RightSide = (props: { children: React.ReactNode }) => {
 
 const IssueReferencePullRequest = (props: {
   pr: PullRequestReference
-  org: OrganizationRead
-  repo: RepositoryRead
+  orgName: string
+  repoName: string
 }) => {
   const pr = props.pr
 
@@ -204,7 +209,7 @@ const IssueReferencePullRequest = (props: {
   const isClosed = !isMerged && pr.state === 'closed'
   const isOpen = !isMerged && !isClosed
 
-  const href = githubPullReqeustUrl(props.org.name, props.repo.name, pr.number)
+  const href = githubPullReqeustUrl(props.orgName, props.repoName, pr.number)
 
   return (
     <>

@@ -1,4 +1,6 @@
+from typing import Any
 import structlog
+from polar.context import PolarContext
 
 from polar.issue.signals import (
     issue_created,
@@ -18,20 +20,20 @@ log = structlog.get_logger()
 
 @repository_issue_synced.connect
 async def on_issue_synced(
-    session: AsyncSession,
+    sender: PolarContext,
     *,
+    item: Issue,
     repository: Repository,
     organization: Organization,
-    record: Issue,
     processed: int,
 ) -> None:
-    log.info("issue.synced", issue=record.id, title=record.title, processed=processed)
+    log.info("issue.synced", issue=item.id, title=item.title, processed=processed)
     await publish(
         "issue.synced",
         {
             "issue": {
-                "id": record.id,
-                "title": record.title,
+                "id": item.id,
+                "title": item.title,
             },
             "expected": repository.open_issues or 0,
             "processed": processed,
@@ -43,7 +45,7 @@ async def on_issue_synced(
 
 @repository_issues_sync_completed.connect
 async def on_issue_sync_completed(
-    session: AsyncSession,
+    sender: PolarContext,
     *,
     repository: Repository,
     organization: Organization,
@@ -67,44 +69,48 @@ async def on_issue_sync_completed(
 
 
 @issue_created.connect
-async def on_issue_created(issue: Issue, session: AsyncSession) -> None:
+async def on_issue_created(sender: PolarContext, *, item: Issue, **values: Any) -> None:
     await publish(
         "issue.created",
-        {"issue": issue.id},
-        repository_id=issue.repository_id,
-        organization_id=issue.organization_id,
+        {"issue": item.id},
+        repository_id=item.repository_id,
+        organization_id=item.organization_id,
     )
 
 
 @issue_updated.connect
-async def on_issue_updated(issue: Issue, session: AsyncSession) -> None:
+async def on_issue_updated(sender: PolarContext, *, item: Issue, **values: Any) -> None:
     await publish(
         "issue.updated",
         {
-            "issue_id": issue.id,
-            "organization_id": issue.organization_id,
-            "repository_id": issue.repository_id,
+            "issue_id": item.id,
+            "organization_id": item.organization_id,
+            "repository_id": item.repository_id,
         },
-        repository_id=issue.repository_id,
-        organization_id=issue.organization_id,
+        repository_id=item.repository_id,
+        organization_id=item.organization_id,
     )
 
 
 @pull_request_created.connect
-async def on_pull_request_created(pr: PullRequest, session: AsyncSession) -> None:
+async def on_pull_request_created(
+    sender: PolarContext, *, item: PullRequest, **values: Any
+) -> None:
     await publish(
         "pull_request.created",
-        {"pull_request": pr.id},
-        repository_id=pr.repository_id,
-        organization_id=pr.organization_id,
+        {"pull_request": item.id},
+        repository_id=item.repository_id,
+        organization_id=item.organization_id,
     )
 
 
 @pull_request_updated.connect
-async def on_pull_request_updated(pr: PullRequest, session: AsyncSession) -> None:
+async def on_pull_request_updated(
+    sender: PolarContext, *, item: PullRequest, **values: Any
+) -> None:
     await publish(
         "pull_request.updated",
-        {"pull_request": pr.id},
-        repository_id=pr.repository_id,
-        organization_id=pr.organization_id,
+        {"pull_request": item.id},
+        repository_id=item.repository_id,
+        organization_id=item.organization_id,
     )

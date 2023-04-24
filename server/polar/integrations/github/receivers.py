@@ -1,5 +1,6 @@
 from typing import Any
 import structlog
+from polar.context import PolarContext
 
 from polar.models import Issue, Organization, Repository
 from polar.postgres import AsyncSession
@@ -15,11 +16,12 @@ log = structlog.get_logger()
 
 @github_issue_created.connect
 async def schedule_embed_badge_task(
-    sender: Any,
+    ctx: PolarContext,
     *,
     organization: Organization,
     repository: Repository,
     issue: Issue,
+    session: AsyncSession,
 ) -> None:
     should_embed, _ = GithubBadge.should_embed(
         organization, repository, issue, setting_retroactive_override=False
@@ -33,11 +35,12 @@ async def schedule_embed_badge_task(
 
 @github_issue_created.connect
 async def schedule_fetch_references_and_dependencies(
-    sender: Any,
+    ctx: PolarContext,
     *,
     organization: Organization,
     repository: Repository,
     issue: Issue,
+    session: AsyncSession,
 ) -> None:
     await enqueue_job("github.issue.sync.issue_references", issue.id)
     await enqueue_job("github.issue.sync.issue_dependencies", issue.id)
@@ -45,11 +48,12 @@ async def schedule_fetch_references_and_dependencies(
 
 @github_issue_updated.connect
 async def schedule_updated_fetch_references_and_dependencies(
-    sender: Any,
+    ctx: PolarContext,
     *,
     organization: Organization,
     repository: Repository,
     issue: Issue,
+    session: AsyncSession,
 ) -> None:
     await enqueue_job("github.issue.sync.issue_references", issue.id)
     await enqueue_job("github.issue.sync.issue_dependencies", issue.id)

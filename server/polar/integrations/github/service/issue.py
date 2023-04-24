@@ -4,6 +4,7 @@ from typing import Sequence, Union
 from sqlalchemy import asc, or_
 
 import structlog
+from polar.context import PolarContext
 from polar.kit.extensions.sqlalchemy import sql
 
 from polar.kit.utils import utc_now
@@ -103,7 +104,11 @@ class GithubIssueService(IssueService):
                 signal = github_issue_created
 
             await signal.send_async(
-                session, organization=organization, repository=repository, issue=record
+                PolarContext(),
+                session=session,
+                organization=organization,
+                repository=repository,
+                issue=record,
             )
 
         return records

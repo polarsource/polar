@@ -1,3 +1,5 @@
+from typing import Any
+from polar.context import PolarContext
 from polar.issue.signals import issue_updated
 from polar.models import Issue
 from polar.models.pledge import Pledge
@@ -13,23 +15,29 @@ from polar.issue.service import issue as issue_service
 
 
 @issue_updated.connect
-async def mark_pledges_pending_on_issue_close(issue: Issue, session: AsyncSession):
-    if issue.state == "closed":
-        await pledge_service.mark_pending_by_issue_id(session, issue.id)
+async def mark_pledges_pending_on_issue_close(
+    ctx: PolarContext, *, item: Issue, session: AsyncSession, **values: Any
+):
+    if item.state == "closed":
+        await pledge_service.mark_pending_by_issue_id(session, item.id)
 
 
 @pledge_created.connect
-async def pledge_created_state_notifications(pledge: Pledge, session: AsyncSession):
-    if pledge.state == "created":
-        await pledge_created_notification(pledge, session)
+async def pledge_created_state_notifications(
+    ctx: PolarContext, *, item: Pledge, session: AsyncSession, **values: Any
+):
+    if item.state == "created":
+        await pledge_created_notification(item, session)
 
 
 @pledge_updated.connect
-async def pledge_updated_state_notifications(pledge: Pledge, session: AsyncSession):
-    if pledge.state == "created":
+async def pledge_updated_state_notifications(
+    ctx: PolarContext, *, item: Pledge, session: AsyncSession, **values: Any
+):
+    if item.state == "created":
         # TODO: find a way to do this only when the state transitions from
         # "initiated" -> "created".
-        await pledge_created_notification(pledge, session)
+        await pledge_created_notification(item, session)
 
 
 async def pledge_created_notification(pledge: Pledge, session: AsyncSession):

@@ -4,6 +4,7 @@ import structlog
 from sqlalchemy.orm import InstrumentedAttribute
 from blinker import Signal
 from githubkit import Paginator
+from polar.context import PolarContext
 
 from polar.models import Organization, Repository, Issue, PullRequest
 from polar.enums import Platforms
@@ -85,7 +86,8 @@ class GithubRepositoryService(RepositoryService):
 
             if on_sync_signal:
                 await on_sync_signal.send_async(
-                    session,
+                    PolarContext(),
+                    session=session,
                     repository=repository,
                     organization=organization,
                     record=record,
@@ -102,7 +104,8 @@ class GithubRepositoryService(RepositoryService):
 
         if on_completed_signal:
             await on_completed_signal.send_async(
-                session,
+                PolarContext(),
+                sesion=session,
                 repository=repository,
                 organization=organization,
                 processed=processed,

@@ -14,6 +14,7 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.orm.properties import MappedColumn
 from sqlalchemy.sql.selectable import FromClause
+from polar.context import PolarContext
 
 from polar.kit.schemas import Schema
 from polar.postgres import AsyncSession, sql
@@ -228,7 +229,7 @@ class ActiveRecordMixin(Generic[ModelType]):
     async def signal_state_change(self, session: AsyncSession, state: str) -> None:
         signal = getattr(self, f"on_{state}_signal", None)
         if signal:
-            await signal.send_async(self, session=session)
+            await signal.send_async(PolarContext(), item=self, session=session)
 
     async def on_updated(self, session: AsyncSession) -> None:
         self.was_updated = True

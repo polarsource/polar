@@ -5,6 +5,7 @@ from githubkit import GitHub, Response
 from pydantic import parse_obj_as
 
 import structlog
+from polar.context import PolarContext
 from polar.exceptions import IntegrityError
 from polar.integrations.github.client import get_app_installation_client
 import polar.integrations.github.client as github
@@ -589,7 +590,9 @@ class GitHubIssueReferencesService:
                 ref=ref,
             )
             if ref.on_created_signal:
-                await ref.on_created_signal.send_async(ref, session=session)
+                await ref.on_created_signal.send_async(
+                    PolarContext(), self=ref, session=session
+                )
 
             return
         except IntegrityError as e:
@@ -614,7 +617,9 @@ class GitHubIssueReferencesService:
         await session.commit()
 
         if ref.on_updated_signal:
-            await ref.on_updated_signal.send_async(ref, session=session)
+            await ref.on_updated_signal.send_async(
+                PolarContext(), self=ref, session=session
+            )
 
 
 github_reference = GitHubIssueReferencesService()

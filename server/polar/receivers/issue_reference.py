@@ -1,4 +1,5 @@
 from pydantic import parse_obj_as
+from polar.context import ExecutionContext, PolarContext
 from polar.models.issue_reference import IssueReference, ReferenceType
 from polar.notifications.schemas import (
     IssuePledgedBranchCreated,
@@ -20,19 +21,23 @@ from polar.repository.service import repository as repository_service
 
 @issue_reference_created.connect
 async def issue_reference_created_notifications(
-    ref: IssueReference, session: AsyncSession
+    context: PolarContext, *, item: IssueReference, session: AsyncSession
 ):
-    await issue_reference_notifications(ref, session)
+    await issue_reference_notifications(item, session)
 
 
 @issue_reference_updated.connect
 async def issue_reference_updated_notifications(
-    ref: IssueReference, session: AsyncSession
+    context: PolarContext, *, item: IssueReference, session: AsyncSession
 ):
-    await issue_reference_notifications(ref, session)
+    await issue_reference_notifications(item, session)
 
 
 async def issue_reference_notifications(ref: IssueReference, session: AsyncSession):
+    ctx = ExecutionContext.current()
+    if ctx.is_during_installation:
+        return
+
     if ref.reference_type == ReferenceType.PULL_REQUEST:
         issue = await issue_service.get_by_id(session, ref.issue_id)
         if not issue:

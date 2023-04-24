@@ -5,8 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
 from polar.extension.schemas import IssueExtensionRead
+from polar.issue.schemas import IssueReferenceRead
 from polar.models import Issue
 from polar.enums import Platforms
+from polar.models.issue_reference import IssueReference
 from polar.models.pledge import Pledge
 from polar.pledge.schemas import PledgeRead, State
 from polar.postgres import AsyncSession, get_db_session
@@ -34,20 +36,33 @@ async def list_issues_for_extension(
         session=session, repository_id=auth.repository.id, numbers=issue_numbers)
     pledges = await pledge_service.get_by_issue_ids(
         session=session, issue_ids=[issue.id for issue in issues])
+    issue_references = await issue_service.list_issue_references_for_issues(
+        session, issue_ids=[issue.id for issue in issues]
+    )
 
     pledges_by_issue_id: dict[UUID, list[Pledge]] = {}
     for pledge in pledges:
         if pledge.issue_id not in pledges_by_issue_id:
             pledges_by_issue_id[pledge.issue_id] = []
         pledges_by_issue_id[pledge.issue_id].append(pledge)
-    
+
+    references_by_issue_id: dict[UUID, list[IssueReference]] = {}
+    for reference in issue_references:
+        if reference.issue_id in pledges_by_issue_id:
+            # Only include references for issues that have pledges
+            if reference.issue_id not in references_by_issue_id:
+                references_by_issue_id[reference.issue_id] = []
+            references_by_issue_id[reference.issue_id].append(reference)
+
     ret = []
     for issue in issues:
         if pledges_by_issue_id.get(issue.id):
             issue_extension = IssueExtensionRead(
                 number=issue.number,
-                pledges=[PledgeRead.from_db(p) for p in pledges_by_issue_id[issue.id]],
-                references=[]
+                pledges=[PledgeRead.from_db(p)
+                         for p in pledges_by_issue_id.get(issue.id, [])],
+                references=[IssueReferenceRead.from_model(r)
+                            for r in references_by_issue_id.get(issue.id, [])],
             )
             ret.append(issue_extension)
 

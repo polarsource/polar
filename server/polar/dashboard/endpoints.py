@@ -117,6 +117,22 @@ async def get_dashboard(
     )
 
 
+def default_sort(
+    issue_list_type: IssueListType,
+    q: Union[str, None] = None,
+) -> IssueSortBy:
+    if q:
+        return IssueSortBy.relevance
+
+    if issue_list_type == IssueListType.issues:
+        return IssueSortBy.issues_default
+
+    if issue_list_type == IssueListType.dependencies:
+        return IssueSortBy.dependencies_default
+
+    return IssueSortBy.newest
+
+
 async def dashboard(
     session: AsyncSession,
     in_repos: Sequence[Repository] = [],
@@ -139,11 +155,9 @@ async def dashboard(
     if status:
         include_closed = IssueStatus.completed in status
 
-    # default sorting
-    if sort is None and q:
-        sort = IssueSortBy.relevance
-    if sort is None and not q:
-        sort = IssueSortBy.newest
+    # Default sorting
+    if not sort:
+        sort = default_sort(issue_list_type, q)
 
     #
     # Select top level issues
@@ -368,6 +382,14 @@ async def dashboard(
         )
         issues = issues_list
 
+    if sort == IssueSortBy.issues_default:
+        issues_list = [i for i in issues]
+        issues_list.sort(
+            key=lambda e: sort_issues_default(e, pledges),
+            reverse=True,
+        )
+        issues = issues_list
+
     return IssueListResponse(
         data=[
             Entry(
@@ -403,6 +425,12 @@ def pledge_sum(issue: Issue, pledges: Sequence[Pledge]) -> int:
     return sum(p.amount for p in pledges if p.issue_id == issue.id)
 
 
+def sort_ts(i: Issue) -> int:
+    if i.issue_modified_at:
+        return int(i.issue_modified_at.timestamp())
+    return int(i.issue_created_at.timestamp())
+
+
 def sort_dependencies_default(
     i: Issue,
     pledges: Sequence[Pledge],
@@ -424,4 +452,13 @@ def sort_dependencies_default(
 
     progress = status_sort_prio(issue_progress(i, issues_with_prs))
 
-    return (self_pledged_amount, progress, int(i.issue_created_at.timestamp()))
+    return (self_pledged_amount, progress, sort_ts(i))
+
+
+def sort_issues_default(
+    i: Issue,
+    pledges: Sequence[Pledge],
+) -> Tuple[int, int, int]:
+    total_pledged_amount = sum([p.amount for p in pledges if p.issue_id == i.id])
+    thumbs_up_count = i.reactions.get("plus_one", 0) if i.reactions else 0
+    return (total_pledged_amount, thumbs_up_count, sort_ts(i))

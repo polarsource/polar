@@ -1,3 +1,4 @@
+import { classNames } from 'polarkit/utils'
 import { IssueReferenceRead, PledgeRead } from '../api/client'
 import IssuePledge from './IssuePledge'
 import IssueReference from './IssueReference'
@@ -12,25 +13,34 @@ const IssueListItemDecoration = ({
   repoName: string
   pledges: PledgeRead[]
   references: IssueReferenceRead[]
-}) => (
-  <>
-    {pledges &&
-      pledges.map((pledge: PledgeRead) => {
-        return <IssuePledge pledge={pledge} key={pledge.id} />
-      })}
+}) => {
+  return (
+    <div className="flex flex-row items-center">
+      {pledges && (
+        <div className="stretch mr-4 flex-none">
+          <IssuePledge pledges={pledges} />
+        </div>
+      )}
 
-    {references &&
-      references.map((r: IssueReferenceRead) => {
-        return (
-          <IssueReference
-            orgName={orgName}
-            repoName={repoName}
-            reference={r}
-            key={r.id}
-          />
-        )
-      })}
-  </>
-)
+      <div className={classNames(pledges ? 'border-l pl-4' : '', 'flex-1')}>
+        {references &&
+          references.map((r: IssueReferenceRead) => {
+            return (
+              <IssueReference
+                orgName={orgName}
+                repoName={repoName}
+                reference={r}
+                key={r.id}
+              />
+            )
+          })}
+
+        {!references && (
+          <p className="text-sm italic text-gray-400">Not picked up yet</p>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export default IssueListItemDecoration

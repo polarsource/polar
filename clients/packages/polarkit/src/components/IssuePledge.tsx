@@ -1,35 +1,26 @@
 import { PledgeRead } from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/utils'
 
-const IssuePledge = (props: { pledge: PledgeRead }) => {
-  const { pledge } = props
-  return (
-    <div className="flex items-center justify-between ">
-      <div className="flex items-center gap-2">
-        <span className="space-x-1 rounded-xl bg-[#FFE794] px-1.5 py-0.5 text-[#574814]">
-          <span className="text-md">🏆</span>
-          <span className="text-sm font-medium">
-            ${getCentsInDollarString(pledge.amount)}
-          </span>
-        </span>
-        <span className="text-sm text-gray-500">
-          contributed by{' '}
-          {pledge.pledger_name && <span>{pledge.pledger_name}</span>}
-          {!pledge.pledger_name && <span>anonymous</span>}
-        </span>
-      </div>
+interface Props {
+  pledges: PledgeRead[]
+}
 
-      <div>
-        {pledge.state === 'created' && (
-          <span className="text-gray-300">Awaiting fix</span>
-        )}
-        {pledge.state === 'pending' && (
-          <span className="text-gray-300">Pending payout</span>
-        )}
-        {pledge.state === 'paid' && (
-          <span className="text-gray-300">Paid to maintainer</span>
-        )}
-      </div>
+const IssuePledge = (props: Props) => {
+  const { pledges } = props
+
+  const totalPledgeAmount = pledges.reduce(
+    (accumulator, pledge) => accumulator + pledge.amount,
+    0,
+  )
+
+  return (
+    <div className="flex items-center gap-2">
+      <p className="space-x-1 rounded-2xl bg-blue-800 px-3 py-1 text-sm text-blue-300">
+        ${' '}
+        <span className="text-blue-100">
+          {getCentsInDollarString(totalPledgeAmount)}
+        </span>
+      </p>
     </div>
   )
 }

@@ -3,6 +3,6 @@
   "compilerOptions": {
     "baseUrl": "src/"
   },
-  "include": ["next-env.d.ts", "next.d.ts", "**/*.ts", "**/*.tsx", "../../packages/polarkit/src/components/IssuePledge.tsx", "src/components/Dashboard/OrganizationDashboard.tsx", "../../packages/polarkit/src/components/IssueReference.tsx"],
+  "include": ["next-env.d.ts", "next.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]
 }

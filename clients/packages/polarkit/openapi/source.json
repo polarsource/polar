@@ -2960,7 +2960,8 @@
                 "enum": [
                     "newest",
                     "pledged_amount_desc",
-                    "relevance"
+                    "relevance",
+                    "dependencies_default"
                 ],
                 "type": "string",
                 "description": "An enumeration."

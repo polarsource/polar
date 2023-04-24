@@ -1,11 +1,11 @@
 import { MagnifyingGlassIcon } from '@heroicons/react/20/solid'
-import { DashboardFilters } from 'components/Dashboard/filters'
 import { useRouter } from 'next/router'
 import { IssueListType, IssueSortBy } from 'polarkit/api/client'
 import { ChangeEvent, Dispatch, FormEvent, SetStateAction } from 'react'
 import Checkbox from './Checkbox'
 import Tab from './Tab'
 import Tabs from './Tabs'
+import { DashboardFilters, navigate } from './filters'
 
 const Search = (props: {
   filters: DashboardFilters
@@ -13,11 +13,12 @@ const Search = (props: {
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
 }) => {
   const { filters, onSetFilters, showTabs } = props
+  const router = useRouter()
 
   const onTabChange = (tab: IssueListType) => {
     const f = { ...filters, tab }
     onSetFilters(f)
-    navigate(f)
+    navigate(router, f)
   }
 
   const onQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -29,7 +30,7 @@ const Search = (props: {
     const f = { ...filters, q: event.target.value, sort }
     onSetFilters(f)
 
-    navigate(f)
+    navigate(router, f)
   }
 
   const onStatusChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -39,48 +40,12 @@ const Search = (props: {
     let f = { ...filters }
     f[id] = event.target.checked
     onSetFilters(f)
-    navigate(f)
+    navigate(router, f)
   }
-
-  const navigate = (filters: DashboardFilters) => {
-    const params = new URLSearchParams()
-
-    const statuses = []
-    if (filters.statusBacklog) {
-      statuses.push('backlog')
-    }
-    if (filters.statusBuild) {
-      statuses.push('build')
-    }
-    if (filters.statusPullRequest) {
-      statuses.push('pull_request')
-    }
-    if (filters.statusCompleted) {
-      statuses.push('completed')
-    }
-
-    params.set('statuses', statuses.join(','))
-
-    if (filters.q) {
-      params.set('q', filters.q)
-    }
-    if (filters.tab) {
-      params.set('tab', filters.tab)
-    }
-    if (filters.sort) {
-      params.set('sort', filters.sort)
-    }
-
-    const url = new URL(window.location.href)
-    const newPath = `${url.pathname}?${params.toString()}`
-    router.push(url.pathname, newPath)
-  }
-
-  const router = useRouter()
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    navigate(filters)
+    navigate(router, filters)
   }
 
   const resetStatus = () => {

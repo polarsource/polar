@@ -100,31 +100,33 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
 
         if issue_list_type == IssueListType.issues:
             statement = sql.select(Issue).where(Issue.repository_id.in_(repository_ids))
-        elif issue_list_type == IssueListType.following:
+        elif issue_list_type == IssueListType.dependencies:
+            if not pledged_by_org and not pledged_by_user:
+                raise ValueError("no pledge_by criteria specified")
+
+            pledge_criterias: list[ColumnElement[bool]] = []
+            if pledged_by_org:
+                pledge_criterias.append(Pledge.by_organization_id == pledged_by_org)
+
+            if pledged_by_user:
+                pledge_criterias.append(Pledge.by_user_id == pledged_by_user)
+
             statement = (
                 sql.select(Issue)
                 .join(
                     IssueDependency,
                     IssueDependency.dependency_issue_id == Issue.id,
+                    isouter=True,
                 )
-                .where(IssueDependency.repository_id.in_(repository_ids))
+                .join(Pledge, Pledge.issue_id == Issue.id, isouter=True)
+                .where(
+                    or_(
+                        IssueDependency.repository_id.in_(repository_ids),
+                        or_(*pledge_criterias),
+                    )
+                )
             )
-        elif issue_list_type == IssueListType.pledged:
-            if not pledged_by_org and not pledged_by_user:
-                raise ValueError("no pledge_by criteria specified")
 
-            crits: list[ColumnElement[bool]] = []
-            if pledged_by_org:
-                crits.append(Pledge.by_organization_id == pledged_by_org)
-
-            if pledged_by_user:
-                crits.append(Pledge.by_user_id == pledged_by_user)
-
-            statement = (
-                sql.select(Issue)
-                .join(Pledge, Pledge.issue_id == Issue.id)
-                .where(or_(*crits))
-            )
         else:
             raise ValueError(f"Unknown issue list type: {issue_list_type}")
 

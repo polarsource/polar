@@ -154,8 +154,10 @@ async def dashboard(
         include_closed=include_closed,
         sort_by_relevance=sort == IssueSortBy.relevance,
         sort_by_newest=sort == IssueSortBy.newest,
-        pledged_by_org=for_org.id if for_org and IssueListType.pledged else None,
-        pledged_by_user=for_user.id if for_user and IssueListType.pledged else None,
+        pledged_by_org=for_org.id if for_org and IssueListType.dependencies else None,
+        pledged_by_user=for_user.id
+        if for_user and IssueListType.dependencies
+        else None,
     )
 
     issue_organizations = list(
@@ -271,7 +273,7 @@ async def dashboard(
                 issues_with_prs.add(i.id)
 
     # get dependents
-    if issue_list_type == IssueListType.following:
+    if issue_list_type == IssueListType.dependencies:
         issue_deps = await issue.list_issue_dependencies_for_repositories(
             session, in_repos
         )

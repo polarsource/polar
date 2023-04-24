@@ -7,6 +7,5 @@
  */
 export enum IssueListType {
   ISSUES = 'issues',
-  FOLLOWING = 'following',
-  PLEDGED = 'pledged',
+  DEPENDENCIES = 'dependencies',
 }

@@ -19,6 +19,7 @@
     "./components/pledge": "./src/components/pledge/index.ts",
     "./components/ui/Cards": "./src/components/ui/Cards/index.ts",
     "./components/icons": "./src/components/icons/index.ts",
+    "./components/Issue": "./src/components/Issue/index.ts",
     "./package.json": "./package.json",
     "./*": "./src/*"
   },

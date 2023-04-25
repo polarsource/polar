@@ -1,5 +1,5 @@
+import { IssueReferenceRead, PledgeRead } from 'polarkit/api/client'
 import { classNames } from 'polarkit/utils'
-import { IssueReferenceRead, PledgeRead } from '../api/client'
 import IssuePledge from './Pledge'
 import IssueReference from './Reference'
 

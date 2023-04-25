@@ -12,7 +12,11 @@
         {
             "run_at": "document_end",
             "js": ["content.js"],
-            "matches": ["https://github.com/*/*/issues"]
+            "matches": [
+                "https://github.com/*/*/issues",
+                "https://github.com/*/*/issues?*",
+                "https://github.com/*/*/issues/*"
+            ]
         },
         {
             "js": ["auth.js"],

@@ -74,34 +74,36 @@ const Popover = () => {
         )}
       </div>
 
-      <div
-        aria-live="assertive"
-        className="pointer-events-none fixed inset-0 top-6 flex items-end px-4 py-6 sm:items-start sm:p-6"
-        ref={ref}
-        onClick={(e) => {
-          e.stopPropagation()
-        }}
-      >
-        <div className="flex w-full flex-col items-center space-y-4 sm:items-end">
-          {show && (
+      {show && (
+        <div
+          aria-live="assertive"
+          className="pointer-events-none fixed inset-0 top-6 flex items-end px-4 py-6 sm:items-start sm:p-6"
+          ref={ref}
+          onClick={(e) => {
+            e.stopPropagation()
+          }}
+        >
+          <div className="flex w-full flex-col items-center space-y-4   sm:items-end">
             <>
               <div className="z-10 mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white"></div>
-              <div className="z-20 w-full max-w-md">
-                <div className="pointer-events-auto w-full  overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
-                  {notifs.data.notifications.length === 0 && (
-                    <div className="p-4 text-black/60">
-                      You don&apos;t have any notifications... yet!
-                    </div>
-                  )}
-                  {notifs.data.notifications.map((n) => {
-                    return <Notification n={n} key={n.id} />
-                  })}
+              <div className="z-20 h-full w-full max-w-md ">
+                <div className="pointer-events-auto w-full rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                  <div className="h-full max-h-[800px] overflow-x-scroll">
+                    {notifs.data.notifications.length === 0 && (
+                      <div className="p-4 text-black/60">
+                        You don&apos;t have any notifications... yet!
+                      </div>
+                    )}
+                    {notifs.data.notifications.map((n) => {
+                      return <Notification n={n} key={n.id} />
+                    })}
+                  </div>
                 </div>
               </div>
             </>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </>
   )
 }
@@ -109,33 +111,28 @@ const Popover = () => {
 export default Popover
 
 const Item = ({
-  title,
   children,
   n,
   iconBg,
 }: {
-  title: string
   iconBg: string
   n: NotificationRead
-  children: React.ReactElement
+  children: { icon: React.ReactElement; text: React.ReactElement }
 }) => {
   return (
-    <a
-      className=" flex space-x-4 p-4 transition-colors duration-100 hover:bg-gray-100"
-      href={n.payload.issue_url}
-    >
+    <div className="flex space-x-4 p-4 transition-colors duration-100">
       <div
         className={`inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md ${iconBg}`}
       >
-        {children}
+        {children.icon}
       </div>
       <div>
-        <div className="font-medium">{title}</div>
+        <div className="font-normal">{children.text}</div>
         <div className="text-black/50">
           <ReactTimeago date={n.created_at} />
         </div>
       </div>
-    </a>
+    </div>
   )
 }
 const IssuePledgeCreated = ({
@@ -147,8 +144,19 @@ const IssuePledgeCreated = ({
 }) => {
   const title = `Issue #${payload.issue_number} received \$${payload.pledge_amount} in backing`
   return (
-    <Item title={title} n={n} iconBg="bg-[#F9E18F]">
-      <DollarSignIcon />
+    <Item n={n} iconBg="bg-[#F9E18F]">
+      {{
+        text: (
+          <>
+            Issue{' '}
+            <Link href={payload.issue_url}>
+              <>#{payload.issue_number}</>
+            </Link>{' '}
+            received <strong>${payload.pledge_amount}</strong> in backing
+          </>
+        ),
+        icon: <DollarSignIcon />,
+      }}
     </Item>
   )
 }
@@ -160,10 +168,23 @@ const PullRequestCreatedNotification = ({
   n: NotificationRead
   payload: IssuePledgedPullRequestCreated | MaintainerIssuePullRequestCreated
 }) => {
-  const title = `${payload.pull_request_creator_username} created a PR for issue #${payload.pull_request_number}`
   return (
-    <Item title={title} n={n} iconBg="bg-[#DFEFE4]">
-      <PullRequestCreatedIcon />
+    <Item n={n} iconBg="bg-[#DFEFE4]">
+      {{
+        text: (
+          <>
+            {payload.pull_request_creator_username} created a{' '}
+            <Link href={payload.pull_request_url}>
+              <>PR</>
+            </Link>{' '}
+            for issue{' '}
+            <Link href={payload.issue_url}>
+              <>#{payload.issue_number}</>
+            </Link>
+          </>
+        ),
+        icon: <PullRequestCreatedIcon />,
+      }}
     </Item>
   )
 }
@@ -175,10 +196,23 @@ const PullRequestMergedNotification = ({
   n: NotificationRead
   payload: IssuePledgedPullRequestMerged | MaintainerIssuePullRequestMerged
 }) => {
-  const title = `${payload.pull_request_creator_username} merged a PR for issue #${payload.issue_number}`
   return (
-    <Item title={title} n={n} iconBg="bg-[#E8DEFC]">
-      <PullRequestMergedIcon />
+    <Item n={n} iconBg="bg-[#E8DEFC]">
+      {{
+        text: (
+          <>
+            {payload.pull_request_creator_username} merged a{' '}
+            <Link href={payload.pull_request_url}>
+              <>PR</>
+            </Link>{' '}
+            for issue{' '}
+            <Link href={payload.issue_url}>
+              <>#{payload.issue_number}</>
+            </Link>
+          </>
+        ),
+        icon: <PullRequestMergedIcon />,
+      }}
     </Item>
   )
 }
@@ -190,10 +224,19 @@ const BranchCreatedNotification = ({
   n: NotificationRead
   payload: IssuePledgedBranchCreated | MaintainerIssueBranchCreated
 }) => {
-  const title = `${payload.branch_creator_username} started working on issue #${payload.issue_number}`
   return (
-    <Item title={title} n={n} iconBg="bg-[#ECECEC]">
-      <BranchCreatedIcon />
+    <Item n={n} iconBg="bg-[#ECECEC]">
+      {{
+        text: (
+          <>
+            {payload.branch_creator_username} started working on issue
+            <Link href={payload.issue_url}>
+              <>#{payload.issue_number}</>
+            </Link>
+          </>
+        ),
+        icon: <BranchCreatedIcon />,
+      }}
     </Item>
   )
 }
@@ -406,5 +449,13 @@ const BranchCreatedIcon = () => {
         />
       </g>
     </svg>
+  )
+}
+
+const Link = (props: { href: string; children: React.ReactElement }) => {
+  return (
+    <a className="font-bold hover:underline" href={props.href}>
+      {props.children}
+    </a>
   )
 }

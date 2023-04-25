@@ -15,18 +15,17 @@ const CachedIssueListItemDecoration = ({
   number: number
 }) => {
   const [value, setValue, isPersistent, error, isInitialStateResolved] =
-    useChromeStorageLocal(`issues/${orgName}/${repoName}/${number}`)
+    useChromeStorageLocal<IssueExtensionRead>(
+      `issues/${orgName}/${repoName}/${number}`,
+    )
 
-  // The type of value is wrong, so we need to cast the value to the correct type
-  const typedValue = value as IssueExtensionRead | undefined
-
-  if (isInitialStateResolved && typedValue) {
+  if (isInitialStateResolved && value) {
     return (
       <IssueListItemDecoration
         orgName={orgName}
         repoName={repoName}
-        pledges={typedValue.pledges}
-        references={typedValue.references}
+        pledges={value.pledges}
+        references={value.references}
       />
     )
   } else {

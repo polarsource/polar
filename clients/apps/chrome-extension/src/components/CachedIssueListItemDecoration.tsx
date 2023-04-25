@@ -2,15 +2,8 @@ import { IssueExtensionRead } from 'polarkit/api/client'
 import { IssueListItemDecoration } from 'polarkit/components'
 import { useChromeStorageLocal } from 'use-chrome-storage'
 
-// The typing is a bit weird, so we need to provide an "empty" initial value of the correct type
-const initialValue: IssueExtensionRead = {
-  number: -1,
-  pledges: [],
-  references: [],
-}
-
 /*
- * Render the issue list item decoration from chrome.storage.
+ * Render the issue list item decoration from chrome.storage or null if there is none.
  */
 const CachedIssueListItemDecoration = ({
   orgName,
@@ -22,12 +15,11 @@ const CachedIssueListItemDecoration = ({
   number: number
 }) => {
   const [value, setValue, isPersistent, error, isInitialStateResolved] =
-    useChromeStorageLocal(
+    useChromeStorageLocal<IssueExtensionRead>(
       `issues/${orgName}/${repoName}/${number}`,
-      initialValue,
     )
 
-  if (isInitialStateResolved) {
+  if (isInitialStateResolved && value) {
     return (
       <IssueListItemDecoration
         orgName={orgName}

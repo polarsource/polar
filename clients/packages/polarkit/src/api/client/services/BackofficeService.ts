@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { BackofficePledgeRead } from '../models/BackofficePledgeRead';
+import type { InviteRead } from '../models/InviteRead';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -75,6 +76,30 @@ export class BackofficeService {
       errors: {
         422: `Validation Error`,
       },
+    });
+  }
+
+  /**
+   * Invites Create Code
+   * @returns InviteRead Successful Response
+   * @throws ApiError
+   */
+  public invitesCreateCode(): CancelablePromise<InviteRead> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/backoffice/invites/create_code',
+    });
+  }
+
+  /**
+   * Invites List
+   * @returns InviteRead Successful Response
+   * @throws ApiError
+   */
+  public invitesList(): CancelablePromise<Array<InviteRead>> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/backoffice/invites/list',
     });
   }
 

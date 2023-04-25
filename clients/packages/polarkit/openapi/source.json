@@ -615,6 +615,52 @@
                 }
             }
         },
+        "/api/v1/backoffice/invites/create_code": {
+            "post": {
+                "tags": [
+                    "backoffice"
+                ],
+                "summary": "Invites Create Code",
+                "operationId": "backoffice:invites_create_code",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InviteRead"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/backoffice/invites/list": {
+            "post": {
+                "tags": [
+                    "backoffice"
+                ],
+                "summary": "Invites List",
+                "operationId": "backoffice:invites_list",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "title": "Response Backoffice:Invites List",
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/InviteRead"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dashboard/personal": {
             "get": {
                 "tags": [
@@ -2509,6 +2555,23 @@
                     }
                 }
             },
+            "InviteRead": {
+                "title": "InviteRead",
+                "required": [
+                    "code"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "title": "Code",
+                        "type": "string"
+                    },
+                    "sent_to_email": {
+                        "title": "Sent To Email",
+                        "type": "string"
+                    }
+                }
+            },
             "IssueExtensionRead": {
                 "title": "IssueExtensionRead",
                 "required": [
@@ -4252,6 +4315,7 @@
                     "username",
                     "email",
                     "profile",
+                    "invite_only_approved",
                     "id"
                 ],
                 "type": "object",
@@ -4273,6 +4337,10 @@
                     "profile": {
                         "title": "Profile",
                         "type": "object"
+                    },
+                    "invite_only_approved": {
+                        "title": "Invite Only Approved",
+                        "type": "boolean"
                     },
                     "id": {
                         "title": "Id",

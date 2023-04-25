@@ -4,13 +4,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
+from polar.invite.schemas import InviteRead
 from .schemas import BackofficePledgeRead
-from polar.kit.extensions.sqlalchemy import sql
-from polar.models.pledge import Pledge
 from polar.postgres import AsyncSession, get_db_session
 
-from polar.pledge.schemas import PledgeRead
 from polar.pledge.service import pledge as pledge_service
+from polar.invite.service import invite as invite_service
 
 from .pledge_service import bo_pledges_service
 
@@ -62,3 +61,26 @@ async def pledge_mark_pending(
 ) -> BackofficePledgeRead:
     await pledge_service.mark_pending_by_pledge_id(session, pledge_id)
     return await get_pledge(session, pledge_id)
+
+
+@router.post("/invites/create_code", response_model=InviteRead)
+async def invites_create_code(
+    auth: Auth = Depends(Auth.backoffice_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> InviteRead:
+    res = await invite_service.create_code(session, auth.user)
+    if not res:
+        raise HTTPException(
+            status_code=404,
+            detail="Pledge not found",
+        )
+    return InviteRead.from_orm(res)
+
+
+@router.post("/invites/list", response_model=list[InviteRead])
+async def invites_list(
+    auth: Auth = Depends(Auth.backoffice_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> list[InviteRead]:
+    res = await invite_service.list(session)
+    return [InviteRead.from_orm(i) for i in res]

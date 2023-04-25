@@ -11,6 +11,7 @@ class UserBase(Schema):
     email: EmailStr
     avatar_url: str | None
     profile: dict[str, Any]
+    invite_only_approved: bool
 
     class Config:
         orm_mode = True

@@ -16,6 +16,7 @@ export const useDashboard = (
   q?: string,
   status?: Array<IssueStatus>,
   sort?: IssueSortBy,
+  onlyPledged?: boolean,
 ): UseQueryResult<IssueListResponse> =>
   useQuery(
     [
@@ -27,6 +28,7 @@ export const useDashboard = (
       q,
       JSON.stringify(status), // Array as cache key,
       sort,
+      onlyPledged,
     ],
     ({ signal }) => {
       const promise = api.dashboard.getDashboard({
@@ -37,6 +39,7 @@ export const useDashboard = (
         q: q,
         status: status,
         sort: sort,
+        onlyPledged: onlyPledged,
       })
 
       signal?.addEventListener('abort', () => {
@@ -56,6 +59,7 @@ export const usePersonalDashboard = (
   q?: string,
   status?: Array<IssueStatus>,
   sort?: IssueSortBy,
+  onlyPledged?: boolean,
 ): UseQueryResult<IssueListResponse> =>
   useQuery(
     [
@@ -64,6 +68,7 @@ export const usePersonalDashboard = (
       q,
       JSON.stringify(status), // Array as cache key,
       sort,
+      onlyPledged,
     ],
     ({ signal }) => {
       const promise = api.dashboard.getPersonalDashboard({
@@ -71,6 +76,7 @@ export const usePersonalDashboard = (
         q: q,
         status: status,
         sort: sort,
+        onlyPledged,
       })
 
       signal?.addEventListener('abort', () => {

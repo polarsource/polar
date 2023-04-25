@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router'
 import {
   IssueListType,
+  IssueSortBy,
   IssueStatus,
   OrganizationRead,
   RepositoryRead,
@@ -28,16 +29,30 @@ export const DefaultFilters: DashboardFilters = {
   statusPullRequest: true,
   statusCompleted: false,
   sort: undefined,
+  onlyPledged: false,
 }
 
 const getTab = (tab: string): IssueListType => {
-  if (tab === 'following') {
-    return IssueListType.FOLLOWING
-  }
-  if (tab === 'pledged') {
-    return IssueListType.PLEDGED
+  if (tab === 'dependencies') {
+    return IssueListType.DEPENDENCIES
   }
   return IssueListType.ISSUES
+}
+
+const getSort = (sort: string): IssueSortBy => {
+  if (sort === 'newest') {
+    return IssueSortBy.NEWEST
+  }
+  if (sort === 'pledged_amount_desc') {
+    return IssueSortBy.PLEDGED_AMOUNT_DESC
+  }
+  if (sort === 'relevance') {
+    return IssueSortBy.RELEVANCE
+  }
+  if (sort === 'dependencies_default') {
+    return IssueSortBy.DEPENDENCIES_DEFAULT
+  }
+  return IssueSortBy.NEWEST
 }
 
 const Dashboard = ({
@@ -69,7 +84,9 @@ const Dashboard = ({
       didSetFiltersFromURL.current = true
       const s = new URLSearchParams(window.location.search)
 
-      const useTab = isPersonal ? IssueListType.PLEDGED : getTab(s.get('tab'))
+      const useTab = isPersonal
+        ? IssueListType.DEPENDENCIES
+        : getTab(s.get('tab'))
 
       const f = {
         ...DefaultFilters,
@@ -82,6 +99,12 @@ const Dashboard = ({
         f.statusBuild = statuses.includes('build')
         f.statusPullRequest = statuses.includes('pull_request')
         f.statusCompleted = statuses.includes('completed')
+      }
+      if (s.has('sort')) {
+        f.sort = getSort(s.get('sort'))
+      }
+      if (s.has('onlyPledged')) {
+        f.onlyPledged = true
       }
 
       setFilters(f)

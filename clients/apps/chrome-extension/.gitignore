@@ -24,3 +24,4 @@ yarn-error.log*
 
 # Extension generated stuff
 /extension/*.js
+/extension/*.css

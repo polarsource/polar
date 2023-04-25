@@ -9,6 +9,16 @@ import reportWebVitals from './reportWebVitals'
 const [, orgName, repoName] = window.location.pathname.split('/')
 
 if (orgName && repoName) {
+  // Install the CSS
+  const head = document.querySelector('head')
+  if (head) {
+    const link = document.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = chrome.runtime.getURL('index.css')
+    head.appendChild(link)
+  }
+
+  // Find all the issues on the page
   const issues = document.querySelectorAll(
     "div[id^='issue_']:has(a[id^='issue_'])",
   )

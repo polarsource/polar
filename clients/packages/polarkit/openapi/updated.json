@@ -663,6 +663,16 @@
                         },
                         "name": "sort",
                         "in": "query"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Only Pledged",
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "name": "only_pledged",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -762,6 +772,16 @@
                             "$ref": "#/components/schemas/IssueSortBy"
                         },
                         "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Only Pledged",
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "name": "only_pledged",
                         "in": "query"
                     }
                 ],
@@ -2546,8 +2566,7 @@
                 "title": "IssueListType",
                 "enum": [
                     "issues",
-                    "following",
-                    "pledged"
+                    "dependencies"
                 ],
                 "type": "string",
                 "description": "An enumeration."
@@ -2891,7 +2910,9 @@
                 "enum": [
                     "newest",
                     "pledged_amount_desc",
-                    "relevance"
+                    "relevance",
+                    "dependencies_default",
+                    "issues_default"
                 ],
                 "type": "string",
                 "description": "An enumeration."

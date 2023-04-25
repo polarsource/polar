@@ -1,11 +1,11 @@
 import { MagnifyingGlassIcon } from '@heroicons/react/20/solid'
-import { DashboardFilters } from 'components/Dashboard/filters'
 import { useRouter } from 'next/router'
 import { IssueListType, IssueSortBy } from 'polarkit/api/client'
+import { Checkbox } from 'polarkit/components/ui'
 import { ChangeEvent, Dispatch, FormEvent, SetStateAction } from 'react'
-import Checkbox from './Checkbox'
 import Tab from './Tab'
 import Tabs from './Tabs'
+import { DashboardFilters, navigate } from './filters'
 
 const Search = (props: {
   filters: DashboardFilters
@@ -13,11 +13,20 @@ const Search = (props: {
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
 }) => {
   const { filters, onSetFilters, showTabs } = props
+  const router = useRouter()
 
   const onTabChange = (tab: IssueListType) => {
-    const f = { ...filters, tab }
+    let sort = filters.sort
+    if (tab === IssueListType.ISSUES) {
+      sort = IssueSortBy.ISSUES_DEFAULT
+    }
+    if (tab === IssueListType.DEPENDENCIES) {
+      sort = IssueSortBy.DEPENDENCIES_DEFAULT
+    }
+
+    const f = { ...filters, tab, sort }
     onSetFilters(f)
-    navigate(f)
+    navigate(router, f)
   }
 
   const onQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -29,7 +38,7 @@ const Search = (props: {
     const f = { ...filters, q: event.target.value, sort }
     onSetFilters(f)
 
-    navigate(f)
+    navigate(router, f)
   }
 
   const onStatusChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -39,58 +48,33 @@ const Search = (props: {
     let f = { ...filters }
     f[id] = event.target.checked
     onSetFilters(f)
-    navigate(f)
+    navigate(router, f)
   }
-
-  const navigate = (filters: DashboardFilters) => {
-    const params = new URLSearchParams()
-
-    const statuses = []
-    if (filters.statusBacklog) {
-      statuses.push('backlog')
-    }
-    if (filters.statusBuild) {
-      statuses.push('build')
-    }
-    if (filters.statusPullRequest) {
-      statuses.push('pull_request')
-    }
-    if (filters.statusCompleted) {
-      statuses.push('completed')
-    }
-
-    params.set('statuses', statuses.join(','))
-
-    if (filters.q) {
-      params.set('q', filters.q)
-    }
-    if (filters.tab) {
-      params.set('tab', filters.tab)
-    }
-    if (filters.sort) {
-      params.set('sort', filters.sort)
-    }
-
-    const url = new URL(window.location.href)
-    const newPath = `${url.pathname}?${params.toString()}`
-    router.push(url.pathname, newPath)
-  }
-
-  const router = useRouter()
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    navigate(filters)
+    navigate(router, filters)
   }
 
   const resetStatus = () => {
-    onSetFilters({
+    const f = {
       ...filters,
       statusBacklog: true,
       statusBuild: true,
       statusPullRequest: true,
       statusCompleted: false,
-    })
+    }
+    onSetFilters(f)
+    navigate(router, f)
+  }
+
+  const resetFilters = () => {
+    const f = {
+      ...filters,
+      onlyPledged: false,
+    }
+    onSetFilters(f)
+    navigate(router, f)
   }
 
   return (
@@ -105,21 +89,12 @@ const Search = (props: {
           </Tab>
         )}
 
-        {showTabs.includes(IssueListType.PLEDGED) && (
+        {showTabs.includes(IssueListType.DEPENDENCIES) && (
           <Tab
-            active={filters.tab === IssueListType.PLEDGED}
-            onClick={() => onTabChange(IssueListType.PLEDGED)}
+            active={filters.tab === IssueListType.DEPENDENCIES}
+            onClick={() => onTabChange(IssueListType.DEPENDENCIES)}
           >
-            Pledged
-          </Tab>
-        )}
-
-        {showTabs.includes(IssueListType.ISSUES) && (
-          <Tab
-            active={filters.tab === IssueListType.FOLLOWING}
-            onClick={() => onTabChange(IssueListType.FOLLOWING)}
-          >
-            Following
+            Dependencies
           </Tab>
         )}
       </Tabs>
@@ -180,6 +155,24 @@ const Search = (props: {
             onChange={onStatusChange}
           >
             Completed
+          </Checkbox>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="mt-1 text-sm font-medium text-gray-500">Filters</div>
+          <div
+            className="cursor-pointer text-xs font-medium text-blue-500"
+            onClick={resetFilters}
+          >
+            Reset
+          </div>
+        </div>
+        <div className="space-y-3">
+          <Checkbox
+            id="onlyPledged"
+            value={filters.onlyPledged}
+            onChange={onStatusChange}
+          >
+            Only Pledged
           </Checkbox>
         </div>
       </form>

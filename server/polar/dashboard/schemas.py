@@ -8,8 +8,7 @@ from enum import Enum
 
 class IssueListType(str, Enum):
     issues = "issues"
-    following = "following"
-    pledged = "pledged"
+    dependencies = "dependencies"
 
 
 class IssueStatus(str, Enum):
@@ -23,6 +22,10 @@ class IssueSortBy(str, Enum):
     newest = "newest"
     pledged_amount_desc = "pledged_amount_desc"
     relevance = "relevance"  # best search match
+    dependencies_default = (
+        "dependencies_default"  # (state, self pledged amount, updated at)
+    )
+    issues_default = "issues_default"  # (total pledged amount, thumbs up, updated at)
 
 
 # JSON:API types below

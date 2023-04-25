@@ -10,12 +10,19 @@
     ],
     "content_scripts": [
         {
+            "run_at": "document_end",
             "js": ["content.js"],
             "matches": ["https://github.com/*/*/issues"]
         },
         {
             "js": ["auth.js"],
             "matches": ["http://127.0.0.1:3000/settings/extension"]
+        }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": ["index.css"],
+            "matches": ["https://github.com/*"]
         }
     ]
 }

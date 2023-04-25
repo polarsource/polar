@@ -52,3 +52,18 @@ export const useBackofficePledgeMarkPending = () =>
       )
     },
   })
+
+export const useBackofficeListInvites = () =>
+  useQuery(['useBackofficeListInvites'], () => api.backoffice.invitesList(), {
+    retry: defaultRetry,
+  })
+
+export const useBackofficeCreateInviteCode = () =>
+  useMutation({
+    mutationFn: () => {
+      return api.backoffice.invitesCreateCode()
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.invalidateQueries(['useBackofficeListInvites'])
+    },
+  })

@@ -663,6 +663,16 @@
                         },
                         "name": "sort",
                         "in": "query"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Only Pledged",
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "name": "only_pledged",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -762,6 +772,16 @@
                             "$ref": "#/components/schemas/IssueSortBy"
                         },
                         "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "required": false,
+                        "schema": {
+                            "title": "Only Pledged",
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "name": "only_pledged",
                         "in": "query"
                     }
                 ],

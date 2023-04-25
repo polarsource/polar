@@ -57,7 +57,7 @@ async def test_maintainer_pledge_created_metadata(
     )
     assert (
         rendered
-        == """Hi foobar,
+        == """Hi foobar,<br><br>
 
 pledging_org has pledged $123.45 to <a href="https://github.com/testorg/testrepo/issues/123">issue title</a>."""  # noqa: E501
     )
@@ -103,7 +103,7 @@ async def test_pledger_pull_request_created(
     )
     assert (
         rendered
-        == """Hi foobar,
+        == """Hi foobar,<br><br>
 
 pr_creator_login just opened a <a href="https://github.com/testorg/testrepo/pull/5555">pull request</a> to testorg/testrepo that solves
 the issue <a href="https://github.com/testorg/testrepo/issues/123">issue title</a> that you've backed!"""  # noqa: E501
@@ -150,10 +150,10 @@ async def test_pledger_pull_request_merged(
     )
     assert (
         rendered
-        == """Hi foobar,
+        == """Hi foobar,<br><br>
 
 pr_creator_login just merged a <a href="https://github.com/testorg/testrepo/pull/5555">pull request</a> to testorg/testrepo that solves
-the issue <a href="https://github.com/testorg/testrepo/issues/123">issue title</a> that you've backed!
+the issue <a href="https://github.com/testorg/testrepo/issues/123">issue title</a> that you've backed!<br><br>
 
 The money will soon be paid out to testorg."""  # noqa: E501
     )
@@ -178,7 +178,7 @@ async def test_pledger_branch_created(
 
     assert (
         rendered
-        == """Hi foobar,
+        == """Hi foobar,<br><br>
 
 Polar has detected that happy_coder has started to work on a fix to <a href="https://github.com/testorg/testrepo/issues/123">issue title</a> that you've backed."""  # noqa: E501
     )

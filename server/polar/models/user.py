@@ -65,6 +65,8 @@ class User(RecordModel):
         "organization_associations", "organization"
     )
 
+    invite_only_approved: Mapped[bool] = mapped_column(Boolean, nullable=False)
+
     __mutables__ = {"email", "profile"}
 
     def get_platform_oauth_account(self, platform: Platforms) -> OAuthAccount | None:

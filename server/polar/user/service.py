@@ -1,9 +1,7 @@
 import structlog
-from sqlalchemy.orm import joinedload
 
 from polar.kit.services import ResourceService
-from polar.models import User, OAuthAccount
-from polar.postgres import AsyncSession, sql
+from polar.models import User
 
 from .schemas import UserCreate, UserUpdate
 

@@ -8,7 +8,7 @@ module.exports = {
   mode: 'jit',
   content: [
     './src/**/*.{ts,tsx}',
-    '../../packages/polarkit/src/**/*.{ts,tsx}',
+    'node_modules/polarkit/src/**/*.{ts,tsx}',
   ],
   theme: {
     fontWeight: {

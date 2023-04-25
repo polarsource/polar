@@ -7,11 +7,11 @@ import {
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
 import { IssueListItemDecoration } from 'polarkit/components'
+import IssueActivityBox from 'polarkit/components/IssueActivityBox'
 import { githubIssueUrl } from 'polarkit/utils'
 import TimeAgo from 'react-timeago'
 import PledgeNow from '../Pledge/PledgeNow'
 import IconCounter from './IconCounter'
-import IssueActivityBox from './IssueActivityBox'
 import IssueLabel, { LabelSchema } from './IssueLabel'
 import IssueProgress, { Progress } from './IssueProgress'
 

@@ -24,11 +24,13 @@ export class DashboardService {
     status,
     q,
     sort,
+    onlyPledged = false,
   }: {
     issueListType?: IssueListType,
     status?: Array<IssueStatus>,
     q?: string,
     sort?: IssueSortBy,
+    onlyPledged?: boolean,
   }): CancelablePromise<IssueListResponse> {
     return this.httpRequest.request({
       method: 'GET',
@@ -38,6 +40,7 @@ export class DashboardService {
         'status': status,
         'q': q,
         'sort': sort,
+        'only_pledged': onlyPledged,
       },
       errors: {
         422: `Validation Error`,
@@ -58,6 +61,7 @@ export class DashboardService {
     status,
     q,
     sort,
+    onlyPledged = false,
   }: {
     platform: Platforms,
     orgName: string,
@@ -66,6 +70,7 @@ export class DashboardService {
     status?: Array<IssueStatus>,
     q?: string,
     sort?: IssueSortBy,
+    onlyPledged?: boolean,
   }): CancelablePromise<IssueListResponse> {
     return this.httpRequest.request({
       method: 'GET',
@@ -80,6 +85,7 @@ export class DashboardService {
         'status': status,
         'q': q,
         'sort': sort,
+        'only_pledged': onlyPledged,
       },
       errors: {
         422: `Validation Error`,

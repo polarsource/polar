@@ -6,8 +6,8 @@ import {
   type PledgeRead,
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
-import { IssueListItemDecoration } from 'polarkit/components'
-import IssueActivityBox from 'polarkit/components/IssueActivityBox'
+import IssueActivityBox from 'polarkit/components/Issue/ActivityBox'
+import IssueListItemDecoration from 'polarkit/components/Issue/ListItemDecoration'
 import { githubIssueUrl } from 'polarkit/utils'
 import TimeAgo from 'react-timeago'
 import PledgeNow from '../Pledge/PledgeNow'

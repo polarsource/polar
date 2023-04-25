@@ -179,46 +179,46 @@ def render_email(
     return res
 
 
-MAINTAINER_PLEDGE_CREATED = """Hi {{username}},
+MAINTAINER_PLEDGE_CREATED = """Hi {{username}},<br><br>
 
 {{pledger_name}} has pledged ${{pledge_amount}} to <a href="{{issue_url}}">{{issue_title}}</a>.
 """  # noqa: E501
 
-PLEDGER_ISSUE_PULL_REQUEST_CREATED = """Hi {{username}},
+PLEDGER_ISSUE_PULL_REQUEST_CREATED = """Hi {{username}},<br><br>
 
 {{pull_request_creator_username}} just opened a <a href="{{pull_request_url}}">pull request</a> to {{repo_owner}}/{{repo_name}} that solves
 the issue <a href="{{issue_url}}">{{issue_title}}</a> that you've backed!
 """  # noqa: E501
 
-PLEDGER_ISSUE_PULL_REQUEST_MERGED = """Hi {{username}},
+PLEDGER_ISSUE_PULL_REQUEST_MERGED = """Hi {{username}},<br><br>
 
 {{pull_request_creator_username}} just merged a <a href="{{pull_request_url}}">pull request</a> to {{repo_owner}}/{{repo_name}} that solves
-the issue <a href="{{issue_url}}">{{issue_title}}</a> that you've backed!
+the issue <a href="{{issue_url}}">{{issue_title}}</a> that you've backed!<br><br>
 
 The money will soon be paid out to {{repo_owner}}.
 """  # noqa: E501
 
-PLEDGER_ISSUE_BRANCH_CREATED = """Hi {{username}},
+PLEDGER_ISSUE_BRANCH_CREATED = """Hi {{username}},<br><br>
 
 Polar has detected that {{branch_creator_username}} has started to work on a fix to <a href="{{issue_url}}">{{issue_title}}</a> that you've backed.
 """  # noqa: E501
 
 
-MAINTAINER_ISSUE_PULL_REQUEST_CREATED = """Hi {{username}},
+MAINTAINER_ISSUE_PULL_REQUEST_CREATED = """Hi {{username}},<br><br>
 
 {{pull_request_creator_username}} just opened a <a href="{{pull_request_url}}">pull request</a> to {{repo_owner}}/{{repo_name}} that solves
 the issue <a href="{{issue_url}}">{{issue_title}}</a> that has been pledged on Polar.
 """  # noqa: E501
 
-MAINTAINER_ISSUE_PULL_REQUEST_MERGED = """Hi {{username}},
+MAINTAINER_ISSUE_PULL_REQUEST_MERGED = """Hi {{username}},<br><br>
 
 {{pull_request_creator_username}} just merged a <a href="{{pull_request_url}}">pull request</a> to {{repo_owner}}/{{repo_name}} that solves
-the issue <a href="{{issue_url}}">{{issue_title}}</a> that has been pledged on Polar.
+the issue <a href="{{issue_url}}">{{issue_title}}</a> that has been pledged on Polar.<br><br>
 
 Check <a href="https://polar.sh/">polar.sh</a> to manage your payout details.
 """  # noqa: E501
 
-MAINTAINER_ISSUE_BRANCH_CREATED = """Hi {{username}},
+MAINTAINER_ISSUE_BRANCH_CREATED = """Hi {{username}},<br><br>
 
 Polar has detected that {{branch_creator_username}} has started to work on a fix to <a href="{{issue_url}}">{{issue_title}}</a> that has been pledged on Polar.
 """  # noqa: E501

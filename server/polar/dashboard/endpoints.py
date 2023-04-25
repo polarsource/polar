@@ -42,6 +42,7 @@ async def get_personal_dashboard(
     status: Union[List[IssueStatus], None] = Query(default=None),
     q: Union[str, None] = Query(default=None),
     sort: Union[IssueSortBy, None] = Query(default=None),
+    only_pledged: bool = Query(default=False),
     auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueListResponse:
@@ -53,6 +54,7 @@ async def get_personal_dashboard(
         sort=sort,
         in_repos=[],
         for_user=auth.user,
+        only_pledged=only_pledged,
     )
 
 
@@ -68,6 +70,7 @@ async def get_dashboard(
     status: Union[List[IssueStatus], None] = Query(default=None),
     q: Union[str, None] = Query(default=None),
     sort: Union[IssueSortBy, None] = Query(default=None),
+    only_pledged: bool = Query(default=False),
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueListResponse:
@@ -114,6 +117,7 @@ async def get_dashboard(
         sort=sort,
         for_org=auth.organization,
         for_user=show_pledges_for_user,
+        only_pledged=only_pledged,
     )
 
 
@@ -142,6 +146,7 @@ async def dashboard(
     sort: Union[IssueSortBy, None] = None,
     for_org: Organization | None = None,
     for_user: User | None = None,
+    only_pledged: bool = False,
 ) -> IssueListResponse:
     include_open = False
     if status:
@@ -175,6 +180,7 @@ async def dashboard(
         pledged_by_user=for_user.id
         if for_user and IssueListType.dependencies
         else None,
+        have_pledge=True if only_pledged else None,
     )
 
     issue_organizations = list(

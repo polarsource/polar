@@ -95,11 +95,14 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         | None = None,  # Only include issues that have been pledged by this org
         pledged_by_user: UUID
         | None = None,  # Only include issues that have been pledged by this user
+        have_pledge: bool | None = None,  # If issues have pledge or not
     ) -> Sequence[Issue]:
-        statement: Select[Tuple[Issue]] | None = None
+        statement = sql.select(Issue).join(
+            Pledge, Pledge.issue_id == Issue.id, isouter=True
+        )
 
         if issue_list_type == IssueListType.issues:
-            statement = sql.select(Issue).where(Issue.repository_id.in_(repository_ids))
+            statement = statement.where(Issue.repository_id.in_(repository_ids))
         elif issue_list_type == IssueListType.dependencies:
             if not pledged_by_org and not pledged_by_user:
                 raise ValueError("no pledge_by criteria specified")
@@ -111,19 +114,14 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             if pledged_by_user:
                 pledge_criterias.append(Pledge.by_user_id == pledged_by_user)
 
-            statement = (
-                sql.select(Issue)
-                .join(
-                    IssueDependency,
-                    IssueDependency.dependency_issue_id == Issue.id,
-                    isouter=True,
-                )
-                .join(Pledge, Pledge.issue_id == Issue.id, isouter=True)
-                .where(
-                    or_(
-                        IssueDependency.repository_id.in_(repository_ids),
-                        or_(*pledge_criterias),
-                    )
+            statement = statement.join(
+                IssueDependency,
+                IssueDependency.dependency_issue_id == Issue.id,
+                isouter=True,
+            ).where(
+                or_(
+                    IssueDependency.repository_id.in_(repository_ids),
+                    or_(*pledge_criterias),
                 )
             )
 
@@ -138,6 +136,14 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
 
         statement = statement.where(or_(*filters))
 
+        # pledge filter
+        if have_pledge is not None:
+            if have_pledge:
+                statement = statement.where(Pledge.id.is_not(None))
+            else:
+                statement = statement.where(Pledge.id.is_(None))
+
+        # free text search
         if text:
             # Search in titles using the vector index
             # https://www.postgresql.org/docs/current/textsearch-controls.html#TEXTSEARCH-PARSING-QUERIES

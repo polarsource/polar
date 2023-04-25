@@ -1938,6 +1938,21 @@ cryptography = ">=35.0.0"
 types-pyOpenSSL = "*"
 
 [[package]]
+name = "types-sqlalchemy-utils"
+version = "1.0.1"
+description = "Type Stubs for sqlalchemy-utils"
+category = "main"
+optional = false
+python-versions = ">=3.7, <4"
+files = [
+    {file = "types-sqlalchemy-utils-1.0.1.tar.gz", hash = "sha256:37016333faa0abab7d253805ecf9f605c24ea107b32dd3643014efb8e49be76d"},
+    {file = "types_sqlalchemy_utils-1.0.1-py3-none-any.whl", hash = "sha256:95bc90db15ec4af5b13d64f04a7d31a7e851931250419fc7859354644ab3ea98"},
+]
+
+[package.extras]
+dev = ["mypy (==0.971)", "pipenv-setup (==3.2.0)", "sqlalchemy-utils (==0.38.3)", "sqlalchemy2-stubs (==0.0.2a25)", "twine (==4.0.1)"]
+
+[[package]]
 name = "types-stripe"
 version = "3.5.2.9"
 description = "Typing stubs for stripe"
@@ -2184,4 +2199,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "082406028f766dadbdbfc664bf92a498085b515eae7a92944f0cd791586296d6"
+content-hash = "79d4d6b3e311df7d5b71933561d64a6eea964b862f823ff38bb82027e7f91433"

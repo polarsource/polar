@@ -23,9 +23,6 @@ const IssueReference = (props: {
 
   if (reference && reference.type === IssueReferenceType.PULL_REQUEST) {
     const pr = reference.payload as PullRequestReference
-    const isClosed = !!pr.closed_at
-    const isMerged = isClosed && !!pr.merged_at
-    const isOpen = !isClosed && !isMerged
     return (
       <Box>
         <IssueReferencePullRequest

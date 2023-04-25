@@ -1,4 +1,5 @@
 import type { NextPage } from 'next'
+import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import { useAuth } from '../hooks'
@@ -14,7 +15,13 @@ const Home: NextPage = () => {
     }
   }, [currentUser])
 
-  return <></>
+  return (
+    <>
+      <Head>
+        <title>Polar</title>
+      </Head>
+    </>
+  )
 }
 
 export default Home

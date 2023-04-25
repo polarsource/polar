@@ -11,6 +11,11 @@ class Environment(Enum):
     production = "production"
 
 
+class EmailSender(Enum):
+    logger = "logger"
+    sendgrid = "sendgrid"
+
+
 class Settings(BaseSettings):
     ENV: Environment = Environment.development
     DEBUG: bool = False
@@ -72,6 +77,9 @@ class Settings(BaseSettings):
     # Application behaviours
 
     GITHUB_BADGE_EMBED: bool = False
+
+    EMAIL_SENDER: EmailSender = EmailSender.logger
+    SENDGRID_API_KEY: str = ""
 
     class Config:
         env_prefix = "polar_"

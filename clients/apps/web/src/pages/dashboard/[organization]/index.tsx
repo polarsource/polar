@@ -1,5 +1,6 @@
 import Dashboard from 'components/Dashboard/Dashboard'
 import type { NextLayoutComponentType } from 'next'
+import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { ReactElement, useEffect } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../../hooks'
@@ -21,7 +22,14 @@ const Page: NextLayoutComponentType = () => {
     return <></>
   }
 
-  return <Dashboard key={key} org={org} repo={undefined} isPersonal={false} />
+  return (
+    <>
+      <Head>
+        <title>Polar {org.name}</title>
+      </Head>
+      <Dashboard key={key} org={org} repo={undefined} isPersonal={false} />
+    </>
+  )
 }
 
 Page.getLayout = (page: ReactElement) => {

@@ -9,6 +9,7 @@ import PaymentSettings from 'components/Settings/PaymentSettings'
 import Spinner from 'components/Shared/Spinner'
 import Topbar from 'components/Shared/Topbar'
 import { NextLayoutComponentType } from 'next'
+import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { OrganizationSettingsUpdate } from 'polarkit/api/client'
@@ -137,6 +138,10 @@ const SettingsPage: NextLayoutComponentType = () => {
 
   return (
     <>
+      <Head>
+        <title>Polar | Settings for {handle}</title>
+      </Head>
+
       <div className="mx-auto max-w-[1100px] md:mt-24">
         <div className="pl-80">
           {showDidSave && <div className="h-4 text-black/50">Saved!</div>}

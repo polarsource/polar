@@ -1,6 +1,14 @@
-# Getting Started with Create React App
+# The Polar Chrome Extension
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+
+## Anatomy of this project
+
+This project has three different "entry points":
+
+- `popup.html`, which includes `popup.tsx`, is the extensions pop-up, the page that is shown when you click the extension's icon in the Chrome toolbar. Click it directly after you install the extension and go through the 1-click authorization process.
+- `auth.ts` is a content script that scrapes Polar's `/settings/extension` URL to look for an auth token
+- `index.tsx` is the main content script, that decorates issues in the GitHub issue list
 
 ## Build the extension
 

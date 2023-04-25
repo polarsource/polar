@@ -26,4 +26,5 @@ const Checkbox = (props: {
     </div>
   )
 }
+
 export default Checkbox

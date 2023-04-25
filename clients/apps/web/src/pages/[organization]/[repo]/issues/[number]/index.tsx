@@ -1,5 +1,6 @@
 import Pledge from 'components/Website/Pledge'
 import type { NextLayoutComponentType, NextPage } from 'next'
+import Head from 'next/head'
 import { api } from 'polarkit'
 import { Platforms, PledgeResources } from 'polarkit/api/client'
 
@@ -58,6 +59,9 @@ const PledgePage: NextPage = ({
 }) => {
   return (
     <>
+      <Head>
+        <title>Polar | {issue.title}</title>
+      </Head>
       <div className="mx-auto mt-24 w-[826px]">
         <h1 className="text-center text-4xl font-normal text-gray-800">
           Complete your backing

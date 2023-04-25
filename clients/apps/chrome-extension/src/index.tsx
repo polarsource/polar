@@ -8,6 +8,9 @@ import reportWebVitals from './reportWebVitals'
 
 const [, orgName, repoName] = window.location.pathname.split('/')
 
+const findIssueNodes = (node: Element | Document) =>
+  node.querySelectorAll("div[id^='issue_']:has(a[id^='issue_'])")
+
 const getIssueNumbers = (issues: NodeListOf<Element>) => {
   const issueNumbers: string[] = []
   issues.forEach((issue) => {
@@ -74,30 +77,26 @@ if (orgName && repoName) {
     head.appendChild(link)
   }
 
-  // Find all the issues on the page
-  const issues = document.querySelectorAll(
-    "div[id^='issue_']:has(a[id^='issue_'])",
-  )
+  // Decorate all issues on page
+  const issues = findIssueNodes(document)
+  if (issues.length > 0) {
+    const issueNumbers = getIssueNumbers(issues)
+    apiRequestDecoration(issueNumbers)
+    mountReact(issues)
+  }
 
-  const issueNumbers = getIssueNumbers(issues)
-  apiRequestDecoration(issueNumbers)
-  mountReact(issues)
-
-  // Listen for changes to the issue list
-  const issueList = document.querySelector(
+  // Listen for changes to the DOM, and decorate any new issues
+  const turboFrame = document.querySelector(
     'turbo-frame[id="repo-content-turbo-frame"]',
   )
-  if (issueList) {
+  if (turboFrame) {
     const callback = (mutationList: MutationRecord[], observer) => {
       for (const mutation of mutationList) {
         if (mutation.type === 'childList') {
           mutation.addedNodes.forEach((addedNode) => {
             if (addedNode.nodeType === Node.ELEMENT_NODE) {
-              const el = addedNode as Element
-              const issues = el.querySelectorAll(
-                "div[id^='issue_']:has(a[id^='issue_'])",
-              )
-
+              const element = addedNode as Element
+              const issues = findIssueNodes(element)
               if (issues.length > 0) {
                 const issueNumbers = getIssueNumbers(issues)
                 apiRequestDecoration(issueNumbers)
@@ -109,7 +108,7 @@ if (orgName && repoName) {
       }
     }
     const observer = new MutationObserver(callback)
-    observer.observe(issueList, {
+    observer.observe(turboFrame, {
       childList: true,
       subtree: true,
     })

@@ -73,8 +73,8 @@ async def notifications_send(
 
                 meta = notifications.parse_payload(notif)
 
-                txt = render_email(user, NotificationType.from_str(notif.type), meta)
-                if not txt:
+                html = render_email(user, NotificationType.from_str(notif.type), meta)
+                if not html:
                     log.error(
                         "notifications.send.could_not_render",
                         user=user,
@@ -82,7 +82,11 @@ async def notifications_send(
                     )
                     continue
 
-                sender.send_to_user(user.email, txt)
+                sender.send_to_user(
+                    to_email_addr=user.email,
+                    subject="[Polar] " + meta.issue_title,
+                    html_content=html,
+                )
 
 
 async def should_send(

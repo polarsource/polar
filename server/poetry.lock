@@ -1459,6 +1459,18 @@ files = [
 cli = ["click (>=5.0)"]
 
 [[package]]
+name = "python-http-client"
+version = "3.3.7"
+description = "HTTP REST client, simplified for Python"
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+files = [
+    {file = "python_http_client-3.3.7-py3-none-any.whl", hash = "sha256:ad371d2bbedc6ea15c26179c6222a78bc9308d272435ddf1d5c84f068f249a36"},
+    {file = "python_http_client-3.3.7.tar.gz", hash = "sha256:bf841ee45262747e00dec7ee9971dfb8c7d83083f5713596488d67739170cea0"},
+]
+
+[[package]]
 name = "pyyaml"
 version = "6.0"
 description = "YAML parser and emitter for Python"
@@ -1594,6 +1606,22 @@ files = [
     {file = "ruff-0.0.253-py3-none-win_arm64.whl", hash = "sha256:506987ac3bc212cd74bf1ca032756e67ada93c4add3b7541e3549bbad5e0fc40"},
     {file = "ruff-0.0.253.tar.gz", hash = "sha256:ab746c843a9673d2637bcbcb45da12ed4d44c0c90f0823484d6dcb660118b539"},
 ]
+
+[[package]]
+name = "sendgrid"
+version = "6.10.0"
+description = "Twilio SendGrid library for Python"
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+files = [
+    {file = "sendgrid-6.10.0-py3-none-any.whl", hash = "sha256:522b30fc98306496208c5d8bdd5642cd6a2fd65cad487475f57f9098ce880604"},
+    {file = "sendgrid-6.10.0.tar.gz", hash = "sha256:9b15050c6f8826ee576f76a786efb15d956639f485478cbddd79ed69e8350ab8"},
+]
+
+[package.dependencies]
+python-http-client = ">=3.2.1"
+starkbank-ecdsa = ">=2.0.1"
 
 [[package]]
 name = "sentry-sdk"
@@ -1790,6 +1818,17 @@ files = [
 starlette = "*"
 
 [[package]]
+name = "starkbank-ecdsa"
+version = "2.2.0"
+description = "A lightweight and fast pure python ECDSA library"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "starkbank-ecdsa-2.2.0.tar.gz", hash = "sha256:9399c3371b899d4a235b68a1ed7919d202fbf024bd2c863ae8ebdad343c2a63a"},
+]
+
+[[package]]
 name = "starlette"
 version = "0.26.1"
 description = "The little ASGI library that shines."
@@ -1936,21 +1975,6 @@ files = [
 [package.dependencies]
 cryptography = ">=35.0.0"
 types-pyOpenSSL = "*"
-
-[[package]]
-name = "types-sqlalchemy-utils"
-version = "1.0.1"
-description = "Type Stubs for sqlalchemy-utils"
-category = "main"
-optional = false
-python-versions = ">=3.7, <4"
-files = [
-    {file = "types-sqlalchemy-utils-1.0.1.tar.gz", hash = "sha256:37016333faa0abab7d253805ecf9f605c24ea107b32dd3643014efb8e49be76d"},
-    {file = "types_sqlalchemy_utils-1.0.1-py3-none-any.whl", hash = "sha256:95bc90db15ec4af5b13d64f04a7d31a7e851931250419fc7859354644ab3ea98"},
-]
-
-[package.extras]
-dev = ["mypy (==0.971)", "pipenv-setup (==3.2.0)", "sqlalchemy-utils (==0.38.3)", "sqlalchemy2-stubs (==0.0.2a25)", "twine (==4.0.1)"]
 
 [[package]]
 name = "types-stripe"
@@ -2199,4 +2223,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "79d4d6b3e311df7d5b71933561d64a6eea964b862f823ff38bb82027e7f91433"
+content-hash = "1ad3bf47b67bb038eb0f22c3383a2a7b3463060a300bf353bf5dc04e55e710a4"

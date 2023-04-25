@@ -5,8 +5,8 @@ import { IssueReadWithRelations } from 'polarkit/api/types'
 import { useDashboard } from 'polarkit/hooks'
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import yayson from 'yayson'
-import { DashboardFilters } from './filters'
 import IssueList from './IssueList'
+import { DashboardFilters } from './filters'
 
 const y = yayson({ adapter: 'default' })
 const store = new y.Store()
@@ -31,6 +31,7 @@ const OrganizationDashboard = ({
     filters.q,
     statuses,
     filters.sort,
+    filters.onlyPledged,
   )
   const dashboard = dashboardQuery.data
 

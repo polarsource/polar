@@ -1,8 +1,8 @@
 import { MagnifyingGlassIcon } from '@heroicons/react/20/solid'
 import { useRouter } from 'next/router'
 import { IssueListType, IssueSortBy } from 'polarkit/api/client'
+import { Checkbox } from 'polarkit/components/ui'
 import { ChangeEvent, Dispatch, FormEvent, SetStateAction } from 'react'
-import Checkbox from './Checkbox'
 import Tab from './Tab'
 import Tabs from './Tabs'
 import { DashboardFilters, navigate } from './filters'
@@ -57,13 +57,24 @@ const Search = (props: {
   }
 
   const resetStatus = () => {
-    onSetFilters({
+    const f = {
       ...filters,
       statusBacklog: true,
       statusBuild: true,
       statusPullRequest: true,
       statusCompleted: false,
-    })
+    }
+    onSetFilters(f)
+    navigate(router, f)
+  }
+
+  const resetFilters = () => {
+    const f = {
+      ...filters,
+      onlyPledged: false,
+    }
+    onSetFilters(f)
+    navigate(router, f)
   }
 
   return (
@@ -144,6 +155,24 @@ const Search = (props: {
             onChange={onStatusChange}
           >
             Completed
+          </Checkbox>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="mt-1 text-sm font-medium text-gray-500">Filters</div>
+          <div
+            className="cursor-pointer text-xs font-medium text-blue-500"
+            onClick={resetFilters}
+          >
+            Reset
+          </div>
+        </div>
+        <div className="space-y-3">
+          <Checkbox
+            id="onlyPledged"
+            value={filters.onlyPledged}
+            onChange={onStatusChange}
+          >
+            Only Pledged
           </Checkbox>
         </div>
       </form>

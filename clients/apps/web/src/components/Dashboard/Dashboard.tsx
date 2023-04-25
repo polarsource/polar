@@ -29,6 +29,7 @@ export const DefaultFilters: DashboardFilters = {
   statusPullRequest: true,
   statusCompleted: false,
   sort: undefined,
+  onlyPledged: false,
 }
 
 const getTab = (tab: string): IssueListType => {
@@ -101,6 +102,9 @@ const Dashboard = ({
       }
       if (s.has('sort')) {
         f.sort = getSort(s.get('sort'))
+      }
+      if (s.has('onlyPledged')) {
+        f.onlyPledged = true
       }
 
       setFilters(f)

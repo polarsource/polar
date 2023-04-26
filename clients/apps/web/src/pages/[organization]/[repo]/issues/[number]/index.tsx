@@ -76,7 +76,6 @@ const PledgePage: NextPage = ({
 
         <HowItWorks />
       </div>
-      {/* <CheckoutForm issueId={issue.id} query={query} /> */}
     </>
   )
 }

@@ -13,5 +13,4 @@ async def payment_intent_succeeded(
         async with AsyncSessionLocal() as session:
             await pledge_service.mark_created_by_payment_id(
                 session=session, payment_id=event["data"]["object"]["id"],
-                # TODO: We'd need the id of the transaction/charge here?
-                transaction_id=event["data"]["object"]["id"])
+                transaction_id=event["data"]["object"]["latest_charge"])

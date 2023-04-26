@@ -1,6 +1,6 @@
 from typing import Self
 from polar.models.pledge import Pledge
-from polar.pledge.schemas import PledgeRead, State
+from polar.pledge.schemas import PledgeRead, PledgeState
 
 
 class BackofficePledgeRead(PledgeRead):
@@ -28,7 +28,7 @@ class BackofficePledgeRead(PledgeRead):
             repository_id=o.repository_id,
             organization_id=o.organization_id,
             amount=o.amount,
-            state=State.from_str(o.state),
+            state=PledgeState.from_str(o.state),
             pledger_name=pledger_name,
             pledger_avatar=pledger_avatar,
             payment_id=o.payment_id,

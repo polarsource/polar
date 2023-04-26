@@ -19,7 +19,7 @@ from .schemas import (
     PledgeMutationResponse,
     PledgeUpdate,
     PledgeRead,
-    State,
+    PledgeState,
     PledgeResources,
 )
 from .service import pledge as pledge_service
@@ -191,7 +191,7 @@ async def create_pledge_anonymous(
         organization_id=org.id,
         email=pledge.email,
         amount=pledge.amount,
-        state=State.initiated,
+        state=PledgeState.initiated,
         payment_id=payment_intent.id,
     )
 
@@ -298,7 +298,7 @@ async def create_pledge_as_org(
         organization_id=org.id,
         email=pledge.email,
         amount=pledge.amount,
-        state=State.created,  # created == polar has received the money
+        state=PledgeState.created,  # created == polar has received the money
         payment_id=payment_intent.id,
         by_organization_id=peldge_as_org.id,
     )

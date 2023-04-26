@@ -2,6 +2,7 @@ import Spinner from 'components/Shared/Spinner'
 import { type OrganizationRead } from 'polarkit/api/client'
 import { useSSE } from 'polarkit/hooks'
 import { useEffect, useState } from 'react'
+import { useTimeoutFn } from 'react-use'
 import { type RepoSyncState, type SyncEvent } from './types'
 
 import OnboardingControls from './OnboardingControls'
@@ -46,8 +47,14 @@ export const SynchronizeRepositories = ({
   const [syncingRepos, setSyncingRepos] = useState<{
     [id: string]: RepoSyncState
   }>(initialSyncStates)
+
+  // Show continue button after a few seconds
   const [continueTimeoutReached, setContinueTimeoutReached] =
     useState<boolean>(false)
+  useTimeoutFn(
+    () => setContinueTimeoutReached(true),
+    continueTimeoutSeconds * 1000,
+  )
 
   const sync = ({
     data,
@@ -97,15 +104,6 @@ export const SynchronizeRepositories = ({
       emitter.off('issue.sync.completed', onIssueSyncCompleted)
     }
   }, [emitter])
-
-  // Show continue button after a few seconds
-  useEffect(() => {
-    const timeout = setTimeout(
-      () => setContinueTimeoutReached(true),
-      continueTimeoutSeconds * 1000,
-    )
-    return () => clearTimeout(timeout)
-  }, [])
 
   const repos = Object.values(syncingRepos)
   const totalProcessed = repos.reduce((acc, repo) => acc + repo.processed, 0)

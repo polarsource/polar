@@ -11,7 +11,7 @@ import {
   GitPullRequestClosedIcon,
   GitPullRequestIcon,
 } from 'polarkit/components/icons'
-import { githubPullReqeustUrl } from 'polarkit/utils'
+import { classNames, githubPullReqeustUrl } from 'polarkit/utils'
 import TimeAgo from 'react-timeago'
 
 const IssueReference = (props: {
@@ -23,11 +23,8 @@ const IssueReference = (props: {
 
   if (reference && reference.type === IssueReferenceType.PULL_REQUEST) {
     const pr = reference.payload as PullRequestReference
-    const isClosed = !!pr.closed_at
-    const isMerged = isClosed && !!pr.merged_at
-    const isOpen = !isClosed && !isMerged
     return (
-      <Box isClosed={isClosed} isMerged={isMerged} isOpen={isOpen}>
+      <Box>
         <IssueReferencePullRequest
           orgName={props.orgName}
           repoName={props.repoName}
@@ -69,31 +66,10 @@ const IssueReference = (props: {
 
 export default IssueReference
 
-const Box = (props: {
-  isMerged?: boolean
-  isClosed?: boolean
-  isOpen?: boolean
-  children: React.ReactNode
-}) => {
-  let backgroundColor = 'bg-[#F7F7F7]'
-  let borderColor = 'border-#[F0F0F0]'
-
-  if (props.isOpen) {
-    backgroundColor = 'bg-[#EDF8F2]'
-    borderColor = 'border-#[D6E8DD]'
-  } else if (props.isMerged) {
-    backgroundColor = 'bg-[#F5F2FC]/90'
-    borderColor = 'border-[#633EB7]/4'
-  } else if (props.isClosed) {
-    backgroundColor = 'bg-red-50'
-    borderColor = 'border-red-100'
-  }
-
+const Box = (props: { children: React.ReactNode }) => {
   return (
     <>
-      <div
-        className={`rounded-xl p-2 ${backgroundColor} border-[1.5px] ${borderColor} flex justify-between text-sm`}
-      >
+      <div className={`flex justify-between text-sm`}>
         <div className="flex w-full items-center justify-between gap-2">
           {props.children}
         </div>
@@ -128,7 +104,6 @@ const IssueReferenceExternalGitHubCommit = (props: {
   return (
     <>
       <LeftSide>
-        <Avatar src={commit.author_avatar} />
         <GitBranchIcon />
         <span className="inline-flex space-x-2">
           {commit.branch_name && (
@@ -153,6 +128,9 @@ const IssueReferenceExternalGitHubCommit = (props: {
           )}
         </span>
       </LeftSide>
+      <RightSide>
+        <Avatar src={commit.author_avatar} />
+      </RightSide>
     </>
   )
 }
@@ -175,7 +153,6 @@ const IssueReferenceExternalGitHubPullRequest = (props: {
   return (
     <>
       <LeftSide>
-        <Avatar src={pr.author_avatar} />
         {isMerged && <GitMergeIcon />}
         {!isMerged && <GitPullRequestIcon />}
         <a href={href} className="font-medium">
@@ -185,6 +162,9 @@ const IssueReferenceExternalGitHubPullRequest = (props: {
           {pr.organization_name}/{pr.repository_name}#{pr.number}
         </a>
       </LeftSide>
+      <RightSide>
+        <Avatar src={pr.author_avatar} />
+      </RightSide>
     </>
   )
 }
@@ -193,7 +173,18 @@ const LeftSide = (props: { children: React.ReactNode }) => {
   return <div className="flex items-center gap-2">{props.children}</div>
 }
 const RightSide = (props: { children: React.ReactNode }) => {
-  return <div className="flex items-center gap-4">{props.children}</div>
+  return (
+    <div className="flex items-center justify-between gap-4">
+      {props.children}
+    </div>
+  )
+}
+
+interface PullRequestFormatting {
+  label: 'opened' | 'closed' | 'merged'
+  timestamp: string
+  titleClasses: string
+  iconClasses: string
 }
 
 const IssueReferencePullRequest = (props: {
@@ -205,55 +196,132 @@ const IssueReferencePullRequest = (props: {
 
   if (!pr) return <></>
 
-  const isMerged = pr.state === 'closed' && pr.merged_at
-  const isClosed = !isMerged && pr.state === 'closed'
-  const isOpen = !isMerged && !isClosed
+  let isMerged = false
+  let isClosed = false
+  let isOpen = false
+
+  let formatting: PullRequestFormatting
+  if (pr.state === 'closed' && pr.merged_at) {
+    isMerged = true
+    formatting = {
+      label: 'merged',
+      timestamp: pr.merged_at,
+      titleClasses: '',
+      iconClasses: 'bg-purple-100 border-purple-200',
+    }
+  } else if (!isMerged && pr.state === 'closed') {
+    isClosed = true
+    formatting = {
+      label: 'closed',
+      timestamp: pr.closed_at || '',
+      titleClasses: '',
+      iconClasses: 'bg-red-100 border-red-200',
+    }
+  } else {
+    isOpen = true
+    formatting = {
+      label: 'opened',
+      timestamp: pr.created_at,
+      titleClasses: '',
+      iconClasses: 'bg-green-100 border-green-200',
+    }
+  }
 
   const href = githubPullReqeustUrl(props.orgName, props.repoName, pr.number)
 
   return (
     <>
       <LeftSide>
-        <Avatar src={pr.author_avatar} />
-        {isMerged && <GitMergeIcon />}
-        {isClosed && <GitPullRequestClosedIcon />}
-        {isOpen && <GitPullRequestIcon />}
-        <a href={href} className="font-medium">
+        <span
+          className={classNames(
+            formatting.iconClasses,
+            'rounded-lg border p-1',
+          )}
+        >
+          {isMerged && <GitMergeIcon />}
+          {isClosed && <GitPullRequestClosedIcon />}
+          {isOpen && <GitPullRequestIcon />}
+        </span>
+        <a
+          href={href}
+          className={classNames(formatting.titleClasses, 'font-medium')}
+        >
           {pr.title}
         </a>
-        {isMerged && pr.merged_at && (
-          <>
-            <span className="text-sm text-gray-500">
-              #{pr.number} merged <TimeAgo date={new Date(pr.merged_at)} />
-            </span>
-          </>
-        )}
-        {isOpen && (
-          <>
-            <span className="text-gray-500">
-              #{pr.number} opened <TimeAgo date={new Date(pr.created_at)} />
-            </span>
-          </>
-        )}
-        {isClosed && pr.closed_at && (
-          <>
-            <span className="text-gray-500">
-              #{pr.number} closed <TimeAgo date={new Date(pr.closed_at)} />
-            </span>
-          </>
-        )}
+        <span className="text-sm text-gray-500">
+          #{pr.number} {formatting.label}{' '}
+          {formatting.timestamp && (
+            <TimeAgo date={new Date(formatting.timestamp)} />
+          )}
+        </span>
       </LeftSide>
 
       <RightSide>
-        <div className="space-x-2">
-          {pr.additions !== undefined && (
-            <span className="text-green-400">+{pr.additions}</span>
-          )}
-          {pr.deletions !== undefined && (
-            <span className="text-red-400">-{pr.deletions}</span>
-          )}
-        </div>
+        <DiffStat additions={pr.additions} deletions={pr.deletions} />
+        <Avatar src={pr.author_avatar} />
       </RightSide>
     </>
+  )
+}
+
+const DiffStat = (props: {
+  additions: number | undefined
+  deletions: number | undefined
+}) => {
+  /*
+   * Generate the diffstat boxes as seen on Github.
+   *
+   * We're mimicking how these boxes are generated on Github vs. solely percentage based.
+   * After some experimentation the logic and rules are:
+   * - 5 boxes
+   * - Additions (green) > Deletions (red) > Empty (gray)
+   * - A box can only be claimed by full 20% steps, i.e 39% is 1 box, 40% is 2 boxes
+   * - Resulting in the last box always being gray unless it's a perfect 100% of deletions or additions
+   */
+  const boxCount = 5
+  const threshold = 1 / boxCount
+  const additions = props.additions || 0
+  const deletions = props.deletions || 0
+  const total = additions + deletions
+
+  // Default to all empty, e.g opened branch/PR with no changes
+  let emptyBoxes = boxCount
+  let additionBoxes = 0
+  let deletionBoxes = 0
+  if (total > 0) {
+    additionBoxes = Math.floor(additions / total / threshold)
+    deletionBoxes = Math.floor(deletions / total / threshold)
+    emptyBoxes = boxCount - additionBoxes - deletionBoxes
+  }
+
+  const generateDiffBox = (className: string, boxes: number) => {
+    if (boxes <= 0) return <></>
+
+    const iterations = [...Array(boxes)]
+    return iterations.map((_, i) => {
+      return (
+        <span
+          key={i}
+          className={classNames(
+            className,
+            'ml-0.5 inline-block h-2.5 w-2.5 border',
+          )}
+        >
+          {' '}
+        </span>
+      )
+    })
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-green-400">+{props.additions}</span>
+      <span className="text-red-400">-{props.deletions}</span>
+      <span>
+        {generateDiffBox('divide-green-300 bg-green-200', additionBoxes)}
+        {generateDiffBox('divide-red-300 bg-red-200', deletionBoxes)}
+        {generateDiffBox('divide-gray-300 bg-gray-200', emptyBoxes)}
+      </span>
+    </div>
   )
 }

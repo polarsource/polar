@@ -1,5 +1,5 @@
 import { IssueExtensionRead } from 'polarkit/api/client'
-import { IssueListItemDecoration } from 'polarkit/components'
+import { IssueListItemDecoration } from 'polarkit/components/Issue'
 import { useChromeStorageLocal } from 'use-chrome-storage'
 
 /*

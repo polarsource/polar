@@ -2,7 +2,6 @@ import stripe
 
 from polar.worker import JobContext, PolarWorkerContext, task
 from polar.postgres import AsyncSessionLocal
-from polar.pledge.schemas import State
 from polar.pledge.service import pledge as pledge_service
 
 
@@ -12,9 +11,7 @@ async def payment_intent_succeeded(
 ) -> None:
     with polar_context.to_execution_context() as context:
         async with AsyncSessionLocal() as session:
-            pledge = await pledge_service.get_by_payment_id(
-                session, event["data"]["object"]["id"]
-            )
-            if pledge and pledge.state == State.initiated:
-                pledge.state = State.created
-                await pledge.save(session=session)
+            await pledge_service.mark_created_by_payment_id(
+                session=session, payment_id=event["data"]["object"]["id"],
+                # TODO: We'd need the id of the transaction/charge here?
+                transaction_id=event["data"]["object"]["id"])

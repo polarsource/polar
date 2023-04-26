@@ -6,6 +6,7 @@ from typing import List, Sequence
 import structlog
 
 from polar.kit.services import ResourceService
+from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.user import User
 from polar.models.pledge import Pledge
 from polar.postgres import AsyncSession, sql
@@ -16,7 +17,7 @@ from polar.organization.service import organization as organization_service
 from polar.account.service import account as account_service
 from polar.exceptions import ResourceNotFound, NotPermitted
 
-from .schemas import PledgeCreate, PledgeUpdate, State
+from .schemas import PledgeCreate, PledgeTransactionType, PledgeUpdate, PledgeState
 
 log = structlog.get_logger()
 
@@ -109,8 +110,8 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
     ) -> None:
         statement = (
             sql.update(Pledge)
-            .where(Pledge.issue_id == issue_id, Pledge.state == State.created)
-            .values(state=State.pending)
+            .where(Pledge.issue_id == issue_id, Pledge.state == PledgeState.created)
+            .values(state=PledgeState.pending)
         )
         await session.execute(statement)
         await session.commit()
@@ -120,17 +121,29 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
     ) -> None:
         statement = (
             sql.update(Pledge)
-            .where(Pledge.id == pledge_id, Pledge.state == State.created)
-            .values(state=State.pending)
+            .where(Pledge.id == pledge_id, Pledge.state == PledgeState.created)
+            .values(state=PledgeState.pending)
         )
         await session.execute(statement)
         await session.commit()
+
+    async def mark_created_by_payment_id(
+        self, session: AsyncSession, payment_id: str, transaction_id: str | None = None
+    ) -> None:
+        pledge = await self.get_by_payment_id(session, payment_id)
+        if pledge:
+            pledge.state = PledgeState.created
+            session.add(PledgeTransaction(
+                pledge_id=pledge.id, type=PledgeTransactionType.pledge,
+                amount=pledge.amount, transaction_id=transaction_id))
+            await session.commit()
+
 
     async def transfer(self, session: AsyncSession, pledge_id: UUID) -> None:
         pledge = await self.get(session, id=pledge_id)
         if not pledge:
             raise ResourceNotFound(f"Pledge not found with id: {pledge_id}")
-        if pledge.state != State.pending:
+        if pledge.state != PledgeState.pending:
             raise NotPermitted("Pledge is not in pending state")
 
         organization = await organization_service.get(
@@ -150,7 +163,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         if transfer_id is None:
             raise NotPermitted("Transfer failed")  # TODO: Better error
 
-        pledge.state = State.paid
+        pledge.state = PledgeState.paid
         pledge.transfer_id = transfer_id
         await pledge.save(session=session)
 

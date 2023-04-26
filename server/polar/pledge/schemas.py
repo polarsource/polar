@@ -13,7 +13,7 @@ from polar.repository.schemas import RepositoryRead
 from polar.issue.schemas import IssueRead
 
 
-class State(str, Enum):
+class PledgeState(str, Enum):
     initiated = "initiated"  # Initiated by customer. Polar has not received money yet.
     created = "created"  # Polar has received the money.
     pending = "pending"  # The issue has been closed, but the pledge has not been paid.
@@ -23,8 +23,13 @@ class State(str, Enum):
     # In the future, we might have a "disputed", "refunded", "cancelled" states etc...
 
     @classmethod
-    def from_str(cls, s: str) -> State:
-        return State.__members__[s]
+    def from_str(cls, s: str) -> PledgeState:
+        return PledgeState.__members__[s]
+
+
+class PledgeTransactionType(str, Enum):
+    pledge = "pledge"
+    transfer = "transfer"
 
 
 class PledgeCreate(Schema):
@@ -41,7 +46,7 @@ class PledgeUpdate(Schema):
 
 class PledgeMutationResponse(PledgeCreate):
     id: UUID
-    state: State
+    state: PledgeState
     client_secret: str | None = None
 
     class Config:
@@ -58,7 +63,7 @@ class PledgeRead(Schema):
     repository_id: UUID
     organization_id: UUID
 
-    state: State
+    state: PledgeState
 
     pledger_name: str | None
     pledger_avatar: str | None
@@ -81,7 +86,7 @@ class PledgeRead(Schema):
             repository_id=o.repository_id,
             organization_id=o.organization_id,
             amount=o.amount,
-            state=State.from_str(o.state),
+            state=PledgeState.from_str(o.state),
             pledger_name=pledger_name,
             pledger_avatar=pledger_avatar,
         )

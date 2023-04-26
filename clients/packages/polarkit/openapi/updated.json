@@ -927,6 +927,52 @@
                 }
             }
         },
+        "/api/v1/invite/claim_code": {
+            "post": {
+                "tags": [
+                    "invite"
+                ],
+                "summary": "Claim",
+                "operationId": "claim",
+                "parameters": [
+                    {
+                        "required": true,
+                        "schema": {
+                            "title": "Code",
+                            "type": "string"
+                        },
+                        "name": "code",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "title": "Response Invite:Claim",
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/{platform}/{org_name}/{repo_name}/pulls": {
             "get": {
                 "tags": [

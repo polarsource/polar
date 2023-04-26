@@ -5,6 +5,7 @@ log = structlog.get_logger()
 
 
 def verify_app_configuration() -> None:
+    log.info("github.app.verify", state="start")
     # Skipping the redis cache here because we want to ensure
     # we verify the current app, i.e no risk of a cached version
     # in case of .env changes.
@@ -52,4 +53,4 @@ def verify_app_configuration() -> None:
         )
         all_ok = False
 
-    log.info("github.verify-app", all_ok=all_ok)
+    log.info("github.app.verified", state="done", all_ok=all_ok)

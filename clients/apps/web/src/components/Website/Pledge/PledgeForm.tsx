@@ -1,5 +1,7 @@
 import { Elements } from '@stripe/react-stripe-js'
+import { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
+import { useRouter } from 'next/router'
 import { CONFIG } from 'polarkit'
 import { api } from 'polarkit/api'
 import {
@@ -8,8 +10,9 @@ import {
 } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/utils'
-import { useRef, useState } from 'react'
-import PaymentForm from './PaymentForm'
+import { useEffect, useRef, useState } from 'react'
+import { useAuth } from '../../../hooks/auth'
+import PaymentForm, { generateRedirectURL } from './PaymentForm'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY)
 
@@ -27,6 +30,8 @@ const PledgeForm = ({
   const [errorMessage, setErrorMessage] = useState(null)
   const [isSyncing, setSyncing] = useState(false)
 
+  const { currentUser, reloadUser } = useAuth()
+
   const MINIMUM_PLEDGE =
     typeof CONFIG.MINIMUM_PLEDGE_AMOUNT === 'string'
       ? parseInt(CONFIG.MINIMUM_PLEDGE_AMOUNT)
@@ -35,6 +40,12 @@ const PledgeForm = ({
   const validateEmail = (email: string) => {
     return email.match(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/)
   }
+
+  useEffect(() => {
+    if (currentUser && currentUser.email) {
+      setEmail(currentUser.email)
+    }
+  }, [currentUser])
 
   const createPledge = async () => {
     return await api.pledges.createPledge({
@@ -143,6 +154,19 @@ const PledgeForm = ({
     debouncedSync()
   }
 
+  const router = useRouter()
+
+  const onStripePaymentSuccess = async (paymentIntent: PaymentIntent) => {
+    // If logged in, reload the user!
+    // This pledge might have allowed them to use polar
+    if (currentUser) {
+      await reloadUser()
+    }
+
+    const location = generateRedirectURL(pledge, paymentIntent)
+    await router.push(location)
+  }
+
   return (
     <>
       <form className="flex flex-col">
@@ -183,6 +207,7 @@ const PledgeForm = ({
           id="email"
           onChange={onEmailChange}
           onBlur={onEmailChange}
+          value={email}
           className="block w-full rounded-md border-gray-200 py-3 px-4 text-sm shadow-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500"
         />
 
@@ -198,6 +223,7 @@ const PledgeForm = ({
               isSyncing={isSyncing}
               setSyncing={setSyncing}
               setErrorMessage={setErrorMessage}
+              onSuccess={onStripePaymentSuccess}
             />
           </Elements>
         )}

@@ -5,7 +5,10 @@ log = structlog.get_logger()
 
 
 def verify_app_configuration() -> None:
-    client = get_app_client()
+    # Skipping the redis cache here because we want to ensure
+    # we verify the current app, i.e no risk of a cached version
+    # in case of .env changes.
+    client = get_app_client(redis_cache=False)
     app = client.rest.apps.get_authenticated()
 
     permissions = app.parsed_data.permissions

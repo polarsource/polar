@@ -34,10 +34,13 @@ async def list_issues_for_extension(
     issue_numbers = [int(number) for number in numbers.split(",")]
     issues = await issue_service.list_by_repository_and_numbers(
         session=session, repository_id=auth.repository.id, numbers=issue_numbers)
+
+    issue_ids = [issue.id for issue in issues]
     pledges = await pledge_service.get_by_issue_ids(
-        session=session, issue_ids=[issue.id for issue in issues])
+        session=session, issue_ids=issue_ids
+    )
     issue_references = await issue_service.list_issue_references_for_issues(
-        session, issue_ids=[issue.id for issue in issues]
+        session, issue_ids=issue_ids
     )
 
     pledges_by_issue_id: dict[UUID, list[Pledge]] = {}
@@ -48,22 +51,21 @@ async def list_issues_for_extension(
 
     references_by_issue_id: dict[UUID, list[IssueReference]] = {}
     for reference in issue_references:
-        if reference.issue_id in pledges_by_issue_id:
-            # Only include references for issues that have pledges
-            if reference.issue_id not in references_by_issue_id:
-                references_by_issue_id[reference.issue_id] = []
-            references_by_issue_id[reference.issue_id].append(reference)
+        if reference.issue_id not in references_by_issue_id:
+            references_by_issue_id[reference.issue_id] = []
+        references_by_issue_id[reference.issue_id].append(reference)
 
     ret = []
     for issue in issues:
-        if pledges_by_issue_id.get(issue.id):
+        pledges = pledges_by_issue_id.get(issue.id, [])
+        references = references_by_issue_id.get(issue.id, [])
+        if pledges or references:
             issue_extension = IssueExtensionRead(
                 number=issue.number,
                 pledges=[PledgeRead.from_db(p)
-                         for p in pledges_by_issue_id.get(issue.id, [])
+                         for p in pledges
                          if p.state != State.initiated],
-                references=[IssueReferenceRead.from_model(r)
-                            for r in references_by_issue_id.get(issue.id, [])],
+                references=[IssueReferenceRead.from_model(r) for r in references],
             )
             ret.append(issue_extension)
 

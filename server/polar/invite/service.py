@@ -3,6 +3,8 @@ import string
 from typing import Sequence
 from polar.config import settings
 from polar.kit.extensions.sqlalchemy import sql
+from sqlalchemy import desc
+from sqlalchemy.orm import joinedload
 
 from polar.models.invites import Invite
 from polar.models.user import User
@@ -12,7 +14,12 @@ from polar.postgres import AsyncSession
 
 class InviteService:
     async def list(self, session: AsyncSession) -> Sequence[Invite]:
-        stmt = sql.select(Invite).order_by(Invite.created_at).limit(100)
+        stmt = (
+            sql.select(Invite)
+            .options(joinedload(Invite.claimed_by_user))
+            .order_by(desc(Invite.created_at))
+            .limit(100)
+        )
         res = await session.execute(stmt)
         return res.scalars().unique().all()
 

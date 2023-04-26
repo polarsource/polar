@@ -6,6 +6,7 @@ from .organization import Organization
 from .pull_request import PullRequest
 from .repository import Repository
 from .pledge import Pledge
+from .pledge_transaction import PledgeTransaction
 from .user import OAuthAccount, User
 from .user_organization import UserOrganization
 from .issue_reference import IssueReference
@@ -29,6 +30,7 @@ __all__ = [
     "Issue",
     "PullRequest",
     "Pledge",
+    "PledgeTransaction",
     "IssueReference",
     "IssueDependency",
     "Invite",

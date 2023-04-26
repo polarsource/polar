@@ -23,9 +23,9 @@ export const OnboardingControls = ({
 
   return (
     <>
-      <div className="flex flex-col justify-center">
+      <div className="mt-10 flex flex-col justify-center">
         <button
-          className="m-auto w-32 rounded-lg bg-blue-500 p-2 text-center text-white"
+          className="m-auto w-32 rounded-xl bg-blue-600 py-2.5 text-center text-sm font-medium text-white"
           onClick={clickedContinue}
         >
           Continue

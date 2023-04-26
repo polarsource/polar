@@ -38,31 +38,26 @@ export const SynchronizeRepository = ({ repo }: { repo: RepoSyncState }) => {
       <div
         className={classNames(
           repo.completed ? 'bg-gray-50 opacity-50' : 'bg-white',
-          'my-5 flex flex-row rounded-lg px-6 py-4 shadow-md',
+          'mb-5 flex flex-row rounded-xl px-5 py-4 shadow',
         )}
       >
         <div className="my-auto basis-2/6">
           <div className="flex flex-row">
             {repo.avatar_url && (
-              <img
-                className="h-10 w-10 rounded-full border border-gray-100"
-                src={repo.avatar_url}
-              />
+              <img className="h-6 w-6 rounded-full" src={repo.avatar_url} />
             )}
-            <strong className="my-auto mx-4 text-base font-medium">
+            <strong className="my-auto mx-2.5 font-normal text-gray-900">
               {repo.name}
             </strong>
           </div>
         </div>
-        <div className="my-auto basis-2/6">
-          <p className="text-xs">
-            {repo.processed}{' '}
+        <div className="my-auto flex basis-4/6 flex-row items-center">
+          <p className="w-52 text-xs">
+            <span className="text-gray-900">{repo.processed} </span>
             <span className="text-gray-500">
               / {repo.expected} issues fetched
             </span>
           </p>
-        </div>
-        <div className="my-auto basis-2/6">
           <ProgressBar
             progress={repo.processed}
             target={repo.expected}

@@ -1,3 +1,4 @@
+import Spinner from 'components/Shared/Spinner'
 import { type OrganizationRead } from 'polarkit/api/client'
 import { useSSE } from 'polarkit/hooks'
 import { useEffect, useState } from 'react'
@@ -112,8 +113,11 @@ export const SynchronizeRepositories = ({
 
   return (
     <>
-      <h1 className="my-11 text-center text-xl font-normal text-gray-600 drop-shadow-md">
+      <h1 className="flex-column mb-11 flex items-center justify-center text-center text-xl font-normal text-gray-500">
         Connecting repositories
+        <span className="ml-4">
+          <Spinner />
+        </span>
       </h1>
       <ul>
         {Object.values(syncingRepos).map((repo) => {

@@ -72,7 +72,7 @@ const InviteOnly = () => {
 
       {showSuccessBanner && (
         <GreenBanner>
-          <>You're in! Redirecting...</>
+          <>You&apos;re in! Redirecting...</>
         </GreenBanner>
       )}
 

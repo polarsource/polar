@@ -29,6 +29,8 @@ async def subscribe(redis: Redis, channels: list[str]):
                 log.info("redis.pubsub", message=message["data"])
                 yield message["data"]
 
+            await asyncio.sleep(0.01)
+
 
 @router.get("/user/stream")
 async def user_stream(

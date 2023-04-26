@@ -5,7 +5,7 @@ import type { NextLayoutComponentType } from 'next'
 import { api } from 'polarkit'
 import { Platforms, type PledgeResources } from 'polarkit/api/client'
 import { GrayCard, WhiteCard } from 'polarkit/components/ui/Cards'
-import { ReactElement, useEffect } from 'react'
+import { ReactElement, useEffect, useRef } from 'react'
 import ReactTimeAgo from 'react-timeago'
 import { useAuth } from '../../../../../hooks/auth'
 
@@ -16,9 +16,11 @@ const PledgeStatusPage: NextLayoutComponentType = ({
   pledge,
 }: PledgeResources) => {
   const { currentUser, reloadUser } = useAuth()
+  const didReloadUser = useRef(false)
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && !didReloadUser.current) {
+      didReloadUser.current = true
       // reload user object after successful pledging
       // this us used to grant the user access to polar (alpha/beta) without an invite code
       reloadUser()

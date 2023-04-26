@@ -14,7 +14,6 @@ from polar.extension.endpoints import router as extension_router
 from polar.account.endpoints import router as accounts_router
 from polar.notifications.endpoints import router as notifications_router
 from polar.backoffice.endpoints import router as backoffice_router
-from polar.health.endpoints import router as health_router
 
 router = APIRouter(prefix="/api/v1")
 

@@ -78,6 +78,7 @@ class GithubUserService(UserService):
                     account_email=github_user.email,
                 )
             ],
+            invite_only_approved=False,
         )
         session.add(new_user)
         await session.commit()
@@ -191,7 +192,6 @@ class GithubUserService(UserService):
 
             # If installed on personal account, always admin
             if i.account.id == int(gh_oauth.account_id):
-
                 log.info(
                     "sync_github_admin_orgs.add_admin",
                     org_id=org.id,

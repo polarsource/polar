@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   redis:
-    image: redislabs/redismod
+    image: redis
     ports:
       - "${POLAR_REDIS_PORT}:${POLAR_REDIS_PORT}"
 

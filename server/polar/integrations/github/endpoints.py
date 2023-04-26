@@ -14,11 +14,11 @@ from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from pydantic import BaseModel, ValidationError
 
 from polar.kit import jwt
-from polar.auth.dependencies import current_active_user
+from polar.auth.dependencies import Auth
 from polar.config import settings
 from polar.enums import Platforms
 from polar.integrations.github import client as github
-from polar.models import Organization, User
+from polar.models import Organization
 from polar.organization.schemas import OrganizationRead
 from polar.postgres import AsyncSession, get_db_session
 from polar.worker import enqueue_job
@@ -154,10 +154,10 @@ class InstallationCreate(BaseModel):
 async def install(
     installation: InstallationCreate,
     session: AsyncSession = Depends(get_db_session),
-    user: User = Depends(current_active_user),
+    auth: Auth = Depends(Auth.current_user),
 ) -> Organization | None:
     organization = await github_organization.install(
-        session, user, installation_id=installation.external_id
+        session, auth.user, installation_id=installation.external_id
     )
 
     return organization

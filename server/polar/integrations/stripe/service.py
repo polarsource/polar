@@ -3,17 +3,19 @@ import stripe as stripe_lib
 from polar.config import settings
 from polar.models.issue import Issue
 from polar.models.organization import Organization
+from polar.models.user import User
 from polar.postgres import AsyncSession, sql
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 
 
 class StripeService:
-    def create_intent(
+    def create_anonymous_intent(
         self,
         amount: int,
         transfer_group: str,
         issue: Issue,
+        anonymous_email: str,
     ) -> stripe_lib.PaymentIntent:
         return stripe_lib.PaymentIntent.create(
             amount=amount,
@@ -22,6 +24,28 @@ class StripeService:
             metadata={
                 "issue_id": issue.id,
                 "issue_title": issue.title,
+                "anonymous": "true",
+                "anonymous_email": anonymous_email,
+            },
+        )
+
+    def create_user_intent(
+        self,
+        amount: int,
+        transfer_group: str,
+        issue: Issue,
+        user: User,
+    ) -> stripe_lib.PaymentIntent:
+        return stripe_lib.PaymentIntent.create(
+            amount=amount,
+            currency="USD",
+            transfer_group=transfer_group,
+            metadata={
+                "issue_id": issue.id,
+                "issue_title": issue.title,
+                "user_id": user.id,
+                "user_username": user.username,
+                "user_email": user.email,
             },
         )
 

@@ -1,10 +1,11 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from polar.auth.dependencies import Auth, current_active_user
+from polar.auth.dependencies import Auth
 from polar.models import Pledge, Repository
 from polar.exceptions import ResourceNotFound
 from polar.enums import Platforms
+from polar.models.user import User
 from polar.postgres import AsyncSession, get_db_session
 
 from polar.integrations.stripe.service import stripe
@@ -116,18 +117,30 @@ async def create_pledge(
     repo_name: str,
     number: int,
     pledge: PledgeCreate,
-    request: Request,
     session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.optional_user),
 ) -> PledgeMutationResponse:
-    # Pre-authenticated pledge flow
-    if pledge.pledge_as_org:
+    # Pre-authenticated pledge flow (with saved CC)
+    if pledge.pledge_as_org and auth.user:
         return await create_pledge_as_org(
             platform,
             org_name,
             repo_name,
             number,
             pledge,
-            request,
+            auth.user,
+            session,
+        )
+
+    # Pledge flow with logged in user
+    if auth.user:
+        return await create_pledge_user(
+            platform,
+            org_name,
+            repo_name,
+            number,
+            pledge,
+            auth.user,
             session,
         )
 
@@ -163,10 +176,11 @@ async def create_pledge_anonymous(
     )
 
     # Create a payment intent with Stripe
-    payment_intent = stripe.create_intent(
+    payment_intent = stripe.create_anonymous_intent(
         amount=pledge.amount,
         transfer_group=f"{issue.id}",
         issue=issue,
+        anonymous_email=pledge.email,
     )
 
     # Create the pledge
@@ -187,13 +201,62 @@ async def create_pledge_anonymous(
     return ret
 
 
+async def create_pledge_user(
+    platform: Platforms,
+    org_name: str,
+    repo_name: str,
+    number: int,
+    pledge: PledgeCreate,
+    user: User,
+    session: AsyncSession,
+) -> PledgeMutationResponse:
+    org, repo, issue = await organization_service.get_with_repo_and_issue(
+        session=session,
+        platform=platform,
+        org_name=org_name,
+        repo_name=repo_name,
+        issue=number,
+    )
+
+    # Create a payment intent with Stripe
+    payment_intent = stripe.create_user_intent(
+        amount=pledge.amount,
+        transfer_group=f"{issue.id}",
+        issue=issue,
+        user=user,
+    )
+
+    # Create the pledge
+    created = await Pledge.create(
+        session=session,
+        issue_id=issue.id,
+        repository_id=repo.id,
+        organization_id=org.id,
+        email=pledge.email,
+        amount=pledge.amount,
+        state=State.initiated,
+        payment_id=payment_intent.id,
+        by_user_id=user.id,
+    )
+
+    ret = PledgeMutationResponse.from_orm(created)
+    ret.client_secret = payment_intent.client_secret
+
+    # User pledged, allow into the beta!
+    if not user.invite_only_approved:
+        user.invite_only_approved = True
+        await user.save(session)
+
+    return ret
+
+
 async def create_pledge_as_org(
     platform: Platforms,
     org_name: str,
     repo_name: str,
     number: int,
     pledge: PledgeCreate,
-    request: Request,
+    user: User,
     session: AsyncSession,
 ) -> PledgeMutationResponse:
     org, repo, issue = await organization_service.get_with_repo_and_issue(
@@ -207,8 +270,6 @@ async def create_pledge_as_org(
     # Pre-authenticated pledge flow
     if not pledge.pledge_as_org:
         raise HTTPException(status_code=401, detail="Unexpected flow")
-
-    user = await current_active_user(request, session)
 
     peldge_as_org = await organization_service.get_by_id_for_user(
         session=session,

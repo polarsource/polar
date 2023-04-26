@@ -9,13 +9,23 @@ from polar.organization.service import organization as organization_service
 from .service import AuthService
 
 
-async def current_active_user(
+async def must_current_active_user(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
 ) -> User:
     user = await AuthService.get_user_from_request(session, request=request)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
+    return user
+
+
+async def optional_current_active_user(
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),
+) -> User | None:
+    user = await AuthService.get_user_from_request(session, request=request)
+    if not user:
+        return None
     return user
 
 
@@ -54,7 +64,15 @@ class Auth:
     ###############################################################################
 
     @classmethod
-    async def current_user(cls, user: User = Depends(current_active_user)) -> "Auth":
+    async def current_user(
+        cls, user: User = Depends(must_current_active_user)
+    ) -> "Auth":
+        return Auth(user=user)
+
+    @classmethod
+    async def optional_user(
+        cls, user: User = Depends(optional_current_active_user)
+    ) -> "Auth":
         return Auth(user=user)
 
     @classmethod
@@ -64,7 +82,7 @@ class Auth:
         platform: Platforms,
         org_name: str,
         session: AsyncSession = Depends(get_db_session),
-        user: User = Depends(current_active_user),
+        user: User = Depends(must_current_active_user),
     ) -> "Auth":
         organization = await organization_service.get_for_user(
             session,
@@ -86,7 +104,7 @@ class Auth:
         org_name: str,
         repo_name: str,
         session: AsyncSession = Depends(get_db_session),
-        user: User = Depends(current_active_user),
+        user: User = Depends(must_current_active_user),
     ) -> "Auth":
         try:
             org, repo = await organization_service.get_with_repo_for_user(
@@ -107,7 +125,7 @@ class Auth:
     async def backoffice_user(
         cls,
         *,
-        user: User = Depends(current_active_user),
+        user: User = Depends(must_current_active_user),
     ) -> "Auth":
         allowed = ["zegl", "birkjernstrom", "hult", "petterheterjag"]
 

@@ -18,6 +18,9 @@ services:
         value: "https://api.polar.sh"
       - key: NEXT_PUBLIC_GITHUB_INSTALLATION_URL
         value: "https://github.com/apps/polar-sh/installations/new"
+      - key: NEXT_PUBLIC_SENTRY_ENABLED
+        value: "true"
+
     domains:
       - dashboard.polar.sh
 

@@ -20,4 +20,5 @@ export const CONFIG = {
   // Minimum amount in cents
   MINIMUM_PLEDGE_AMOUNT:
     process?.env?.NEXT_PUBLIC_MINIMUM_PLEDGE_AMOUNT || 2000,
+  SENTRY_ENABLED: process?.env?.NEXT_PUBLIC_SENTRY_ENABLED || false,
 }

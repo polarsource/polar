@@ -14,6 +14,7 @@ from polar.extension.endpoints import router as extension_router
 from polar.account.endpoints import router as accounts_router
 from polar.notifications.endpoints import router as notifications_router
 from polar.backoffice.endpoints import router as backoffice_router
+from polar.invite.endpoints import router as invite_router
 
 router = APIRouter(prefix="/api/v1")
 
@@ -31,6 +32,8 @@ router.include_router(backoffice_router)
 router.include_router(dashboard_router)
 # /extension
 router.include_router(extension_router)
+# /invite
+router.include_router(invite_router)
 # /{platform}/{org_name}/{repo_name}/pulls
 router.include_router(pull_request_router)
 # /{platform}/{org_name}/{repo_name}/issues

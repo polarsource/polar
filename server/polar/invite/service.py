@@ -65,6 +65,9 @@ Welcome!
         invite.claimed_by = user.id
         await invite.save(session, autocommit=True)
 
+        user.invite_only_approved = True
+        await user.save(session, autocommit=True)
+
         return True
 
 

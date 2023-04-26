@@ -1,6 +1,7 @@
 import random
 import string
 from typing import Sequence
+from polar.config import settings
 from polar.kit.extensions.sqlalchemy import sql
 
 from polar.models.invites import Invite
@@ -45,9 +46,10 @@ Welcome!
             """,
         )
 
-    async def verify_and_claim_code(
-        self, session: AsyncSession, user: User, code: str
-    ) -> bool:
+    async def claim_code(self, session: AsyncSession, user: User, code: str) -> bool:
+        if settings.is_development() and code == "POLAR":
+            return True
+
         invite = await Invite.find_by(
             session=session,
             code=code,
@@ -64,6 +66,14 @@ Welcome!
 
         invite.claimed_by = user.id
         await invite.save(session, autocommit=True)
+
+        return True
+
+    async def verify_and_claim_code(
+        self, session: AsyncSession, user: User, code: str
+    ) -> bool:
+        if not self.claim_code(session, user, code):
+            return False
 
         user.invite_only_approved = True
         await user.save(session, autocommit=True)

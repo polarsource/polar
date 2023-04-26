@@ -60,7 +60,8 @@ async def list_issues_for_extension(
             issue_extension = IssueExtensionRead(
                 number=issue.number,
                 pledges=[PledgeRead.from_db(p)
-                         for p in pledges_by_issue_id.get(issue.id, [])],
+                         for p in pledges_by_issue_id.get(issue.id, [])
+                         if p.state != State.initiated],
                 references=[IssueReferenceRead.from_model(r)
                             for r in references_by_issue_id.get(issue.id, [])],
             )

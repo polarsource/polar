@@ -76,6 +76,7 @@ export { DashboardService } from './services/DashboardService';
 export { ExtensionService } from './services/ExtensionService';
 export { HealthService } from './services/HealthService';
 export { IntegrationsService } from './services/IntegrationsService';
+export { InviteService } from './services/InviteService';
 export { IssuesService } from './services/IssuesService';
 export { NotificationsService } from './services/NotificationsService';
 export { OrganizationsService } from './services/OrganizationsService';

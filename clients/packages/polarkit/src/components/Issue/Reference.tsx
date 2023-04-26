@@ -173,7 +173,18 @@ const LeftSide = (props: { children: React.ReactNode }) => {
   return <div className="flex items-center gap-2">{props.children}</div>
 }
 const RightSide = (props: { children: React.ReactNode }) => {
-  return <div className="flex items-center gap-4">{props.children}</div>
+  return (
+    <div className="flex items-center justify-between gap-4">
+      {props.children}
+    </div>
+  )
+}
+
+interface PullRequestFormatting {
+  label: 'opened' | 'closed' | 'merged'
+  timestamp: string
+  titleClasses: string
+  iconClasses: string
 }
 
 const IssueReferencePullRequest = (props: {
@@ -185,42 +196,64 @@ const IssueReferencePullRequest = (props: {
 
   if (!pr) return <></>
 
-  const isMerged = pr.state === 'closed' && pr.merged_at
-  const isClosed = !isMerged && pr.state === 'closed'
-  const isOpen = !isMerged && !isClosed
+  let isMerged = false
+  let isClosed = false
+  let isOpen = false
+
+  let formatting: PullRequestFormatting
+  if (pr.state === 'closed' && pr.merged_at) {
+    isMerged = true
+    formatting = {
+      label: 'merged',
+      timestamp: pr.merged_at,
+      titleClasses: '',
+      iconClasses: 'bg-purple-100 border-purple-200',
+    }
+  } else if (!isMerged && pr.state === 'closed') {
+    isClosed = true
+    formatting = {
+      label: 'closed',
+      timestamp: pr.closed_at || '',
+      titleClasses: '',
+      iconClasses: 'bg-red-100 border-red-200',
+    }
+  } else {
+    isOpen = true
+    formatting = {
+      label: 'opened',
+      timestamp: pr.created_at,
+      titleClasses: '',
+      iconClasses: 'bg-green-100 border-green-200',
+    }
+  }
 
   const href = githubPullReqeustUrl(props.orgName, props.repoName, pr.number)
 
   return (
     <>
       <LeftSide>
-        {isMerged && <GitMergeIcon />}
-        {isClosed && <GitPullRequestClosedIcon />}
-        {isOpen && <GitPullRequestIcon />}
-        <a href={href} className="font-medium">
+        <span
+          className={classNames(
+            formatting.iconClasses,
+            'rounded-lg border p-1',
+          )}
+        >
+          {isMerged && <GitMergeIcon />}
+          {isClosed && <GitPullRequestClosedIcon />}
+          {isOpen && <GitPullRequestIcon />}
+        </span>
+        <a
+          href={href}
+          className={classNames(formatting.titleClasses, 'font-medium')}
+        >
           {pr.title}
         </a>
-        {isMerged && pr.merged_at && (
-          <>
-            <span className="text-sm text-gray-500">
-              #{pr.number} merged <TimeAgo date={new Date(pr.merged_at)} />
-            </span>
-          </>
-        )}
-        {isOpen && (
-          <>
-            <span className="text-gray-500">
-              #{pr.number} opened <TimeAgo date={new Date(pr.created_at)} />
-            </span>
-          </>
-        )}
-        {isClosed && pr.closed_at && (
-          <>
-            <span className="text-gray-500">
-              #{pr.number} closed <TimeAgo date={new Date(pr.closed_at)} />
-            </span>
-          </>
-        )}
+        <span className="text-sm text-gray-500">
+          #{pr.number} {formatting.label}{' '}
+          {formatting.timestamp && (
+            <TimeAgo date={new Date(formatting.timestamp)} />
+          )}
+        </span>
       </LeftSide>
 
       <RightSide>

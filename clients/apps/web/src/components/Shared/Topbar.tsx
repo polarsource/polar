@@ -10,6 +10,7 @@ const Topbar = (props: {
   }
   isFixed?: boolean
   customLogoTitle?: string
+  hideProfile?: boolean
 }) => {
   const className = classNames(
     props.isFixed ? 'fixed z-10' : '',
@@ -18,6 +19,7 @@ const Topbar = (props: {
 
   const hasLeft = !!props?.children?.left
   const hasMid = !!props?.children?.center
+  const hideProfile = props?.hideProfile
 
   const { authenticated } = useAuth()
 
@@ -45,8 +47,12 @@ const Topbar = (props: {
         )}
 
         <div className="flex flex-shrink-0 justify-end space-x-4 md:flex-1">
-          {authenticated && <Popover />}
-          <Profile />
+          {!hideProfile && (
+            <>
+              {authenticated && <Popover />}
+              <Profile />
+            </>
+          )}
         </div>
       </div>
     </>

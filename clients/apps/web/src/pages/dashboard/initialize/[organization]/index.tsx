@@ -1,6 +1,7 @@
 import Gatekeeper from 'components/Dashboard/Gatekeeper/Gatekeeper'
 import SetupOrganization from 'components/Dashboard/Onboarding/SetupOrganization'
 import SynchronizeRepositories from 'components/Dashboard/Onboarding/SynchronizeRepositories'
+import Topbar from 'components/Shared/Topbar'
 import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { ReactElement, useState } from 'react'
@@ -37,7 +38,12 @@ const Page: NextLayoutComponentType = () => {
 }
 
 Page.getLayout = (page: ReactElement) => {
-  return <Gatekeeper>{page}</Gatekeeper>
+  return (
+    <>
+      <Topbar hideProfile={true} />
+      <Gatekeeper>{page}</Gatekeeper>
+    </>
+  )
 }
 
 export default Page

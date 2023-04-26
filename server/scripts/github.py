@@ -4,6 +4,8 @@ from typing import Sequence
 
 import typer
 
+from sqlalchemy.orm import joinedload
+
 from polar.config import settings
 from polar.enums import Platforms
 from polar.integrations.github.service import github_organization
@@ -31,6 +33,15 @@ async def get_repositories(
     session: AsyncSession, org: Organization
 ) -> Sequence[Repository]:
     query = sql.select(Repository).where(Repository.organization_id == org.id)
+    res = await session.execute(query)
+    return res.scalars().unique().all()
+
+
+async def get_issues(
+    session: AsyncSession, org: Organization
+) -> Sequence[Issue]:
+    query = sql.select(Issue).options(joinedload(Issue.repository)).where(
+        Issue.organization_id == org.id)
     res = await session.execute(query)
     return res.scalars().unique().all()
 
@@ -68,6 +79,18 @@ async def trigger_repositories_sync(session: AsyncSession, org: Organization) ->
     typer.echo(f"Triggered repo sync for {org.name}")
 
 
+async def trigger_issue_dependencies_sync(
+    session: AsyncSession, org: Organization
+) -> None:
+    issues = await get_issues(session, org)
+    if not issues:
+        raise RuntimeError(f"No issues found for {org.name}")
+
+    for issue in issues:
+        await enqueue_job("github.issue.sync.issue_dependencies", issue.id)
+        typer.echo(f"Triggered issue dependencies sync for {org.name}/{issue.repository.name}/#{issue.number}")
+
+
 ###############################################################################
 # Commands
 ###############################################################################
@@ -101,6 +124,17 @@ async def sync_references(org_name: str) -> None:
             raise RuntimeError(f"Organization {org_name} not found")
 
         await trigger_issue_references_sync(session, org)
+
+
+@cli.command()
+@typer_async
+async def sync_dependencies(org_name: str) -> None:
+    async with AsyncSessionLocal() as session:
+        org = await github_organization.get_by_name(session, Platforms.github, org_name)
+        if not org:
+            raise RuntimeError(f"Organization {org_name} not found")
+
+        await trigger_issue_dependencies_sync(session, org)
 
 
 @cli.command()

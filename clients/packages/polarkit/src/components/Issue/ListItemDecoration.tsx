@@ -14,9 +14,10 @@ const IssueListItemDecoration = ({
   pledges: PledgeRead[]
   references: IssueReferenceRead[]
 }) => {
+  const showPledges = pledges && pledges.length > 0
   return (
     <div className="flex flex-row items-center">
-      {pledges && (
+      {showPledges && (
         <div className="stretch mr-4 flex-none">
           <IssuePledge pledges={pledges} />
         </div>

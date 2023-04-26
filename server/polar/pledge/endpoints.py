@@ -234,7 +234,7 @@ async def create_pledge_user(
         organization_id=org.id,
         email=pledge.email,
         amount=pledge.amount,
-        state=State.initiated,
+        state=PledgeState.initiated,
         payment_id=payment_intent.id,
         by_user_id=user.id,
     )

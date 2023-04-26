@@ -1,7 +1,7 @@
-const Box = ({ children }) => (
-  <div className=" w-full rounded-xl bg-white p-5 shadow">
+const Box = (props: { children: React.ReactElement }) => (
+  <ShadowBox>
     <form className="flex flex-col space-y-4">{children}</form>
-  </div>
+  </ShadowBox>
 )
 
 export default Box

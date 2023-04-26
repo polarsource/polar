@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 export const useAuth = (): UserState & {
   hasChecked: boolean
   isChecking: boolean
+  reloadUser: () => CancelablePromise<UserRead>
 } => {
   const hasHydrated = useHasHydrated()
   const authenticated = useStore((state) => state.authenticated)
@@ -36,6 +37,14 @@ export const useAuth = (): UserState & {
     }
   }, [authenticated, hasChecked, login])
 
+  const reloadUser = async () => {
+    setIsChecking(true)
+    return login(() => {
+      setIsChecking(false)
+      setHasChecked(true)
+    })
+  }
+
   /*
    * We're not supporting serverside authentication/session via NextJS.
    * So unless we've hydrated and are on the clientside, we need to always
@@ -49,9 +58,18 @@ export const useAuth = (): UserState & {
       isChecking: false,
       login,
       logout,
+      reloadUser,
     }
   }
-  return { authenticated, currentUser, hasChecked, isChecking, login, logout }
+  return {
+    authenticated,
+    currentUser,
+    hasChecked,
+    isChecking,
+    login,
+    logout,
+    reloadUser,
+  }
 }
 
 export const useRequireAuth = (

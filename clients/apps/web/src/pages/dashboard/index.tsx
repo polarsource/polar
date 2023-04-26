@@ -1,4 +1,5 @@
 import Dashboard from 'components/Dashboard/Dashboard'
+import InviteOnly from 'components/Dashboard/InviteOnly'
 import DashboardLayout from 'components/Layout/DashboardLayout'
 import OnboardingConnectReposToGetStarted from 'components/Onboarding/OnboardingConnectReposToGetStarted'
 import type { NextLayoutComponentType } from 'next'
@@ -33,6 +34,10 @@ const Page: NextLayoutComponentType = () => {
       return
     }
   })
+
+  if (currentUser && !currentUser.invite_only_approved) {
+    return <InviteOnly />
+  }
 
   if (!isLoaded) {
     return <></>

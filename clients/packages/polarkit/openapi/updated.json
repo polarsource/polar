@@ -2615,6 +2615,10 @@
                     "sent_to_email": {
                         "title": "Sent To Email",
                         "type": "string"
+                    },
+                    "claimed_by_username": {
+                        "title": "Claimed By Username",
+                        "type": "string"
                     }
                 }
             },

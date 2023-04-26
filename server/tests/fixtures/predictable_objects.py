@@ -109,7 +109,11 @@ async def predictable_user(
     session: AsyncSession,
 ) -> User:
     user = await User.create(
-        session=session, id=uuid.uuid4(), username="foobar", email="test@example.com"
+        session=session,
+        id=uuid.uuid4(),
+        username="foobar",
+        email="test@example.com",
+        invite_only_approved=True,
     )
 
     await session.commit()

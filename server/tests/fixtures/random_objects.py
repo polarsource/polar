@@ -115,6 +115,7 @@ async def user(
         id=uuid.uuid4(),
         username=rstr("testuser"),
         email=rstr("test") + "@example.com",
+        invite_only_approved=True,
     )
 
     await session.commit()

@@ -30,7 +30,7 @@ const Topbar = (props: {
 
         {props.customLogoTitle && (
           <div className="flex items-center space-x-1">
-            <Logo />
+            <LogoIcon />
             <span className="font-display text-xl">Backoffice</span>
           </div>
         )}
@@ -111,7 +111,7 @@ const Logotype = () => {
   )
 }
 
-const Logo = () => {
+const LogoIcon = () => {
   return (
     <svg
       width="29"

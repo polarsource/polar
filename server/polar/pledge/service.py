@@ -98,8 +98,11 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             raise ResourceNotFound(f"Pledge not found with id: {pledge_id}")
 
         pledge.by_user_id = backer.id
-        session.add(pledge)
-        await session.commit()
+        await pledge.save(session)
+
+        # Approve the user for the alpha!
+        backer.invite_only_approved = True
+        await backer.save(session)
 
     async def mark_pending_by_issue_id(
         self, session: AsyncSession, issue_id: UUID

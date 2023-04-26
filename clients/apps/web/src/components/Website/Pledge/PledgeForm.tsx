@@ -69,13 +69,26 @@ const PledgeForm = ({
       return false
     }
 
-    // Always sync in case of valid amount and either 1) updated amount or 2) no prior pledge
-    if (!pledge || pledge.amount !== amount) {
+    if (!validateEmail(email)) {
+      return false
+    }
+
+    // Sync if pledge is missing
+    if (!pledge) {
       return true
     }
 
-    // Otherwise, only sync if email has changed (and is valid)
-    return pledge.email !== email && validateEmail(email)
+    // Sync if amount has chagned
+    if (pledge && pledge.amount !== amount) {
+      return true
+    }
+
+    // Sync if email has changed
+    if (pledge && pledge.email !== email) {
+      return true
+    }
+
+    return false
   }
 
   const synchronizePledge = async () => {

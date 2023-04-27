@@ -128,14 +128,26 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         await session.commit()
 
     async def mark_created_by_payment_id(
-        self, session: AsyncSession, payment_id: str, transaction_id: str | None = None
+        self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
     ) -> None:
         pledge = await self.get_by_payment_id(session, payment_id)
         if pledge:
             pledge.state = PledgeState.created
             session.add(PledgeTransaction(
                 pledge_id=pledge.id, type=PledgeTransactionType.pledge,
-                amount=pledge.amount, transaction_id=transaction_id))
+                amount=amount, transaction_id=transaction_id))
+            await session.commit()
+
+
+    async def mark_paid_by_payment_id(
+        self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
+    ) -> None:
+        pledge = await self.get_by_payment_id(session, payment_id)
+        if pledge:
+            pledge.state = PledgeState.paid
+            session.add(PledgeTransaction(
+                pledge_id=pledge.id, type=PledgeTransactionType.transfer,
+                amount=amount, transaction_id=transaction_id))
             await session.commit()
 
 

@@ -7,3 +7,10 @@ export const useInviteClaimCode = () =>
       return api.invite.claim({ code: variables.code })
     },
   })
+
+export const useUserAcceptTermsOfService = () =>
+  useMutation({
+    mutationFn: () => {
+      return api.users.acceptTerms()
+    },
+  })

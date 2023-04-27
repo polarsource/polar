@@ -36,6 +36,8 @@ async def sync_repository_issues(
     organization_id: UUID,
     repository_id: UUID,
     polar_context: PolarWorkerContext,
+    crawl_with_installation_id: int
+    | None = None,  # Override which installation to use when crawling
 ) -> None:
     with polar_context.to_execution_context() as context:
         async with AsyncSessionLocal() as session:
@@ -43,7 +45,10 @@ async def sync_repository_issues(
                 session, organization_id, repository_id
             )
             await service.github_repository.sync_issues(
-                session, organization=organization, repository=repository
+                session,
+                organization=organization,
+                repository=repository,
+                crawl_with_installation_id=crawl_with_installation_id,
             )
 
 
@@ -53,6 +58,7 @@ async def sync_repository_pull_requests(
     organization_id: UUID,
     repository_id: UUID,
     polar_context: PolarWorkerContext,
+    crawl_with_installation_id: int | None = None,
 ) -> None:
     with polar_context.to_execution_context() as context:
         async with AsyncSessionLocal() as session:
@@ -63,9 +69,13 @@ async def sync_repository_pull_requests(
                 session,
                 organization=organization,
                 repository=repository,
+                crawl_with_installation_id=crawl_with_installation_id,
             )
             await enqueue_job(
-                "github.repo.sync.issue_references", organization.id, repository.id
+                "github.repo.sync.issue_references",
+                organization.id,
+                repository.id,
+                crawl_with_installation_id=crawl_with_installation_id,
             )
 
 
@@ -75,6 +85,7 @@ async def repo_sync_issue_references(
     organization_id: UUID,
     repository_id: UUID,
     polar_context: PolarWorkerContext,
+    crawl_with_installation_id: int | None = None,
 ) -> None:
     with polar_context.to_execution_context() as context:
         async with AsyncSessionLocal() as session:
@@ -85,4 +96,5 @@ async def repo_sync_issue_references(
                 session,
                 org=organization,
                 repo=repository,
+                crawl_with_installation_id=crawl_with_installation_id,
             )

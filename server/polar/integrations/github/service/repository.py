@@ -123,6 +123,8 @@ class GithubRepositoryService(RepositoryService):
         sort: Literal["created", "updated", "comments"] = "updated",
         direction: Literal["asc", "desc"] = "desc",
         per_page: int = 30,
+        crawl_with_installation_id: int
+        | None = None,  # Override which installation to use when crawling
     ) -> tuple[SyncedCount, ErrorCount]:
         # We get PRs in the issues list too, but super slim versions of them.
         # Since we sync PRs separately, we therefore skip them here.
@@ -131,7 +133,17 @@ class GithubRepositoryService(RepositoryService):
         ) -> bool:
             return bool(getattr(data, "pull_request", None))
 
-        client = github.get_app_installation_client(organization.installation_id)
+        installation_id = (
+            crawl_with_installation_id
+            if crawl_with_installation_id
+            else organization.installation_id
+        )
+
+        if not installation_id:
+            raise Exception("no github installation id found")
+
+        client = github.get_app_installation_client(installation_id)
+
         paginator = client.paginate(
             client.rest.issues.async_list_for_repo,
             owner=organization.name,
@@ -163,8 +175,20 @@ class GithubRepositoryService(RepositoryService):
         sort: Literal["created", "updated", "popularity", "long-running"] = "updated",
         direction: Literal["asc", "desc"] = "desc",
         per_page: int = 30,
+        crawl_with_installation_id: int
+        | None = None,  # Override which installation to use when crawling
     ) -> tuple[SyncedCount, ErrorCount]:
-        client = github.get_app_installation_client(organization.installation_id)
+        installation_id = (
+            crawl_with_installation_id
+            if crawl_with_installation_id
+            else organization.installation_id
+        )
+
+        if not installation_id:
+            raise Exception("no github installation id found")
+
+        client = github.get_app_installation_client(installation_id)
+
         paginator = client.paginate(
             client.rest.pulls.async_list,
             owner=organization.name,
@@ -187,12 +211,20 @@ class GithubRepositoryService(RepositoryService):
     async def enqueue_sync(
         self,
         repository: Repository,
+        crawl_with_installation_id: int
+        | None = None,  # Override which installation to use when crawling
     ) -> None:
         await enqueue_job(
-            "github.repo.sync.issues", repository.organization_id, repository.id
+            "github.repo.sync.issues",
+            repository.organization_id,
+            repository.id,
+            crawl_with_installation_id=crawl_with_installation_id,
         )
         await enqueue_job(
-            "github.repo.sync.pull_requests", repository.organization_id, repository.id
+            "github.repo.sync.pull_requests",
+            repository.organization_id,
+            repository.id,
+            crawl_with_installation_id=crawl_with_installation_id,
         )
 
     async def upsert_many(

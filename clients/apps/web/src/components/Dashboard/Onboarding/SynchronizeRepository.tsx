@@ -1,8 +1,8 @@
+import { CheckCircleIcon } from '@heroicons/react/24/solid'
 import { motion } from 'framer-motion'
-import { classNames } from 'polarkit/utils'
 import { type RepoSyncState } from './types'
 
-const ProgressBar = ({
+const Progress = ({
   progress,
   target,
   completed,
@@ -18,14 +18,31 @@ const ProgressBar = ({
 
   return (
     <>
-      <div className="h-2.5 w-full rounded-full bg-gray-200 dark:bg-gray-700">
+      <p className="mr-4 w-56 text-xs">
+        {completed && (
+          <motion.span
+            className="flex flex-row items-center text-gray-500"
+            initial="hidden"
+            animate={{
+              opacity: [0, 1],
+            }}
+          >
+            <CheckCircleIcon className="mr-1 h-4 w-4 text-blue-600" />{' '}
+            <strong className="mr-1 text-blue-600">{target}</strong> issues
+            fetched
+          </motion.span>
+        )}
+        {!completed && (
+          <>
+            <span className="text-gray-900">{progress}</span>
+            <span className="text-gray-500"> / {target} issues fetched</span>
+          </>
+        )}
+      </p>
+
+      <div className="h-2.5 w-full rounded-full bg-gray-200">
         <motion.div
-          className={classNames(
-            completed
-              ? 'bg-gray-400 dark:bg-gray-700'
-              : 'bg-blue-600 dark:bg-blue-500',
-            'h-2.5 w-[0%] rounded-full',
-          )}
+          className="h-2.5 w-[0%] rounded-full bg-blue-600"
           initial="hidden"
           animate={{
             width: `${percent}%`,
@@ -51,12 +68,7 @@ export const SynchronizeRepository = ({
    */
   return (
     <>
-      <div
-        className={classNames(
-          repo.completed ? 'bg-gray-50 opacity-50' : 'bg-white',
-          'flex flex-row rounded-xl px-5 py-4 shadow',
-        )}
-      >
+      <div className="flex flex-row rounded-xl bg-white px-5 py-4 shadow">
         <div className="my-auto basis-2/6">
           <div className="flex flex-row">
             {repo.avatar_url && (
@@ -68,13 +80,7 @@ export const SynchronizeRepository = ({
           </div>
         </div>
         <div className="my-auto flex basis-4/6 flex-row items-center">
-          <p className="w-52 text-xs">
-            <span className="text-gray-900">{repo.processed} </span>
-            <span className="text-gray-500">
-              / {repo.expected} issues fetched
-            </span>
-          </p>
-          <ProgressBar
+          <Progress
             progress={repo.processed}
             target={repo.expected}
             completed={repo.completed}

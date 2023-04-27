@@ -154,6 +154,20 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             await session.commit()
 
 
+    # TODO: Change the name if we don't actually change state?
+    async def mark_refunded_by_payment_id(
+        self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
+    ) -> None:
+        pledge = await self.get_by_payment_id(session, payment_id)
+        if pledge:
+            # TODO: Do we change state?
+            # pledge.state = PledgeState.created
+            session.add(PledgeTransaction(
+                pledge_id=pledge.id, type=PledgeTransactionType.refund,
+                amount=amount, transaction_id=transaction_id))
+            await session.commit()
+
+
     async def transfer(self, session: AsyncSession, pledge_id: UUID) -> None:
         pledge = await self.get(session, id=pledge_id)
         if not pledge:

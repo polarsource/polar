@@ -30,6 +30,7 @@ class PledgeState(str, Enum):
 class PledgeTransactionType(str, Enum):
     pledge = "pledge"
     transfer = "transfer"
+    refund = "refund"
 
 
 class PledgeCreate(Schema):

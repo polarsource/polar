@@ -1,17 +1,16 @@
 import Dashboard from 'components/Dashboard/Dashboard'
-import InviteOnly from 'components/Dashboard/InviteOnly'
+import Gatekeeper from 'components/Dashboard/Gatekeeper/Gatekeeper'
 import type { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { ReactElement, useEffect } from 'react'
-import { useCurrentOrgAndRepoFromURL, useRequireAuth } from '../../../../hooks'
+import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
 
 const Page: NextLayoutComponentType = () => {
   const router = useRouter()
   const { organization: orgSlug, repo: repoSlug } = router.query
   const key = `orgrepo-${orgSlug}-${repoSlug}` // use key to force reload of state
-  const { org, repo, isLoaded, haveOrgs } = useCurrentOrgAndRepoFromURL()
-  const { currentUser } = useRequireAuth()
+  const { org, repo, isLoaded } = useCurrentOrgAndRepoFromURL()
 
   useEffect(() => {
     if (isLoaded && !org && !repo) {
@@ -23,10 +22,6 @@ const Page: NextLayoutComponentType = () => {
       return
     }
   }, [isLoaded, org, repo])
-
-  if (currentUser && !currentUser.invite_only_approved) {
-    return <InviteOnly />
-  }
 
   if (!isLoaded) {
     return <></>
@@ -45,7 +40,7 @@ const Page: NextLayoutComponentType = () => {
 }
 
 Page.getLayout = (page: ReactElement) => {
-  return <>{page}</>
+  return <Gatekeeper>{page}</Gatekeeper>
 }
 
 export default Page

@@ -1,5 +1,5 @@
 import Dashboard from 'components/Dashboard/Dashboard'
-import InviteOnly from 'components/Dashboard/InviteOnly'
+import Gatekeeper from 'components/Dashboard/Gatekeeper/Gatekeeper'
 import DashboardLayout from 'components/Layout/DashboardLayout'
 import OnboardingConnectReposToGetStarted from 'components/Onboarding/OnboardingConnectReposToGetStarted'
 import type { NextLayoutComponentType } from 'next'
@@ -35,10 +35,6 @@ const Page: NextLayoutComponentType = () => {
     }
   })
 
-  if (currentUser && !currentUser.invite_only_approved) {
-    return <InviteOnly />
-  }
-
   if (!isLoaded) {
     return <></>
   }
@@ -62,7 +58,7 @@ const Page: NextLayoutComponentType = () => {
 }
 
 Page.getLayout = (page: ReactElement) => {
-  return <>{page}</>
+  return <Gatekeeper>{page}</Gatekeeper>
 }
 
 export default Page

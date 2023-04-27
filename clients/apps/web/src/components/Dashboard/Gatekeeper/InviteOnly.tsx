@@ -8,6 +8,8 @@ import {
 } from 'polarkit/components/ui'
 import { useInviteClaimCode } from 'polarkit/hooks'
 import { useState } from 'react'
+import TakeoverBox from './TakeoverBox'
+import TakeoverHeader from './TakeoverHeader'
 
 const InviteOnly = () => {
   const [code, setCode] = useState('')
@@ -56,45 +58,49 @@ const InviteOnly = () => {
   }
 
   return (
-    <div className="mx-auto my-11 flex max-w-2xl flex-col space-y-8">
-      <h1 className="text-center text-xl font-normal text-gray-600 drop-shadow-md">
-        Welcome to Polar
-      </h1>
+    <TakeoverBox>
+      <>
+        <TakeoverHeader>
+          <>Welcome to Polar</>
+        </TakeoverHeader>
 
-      {showErrorBanner && (
-        <RedBanner>
-          <>
-            The code that you entered was not valid. Please double check your
-            code and try again.
-          </>
-        </RedBanner>
-      )}
+        {showErrorBanner && (
+          <RedBanner>
+            <>
+              The code that you entered was not valid. Please double check your
+              code and try again.
+            </>
+          </RedBanner>
+        )}
 
-      {showSuccessBanner && (
-        <GreenBanner>
-          <>You&apos;re in! Redirecting...</>
-        </GreenBanner>
-      )}
+        {showSuccessBanner && (
+          <GreenBanner>
+            <>You&apos;re in! Redirecting...</>
+          </GreenBanner>
+        )}
 
-      <ShadowBox>
-        <div className="flex flex-col space-y-2">
-          <p className="text-gray-500">To join Polar, enter your invite code</p>
-          <Input
-            name="polar-code"
-            id="polar-code"
-            placeholder="Your invite code"
-            onUpdated={onInputUpdated}
-          />
-          <PrimaryButton
-            disabled={joinDisabled}
-            loading={joinLoading}
-            onClick={onJoinClick}
-          >
-            Join
-          </PrimaryButton>
-        </div>
-      </ShadowBox>
-    </div>
+        <ShadowBox>
+          <div className="flex flex-col space-y-2">
+            <p className="text-gray-500">
+              To join Polar, enter your invite code
+            </p>
+            <Input
+              name="polar-code"
+              id="polar-code"
+              placeholder="Your invite code"
+              onUpdated={onInputUpdated}
+            />
+            <PrimaryButton
+              disabled={joinDisabled}
+              loading={joinLoading}
+              onClick={onJoinClick}
+            >
+              Join
+            </PrimaryButton>
+          </div>
+        </ShadowBox>
+      </>
+    </TakeoverBox>
   )
 }
 

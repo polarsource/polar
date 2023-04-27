@@ -1,16 +1,10 @@
 import Dashboard from 'components/Dashboard/Dashboard'
-import InviteOnly from 'components/Dashboard/InviteOnly'
-import { useRequireAuth } from 'hooks'
+import Gatekeeper from 'components/Dashboard/Gatekeeper/Gatekeeper'
 import type { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { ReactElement } from 'react'
 
 const Page: NextLayoutComponentType = () => {
-  const { currentUser } = useRequireAuth()
-  if (currentUser && !currentUser.invite_only_approved) {
-    return <InviteOnly />
-  }
-
   return (
     <>
       <Head>
@@ -27,7 +21,7 @@ const Page: NextLayoutComponentType = () => {
 }
 
 Page.getLayout = (page: ReactElement) => {
-  return <>{page}</>
+  return <Gatekeeper>{page}</Gatekeeper>
 }
 
 export default Page

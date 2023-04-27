@@ -61,19 +61,18 @@ const IssueListItem = (props: {
     <div>
       <div className="hover:bg-gray-75 group flex items-center justify-between gap-4 py-4 px-2 pb-5">
         <div className="flex flex-col gap-1">
-          <div className="flex items-start gap-4">
+          <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
             <a
-              className="text-md font-medium"
+              className="text-md text-nowrap font-medium"
               href={githubIssueUrl(props.org.name, props.repo.name, number)}
             >
               {title}
             </a>
-            <div className="flex items-center gap-2">
-              {props.issue.labels &&
-                props.issue.labels.map((label: LabelSchema) => {
-                  return <IssueLabel label={label} key={label.id} />
-                })}
-            </div>
+
+            {props.issue.labels &&
+              props.issue.labels.map((label: LabelSchema) => {
+                return <IssueLabel label={label} key={label.id} />
+              })}
           </div>
           <div className="text-xs text-gray-500">
             {state == 'open' && (

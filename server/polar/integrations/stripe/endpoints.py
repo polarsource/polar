@@ -31,7 +31,6 @@ class WebhookResponse(BaseModel):
 
 IMPLEMENTED_WEBHOOKS = {
     "payment_intent.succeeded",
-    "transfer.created",
 }
 
 

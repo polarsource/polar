@@ -6,6 +6,7 @@ from typing import List, Sequence
 import structlog
 
 from polar.kit.services import ResourceService
+from polar.models.issue import Issue
 from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.user import User
 from polar.models.pledge import Pledge
@@ -33,6 +34,8 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             .options(
                 joinedload(Pledge.user),
                 joinedload(Pledge.organization),
+                joinedload(Pledge.issue).joinedload(Issue.organization),
+                joinedload(Pledge.issue).joinedload(Issue.repository),
             )
             .filter(Pledge.id == pledge_id)
         )
@@ -139,7 +142,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             await session.commit()
 
 
-    async def mark_paid_by_payment_id(
+    async def mark_paid_by_pledge_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
     ) -> None:
         pledge = await self.get_by_payment_id(session, payment_id)
@@ -169,15 +172,14 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             session=session,
             account=organization.account,
             amount=organization_share,
-            transfer_group=f"{pledge.issue_id}",
+            transfer_group=f"{pledge.id}",
         )
 
         if transfer_id is None:
             raise NotPermitted("Transfer failed")  # TODO: Better error
 
-        pledge.state = PledgeState.paid
-        pledge.transfer_id = transfer_id
-        await pledge.save(session=session)
+        await self.mark_paid_by_pledge_id(session, pledge.payment_id,
+                                          organization_share, transfer_id)
 
     async def get_by_payment_id(
         self, session: AsyncSession, payment_id: str

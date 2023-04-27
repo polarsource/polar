@@ -67,7 +67,18 @@ class User(RecordModel):
 
     invite_only_approved: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
-    __mutables__ = {"email", "profile", "invite_only_approved"}
+    accepted_terms_of_service: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+
+    __mutables__ = {
+        "email",
+        "profile",
+        "invite_only_approved",
+        "accepted_terms_of_service",
+    }
 
     def get_platform_oauth_account(self, platform: Platforms) -> OAuthAccount | None:
         for account in self.oauth_accounts:

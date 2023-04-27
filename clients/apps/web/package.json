@@ -12,7 +12,6 @@
     "node": ">= 19 <20"
   },
   "dependencies": {
-    "@headlessui/react": "^1.7.0",
     "@heroicons/react": "^2.0.16",
     "@radix-ui/react-popover": "^1.0.5",
     "@sentry/nextjs": "^7.48.0",
@@ -21,6 +20,7 @@
     "@tailwindcss/forms": "^0.5.3",
     "axios": "^0.27.2",
     "cmdk": "^0.2.0",
+    "framer-motion": "^10.12.4",
     "next": "latest",
     "polarkit": "workspace:*",
     "react": "^18.2.0",

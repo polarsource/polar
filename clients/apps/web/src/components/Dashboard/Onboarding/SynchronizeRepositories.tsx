@@ -1,4 +1,5 @@
 import Spinner from 'components/Shared/Spinner'
+import { motion } from 'framer-motion'
 import { type OrganizationRead } from 'polarkit/api/client'
 import { useSSE } from 'polarkit/hooks'
 import { useEffect, useState } from 'react'
@@ -118,16 +119,63 @@ export const SynchronizeRepositories = ({
         </span>
       </h1>
       <ul>
-        {Object.values(syncingRepos).map((repo) => {
+        {Object.values(syncingRepos).map((repo, index) => {
           return (
-            <li key={repo.id}>
-              <SynchronizeRepository repo={repo} />
-            </li>
+            <motion.ul
+              variants={{
+                hidden: { opacity: 0 },
+                show: {
+                  opacity: 1,
+                  transition: {
+                    delayChildren: 0.5,
+                  },
+                },
+              }}
+              initial="hidden"
+              animate="show"
+            >
+              <motion.li
+                key={repo.id}
+                className="mb-5"
+                variants={{
+                  hidden: {
+                    opacity: 0,
+                    translateY: '100%',
+                    scale: 0.95,
+                  },
+                  show: {
+                    opacity: 1,
+                    scale: [0.95, 1.05, 1],
+                    translateY: 0,
+                    transition: {
+                      delay: 0.3 * index,
+                    },
+                  },
+                }}
+              >
+                <SynchronizeRepository repo={repo} />
+              </motion.li>
+            </motion.ul>
           )
         })}
       </ul>
       {(totalProcessed / totalExpected > 0.4 || continueTimeoutReached) && (
-        <OnboardingControls onClickContinue={onContinue} />
+        <motion.div
+          variants={{
+            hidden: {
+              opacity: 0,
+              scale: 1,
+            },
+            show: {
+              opacity: 1,
+              scale: [1, 1.1, 1],
+            },
+          }}
+          initial="hidden"
+          animate="show"
+        >
+          <OnboardingControls onClickContinue={onContinue} />
+        </motion.div>
       )}
     </>
   )

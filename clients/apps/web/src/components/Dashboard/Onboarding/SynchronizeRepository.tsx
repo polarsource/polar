@@ -38,7 +38,7 @@ export const SynchronizeRepository = ({ repo }: { repo: RepoSyncState }) => {
       <div
         className={classNames(
           repo.completed ? 'bg-gray-50 opacity-50' : 'bg-white',
-          'mb-5 flex flex-row rounded-xl px-5 py-4 shadow',
+          'flex flex-row rounded-xl px-5 py-4 shadow',
         )}
       >
         <div className="my-auto basis-2/6">

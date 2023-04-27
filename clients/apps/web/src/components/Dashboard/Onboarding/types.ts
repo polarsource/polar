@@ -9,4 +9,6 @@ export interface RepoSyncState extends SyncEvent {
   avatar_url: string
   name: string
   completed: boolean
+  isOpen: boolean
+  stars: number
 }

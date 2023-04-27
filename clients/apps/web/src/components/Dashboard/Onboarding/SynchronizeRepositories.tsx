@@ -9,6 +9,13 @@ import SynchronizeRepository from './SynchronizeRepository'
 
 const continueTimeoutSeconds = 5
 
+const sortRepos = (a: RepoSyncState, b: RepoSyncState) => {
+  const aIsOpenSource = a.isOpen ? 1 : 0
+  const bIsOpenSource = b.isOpen ? 1 : 0
+  // Prioritize open source and then by stars
+  return bIsOpenSource - aIsOpenSource || b.stars - a.stars
+}
+
 const getInitializedSyncState = (
   org: OrganizationRead,
 ): { [id: string]: RepoSyncState } => {
@@ -21,9 +28,12 @@ const getInitializedSyncState = (
       name: repo.name,
       processed: 0,
       expected: repo.open_issues,
+      isOpen: !repo.is_private,
+      stars: repo.stars || 0,
       completed: false,
     }
   }
+
   return initialSyncStates
 }
 
@@ -50,6 +60,7 @@ export const SynchronizeRepositories = ({
   }>(initialSyncStates)
 
   const repos = Object.values(syncingRepos)
+  const sortedRepos = repos.sort(sortRepos)
   const totalProcessed = repos.reduce((acc, repo) => acc + repo.processed, 0)
   const totalExpected = repos.reduce((acc, repo) => acc + repo.expected, 0)
 
@@ -111,7 +122,7 @@ export const SynchronizeRepositories = ({
   return (
     <>
       <ul>
-        {Object.values(syncingRepos).map((repo, index) => {
+        {sortedRepos.map((repo, index) => {
           return (
             <motion.ul
               variants={{

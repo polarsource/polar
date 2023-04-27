@@ -15,6 +15,7 @@ const AcceptTerms = () => {
   const [loading, setLoading] = useState(false)
   const acceptTerms = useUserAcceptTermsOfService()
   const [showErrorBanner, setShowErrorBanner] = useState(false)
+  const [boxFadeOut, setBoxFadeOut] = useState(false)
 
   const { reloadUser } = useAuth()
 
@@ -31,6 +32,12 @@ const AcceptTerms = () => {
           throw new Error('something went wrong')
         }
       })
+      .then(await new Promise((r) => setTimeout(r, 500)))
+      .then(() => {
+        setLoading(false)
+        setBoxFadeOut(true)
+      })
+      .then(await new Promise((r) => setTimeout(r, 500)))
       .then(reloadUser)
       .catch(() => {
         setShowErrorBanner(true)
@@ -46,7 +53,7 @@ const AcceptTerms = () => {
   }
 
   return (
-    <TakeoverBox>
+    <TakeoverBox fadeOut={boxFadeOut}>
       <>
         <TakeoverHeader>
           <>Terms of Service and Privacy Policy</>

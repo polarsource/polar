@@ -105,6 +105,7 @@ const PrimaryButton = (props: ButtonProps) => {
   return (
     <>
       <button className={classes} onClick={props.onClick} disabled={disabled}>
+        <div className="h-6">{/* Same height as LoadingSpinner */}</div>
         {props.loading && <LoadingSpinner disabled={disabled} />}
         {!props.loading && props.children}
       </button>
@@ -121,13 +122,14 @@ export const ThinButton = (props: ButtonProps) => {
   let classes = classNames(
     bg(props.color, props.loading, disabled),
     text(props.color, props.loading, disabled),
-    'rounded px-2 py-1 text-xs font-semibold transition-colors duration-100',
+    'rounded px-2 py-1 text-xs font-semibold transition-colors duration-100 h-6',
   )
 
   if (props.href) {
     return (
       <>
         <a className={classes} href={props.href} target="_blank">
+          <div className="h-6">{/* Same height as LoadingSpinner */}</div>
           {props.loading && <LoadingSpinner disabled={disabled} />}
           {!props.loading && props.children}
         </a>
@@ -138,6 +140,7 @@ export const ThinButton = (props: ButtonProps) => {
   return (
     <>
       <button className={classes} onClick={props.onClick} disabled={disabled}>
+        <div className="h-6">{/* Same height as LoadingSpinner */}</div>
         {props.loading && <LoadingSpinner disabled={disabled} />}
         {!props.loading && props.children}
       </button>

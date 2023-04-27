@@ -12,7 +12,7 @@ const FakePullRequest = ({ showAmount }: { showAmount: boolean }) => {
           bot
         </div>
       </div>
-      <div className="flex flex-col space-y-3 p-4 pb-2">
+      <div className="mb-3 flex flex-col space-y-3.5 p-4 pb-2">
         <div className="h-4 w-full max-w-[250px] rounded-full bg-[#EAEBEC]"></div>
         <div className="h-4 w-full max-w-[500px] rounded-full bg-[#EAEBEC]"></div>
         <div className="h-4 w-full max-w-[400px] rounded-full bg-[#EAEBEC]"></div>

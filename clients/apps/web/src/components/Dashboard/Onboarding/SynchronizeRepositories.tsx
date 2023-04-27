@@ -7,7 +7,7 @@ import { type RepoSyncState, type SyncEvent } from './types'
 
 import SynchronizeRepository from './SynchronizeRepository'
 
-const continueTimeoutSeconds = 5
+const continueTimeoutSeconds = 10
 
 const sortRepos = (a: RepoSyncState, b: RepoSyncState) => {
   const aIsOpenSource = a.isOpen ? 1 : 0

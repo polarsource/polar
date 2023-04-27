@@ -55,8 +55,8 @@ const Page: NextLayoutComponentType = () => {
         <div className="m-auto w-[700px]">
           {showSetup && (
             <>
-              <h1 className="flex-column mb-11 flex items-center justify-center text-center text-xl font-normal text-gray-500">
-                Add Polar to your open source issues
+              <h1 className="flex-column mb-11 flex items-center justify-center text-center text-xl font-normal text-gray-900">
+                Add the Polar badge on your open source issues
               </h1>
 
               <motion.div
@@ -75,7 +75,6 @@ const Page: NextLayoutComponentType = () => {
                 className="mb-11"
               >
                 <Box>
-                  <h1>Polar will inject this badge into new issues:</h1>
                   <BadgeSettings
                     badgeAddOldIssues={badgeAddOldIssues}
                     badgeShowRaised={badgeShowRaised}

@@ -121,7 +121,6 @@ async def resync_issues(org_name: str) -> None:
         if not org:
             raise RuntimeError(f"Organization {org_name} not found")
 
-        await do_delete_issues(session, org)
         await trigger_issue_sync(session, org)
 
 

@@ -19,7 +19,7 @@ const Page: NextLayoutComponentType = () => {
   const [showControls, setShowControls] = useState<boolean>(false)
   const [showSetup, setShowSetup] = useState<boolean>(false)
   const [badgeAddOldIssues, setBadgeAddOldIssues] = useState<boolean>(true)
-  const [badgeShowRaised, setBadgeShowRaised] = useState<boolean>(true)
+  const [badgeShowRaised, setBadgeShowRaised] = useState<boolean>(false)
   const { org } = useCurrentOrgAndRepoFromURL()
   const router = useRouter()
 

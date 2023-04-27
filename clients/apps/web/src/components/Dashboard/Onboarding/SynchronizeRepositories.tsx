@@ -1,4 +1,3 @@
-import Spinner from 'components/Shared/Spinner'
 import { motion } from 'framer-motion'
 import { type OrganizationRead } from 'polarkit/api/client'
 import { useSSE } from 'polarkit/hooks'
@@ -6,10 +5,9 @@ import { useEffect, useState } from 'react'
 import { useTimeoutFn } from 'react-use'
 import { type RepoSyncState, type SyncEvent } from './types'
 
-import OnboardingControls from './OnboardingControls'
 import SynchronizeRepository from './SynchronizeRepository'
 
-const continueTimeoutSeconds = 10
+const continueTimeoutSeconds = 5
 
 const getInitializedSyncState = (
   org: OrganizationRead,
@@ -38,10 +36,12 @@ const max = (a: number, b: number): number => {
 
 export const SynchronizeRepositories = ({
   org,
-  onContinue,
+  showSetup,
+  setShowControls,
 }: {
   org: OrganizationRead
-  onContinue: () => void
+  showSetup: boolean
+  setShowControls: (state: boolean) => void
 }) => {
   let initialSyncStates = getInitializedSyncState(org)
   const emitter = useSSE(org.platform, org.name)
@@ -49,13 +49,15 @@ export const SynchronizeRepositories = ({
     [id: string]: RepoSyncState
   }>(initialSyncStates)
 
-  // Show continue button after a few seconds
-  const [continueTimeoutReached, setContinueTimeoutReached] =
-    useState<boolean>(false)
-  useTimeoutFn(
-    () => setContinueTimeoutReached(true),
-    continueTimeoutSeconds * 1000,
-  )
+  const repos = Object.values(syncingRepos)
+  const totalProcessed = repos.reduce((acc, repo) => acc + repo.processed, 0)
+  const totalExpected = repos.reduce((acc, repo) => acc + repo.expected, 0)
+
+  // Show continue button after a few seconds OR once 40% sync is complete
+  useTimeoutFn(() => setShowControls(true), continueTimeoutSeconds * 1000)
+  if (totalProcessed / totalExpected > 0.4) {
+    setShowControls(true)
+  }
 
   const sync = ({
     data,
@@ -106,18 +108,8 @@ export const SynchronizeRepositories = ({
     }
   }, [emitter])
 
-  const repos = Object.values(syncingRepos)
-  const totalProcessed = repos.reduce((acc, repo) => acc + repo.processed, 0)
-  const totalExpected = repos.reduce((acc, repo) => acc + repo.expected, 0)
-
   return (
     <>
-      <h1 className="flex-column mb-11 flex items-center justify-center text-center text-xl font-normal text-gray-500">
-        Connecting repositories
-        <span className="ml-4">
-          <Spinner />
-        </span>
-      </h1>
       <ul>
         {Object.values(syncingRepos).map((repo, index) => {
           return (
@@ -153,30 +145,12 @@ export const SynchronizeRepositories = ({
                   },
                 }}
               >
-                <SynchronizeRepository repo={repo} />
+                <SynchronizeRepository repo={repo} showSetup={showSetup} />
               </motion.li>
             </motion.ul>
           )
         })}
       </ul>
-      {(totalProcessed / totalExpected > 0.4 || continueTimeoutReached) && (
-        <motion.div
-          variants={{
-            hidden: {
-              opacity: 0,
-              scale: 1,
-            },
-            show: {
-              opacity: 1,
-              scale: [1, 1.1, 1],
-            },
-          }}
-          initial="hidden"
-          animate="show"
-        >
-          <OnboardingControls onClickContinue={onContinue} />
-        </motion.div>
-      )}
     </>
   )
 }

@@ -32,7 +32,19 @@ const ProgressBar = ({
   )
 }
 
-export const SynchronizeRepository = ({ repo }: { repo: RepoSyncState }) => {
+export const SynchronizeRepository = ({
+  repo,
+  showSetup,
+}: {
+  repo: RepoSyncState
+  showSetup: boolean
+}) => {
+  /*
+   * Use the Polarkit ShadowBox component instead of custom.
+   *
+   * We need to switch our classNames to the npm version which allows for better
+   * merging of classnames so that we can do overrides etc, i.e smaller padding here.
+   */
   return (
     <>
       <div

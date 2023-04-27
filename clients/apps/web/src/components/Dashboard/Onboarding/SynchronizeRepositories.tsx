@@ -47,10 +47,12 @@ const max = (a: number, b: number): number => {
 export const SynchronizeRepositories = ({
   org,
   showSetup,
+  setShowSetup,
   setShowControls,
 }: {
   org: OrganizationRead
   showSetup: boolean
+  setShowSetup: (state: boolean) => void
   setShowControls: (state: boolean) => void
 }) => {
   let initialSyncStates = getInitializedSyncState(org)
@@ -63,6 +65,17 @@ export const SynchronizeRepositories = ({
   const sortedRepos = repos.sort(sortRepos)
   const totalProcessed = repos.reduce((acc, repo) => acc + repo.processed, 0)
   const totalExpected = repos.reduce((acc, repo) => acc + repo.expected, 0)
+  const countRepos = repos.length
+  const [countSynced, setCountSynced] = useState<number>(
+    repos.reduce((acc, repo) => acc + (repo.completed ? 1 : 0), 0),
+  )
+  const isSyncCompleted = countSynced === countRepos
+
+  // Goto next step and setup in case syncing is complete
+  if (isSyncCompleted) {
+    setShowSetup(true)
+    setShowControls(true)
+  }
 
   // Show continue button after a few seconds OR once 40% sync is complete
   useTimeoutFn(() => setShowControls(true), continueTimeoutSeconds * 1000)
@@ -85,6 +98,7 @@ export const SynchronizeRepositories = ({
        * we still need to update the processed count to the expected count.
        */
       processed = data.expected
+      setCountSynced((prev) => prev + 1)
     }
     setSyncingRepos((prev) => {
       const repo = prev[data.repository_id]

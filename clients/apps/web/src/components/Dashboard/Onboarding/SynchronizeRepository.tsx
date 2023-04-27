@@ -1,5 +1,6 @@
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
 import { motion } from 'framer-motion'
+import { classNames } from 'polarkit/utils'
 import { useMemo } from 'react'
 import { type RepoSyncState } from './types'
 
@@ -9,7 +10,7 @@ const zeroIssuesMessages = [
   'No issues? Surely this repo is not software.',
 ]
 
-const Progress = ({
+const ProgressText = ({
   progress,
   target,
   completed,
@@ -24,17 +25,13 @@ const Progress = ({
       Math.floor(Math.random() * zeroIssuesMessages.length)
     ]
   }, [])
+
   if (!shouldSync) {
     return (
       <>
         <span className="text-sm text-gray-500">{zeroIssueMessage}</span>
       </>
     )
-  }
-
-  let percent = (progress / target) * 100
-  if (shouldSync && completed) {
-    percent = 100
   }
 
   return (
@@ -60,18 +57,37 @@ const Progress = ({
           </>
         )}
       </p>
+    </>
+  )
+}
 
-      {shouldSync && (
-        <div className="h-2.5 w-full rounded-full bg-gray-200">
-          <motion.div
-            className="h-2.5 w-[0%] rounded-full bg-blue-600"
-            initial="hidden"
-            animate={{
-              width: `${percent}%`,
-            }}
-          ></motion.div>
-        </div>
-      )}
+const Progress = ({
+  progress,
+  target,
+  completed,
+}: {
+  progress: number
+  target: number
+  completed: boolean
+}) => {
+  if (target === 0) return <></>
+
+  let percent = (progress / target) * 100
+  if (completed) {
+    percent = 100
+  }
+
+  return (
+    <>
+      <div className="h-2.5 w-full rounded-full bg-gray-200">
+        <motion.div
+          className="h-2.5 w-[0%] rounded-full bg-blue-600"
+          initial="hidden"
+          animate={{
+            width: `${percent}%`,
+          }}
+        ></motion.div>
+      </div>
     </>
   )
 }
@@ -83,6 +99,7 @@ export const SynchronizeRepository = ({
   repo: RepoSyncState
   showSetup: boolean
 }) => {
+  const showBadgeSettings = showSetup && repo.isOpen
   /*
    * Use the Polarkit ShadowBox component instead of custom.
    *
@@ -91,7 +108,11 @@ export const SynchronizeRepository = ({
    */
   return (
     <>
-      <div className="flex flex-row rounded-xl bg-white px-5 py-4 shadow">
+      <div
+        className={classNames(
+          'flex flex-row rounded-xl bg-white px-5 py-4 shadow',
+        )}
+      >
         <div className="my-auto basis-2/6">
           <div className="flex flex-row">
             {repo.avatar_url && (
@@ -103,11 +124,17 @@ export const SynchronizeRepository = ({
           </div>
         </div>
         <div className="my-auto flex basis-4/6 flex-row items-center">
+          <ProgressText
+            progress={repo.processed}
+            target={repo.expected}
+            completed={repo.completed}
+          />
           <Progress
             progress={repo.processed}
             target={repo.expected}
             completed={repo.completed}
           />
+          {showBadgeSettings && <p></p>}
         </div>
       </div>
     </>

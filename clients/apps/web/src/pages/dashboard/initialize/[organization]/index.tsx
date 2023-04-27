@@ -99,6 +99,7 @@ const Page: NextLayoutComponentType = () => {
           <SynchronizeRepositories
             org={org}
             showSetup={showSetup}
+            setShowSetup={setShowSetup}
             setShowControls={setShowControls}
           />
 

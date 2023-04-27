@@ -134,49 +134,47 @@ export const SynchronizeRepositories = ({
   }, [emitter])
 
   return (
-    <>
-      <ul>
-        {sortedRepos.map((repo, index) => {
-          return (
-            <motion.ul
+    <ul>
+      {sortedRepos.map((repo, index) => {
+        return (
+          <motion.ul
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: {
+                  delayChildren: 0.5,
+                },
+              },
+            }}
+            initial="hidden"
+            animate="show"
+          >
+            <motion.li
+              key={repo.id}
+              className="mb-5"
               variants={{
-                hidden: { opacity: 0 },
+                hidden: {
+                  opacity: 0,
+                  translateY: '100%',
+                  scale: 0.95,
+                },
                 show: {
                   opacity: 1,
+                  scale: [0.95, 1.05, 1],
+                  translateY: 0,
                   transition: {
-                    delayChildren: 0.5,
+                    delay: 0.3 * index,
                   },
                 },
               }}
-              initial="hidden"
-              animate="show"
             >
-              <motion.li
-                key={repo.id}
-                className="mb-5"
-                variants={{
-                  hidden: {
-                    opacity: 0,
-                    translateY: '100%',
-                    scale: 0.95,
-                  },
-                  show: {
-                    opacity: 1,
-                    scale: [0.95, 1.05, 1],
-                    translateY: 0,
-                    transition: {
-                      delay: 0.3 * index,
-                    },
-                  },
-                }}
-              >
-                <SynchronizeRepository repo={repo} showSetup={showSetup} />
-              </motion.li>
-            </motion.ul>
-          )
-        })}
-      </ul>
-    </>
+              <SynchronizeRepository repo={repo} showSetup={showSetup} />
+            </motion.li>
+          </motion.ul>
+        )
+      })}
+    </ul>
   )
 }
 

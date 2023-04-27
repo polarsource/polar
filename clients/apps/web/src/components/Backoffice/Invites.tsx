@@ -20,7 +20,7 @@ const Invites = () => {
   }
 
   return (
-    <>
+    <div className="mt-4 flex flex-col space-y-4">
       <PrimaryButton fullWidth={false} onClick={createNewCode}>
         Create new code
       </PrimaryButton>
@@ -42,7 +42,13 @@ const Invites = () => {
               scope="col"
               className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
             >
-              Email
+              Sent to
+            </th>
+            <th
+              scope="col"
+              className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
+            >
+              Claimed by
             </th>
           </tr>
         </thead>
@@ -50,7 +56,7 @@ const Invites = () => {
           {data && data.map((p) => <Item invite={p} key={p.code} />)}
         </tbody>
       </table>
-    </>
+    </div>
   )
 }
 
@@ -61,12 +67,15 @@ const Item = (props: { invite: InviteRead }) => {
   return (
     <>
       <tr>
-        <tr>
+        <td>
           <pre>{i.code}</pre>
-        </tr>
-        <tr>
+        </td>
+        <td>
           <pre>{i.sent_to_email}</pre>
-        </tr>
+        </td>
+        <td>
+          <pre>{i.claimed_by_username}</pre>
+        </td>
       </tr>
     </>
   )

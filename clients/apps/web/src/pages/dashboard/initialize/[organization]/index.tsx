@@ -1,8 +1,9 @@
+import Gatekeeper from 'components/Dashboard/Gatekeeper/Gatekeeper'
 import SetupOrganization from 'components/Dashboard/Onboarding/SetupOrganization'
 import SynchronizeRepositories from 'components/Dashboard/Onboarding/SynchronizeRepositories'
 import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
-import { useState } from 'react'
+import { ReactElement, useState } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
 
 const Page: NextLayoutComponentType = () => {
@@ -33,6 +34,10 @@ const Page: NextLayoutComponentType = () => {
       </div>
     </>
   )
+}
+
+Page.getLayout = (page: ReactElement) => {
+  return <Gatekeeper>{page}</Gatekeeper>
 }
 
 export default Page

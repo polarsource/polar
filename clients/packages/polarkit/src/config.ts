@@ -15,7 +15,7 @@ export const CONFIG = {
     process?.env?.NEXT_PUBLIC_LOCALSTORAGE_PERSIST_KEY || 'polar',
   LOCALSTORAGE_PERSIST_VERSION: stringToNumber(
     process?.env?.NEXT_PUBLIC_LOCALSTORAGE_PERSIST_VERSION,
-    2,
+    3,
   ),
   // Minimum amount in cents
   MINIMUM_PLEDGE_AMOUNT:

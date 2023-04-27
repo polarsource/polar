@@ -21,12 +21,14 @@ const CachedIssueListItemDecoration = ({
 
   if (isInitialStateResolved && value) {
     return (
-      <IssueListItemDecoration
-        orgName={orgName}
-        repoName={repoName}
-        pledges={value.pledges}
-        references={value.references}
-      />
+      <div className="bg-blue-50 px-3.5 py-2.5">
+        <IssueListItemDecoration
+          orgName={orgName}
+          repoName={repoName}
+          pledges={value.pledges}
+          references={value.references}
+        />
+      </div>
     )
   } else {
     return null

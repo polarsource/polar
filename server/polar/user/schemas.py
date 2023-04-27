@@ -12,6 +12,7 @@ class UserBase(Schema):
     avatar_url: str | None
     profile: dict[str, Any]
     invite_only_approved: bool
+    accepted_terms_of_service: bool
 
     class Config:
         orm_mode = True

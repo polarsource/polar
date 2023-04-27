@@ -97,6 +97,27 @@
                 }
             }
         },
+        "/api/v1/users/me/accept_terms": {
+            "post": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Accept Terms",
+                "operationId": "accept_terms",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserRead"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/logout": {
             "get": {
                 "tags": [
@@ -2615,6 +2636,10 @@
                     "sent_to_email": {
                         "title": "Sent To Email",
                         "type": "string"
+                    },
+                    "claimed_by_username": {
+                        "title": "Claimed By Username",
+                        "type": "string"
                     }
                 }
             },
@@ -4172,6 +4197,7 @@
                     "email",
                     "profile",
                     "invite_only_approved",
+                    "accepted_terms_of_service",
                     "id"
                 ],
                 "type": "object",
@@ -4196,6 +4222,10 @@
                     },
                     "invite_only_approved": {
                         "title": "Invite Only Approved",
+                        "type": "boolean"
+                    },
+                    "accepted_terms_of_service": {
+                        "title": "Accepted Terms Of Service",
                         "type": "boolean"
                     },
                     "id": {

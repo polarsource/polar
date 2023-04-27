@@ -1,4 +1,3 @@
-from typing import Sequence
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -74,7 +73,7 @@ async def invites_create_code(
             status_code=404,
             detail="Pledge not found",
         )
-    return InviteRead.from_orm(res)
+    return InviteRead.from_db(res)
 
 
 @router.post("/invites/list", response_model=list[InviteRead])
@@ -83,4 +82,4 @@ async def invites_list(
     session: AsyncSession = Depends(get_db_session),
 ) -> list[InviteRead]:
     res = await invite_service.list(session)
-    return [InviteRead.from_orm(i) for i in res]
+    return [InviteRead.from_db(i) for i in res]

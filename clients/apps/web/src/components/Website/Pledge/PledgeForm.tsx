@@ -1,6 +1,7 @@
 import { Elements } from '@stripe/react-stripe-js'
 import { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { CONFIG } from 'polarkit'
 import { api } from 'polarkit/api'
@@ -8,9 +9,9 @@ import {
   PledgeMutationResponse,
   type PledgeResources,
 } from 'polarkit/api/client'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { Checkbox, PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/utils'
-import { useEffect, useRef, useState } from 'react'
+import { ChangeEvent, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../../hooks/auth'
 import PaymentForm, { generateRedirectURL } from './PaymentForm'
 
@@ -29,6 +30,7 @@ const PledgeForm = ({
   const [email, setEmail] = useState('')
   const [errorMessage, setErrorMessage] = useState(null)
   const [isSyncing, setSyncing] = useState(false)
+  const [approvedTos, setApprovedTos] = useState(false)
 
   const { currentUser, reloadUser } = useAuth()
 
@@ -81,6 +83,10 @@ const PledgeForm = ({
     }
 
     if (!validateEmail(email)) {
+      return false
+    }
+
+    if (!approvedTos) {
       return false
     }
 
@@ -167,6 +173,12 @@ const PledgeForm = ({
     await router.push(location)
   }
 
+  const onChangeAcceptTos = (e: ChangeEvent<HTMLInputElement>) => {
+    setApprovedTos(e.target.checked)
+  }
+
+  const showStripeForm = pledge && approvedTos
+
   return (
     <>
       <form className="flex flex-col">
@@ -211,7 +223,24 @@ const PledgeForm = ({
           className="block w-full rounded-md border-gray-200 py-3 px-4 text-sm shadow-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500"
         />
 
-        {pledge && (
+        <div className="mt-5 mb-2">
+          <Checkbox
+            id="accept_tos"
+            value={approvedTos}
+            onChange={onChangeAcceptTos}
+          >
+            I accept the{' '}
+            <Link href="/tos" className="underline">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" className="underline">
+              Privacy Policy
+            </Link>
+          </Checkbox>
+        </div>
+
+        {showStripeForm && (
           <Elements
             stripe={stripePromise}
             options={{
@@ -233,7 +262,7 @@ const PledgeForm = ({
          * remove it once Stripe is initiated. Since we cannot (in an easy/nice way)
          * manage the submission outside of the Stripe Elements context.
          */}
-        {!pledge && (
+        {!showStripeForm && (
           <div className="mt-6">
             <PrimaryButton
               disabled={true}

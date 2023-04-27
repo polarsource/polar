@@ -1,14 +1,7 @@
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
 import { motion } from 'framer-motion'
 import { classNames } from 'polarkit/utils'
-import { useMemo } from 'react'
 import { type RepoSyncState } from './types'
-
-const zeroIssuesMessages = [
-  'Zero issues. At least reported ones 🤭',
-  'No bugs in sight',
-  'No issues? Surely this repo is not software.',
-]
 
 const ProgressText = ({
   progress,
@@ -20,16 +13,11 @@ const ProgressText = ({
   completed: boolean
 }) => {
   const shouldSync = target > 0
-  const zeroIssueMessage = useMemo(() => {
-    return zeroIssuesMessages[
-      Math.floor(Math.random() * zeroIssuesMessages.length)
-    ]
-  }, [])
 
   if (!shouldSync) {
     return (
       <>
-        <span className="text-sm text-gray-500">{zeroIssueMessage}</span>
+        <span className="text-xs text-gray-500">No issues to fetch</span>
       </>
     )
   }

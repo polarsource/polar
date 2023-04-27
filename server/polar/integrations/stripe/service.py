@@ -94,7 +94,11 @@ class StripeService:
         return stripe_lib.PaymentIntent.retrieve(id)
 
     def create_account(self) -> stripe_lib.Account:
-        return stripe_lib.Account.create(type="express")
+        return stripe_lib.Account.create(
+            country="SE",
+            type="express",
+            tos_acceptance={"service_agreement": "recipient"},
+            capabilities={"transfers": {"requested": True}})
 
     def retrieve_account(self, id: str) -> stripe_lib.Account:
         return stripe_lib.Account.retrieve(id)

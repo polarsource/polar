@@ -1,6 +1,5 @@
 import { useAuth } from 'hooks'
 import {
-  GreenBanner,
   Input,
   PrimaryButton,
   RedBanner,
@@ -15,6 +14,7 @@ const InviteOnly = () => {
   const [code, setCode] = useState('')
   const [joinDisabled, setJoinDisabled] = useState(true)
   const [joinLoading, setJoinLoading] = useState(false)
+  const [boxFadeOut, setBoxFadeOut] = useState(false)
 
   const claimCode = useInviteClaimCode()
 
@@ -24,31 +24,28 @@ const InviteOnly = () => {
   }
 
   const [showErrorBanner, setShowErrorBanner] = useState(false)
-  const [showSuccessBanner, setShowSuccessBanner] = useState(false)
-
-  const { currentUser, reloadUser } = useAuth()
+  const { reloadUser } = useAuth()
 
   const onJoinClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
     setJoinLoading(true)
     setShowErrorBanner(false)
-    setShowSuccessBanner(false)
 
     claimCode
       .mutateAsync({ code: code })
       .then((res) => {
         if (res && res.status === true) {
-          setShowSuccessBanner(true)
+          // nice!
         } else {
           throw new Error('invalid code')
         }
       })
-      .then(reloadUser)
+      .then(await new Promise((r) => setTimeout(r, 500)))
       .then(() => {
-        // TODO: Is this worth it?
-        setTimeout(() => {
-          window.location.pathname = '/dashboard'
-        }, 1000)
+        setJoinLoading(false)
+        setBoxFadeOut(true)
       })
+      .then(await new Promise((r) => setTimeout(r, 500)))
+      .then(reloadUser)
       .catch(() => {
         setShowErrorBanner(true)
       })
@@ -58,7 +55,7 @@ const InviteOnly = () => {
   }
 
   return (
-    <TakeoverBox>
+    <TakeoverBox fadeOut={boxFadeOut}>
       <>
         <TakeoverHeader>
           <>Welcome to Polar</>
@@ -72,13 +69,6 @@ const InviteOnly = () => {
             </>
           </RedBanner>
         )}
-
-        {showSuccessBanner && (
-          <GreenBanner>
-            <>You&apos;re in! Redirecting...</>
-          </GreenBanner>
-        )}
-
         <ShadowBox>
           <div className="flex flex-col space-y-2">
             <p className="text-gray-500">

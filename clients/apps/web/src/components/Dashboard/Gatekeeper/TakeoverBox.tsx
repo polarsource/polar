@@ -1,6 +1,27 @@
-const TakeoverBox = (props: { children: React.ReactElement }) => {
+import { classNames } from 'polarkit/utils'
+import { useEffect, useState } from 'react'
+
+const TakeoverBox = (props: {
+  fadeOut: boolean
+  children: React.ReactElement
+}) => {
+  const [show, setShow] = useState(false)
+
+  useEffect(() => {
+    if (props.fadeOut) {
+      setShow(false)
+    } else {
+      setShow(true)
+    }
+  })
+
   return (
-    <div className="flex h-screen items-center justify-center">
+    <div
+      className={classNames(
+        'flex h-screen items-center justify-center transition duration-500 ease-in-out',
+        show ? 'scale-100 opacity-100' : 'scale-90 opacity-0',
+      )}
+    >
       <div className="min-w-[700px] ">
         <div className="flex flex-col space-y-8">{props.children}</div>
       </div>

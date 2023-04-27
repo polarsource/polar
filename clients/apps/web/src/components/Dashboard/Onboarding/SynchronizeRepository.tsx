@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion'
 import { classNames } from 'polarkit/utils'
 import { type RepoSyncState } from './types'
 
@@ -18,15 +19,18 @@ const ProgressBar = ({
   return (
     <>
       <div className="h-2.5 w-full rounded-full bg-gray-200 dark:bg-gray-700">
-        <div
+        <motion.div
           className={classNames(
             completed
               ? 'bg-gray-400 dark:bg-gray-700'
               : 'bg-blue-600 dark:bg-blue-500',
-            'h-2.5 rounded-full',
+            'h-2.5 w-[0%] rounded-full',
           )}
-          style={{ width: `${percent}%` }}
-        ></div>
+          initial="hidden"
+          animate={{
+            width: `${percent}%`,
+          }}
+        ></motion.div>
       </div>
     </>
   )

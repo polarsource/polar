@@ -12,7 +12,7 @@ const FakePullRequest = ({ showAmount }: { showAmount: boolean }) => {
           bot
         </div>
       </div>
-      <div className="mb-3 flex flex-col space-y-3.5 p-4 pb-2">
+      <div className="flex flex-col space-y-3.5 p-4 pb-2">
         <div className="h-4 w-full max-w-[250px] rounded-full bg-[#EAEBEC]"></div>
         <div className="h-4 w-full max-w-[500px] rounded-full bg-[#EAEBEC]"></div>
         <div className="h-4 w-full max-w-[400px] rounded-full bg-[#EAEBEC]"></div>
@@ -24,7 +24,7 @@ const FakePullRequest = ({ showAmount }: { showAmount: boolean }) => {
 
 const PolarBadge = ({ showAmount }: { showAmount: boolean }) => {
   return (
-    <div className="flex h-12 w-fit min-w-[550px] items-center space-x-6 rounded-lg px-4 py-2 text-sm shadow-[0_0_15px_-5px_rgba(0,0,0,0.3)]">
+    <div className="flex h-12 w-fit min-w-[550px] items-center space-x-6 rounded-xl px-4 py-2 text-sm shadow">
       <div className="font-medium">Polar</div>
       <div className="text-black/50">Open source funding</div>
       <div

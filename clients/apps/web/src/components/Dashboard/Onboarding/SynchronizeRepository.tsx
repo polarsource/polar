@@ -11,8 +11,19 @@ const Progress = ({
   target: number
   completed: boolean
 }) => {
+  const shouldSync = target > 0
+  if (!shouldSync) {
+    return (
+      <>
+        <span className="text-xs text-gray-500">
+          No issues. Not reported at least 🤭
+        </span>
+      </>
+    )
+  }
+
   let percent = (progress / target) * 100
-  if (completed) {
+  if (shouldSync && completed) {
     percent = 100
   }
 
@@ -40,15 +51,17 @@ const Progress = ({
         )}
       </p>
 
-      <div className="h-2.5 w-full rounded-full bg-gray-200">
-        <motion.div
-          className="h-2.5 w-[0%] rounded-full bg-blue-600"
-          initial="hidden"
-          animate={{
-            width: `${percent}%`,
-          }}
-        ></motion.div>
-      </div>
+      {shouldSync && (
+        <div className="h-2.5 w-full rounded-full bg-gray-200">
+          <motion.div
+            className="h-2.5 w-[0%] rounded-full bg-blue-600"
+            initial="hidden"
+            animate={{
+              width: `${percent}%`,
+            }}
+          ></motion.div>
+        </div>
+      )}
     </>
   )
 }

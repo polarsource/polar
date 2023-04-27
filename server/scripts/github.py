@@ -8,10 +8,17 @@ from sqlalchemy.orm import joinedload
 
 from polar.config import settings
 from polar.enums import Platforms
+from polar.integrations.github import client as github
+from polar.integrations.github import service
 from polar.integrations.github.service import github_organization
+from polar.integrations.github.service import github_repository
 from polar.models import Issue, Organization, Repository
+from polar.models.user_organization import UserOrganization
+from polar.organization.schemas import OrganizationCreate
 from polar.postgres import AsyncSession, AsyncSessionLocal, sql
+from polar.repository.schemas import RepositoryCreate
 from polar.worker import enqueue_job
+from polar.user.service import user as user_service
 
 cli = typer.Typer()
 
@@ -37,11 +44,12 @@ async def get_repositories(
     return res.scalars().unique().all()
 
 
-async def get_issues(
-    session: AsyncSession, org: Organization
-) -> Sequence[Issue]:
-    query = sql.select(Issue).options(joinedload(Issue.repository)).where(
-        Issue.organization_id == org.id)
+async def get_issues(session: AsyncSession, org: Organization) -> Sequence[Issue]:
+    query = (
+        sql.select(Issue)
+        .options(joinedload(Issue.repository))
+        .where(Issue.organization_id == org.id)
+    )
     res = await session.execute(query)
     return res.scalars().unique().all()
 
@@ -88,7 +96,9 @@ async def trigger_issue_dependencies_sync(
 
     for issue in issues:
         await enqueue_job("github.issue.sync.issue_dependencies", issue.id)
-        typer.echo(f"Triggered issue dependencies sync for {org.name}/{issue.repository.name}/#{issue.number}")
+        typer.echo(
+            f"Triggered issue dependencies sync for {org.name}/{issue.repository.name}/#{issue.number}"
+        )
 
 
 ###############################################################################
@@ -146,6 +156,94 @@ async def sync_repos(org_name: str) -> None:
             raise RuntimeError(f"Organization {org_name} not found")
 
         await trigger_repositories_sync(session, org)
+
+
+@cli.command()
+@typer_async
+async def add_external_repo(
+    org_name: str, repo_name: str, invite_username: str
+) -> None:
+    async with AsyncSessionLocal() as session:
+        """
+        This command is very much a work in progress. Some tweaks are needed (like
+        adjusting the installation ID) to get it to run.
+        """
+        client = github.get_app_installation_client(36355936)
+
+        repo_response = await client.rest.repos.async_get(org_name, repo_name)
+        github_repo = repo_response.parsed_data
+
+        owner = github_repo.owner
+
+        is_personal = owner.type.lower() == "user"
+        org_schema = OrganizationCreate(
+            platform=Platforms.github,
+            name=owner.login,
+            external_id=owner.id,
+            avatar_url=owner.avatar_url,
+            is_personal=is_personal,
+        )
+        organization = await service.github_organization.upsert(session, org_schema)
+
+        repo_schema = RepositoryCreate(
+            platform=Platforms.github,
+            external_id=github_repo.id,
+            organization_id=organization.id,
+            name=github_repo.name,
+            is_private=github_repo.private,
+        )
+        repository = await service.github_repository.upsert(session, repo_schema)
+
+        user = await user_service.get_by(session, username=invite_username)
+        if not user:
+            print("user not found")
+            return
+
+        if not await UserOrganization.find_by(
+            session, organization_id=organization.id, user_id=user.id
+        ):
+            uc = await UserOrganization.create(
+                session=session,
+                organization_id=organization.id,
+                user_id=user.id,
+            )
+            print("Added user to org", uc)
+
+        # return
+
+        # await enqueue_job(
+        #    "github.issue.sync.issue_references",
+        #    issue_id="ce38a42c-ca84-4e1c-a730-93218ca812e3",
+        #    crawl_with_installation_id=36355936,
+        # )
+
+        if True:
+            await enqueue_job(
+                "github.repo.sync.issues",
+                organization.id,
+                repository.id,
+                crawl_with_installation_id=36355936,
+            )
+            typer.echo(
+                f"Triggered issue sync for {organization.name}/{repository.name}"
+            )
+
+        if False:
+            await enqueue_job(
+                "github.repo.sync.issue_references",
+                organization.id,
+                repository.id,
+                crawl_with_installation_id=36355936,
+            )
+            typer.echo(
+                f"Triggered issue_references {organization.name}/{repository.name}"
+            )
+
+        return
+
+        # get
+
+        # await trigger_repositories_sync(session, org)
 
 
 if __name__ == "__main__":

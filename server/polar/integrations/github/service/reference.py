@@ -86,13 +86,29 @@ TimelineEventType = Union[
 
 class GitHubIssueReferencesService:
     async def sync_repo_references(
-        self, session: AsyncSession, org: Organization, repo: Repository
+        self,
+        session: AsyncSession,
+        org: Organization,
+        repo: Repository,
+        crawl_with_installation_id: int
+        | None = None,  # Override which installation to use when crawling
     ) -> None:
         """
         sync_repo_references lists repository events to find issues that have been
         mentioned. When we know which issues that have been mentioned, a job to fetch
         and parse timeline events will be triggered.
         """
+
+        installation_id = (
+            crawl_with_installation_id
+            if crawl_with_installation_id
+            else org.installation_id
+        )
+
+        if not installation_id:
+            raise Exception("no github installation id found")
+
+        client = github.get_app_installation_client(installation_id)
 
         if (
             repo.issues_references_synced_at
@@ -116,8 +132,6 @@ class GitHubIssueReferencesService:
         )
         await session.execute(stmt)
         await session.commit()
-
-        client = get_app_installation_client(org.installation_id)
 
         log.info(
             "github.sync_repo_references",
@@ -165,7 +179,11 @@ class GitHubIssueReferencesService:
                     )
                     continue
                 # Trigger issue references sync job
-                await enqueue_job("github.issue.sync.issue_references", issue.id)
+                await enqueue_job(
+                    "github.issue.sync.issue_references",
+                    issue.id,
+                    crawl_with_installation_id=installation_id,
+                )
 
         return None
 
@@ -275,16 +293,24 @@ class GitHubIssueReferencesService:
         org: Organization,
         repo: Repository,
         issue: Issue,
+        crawl_with_installation_id: int
+        | None = None,  # Override which installation to use when crawling
     ) -> None:
         """
         sync_issue_references uses the GitHub Timeline API to find CrossReference events
         and creates IssueReferences
         """
 
-        if not org.installation_id:
-            return
+        installation_id = (
+            crawl_with_installation_id
+            if crawl_with_installation_id
+            else org.installation_id
+        )
 
-        client = get_app_installation_client(org.installation_id)
+        if not installation_id:
+            raise Exception("no github installation id found")
+
+        client = github.get_app_installation_client(installation_id)
 
         log.info("github.sync_issue_references", issue_id=issue.id)
 
@@ -322,11 +348,11 @@ class GitHubIssueReferencesService:
 
             for event in res.parsed_data:
                 ref = await self.parse_issue_timeline_event(
-                    session, org, repo, issue, event
+                    session, org, repo, issue, event, client=client
                 )
                 if ref:
                     # add data missing from github api
-                    ref = await self.annotate(session, org, ref)
+                    ref = await self.annotate(session, org, ref, client=client)
 
                     # persist
                     await self.create_reference(session, ref)
@@ -342,10 +368,16 @@ class GitHubIssueReferencesService:
         repo: Repository,
         issue: Issue,
         event: TimelineEventType,
+        client: GitHub,
     ) -> IssueReference | None:
         if isinstance(event, github.rest.TimelineCrossReferencedEvent):
             return await self.parse_issue_pull_request_reference(
-                session, org, repo, event, issue
+                session,
+                org,
+                repo,
+                event,
+                issue,
+                client=client,
             )
 
         # For some reason, this events maps to the StateChangeIssueEvent type
@@ -363,6 +395,7 @@ class GitHubIssueReferencesService:
         repo: Repository,
         event: github.rest.TimelineCrossReferencedEvent,
         issue: Issue,
+        client: GitHub,
     ) -> IssueReference | None:
         if not event.source.issue:
             return None
@@ -395,6 +428,7 @@ class GitHubIssueReferencesService:
                 # Try to fetch it
                 referenced_by_pr = await github_pull_request.sync_pull_request(
                     session,
+                    client=client,
                     organization=org,
                     repository=repo,
                     number=event.source.issue.number,
@@ -490,7 +524,11 @@ class GitHubIssueReferencesService:
         return ref
 
     async def annotate(
-        self, session: AsyncSession, org: Organization, ref: IssueReference
+        self,
+        session: AsyncSession,
+        org: Organization,
+        ref: IssueReference,
+        client: GitHub,
     ) -> IssueReference:
         if ref.reference_type == ReferenceType.EXTERNAL_GITHUB_COMMIT:
             r = parse_obj_as(ExternalGitHubCommitReference, ref.external_source)
@@ -506,7 +544,7 @@ class GitHubIssueReferencesService:
             )
 
             ref.external_source = jsonable_encoder(
-                await self.annotate_issue_commit_reference(org, r, existingRef)
+                await self.annotate_issue_commit_reference(org, r, existingRef, client)
             )
 
         return ref
@@ -516,6 +554,7 @@ class GitHubIssueReferencesService:
         org: Organization,
         ref: ExternalGitHubCommitReference,
         existingRef: ExternalGitHubCommitReference | None,
+        client: GitHub,
     ) -> ExternalGitHubCommitReference:
         """
         annotate_issue_commit_reference attempts to fetch data from the GitHub API
@@ -534,8 +573,6 @@ class GitHubIssueReferencesService:
 
         # If still not there, fetch from GitHub
         if not ref.branch_name or not ref.message:
-            client = github.get_app_installation_client(org.installation_id)
-
             # Fetch branches where the commit is currently the HEAD commit
             # GitHub has no API to find branches that _contain_ a commit, so if that's
             # what we want to do long term, we'll probably have to clone the repo and

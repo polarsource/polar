@@ -17,6 +17,8 @@ async def issue_sync_issue_references(
     ctx: JobContext,
     issue_id: UUID,
     polar_context: PolarWorkerContext,
+    crawl_with_installation_id: int
+    | None = None,  # Override which installation to use when crawling
 ) -> None:
     with polar_context.to_execution_context() as context:
         async with AsyncSessionLocal() as session:
@@ -38,6 +40,7 @@ async def issue_sync_issue_references(
                 org=organization,
                 repo=repository,
                 issue=issue,
+                crawl_with_installation_id=crawl_with_installation_id,
             )
 
 

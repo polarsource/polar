@@ -1,6 +1,8 @@
 import { ShadowBox } from 'polarkit/components/ui'
 
-const Box = (props: { children: React.ReactElement }) => (
+const Box = (props: {
+  children: React.ReactElement | React.ReactElement[]
+}) => (
   <ShadowBox>
     <form className="flex flex-col space-y-4">{props.children}</form>
   </ShadowBox>

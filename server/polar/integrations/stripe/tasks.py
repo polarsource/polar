@@ -24,7 +24,7 @@ async def charge_refunded(
     with polar_context.to_execution_context() as context:
         async with AsyncSessionLocal() as session:
             charge = event["data"]["object"]
-            await pledge_service.mark_refunded_by_payment_id(
+            await pledge_service.refund_by_payment_id(
                 session=session, payment_id=charge["payment_intent"],
                 amount=charge["amount_refunded"],
                 transaction_id=charge["id"])

@@ -18,6 +18,7 @@ class PledgeState(str, Enum):
     created = "created"  # Polar has received the money.
     pending = "pending"  # The issue has been closed, but the pledge has not been paid.
     paid = "paid"  # The pledge has been paid out to the maintainer.
+    refunded = "refunded"  # The pledge was refunded in full before being paid out.
 
     # Alpha flow: initiated -> created -> pending -> paid
     # In the future, we might have a "disputed", "refunded", "cancelled" states etc...

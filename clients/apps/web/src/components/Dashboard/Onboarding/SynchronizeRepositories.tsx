@@ -49,11 +49,13 @@ export const SynchronizeRepositories = ({
   showSetup,
   setShowSetup,
   setShowControls,
+  syncedIssuesRef,
 }: {
   org: OrganizationRead
   showSetup: boolean
   setShowSetup: (state: boolean) => void
   setShowControls: (state: boolean) => void
+  syncedIssuesRef: { current: number }
 }) => {
   let initialSyncStates = getInitializedSyncState(org)
   const emitter = useSSE(org.platform, org.name)
@@ -70,6 +72,7 @@ export const SynchronizeRepositories = ({
     repos.reduce((acc, repo) => acc + (repo.completed ? 1 : 0), 0),
   )
   const isSyncCompleted = countSynced === countRepos
+  syncedIssuesRef.current = totalProcessed
 
   // Goto next step and setup in case syncing is complete
   if (isSyncCompleted) {

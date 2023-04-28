@@ -267,8 +267,6 @@ async def dashboard(
                     RelationshipData(type="pledge", id=pled.id)
                 )
 
-    issues_with_prs: Set[UUID] = set()
-
     # get linked pull requests
     for i in issues:
         refs = i.references
@@ -283,12 +281,6 @@ async def dashboard(
             ir = issue_relationship(ref.issue_id, "references", [])
             if isinstance(ir.data, list):  # it always is
                 ir.data.append(RelationshipData(type="reference", id=ref.external_id))
-
-            if (
-                ref.reference_type == ReferenceType.PULL_REQUEST
-                or ref.reference_type == ReferenceType.EXTERNAL_GITHUB_PULL_REQUEST
-            ):
-                issues_with_prs.add(i.id)
 
     # get dependents
     if issue_list_type == IssueListType.dependencies:
@@ -356,7 +348,7 @@ async def dashboard(
 
     # filter issues to only include issues with any of the expected statuses
     if status:
-        issues = [i for i in issues if issue_progress(i, issues_with_prs) in status]
+        issues = [i for i in issues if issue_progress(i) in status]
 
     #
     # Sorting
@@ -376,9 +368,7 @@ async def dashboard(
     if sort == IssueSortBy.dependencies_default:
         issues_list = [i for i in issues]
         issues_list.sort(
-            key=lambda e: sort_dependencies_default(
-                e, for_org, for_user, issues_with_prs
-            ),
+            key=lambda e: sort_dependencies_default(e, for_org, for_user),
             reverse=True,
         )
         issues = issues_list
@@ -405,11 +395,14 @@ async def dashboard(
     )
 
 
-def issue_progress(issue: Issue, issues_with_prs: set[UUID]) -> IssueStatus:
+def issue_progress(issue: Issue) -> IssueStatus:
     if issue.issue_closed_at:
         return IssueStatus.completed
-    if issue.id in issues_with_prs:
-        return IssueStatus.pull_request
+    for r in issue.references:
+        if r.pull_request:
+            return IssueStatus.pull_request
+    if issue.references:
+        return IssueStatus.building
     return IssueStatus.backlog
 
 
@@ -436,7 +429,6 @@ def sort_dependencies_default(
     i: Issue,
     for_org: Organization | None,
     for_user: User | None,
-    issues_with_prs: set[UUID],
 ) -> Tuple[int, int, int]:
     self_pledged_amount = sum(
         [
@@ -450,7 +442,7 @@ def sort_dependencies_default(
         ]
     )
 
-    progress = status_sort_prio(issue_progress(i, issues_with_prs))
+    progress = status_sort_prio(issue_progress(i))
 
     return (self_pledged_amount, progress, sort_ts(i))
 

@@ -15,7 +15,7 @@ class Pledge(RecordModel):
     __tablename__ = "pledges"
 
     issue_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("issues.id"), nullable=False
+        PostgresUUID, ForeignKey("issues.id"), nullable=False, index=True
     )
     repository_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)
     organization_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)

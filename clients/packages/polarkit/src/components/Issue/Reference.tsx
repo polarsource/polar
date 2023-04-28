@@ -170,11 +170,13 @@ const IssueReferenceExternalGitHubPullRequest = (props: {
 }
 
 const LeftSide = (props: { children: React.ReactNode }) => {
-  return <div className="flex items-center gap-2">{props.children}</div>
+  return (
+    <div className="flex flex-wrap items-center gap-2">{props.children}</div>
+  )
 }
 const RightSide = (props: { children: React.ReactNode }) => {
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div className="flex flex-shrink-0 items-center justify-between gap-4">
       {props.children}
     </div>
   )
@@ -248,7 +250,7 @@ const IssueReferencePullRequest = (props: {
         >
           {pr.title}
         </a>
-        <span className="text-sm text-gray-500">
+        <span className="overflow-hidden whitespace-pre text-sm text-gray-500">
           #{pr.number} {formatting.label}{' '}
           {formatting.timestamp && (
             <TimeAgo date={new Date(formatting.timestamp)} />
@@ -314,7 +316,7 @@ const DiffStat = (props: {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="hidden flex-shrink-0 flex-nowrap items-center gap-2 lg:flex">
       <span className="text-green-400">+{props.additions}</span>
       <span className="text-red-400">-{props.deletions}</span>
       <span>

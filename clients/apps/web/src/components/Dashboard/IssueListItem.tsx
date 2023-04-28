@@ -181,12 +181,13 @@ const MarkdownTitle = ({ title }: { title: string }) => {
 
   let i = 0
   let offset = 0
-  const nodes = []
+  const nodes: React.ReactElement[] = []
   const matchCount = matches.length
+
   for (const match of matches) {
     i += 1
     if (offset < match.index) {
-      nodes.push(title.substring(offset, match.index))
+      nodes.push(<>{title.substring(offset, match.index)}</>)
     }
 
     nodes.push(
@@ -194,7 +195,7 @@ const MarkdownTitle = ({ title }: { title: string }) => {
     )
     offset = match.index + match[0].length
     if (i === matchCount) {
-      nodes.push(title.substring(offset, title.length))
+      nodes.push(<>{title.substring(offset, title.length)}</>)
     }
   }
   return nodes

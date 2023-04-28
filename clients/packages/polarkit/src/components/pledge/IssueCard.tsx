@@ -1,6 +1,7 @@
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
 import TimeAgo from 'react-timeago'
 import {
+  IssueDashboardRead,
   OrganizationRead,
   RepositoryRead,
   type IssueRead,
@@ -13,7 +14,7 @@ const IssueCard = ({
   organization,
   repository,
 }: {
-  issue: IssueRead
+  issue: IssueRead | IssueDashboardRead
   className: string
   organization: OrganizationRead
   repository: RepositoryRead

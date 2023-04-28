@@ -1,4 +1,5 @@
 import enum
+from typing import TYPE_CHECKING
 from uuid import UUID
 from datetime import datetime
 
@@ -25,12 +26,17 @@ from polar.issue.signals import issue_created, issue_updated
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 from polar.enums import Platforms
-from polar.models.organization import Organization
-from polar.models.repository import Repository
+
 from polar.types import JSONDict, JSONList
 
 import sqlalchemy as sa
 from sqlalchemy_utils.types.ts_vector import TSVectorType  # type: ignore
+
+if TYPE_CHECKING:  # pragma: no cover
+    from polar.models.issue_reference import IssueReference
+    from polar.models.organization import Organization
+    from polar.models.repository import Repository
+    from polar.models.pledge import Pledge
 
 
 class Platform(enum.Enum):
@@ -52,17 +58,17 @@ class IssueFields:
         )
 
     @declared_attr
-    def organization(cls) -> Mapped[Organization]:
+    def organization(cls) -> "Mapped[Organization]":
         return relationship("Organization", lazy="raise")
 
     @declared_attr
-    def repository_id(cls) -> MappedColumn[UUID]:
+    def repository_id(cls) -> "MappedColumn[UUID]":
         return mapped_column(
             PostgresUUID, ForeignKey("repositories.id"), nullable=False
         )
 
     @declared_attr
-    def repository(cls) -> Mapped[Repository]:
+    def repository(cls) -> "Mapped[Repository]":
         return relationship("Repository", lazy="raise")
 
     number: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -146,6 +152,14 @@ class Issue(IssueFields, RecordModel):
     github_timeline_fetched_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
+
+    @declared_attr
+    def references(cls) -> "Mapped[list[IssueReference]]":
+        return relationship("IssueReference", lazy="raise", viewonly=True)
+
+    @declared_attr
+    def pledges(cls) -> "Mapped[list[Pledge]]":
+        return relationship("Pledge", lazy="raise", viewonly=True)
 
     on_created_signal = issue_created
     on_updated_signal = issue_updated

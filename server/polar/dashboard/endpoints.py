@@ -13,7 +13,7 @@ from polar.dashboard.schemas import (
     RelationshipData,
 )
 from polar.enums import Platforms
-from polar.issue.schemas import IssueRead, IssueReferenceRead
+from polar.issue.schemas import IssueDashboardRead, IssueRead, IssueReferenceRead
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.issue_reference import ReferenceType
@@ -396,7 +396,7 @@ async def dashboard(
             Entry(
                 id=i.id,
                 type="issue",
-                attributes=IssueRead.from_orm(i),
+                attributes=IssueDashboardRead.from_orm(i),
                 relationships=issue_relationships.get(i.id, None),
             )
             for i in issues

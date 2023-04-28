@@ -1,6 +1,6 @@
 from typing import Any, Generic, List, TypeVar, Union
 from uuid import UUID
-from polar.issue.schemas import IssueRead
+from polar.issue.schemas import IssueDashboardRead, IssueRead
 from polar.kit.schemas import Schema
 from pydantic.generics import GenericModel
 from enum import Enum
@@ -64,5 +64,5 @@ class SingleResponse(GenericModel, Generic[DataT]):
     included: List[Entry[Any]] = []
 
 
-class IssueListResponse(ListResponse[IssueRead]):
+class IssueListResponse(ListResponse[IssueDashboardRead]):
     ...

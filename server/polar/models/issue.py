@@ -54,7 +54,10 @@ class IssueFields:
     @declared_attr
     def organization_id(cls) -> MappedColumn[UUID]:
         return mapped_column(
-            PostgresUUID, ForeignKey("organizations.id"), nullable=False
+            PostgresUUID,
+            ForeignKey("organizations.id"),
+            nullable=False,
+            index=True,
         )
 
     @declared_attr
@@ -64,7 +67,10 @@ class IssueFields:
     @declared_attr
     def repository_id(cls) -> "MappedColumn[UUID]":
         return mapped_column(
-            PostgresUUID, ForeignKey("repositories.id"), nullable=False
+            PostgresUUID,
+            ForeignKey("repositories.id"),
+            nullable=False,
+            index=True,
         )
 
     @declared_attr

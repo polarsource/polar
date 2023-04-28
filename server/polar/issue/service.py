@@ -237,7 +237,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         stmt = (
             sql.select(IssueDependency)
             .where(
-                IssueDependency.repository_id.in_([r.id for r in repos]),
+                IssueDependency.repository_id.in_(list(set([r.id for r in repos]))),
             )
             .options(
                 joinedload(IssueDependency.dependent_issue),

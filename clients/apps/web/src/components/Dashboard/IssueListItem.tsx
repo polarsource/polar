@@ -70,6 +70,8 @@ const IssueListItem = (props: {
   const showPledgeAction =
     isDependency && props.issue.progress !== IssueStatus.COMPLETED
 
+  const markdownTitle = generateMarkdownTitle(title)
+
   return (
     <div>
       <div className="hover:bg-gray-75 group flex items-center justify-between gap-4 py-4 px-2 pb-5">
@@ -88,7 +90,7 @@ const IssueListItem = (props: {
                 className="text-md text-nowrap font-medium"
                 href={githubIssueUrl(props.org.name, props.repo.name, number)}
               >
-                <MarkdownTitle title={title} />
+                {markdownTitle}
                 {isDependency && (
                   <span className="text-gray-400"> #{props.issue.number}</span>
                 )}
@@ -173,10 +175,12 @@ const IssueListItem = (props: {
   )
 }
 
-const MarkdownTitle = ({ title }: { title: string }) => {
+const generateMarkdownTitle = (
+  title: string,
+): React.ReactElement | React.ReactElement[] => {
   const matches = [...title.matchAll(/`([^`]*)`/g)]
   if (matches.length === 0) {
-    return title
+    return <>{title}</>
   }
 
   let i = 0

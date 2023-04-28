@@ -12,7 +12,6 @@ import {
   IssueListItemDecoration,
 } from 'polarkit/components/Issue'
 import { githubIssueUrl } from 'polarkit/utils'
-import { React } from 'react'
 import TimeAgo from 'react-timeago'
 import PledgeNow from '../Pledge/PledgeNow'
 import IconCounter from './IconCounter'
@@ -89,7 +88,7 @@ const IssueListItem = (props: {
                 className="text-md text-nowrap font-medium"
                 href={githubIssueUrl(props.org.name, props.repo.name, number)}
               >
-                <MarkdownTitle>{title}</MarkdownTitle>
+                <MarkdownTitle title={title} />
                 {isDependency && (
                   <span className="text-gray-400"> #{props.issue.number}</span>
                 )}
@@ -174,10 +173,10 @@ const IssueListItem = (props: {
   )
 }
 
-const MarkdownTitle = (props: { children: React.ReactElement }) => {
-  const matches = [...props.children.matchAll(/`([^`]*)`/g)]
+const MarkdownTitle = ({ title }: { title: string }) => {
+  const matches = [...title.matchAll(/`([^`]*)`/g)]
   if (matches.length === 0) {
-    return props.children
+    return title
   }
 
   let i = 0
@@ -187,7 +186,7 @@ const MarkdownTitle = (props: { children: React.ReactElement }) => {
   for (const match of matches) {
     i += 1
     if (offset < match.index) {
-      nodes.push(props.children.substring(offset, match.index))
+      nodes.push(title.substring(offset, match.index))
     }
 
     nodes.push(
@@ -195,7 +194,7 @@ const MarkdownTitle = (props: { children: React.ReactElement }) => {
     )
     offset = match.index + match[0].length
     if (i === matchCount) {
-      nodes.push(props.children.substring(offset, props.children.length))
+      nodes.push(title.substring(offset, title.length))
     }
   }
   return nodes

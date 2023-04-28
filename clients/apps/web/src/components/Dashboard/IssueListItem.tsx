@@ -37,14 +37,12 @@ const IssueListItem = (props: {
   } = props.issue
 
   const isDependency = props.dependents && props.dependents.length > 0
-
   const createdAt = new Date(issue_created_at)
   const closedAt = new Date(issue_created_at)
 
   const havePledge = props.pledges && props.pledges.length > 0
   const haveReference = props.references && props.references?.length > 0
   const havePledgeOrReference = havePledge || haveReference
-  const haveDependents = props.dependents && props.dependents.length > 0
 
   const showCommentsCount = !!(comments && comments > 0)
   const showReactionsThumbs = !!(reactions.plus_one > 0)
@@ -71,50 +69,67 @@ const IssueListItem = (props: {
   return (
     <div>
       <div className="hover:bg-gray-75 group flex items-center justify-between gap-4 py-4 px-2 pb-5">
-        <div className="flex flex-col gap-1">
-          <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
-            <a
-              className="text-md text-nowrap font-medium"
-              href={githubIssueUrl(props.org.name, props.repo.name, number)}
-            >
-              {title}
-            </a>
-
-            {props.issue.labels &&
-              props.issue.labels.map((label: LabelSchema) => {
-                return <IssueLabel label={label} key={label.id} />
-              })}
-          </div>
-          <div className="text-xs text-gray-500">
-            {state == 'open' && (
-              <p>
-                #{number} opened <TimeAgo date={new Date(createdAt)} />
-              </p>
-            )}
-            {state == 'closed' && (
-              <p>
-                #{number} closed <TimeAgo date={new Date(closedAt)} />
-              </p>
-            )}
-          </div>
-          {haveDependents && (
-            <div className="text-xs text-gray-500">
-              {props.dependents?.map((dep: IssueReadWithRelations) => (
-                <p key={dep.id}>
-                  Mentioned in{' '}
-                  <a
-                    href={githubIssueUrl(
-                      dep.organization.name,
-                      dep.repository.name,
-                      dep.number,
-                    )}
-                  >
-                    #{dep.number} {dep.title}
-                  </a>
-                </p>
-              ))}
+        <div className="flex flex-row items-center">
+          {isDependency && (
+            <div className="mr-3 justify-center rounded-full bg-white p-[1px] shadow">
+              <img
+                src={props.issue.organization.avatar_url}
+                className="h-8 w-8 rounded-full"
+              />
             </div>
           )}
+          <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
+              <a
+                className="text-md text-nowrap font-medium"
+                href={githubIssueUrl(props.org.name, props.repo.name, number)}
+              >
+                {title}
+                {isDependency && (
+                  <span className="text-gray-400"> #{props.issue.number}</span>
+                )}
+              </a>
+
+              {props.issue.labels &&
+                props.issue.labels.map((label: LabelSchema) => {
+                  return <IssueLabel label={label} key={label.id} />
+                })}
+            </div>
+            {!isDependency && (
+              <div className="text-xs text-gray-500">
+                {state == 'open' && (
+                  <p>
+                    #{number} opened <TimeAgo date={new Date(createdAt)} />
+                  </p>
+                )}
+                {state == 'closed' && (
+                  <p>
+                    #{number} closed <TimeAgo date={new Date(closedAt)} />
+                  </p>
+                )}
+              </div>
+            )}
+            {isDependency && (
+              <div className="text-xs text-gray-500">
+                {props.dependents?.map((dep: IssueReadWithRelations) => (
+                  <p key={dep.id}>
+                    Mentioned in{' '}
+                    <a
+                      href={githubIssueUrl(
+                        dep.organization.name,
+                        dep.repository.name,
+                        dep.number,
+                      )}
+                      className="font-medium text-blue-600"
+                    >
+                      {dep.organization.name}/{dep.repository.name}#{dep.number}{' '}
+                      {dep.title}
+                    </a>
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-6">

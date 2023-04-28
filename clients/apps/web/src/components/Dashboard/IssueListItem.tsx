@@ -65,6 +65,9 @@ const IssueListItem = (props: {
   }
   const issueProgress = getissueProgress()
 
+  const showPledgeAction =
+    isDependency && props.issue.progress !== IssueStatus.COMPLETED
+
   return (
     <div>
       <div className="hover:bg-gray-75 group flex items-center justify-between gap-4 py-4 px-2 pb-5">
@@ -125,7 +128,7 @@ const IssueListItem = (props: {
 
           <IssueProgress progress={issueProgress} />
 
-          {isDependency && (
+          {showPledgeAction && (
             <div className="group-hover:delay-0 -ml-6 w-0 overflow-hidden opacity-0 delay-150 duration-100 group-hover:ml-0 group-hover:w-20 group-hover:opacity-100 group-hover:transition-all group-hover:duration-200 group-hover:ease-in-out">
               <PledgeNow
                 issue={props.issue}

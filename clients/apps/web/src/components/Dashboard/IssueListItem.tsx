@@ -1,8 +1,8 @@
 import {
+  IssueDashboardRead,
   IssueReferenceRead,
   OrganizationRead,
   RepositoryRead,
-  type IssueRead,
   type PledgeRead,
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
@@ -20,7 +20,7 @@ import IssueProgress, { Progress } from './IssueProgress'
 const IssueListItem = (props: {
   org: OrganizationRead
   repo: RepositoryRead
-  issue: IssueRead
+  issue: IssueDashboardRead
   references: IssueReferenceRead[]
   dependents?: IssueReadWithRelations[]
   pledges: PledgeRead[]

@@ -12,6 +12,7 @@ import {
   IssueListItemDecoration,
 } from 'polarkit/components/Issue'
 import { githubIssueUrl } from 'polarkit/utils'
+import { React } from 'react'
 import TimeAgo from 'react-timeago'
 import PledgeNow from '../Pledge/PledgeNow'
 import IconCounter from './IconCounter'
@@ -88,7 +89,7 @@ const IssueListItem = (props: {
                 className="text-md text-nowrap font-medium"
                 href={githubIssueUrl(props.org.name, props.repo.name, number)}
               >
-                {title}
+                <MarkdownTitle>{title}</MarkdownTitle>
                 {isDependency && (
                   <span className="text-gray-400"> #{props.issue.number}</span>
                 )}
@@ -171,6 +172,33 @@ const IssueListItem = (props: {
       )}
     </div>
   )
+}
+
+const MarkdownTitle = (props: { children: React.ReactElement }) => {
+  const matches = [...props.children.matchAll(/`([^`]*)`/g)]
+  if (matches.length === 0) {
+    return props.children
+  }
+
+  let i = 0
+  let offset = 0
+  const nodes = []
+  const matchCount = matches.length
+  for (const match of matches) {
+    i += 1
+    if (offset < match.index) {
+      nodes.push(props.children.substring(offset, match.index))
+    }
+
+    nodes.push(
+      <span className="rounded-md bg-gray-100 py-0.5 px-1.5">{match[1]}</span>,
+    )
+    offset = match.index + match[0].length
+    if (i === matchCount) {
+      nodes.push(props.children.substring(offset, props.children.length))
+    }
+  }
+  return nodes
 }
 
 export default IssueListItem

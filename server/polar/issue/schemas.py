@@ -170,6 +170,28 @@ class IssueRead(IssueCreate):
         orm_mode = True
 
 
+class IssueDashboardRead(Schema):
+    id: UUID
+    platform: Platforms
+    organization_id: UUID
+    repository_id: UUID
+    number: int
+    title: str
+    author: JSONAny
+    labels: JSONAny
+    closed_by: JSONAny
+    reactions: JSONAny
+    state: Issue.State
+    state_reason: str | None
+    issue_closed_at: datetime | None
+    issue_modified_at: datetime | None
+    issue_created_at: datetime
+    comments: int | None
+
+    class Config:
+        orm_mode = True
+
+
 class GetIssuePath(Schema):
     organization: str
     repo: str

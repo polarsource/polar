@@ -18,10 +18,14 @@ import IconCounter from './IconCounter'
 import IssueLabel, { LabelSchema } from './IssueLabel'
 import IssueProgress, { Progress } from './IssueProgress'
 
+interface Issue extends IssueDashboardRead {
+  organization?: OrganizationRead
+}
+
 const IssueListItem = (props: {
   org: OrganizationRead
   repo: RepositoryRead
-  issue: IssueDashboardRead
+  issue: Issue
   references: IssueReferenceRead[]
   dependents?: IssueReadWithRelations[]
   pledges: PledgeRead[]

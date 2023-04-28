@@ -187,7 +187,7 @@ async def dashboard(
         (
             await session.execute(
                 sql.select(Organization).where(
-                    Organization.id.in_([i.organization_id for i in issues])
+                    Organization.id.in_(list(set([i.organization_id for i in issues])))
                 )
             )
         )
@@ -202,7 +202,7 @@ async def dashboard(
         (
             await session.execute(
                 sql.select(Repository).where(
-                    Repository.id.in_([i.repository_id for i in issues])
+                    Repository.id.in_(list(set([i.repository_id for i in issues])))
                 )
             )
         )

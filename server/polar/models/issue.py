@@ -148,6 +148,11 @@ class Issue(IssueFields, RecordModel):
         Index(
             "idx_issues_title_tsv", "title_tsv", postgresql_using="gin"
         ),  # Search index
+        Index(
+            "idx_issues_id_closed_at",
+            "id",
+            "issue_closed_at",
+        ),
     )
 
     funding_badge_embedded_at: Mapped[datetime | None] = mapped_column(

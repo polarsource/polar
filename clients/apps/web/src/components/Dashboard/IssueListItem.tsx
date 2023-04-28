@@ -1,6 +1,7 @@
 import {
   IssueDashboardRead,
   IssueReferenceRead,
+  IssueStatus,
   OrganizationRead,
   RepositoryRead,
   type PledgeRead,
@@ -47,13 +48,18 @@ const IssueListItem = (props: {
   const showReactionsThumbs = !!(reactions.plus_one > 0)
 
   const getissueProgress = (): Progress => {
-    if (!!issue_closed_at) {
-      return 'completed'
+    if (props.issue.progress === IssueStatus.BACKLOG) {
+      return 'backlog'
     }
-    if (props.references?.length > 0) {
+    if (props.issue.progress === IssueStatus.BUILDING) {
+      return 'building'
+    }
+    if (props.issue.progress === IssueStatus.PULL_REQUEST) {
       return 'pull_request'
     }
-    return 'backlog'
+    if (props.issue.progress === IssueStatus.COMPLETED) {
+      return 'completed'
+    }
   }
   const issueProgress = getissueProgress()
 

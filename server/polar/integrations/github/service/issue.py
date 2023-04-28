@@ -205,6 +205,7 @@ class GithubIssueService(IssueService):
                 Issue.deleted_at.is_(None),
                 Organization.deleted_at.is_(None),
                 Repository.deleted_at.is_(None),
+                Organization.installation_id.is_not(None),
             )
             .order_by(asc(Issue.github_timeline_fetched_at))
             .limit(1000)

@@ -1,9 +1,12 @@
-from typing import Any, Generic, List, TypeVar, Union
+from datetime import datetime
+from typing import Any, Generic, List, TypeVar
 from uuid import UUID
-from polar.issue.schemas import IssueDashboardRead, IssueRead
+from polar.enums import Platforms
+from polar.models.issue import Issue
 from polar.kit.schemas import Schema
 from pydantic.generics import GenericModel
 from enum import Enum
+from polar.types import JSONAny
 
 
 class IssueListType(str, Enum):
@@ -62,6 +65,29 @@ class ListResponse(GenericModel, Generic[DataT]):
 class SingleResponse(GenericModel, Generic[DataT]):
     data: Entry[DataT]
     included: List[Entry[Any]] = []
+
+
+class IssueDashboardRead(Schema):
+    id: UUID
+    platform: Platforms
+    organization_id: UUID
+    repository_id: UUID
+    number: int
+    title: str
+    author: JSONAny
+    labels: JSONAny
+    closed_by: JSONAny
+    reactions: JSONAny
+    state: Issue.State
+    state_reason: str | None
+    issue_closed_at: datetime | None
+    issue_modified_at: datetime | None
+    issue_created_at: datetime
+    comments: int | None
+    progress: IssueStatus | None = None
+
+    class Config:
+        orm_mode = True
 
 
 class IssueListResponse(ListResponse[IssueDashboardRead]):

@@ -11,12 +11,12 @@ from polar.dashboard.schemas import (
     IssueStatus,
     Relationship,
     RelationshipData,
+    IssueDashboardRead,
 )
 from polar.enums import Platforms
-from polar.issue.schemas import IssueDashboardRead, IssueRead, IssueReferenceRead
+from polar.issue.schemas import IssueRead, IssueReferenceRead
 from polar.models.issue import Issue
 from polar.models.organization import Organization
-from polar.models.issue_reference import ReferenceType
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.organization.schemas import OrganizationRead
@@ -386,13 +386,19 @@ async def dashboard(
             Entry(
                 id=i.id,
                 type="issue",
-                attributes=IssueDashboardRead.from_orm(i),
+                attributes=issue_to_schema(i),
                 relationships=issue_relationships.get(i.id, None),
             )
             for i in issues
         ],
         included=list(included.values()),
     )
+
+
+def issue_to_schema(issue: Issue) -> IssueDashboardRead:
+    r = IssueDashboardRead.from_orm(issue)
+    r.progress = issue_progress(issue)
+    return r
 
 
 def issue_progress(issue: Issue) -> IssueStatus:

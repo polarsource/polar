@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
+import type { IssueStatus } from './IssueStatus';
 import type { Platforms } from './Platforms';
 import type { polar__models__issue__IssueFields__State } from './polar__models__issue__IssueFields__State';
 
@@ -22,5 +23,6 @@ export type IssueDashboardRead = {
   issue_modified_at?: string;
   issue_created_at: string;
   comments?: number;
+  progress?: IssueStatus;
 };
 

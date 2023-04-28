@@ -63,12 +63,12 @@ class Organization(RecordModel):
     )
 
     # Add badge to all historical & open issues before onboarding?
-    funding_badge_retroactive: Mapped[bool] = mapped_column(
+    pledge_badge_retroactive: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
 
-    # Whether to show funding amount in the badge
-    funding_badge_show_amount: Mapped[bool] = mapped_column(
+    # Whether to show pledged amount in the badge
+    pledge_badge_show_amount: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
 
@@ -104,6 +104,6 @@ class Organization(RecordModel):
         "installation_updated_at",
         "installation_suspended_at",
         "status",
-        "funding_badge_retroactive",
-        "funding_badge_show_amount",
+        "pledge_badge_retroactive",
+        "pledge_badge_show_amount",
     }

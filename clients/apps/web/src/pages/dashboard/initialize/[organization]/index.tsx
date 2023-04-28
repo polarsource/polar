@@ -34,8 +34,8 @@ const Page: NextLayoutComponentType = () => {
         platform: org.platform,
         orgName: org.name,
         requestBody: {
-          funding_badge_retroactive: badgeAddOldIssues,
-          funding_badge_show_amount: badgeShowRaised,
+          pledge_badge_retroactive: badgeAddOldIssues,
+          pledge_badge_show_amount: badgeShowRaised,
         },
       })
       .then((updatedOrg: OrganizationRead) => {

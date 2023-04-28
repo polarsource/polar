@@ -13,8 +13,8 @@ from polar.repository.schemas import RepositoryRead
 
 
 class OrganizationSettingsRead(BaseModel):
-    funding_badge_retroactive: bool = False
-    funding_badge_show_amount: bool = False
+    pledge_badge_retroactive: bool = False
+    pledge_badge_show_amount: bool = False
 
     email_notification_maintainer_issue_receives_backing: bool = False
     email_notification_maintainer_issue_branch_created: bool = False
@@ -26,8 +26,8 @@ class OrganizationSettingsRead(BaseModel):
 
 
 class OrganizationSettingsUpdate(Schema):
-    funding_badge_retroactive: bool | None = None
-    funding_badge_show_amount: bool | None = None
+    pledge_badge_retroactive: bool | None = None
+    pledge_badge_show_amount: bool | None = None
 
     email_notification_maintainer_issue_receives_backing: bool | None = None
     email_notification_maintainer_issue_branch_created: bool | None = None

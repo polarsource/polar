@@ -282,25 +282,25 @@ class OrganizationService(
         settings: OrganizationSettingsUpdate,
     ) -> Organization:
         # Leverage .update() in case we expand this with additional settings
-        enabled_funding_badge_retroactive = False
-        disabled_funding_badge_retroactive = False
+        enabled_pledge_badge_retroactive = False
+        disabled_pledge_badge_retroactive = False
 
-        if settings.funding_badge_retroactive is not None:
+        if settings.pledge_badge_retroactive is not None:
             if (
-                not organization.funding_badge_retroactive
-                and settings.funding_badge_retroactive
+                not organization.pledge_badge_retroactive
+                and settings.pledge_badge_retroactive
             ):
-                enabled_funding_badge_retroactive = True
+                enabled_pledge_badge_retroactive = True
             elif (
-                organization.funding_badge_retroactive
-                and not settings.funding_badge_retroactive
+                organization.pledge_badge_retroactive
+                and not settings.pledge_badge_retroactive
             ):
-                disabled_funding_badge_retroactive = True
+                disabled_pledge_badge_retroactive = True
 
-            organization.funding_badge_retroactive = settings.funding_badge_retroactive
+            organization.pledge_badge_retroactive = settings.pledge_badge_retroactive
 
-        if settings.funding_badge_show_amount is not None:
-            organization.funding_badge_show_amount = settings.funding_badge_show_amount
+        if settings.pledge_badge_show_amount is not None:
+            organization.pledge_badge_show_amount = settings.pledge_badge_show_amount
 
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(timezone.utc)
@@ -332,11 +332,11 @@ class OrganizationService(
             settings=settings.dict(),
         )
 
-        if enabled_funding_badge_retroactive:
+        if enabled_pledge_badge_retroactive:
             await enqueue_job(
                 "github.badge.embed_retroactively_on_organization", organization.id
             )
-        elif disabled_funding_badge_retroactive:
+        elif disabled_pledge_badge_retroactive:
             await enqueue_job("github.badge.remove_on_organization", organization.id)
 
         return updated

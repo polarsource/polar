@@ -7,8 +7,8 @@ import type { RepositoryRead } from './RepositoryRead';
 import type { Status } from './Status';
 
 export type OrganizationRead = {
-  funding_badge_retroactive?: boolean;
-  funding_badge_show_amount?: boolean;
+  pledge_badge_retroactive?: boolean;
+  pledge_badge_show_amount?: boolean;
   email_notification_maintainer_issue_receives_backing?: boolean;
   email_notification_maintainer_issue_branch_created?: boolean;
   email_notification_maintainer_pull_request_created?: boolean;

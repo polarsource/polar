@@ -14,7 +14,7 @@ export type GithubBadgeRead = {
 export namespace GithubBadgeRead {
 
   export enum badge_type {
-    FUNDING = 'funding',
+    PLEDGE = 'pledge',
   }
 
 

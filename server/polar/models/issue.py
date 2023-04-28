@@ -155,7 +155,7 @@ class Issue(IssueFields, RecordModel):
         ),
     )
 
-    funding_badge_embedded_at: Mapped[datetime | None] = mapped_column(
+    pledge_badge_embedded_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
 

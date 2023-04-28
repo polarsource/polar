@@ -123,7 +123,7 @@ const IssueListItem = (props: {
                       className="font-medium text-blue-600"
                     >
                       {dep.organization.name}/{dep.repository.name}#{dep.number}{' '}
-                      {dep.title}
+                      - {dep.title}
                     </a>
                   </p>
                 ))}

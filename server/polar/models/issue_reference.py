@@ -59,7 +59,7 @@ class IssueReference(TimestampedModel):
         ForeignKey("issues.id"),
         nullable=False,
         primary_key=True,
-        # index=True,
+        index=True,
     )
 
     reference_type: Mapped[str] = mapped_column(

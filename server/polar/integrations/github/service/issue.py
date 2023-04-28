@@ -130,7 +130,7 @@ class GithubIssueService(IssueService):
             # There's a race condition here since we updated the issue and it will
             # trigger a webhook upon which we'll update the entire issue except for this
             # timestamp. So we leave the updating of the issue to our webhook handler.
-            issue.funding_badge_embedded_at = utc_now()
+            issue.pledge_badge_embedded_at = utc_now()
             await issue.save(session)
             return True
         except GithubBadgeNotEmbeddable as e:
@@ -174,7 +174,7 @@ class GithubIssueService(IssueService):
             # There's a race condition here since we updated the issue and it will
             # trigger a webhook upon which we'll update the entire issue except for this
             # timestamp. So we leave the updating of the issue to our webhook handler.
-            issue.funding_badge_embedded_at = None
+            issue.pledge_badge_embedded_at = None
             await issue.save(session)
             return True
         except GithubBadgeNotEmbedded:

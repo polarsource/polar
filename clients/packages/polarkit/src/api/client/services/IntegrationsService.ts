@@ -84,7 +84,7 @@ export class IntegrationsService {
     org: string,
     repo: string,
     number: number,
-    badgeType: 'funding',
+    badgeType: 'pledge',
   }): CancelablePromise<GithubBadgeRead> {
     return this.httpRequest.request({
       method: 'GET',

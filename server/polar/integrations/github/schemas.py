@@ -26,7 +26,7 @@ class BadgeAmount(Schema):
 
 
 class GithubBadgeRead(Schema):
-    badge_type: Literal["funding"]
+    badge_type: Literal["pledge"]
     width: int = 445
     height: int = 44
     amount: BadgeAmount | None = None

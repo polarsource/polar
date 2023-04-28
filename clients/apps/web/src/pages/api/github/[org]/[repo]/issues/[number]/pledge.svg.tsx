@@ -34,7 +34,7 @@ const getBadgeData = async (
 ): Promise<BadgeData> => {
   const base = process.env.NEXT_PUBLIC_API_URL
   // TODO: Store this in an environment variable for easier customization?
-  const endpoint = `${base}/api/v1/integrations/github/${org}/${repo}/issues/${number}/badges/funding`
+  const endpoint = `${base}/api/v1/integrations/github/${org}/${repo}/issues/${number}/badges/pledge`
   const response = await fetch(endpoint)
   const data = await response.json()
   if (!data.badge_type) throw new Error('Invalid badge response')

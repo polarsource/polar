@@ -5,6 +5,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     TIMESTAMP,
+    BigInteger,
     ForeignKey,
     Index,
     Integer,
@@ -12,6 +13,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+import sqlalchemy
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
     Mapped,
@@ -145,13 +147,21 @@ class Issue(IssueFields, RecordModel):
     __table_args__ = (
         UniqueConstraint("external_id"),
         UniqueConstraint("organization_id", "repository_id", "number"),
-        Index(
-            "idx_issues_title_tsv", "title_tsv", postgresql_using="gin"
-        ),  # Search index
+        # Search index
+        Index("idx_issues_title_tsv", "title_tsv", postgresql_using="gin"),
         Index(
             "idx_issues_id_closed_at",
             "id",
             "issue_closed_at",
+        ),
+        Index(
+            "idx_issues_pledged_amount_sum",
+            "pledged_amount_sum",
+        ),
+        Index(
+            "idx_issues_reactions_plus_one",
+            sqlalchemy.text("(reactions::jsonb->'plus_one')"),
+            postgresql_using="gin",
         ),
     )
 
@@ -171,6 +181,12 @@ class Issue(IssueFields, RecordModel):
     @declared_attr
     def pledges(cls) -> "Mapped[list[Pledge]]":
         return relationship("Pledge", lazy="raise", viewonly=True)
+
+    # calculated sum of pledges, used for sorting
+    # not to be exported through APIs
+    pledged_amount_sum: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, default=0
+    )
 
     on_created_signal = issue_created
     on_updated_signal = issue_updated

@@ -23,6 +23,14 @@ async def mark_pledges_pending_on_issue_close(
 
 
 @pledge_created.connect
+@pledge_updated.connect
+async def issue_pledged_amount_sum(
+    ctx: PolarContext, *, item: Pledge, session: AsyncSession, **values: Any
+):
+    await pledge_service.set_issue_pledged_amount_sum(session, item.issue_id)
+
+
+@pledge_created.connect
 async def pledge_created_state_notifications(
     ctx: PolarContext, *, item: Pledge, session: AsyncSession, **values: Any
 ):

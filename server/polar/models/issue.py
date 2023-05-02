@@ -160,8 +160,8 @@ class Issue(IssueFields, RecordModel):
         ),
         Index(
             "idx_issues_reactions_plus_one",
-            sqlalchemy.text("(reactions::jsonb->'plus_one')"),
-            postgresql_using="gin",
+            sqlalchemy.text("((reactions::jsonb ->> 'plus_one')::int)"),
+            postgresql_using="btree",
         ),
     )
 

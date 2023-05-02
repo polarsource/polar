@@ -38,6 +38,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
                 joinedload(Pledge.issue).joinedload(Issue.repository),
             )
             .filter(Pledge.id == pledge_id)
+            .where(Pledge.state != PledgeState.initiated)
         )
         res = await session.execute(statement)
         return res.scalars().unique().one_or_none()
@@ -47,7 +48,10 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
     ) -> Sequence[Pledge]:
         statement = (
             sql.select(Pledge)
-            .where(Pledge.repository_id == repository_id)
+            .where(
+                Pledge.repository_id == repository_id,
+                Pledge.state != PledgeState.initiated,
+            )
             .options(
                 joinedload(Pledge.user),
                 joinedload(Pledge.organization),
@@ -62,7 +66,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
     ) -> Sequence[Pledge]:
         statement = (
             sql.select(Pledge)
-            .where(Pledge.by_user_id == user_id)
+            .where(Pledge.by_user_id == user_id, Pledge.state != PledgeState.initiated)
             .options(
                 joinedload(Pledge.user),
                 joinedload(Pledge.organization),
@@ -85,7 +89,9 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
                 joinedload(Pledge.user),
                 joinedload(Pledge.organization),
             )
-            .filter(Pledge.issue_id.in_(issue_ids))
+            .filter(
+                Pledge.issue_id.in_(issue_ids), Pledge.state != PledgeState.initiated
+            )
         )
         res = await session.execute(statement)
         issues = res.scalars().unique().all()
@@ -137,11 +143,15 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         if pledge:
             pledge.state = PledgeState.created
             session.add(pledge)
-            session.add(PledgeTransaction(
-                pledge_id=pledge.id, type=PledgeTransactionType.pledge,
-                amount=amount, transaction_id=transaction_id))
+            session.add(
+                PledgeTransaction(
+                    pledge_id=pledge.id,
+                    type=PledgeTransactionType.pledge,
+                    amount=amount,
+                    transaction_id=transaction_id,
+                )
+            )
             await session.commit()
-
 
     async def mark_paid_by_pledge_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
@@ -150,11 +160,15 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         if pledge:
             pledge.state = PledgeState.paid
             session.add(pledge)
-            session.add(PledgeTransaction(
-                pledge_id=pledge.id, type=PledgeTransactionType.transfer,
-                amount=amount, transaction_id=transaction_id))
+            session.add(
+                PledgeTransaction(
+                    pledge_id=pledge.id,
+                    type=PledgeTransactionType.transfer,
+                    amount=amount,
+                    transaction_id=transaction_id,
+                )
+            )
             await session.commit()
-
 
     async def refund_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
@@ -174,11 +188,15 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
                 ...
 
             session.add(pledge)
-            session.add(PledgeTransaction(
-                pledge_id=pledge.id, type=PledgeTransactionType.refund,
-                amount=amount, transaction_id=transaction_id))
+            session.add(
+                PledgeTransaction(
+                    pledge_id=pledge.id,
+                    type=PledgeTransactionType.refund,
+                    amount=amount,
+                    transaction_id=transaction_id,
+                )
+            )
             await session.commit()
-
 
     async def transfer(self, session: AsyncSession, pledge_id: UUID) -> None:
         pledge = await self.get(session, id=pledge_id)
@@ -204,8 +222,9 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         if transfer_id is None:
             raise NotPermitted("Transfer failed")  # TODO: Better error
 
-        await self.mark_paid_by_pledge_id(session, pledge.payment_id,
-                                          organization_share, transfer_id)
+        await self.mark_paid_by_pledge_id(
+            session, pledge.payment_id, organization_share, transfer_id
+        )
 
     async def get_by_payment_id(
         self, session: AsyncSession, payment_id: str
@@ -214,6 +233,26 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             session=session,
             payment_id=payment_id,
         )
+
+    async def set_issue_pledged_amount_sum(
+        self,
+        session: AsyncSession,
+        issue_id: UUID,
+    ) -> None:
+        pledges = await self.get_by_issue_ids(session, issue_ids=[issue_id])
+
+        summed = 0
+        if pledges:
+            summed = sum([p.amount for p in pledges])
+
+        stmt = (
+            sql.update(Issue)
+            .where(Issue.id == issue_id)
+            .values(pledged_amount_sum=summed)
+        )
+
+        await session.execute(stmt)
+        await session.commit()
 
 
 pledge = PledgeService(Pledge)

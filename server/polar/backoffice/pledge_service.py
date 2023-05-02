@@ -1,7 +1,4 @@
 from __future__ import annotations
-from uuid import UUID
-
-
 import structlog
 from polar.backoffice.schemas import BackofficePledgeRead
 from polar.kit.extensions.sqlalchemy import sql
@@ -10,15 +7,8 @@ from sqlalchemy.orm import (
 )
 from polar.models.issue import Issue
 from polar.models.organization import Organization
-
 from polar.models.pledge import Pledge
-
-from polar.models.user import User
-
-from polar.models.account import Account
 from polar.postgres import AsyncSession
-from polar.enums import AccountType
-from polar.integrations.stripe.service import stripe
 
 
 log = structlog.get_logger()

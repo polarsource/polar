@@ -354,32 +354,32 @@ async def dashboard(
     # Sorting
     #
 
-    if sort == IssueSortBy.pledged_amount_desc:
-        # calculate pledge sum
-        sum_by_issue: dict[UUID, int] = dict()
-        for i in issues:
-            sum_by_issue[i.id] = pledge_sum(i)
-
-        # issues is a sequence and can't be sorted on, quickly convert to a list
-        issues_list = [i for i in issues]
-        issues_list.sort(key=lambda i: sum_by_issue[i.id], reverse=True)
-        issues = issues_list
-
-    if sort == IssueSortBy.dependencies_default:
-        issues_list = [i for i in issues]
-        issues_list.sort(
-            key=lambda e: sort_dependencies_default(e, for_org, for_user),
-            reverse=True,
-        )
-        issues = issues_list
-
-    if sort == IssueSortBy.issues_default:
-        issues_list = [i for i in issues]
-        issues_list.sort(
-            key=lambda e: sort_issues_default(e),
-            reverse=True,
-        )
-        issues = issues_list
+    # if sort == IssueSortBy.pledged_amount_desc:
+    #     # calculate pledge sum
+    #     sum_by_issue: dict[UUID, int] = dict()
+    #     for i in issues:
+    #         sum_by_issue[i.id] = pledge_sum(i)
+    #
+    #     # issues is a sequence and can't be sorted on, quickly convert to a list
+    #     issues_list = [i for i in issues]
+    #     issues_list.sort(key=lambda i: sum_by_issue[i.id], reverse=True)
+    #     issues = issues_list
+    #
+    # if sort == IssueSortBy.dependencies_default:
+    #     issues_list = [i for i in issues]
+    #     issues_list.sort(
+    #         key=lambda e: sort_dependencies_default(e, for_org, for_user),
+    #         reverse=True,
+    #     )
+    #     issues = issues_list
+    #
+    # if sort == IssueSortBy.issues_default:
+    #     issues_list = [i for i in issues]
+    #     issues_list.sort(
+    #         key=lambda e: sort_issues_default(e),
+    #         reverse=True,
+    #     )
+    #     issues = issues_list
 
     return IssueListResponse(
         data=[

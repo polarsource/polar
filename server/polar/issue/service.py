@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from uuid import UUID
-from typing import List, Sequence
-from sqlalchemy import Integer, desc, func, or_, ColumnElement
+from typing import List, Sequence, Tuple
+from sqlalchemy import Integer, desc, func, nullslast, or_, ColumnElement
 from sqlalchemy.orm import joinedload
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
-from polar.dashboard.schemas import IssueListType
+from polar.dashboard.schemas import IssueListType, IssueSortBy
 
 from polar.kit.services import ResourceService
 from polar.models.issue import Issue
@@ -15,7 +15,7 @@ from polar.models.repository import Repository
 from polar.enums import Platforms
 from polar.models.issue_dependency import IssueDependency
 from polar.models.issue_reference import IssueReference
-from polar.pledge.schemas import State
+from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession, sql
 
 
@@ -89,9 +89,6 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         text: str | None = None,
         include_open: bool = True,
         include_closed: bool = False,
-        sort_by_newest: bool = False,
-        sort_by_recently_updated: bool = False,
-        sort_by_relevance: bool = False,
         pledged_by_org: UUID
         | None = None,  # Only include issues that have been pledged by this org
         pledged_by_user: UUID
@@ -99,9 +96,14 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         have_pledge: bool | None = None,  # If issues have pledge or not
         load_references: bool = False,
         load_pledges: bool = False,
-    ) -> Sequence[Issue]:
+        sort_by: IssueSortBy = IssueSortBy.newest,
+        offset: int = 0,
+        limit: int | None = None,
+    ) -> Tuple[Sequence[Issue], int]:  # (issues, total_issue_count)
         statement = sql.select(
-            Issue, sql.func.sum(Pledge.amount).label("pledge_sum")
+            Issue,
+            sql.func.count(Issue.id).over().label("total_count"),
+            sql.func.sum(Pledge.amount).label("pledged_amount"),
         ).join(Pledge, Pledge.issue_id == Issue.id, isouter=True)
 
         if issue_list_type == IssueListType.issues:
@@ -133,7 +135,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
 
         # Excluded initiated pledges (Polar has not received the money yet)
         statement = statement.where(
-            or_(Pledge.id.is_(None), Pledge.state != State.initiated)
+            or_(Pledge.id.is_(None), Pledge.state != PledgeState.initiated)
         )
 
         filters = []
@@ -176,31 +178,31 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             )
 
             # Sort results based on matching
-            if sort_by_relevance:
+            if sort_by == IssueSortBy.relevance:
                 statement = statement.order_by(
                     desc(func.ts_rank_cd(Issue.title_tsv, func.to_tsquery(search)))
                 )
 
-        # if sort_by_newest:
-        #    statement = statement.order_by(desc(Issue.issue_created_at))
-        # if sort_by_recently_updated:
-        #    statement = statement.order_by(desc(Issue.issue_modified_at))
-
-        # if True:
-        #    statement = (
-        #        statement.order_by(
-        #            desc(
-        #                coalesce(sql.func.sum(Pledge.amount), 0).label("pledge_sum"),
-        #            )
-        #        ).group_by(Issue.id)
-        #        # .limit(10)
-        #    )
-
-        statement = statement.order_by(
-            desc(Issue.pledged_amount_sum),
-            desc(Issue.reactions.op("->")("plus_one").cast(Integer)),
-            desc(Issue.issue_modified_at),
-        )
+        if sort_by == IssueSortBy.issues_default:
+            statement = statement.order_by(
+                desc(Issue.pledged_amount_sum),
+                desc(Issue.reactions.op("->")("plus_one").cast(Integer)),
+                desc(Issue.issue_modified_at),
+            )
+        elif sort_by == IssueSortBy.newest:
+            statement = statement.order_by(
+                desc(Issue.issue_created_at),
+            )
+        elif sort_by == IssueSortBy.relevance:
+            pass  # handled above
+        elif sort_by == IssueSortBy.pledged_amount_desc:
+            statement = statement.order_by(
+                desc(Issue.pledged_amount_sum),
+            )
+        elif sort_by == IssueSortBy.dependencies_default:
+            statement = statement.order_by(nullslast(desc(sql.func.sum(Pledge.amount))))
+        else:
+            raise Exception("unknown sort_by")
 
         if load_references:
             statement = statement.options(
@@ -215,10 +217,16 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
 
         statement = statement.group_by(Issue.id)
 
-        res = await session.execute(statement)
-        issues = res.scalars().unique().all()
+        if limit:
+            statement = statement.limit(limit).offset(offset)
 
-        return issues
+        res = await session.execute(statement)
+        rows = res.unique().all()
+
+        total_count = rows[0][1] if len(rows) > 0 else 0
+        issues = [r[0] for r in rows]
+
+        return (issues, total_count)
 
     async def list_issue_references(
         self,

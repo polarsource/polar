@@ -23,6 +23,7 @@ class IssueStatus(str, Enum):
 
 class IssueSortBy(str, Enum):
     newest = "newest"
+    recently_updated = "recently_updated"
     pledged_amount_desc = "pledged_amount_desc"
     relevance = "relevance"  # best search match
     dependencies_default = (
@@ -90,5 +91,11 @@ class IssueDashboardRead(Schema):
         orm_mode = True
 
 
+class PaginationResponse(Schema):
+    total_count: int
+    page: int
+    next_page: int | None
+
+
 class IssueListResponse(ListResponse[IssueDashboardRead]):
-    ...
+    pagination: PaginationResponse

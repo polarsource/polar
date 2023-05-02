@@ -9,6 +9,7 @@ from polar.dashboard.schemas import (
     IssueRelationship,
     IssueSortBy,
     IssueStatus,
+    PaginationResponse,
     Relationship,
     RelationshipData,
     IssueDashboardRead,
@@ -40,6 +41,7 @@ async def get_personal_dashboard(
     q: Union[str, None] = Query(default=None),
     sort: Union[IssueSortBy, None] = Query(default=None),
     only_pledged: bool = Query(default=False),
+    page: int = Query(default=1),
     auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueListResponse:
@@ -50,6 +52,7 @@ async def get_personal_dashboard(
         q=q,
         sort=sort,
         in_repos=[],
+        page=page,
         for_user=auth.user,
         only_pledged=only_pledged,
     )
@@ -68,6 +71,7 @@ async def get_dashboard(
     q: Union[str, None] = Query(default=None),
     sort: Union[IssueSortBy, None] = Query(default=None),
     only_pledged: bool = Query(default=False),
+    page: int = Query(default=1),
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueListResponse:
@@ -115,6 +119,7 @@ async def get_dashboard(
         for_org=auth.organization,
         for_user=show_pledges_for_user,
         only_pledged=only_pledged,
+        page=page,
     )
 
 
@@ -144,6 +149,7 @@ async def dashboard(
     for_org: Organization | None = None,
     for_user: User | None = None,
     only_pledged: bool = False,
+    page: int = 1,
 ) -> IssueListResponse:
     include_open = False
     if status:
@@ -161,18 +167,21 @@ async def dashboard(
     if not sort:
         sort = default_sort(issue_list_type, q)
 
+    # Pagination.
+    # Page 1 is the first page
+    limit = 100
+    offset = (page - 1) * limit
+
     #
     # Select top level issues
     #
-    issues = await issue.list_by_repository_type_and_status(
+    (issues, total_issue_count) = await issue.list_by_repository_type_and_status(
         session,
         [r.id for r in in_repos],
         issue_list_type=issue_list_type,
         text=q,
         include_open=include_open,
         include_closed=include_closed,
-        sort_by_relevance=sort == IssueSortBy.relevance,
-        sort_by_newest=sort == IssueSortBy.newest,
         pledged_by_org=for_org.id if for_org and IssueListType.dependencies else None,
         pledged_by_user=for_user.id
         if for_user and IssueListType.dependencies
@@ -180,6 +189,9 @@ async def dashboard(
         have_pledge=True if only_pledged else None,
         load_references=True,
         load_pledges=True,
+        sort_by=sort,
+        limit=limit,
+        offset=offset,
     )
 
     issue_organizations = list(
@@ -347,39 +359,11 @@ async def dashboard(
     #
 
     # filter issues to only include issues with any of the expected statuses
+    # TODO: we should be able to do this in the database
     if status:
         issues = [i for i in issues if issue_progress(i) in status]
 
-    #
-    # Sorting
-    #
-
-    # if sort == IssueSortBy.pledged_amount_desc:
-    #     # calculate pledge sum
-    #     sum_by_issue: dict[UUID, int] = dict()
-    #     for i in issues:
-    #         sum_by_issue[i.id] = pledge_sum(i)
-    #
-    #     # issues is a sequence and can't be sorted on, quickly convert to a list
-    #     issues_list = [i for i in issues]
-    #     issues_list.sort(key=lambda i: sum_by_issue[i.id], reverse=True)
-    #     issues = issues_list
-    #
-    # if sort == IssueSortBy.dependencies_default:
-    #     issues_list = [i for i in issues]
-    #     issues_list.sort(
-    #         key=lambda e: sort_dependencies_default(e, for_org, for_user),
-    #         reverse=True,
-    #     )
-    #     issues = issues_list
-    #
-    # if sort == IssueSortBy.issues_default:
-    #     issues_list = [i for i in issues]
-    #     issues_list.sort(
-    #         key=lambda e: sort_issues_default(e),
-    #         reverse=True,
-    #     )
-    #     issues = issues_list
+    next_page = page + 1 if total_issue_count > page * limit else None
 
     return IssueListResponse(
         data=[
@@ -392,6 +376,11 @@ async def dashboard(
             for i in issues
         ],
         included=list(included.values()),
+        pagination=PaginationResponse(
+            total_count=total_issue_count,
+            page=page,
+            next_page=next_page,
+        ),
     )
 
 
@@ -410,52 +399,3 @@ def issue_progress(issue: Issue) -> IssueStatus:
     if issue.references:
         return IssueStatus.building
     return IssueStatus.backlog
-
-
-def status_sort_prio(status: IssueStatus) -> int:
-    return {
-        IssueStatus.backlog: 0,
-        IssueStatus.building: 1,
-        IssueStatus.pull_request: 2,
-        IssueStatus.completed: 3,
-    }.get(status, 0)
-
-
-def pledge_sum(issue: Issue) -> int:
-    return sum(p.amount for p in issue.pledges)
-
-
-def sort_ts(i: Issue) -> int:
-    if i.issue_modified_at:
-        return int(i.issue_modified_at.timestamp())
-    return int(i.issue_created_at.timestamp())
-
-
-def sort_dependencies_default(
-    i: Issue,
-    for_org: Organization | None,
-    for_user: User | None,
-) -> Tuple[int, int, int]:
-    self_pledged_amount = sum(
-        [
-            p.amount
-            for p in i.pledges
-            if (
-                (for_org and p.by_organization_id == for_org.id)
-                or (for_user and p.by_user_id == for_user.id)
-            )
-            and p.issue_id == i.id
-        ]
-    )
-
-    progress = status_sort_prio(issue_progress(i))
-
-    return (self_pledged_amount, progress, sort_ts(i))
-
-
-def sort_issues_default(
-    i: Issue,
-) -> Tuple[int, int, int]:
-    total_pledged_amount = sum([p.amount for p in i.pledges])
-    thumbs_up_count = i.reactions.get("plus_one", 0) if i.reactions else 0
-    return (total_pledged_amount, thumbs_up_count, sort_ts(i))

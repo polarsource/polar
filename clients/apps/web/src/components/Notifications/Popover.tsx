@@ -9,10 +9,10 @@ import {
   MaintainerIssuePullRequestMerged,
   NotificationRead,
 } from 'polarkit/api/client'
+import { PolarTimeAgo } from 'polarkit/components/ui'
 import { useNotifications, useNotificationsMarkRead } from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
 import { useEffect, useRef, useState } from 'react'
-import ReactTimeago from 'react-timeago'
 
 const Popover = () => {
   const [show, setShow] = useState(false)
@@ -129,7 +129,7 @@ const Item = ({
       <div>
         <div className="font-normal">{children.text}</div>
         <div className="text-black/50">
-          <ReactTimeago date={n.created_at} />
+          <PolarTimeAgo date={new Date(n.created_at)} />
         </div>
       </div>
     </div>

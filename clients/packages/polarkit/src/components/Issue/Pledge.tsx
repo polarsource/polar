@@ -20,6 +20,9 @@ const IssuePledge = (props: Props) => {
         <span className="text-blue-100">
           {getCentsInDollarString(totalPledgeAmount)}
         </span>
+        {pledges.map((p) => (
+          <div>{p.amount}</div>
+        ))}
       </p>
     </div>
   )

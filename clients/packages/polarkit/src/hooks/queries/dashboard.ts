@@ -1,4 +1,4 @@
-import { useQuery, UseQueryResult } from '@tanstack/react-query'
+import { useInfiniteQuery, UseInfiniteQueryResult } from '@tanstack/react-query'
 import { api } from '../../api'
 import {
   IssueListResponse,
@@ -17,9 +17,9 @@ export const useDashboard = (
   status?: Array<IssueStatus>,
   sort?: IssueSortBy,
   onlyPledged?: boolean,
-): UseQueryResult<IssueListResponse> =>
-  useQuery(
-    [
+): UseInfiniteQueryResult<IssueListResponse> =>
+  useInfiniteQuery({
+    queryKey: [
       'dashboard',
       'repo',
       orgName,
@@ -30,7 +30,7 @@ export const useDashboard = (
       sort,
       onlyPledged,
     ],
-    ({ signal }) => {
+    queryFn: ({ signal, pageParam = 1 }) => {
       const promise = api.dashboard.getDashboard({
         platform: Platforms.GITHUB,
         orgName: orgName,
@@ -40,6 +40,7 @@ export const useDashboard = (
         status: status,
         sort: sort,
         onlyPledged: onlyPledged,
+        page: pageParam,
       })
 
       signal?.addEventListener('abort', () => {
@@ -48,11 +49,12 @@ export const useDashboard = (
 
       return promise
     },
-    {
-      enabled: !!orgName,
-      retry: defaultRetry,
+    getNextPageParam: (lastPage, pages): number | undefined => {
+      return lastPage.pagination.next_page
     },
-  )
+    enabled: !!orgName,
+    retry: defaultRetry,
+  })
 
 export const usePersonalDashboard = (
   tab?: IssueListType,
@@ -60,9 +62,9 @@ export const usePersonalDashboard = (
   status?: Array<IssueStatus>,
   sort?: IssueSortBy,
   onlyPledged?: boolean,
-): UseQueryResult<IssueListResponse> =>
-  useQuery(
-    [
+): UseInfiniteQueryResult<IssueListResponse> =>
+  useInfiniteQuery({
+    queryKey: [
       'personalDashboard',
       tab,
       q,
@@ -70,13 +72,14 @@ export const usePersonalDashboard = (
       sort,
       onlyPledged,
     ],
-    ({ signal }) => {
+    queryFn: ({ signal, pageParam }) => {
       const promise = api.dashboard.getPersonalDashboard({
         issueListType: tab,
         q: q,
         status: status,
         sort: sort,
         onlyPledged,
+        page: pageParam,
       })
 
       signal?.addEventListener('abort', () => {
@@ -85,7 +88,8 @@ export const usePersonalDashboard = (
 
       return promise
     },
-    {
-      retry: defaultRetry,
+    getNextPageParam: (lastPage, pages): number | undefined => {
+      return lastPage.pagination.next_page
     },
-  )
+    retry: defaultRetry,
+  })

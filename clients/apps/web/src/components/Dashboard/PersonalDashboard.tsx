@@ -1,15 +1,10 @@
 import DashboardLayout from 'components/Layout/DashboardLayout'
 import OnboardingConnectPersonalDashboard from 'components/Onboarding/OnboardingConnectDashboard'
 import { IssueStatus } from 'polarkit/api/client'
-import { IssueReadWithRelations } from 'polarkit/api/types'
 import { usePersonalDashboard } from 'polarkit/hooks'
-import { Dispatch, SetStateAction, useEffect, useState } from 'react'
-import yayson from 'yayson'
-import IssueList from './IssueList'
+import { Dispatch, SetStateAction } from 'react'
 import { DashboardFilters } from './filters'
-
-const y = yayson({ adapter: 'default' })
-const store = new y.Store()
+import IssueList from './IssueList'
 
 const PersonalDashboard = ({
   filters,
@@ -28,32 +23,27 @@ const PersonalDashboard = ({
     filters.onlyPledged,
   )
   const dashboard = dashboardQuery.data
-
-  const [issues, setIssues] = useState<IssueReadWithRelations[]>()
-
-  useEffect(() => {
-    if (dashboard) {
-      const issues: IssueReadWithRelations[] = store.sync(dashboard)
-      setIssues(issues)
-    } else {
-      setIssues([])
-    }
-  }, [dashboard])
+  const totalCount = dashboard?.pages[0].pagination.total_count || undefined
 
   return (
     <DashboardLayout
       filters={filters}
       onSetFilters={onSetFilters}
       showSidebar={true}
-      isPersonalDashboard={true}
+      isPersonalDashboard={false}
     >
-      <div className="space-y-4">
+      <div>
         <OnboardingConnectPersonalDashboard />
         <IssueList
+          totalCount={totalCount}
           loading={dashboardQuery.isLoading}
-          issues={issues}
+          dashboard={dashboard}
           filters={filters}
           onSetFilters={onSetFilters}
+          isFetching={dashboardQuery.isFetching}
+          isFetchingNextPage={dashboardQuery.isFetchingNextPage}
+          hasNextPage={dashboardQuery.hasNextPage}
+          fetchNextPage={dashboardQuery.fetchNextPage}
         />
       </div>
     </DashboardLayout>

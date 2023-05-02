@@ -1,59 +1,122 @@
+import { InfiniteData } from '@tanstack/react-query'
 import { DashboardFilters, navigate } from 'components/Dashboard/filters'
 import Spinner from 'components/Shared/Spinner'
 import { useRouter } from 'next/router'
-import { IssueListType, IssueSortBy } from 'polarkit/api/client'
+import {
+  IssueListResponse,
+  IssueListType,
+  IssueSortBy,
+} from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
-import { Dispatch, SetStateAction, useMemo } from 'react'
+import { PrimaryButton } from 'polarkit/components/ui'
+import React, {
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
+import yayson from 'yayson'
 import IssueListItem from './IssueListItem'
 
 const IssueList = (props: {
-  issues: IssueReadWithRelations[]
+  dashboard: InfiniteData<IssueListResponse>
   filters: DashboardFilters
   loading: boolean
+  totalCount?: number
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
+  fetchNextPage: () => void
+  hasNextPage: boolean
+  isFetching: boolean
+  isFetchingNextPage: boolean
 }) => {
-  const { issues } = props
+  if (!props.dashboard) {
+    return <></>
+  }
 
-  if (!issues) return <></>
+  const { fetchNextPage, hasNextPage, isFetchingNextPage, isFetching } = props
 
   return (
     <div className="divide-y">
       <Header
-        count={issues.length}
+        totalCount={props.totalCount}
         filters={props.filters}
         onSetFilters={props.onSetFilters}
+        spinner={isFetching && !isFetchingNextPage}
       />
 
-      {props.loading && (
-        <div className="flex justify-around py-8">
-          <Spinner />
-        </div>
+      {!props.loading && (
+        <>
+          {props.dashboard.pages.map((group, i) => (
+            <IssueListPage page={group} key={i} />
+          ))}
+        </>
       )}
 
-      {!props.loading &&
-        issues.map((issue) => {
-          return (
-            <IssueListItem
-              issue={issue}
-              references={issue.references}
-              dependents={issue.dependents}
-              pledges={issue.pledges}
-              org={issue.organization}
-              repo={issue.repository}
-              key={issue.id}
-            />
-          )
-        })}
+      {hasNextPage && (
+        <PrimaryButton
+          loading={isFetchingNextPage}
+          disabled={isFetchingNextPage}
+          onClick={fetchNextPage}
+        >
+          Load more
+        </PrimaryButton>
+      )}
+
+      {props.totalCount > 100 && !hasNextPage && (
+        <div className="p-4 text-center text-gray-500">
+          You&apos;ve reached the bottom... 🏝️
+        </div>
+      )}
     </div>
   )
 }
 
 export default IssueList
 
+const IssueListPage = (props: { page: IssueListResponse }) => {
+  const [issues, setIssues] = useState<IssueReadWithRelations[]>()
+
+  const y = yayson({ adapter: 'default' })
+  const store = new y.Store()
+
+  const { page } = props
+
+  useEffect(() => {
+    if (page) {
+      const issues: IssueReadWithRelations[] = store.sync(page)
+      setIssues(issues)
+    } else {
+      setIssues([])
+    }
+  }, [page])
+
+  if (!issues) {
+    return <></>
+  }
+
+  return (
+    <>
+      {issues.map((issue) => (
+        <IssueListItem
+          issue={issue}
+          references={issue.references}
+          dependents={issue.dependents}
+          pledges={issue.pledges}
+          org={issue.organization}
+          repo={issue.repository}
+          key={issue.id}
+        />
+      ))}
+    </>
+  )
+}
+
 const Header = (props: {
   filters: DashboardFilters
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
-  count: number
+  totalCount?: number
+  spinner?: boolean
 }) => {
   const router = useRouter()
 
@@ -109,9 +172,15 @@ const Header = (props: {
   return (
     <div className="flex h-12 items-center justify-between px-2">
       <div className="text-sm">
-        <strong className="font-medium">{props.count}</strong>{' '}
-        <span className="text-gray-500">issues</span>
+        {props.totalCount !== undefined && (
+          <>
+            <strong className="font-medium">{props.totalCount}</strong>{' '}
+            <span className="text-gray-500">issues</span>
+          </>
+        )}
       </div>
+
+      {props.spinner && <Spinner />}
 
       <div>
         <span className="mr-2 text-sm text-gray-500">Sort:</span>

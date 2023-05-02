@@ -2,7 +2,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import RepoSelection from 'components/Dashboard/RepoSelection'
 import { api, CONFIG } from 'polarkit'
 import {
-  IssueRead,
+  IssueDashboardRead,
   OrganizationRead,
   OrganizationStripeCustomerRead,
   RepositoryRead,
@@ -21,7 +21,7 @@ const Overlay = ({
   issueRepo,
 }: {
   onClose: () => void
-  issue: IssueRead
+  issue: IssueDashboardRead
   issueOrg: OrganizationRead
   issueRepo: RepositoryRead
 }) => {

@@ -113,7 +113,7 @@ async def get_badge_settings(
     org: str,
     repo: str,
     number: int,
-    badge_type: Literal["funding"],
+    badge_type: Literal["pledge"],
     session: AsyncSession = Depends(get_db_session),
 ) -> GithubBadgeRead:
     organization = await github_organization.get_by_name(session, Platforms.github, org)
@@ -133,8 +133,8 @@ async def get_badge_settings(
     if not issue:
         raise HTTPException(status_code=404, detail="Issue not found")
 
-    if not issue.funding_badge_embedded_at:
-        raise HTTPException(status_code=404, detail="Funding badge not found")
+    if not issue.pledge_badge_embedded_at:
+        raise HTTPException(status_code=404, detail="Pledge badge not found")
 
     badge = GithubBadgeRead(badge_type=badge_type, amount=None)
     return badge

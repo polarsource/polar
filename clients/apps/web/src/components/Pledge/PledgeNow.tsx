@@ -1,5 +1,5 @@
 import {
-  IssueRead,
+  IssueDashboardRead,
   OrganizationRead,
   RepositoryRead,
 } from 'polarkit/api/client'
@@ -11,7 +11,7 @@ const PledgeNow = ({
   org,
   repo,
 }: {
-  issue: IssueRead
+  issue: IssueDashboardRead
   org: OrganizationRead
   repo: RepositoryRead
 }) => {

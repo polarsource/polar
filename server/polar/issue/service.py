@@ -96,6 +96,8 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         pledged_by_user: UUID
         | None = None,  # Only include issues that have been pledged by this user
         have_pledge: bool | None = None,  # If issues have pledge or not
+        load_references: bool = False,
+        load_pledges: bool = False,
     ) -> Sequence[Issue]:
         statement = sql.select(Issue).join(
             Pledge, Pledge.issue_id == Issue.id, isouter=True
@@ -178,6 +180,17 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         if sort_by_recently_updated:
             statement = statement.order_by(desc(Issue.issue_modified_at))
 
+        if load_references:
+            statement = statement.options(
+                joinedload(Issue.references).joinedload(IssueReference.pull_request)
+            )
+
+        if load_pledges:
+            statement = statement.options(
+                joinedload(Issue.pledges).joinedload(Pledge.user),
+                joinedload(Issue.pledges).joinedload(Pledge.organization),
+            )
+
         res = await session.execute(statement)
         issues = res.scalars().unique().all()
 
@@ -224,7 +237,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         stmt = (
             sql.select(IssueDependency)
             .where(
-                IssueDependency.repository_id.in_([r.id for r in repos]),
+                IssueDependency.repository_id.in_(list(set([r.id for r in repos]))),
             )
             .options(
                 joinedload(IssueDependency.dependent_issue),

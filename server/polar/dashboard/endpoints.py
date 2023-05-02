@@ -11,21 +11,18 @@ from polar.dashboard.schemas import (
     IssueStatus,
     Relationship,
     RelationshipData,
+    IssueDashboardRead,
 )
 from polar.enums import Platforms
 from polar.issue.schemas import IssueRead, IssueReferenceRead
 from polar.models.issue import Issue
 from polar.models.organization import Organization
-from polar.models.issue_reference import ReferenceType
-from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.organization.schemas import OrganizationRead
 from polar.repository.schemas import RepositoryRead
 from polar.issue.service import issue
-from polar.organization.service import organization
 from polar.pledge.schemas import PledgeRead
-from polar.pledge.service import pledge
 from polar.repository.service import repository
 from polar.auth.dependencies import Auth
 from polar.postgres import AsyncSession, get_db_session, sql
@@ -181,13 +178,15 @@ async def dashboard(
         if for_user and IssueListType.dependencies
         else None,
         have_pledge=True if only_pledged else None,
+        load_references=True,
+        load_pledges=True,
     )
 
     issue_organizations = list(
         (
             await session.execute(
                 sql.select(Organization).where(
-                    Organization.id.in_([i.organization_id for i in issues])
+                    Organization.id.in_(list(set([i.organization_id for i in issues])))
                 )
             )
         )
@@ -202,7 +201,7 @@ async def dashboard(
         (
             await session.execute(
                 sql.select(Repository).where(
-                    Repository.id.in_([i.repository_id for i in issues])
+                    Repository.id.in_(list(set([i.repository_id for i in issues])))
                 )
             )
         )
@@ -212,10 +211,6 @@ async def dashboard(
     ) + list(in_repos)
 
     included: dict[str, Entry[Any]] = {}
-
-    # get pledges
-    issue_ids = [i.id for i in issues]
-    pledges = await pledge.get_by_issue_ids(session, issue_ids)
 
     # start building issue relationships with pledges
     issue_relationships: Dict[UUID, IssueRelationship] = {}
@@ -258,25 +253,23 @@ async def dashboard(
             )
 
     # add pledges to included
-    for pled in pledges:
-        included[str(pled.id)] = Entry(
-            id=pled.id, type="pledge", attributes=PledgeRead.from_db(pled)
-        )
+    for i in issues:
+        for pled in i.pledges:
+            # for pled in pledges:
+            included[str(pled.id)] = Entry(
+                id=pled.id, type="pledge", attributes=PledgeRead.from_db(pled)
+            )
 
-        # inject relationships
-        pledge_relationship = issue_relationship(pled.issue_id, "pledges", [])
-        if isinstance(pledge_relationship.data, list):  # it always is
-            pledge_relationship.data.append(RelationshipData(type="pledge", id=pled.id))
-
-    issues_with_prs: Set[UUID] = set()
-
-    issue_references = await issue.list_issue_references_for_issues(
-        session, [i.id for i in issues]
-    )
+            # inject relationships
+            pledge_relationship = issue_relationship(pled.issue_id, "pledges", [])
+            if isinstance(pledge_relationship.data, list):  # it always is
+                pledge_relationship.data.append(
+                    RelationshipData(type="pledge", id=pled.id)
+                )
 
     # get linked pull requests
     for i in issues:
-        refs = [r for r in issue_references if r.issue_id == i.id]
+        refs = i.references
         for ref in refs:
             ref_entry: Entry[IssueReferenceRead] = Entry(
                 id=ref.external_id,
@@ -288,12 +281,6 @@ async def dashboard(
             ir = issue_relationship(ref.issue_id, "references", [])
             if isinstance(ir.data, list):  # it always is
                 ir.data.append(RelationshipData(type="reference", id=ref.external_id))
-
-            if (
-                ref.reference_type == ReferenceType.PULL_REQUEST
-                or ref.reference_type == ReferenceType.EXTERNAL_GITHUB_PULL_REQUEST
-            ):
-                issues_with_prs.add(i.id)
 
     # get dependents
     if issue_list_type == IssueListType.dependencies:
@@ -361,7 +348,7 @@ async def dashboard(
 
     # filter issues to only include issues with any of the expected statuses
     if status:
-        issues = [i for i in issues if issue_progress(i, issues_with_prs) in status]
+        issues = [i for i in issues if issue_progress(i) in status]
 
     #
     # Sorting
@@ -371,7 +358,7 @@ async def dashboard(
         # calculate pledge sum
         sum_by_issue: dict[UUID, int] = dict()
         for i in issues:
-            sum_by_issue[i.id] = pledge_sum(i, pledges)
+            sum_by_issue[i.id] = pledge_sum(i)
 
         # issues is a sequence and can't be sorted on, quickly convert to a list
         issues_list = [i for i in issues]
@@ -381,9 +368,7 @@ async def dashboard(
     if sort == IssueSortBy.dependencies_default:
         issues_list = [i for i in issues]
         issues_list.sort(
-            key=lambda e: sort_dependencies_default(
-                e, pledges, for_org, for_user, issues_with_prs
-            ),
+            key=lambda e: sort_dependencies_default(e, for_org, for_user),
             reverse=True,
         )
         issues = issues_list
@@ -391,7 +376,7 @@ async def dashboard(
     if sort == IssueSortBy.issues_default:
         issues_list = [i for i in issues]
         issues_list.sort(
-            key=lambda e: sort_issues_default(e, pledges),
+            key=lambda e: sort_issues_default(e),
             reverse=True,
         )
         issues = issues_list
@@ -401,7 +386,7 @@ async def dashboard(
             Entry(
                 id=i.id,
                 type="issue",
-                attributes=IssueRead.from_orm(i),
+                attributes=issue_to_schema(i),
                 relationships=issue_relationships.get(i.id, None),
             )
             for i in issues
@@ -410,11 +395,20 @@ async def dashboard(
     )
 
 
-def issue_progress(issue: Issue, issues_with_prs: set[UUID]) -> IssueStatus:
+def issue_to_schema(issue: Issue) -> IssueDashboardRead:
+    r = IssueDashboardRead.from_orm(issue)
+    r.progress = issue_progress(issue)
+    return r
+
+
+def issue_progress(issue: Issue) -> IssueStatus:
     if issue.issue_closed_at:
         return IssueStatus.completed
-    if issue.id in issues_with_prs:
-        return IssueStatus.pull_request
+    for r in issue.references:
+        if r.pull_request:
+            return IssueStatus.pull_request
+    if issue.references:
+        return IssueStatus.building
     return IssueStatus.backlog
 
 
@@ -427,8 +421,8 @@ def status_sort_prio(status: IssueStatus) -> int:
     }.get(status, 0)
 
 
-def pledge_sum(issue: Issue, pledges: Sequence[Pledge]) -> int:
-    return sum(p.amount for p in pledges if p.issue_id == issue.id)
+def pledge_sum(issue: Issue) -> int:
+    return sum(p.amount for p in issue.pledges)
 
 
 def sort_ts(i: Issue) -> int:
@@ -439,15 +433,13 @@ def sort_ts(i: Issue) -> int:
 
 def sort_dependencies_default(
     i: Issue,
-    pledges: Sequence[Pledge],
     for_org: Organization | None,
     for_user: User | None,
-    issues_with_prs: set[UUID],
 ) -> Tuple[int, int, int]:
     self_pledged_amount = sum(
         [
             p.amount
-            for p in pledges
+            for p in i.pledges
             if (
                 (for_org and p.by_organization_id == for_org.id)
                 or (for_user and p.by_user_id == for_user.id)
@@ -456,15 +448,14 @@ def sort_dependencies_default(
         ]
     )
 
-    progress = status_sort_prio(issue_progress(i, issues_with_prs))
+    progress = status_sort_prio(issue_progress(i))
 
     return (self_pledged_amount, progress, sort_ts(i))
 
 
 def sort_issues_default(
     i: Issue,
-    pledges: Sequence[Pledge],
 ) -> Tuple[int, int, int]:
-    total_pledged_amount = sum([p.amount for p in pledges if p.issue_id == i.id])
+    total_pledged_amount = sum([p.amount for p in i.pledges])
     thumbs_up_count = i.reactions.get("plus_one", 0) if i.reactions else 0
     return (total_pledged_amount, thumbs_up_count, sort_ts(i))

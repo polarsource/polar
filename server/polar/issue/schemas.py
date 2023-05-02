@@ -231,7 +231,6 @@ class IssueReferenceRead(Schema):
             case ReferenceType.PULL_REQUEST:
                 pr = m.pull_request
                 if pr:
-
                     avatar = pr.author.get("avatar_url", None) if pr.author else None
                     if not avatar:
                         raise Exception(

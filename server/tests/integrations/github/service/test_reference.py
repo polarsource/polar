@@ -77,9 +77,16 @@ async def test_parse_issue_timeline(
     await existing_pr.save(session)
     await session.commit()
 
+    client = github.get_client("fake")
+
     parsed = [
         await github_reference.parse_issue_timeline_event(
-            session, org, repo, issue, event
+            session,
+            org,
+            repo,
+            issue,
+            event,
+            client=client,
         )
         for event in payload
     ]

@@ -1,12 +1,20 @@
+import { motion } from 'framer-motion'
 import { type OrganizationRead } from 'polarkit/api/client'
 import { useSSE } from 'polarkit/hooks'
 import { useEffect, useState } from 'react'
+import { useTimeoutFn } from 'react-use'
 import { type RepoSyncState, type SyncEvent } from './types'
 
-import OnboardingControls from './OnboardingControls'
 import SynchronizeRepository from './SynchronizeRepository'
 
 const continueTimeoutSeconds = 10
+
+const sortRepos = (a: RepoSyncState, b: RepoSyncState) => {
+  const aIsOpenSource = a.isOpen ? 1 : 0
+  const bIsOpenSource = b.isOpen ? 1 : 0
+  // Prioritize open source and then by stars
+  return bIsOpenSource - aIsOpenSource || b.stars - a.stars
+}
 
 const getInitializedSyncState = (
   org: OrganizationRead,
@@ -20,9 +28,12 @@ const getInitializedSyncState = (
       name: repo.name,
       processed: 0,
       expected: repo.open_issues,
+      isOpen: !repo.is_private,
+      stars: repo.stars || 0,
       completed: false,
     }
   }
+
   return initialSyncStates
 }
 
@@ -35,18 +46,45 @@ const max = (a: number, b: number): number => {
 
 export const SynchronizeRepositories = ({
   org,
-  onContinue,
+  showSetup,
+  setShowSetup,
+  setShowControls,
+  syncedIssuesRef,
 }: {
   org: OrganizationRead
-  onContinue: () => void
+  showSetup: boolean
+  setShowSetup: (state: boolean) => void
+  setShowControls: (state: boolean) => void
+  syncedIssuesRef: { current: number }
 }) => {
   let initialSyncStates = getInitializedSyncState(org)
   const emitter = useSSE(org.platform, org.name)
   const [syncingRepos, setSyncingRepos] = useState<{
     [id: string]: RepoSyncState
   }>(initialSyncStates)
-  const [continueTimeoutReached, setContinueTimeoutReached] =
-    useState<boolean>(false)
+
+  const repos = Object.values(syncingRepos)
+  const sortedRepos = repos.sort(sortRepos)
+  const totalProcessed = repos.reduce((acc, repo) => acc + repo.processed, 0)
+  const totalExpected = repos.reduce((acc, repo) => acc + repo.expected, 0)
+  const countRepos = repos.length
+  const [countSynced, setCountSynced] = useState<number>(
+    repos.reduce((acc, repo) => acc + (repo.completed ? 1 : 0), 0),
+  )
+  const isSyncCompleted = countSynced === countRepos
+  syncedIssuesRef.current = totalProcessed
+
+  // Goto next step and setup in case syncing is complete
+  if (isSyncCompleted) {
+    setShowSetup(true)
+    setShowControls(true)
+  }
+
+  // Show continue button after a few seconds OR once 40% sync is complete
+  useTimeoutFn(() => setShowControls(true), continueTimeoutSeconds * 1000)
+  if (totalProcessed / totalExpected > 0.4) {
+    setShowControls(true)
+  }
 
   const sync = ({
     data,
@@ -63,6 +101,7 @@ export const SynchronizeRepositories = ({
        * we still need to update the processed count to the expected count.
        */
       processed = data.expected
+      setCountSynced((prev) => prev + 1)
     }
     setSyncingRepos((prev) => {
       const repo = prev[data.repository_id]
@@ -97,37 +136,48 @@ export const SynchronizeRepositories = ({
     }
   }, [emitter])
 
-  // Show continue button after a few seconds
-  useEffect(() => {
-    const timeout = setTimeout(
-      () => setContinueTimeoutReached(true),
-      continueTimeoutSeconds * 1000,
-    )
-    return () => clearTimeout(timeout)
-  }, [])
-
-  const repos = Object.values(syncingRepos)
-  const totalProcessed = repos.reduce((acc, repo) => acc + repo.processed, 0)
-  const totalExpected = repos.reduce((acc, repo) => acc + repo.expected, 0)
-
   return (
-    <>
-      <h1 className="my-11 text-center text-xl font-normal text-gray-600 drop-shadow-md">
-        Connecting repositories
-      </h1>
-      <ul>
-        {Object.values(syncingRepos).map((repo) => {
-          return (
-            <li key={repo.id}>
-              <SynchronizeRepository repo={repo} />
-            </li>
-          )
-        })}
-      </ul>
-      {(totalProcessed / totalExpected > 0.4 || continueTimeoutReached) && (
-        <OnboardingControls onClickContinue={onContinue} />
-      )}
-    </>
+    <ul>
+      {sortedRepos.map((repo, index) => {
+        return (
+          <motion.ul
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: {
+                  delayChildren: 0.5,
+                },
+              },
+            }}
+            initial="hidden"
+            animate="show"
+          >
+            <motion.li
+              key={repo.id}
+              className="mb-5"
+              variants={{
+                hidden: {
+                  opacity: 0,
+                  translateY: '100%',
+                  scale: 0.95,
+                },
+                show: {
+                  opacity: 1,
+                  scale: [0.95, 1.05, 1],
+                  translateY: 0,
+                  transition: {
+                    delay: 0.3 * index,
+                  },
+                },
+              }}
+            >
+              <SynchronizeRepository repo={repo} showSetup={showSetup} />
+            </motion.li>
+          </motion.ul>
+        )
+      })}
+    </ul>
   )
 }
 

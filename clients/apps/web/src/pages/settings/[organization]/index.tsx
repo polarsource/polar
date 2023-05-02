@@ -50,8 +50,8 @@ const SettingsPage: NextLayoutComponentType = () => {
 
     // On first load, set values from API
     // After first load, treat local values as the source of truth, and send them to the API
-    setBadgeAddOldIssues(!!org.funding_badge_retroactive)
-    setBadgeShowRaised(!!org.funding_badge_show_amount)
+    setBadgeAddOldIssues(!!org.pledge_badge_retroactive)
+    setBadgeShowRaised(!!org.pledge_badge_show_amount)
 
     setNotificationSettings({
       email_notification_maintainer_issue_receives_backing:
@@ -172,11 +172,11 @@ const SettingsPage: NextLayoutComponentType = () => {
                 badgeShowRaised={badgeShowRaised}
                 setBadgeAddOldIssues={(value) => {
                   setBadgeAddOldIssues(value)
-                  save({ funding_badge_retroactive: value })
+                  save({ pledge_badge_retroactive: value })
                 }}
                 setBadgeShowRaised={(value) => {
                   setBadgeShowRaised(value)
-                  save({ funding_badge_show_amount: value })
+                  save({ pledge_badge_show_amount: value })
                 }}
               />
             </Box>

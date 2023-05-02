@@ -19,6 +19,9 @@ ShouldEmbed = bool
 ShouldEmbedReason = str
 
 
+PLEDGE_BADGE_COMMENT = "<!-- POLAR PLEDGE BADGE -->"
+
+
 class GithubBadge:
     def __init__(
         self, *, organization: Organization, repository: Repository, issue: Issue
@@ -58,13 +61,13 @@ class GithubBadge:
         if setting_retroactive_override is True:
             return (True, "retroactive_enforced_by_override")
 
-        if organization.funding_badge_retroactive:
+        if organization.pledge_badge_retroactive:
             return (True, "org_enabled_retroactive_embed")
 
         return (False, "org_disabled_retroactive_embed")
 
     def generate_svg_url(self) -> str:
-        return "{base}/api/github/{org}/{repo}/issues/{number}/funding.svg".format(
+        return "{base}/api/github/{org}/{repo}/issues/{number}/pledge.svg".format(
             base=settings.FRONTEND_BASE_URL,
             org=self.organization.name,
             repo=self.repository.name,
@@ -82,8 +85,8 @@ class GithubBadge:
     def _badge_markdown(self) -> str:
         svg_url = self.generate_svg_url()
         funding_url = self.generate_funding_url()
-        svg_markdown = f"![Funding with Polar]({svg_url})"
-        return f"[{svg_markdown}]({funding_url})"
+        svg_markdown = f"![Fund with Polar]({svg_url})"
+        return f"{PLEDGE_BADGE_COMMENT}\n[{svg_markdown}]({funding_url})"
 
     def generate_body_with_badge(self, body: str) -> str:
         return f"{body}\n\n{self._badge_markdown()}"
@@ -98,10 +101,26 @@ class GithubBadge:
             # Otherwise, we just remove the (first) badge markdown
             return body.replace(badge_markdown, "", 1)
 
-    def badge_is_embedded(self, body: str) -> bool:
+    def legacy_badge_is_embedded(self, body: str) -> bool:
+        # Search for legacy markdown.
+        #
+        # TODO: Remove this? Will only impact our internal Polar repositories
+        # which had the old format before comment prefix. They would get duplicates.
+        markdown_legacy = "![Funding with Polar]("
+        index = body.rfind(markdown_legacy)
+        if index != -1:
+            return True
+
         svg_url = self.generate_svg_url()
         index = body.rfind(svg_url)
         return index != -1
+
+    def badge_is_embedded(self, body: str) -> bool:
+        index = body.rfind(PLEDGE_BADGE_COMMENT)
+        if index != -1:
+            return True
+
+        return self.legacy_badge_is_embedded(body)
 
     async def get_current_body(
         self, client: GitHub[AppInstallationAuthStrategy]

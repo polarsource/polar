@@ -1,4 +1,5 @@
 from typing import Sequence
+from githubkit import GitHub
 
 import structlog
 import polar.integrations.github.client as github
@@ -120,9 +121,8 @@ class GithubPullRequestService(PullRequestService):
         organization: Organization,
         repository: Repository,
         number: int,
+        client: GitHub,
     ) -> PullRequest | None:
-        client = github.get_app_installation_client(organization.installation_id)
-
         gh_pull = await client.rest.pulls.async_get(
             owner=organization.name, repo=repository.name, pull_number=number
         )

@@ -11,8 +11,8 @@ import {
   IssueActivityBox,
   IssueListItemDecoration,
 } from 'polarkit/components/Issue'
+import { PolarTimeAgo } from 'polarkit/components/ui'
 import { githubIssueUrl } from 'polarkit/utils'
-import TimeAgo from 'react-timeago'
 import PledgeNow from '../Pledge/PledgeNow'
 import IconCounter from './IconCounter'
 import IssueLabel, { LabelSchema } from './IssueLabel'
@@ -104,12 +104,12 @@ const IssueListItem = (props: {
               <div className="text-xs text-gray-500">
                 {state == 'open' && (
                   <p>
-                    #{number} opened <TimeAgo date={new Date(createdAt)} />
+                    #{number} opened <PolarTimeAgo date={new Date(createdAt)} />
                   </p>
                 )}
                 {state == 'closed' && (
                   <p>
-                    #{number} closed <TimeAgo date={new Date(closedAt)} />
+                    #{number} closed <PolarTimeAgo date={new Date(closedAt)} />
                   </p>
                 )}
               </div>

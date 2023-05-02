@@ -1,6 +1,6 @@
 import { IssueReferenceRead, PledgeRead } from 'polarkit/api/client'
 import { classNames } from 'polarkit/utils'
-import IssuePledge from './Pledge'
+import IssuePledge from './IssuePledge'
 import IssueReference from './Reference'
 
 const IssueListItemDecoration = ({

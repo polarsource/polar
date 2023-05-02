@@ -1,6 +1,6 @@
 import IssueActivityBox from './IssueActivityBox'
+import IssuePledge from './IssuePledge'
 import IssueListItemDecoration from './ListItemDecoration'
-import IssuePledge from './Pledge'
 import IssueReference from './Reference'
 
 export {

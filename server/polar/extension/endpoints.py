@@ -10,7 +10,7 @@ from polar.models import Issue
 from polar.enums import Platforms
 from polar.models.issue_reference import IssueReference
 from polar.models.pledge import Pledge
-from polar.pledge.schemas import PledgeRead, State
+from polar.pledge.schemas import PledgeRead, PledgeState
 from polar.postgres import AsyncSession, get_db_session
 from polar.exceptions import ResourceNotFound
 
@@ -64,7 +64,7 @@ async def list_issues_for_extension(
                 number=issue.number,
                 pledges=[PledgeRead.from_db(p)
                          for p in pledges
-                         if p.state != State.initiated],
+                         if p.state != PledgeState.initiated],
                 references=[IssueReferenceRead.from_model(r) for r in references],
             )
             ret.append(issue_extension)

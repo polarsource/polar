@@ -16,6 +16,7 @@ from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import OrganizationCreate
+from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession
 
 from polar.integrations.github.service import (
@@ -138,6 +139,7 @@ async def pledge(
         repository_id=repository.id,
         organization_id=organization.id,
         amount=12345,
+        state=PledgeState.created,
     )
 
     await session.commit()

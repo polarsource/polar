@@ -4,9 +4,9 @@ import GithubLoginButton from 'components/Shared/GithubLoginButton'
 import type { NextLayoutComponentType } from 'next'
 import { api } from 'polarkit'
 import { Platforms, type PledgeResources } from 'polarkit/api/client'
+import { PolarTimeAgo } from 'polarkit/components/ui'
 import { GrayCard, WhiteCard } from 'polarkit/components/ui/Cards'
 import { ReactElement, useEffect, useRef } from 'react'
-import ReactTimeAgo from 'react-timeago'
 import { useAuth } from '../../../../../hooks/auth'
 
 const PledgeStatusPage: NextLayoutComponentType = ({
@@ -36,7 +36,7 @@ const PledgeStatusPage: NextLayoutComponentType = ({
             Thank you!
           </h1>
           <p className="w-1/2 text-right align-middle text-sm font-normal text-gray-600">
-            Backed <ReactTimeAgo date={pledge.created_at} />
+            Backed <PolarTimeAgo date={new Date(pledge.created_at)} />
           </p>
         </div>
 

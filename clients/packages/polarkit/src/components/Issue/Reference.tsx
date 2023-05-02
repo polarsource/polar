@@ -11,8 +11,8 @@ import {
   GitPullRequestClosedIcon,
   GitPullRequestIcon,
 } from 'polarkit/components/icons'
+import { PolarTimeAgo } from 'polarkit/components/ui'
 import { classNames, githubPullReqeustUrl } from 'polarkit/utils'
-import TimeAgo from 'react-timeago'
 
 const IssueReference = (props: {
   orgName: string
@@ -253,7 +253,7 @@ const IssueReferencePullRequest = (props: {
         <span className="overflow-hidden whitespace-pre text-sm text-gray-500">
           #{pr.number} {formatting.label}{' '}
           {formatting.timestamp && (
-            <TimeAgo date={new Date(formatting.timestamp)} />
+            <PolarTimeAgo date={new Date(formatting.timestamp)} />
           )}
         </span>
       </LeftSide>

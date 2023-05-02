@@ -1,5 +1,5 @@
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
-import TimeAgo from 'react-timeago'
+import { PolarTimeAgo } from 'polarkit/components/ui'
 import {
   IssueDashboardRead,
   OrganizationRead,
@@ -32,7 +32,7 @@ const IssueCard = ({
         <h1 className="my-2.5 text-lg font-normal">{issue.title}</h1>
         <p className="text-sm font-normal text-gray-500">
           <a href={url}>#{issue.number}</a> opened{' '}
-          <TimeAgo date={new Date(issue.issue_created_at)} />
+          <PolarTimeAgo date={new Date(issue.issue_created_at)} />
         </p>
         <div className="mt-6 flex flex-row justify-center space-x-4">
           <p className="w-16 text-sm text-gray-600">

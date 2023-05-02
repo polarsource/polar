@@ -136,6 +136,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         pledge = await self.get_by_payment_id(session, payment_id)
         if pledge:
             pledge.state = PledgeState.created
+            session.add(pledge)
             session.add(PledgeTransaction(
                 pledge_id=pledge.id, type=PledgeTransactionType.pledge,
                 amount=amount, transaction_id=transaction_id))
@@ -148,6 +149,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         pledge = await self.get_by_payment_id(session, payment_id)
         if pledge:
             pledge.state = PledgeState.paid
+            session.add(pledge)
             session.add(PledgeTransaction(
                 pledge_id=pledge.id, type=PledgeTransactionType.transfer,
                 amount=amount, transaction_id=transaction_id))
@@ -165,11 +167,13 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
                 elif amount < pledge.amount:
                     pledge.amount -= amount
                 else:
-                    # TODO: Unclear what we should do here
+                    # Not possible
                     ...
             else:
-                # TODO: Unclear what we should do here
+                # TODO: Log to sentry
                 ...
+
+            session.add(pledge)
             session.add(PledgeTransaction(
                 pledge_id=pledge.id, type=PledgeTransactionType.refund,
                 amount=amount, transaction_id=transaction_id))

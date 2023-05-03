@@ -112,22 +112,26 @@ const Pill = ({ className }: { className: string }) => (
 )
 
 const Pills = ({ state }: { state: string }) => {
-  const nums = {
-    created: 1,
-    pending: 2,
-    paid: 3,
+  const states = {
+    created: { num: 1, color: 'bg-blue-400' },
+    pending: { num: 2, color: 'bg-blue-400' },
+    paid: { num: 3, color: 'bg-blue-400' },
+    refunded: { num: 2, color: 'bg-red-400' },
+    disputed: { num: 4, color: 'bg-red-400' },
   }
-  const n = nums[state] || 0
-  const filled = [...Array(n)]
-  const pending = [...Array(4 - n)]
+  const pillState = states[state] || { num: 0, color: 'bg-blue-400' }
+  const filled = [...Array(pillState.num)]
+  const pending = [...Array(4 - pillState.num)]
+
+  console.log(filled, pending)
 
   return (
     <div className="flex items-center space-x-1">
-      {filled.map(() => (
-        <Pill className="bg-blue-400" />
+      {filled.map((_, index) => (
+        <Pill key={index} className={pillState.color} />
       ))}
-      {pending.map(() => (
-        <Pill className="bg-gray-200" />
+      {pending.map((_, index) => (
+        <Pill key={index} className="bg-gray-200" />
       ))}
     </div>
   )

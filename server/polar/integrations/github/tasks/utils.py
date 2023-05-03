@@ -39,6 +39,7 @@ async def get_organization_and_repo(
 async def add_repositories(
     session: AsyncSession,
     organization: Organization,
+    installation_id: int,
     repositories: Sequence[
         Union[
             github.webhooks.InstallationCreatedPropRepositoriesItems,
@@ -46,18 +47,8 @@ async def add_repositories(
             github.webhooks.InstallationRepositoriesRemovedPropRepositoriesAddedItems,
         ]
     ],
-) -> Sequence[Repository]:
-    schemas = []
+) -> None:
     for repo in repositories:
-        create_schema = RepositoryCreate(
-            platform=Platforms.github,
-            external_id=repo.id,
-            organization_id=organization.id,
-            name=repo.name,
-            is_private=repo.private,
-        )
-        schemas.append(create_schema)
-
         # un-delete if previously deleted
         prev = await service.github_repository.get_by_external_id(
             session, external_id=repo.id
@@ -66,14 +57,13 @@ async def add_repositories(
             prev.deleted_at = None
             await prev.save(session)
 
-    log.debug("github.repositories.upsert_many", repos=schemas)
-    instances = await service.github_repository.upsert_many(session, schemas)
-    return instances
+    await service.github_repository.install_for_organization(
+        session, organization, installation_id
+    )
 
 
 async def remove_repositories(
     session: AsyncSession,
-    organization: Organization,
     repositories: Sequence[
         Union[
             github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems,

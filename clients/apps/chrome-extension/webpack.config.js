@@ -1,3 +1,5 @@
+const EnvironmentPlugin = require("webpack").EnvironmentPlugin
+
 module.exports = {
   entry: {
     content: "./src/index.tsx",
@@ -44,6 +46,10 @@ module.exports = {
   resolve: {
     extensions: [".tsx", ".ts", ".js"],
   },
+  plugins: [new EnvironmentPlugin({
+    "API_URL": '',
+    "WEB_URL": '',
+  })],
   output: {
     filename: "[name].js",
   },

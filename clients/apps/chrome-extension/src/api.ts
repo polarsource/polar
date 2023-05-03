@@ -1,4 +1,5 @@
 import { PolarAPI } from 'polarkit/api/client'
+import { CONFIG } from './config'
 
 const headers = {}
 
@@ -33,7 +34,7 @@ chrome.storage.local.onChanged.addListener(
 )
 
 const api = new PolarAPI({
-  BASE: 'http://127.0.0.1:8000', // TODO
+  BASE: CONFIG.API_URL,
   WITH_CREDENTIALS: false,
   HEADERS: getHeaders,
 })

@@ -1,5 +1,5 @@
 {
-    "name": "Polar Chrome Extension",
+    "name": "Polar Browser Extension",
     "version": "0.0.1",
     "manifest_version": 3,
     "permissions": [
@@ -10,20 +10,23 @@
             "run_at": "document_end",
             "js": ["content.js"],
             "matches": [
-                "https://github.com/*/*/issues",
-                "https://github.com/*/*/issues?*",
-                "https://github.com/*/*/issues/*"
+                "*://github.com/*/*/issues",
+                "*://github.com/*/*/issues?*",
+                "*://github.com/*/*/issues/*"
             ]
         },
         {
             "js": ["auth.js"],
-            "matches": ["http://127.0.0.1:3000/settings/extension"]
+            "matches": [
+                "*://dashboard.polar.sh/settings/extension",
+                "http://127.0.0.1:3000/settings/extension"
+            ]
         }
     ],
     "web_accessible_resources": [
         {
             "resources": ["index.css"],
-            "matches": ["https://github.com/*"]
+            "matches": ["*://github.com/*"]
         }
     ]
 }

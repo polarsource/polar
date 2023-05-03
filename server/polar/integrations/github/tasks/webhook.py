@@ -49,25 +49,20 @@ async def repositories_changed(
         if not organization:
             log.critical(
                 "suspicuous github webhook!",
-                # webhook_id=event.id,
                 github_event=f"{scope}.{action}",
                 organization=event.installation.account.login,
             )
             return dict(success=False)
 
-        added, deleted = 0, 0
         if event.repositories_added:
-            instances = await add_repositories(
-                session, organization, event.repositories_added
+            await add_repositories(
+                session, organization, event.installation.id, event.repositories_added
             )
-            added = len(instances)
 
         if event.repositories_removed:
-            deleted = await remove_repositories(
-                session, organization, event.repositories_removed
-            )
+            await remove_repositories(session, event.repositories_removed)
 
-        return dict(success=True, added=added, removed=deleted)
+        return dict(success=True)
 
 
 @task("github.webhook.installation_repositories.added")
@@ -77,14 +72,14 @@ async def repositories_added(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context() as context:
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.InstallationRepositoriesAdded):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
         async with AsyncSessionLocal() as session:
-            return await repositories_changed(session, scope, action, parsed)
+            await repositories_changed(session, scope, action, parsed)
 
 
 @task(name="github.webhook.installation_repositories.removed")
@@ -94,14 +89,14 @@ async def repositories_removed(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context() as context:
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.InstallationRepositoriesRemoved):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
         async with AsyncSessionLocal() as session:
-            return await repositories_changed(session, scope, action, parsed)
+            await repositories_changed(session, scope, action, parsed)
 
 
 # ------------------------------------------------------------------------------
@@ -442,7 +437,9 @@ async def installation_created(
                 await service.github_user.sync_github_admin_orgs(session, user=sender)
 
             if event.repositories:
-                await add_repositories(session, organization, event.repositories)
+                await add_repositories(
+                    session, organization, event.installation.id, event.repositories
+                )
 
             return dict(success=True)
 

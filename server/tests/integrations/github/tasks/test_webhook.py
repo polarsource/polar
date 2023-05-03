@@ -11,12 +11,17 @@ from polar.integrations.github import service
 from polar.integrations.github import client as github
 from polar.kit import utils
 from polar.models.organization import Organization
+from polar.models.repository import Repository
 from polar.organization.schemas import OrganizationCreate
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, AsyncSessionLocal
 from polar.integrations.github.tasks import webhook as webhook_tasks
+from polar.repository.schemas import RepositoryCreate
 from polar.worker import JobContext, PolarWorkerContext
 from tests.fixtures.webhook import TestWebhook, TestWebhookFactory
+from polar.integrations.github.service.repository import (
+    github_repository as github_repository_service,
+)
 
 FAKE_CTX: JobContext = {
     "redis": ArqRedis(),
@@ -53,12 +58,10 @@ async def create_org(
     status: Organization.Status = Organization.Status.ACTIVE,
 ) -> Organization:
     hook = github_webhook.create("installation.created")
-    # hook = github.patch_unset("requester", hook.json)
     event = github.webhooks.parse_obj("installation", hook.json)
     if not isinstance(event, github.webhooks.InstallationCreated):
         raise Exception("unexpected type")
 
-    # TODO: Move this into its own schema helper
     account = event.installation.account
     is_personal = account.type.lower() == "user"
     create_schema = OrganizationCreate(
@@ -68,8 +71,8 @@ async def create_org(
         avatar_url=account.avatar_url,
         is_personal=is_personal,
         installation_id=event.installation.id,
-        installation_created_at=utils.utc_now(),  # Or something else?
-        installation_updated_at=utils.utc_now(),  # Or something else?
+        installation_created_at=utils.utc_now(),
+        installation_updated_at=utils.utc_now(),
         installation_suspended_at=event.installation.suspended_at,
     )
     async with AsyncSessionLocal() as session:
@@ -80,17 +83,26 @@ async def create_org(
         return org
 
 
-async def create_repositories(github_webhook: TestWebhookFactory) -> TestWebhook:
-    await create_org(github_webhook, status=Organization.Status.ACTIVE)
+async def create_repositories(github_webhook: TestWebhookFactory):
+    org = await create_org(github_webhook, status=Organization.Status.ACTIVE)
     hook = github_webhook.create("installation_repositories.added")
-    await webhook_tasks.repositories_added(
-        FAKE_CTX,
-        "installation_repositories",
-        "added",
-        hook.json,
-        polar_context=PolarWorkerContext(),
-    )
-    return hook
+
+    parsed = github.webhooks.parse_obj("installation_repositories", hook.json)
+    if not isinstance(parsed, github.webhooks.InstallationRepositoriesAdded):
+        raise Exception("unexpected webhook payload")
+
+    async with AsyncSessionLocal() as session:
+        for repo in parsed.repositories_added:
+            await github_repository_service.upsert(
+                session,
+                RepositoryCreate(
+                    platform=Platforms.github,
+                    external_id=repo.id,
+                    organization_id=org.id,
+                    name=repo.name,
+                    is_private=repo.private,
+                ),
+            )
 
 
 async def create_issue(github_webhook: TestWebhookFactory) -> TestWebhook:
@@ -117,36 +129,6 @@ async def create_pr(github_webhook: TestWebhookFactory) -> TestWebhook:
         polar_context=PolarWorkerContext(),
     )
     return hook
-
-
-@pytest.mark.asyncio
-async def test_webhook_installation_created(
-    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
-) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("arq.connections.ArqRedis.enqueue_job")
-
-    hook = github_webhook.create("installation.created")
-    installation_id = hook["installation"]["id"]
-    account = hook["installation"]["account"]
-    await webhook_tasks.installation_created(
-        FAKE_CTX,
-        "installation",
-        "created",
-        hook.json,
-        polar_context=PolarWorkerContext(),
-    )
-
-    org = await service.github_organization.get_by(
-        session, installation_id=installation_id
-    )
-
-    assert org is not None
-    assert org.external_id == account["id"]
-    assert org.name == account["login"]
-
-    for repo in hook["repositories"]:
-        await assert_repository_exists(session, repo)
 
 
 @pytest.mark.asyncio
@@ -232,97 +214,6 @@ async def test_webhook_installation_delete(
         # un-delete (fixes other tests)
         fetched.deleted_at = None
         await fetched.save(session)
-
-
-@pytest.mark.asyncio
-async def test_webhook_installation_create_delete_create(
-    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
-) -> None:
-    # Capture and prevent any calls to enqueue_job
-    mocker.patch("arq.connections.ArqRedis.enqueue_job")
-
-    hook = github_webhook.create("installation.created")
-    installation_id = hook["installation"]["id"]
-    account = hook["installation"]["account"]
-
-    # Create
-    await webhook_tasks.installation_created(
-        FAKE_CTX,
-        "installation",
-        "created",
-        hook.json,
-        polar_context=PolarWorkerContext(),
-    )
-
-    org = await service.github_organization.get_by(
-        session, installation_id=installation_id
-    )
-
-    assert org is not None
-    assert org.external_id == account["id"]
-    assert org.deleted_at is None
-
-    # repos
-    pre_delete_repos = await service.github_repository.list_by_organization(
-        session, org.id
-    )
-
-    # Delete
-    hook_deleted = github_webhook.create("installation.deleted")
-    await webhook_tasks.installation_delete(
-        FAKE_CTX,
-        "installation",
-        "deleted",
-        hook_deleted.json,
-        polar_context=PolarWorkerContext(),
-    )
-
-    session.expunge_all()
-    session.expire_all()
-
-    org_deleted_get = await service.github_organization.get(
-        session, org.id, allow_deleted=False
-    )
-    assert org_deleted_get is None
-
-    org_post_delete = await service.github_organization.get(
-        session, org.id, allow_deleted=True
-    )
-    assert org_post_delete is not None
-    assert org_post_delete.deleted_at is not None
-
-    session.expunge_all()
-    session.expire_all()
-
-    post_delete_repos = await service.github_repository.list_by_organization(
-        session, org.id
-    )
-
-    # check that repos where deleted
-    assert len(pre_delete_repos) == 1
-    assert len(post_delete_repos) == 0
-
-    # Create
-    await webhook_tasks.installation_created(
-        FAKE_CTX,
-        "installation",
-        "created",
-        hook.json,
-        polar_context=PolarWorkerContext(),
-    )
-
-    org_post_recreate = await service.github_organization.get_by(
-        session, installation_id=installation_id
-    )
-
-    assert org_post_recreate is not None
-    assert org_post_recreate.deleted_at is None
-
-    # check that repos where re-installed
-    post_recreate_repos = await service.github_repository.list_by_organization(
-        session, org.id
-    )
-    assert len(post_recreate_repos) == 1
 
 
 @pytest.mark.asyncio

@@ -18,6 +18,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "npm run build:js && npm run build:css",
+    "build:prod": "API_URL=https://api.polar.sh WEB_URL=https://dashboard.polar.sh npm run build",
     "build:css": "tailwindcss -i ./src/index.css -o ./extension/index.css",
     "build:js": "webpack --config webpack.config.js && mv dist/content.js ./extension && mv dist/auth.js ./extension",
     "test": "react-scripts test",

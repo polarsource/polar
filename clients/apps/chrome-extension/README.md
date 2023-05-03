@@ -10,12 +10,25 @@ This project has three different "entry points":
 - `auth.ts` is a content script that scrapes Polar's `/settings/extension` URL to look for an auth token
 - `index.tsx` is the main content script, that decorates issues in the GitHub issue list
 
+## Config
+
+This extension uses webpack's `EnvironmentPlugin` to take values of environment variables
+at build time and make them accessible at runtime. Check `src/config.ts`.
+
 ## Build the extension
 
-Before the extension can be installed (and after every change), you need to rebuild it
+Before the extension can be installed (and after every change), you need to rebuild it.
+
+To build a version that uses your local web and API:
 
 ```bash
 pnpm build
+```
+
+To build it for production:
+
+```bash
+pmpm build:prod
 ```
 
 ## Install the extension

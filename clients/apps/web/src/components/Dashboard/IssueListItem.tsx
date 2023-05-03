@@ -76,7 +76,7 @@ const IssueListItem = (props: {
       <div className="hover:bg-gray-75 group flex items-center justify-between gap-4 py-4 px-2 pb-5">
         <div className="flex flex-row items-center">
           {isDependency && (
-            <div className="mr-3 justify-center rounded-full bg-white p-[1px] shadow">
+            <div className="mr-3 flex-shrink-0 justify-center rounded-full bg-white p-[1px] shadow">
               <img
                 src={props.issue.organization.avatar_url}
                 className="h-8 w-8 rounded-full"

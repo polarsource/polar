@@ -5,9 +5,7 @@ from datetime import datetime
 from enum import Enum
 
 from polar.kit.schemas import Schema
-from polar.models.organization import Organization
 from polar.models.pledge import Pledge
-from polar.models.user import User
 from polar.organization.schemas import OrganizationRead
 from polar.repository.schemas import RepositoryRead
 from polar.issue.schemas import IssueRead

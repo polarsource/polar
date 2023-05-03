@@ -8,10 +8,13 @@ const StripeOnboardingButton = ({ stripeId }: { stripeId?: string }) => {
   const onboard = async () => {
     let stripeAccountId = stripeId
     if (!stripeId) {
+      const country = prompt(
+        'Country of reisdence or tax residence (2 letter ISO code)',
+      )
       const account = await api.accounts.createAccount({
         platform: Platforms.GITHUB,
         orgName: currentOrg.name,
-        requestBody: { account_type: AccountType.STRIPE },
+        requestBody: { account_type: AccountType.STRIPE, country },
       })
       stripeAccountId = account.stripe_id
     }

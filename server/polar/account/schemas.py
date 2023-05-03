@@ -14,6 +14,7 @@ class AccountLinkTypes(str, Enum):
 
 class AccountCreate(Schema):
     account_type: AccountType | None
+    country: str
 
 
 class AccountUpdate(Schema):

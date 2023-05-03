@@ -6,5 +6,6 @@ import type { AccountType } from './AccountType';
 
 export type AccountCreate = {
   account_type?: AccountType;
+  country: string;
 };
 

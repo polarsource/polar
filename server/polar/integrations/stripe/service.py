@@ -1,4 +1,5 @@
 import stripe as stripe_lib
+from polar.account.schemas import AccountCreate
 
 from polar.config import settings
 from polar.models.issue import Issue
@@ -93,11 +94,13 @@ class StripeService:
     def retrieve_intent(self, id: str) -> stripe_lib.PaymentIntent:
         return stripe_lib.PaymentIntent.retrieve(id)
 
-    def create_account(self) -> stripe_lib.Account:
+    def create_account(self, account: AccountCreate) -> stripe_lib.Account:
+        tos_acceptance = account.country != 'US' and \
+            {"service_agreement": "recipient"} or None
         return stripe_lib.Account.create(
-            country="SE",
+            country=account.country,
             type="express",
-            tos_acceptance={"service_agreement": "recipient"},
+            tos_acceptance=tos_acceptance,
             capabilities={"transfers": {"requested": True}})
 
     def retrieve_account(self, id: str) -> stripe_lib.Account:

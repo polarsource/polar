@@ -33,7 +33,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         if account.account_type != AccountType.stripe:
             return None
 
-        stripe_account = stripe.create_account()
+        stripe_account = stripe.create_account(account)
         return await Account.create(
             session=session,
             organization_id=organization_id,

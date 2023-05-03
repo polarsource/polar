@@ -1,9 +1,11 @@
 import { Cog8ToothIcon } from '@heroicons/react/24/outline'
 import AccountTopbar from 'components/Dashboard/Account/Topbar'
 import RepoSelection from 'components/Dashboard/RepoSelection'
+import SetupAccount from 'components/Dashboard/SetupAccount'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useStore } from 'polarkit/store'
+import { useState } from 'react'
 import Topbar from './Topbar'
 
 const SettingsLink = ({ orgSlug }: { orgSlug?: string }) => {
@@ -24,7 +26,11 @@ const SettingsLink = ({ orgSlug }: { orgSlug?: string }) => {
   )
 }
 
-const DashboardNav = () => {
+const DashboardNav = ({
+  showSetupAccount,
+}: {
+  showSetupAccount: (_: boolean) => void
+}) => {
   const router = useRouter()
   const currentOrg = useStore((state) => state.currentOrg)
   const currentRepo = useStore((state) => state.currentRepo)
@@ -46,7 +52,7 @@ const DashboardNav = () => {
         showUserInDropdown={true}
         showOrganizationRepositoryCount={true}
       />
-      <AccountTopbar />
+      <AccountTopbar showSetupAccount={showSetupAccount} />
       <SettingsLink orgSlug={currentOrg.name} />
     </>
   )
@@ -74,12 +80,18 @@ const PersonalDashboardNav = () => {
 }
 
 const DashboardTopbar = () => {
+  const [showSetupAccount, setShowSetupAccount] = useState(false)
   return (
-    <Topbar isFixed={true}>
-      {{
-        left: <DashboardNav />,
-      }}
-    </Topbar>
+    <>
+      {showSetupAccount && (
+        <SetupAccount onClose={() => setShowSetupAccount(false)} />
+      )}
+      <Topbar isFixed={true}>
+        {{
+          left: <DashboardNav showSetupAccount={setShowSetupAccount} />,
+        }}
+      </Topbar>
+    </>
   )
 }
 

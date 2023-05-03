@@ -22,7 +22,9 @@ class PledgeState(str, Enum):
     disputed = "disputed"  # The charge was disputed by the customer.
 
     # The states in which this pledge is "active", i.e. is listed on the issue
-    active_states = [created, pending, paid]
+    @classmethod
+    def active_states(cls) -> list[PledgeState]:
+        return [cls.created, cls.pending, cls.paid]
 
     # Happy path: initiated -> created -> pending -> paid
 
@@ -35,6 +37,7 @@ class PledgeTransactionType(str, Enum):
     pledge = "pledge"
     transfer = "transfer"
     refund = "refund"
+    disputed = "disputed"
 
 
 class PledgeCreate(Schema):

@@ -106,7 +106,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             sql.func.sum(Pledge.amount).label("pledged_amount"),
         ).join(Pledge,
             and_(Pledge.issue_id == Issue.id,
-                 or_(Pledge.id.is_(None), Pledge.state.in_(PledgeState.active_states))),
+                 or_(Pledge.id.is_(None), Pledge.state.in_(PledgeState.active_states()))),
             isouter=True)
 
         if issue_list_type == IssueListType.issues:

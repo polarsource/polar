@@ -28,3 +28,15 @@ async def charge_refunded(
                 session=session, payment_id=charge["payment_intent"],
                 amount=charge["amount_refunded"],
                 transaction_id=charge["id"])
+
+@task("stripe.webhook.charge.dispute.created")
+async def charge_dispute_created(
+    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
+) -> None:
+    with polar_context.to_execution_context() as context:
+        async with AsyncSessionLocal() as session:
+            dispute = event["data"]["object"]
+            await pledge_service.mark_disputed_by_payment_id(
+                session=session, payment_id=dispute["payment_intent"],
+                amount=dispute["amount"],
+                transaction_id=dispute["id"])

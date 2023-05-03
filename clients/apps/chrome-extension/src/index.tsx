@@ -94,9 +94,8 @@ const decorateIssues = () => {
   }
 
   // Listen for changes to the DOM, and decorate any new issues
-  const turboFrame = document.querySelector(
-    'turbo-frame[id="repo-content-turbo-frame"]',
-  )
+  // We must listen at the root, since some requests (like pagination) replace the entire DOM
+  const turboFrame = document.querySelector('html')
   if (turboFrame) {
     const callback = (mutationList: MutationRecord[], observer) => {
       for (const mutation of mutationList) {

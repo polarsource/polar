@@ -1,7 +1,8 @@
 import { Platforms } from 'polarkit/api/client'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import api from './api'
+import api, { isAuthenticated } from './api'
+import AuthorizationBanner from './components/AuthorizationBanner'
 import CachedIssueListItemDecoration from './components/CachedIssueListItemDecoration'
 import './index.css'
 import reportWebVitals from './reportWebVitals'
@@ -49,7 +50,7 @@ const apiRequestDecoration = (issueNumbers: string[]) => {
     })
 }
 
-const mountReact = (issues: NodeListOf<Element>) => {
+const mountDecoration = (issues: NodeListOf<Element>) => {
   issues.forEach((issue) => {
     const issueNumber = parseInt(issue.id.replace('issue_', ''))
     const badge = document.createElement('div')
@@ -67,28 +68,34 @@ const mountReact = (issues: NodeListOf<Element>) => {
   })
 }
 
-if (orgName && repoName) {
-  // Install the CSS
-  const head = document.querySelector('head')
-  if (head) {
-    const link = document.createElement('link')
-    link.rel = 'stylesheet'
-    link.href = chrome.runtime.getURL('index.css')
-    head.appendChild(link)
+const mountAuthorizationBanner = () => {
+  const heading = document.querySelector(
+    'div.new-discussion-timeline h1.sr-only',
+  )
+  if (heading) {
+    const badge = document.createElement('div')
+    heading.insertAdjacentElement('afterend', badge)
+    const root = createRoot(badge)
+    root.render(
+      <React.StrictMode>
+        <AuthorizationBanner />
+      </React.StrictMode>,
+    )
   }
+}
 
+const decorateIssues = () => {
   // Decorate all issues on page
   const issues = findIssueNodes(document)
   if (issues.length > 0) {
     const issueNumbers = getIssueNumbers(issues)
     apiRequestDecoration(issueNumbers)
-    mountReact(issues)
+    mountDecoration(issues)
   }
 
   // Listen for changes to the DOM, and decorate any new issues
-  const turboFrame = document.querySelector(
-    'turbo-frame[id="repo-content-turbo-frame"]',
-  )
+  // We must listen at the root, since some requests (like pagination) replace the entire DOM
+  const turboFrame = document.querySelector('html')
   if (turboFrame) {
     const callback = (mutationList: MutationRecord[], observer) => {
       for (const mutation of mutationList) {
@@ -100,7 +107,7 @@ if (orgName && repoName) {
               if (issues.length > 0) {
                 const issueNumbers = getIssueNumbers(issues)
                 apiRequestDecoration(issueNumbers)
-                mountReact(issues)
+                mountDecoration(issues)
               }
             }
           })
@@ -113,6 +120,45 @@ if (orgName && repoName) {
       subtree: true,
     })
   }
+}
+
+const showAuthorizeBanner = () => {
+  // Show an authorize banner
+  mountAuthorizationBanner()
+
+  // Remove the banner and start decorating issues if the user authorizes
+  chrome.storage.local.onChanged.addListener(
+    (changes: { [key: string]: chrome.storage.StorageChange }) => {
+      if (changes.token && changes.token.newValue) {
+        const banner = document.getElementById('polar-authorize-banner')
+        if (banner) {
+          banner.remove()
+        }
+        decorateIssues()
+      }
+    },
+  )
+}
+
+const main = async () => {
+  if (await isAuthenticated()) {
+    decorateIssues()
+  } else {
+    showAuthorizeBanner()
+  }
+}
+
+if (orgName && repoName) {
+  // Install the CSS
+  const head = document.querySelector('head')
+  if (head) {
+    const link = document.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = chrome.runtime.getURL('index.css')
+    head.appendChild(link)
+  }
+
+  main()
 }
 
 // If you want to start measuring performance in your app, pass a function

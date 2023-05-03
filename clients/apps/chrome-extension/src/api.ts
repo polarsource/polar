@@ -11,10 +11,17 @@ const getHeaders = async (): Promise<Record<string, string>> => {
 
   return new Promise((resolve) => {
     chrome.storage.local.get('token', (result) => {
-      headers['Authorization'] = `Bearer ${result.token}`
+      if (result.token) {
+        headers['Authorization'] = `Bearer ${result.token}`
+      }
       resolve(headers)
     })
   })
+}
+
+export const isAuthenticated = async (): Promise<boolean> => {
+  const headers = await getHeaders()
+  return !!headers['Authorization']
 }
 
 chrome.storage.local.onChanged.addListener(

@@ -2,7 +2,6 @@ module.exports = {
   entry: {
     content: "./src/index.tsx",
     auth: "./src/auth.ts",
-    popup: "./src/popup.tsx",
   },
   mode: "production",
   module: {

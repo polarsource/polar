@@ -16,10 +16,9 @@ const ExtensionSettingsPage: NextPageWithLayout = () => {
   }, [])
 
   return (
-    <>
-      <h1>Congrats on getting the extension</h1>
-      <div id="polar-token">{token}</div>
-    </>
+    <div id="polar-token" style={{ color: 'white' }}>
+      {token}
+    </div>
   )
 }
 

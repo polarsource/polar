@@ -68,15 +68,20 @@ const mountDecoration = (issues: NodeListOf<Element>) => {
   })
 }
 
-const mountAuthorizationBanner = (issue: Element) => {
-  const badge = document.createElement('div')
-  issue.insertAdjacentElement('afterend', badge)
-  const root = createRoot(badge)
-  root.render(
-    <React.StrictMode>
-      <AuthorizationBanner />
-    </React.StrictMode>,
+const mountAuthorizationBanner = () => {
+  const heading = document.querySelector(
+    'div.new-discussion-timeline h1.sr-only',
   )
+  if (heading) {
+    const badge = document.createElement('div')
+    heading.insertAdjacentElement('afterend', badge)
+    const root = createRoot(badge)
+    root.render(
+      <React.StrictMode>
+        <AuthorizationBanner />
+      </React.StrictMode>,
+    )
+  }
 }
 
 const decorateIssues = () => {
@@ -119,25 +124,21 @@ const decorateIssues = () => {
 }
 
 const showAuthorizeBanner = () => {
-  // Show an authorize banner on the first issue
-  const issues = findIssueNodes(document)
-  if (issues.length > 0) {
-    const firstIssue = issues[0]
-    mountAuthorizationBanner(firstIssue)
+  // Show an authorize banner
+  mountAuthorizationBanner()
 
-    // Remove the banner and start decorating issues if the user authorizes
-    chrome.storage.local.onChanged.addListener(
-      (changes: { [key: string]: chrome.storage.StorageChange }) => {
-        if (changes.token && changes.token.newValue) {
-          const banner = document.getElementById('polar-authorize-banner')
-          if (banner) {
-            banner.remove()
-          }
-          decorateIssues()
+  // Remove the banner and start decorating issues if the user authorizes
+  chrome.storage.local.onChanged.addListener(
+    (changes: { [key: string]: chrome.storage.StorageChange }) => {
+      if (changes.token && changes.token.newValue) {
+        const banner = document.getElementById('polar-authorize-banner')
+        if (banner) {
+          banner.remove()
         }
-      },
-    )
-  }
+        decorateIssues()
+      }
+    },
+  )
 }
 
 const main = async () => {

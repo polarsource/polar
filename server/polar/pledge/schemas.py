@@ -5,9 +5,7 @@ from datetime import datetime
 from enum import Enum
 
 from polar.kit.schemas import Schema
-from polar.models.organization import Organization
 from polar.models.pledge import Pledge
-from polar.models.user import User
 from polar.organization.schemas import OrganizationRead
 from polar.repository.schemas import RepositoryRead
 from polar.issue.schemas import IssueRead
@@ -19,9 +17,14 @@ class PledgeState(str, Enum):
     pending = "pending"  # The issue has been closed, but the pledge has not been paid.
     paid = "paid"  # The pledge has been paid out to the maintainer.
     refunded = "refunded"  # The pledge was refunded in full before being paid out.
+    disputed = "disputed"  # The charge was disputed by the customer.
 
-    # Alpha flow: initiated -> created -> pending -> paid
-    # In the future, we might have a "disputed", "refunded", "cancelled" states etc...
+    # The states in which this pledge is "active", i.e. is listed on the issue
+    @classmethod
+    def active_states(cls) -> list[PledgeState]:
+        return [cls.created, cls.pending, cls.paid]
+
+    # Happy path: initiated -> created -> pending -> paid
 
     @classmethod
     def from_str(cls, s: str) -> PledgeState:
@@ -32,6 +35,7 @@ class PledgeTransactionType(str, Enum):
     pledge = "pledge"
     transfer = "transfer"
     refund = "refund"
+    disputed = "disputed"
 
 
 class PledgeCreate(Schema):

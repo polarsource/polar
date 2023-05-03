@@ -38,7 +38,6 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
                 joinedload(Pledge.issue).joinedload(Issue.repository),
             )
             .filter(Pledge.id == pledge_id)
-            .where(Pledge.state != PledgeState.initiated)
         )
         res = await session.execute(statement)
         return res.scalars().unique().one_or_none()
@@ -50,7 +49,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             sql.select(Pledge)
             .where(
                 Pledge.repository_id == repository_id,
-                Pledge.state != PledgeState.initiated,
+                Pledge.state.in_(PledgeState.active_states())
             )
             .options(
                 joinedload(Pledge.user),
@@ -66,7 +65,9 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
     ) -> Sequence[Pledge]:
         statement = (
             sql.select(Pledge)
-            .where(Pledge.by_user_id == user_id, Pledge.state != PledgeState.initiated)
+            .where(
+                Pledge.by_user_id == user_id,
+                Pledge.state.in_(PledgeState.active_states()))
             .options(
                 joinedload(Pledge.user),
                 joinedload(Pledge.organization),
@@ -90,7 +91,8 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
                 joinedload(Pledge.organization),
             )
             .filter(
-                Pledge.issue_id.in_(issue_ids), Pledge.state != PledgeState.initiated
+                Pledge.issue_id.in_(issue_ids),
+                Pledge.state.in_(PledgeState.active_states())
             )
         )
         res = await session.execute(statement)
@@ -192,6 +194,23 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
                 PledgeTransaction(
                     pledge_id=pledge.id,
                     type=PledgeTransactionType.refund,
+                    amount=amount,
+                    transaction_id=transaction_id,
+                )
+            )
+            await session.commit()
+
+    async def mark_disputed_by_payment_id(
+        self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
+    ) -> None:
+        pledge = await self.get_by_payment_id(session, payment_id)
+        if pledge:
+            pledge.state = PledgeState.disputed
+            session.add(pledge)
+            session.add(
+                PledgeTransaction(
+                    pledge_id=pledge.id,
+                    type=PledgeTransactionType.disputed,
                     amount=amount,
                     transaction_id=transaction_id,
                 )

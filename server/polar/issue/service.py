@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 from typing import List, Sequence, Tuple
-from sqlalchemy import Integer, desc, func, nullslast, or_, ColumnElement
+from sqlalchemy import Integer, desc, func, nullslast, or_, and_, ColumnElement
 from sqlalchemy.orm import joinedload
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
@@ -104,7 +104,11 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             Issue,
             sql.func.count(Issue.id).over().label("total_count"),
             sql.func.sum(Pledge.amount).label("pledged_amount"),
-        ).join(Pledge, Pledge.issue_id == Issue.id, isouter=True)
+        ).join(Pledge,
+            and_(Pledge.issue_id == Issue.id,
+                 or_(Pledge.id.is_(None),
+                     Pledge.state.in_(PledgeState.active_states()))),
+            isouter=True)
 
         if issue_list_type == IssueListType.issues:
             statement = statement.where(Issue.repository_id.in_(repository_ids))
@@ -132,11 +136,6 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
 
         else:
             raise ValueError(f"Unknown issue list type: {issue_list_type}")
-
-        # Excluded initiated pledges (Polar has not received the money yet)
-        statement = statement.where(
-            or_(Pledge.id.is_(None), Pledge.state != PledgeState.initiated)
-        )
 
         filters = []
         if include_open:

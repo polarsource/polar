@@ -12,6 +12,7 @@ from fastapi import (
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from pydantic import BaseModel, ValidationError
+from polar.context import ExecutionContext
 
 from polar.kit import jwt
 from polar.auth.dependencies import Auth
@@ -156,9 +157,10 @@ async def install(
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.current_user),
 ) -> Organization | None:
-    organization = await github_organization.install(
-        session, auth.user, installation_id=installation.external_id
-    )
+    with ExecutionContext(is_during_installation=True) as context:
+        organization = await github_organization.install(
+            session, auth.user, installation_id=installation.external_id
+        )
 
     return organization
 

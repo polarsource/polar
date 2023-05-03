@@ -386,7 +386,7 @@ async def installation_created(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with polar_context.to_execution_context() as context:
+    with ExecutionContext(is_during_installation=True) as context:
         event = github.webhooks.parse_obj(scope, payload)
         if not isinstance(event, github.webhooks.InstallationCreated):
             log.error("github.webhook.unexpected_type")

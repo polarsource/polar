@@ -19,9 +19,12 @@ class PledgeState(str, Enum):
     pending = "pending"  # The issue has been closed, but the pledge has not been paid.
     paid = "paid"  # The pledge has been paid out to the maintainer.
     refunded = "refunded"  # The pledge was refunded in full before being paid out.
+    disputed = "disputed"  # The charge was disputed by the customer.
 
-    # Alpha flow: initiated -> created -> pending -> paid
-    # In the future, we might have a "disputed", "refunded", "cancelled" states etc...
+    # The states in which this pledge is "active", i.e. is listed on the issue
+    active_states = [created, pending, paid]
+
+    # Happy path: initiated -> created -> pending -> paid
 
     @classmethod
     def from_str(cls, s: str) -> PledgeState:

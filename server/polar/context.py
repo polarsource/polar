@@ -9,6 +9,11 @@ class PolarContext:
 class ExecutionContext:
     _contextvar: ClassVar[ContextVar] = ContextVar("ExecutionContext")
 
+    # is_during_installation is True this is an event (or request) triggered by the app
+    # or repository installation flow.
+    #
+    # It allows us to, for example, prevent creating notifications for objects
+    # found during the initial syncing.
     is_during_installation: bool
 
     def __init__(self, is_during_installation=False):

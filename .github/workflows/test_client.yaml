@@ -36,4 +36,7 @@ jobs:
         - name: Build
           working-directory: ./clients
           run: pnpm build
- 
+
+        - name: Check for latest API client
+          working-directory: ./clients/packages/polarkit
+          run: pnpm generate && git diff-files --quiet

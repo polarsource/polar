@@ -2,7 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import type { polar__pledge__schemas__State } from './polar__pledge__schemas__State';
+import type { PledgeState } from './PledgeState';
 
 export type BackofficePledgeRead = {
   id: string;
@@ -11,7 +11,7 @@ export type BackofficePledgeRead = {
   amount: number;
   repository_id: string;
   organization_id: string;
-  state: polar__pledge__schemas__State;
+  state: PledgeState;
   pledger_name?: string;
   pledger_avatar?: string;
   payment_id?: string;

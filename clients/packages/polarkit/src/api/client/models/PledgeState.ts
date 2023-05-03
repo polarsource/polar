@@ -5,9 +5,11 @@
 /**
  * An enumeration.
  */
-export enum polar__pledge__schemas__State {
+export enum PledgeState {
   INITIATED = 'initiated',
   CREATED = 'created',
   PENDING = 'pending',
   PAID = 'paid',
+  REFUNDED = 'refunded',
+  DISPUTED = 'disputed',
 }

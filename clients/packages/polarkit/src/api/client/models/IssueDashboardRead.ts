@@ -4,7 +4,7 @@
 
 import type { IssueStatus } from './IssueStatus';
 import type { Platforms } from './Platforms';
-import type { polar__models__issue__IssueFields__State } from './polar__models__issue__IssueFields__State';
+import type { State } from './State';
 
 export type IssueDashboardRead = {
   id: string;
@@ -17,7 +17,7 @@ export type IssueDashboardRead = {
   labels?: any;
   closed_by?: any;
   reactions?: any;
-  state: polar__models__issue__IssueFields__State;
+  state: State;
   state_reason?: string;
   issue_closed_at?: string;
   issue_modified_at?: string;

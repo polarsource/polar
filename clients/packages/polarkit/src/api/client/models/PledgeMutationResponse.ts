@@ -2,7 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import type { polar__pledge__schemas__State } from './polar__pledge__schemas__State';
+import type { PledgeState } from './PledgeState';
 
 export type PledgeMutationResponse = {
   issue_id: string;
@@ -10,7 +10,7 @@ export type PledgeMutationResponse = {
   amount: number;
   pledge_as_org?: string;
   id: string;
-  state: polar__pledge__schemas__State;
+  state: PledgeState;
   client_secret?: string;
 };
 

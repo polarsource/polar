@@ -207,8 +207,32 @@ async def issue_labeled(
             return await issue_labeled_async(session, scope, action, parsed)
 
 
+@task("github.webhook.issues.unlabeled")
+async def issue_unlabeled(
+    ctx: JobContext,
+    scope: str,
+    action: str,
+    payload: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> dict[str, Any]:
+    with polar_context.to_execution_context() as context:
+        parsed = github.webhooks.parse_obj(scope, payload)
+        if not isinstance(parsed, github.webhooks.IssuesUnlabeled):
+            log.error("github.webhook.unexpected_type")
+            raise Exception("unexpected webhook payload")
+
+        async with AsyncSessionLocal() as session:
+            return await issue_labeled_async(session, scope, action, parsed)
+
+
 async def issue_labeled_async(
-    session: AsyncSession, scope: str, action: str, event: github.webhooks.IssuesLabeled
+    session: AsyncSession,
+    scope: str,
+    action: str,
+    event: Union[
+        github.webhooks.IssuesLabeled,
+        github.webhooks.IssuesUnlabeled,
+    ],
 ) -> dict[str, Any]:
     issue = await service.github_issue.get_by_external_id(session, event.issue.id)
     if not issue:

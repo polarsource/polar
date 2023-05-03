@@ -185,6 +185,7 @@ IMPLEMENTED_WEBHOOKS = {
     "issues.edited",
     "issues.closed",
     "issues.labeled",
+    "issues.unlabeled",
     "pull_request.opened",
     "pull_request.edited",
     "pull_request.closed",

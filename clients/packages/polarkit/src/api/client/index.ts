@@ -50,6 +50,8 @@ export type { OrganizationRead } from './models/OrganizationRead';
 export type { OrganizationSettingsUpdate } from './models/OrganizationSettingsUpdate';
 export type { OrganizationSetupIntentRead } from './models/OrganizationSetupIntentRead';
 export type { OrganizationStripeCustomerRead } from './models/OrganizationStripeCustomerRead';
+export type { OrganizationSyncedRead } from './models/OrganizationSyncedRead';
+export type { OrganizationSyncedRepositoryRead } from './models/OrganizationSyncedRepositoryRead';
 export type { PaginationResponse } from './models/PaginationResponse';
 export type { PaymentMethod } from './models/PaymentMethod';
 export { Platforms } from './models/Platforms';

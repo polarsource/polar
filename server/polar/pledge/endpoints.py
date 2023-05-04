@@ -5,6 +5,8 @@ from polar.auth.dependencies import Auth
 from polar.models import Pledge, Repository
 from polar.exceptions import ResourceNotFound
 from polar.enums import Platforms
+from polar.models.issue import Issue
+from polar.models.organization import Organization
 from polar.models.user import User
 from polar.postgres import AsyncSession, get_db_session
 
@@ -120,13 +122,21 @@ async def create_pledge(
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
 ) -> PledgeMutationResponse:
+    org, repo, issue = await organization_service.get_with_repo_and_issue(
+        session=session,
+        platform=platform,
+        org_name=org_name,
+        repo_name=repo_name,
+        issue=number,
+    )
+
     # Pre-authenticated pledge flow (with saved CC)
     if pledge.pledge_as_org and auth.user:
         return await create_pledge_as_org(
             platform,
-            org_name,
-            repo_name,
-            number,
+            org,
+            repo,
+            issue,
             pledge,
             auth.user,
             session,
@@ -136,9 +146,9 @@ async def create_pledge(
     if auth.user:
         return await create_pledge_user(
             platform,
-            org_name,
-            repo_name,
-            number,
+            org,
+            repo,
+            issue,
             pledge,
             auth.user,
             session,
@@ -146,9 +156,9 @@ async def create_pledge(
 
     return await create_pledge_anonymous(
         platform,
-        org_name,
-        repo_name,
-        number,
+        org,
+        repo,
+        issue,
         pledge,
         session,
     )
@@ -156,9 +166,9 @@ async def create_pledge(
 
 async def create_pledge_anonymous(
     platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    number: int,
+    org: Organization,
+    repo: Repository,
+    issue: Issue,
     pledge: PledgeCreate,
     session: AsyncSession,
 ) -> PledgeMutationResponse:
@@ -166,14 +176,6 @@ async def create_pledge_anonymous(
         raise HTTPException(
             status_code=401, detail="pledge.email is required for anonymous pledges"
         )
-
-    org, repo, issue = await organization_service.get_with_repo_and_issue(
-        session=session,
-        platform=platform,
-        org_name=org_name,
-        repo_name=repo_name,
-        issue=number,
-    )
 
     # Create the pledge
     created = await Pledge.create(
@@ -206,21 +208,13 @@ async def create_pledge_anonymous(
 
 async def create_pledge_user(
     platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    number: int,
+    org: Organization,
+    repo: Repository,
+    issue: Issue,
     pledge: PledgeCreate,
     user: User,
     session: AsyncSession,
 ) -> PledgeMutationResponse:
-    org, repo, issue = await organization_service.get_with_repo_and_issue(
-        session=session,
-        platform=platform,
-        org_name=org_name,
-        repo_name=repo_name,
-        issue=number,
-    )
-
     # Create the pledge
     created = await Pledge.create(
         session=session,
@@ -258,21 +252,13 @@ async def create_pledge_user(
 
 async def create_pledge_as_org(
     platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    number: int,
+    org: Organization,
+    repo: Repository,
+    issue: Issue,
     pledge: PledgeCreate,
     user: User,
     session: AsyncSession,
 ) -> PledgeMutationResponse:
-    org, repo, issue = await organization_service.get_with_repo_and_issue(
-        session=session,
-        platform=platform,
-        org_name=org_name,
-        repo_name=repo_name,
-        issue=number,
-    )
-
     # Pre-authenticated pledge flow
     if not pledge.pledge_as_org:
         raise HTTPException(status_code=401, detail="Unexpected flow")

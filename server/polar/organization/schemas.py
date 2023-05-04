@@ -123,3 +123,12 @@ class OrganizationSetupIntentRead(Schema):
     id: str
     status: str
     client_secret: str
+
+
+class OrganizationSyncedRepositoryRead(Schema):
+    id: UUID
+    synced_issues_count: int
+
+
+class OrganizationSyncedRead(Schema):
+    repos: list[OrganizationSyncedRepositoryRead]

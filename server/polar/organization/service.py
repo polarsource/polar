@@ -3,7 +3,7 @@ from uuid import UUID
 from datetime import datetime, timezone
 
 import structlog
-from sqlalchemy import and_
+from sqlalchemy import and_, distinct
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import (
     InstrumentedAttribute,
@@ -14,6 +14,7 @@ from polar.kit.services import ResourceService
 from polar.exceptions import ResourceNotFound
 from polar.models import Organization, User, UserOrganization, Repository, Issue
 from polar.enums import Platforms
+from polar.models.pull_request import PullRequest
 from polar.postgres import AsyncSession, sql
 from polar.issue.service import issue as issue_service
 from polar.worker import enqueue_job
@@ -340,6 +341,41 @@ class OrganizationService(
             await enqueue_job("github.badge.remove_on_organization", organization.id)
 
         return updated
+
+    async def repositories_issues_synced(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> dict[UUID, int]:
+        repo_count: dict[UUID, int] = dict()
+
+        stmt = (
+            sql.select(
+                Repository.id,
+                sql.func.count(distinct(Issue.id)).label("issue_count"),
+                sql.func.count(distinct(PullRequest.id)).label("pull_request_count"),
+            )
+            .join(
+                Issue,
+                Issue.repository_id == Repository.id,
+                isouter=True,
+            )
+            .join(
+                PullRequest,
+                PullRequest.state == "open",
+                isouter=True,
+            )
+            .where(Repository.organization_id == organization.id)
+            .group_by(Repository.id)
+        )
+
+        res = await session.execute(stmt)
+        rows = res.unique().all()
+
+        for r in rows:
+            repo_count[r[0]] = int(r[1]) + int(r[2])
+
+        return repo_count
 
 
 organization = OrganizationService(Organization)

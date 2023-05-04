@@ -55,10 +55,16 @@ oauth2_authorize_callback = OAuth2AuthorizeCallback(
 
 
 @router.get("/authorize")
-async def github_authorize(pledge_id: UUID | None = None) -> AuthorizationResponse:
+async def github_authorize(
+    pledge_id: UUID | None = None,
+    goto_url: str | None = None,
+) -> AuthorizationResponse:
     state = {}
     if pledge_id:
         state["pledge_id"] = str(pledge_id)
+
+    if goto_url:
+        state["goto_url"] = goto_url
 
     encoded_state = jwt.encode(
         data=state,
@@ -99,7 +105,11 @@ async def github_callback(
     if pledge_id:
         await pledge_service.connect_backer(session, pledge_id=pledge_id, backer=user)
 
-    return AuthService.generate_login_cookie_response(response=response, user=user)
+    goto_url = state_data.get("goto_url", None)
+
+    return AuthService.generate_login_cookie_response(
+        response=response, user=user, goto_url=goto_url
+    )
 
 
 ###############################################################################

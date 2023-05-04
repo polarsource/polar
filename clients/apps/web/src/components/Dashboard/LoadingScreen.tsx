@@ -1,7 +1,7 @@
 import { classNames } from 'polarkit/utils'
 
 interface Props {
-  error: string
+  animate: boolean
   children: React.ReactNode
 }
 
@@ -44,22 +44,29 @@ const LogoIcon = ({ animate }: { animate: boolean }) => {
   )
 }
 
-const LoadingScreen = ({ error, children }: Props) => {
+const LoadingScreen = ({ animate, children }: Props) => {
   return (
     <>
       <div className="flex h-screen items-center justify-center">
         <div className="flex-row">
-          <LogoIcon animate={!error} />
-          {error && (
-            <p className="mt-4">
-              <strong>Oh no!</strong> {error}
-            </p>
-          )}
-          {!error && <p className="mt-4">{children}</p>}
+          <LogoIcon animate={animate} />
+          <div className="mt-4">{children}</div>
         </div>
       </div>
     </>
   )
 }
 
+LoadingScreen.defaultProps = {
+  animate: true,
+}
+
 export default LoadingScreen
+
+export const LoadingScreenError = (props: { error: string }) => {
+  return (
+    <>
+      <strong>Oh no!</strong> {props.error}
+    </>
+  )
+}

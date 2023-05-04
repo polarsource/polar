@@ -10,7 +10,7 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
 import { type OrganizationRead } from 'polarkit/api/client'
-import { ReactElement, useRef, useState } from 'react'
+import { ReactElement, useState } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
 
 import OnboardingControls from 'components/Dashboard/Onboarding/OnboardingControls'
@@ -18,7 +18,7 @@ import OnboardingControls from 'components/Dashboard/Onboarding/OnboardingContro
 const Page: NextLayoutComponentType = () => {
   const [showControls, setShowControls] = useState<boolean>(false)
   const [showSetup, setShowSetup] = useState<boolean>(false)
-  const syncedIssuesRef = useRef<number>(0)
+  const [syncedIssuesCount, setSyncIssuesCount] = useState<number>(0)
   const [badgeAddOldIssues, setBadgeAddOldIssues] = useState<boolean>(true)
   const [badgeShowRaised, setBadgeShowRaised] = useState<boolean>(false)
   const { org } = useCurrentOrgAndRepoFromURL()
@@ -58,7 +58,7 @@ const Page: NextLayoutComponentType = () => {
             <>
               <div className="mb-11 text-center">
                 <span className="rounded-2xl border border-gray-200 py-1 px-3 text-sm font-medium text-gray-500">
-                  {syncedIssuesRef.current} issues fetched
+                  {syncedIssuesCount} issues fetched
                 </span>
                 <h1 className="mt-8 text-xl font-normal text-gray-900">
                   Add the Polar badge on your open source issues
@@ -106,7 +106,7 @@ const Page: NextLayoutComponentType = () => {
             showSetup={showSetup}
             setShowSetup={setShowSetup}
             setShowControls={setShowControls}
-            syncedIssuesRef={syncedIssuesRef}
+            setSyncIssuesCount={setSyncIssuesCount}
           />
 
           {showControls && (

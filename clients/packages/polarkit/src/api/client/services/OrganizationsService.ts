@@ -5,6 +5,7 @@ import type { OrganizationRead } from '../models/OrganizationRead';
 import type { OrganizationSettingsUpdate } from '../models/OrganizationSettingsUpdate';
 import type { OrganizationSetupIntentRead } from '../models/OrganizationSetupIntentRead';
 import type { OrganizationStripeCustomerRead } from '../models/OrganizationStripeCustomerRead';
+import type { OrganizationSyncedRead } from '../models/OrganizationSyncedRead';
 import type { Platforms } from '../models/Platforms';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
@@ -141,6 +142,31 @@ export class OrganizationsService {
       },
       query: {
         'payment_method_id': paymentMethodId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Get Synced
+   * @returns OrganizationSyncedRead Successful Response
+   * @throws ApiError
+   */
+  public getSynced({
+    platform,
+    orgName,
+  }: {
+    platform: Platforms,
+    orgName: string,
+  }): CancelablePromise<OrganizationSyncedRead> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/{platform}/{org_name}/synced',
+      path: {
+        'platform': platform,
+        'org_name': orgName,
       },
       errors: {
         422: `Validation Error`,

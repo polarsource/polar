@@ -17,6 +17,7 @@ class LoginResponse(Schema):
     success: bool
     expires_at: datetime
     token: str | None = None
+    goto_url: str | None = None
 
 
 class LogoutResponse(Schema):
@@ -40,30 +41,29 @@ class AuthService:
         )
 
     @classmethod
-    def generate_token(
-        cls, user: User
-    ) -> tuple[str, datetime]:
+    def generate_token(cls, user: User) -> tuple[str, datetime]:
         expires_at = jwt.create_expiration_dt(seconds=settings.AUTH_COOKIE_TTL_SECONDS)
-        return (jwt.encode(
-            data={
-                "user_id": str(user.id),
-            },
-            secret=settings.SECRET,
-            expires_at=expires_at,
-        ), expires_at)
+        return (
+            jwt.encode(
+                data={
+                    "user_id": str(user.id),
+                },
+                secret=settings.SECRET,
+                expires_at=expires_at,
+            ),
+            expires_at,
+        )
 
     @classmethod
     def generate_login_cookie_response(
-        cls, *, response: Response, user: User
+        cls, *, response: Response, user: User, goto_url: str | None = None
     ) -> LoginResponse:
         (token, expires_at) = cls.generate_token(user=user)
         cls.set_auth_cookie(response=response, value=token, expires_at=expires_at)
-        return LoginResponse(success=True, expires_at=expires_at)
+        return LoginResponse(success=True, expires_at=expires_at, goto_url=goto_url)
 
     @classmethod
-    def generate_login_json_response(
-        cls, *, user: User
-    ) -> LoginResponse:
+    def generate_login_json_response(cls, *, user: User) -> LoginResponse:
         (token, expires_at) = cls.generate_token(user=user)
         return LoginResponse(success=True, token=token, expires_at=expires_at)
 
@@ -83,17 +83,12 @@ class AuthService:
         except jwt.DecodeError:
             return None
 
-
     @classmethod
-    def get_token_from_auth_cookie(
-        cls, *, request: Request
-    ) -> str | None:
+    def get_token_from_auth_cookie(cls, *, request: Request) -> str | None:
         return request.cookies.get(settings.AUTH_COOKIE_KEY)
 
     @classmethod
-    def get_token_from_auth_header(
-        cls, *, request: Request
-    ) -> str | None:
+    def get_token_from_auth_header(cls, *, request: Request) -> str | None:
         auhtorization = request.headers.get("Authorization")
         if not auhtorization:
             return None

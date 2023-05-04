@@ -10,7 +10,7 @@ import reportWebVitals from './reportWebVitals'
 const [, orgName, repoName] = window.location.pathname.split('/')
 
 const findIssueNodes = (node: Element | Document) =>
-  node.querySelectorAll("div[id^='issue_']:has(a[id^='issue_'])")
+  node.querySelectorAll("div[id^='issue_']")
 
 const getIssueNumbers = (issues: NodeListOf<Element>) => {
   const issueNumbers: string[] = []

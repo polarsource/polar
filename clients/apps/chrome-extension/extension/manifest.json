@@ -19,7 +19,7 @@
             "js": ["auth.js"],
             "matches": [
                 "*://dashboard.polar.sh/settings/extension",
-                "http://127.0.0.1:3000/settings/extension"
+                "http://127.0.0.1/settings/extension"
             ]
         }
     ],

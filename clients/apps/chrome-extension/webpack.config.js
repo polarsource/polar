@@ -51,6 +51,7 @@ module.exports = {
     "WEB_URL": '',
   })],
   output: {
+    publicPath: '',
     filename: "[name].js",
   },
 }

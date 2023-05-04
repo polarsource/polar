@@ -4,7 +4,11 @@ import { useOrganizationAccounts } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import BalanceBadgeBox from './BalanceBadgeBox'
 
-const AccountTopbar = () => {
+const AccountTopbar = ({
+  showSetupAccount,
+}: {
+  showSetupAccount: (_: boolean) => void
+}) => {
   const currentOrg = useStore((state) => state.currentOrg)
   const accountQuery = useOrganizationAccounts(currentOrg?.name)
   const accounts = accountQuery.data
@@ -20,14 +24,18 @@ const AccountTopbar = () => {
   if (accounts?.length === 1) {
     return (
       <>
-        <BalanceBadge account={accounts[0]} />
-        {!accounts[0].is_details_submitted && accounts[0].is_admin && (
-          <StripeOnboardingButton stripeId={accounts[0].stripe_id} />
+        {!accounts[0].is_details_submitted && accounts[0].is_admin ? (
+          <StripeOnboardingButton
+            stripeId={accounts[0].stripe_id}
+            showSetupAccount={showSetupAccount}
+          />
+        ) : (
+          <BalanceBadge account={accounts[0]} />
         )}
       </>
     )
   }
 
-  return <StripeOnboardingButton />
+  return <StripeOnboardingButton showSetupAccount={showSetupAccount} />
 }
 export default AccountTopbar

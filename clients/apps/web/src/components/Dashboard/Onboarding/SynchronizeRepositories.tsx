@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { type OrganizationRead } from 'polarkit/api/client'
-import { useSSE } from 'polarkit/hooks'
-import { useEffect, useState } from 'react'
+import { useOrganizationsRepositorySyncedIssues, useSSE } from 'polarkit/hooks'
+import { useEffect, useRef, useState } from 'react'
 import { useTimeoutFn } from 'react-use'
 import { type RepoSyncState, type SyncEvent } from './types'
 
@@ -44,47 +44,98 @@ const max = (a: number, b: number): number => {
   return b
 }
 
+const min = (a: number, b: number): number => {
+  if (a < b) {
+    return a
+  }
+  return b
+}
+
 export const SynchronizeRepositories = ({
   org,
   showSetup,
   setShowSetup,
   setShowControls,
-  syncedIssuesRef,
+  setSyncIssuesCount,
 }: {
   org: OrganizationRead
   showSetup: boolean
   setShowSetup: (state: boolean) => void
   setShowControls: (state: boolean) => void
-  syncedIssuesRef: { current: number }
+  setSyncIssuesCount: (state: number) => void
 }) => {
   let initialSyncStates = getInitializedSyncState(org)
   const emitter = useSSE(org.platform, org.name)
+
   const [syncingRepos, setSyncingRepos] = useState<{
     [id: string]: RepoSyncState
   }>(initialSyncStates)
 
-  const repos = Object.values(syncingRepos)
-  const sortedRepos = repos.sort(sortRepos)
-  const totalProcessed = repos.reduce((acc, repo) => acc + repo.processed, 0)
-  const totalExpected = repos.reduce((acc, repo) => acc + repo.expected, 0)
-  const countRepos = repos.length
-  const [countSynced, setCountSynced] = useState<number>(
-    repos.reduce((acc, repo) => acc + (repo.completed ? 1 : 0), 0),
+  // Number of issues already in Polar
+  // Used before the first SSE event is received, or if the syncing already is completed when the user visits this page.
+  const syncedIssuesPre = useOrganizationsRepositorySyncedIssues(
+    org.platform,
+    org.name,
   )
-  const isSyncCompleted = countSynced === countRepos
-  syncedIssuesRef.current = totalProcessed
 
-  // Goto next step and setup in case syncing is complete
-  if (isSyncCompleted) {
-    setShowSetup(true)
-    setShowControls(true)
-  }
+  const didInitialSet = useRef(false)
+
+  useEffect(() => {
+    if (!syncedIssuesPre || !syncedIssuesPre.data) {
+      return
+    }
+    if (didInitialSet.current) {
+      return
+    }
+    didInitialSet.current = true
+
+    setSyncingRepos((prev) => {
+      const state = {
+        ...prev,
+      }
+      for (const k of syncedIssuesPre.data.repos) {
+        // only update repositories that we already have data for
+        if (!prev[k.id]) {
+          continue
+        }
+
+        const processed = min(
+          max(k.synced_issues_count, prev[k.id].processed), // highest of the response from this API, or from SSE
+          prev[k.id].expected, // not higher than the expected number
+        )
+
+        state[k.id] = {
+          ...prev[k.id],
+          processed,
+          completed: processed >= prev[k.id].expected,
+        }
+      }
+      return state
+    })
+  }, [syncedIssuesPre, syncingRepos])
+
+  useEffect(() => {
+    const repos = Object.values(syncingRepos)
+    const totalProcessed = repos.reduce((acc, repo) => acc + repo.processed, 0)
+    const totalExpected = repos.reduce((acc, repo) => acc + repo.expected, 0)
+    const countSynced = repos.filter((r) => r.completed).length
+    const countRepos = repos.length
+    const isSyncCompleted = countSynced === countRepos
+
+    // Goto next step and setup in case syncing is complete
+    setShowSetup(isSyncCompleted)
+    setShowControls(isSyncCompleted)
+    setSyncIssuesCount(totalProcessed)
+
+    if (totalProcessed / totalExpected > 0.4) {
+      setShowControls(true)
+    }
+  }, [syncingRepos])
+
+  const sortedRepos = Object.values(syncingRepos).sort(sortRepos)
 
   // Show continue button after a few seconds OR once 40% sync is complete
   useTimeoutFn(() => setShowControls(true), continueTimeoutSeconds * 1000)
-  if (totalProcessed / totalExpected > 0.4) {
-    setShowControls(true)
-  }
 
   const sync = ({
     data,
@@ -101,7 +152,6 @@ export const SynchronizeRepositories = ({
        * we still need to update the processed count to the expected count.
        */
       processed = data.expected
-      setCountSynced((prev) => prev + 1)
     }
     setSyncingRepos((prev) => {
       const repo = prev[data.repository_id]
@@ -141,6 +191,7 @@ export const SynchronizeRepositories = ({
       {sortedRepos.map((repo, index) => {
         return (
           <motion.ul
+            key={repo.id}
             variants={{
               hidden: { opacity: 0 },
               show: {

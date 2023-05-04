@@ -1,19 +1,21 @@
-import LoadingScreen from 'components/Dashboard/LoadingScreen'
+import LoadingScreen, {
+  LoadingScreenError,
+} from 'components/Dashboard/LoadingScreen'
 import Layout from 'components/Layout/EmptyLayout'
+import GithubLoginButton from 'components/Shared/GithubLoginButton'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit'
 import { InstallationCreate, OrganizationRead } from 'polarkit/api/client'
 import type { ReactElement } from 'react'
 import { useEffect, useState } from 'react'
 import { NextPageWithLayout } from 'utils/next'
-import { useAuth } from '../../hooks'
 
 const GithubInstallationPage: NextPageWithLayout = () => {
   const router = useRouter()
-  const { authenticated } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [installed, setInstalled] = useState<OrganizationRead | null>(null)
   const query = router.query
+  const [showLogin, setShowLogin] = useState(false)
 
   const install = (query) => {
     const request = api.integrations.install({
@@ -23,12 +25,18 @@ const GithubInstallationPage: NextPageWithLayout = () => {
       },
     })
 
+    setShowLogin(false)
+
     request
       .then((organization) => {
         setInstalled(organization)
       })
       .catch((err) => {
         if (err.isCancelled) return
+        if (err.status === 401) {
+          setShowLogin(true)
+          return
+        }
         setError('Error installing organization')
       })
     return request
@@ -47,13 +55,38 @@ const GithubInstallationPage: NextPageWithLayout = () => {
     }
   }, [query])
 
+  const [gotoUrl, setGotoUrl] = useState('')
+
+  useEffect(() => {
+    setGotoUrl(window.location.href)
+  }, [])
+
   if (installed) {
     router.replace(`/dashboard/initialize/${installed.name}`)
     return
   }
 
+  if (showLogin) {
+    return (
+      <LoadingScreen animate={false}>
+        <div className="flex flex-col items-center space-y-2">
+          <p>Login to continue</p>
+          {gotoUrl && <GithubLoginButton gotoUrl={gotoUrl} />}
+        </div>
+      </LoadingScreen>
+    )
+  }
+
+  if (error) {
+    return (
+      <LoadingScreen animate={false}>
+        <LoadingScreenError error={error} />
+      </LoadingScreen>
+    )
+  }
+
   return (
-    <LoadingScreen error={error}>
+    <LoadingScreen animate={true}>
       Connecting your amazing repositories.
     </LoadingScreen>
   )

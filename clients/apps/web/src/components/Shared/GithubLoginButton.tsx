@@ -1,13 +1,14 @@
 import { api } from 'polarkit'
 import { MouseEvent } from 'react'
 
-const GithubLoginButton = (props: { pledgeId?: string }) => {
+const GithubLoginButton = (props: { pledgeId?: string; gotoUrl?: string }) => {
   const signin = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     e.stopPropagation()
 
     const res = await api.integrations.githubAuthorize({
       pledgeId: props.pledgeId,
+      gotoUrl: props.gotoUrl,
     })
 
     if (res.authorization_url) {

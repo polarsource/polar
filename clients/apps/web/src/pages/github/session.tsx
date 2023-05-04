@@ -1,4 +1,6 @@
-import LoadingScreen from 'components/Dashboard/LoadingScreen'
+import LoadingScreen, {
+  LoadingScreenError,
+} from 'components/Dashboard/LoadingScreen'
 import Layout from 'components/Layout/EmptyLayout'
 import { useRouter } from 'next/router'
 import type { ReactElement } from 'react'
@@ -15,14 +17,31 @@ const GithubAuthPage: NextPageWithLayout = ({
   }
 }) => {
   const router = useRouter()
-  const { success, error } = useGithubOAuthCallback(query.code, query.state)
+  const { success, error, gotoUrl } = useGithubOAuthCallback(
+    query.code,
+    query.state,
+  )
+
+  if (success && gotoUrl) {
+    router.push(gotoUrl)
+    return
+  }
+
   if (success) {
     router.push('/dashboard')
     return
   }
 
+  if (error) {
+    return (
+      <LoadingScreen animate={false}>
+        <LoadingScreenError error={error} />
+      </LoadingScreen>
+    )
+  }
+
   return (
-    <LoadingScreen error={error}>Brewing a fresh access token.</LoadingScreen>
+    <LoadingScreen animate={true}>Brewing a fresh access token.</LoadingScreen>
   )
 }
 

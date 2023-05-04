@@ -8,10 +8,12 @@ export const useGithubOAuthCallback = (
 ): {
   success: boolean
   error: string | null
+  gotoUrl: string | null
 } => {
   const session = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<boolean>(false)
+  const [gotoUrl, setGotoUrl] = useState<string | null>(null)
 
   const login = async () => {
     session.login((authenticated: boolean) => {
@@ -28,7 +30,7 @@ export const useGithubOAuthCallback = (
     let request: ReturnType<typeof api.integrations.githubCallback>
 
     if (!code || !state) {
-      setError('Cannot authenticated without an OAuth code and state')
+      setError('Cannot authenticate without an OAuth code and state')
       return
     }
 
@@ -40,6 +42,7 @@ export const useGithubOAuthCallback = (
         })
         const response = await request
         if (response.success && !cancelled) {
+          setGotoUrl(response.goto_url)
           await login()
           return
         }
@@ -51,6 +54,7 @@ export const useGithubOAuthCallback = (
     }
 
     exchange()
+
     return () => {
       if (request) {
         request.cancel()
@@ -59,5 +63,5 @@ export const useGithubOAuthCallback = (
     }
   }, [code, state])
 
-  return { success, error }
+  return { success, error, gotoUrl }
 }

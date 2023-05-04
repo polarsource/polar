@@ -4,17 +4,24 @@
     "manifest_version": 3,
     "permissions": [
         "storage",
-        "webRequest",
-        "webRequestBlocking"
+        "declarativeNetRequest"
+    ],
+    "declarative_net_request": {
+        "rule_resources": [{
+            "id": "csp",
+            "enabled": true,
+            "path": "csp.json"
+        }]
+    },
+    "host_permissions": [
+        "*://github.com/*/*/issues*"
     ],
     "content_scripts": [
         {
             "run_at": "document_end",
             "js": ["content.js"],
             "matches": [
-                "*://github.com/*/*/issues",
-                "*://github.com/*/*/issues?*",
-                "*://github.com/*/*/issues/*"
+                "*://github.com/*/*/issues*"
             ]
         },
         {
@@ -25,9 +32,6 @@
             ]
         }
     ],
-    "background": {
-        "service_worker": "background.js"
-    },
     "web_accessible_resources": [
         {
             "resources": ["index.css"],

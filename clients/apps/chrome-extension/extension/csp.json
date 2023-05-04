@@ -1,0 +1,13 @@
+[
+    {
+      "id": 1,
+      "action": {
+        "type": "modifyHeaders",
+        "responseHeaders": [
+          { "header": "Content-Security-Policy", "operation": "append", "value": "connect-src https://api.polar.sh" },
+          { "header": "Content-Security-Policy", "operation": "append", "value": "connect-src http://127.0.0.1" }
+        ]
+      },
+      "condition": { "urlFilter": "github.com", "resourceTypes": ["main_frame"] }
+    }
+]

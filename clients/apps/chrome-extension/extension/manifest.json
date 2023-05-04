@@ -3,7 +3,9 @@
     "version": "0.0.1",
     "manifest_version": 3,
     "permissions": [
-        "storage"
+        "storage",
+        "webRequest",
+        "webRequestBlocking"
     ],
     "content_scripts": [
         {
@@ -23,6 +25,9 @@
             ]
         }
     ],
+    "background": {
+        "service_worker": "background.js"
+    },
     "web_accessible_resources": [
         {
             "resources": ["index.css"],

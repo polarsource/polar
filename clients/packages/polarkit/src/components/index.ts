@@ -1,3 +1,4 @@
 import Badge from './Badge'
+import CountryPicker from './CountryPicker'
 
-export { Badge }
+export { Badge, CountryPicker }

@@ -24,12 +24,13 @@ const AccountTopbar = ({
   if (accounts?.length === 1) {
     return (
       <>
-        <BalanceBadge account={accounts[0]} />
-        {!accounts[0].is_details_submitted && accounts[0].is_admin && (
+        {!accounts[0].is_details_submitted && accounts[0].is_admin ? (
           <StripeOnboardingButton
             stripeId={accounts[0].stripe_id}
             showSetupAccount={showSetupAccount}
           />
+        ) : (
+          <BalanceBadge account={accounts[0]} />
         )}
       </>
     )

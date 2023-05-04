@@ -33,6 +33,7 @@
     "@tanstack/react-query": "^4.24.6",
     "axios": "^0.27.2",
     "cmdk": "^0.2.0",
+    "countries-list": "^2.6.1",
     "eventemitter3": "^5.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

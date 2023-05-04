@@ -1,3 +1,5 @@
+import { api } from 'polarkit'
+import { Platforms } from 'polarkit/api/client'
 import { useStore } from 'polarkit/store'
 import BalanceBadgeBox from './BalanceBadgeBox'
 
@@ -10,26 +12,16 @@ const StripeOnboardingButton = ({
 }) => {
   const currentOrg = useStore((store) => store.currentOrg)
   const onboard = async () => {
-    // let stripeAccountId = stripeId
-    // if (!stripeId) {
-    //   const country = prompt(
-    //     'Country of reisdence or tax residence (2 letter ISO code)',
-    //   )
-    //   const account = await api.accounts.createAccount({
-    //     platform: Platforms.GITHUB,
-    //     orgName: currentOrg.name,
-    //     requestBody: { account_type: AccountType.STRIPE, country },
-    //   })
-    //   stripeAccountId = account.stripe_id
-    // }
-    // const link = await api.accounts.onboardingLink({
-    //   platform: Platforms.GITHUB,
-    //   orgName: currentOrg.name,
-    //   stripeId: stripeAccountId,
-    // })
-    // window.location.href = link.url
-    console.log('Show Setup Account', showSetupAccount)
-    showSetupAccount(true)
+    if (!stripeId) {
+      showSetupAccount(true)
+    } else {
+      const link = await api.accounts.onboardingLink({
+        platform: Platforms.GITHUB,
+        orgName: currentOrg.name,
+        stripeId,
+      })
+      window.location.href = link.url
+    }
   }
 
   return (

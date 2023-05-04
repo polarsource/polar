@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from polar.auth.dependencies import Auth
 from polar.models import Pledge, Repository
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import ResourceNotFound, NotPermitted
 from polar.enums import Platforms
 from polar.models.issue import Issue
 from polar.models.organization import Organization
@@ -130,177 +130,26 @@ async def create_pledge(
         issue=number,
     )
 
-    # Pre-authenticated pledge flow (with saved CC)
-    if pledge.pledge_as_org and auth.user:
-        return await create_pledge_as_org(
-            platform,
-            org,
-            repo,
-            issue,
-            pledge,
-            auth.user,
-            session,
+    try:
+        return await pledge_service.create_pledge(
+            platform=platform,
+            user=auth.user,
+            org=org,
+            repo=repo,
+            issue=issue,
+            pledge=pledge,
+            session=session,
         )
-
-    # Pledge flow with logged in user
-    if auth.user:
-        return await create_pledge_user(
-            platform,
-            org,
-            repo,
-            issue,
-            pledge,
-            auth.user,
-            session,
-        )
-
-    return await create_pledge_anonymous(
-        platform,
-        org,
-        repo,
-        issue,
-        pledge,
-        session,
-    )
-
-
-async def create_pledge_anonymous(
-    platform: Platforms,
-    org: Organization,
-    repo: Repository,
-    issue: Issue,
-    pledge: PledgeCreate,
-    session: AsyncSession,
-) -> PledgeMutationResponse:
-    if not pledge.email:
+    except ResourceNotFound as e:
         raise HTTPException(
-            status_code=401, detail="pledge.email is required for anonymous pledges"
+            status_code=404,
+            detail=str(e),
         )
-
-    # Create the pledge
-    created = await Pledge.create(
-        session=session,
-        issue_id=issue.id,
-        repository_id=repo.id,
-        organization_id=org.id,
-        email=pledge.email,
-        amount=pledge.amount,
-        state=PledgeState.initiated,
-    )
-
-    # Create a payment intent with Stripe
-    payment_intent = stripe.create_anonymous_intent(
-        amount=pledge.amount,
-        transfer_group=f"{created.id}",
-        issue=issue,
-        anonymous_email=pledge.email,
-    )
-
-    # Store the intent id
-    created.payment_id = payment_intent.id
-    await created.save(session)
-
-    ret = PledgeMutationResponse.from_orm(created)
-    ret.client_secret = payment_intent.client_secret
-
-    return ret
-
-
-async def create_pledge_user(
-    platform: Platforms,
-    org: Organization,
-    repo: Repository,
-    issue: Issue,
-    pledge: PledgeCreate,
-    user: User,
-    session: AsyncSession,
-) -> PledgeMutationResponse:
-    # Create the pledge
-    created = await Pledge.create(
-        session=session,
-        issue_id=issue.id,
-        repository_id=repo.id,
-        organization_id=org.id,
-        email=pledge.email,
-        amount=pledge.amount,
-        state=PledgeState.initiated,
-        by_user_id=user.id,
-    )
-
-    # Create a payment intent with Stripe
-    payment_intent = stripe.create_user_intent(
-        amount=pledge.amount,
-        transfer_group=f"{created.id}",
-        issue=issue,
-        user=user,
-    )
-
-    # Store the intent id
-    created.payment_id = payment_intent.id
-    await created.save(session)
-
-    ret = PledgeMutationResponse.from_orm(created)
-    ret.client_secret = payment_intent.client_secret
-
-    # User pledged, allow into the beta!
-    if not user.invite_only_approved:
-        user.invite_only_approved = True
-        await user.save(session)
-
-    return ret
-
-
-async def create_pledge_as_org(
-    platform: Platforms,
-    org: Organization,
-    repo: Repository,
-    issue: Issue,
-    pledge: PledgeCreate,
-    user: User,
-    session: AsyncSession,
-) -> PledgeMutationResponse:
-    # Pre-authenticated pledge flow
-    if not pledge.pledge_as_org:
-        raise HTTPException(status_code=401, detail="Unexpected flow")
-
-    pledge_as_org = await organization_service.get_by_id_for_user(
-        session=session,
-        platform=platform,
-        org_id=pledge.pledge_as_org,
-        user_id=user.id,
-    )
-
-    if not pledge_as_org:
-        raise HTTPException(status_code=404, detail="Not found")
-
-    # Create the pledge
-    created = await Pledge.create(
-        session=session,
-        issue_id=issue.id,
-        repository_id=repo.id,
-        organization_id=org.id,
-        email=pledge.email,
-        amount=pledge.amount,
-        state=PledgeState.created,  # created == polar has received the money
-        by_organization_id=pledge_as_org.id,
-    )
-
-    # Create a payment intent with Stripe
-    payment_intent = await stripe.create_confirmed_payment_intent_for_organization(
-        session,
-        amount=pledge.amount,
-        transfer_group=f"{created.id}",
-        issue=issue,
-        organization=pledge_as_org,
-    )
-
-    # Store the intent id
-    created.payment_id = payment_intent.id
-    await created.save(session)
-
-    ret = PledgeMutationResponse.from_orm(created)
-
-    return ret
+    except NotPermitted as e:
+        raise HTTPException(
+            status_code=403,
+            detail=str(e),
+        )
 
 
 @router.patch(

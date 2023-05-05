@@ -1,11 +1,12 @@
 import Topbar from '../Shared/Topbar'
+import EmptyLayout from './EmptyLayout'
 
 const TopbarLayout = ({ children }) => {
   return (
-    <>
+    <EmptyLayout>
       <Topbar />
-      <div>{children}</div>
-    </>
+      {children}
+    </EmptyLayout>
   )
 }
 

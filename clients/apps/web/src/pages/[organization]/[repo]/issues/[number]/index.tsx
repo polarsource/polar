@@ -1,3 +1,4 @@
+import PageNotFound from 'components/Shared/PageNotFound'
 import Pledge from 'components/Website/Pledge'
 import type { NextLayoutComponentType, NextPage } from 'next'
 import Head from 'next/head'
@@ -57,6 +58,10 @@ const PledgePage: NextPage = ({
 }: PledgeResources & {
   query: any // TODO: Investigate & fix type
 }) => {
+  if (!issue) {
+    return <PageNotFound />
+  }
+
   return (
     <>
       <Head>
@@ -81,16 +86,19 @@ const PledgePage: NextPage = ({
 }
 
 export const getServerSideProps = async (context) => {
-  const res = await api.pledges.getPledgeWithResources({
-    platform: Platforms.GITHUB,
-    orgName: context.params.organization,
-    repoName: context.params.repo,
-    number: context.params.number,
-    include: 'issue,organization,repository',
-  })
-
-  const { organization, repository, issue } = res
-  return { props: { organization, repository, issue, query: context.query } }
+  try {
+    const res = await api.pledges.getPledgeWithResources({
+      platform: Platforms.GITHUB,
+      orgName: context.params.organization,
+      repoName: context.params.repo,
+      number: context.params.number,
+      include: 'issue,organization,repository',
+    })
+    const { organization, repository, issue } = res
+    return { props: { organization, repository, issue, query: context.query } }
+  } catch (Error) {
+    return { props: {} }
+  }
 }
 
 export default PledgePage

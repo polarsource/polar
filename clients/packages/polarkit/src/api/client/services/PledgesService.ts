@@ -139,4 +139,31 @@ export class PledgesService {
     });
   }
 
+  /**
+   * Dispute Pledge
+   * @returns PledgeRead Successful Response
+   * @throws ApiError
+   */
+  public disputePledge({
+    pledgeId,
+    reason,
+  }: {
+    pledgeId: string,
+    reason: string,
+  }): CancelablePromise<PledgeRead> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/pledges/{pledge_id}/dispute',
+      path: {
+        'pledge_id': pledgeId,
+      },
+      query: {
+        'reason': reason,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
 }

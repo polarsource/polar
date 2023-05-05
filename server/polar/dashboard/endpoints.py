@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, Dict, List, Sequence, Set, Tuple, Union
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -23,7 +24,7 @@ from polar.models.user import User
 from polar.organization.schemas import OrganizationRead
 from polar.repository.schemas import RepositoryRead
 from polar.issue.service import issue
-from polar.pledge.schemas import PledgeRead
+from polar.pledge.schemas import PledgeRead, PledgeState
 from polar.repository.service import repository
 from polar.auth.dependencies import Auth
 from polar.postgres import AsyncSession, get_db_session, sql
@@ -267,9 +268,20 @@ async def dashboard(
     # add pledges to included
     for i in issues:
         for pled in i.pledges:
+            pledge_read = PledgeRead.from_db(pled)
+
+            # Add user-specific metadata
+
+            user_can_admin = (for_user and pled.by_user_id == for_user.id) or (
+                for_org and pled.by_organization_id == for_org.id
+            )
+
+            if user_can_admin and pled.state == PledgeState.pending:
+                pledge_read.authed_user_can_dispute = True
+
             # for pled in pledges:
             included[str(pled.id)] = Entry(
-                id=pled.id, type="pledge", attributes=PledgeRead.from_db(pled)
+                id=pled.id, type="pledge", attributes=pledge_read
             )
 
             # inject relationships

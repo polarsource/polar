@@ -74,6 +74,9 @@ class PledgeRead(Schema):
     pledger_name: str | None
     pledger_avatar: str | None
 
+    authed_user_can_dispute: bool = False
+    scheduled_payout_at: datetime | None = None
+
     @classmethod
     def from_db(cls, o: Pledge) -> PledgeRead:
         pledger_name = None
@@ -95,6 +98,7 @@ class PledgeRead(Schema):
             state=PledgeState.from_str(o.state),
             pledger_name=pledger_name,
             pledger_avatar=pledger_avatar,
+            scheduled_payout_at=o.scheduled_payout_at,
         )
 
 

@@ -1,3 +1,4 @@
+from typing import Sequence
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request
 
@@ -6,6 +7,7 @@ from polar.models import Pledge, Repository
 from polar.exceptions import ResourceNotFound
 from polar.enums import Platforms
 from polar.models.user import User
+from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession, get_db_session
 
 from polar.integrations.stripe.service import stripe
@@ -13,6 +15,9 @@ from polar.organization.schemas import OrganizationRead
 from polar.organization.service import organization as organization_service
 from polar.repository.schemas import RepositoryRead
 from polar.issue.schemas import IssueRead
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 
 from .schemas import (
     PledgeCreate,
@@ -370,3 +375,49 @@ async def list_personal_pledges(
 ) -> list[PledgeRead]:
     pledges = await pledge_service.list_by_pledging_user(session, auth.user.id)
     return [PledgeRead.from_db(p) for p in pledges]
+
+
+@router.post(
+    "/pledges/{pledge_id}/dispute",
+    response_model=PledgeRead,
+)
+async def dispute_pledge(
+    pledge_id: UUID,
+    reason: str,
+    auth: Auth = Depends(Auth.current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> PledgeRead:
+    pledge = await pledge_service.get(session, pledge_id)
+    if not pledge:
+        raise HTTPException(status_code=404, detail="Pledge not found")
+
+    # authorize
+    memberships = await user_organization_service.list_by_user_id(
+        session, user_id=auth.user.id
+    )
+    if not authorize(pledge, auth.user, memberships):
+        raise HTTPException(status_code=404, detail="Pledge not found")
+
+    await pledge_service.mark_disputed(
+        session, pledge_id=pledge_id, by_user_id=auth.user.id, reason=reason
+    )
+
+    # get pledge again
+    pledge = await pledge_service.get_with_loaded(session, pledge_id)
+    if not pledge:
+        raise HTTPException(status_code=404, detail="Pledge not found")
+
+    return PledgeRead.from_db(pledge)
+
+
+def authorize(
+    pledge: Pledge, user: User, memberships: Sequence[UserOrganization]
+) -> bool:
+    if pledge.by_user_id == user.id:
+        return True
+
+    orgs = [m.organization_id for m in memberships]
+    if pledge.by_organization_id in orgs:
+        return True
+
+    return False

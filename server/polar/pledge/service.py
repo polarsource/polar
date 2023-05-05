@@ -1,5 +1,6 @@
 from __future__ import annotations
 from datetime import date, timedelta
+import datetime
 
 from uuid import UUID
 from typing import List, Sequence
@@ -278,6 +279,26 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             .values(pledged_amount_sum=summed)
         )
 
+        await session.execute(stmt)
+        await session.commit()
+
+    async def mark_disputed(
+        self,
+        session: AsyncSession,
+        pledge_id: UUID,
+        by_user_id: UUID,
+        reason: str,
+    ) -> None:
+        stmt = (
+            sql.update(Pledge)
+            .where(Pledge.id == pledge_id)
+            .values(
+                state=PledgeState.disputed,
+                dispute_reason=reason,
+                disputed_at=datetime.datetime.now(),
+                disputed_by_user_id=by_user_id,
+            )
+        )
         await session.execute(stmt)
         await session.commit()
 

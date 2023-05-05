@@ -34,6 +34,16 @@ class Pledge(RecordModel):
         TIMESTAMP(timezone=True), nullable=True
     )
 
+    dispute_reason: Mapped[str | None] = mapped_column(String, nullable=True)
+    disputed_by_user_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("users.id"),
+        nullable=True,
+    )
+    disputed_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+
     by_user_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("users.id"),

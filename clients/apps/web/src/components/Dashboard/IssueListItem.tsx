@@ -1,4 +1,5 @@
 import Modal, { ModalBox } from 'components/Shared/Modal'
+import { api } from 'polarkit/api'
 import {
   IssueDashboardRead,
   IssueReferenceRead,
@@ -14,7 +15,7 @@ import {
 } from 'polarkit/components/Issue'
 import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString, githubIssueUrl } from 'polarkit/utils'
-import { useState } from 'react'
+import { ChangeEvent, useState } from 'react'
 import PledgeNow from '../Pledge/PledgeNow'
 import IconCounter from './IconCounter'
 import IssueLabel, { LabelSchema } from './IssueLabel'
@@ -236,15 +237,43 @@ const generateMarkdownTitle = (
 export default IssueListItem
 
 const DisputeModal = (props: { pledge: PledgeRead }) => {
+  const [reason, setReason] = useState('')
+  const [canSubmit, setCanSubmit] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [didSubmit, setDidSubmit] = useState(false)
+
+  const submit = async () => {
+    setIsLoading(true)
+    setMessage('')
+
+    try {
+      await api.pledges.disputePledge({
+        pledgeId: pledge.id,
+        reason: reason,
+      })
+      setMessage("Thanks, we'll review your dispute soon.")
+      setDidSubmit(true)
+    } catch (Error) {
+      setMessage('Something went wrong. Please try again.')
+    }
+    setIsLoading(false)
+  }
+
+  const onUpdateReason = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    setReason(e.target.value)
+    setCanSubmit(e.target.value.length > 4 && !didSubmit)
+  }
+
   const { pledge } = props
   return (
     <ModalBox>
       <>
         <h1 className="text-2xl font-normal">Dispute your pledge</h1>
         <p className="text-sm text-gray-500">
-          You can dispute your pledge if you believe that you've been scammed,
-          or that the issue that you pledged towards has not been resolved in a
-          satisfacotry way.
+          You can dispute your pledge if you believe that you&apos;ve been
+          scammed, or that the issue that you pledged towards has not been
+          resolved in a satisfacotry way.
           <br />
           <br />
           Once submitted, Polar will prevent the money from being paid out to
@@ -284,18 +313,33 @@ const DisputeModal = (props: { pledge: PledgeRead }) => {
             </td>
           </tr>
         </table>
-        <label
-          htmlFor="dispute_description"
-          className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
+
+        {!didSubmit && (
+          <>
+            <label
+              htmlFor="dispute_description"
+              className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
+            >
+              Description
+            </label>
+            <textarea
+              id="dispute_description"
+              placeholder="Explain what happened"
+              rows={8}
+              onChange={onUpdateReason}
+            ></textarea>
+          </>
+        )}
+
+        <PrimaryButton
+          disabled={!canSubmit}
+          onClick={submit}
+          loading={isLoading}
         >
-          Description
-        </label>
-        <textarea
-          id="dispute_description"
-          placeholder="Explain what happened"
-          rows={8}
-        ></textarea>
-        <PrimaryButton>Submit</PrimaryButton>
+          Submit
+        </PrimaryButton>
+
+        {message && <p>{message}</p>}
       </>
     </ModalBox>
   )

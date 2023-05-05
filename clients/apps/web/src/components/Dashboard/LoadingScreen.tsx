@@ -47,7 +47,7 @@ const LogoIcon = ({ animate }: { animate: boolean }) => {
 const LoadingScreen = ({ animate, children }: Props) => {
   return (
     <>
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex grow items-center justify-center">
         <div className="flex-row">
           <LogoIcon animate={animate} />
           <div className="mt-4">{children}</div>

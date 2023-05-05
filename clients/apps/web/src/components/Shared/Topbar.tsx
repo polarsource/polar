@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { classNames } from 'polarkit/utils'
 import { useAuth } from '../../hooks'
 import Popover from '../Notifications/Popover'
@@ -40,9 +41,12 @@ const Topbar = (props: {
         {hasMid && props.children.center}
         {!hasMid && !props.customLogoTitle && (
           <>
-            <div className="hidden flex-shrink-0 items-center space-x-2 font-semibold text-gray-700 md:inline-flex">
+            <Link
+              href="/"
+              className="hidden flex-shrink-0 items-center space-x-2 font-semibold text-gray-700 md:inline-flex"
+            >
               <Logotype />
-            </div>
+            </Link>
           </>
         )}
 

@@ -1,5 +1,9 @@
-import { IssueReferenceRead, PledgeRead } from 'polarkit/api/client'
-import { classNames } from 'polarkit/utils'
+import {
+  IssueReferenceRead,
+  PledgeRead,
+  PledgeState,
+} from 'polarkit/api/client'
+import { classNames, getCentsInDollarString } from 'polarkit/utils'
 import IssuePledge from './IssuePledge'
 import IssueReference from './Reference'
 
@@ -23,7 +27,12 @@ const IssueListItemDecoration = ({
   const ONE_DAY = 1000 * 60 * 60 * 24
   const canDisputeAny =
     pledges &&
-    pledges.find((p) => p.authed_user_can_dispute && p.scheduled_payout_at)
+    pledges.find(
+      (p) =>
+        p.authed_user_can_admin &&
+        p.scheduled_payout_at &&
+        p.state === PledgeState.PENDING,
+    )
   const now = new Date()
   const disputeDays =
     canDisputeAny && canDisputeAny.scheduled_payout_at
@@ -33,6 +42,12 @@ const IssueListItemDecoration = ({
             ONE_DAY,
         )
       : 0
+
+  const disputedPledges = pledges.filter(
+    (p) => p.state === PledgeState.DISPUTED,
+  )
+
+  const showDisputeBox = disputedPledges.length > 0 || canDisputeAny
 
   const onClickDisputeButton = () => {
     if (!canDisputeAny || !onDispute) {
@@ -69,18 +84,42 @@ const IssueListItemDecoration = ({
           )}
         </div>
       </div>
-      {showDisputeAction && canDisputeAny && (
+      {showDisputeAction && showDisputeBox && (
         <div className="border-t-2 border-gray-100 bg-gray-50 px-4 py-1">
-          <span className="text-sm text-gray-500">
-            <a
-              href="#"
-              onClick={onClickDisputeButton}
-              className="text-blue-600"
-            >
-              Dispute
-            </a>{' '}
-            within {disputeDays} {disputeDays === 1 ? 'day' : 'days'}
-          </span>
+          {canDisputeAny && (
+            <div>
+              <span className="text-sm text-gray-500">
+                <a
+                  href="#"
+                  onClick={onClickDisputeButton}
+                  className="text-blue-600"
+                >
+                  Dispute
+                </a>{' '}
+                within {disputeDays} {disputeDays === 1 ? 'day' : 'days'}
+              </span>
+            </div>
+          )}
+
+          {disputedPledges.map((p) => {
+            return (
+              <div>
+                {p.authed_user_can_admin && (
+                  <span className="text-sm text-gray-500">
+                    You've disputed your pledge ($
+                    {getCentsInDollarString(p.amount)})
+                  </span>
+                )}
+
+                {!p.authed_user_can_admin && (
+                  <span className="text-sm text-gray-500">
+                    {p.pledger_name} disputed their pledge ($
+                    {getCentsInDollarString(p.amount)})
+                  </span>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

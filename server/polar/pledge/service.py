@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import date, timedelta
 
 from uuid import UUID
 from typing import List, Sequence
@@ -49,7 +50,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             sql.select(Pledge)
             .where(
                 Pledge.repository_id == repository_id,
-                Pledge.state.in_(PledgeState.active_states())
+                Pledge.state.in_(PledgeState.active_states()),
             )
             .options(
                 joinedload(Pledge.user),
@@ -67,7 +68,8 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             sql.select(Pledge)
             .where(
                 Pledge.by_user_id == user_id,
-                Pledge.state.in_(PledgeState.active_states()))
+                Pledge.state.in_(PledgeState.active_states()),
+            )
             .options(
                 joinedload(Pledge.user),
                 joinedload(Pledge.organization),
@@ -92,7 +94,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             )
             .filter(
                 Pledge.issue_id.in_(issue_ids),
-                Pledge.state.in_(PledgeState.active_states())
+                Pledge.state.in_(PledgeState.active_states()),
             )
         )
         res = await session.execute(statement)
@@ -122,7 +124,10 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         statement = (
             sql.update(Pledge)
             .where(Pledge.issue_id == issue_id, Pledge.state == PledgeState.created)
-            .values(state=PledgeState.pending)
+            .values(
+                state=PledgeState.pending,
+                scheduled_payout_at=date.today() + timedelta(days=14),
+            )
         )
         await session.execute(statement)
         await session.commit()
@@ -133,7 +138,10 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         statement = (
             sql.update(Pledge)
             .where(Pledge.id == pledge_id, Pledge.state == PledgeState.created)
-            .values(state=PledgeState.pending)
+            .values(
+                state=PledgeState.pending,
+                scheduled_payout_at=date.today() + timedelta(days=14),
+            )
         )
         await session.execute(statement)
         await session.commit()

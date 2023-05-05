@@ -100,15 +100,22 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         offset: int = 0,
         limit: int | None = None,
     ) -> Tuple[Sequence[Issue], int]:  # (issues, total_issue_count)
+        pledge_statuses = list(
+            set(PledgeState.active_states()) | set([PledgeState.disputed])
+        )
+
         statement = sql.select(
             Issue,
             sql.func.count(Issue.id).over().label("total_count"),
             sql.func.sum(Pledge.amount).label("pledged_amount"),
-        ).join(Pledge,
-            and_(Pledge.issue_id == Issue.id,
-                 or_(Pledge.id.is_(None),
-                     Pledge.state.in_(PledgeState.active_states()))),
-            isouter=True)
+        ).join(
+            Pledge,
+            and_(
+                Pledge.issue_id == Issue.id,
+                or_(Pledge.id.is_(None), Pledge.state.in_(pledge_statuses)),
+            ),
+            isouter=True,
+        )
 
         if issue_list_type == IssueListType.issues:
             statement = statement.where(Issue.repository_id.in_(repository_ids))

@@ -186,17 +186,19 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
     ) -> None:
         pledge = await self.get_by_payment_id(session, payment_id)
         if pledge:
-            if pledge.state in [PledgeState.created, PledgeState.pending]:
+            if pledge.state in [
+                PledgeState.created,
+                PledgeState.pending,
+                PledgeState.disputed,
+            ]:
                 if amount == pledge.amount:
                     pledge.state = PledgeState.refunded
                 elif amount < pledge.amount:
                     pledge.amount -= amount
                 else:
-                    # Not possible
-                    ...
+                    raise NotPermitted("Refunding error, unexpected amount!")
             else:
-                # TODO: Log to sentry
-                ...
+                raise NotPermitted("Refunding error, unexpected pledge status")
 
             session.add(pledge)
             session.add(

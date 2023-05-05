@@ -8,11 +8,15 @@ const IssueListItemDecoration = ({
   repoName,
   pledges,
   references,
+  showDisputeAction,
+  onDispute,
 }: {
   orgName: string
   repoName: string
   pledges: PledgeRead[]
   references: IssueReferenceRead[]
+  showDisputeAction?: boolean
+  onDispute?: (pledge: PledgeRead) => void
 }) => {
   const showPledges = pledges && pledges.length > 0
 
@@ -29,6 +33,14 @@ const IssueListItemDecoration = ({
             ONE_DAY,
         )
       : 0
+
+  const onClickDisputeButton = () => {
+    if (!canDisputeAny || !onDispute) {
+      return
+    }
+    // TODO: Support disputing multiple pledges to the same issue?
+    onDispute(canDisputeAny)
+  }
 
   return (
     <div>
@@ -57,10 +69,14 @@ const IssueListItemDecoration = ({
           )}
         </div>
       </div>
-      {canDisputeAny && (
+      {showDisputeAction && canDisputeAny && (
         <div className="border-t-2 border-gray-100 bg-gray-50 px-4 py-1">
           <span className="text-sm text-gray-500">
-            <a href="#" className="text-blue-600">
+            <a
+              href="#"
+              onClick={onClickDisputeButton}
+              className="text-blue-600"
+            >
               Dispute
             </a>{' '}
             within {disputeDays} {disputeDays === 1 ? 'day' : 'days'}

@@ -180,9 +180,13 @@ class Issue(IssueFields, RecordModel):
 
     @declared_attr
     def pledges(cls) -> "Mapped[list[Pledge]]":
-        return relationship("Pledge", lazy="raise", viewonly=True,
+        return relationship(
+            "Pledge",
+            lazy="raise",
+            viewonly=True,
             primaryjoin="""and_(Issue.id == Pledge.issue_id, Pledge.state.in_(
-                ['created', 'pending', 'paid']))""")
+                ['created', 'pending', 'paid', 'disputed']))""",
+        )
 
     # calculated sum of pledges, used for sorting
     # not to be exported through APIs

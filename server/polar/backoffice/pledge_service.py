@@ -5,6 +5,7 @@ from polar.kit.extensions.sqlalchemy import sql
 from sqlalchemy.orm import (
     joinedload,
 )
+from polar.models.account import Account
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
@@ -25,21 +26,17 @@ class BackofficePledgeService:
             joinedload(Pledge.issue).joinedload(Issue.repository),
         )
 
-        # Pledges to customers
-        if customers:
-            stmt = stmt.where(
-                Pledge.issue.has(
-                    Issue.organization.has(Organization.onboarded_at.is_not(None))
-                )
-            )
+        stmt = stmt.join(
+            Account, Account.organization_id == Pledge.organization_id, isouter=True
+        )
 
-            # Pledges to non customers
-        if not customers:
-            stmt = stmt.where(
-                Pledge.issue.has(
-                    Issue.organization.has(Organization.onboarded_at.is_(None))
-                )
-            )
+        # Pledges to customers
+        if customers is True:
+            stmt = stmt.where(Account.id.is_not(None))
+
+        # Pledges to non customers
+        if customers is False:
+            stmt = stmt.where(Account.id.is_(None))
 
         res = await session.execute(stmt)
         pledges = res.scalars().unique().all()

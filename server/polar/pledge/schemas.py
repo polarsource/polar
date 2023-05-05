@@ -22,9 +22,10 @@ class PledgeState(str, Enum):
     # The states in which this pledge is "active", i.e. is listed on the issue
     @classmethod
     def active_states(cls) -> list[PledgeState]:
-        return [cls.created, cls.pending, cls.paid]
+        return [cls.created, cls.pending, cls.paid, cls.disputed]
 
-    # Happy path: initiated -> created -> pending -> paid
+    # Happy path:
+    # initiated -> created -> pending -> paid
 
     @classmethod
     def from_str(cls, s: str) -> PledgeState:
@@ -74,7 +75,7 @@ class PledgeRead(Schema):
     pledger_name: str | None
     pledger_avatar: str | None
 
-    authed_user_can_dispute: bool = False
+    authed_user_can_admin: bool = False
     scheduled_payout_at: datetime | None = None
 
     @classmethod

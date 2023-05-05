@@ -276,8 +276,8 @@ async def dashboard(
                 for_org and pled.by_organization_id == for_org.id
             )
 
-            if user_can_admin and pled.state == PledgeState.pending:
-                pledge_read.authed_user_can_dispute = True
+            if user_can_admin:
+                pledge_read.authed_user_can_admin = True
 
             # for pled in pledges:
             included[str(pled.id)] = Entry(

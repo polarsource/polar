@@ -160,7 +160,7 @@ export const SynchronizeRepositories = ({
         [data.repository_id]: {
           ...repo,
           // Make sure that processed doesn't decrease
-          processed: max(processed, repo.processed),
+          processed: max(processed, repo?.processed || 0),
           expected: data.expected,
           completed,
         },

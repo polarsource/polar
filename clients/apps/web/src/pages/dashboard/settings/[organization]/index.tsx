@@ -231,7 +231,7 @@ const SettingsTopbar = () => {
               showRepositories={false}
               showConnectMore={false}
               currentOrg={currentOrg}
-              onSelectOrg={(org) => router.push(`/settings/${org}`)}
+              onSelectOrg={(org) => router.push(`/dashboard/settings/${org}`)}
             />
           </div>
         ),

@@ -9,7 +9,7 @@ import { useState } from 'react'
 import Topbar from './Topbar'
 
 const SettingsLink = ({ orgSlug }: { orgSlug?: string }) => {
-  let path = '/settings'
+  let path = '/dashboard/settings'
   if (orgSlug) {
     path += `/${orgSlug}`
   }

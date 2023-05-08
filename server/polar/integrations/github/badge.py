@@ -92,10 +92,12 @@ class GithubBadge:
         lightmode_url = self.generate_svg_url(darkmode=False)
 
         return f"""{PLEDGE_BADGE_COMMENT_START}
-<a href="{funding_url}"><picture>
+<a href="{funding_url}">
+<picture>
   <source media="(prefers-color-scheme: dark)" srcset="{darkmode_url}">
   <img alt="Fund with Polar" src="{lightmode_url}">
-</picture></a>
+</picture>
+</a>
 {PLEDGE_BADGE_COMMENT_END}
 """
 

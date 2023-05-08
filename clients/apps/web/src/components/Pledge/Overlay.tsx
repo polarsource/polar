@@ -136,6 +136,16 @@ const Overlay = ({
     })
   }
 
+  const payPledge = async () => {
+    return await api.pledges.confirmPledge({
+      platform: issue.platform,
+      orgName: issueOrg.name,
+      repoName: issueRepo.name,
+      number: issue.number,
+      pledgeId: pledge.id,
+    })
+  }
+
   const synchronizePledge = async (amount: number) => {
     console.log('SYNC 1')
 
@@ -172,7 +182,8 @@ const Overlay = ({
 
   const onClickPledge = async (e) => {
     e.preventDefault()
-    await createPledge()
+    await payPledge()
+    setIsDone(true)
   }
 
   return (

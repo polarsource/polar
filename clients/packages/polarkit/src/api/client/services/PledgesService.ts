@@ -128,6 +128,40 @@ export class PledgesService {
   }
 
   /**
+   * Confirm Pledge
+   * @returns PledgeMutationResponse Successful Response
+   * @throws ApiError
+   */
+  public confirmPledge({
+    platform,
+    orgName,
+    repoName,
+    number,
+    pledgeId,
+  }: {
+    platform: Platforms,
+    orgName: string,
+    repoName: string,
+    number: number,
+    pledgeId: string,
+  }): CancelablePromise<PledgeMutationResponse> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}/pledges/{pledge_id}/confirm',
+      path: {
+        'platform': platform,
+        'org_name': orgName,
+        'repo_name': repoName,
+        'number': number,
+        'pledge_id': pledgeId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
    * List Personal Pledges
    * @returns PledgeRead Successful Response
    * @throws ApiError

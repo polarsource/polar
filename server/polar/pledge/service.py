@@ -286,7 +286,6 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         if updates.amount and updates.amount != pledge.amount:
             pledge.amount = updates.amount
             pledge.fee = self.calculate_fee(pledge.amount)
-            print("######", repr(pledge.amount), repr(pledge.fee), repr(pledge.amount_including_fee))
             payment_intent = stripe.modify_intent(pledge.payment_id,
                                                   amount=pledge.amount_including_fee)
 
@@ -300,6 +299,33 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
 
         ret = PledgeMutationResponse.from_orm(pledge)
         ret.client_secret = payment_intent.client_secret
+
+        return ret
+
+    async def confirm_pledge(
+        self,
+        session: AsyncSession,
+        repo: Repository,
+        pledge_id: UUID,
+    ) -> PledgeMutationResponse:
+        pledge = await self.get_with_loaded(session=session, pledge_id=pledge_id)
+
+        if not pledge or pledge.repository_id != repo.id:
+            raise ResourceNotFound('Pledge not found')
+
+        payment_intent = await stripe.create_confirmed_payment_intent_for_organization(
+            session=session,
+            organization=pledge.organization,
+            amount=pledge.amount_including_fee,
+            transfer_group=f"{pledge.id}",
+            issue=pledge.issue,
+        )
+
+        pledge.state = PledgeState.created
+        pledge.payment_id = payment_intent.id
+        await pledge.save(session=session)
+
+        ret = PledgeMutationResponse.from_orm(pledge)
 
         return ret
 

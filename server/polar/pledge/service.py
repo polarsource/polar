@@ -262,19 +262,8 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             by_organization=pledge_as_org,
         )
 
-        # Create a payment intent with Stripe
-        payment_intent = await stripe.create_confirmed_payment_intent_for_organization(
-            session,
-            amount=db_pledge.amount_including_fee,
-            transfer_group=f"{db_pledge.id}",
-            issue=issue,
-            organization=pledge_as_org,
-        )
-
-        # Store the intent id and the fact that we received the money
-        db_pledge.state = PledgeState.created
-        db_pledge.payment_id = payment_intent.id
-        await db_pledge.save(session)
+        # Note that we don't create a payment intent here, we create it off_session
+        # when the user calls the API to confirm the pledge
 
         ret = PledgeMutationResponse.from_orm(db_pledge)
 
@@ -289,7 +278,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
     ) -> PledgeMutationResponse:
         payment_intent = None
 
-        pledge = await self.get_by(session=session, pledge_id=pledge_id)
+        pledge = await self.get(session=session, id=pledge_id)
 
         if not pledge or pledge.repository_id != repo.id:
             raise ResourceNotFound('Pledge not found')
@@ -297,6 +286,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         if updates.amount and updates.amount != pledge.amount:
             pledge.amount = updates.amount
             pledge.fee = self.calculate_fee(pledge.amount)
+            print("######", repr(pledge.amount), repr(pledge.fee), repr(pledge.amount_including_fee))
             payment_intent = stripe.modify_intent(pledge.payment_id,
                                                   amount=pledge.amount_including_fee)
 

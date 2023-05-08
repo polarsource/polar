@@ -271,8 +271,10 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
 
     async def modify_pledge(
         self,
+        platform: Platforms,
         session: AsyncSession,
         repo: Repository,
+        user: User | None,
         pledge_id: UUID,
         updates: PledgeUpdate
     ) -> PledgeMutationResponse:
@@ -283,6 +285,9 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         if not pledge or pledge.repository_id != repo.id:
             raise ResourceNotFound('Pledge not found')
 
+        if updates.pledge_as_org and not user:
+            raise NotPermitted('Logged-in user required')
+
         if updates.amount and updates.amount != pledge.amount:
             pledge.amount = updates.amount
             pledge.fee = self.calculate_fee(pledge.amount)
@@ -291,6 +296,17 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
 
         if updates.email and updates.email != pledge.email:
             pledge.email = updates.email
+
+        if user and updates.pledge_as_org and \
+            updates.pledge_as_org != pledge.organization_id:
+            pledge_as_org = await organization_service.get_by_id_for_user(
+                session=session,
+                platform=platform,
+                org_id=updates.pledge_as_org,
+                user_id=user.id,
+            )
+            if pledge_as_org:
+                pledge.by_organization_id = pledge_as_org.id
 
         if payment_intent is None:
             payment_intent = stripe.retrieve_intent(pledge.payment_id)

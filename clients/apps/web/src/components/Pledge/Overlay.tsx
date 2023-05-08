@@ -15,6 +15,8 @@ import { getCentsInDollarString } from 'polarkit/utils'
 import { useEffect, useRef, useState } from 'react'
 import { useRequireAuth } from '../../hooks'
 
+type PledgeSync = { amount?: number; pledgeAsOrg?: OrganizationRead }
+
 const Overlay = ({
   onClose,
   issue,
@@ -43,6 +45,7 @@ const Overlay = ({
   useEffect(() => {
     const org = userOrgQuery.data?.find((o) => o.name === pledgeAs)
     setSelectedOrg(org)
+    debouncedSync({ pledgeAsOrg: org })
   }, [userOrgQuery, pledgeAs])
 
   const orgCustomer = useOrganizationCustomer(selectedOrg?.name)
@@ -75,7 +78,7 @@ const Overlay = ({
 
     setErrorMessage(null)
     setAmount(amountInCents)
-    debouncedSync(amountInCents)
+    debouncedSync({ amount: amountInCents })
   }
 
   const [havePaymentMethod, setHavePaymentMethod] = useState(false)
@@ -107,8 +110,8 @@ const Overlay = ({
     return false
   }
 
-  const createPledge = async (amount: number) => {
-    console.log('CREATE PLEDGE', amount)
+  const createPledge = async (pledgeSync: PledgeSync) => {
+    console.log('CREATE PLEDGE', pledgeSync)
     return await api.pledges.createPledge({
       platform: issue.platform,
       orgName: issueOrg.name,
@@ -116,14 +119,14 @@ const Overlay = ({
       number: issue.number,
       requestBody: {
         issue_id: issue.id,
-        amount: amount,
-        pledge_as_org: selectedOrg.id,
+        amount: pledgeSync.amount,
+        pledge_as_org: pledgeSync.pledgeAsOrg?.id,
       },
     })
   }
 
-  const updatePledge = async (amount: number) => {
-    console.log('UPDATE PLEDGE', amount)
+  const updatePledge = async (pledgeSync: PledgeSync) => {
+    console.log('UPDATE PLEDGE', pledgeSync)
     return await api.pledges.updatePledge({
       platform: issue.platform,
       orgName: issueOrg.name,
@@ -131,7 +134,8 @@ const Overlay = ({
       number: issue.number,
       pledgeId: pledge.id,
       requestBody: {
-        amount: amount,
+        amount: pledgeSync.amount,
+        pledge_as_org: pledgeSync.pledgeAsOrg?.id,
       },
     })
   }
@@ -146,7 +150,7 @@ const Overlay = ({
     })
   }
 
-  const synchronizePledge = async (amount: number) => {
+  const synchronizePledge = async (pledgeSync: PledgeSync) => {
     console.log('SYNC 1')
 
     if (!selectedOrg) {
@@ -164,9 +168,9 @@ const Overlay = ({
     setSyncing(true)
     let updatedPledge: PledgeMutationResponse
     if (!pledge) {
-      updatedPledge = await createPledge(amount)
+      updatedPledge = await createPledge(pledgeSync)
     } else {
-      updatedPledge = await updatePledge(amount)
+      updatedPledge = await updatePledge(pledgeSync)
     }
 
     if (updatedPledge) {
@@ -175,9 +179,9 @@ const Overlay = ({
     setSyncing(false)
   }
 
-  const debouncedSync = (amount: number) => {
+  const debouncedSync = (pledgeSync: PledgeSync) => {
     clearTimeout(syncTimeout.current)
-    syncTimeout.current = setTimeout(() => synchronizePledge(amount), 500)
+    syncTimeout.current = setTimeout(() => synchronizePledge(pledgeSync), 500)
   }
 
   const onClickPledge = async (e) => {

@@ -48,6 +48,7 @@ class PledgeCreate(Schema):
 class PledgeUpdate(Schema):
     email: str | None
     amount: int | None
+    pledge_as_org: UUID | None = None
 
 
 class PledgeMutationResponse(PledgeCreate):

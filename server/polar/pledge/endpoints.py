@@ -164,6 +164,7 @@ async def update_pledge(
     pledge_id: UUID,
     updates: PledgeUpdate,
     session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.optional_user),
 ) -> PledgeMutationResponse:
     org, repo, issue = await organization_service.get_with_repo_and_issue(
         session=session,
@@ -175,7 +176,9 @@ async def update_pledge(
 
     return await pledge_service.modify_pledge(
         session=session,
+        platform=platform,
         repo=repo,
+        user=auth.user,
         pledge_id=pledge_id,
         updates=updates
     )

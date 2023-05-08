@@ -84,10 +84,16 @@ export default async function handler(
   try {
     const svg = await generateBadge(org, repo, intNumber, isDarkmode)
     res.setHeader('Content-Type', 'image/svg+xml')
+    res.setHeader('Cache-Control', 'no-cache')
     res.end(svg)
   } catch (error) {
     console.log({ error })
-    res.status(404).end()
-    // TODO: Return 1x1 pixel transparent SVG to avoid browser issues
+    // Return 1x1 pixel SVG to prevent image-not-found issues in browsers
+    res.setHeader('Content-Type', 'image/svg+xml')
+    res.setHeader('Cache-Control', 'no-cache')
+    res.status(400)
+    res.end(
+      '<svg width="1" height="1" viewBox="0 0 1 1" xmlns="http://www.w3.org/2000/svg"></svg>',
+    )
   }
 }

@@ -75,7 +75,7 @@ const bg = (color: Color, loading: boolean, disabled: boolean) => {
     case 'lightblue':
       return 'bg-blue-500 hover:bg-blue-600'
     case 'red':
-      return 'bg-red-600 hover:bg-blue-500'
+      return 'bg-red-600 hover:bg-red-500'
     case 'green':
       return 'bg-green-600 hover:bg-green-500'
     case 'gray':
@@ -122,7 +122,7 @@ export const ThinButton = (props: ButtonProps) => {
   let classes = classNames(
     bg(props.color, props.loading, disabled),
     text(props.color, props.loading, disabled),
-    'rounded px-2 py-1 text-xs font-semibold transition-colors duration-100 h-6 inline-flex',
+    'rounded px-2 py-1 text-xs font-semibold transition-colors duration-100 h-6 flex',
   )
 
   if (props.href) {
@@ -131,7 +131,9 @@ export const ThinButton = (props: ButtonProps) => {
         <a className={classes} href={props.href} target="_blank">
           <div className="h-6">{/* Same height as LoadingSpinner */}</div>
           {props.loading && <LoadingSpinner disabled={disabled} />}
-          {!props.loading && <span>{props.children}</span>}
+          {!props.loading && (
+            <div className="flex space-x-1">{props.children}</div>
+          )}
         </a>
       </>
     )
@@ -142,7 +144,7 @@ export const ThinButton = (props: ButtonProps) => {
       <button className={classes} onClick={props.onClick} disabled={disabled}>
         <div className="h-6">{/* Same height as LoadingSpinner */}</div>
         {props.loading && <LoadingSpinner disabled={disabled} />}
-        {!props.loading && <span>{props.children}</span>}
+        <div className="flex space-x-1">{props.children}</div>
       </button>
     </>
   )

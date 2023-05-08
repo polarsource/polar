@@ -21,5 +21,8 @@ export type BackofficePledgeRead = {
   receiver_org_name: string;
   issue_title: string;
   issue_url: string;
+  dispute_reason?: string;
+  disputed_by_user_id?: string;
+  disputed_at?: string;
 };
 

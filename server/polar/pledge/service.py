@@ -8,6 +8,7 @@ from typing import List, Sequence
 import structlog
 
 from polar.kit.services import ResourceService
+from polar.kit.utils import utc_now
 from polar.models.issue import Issue
 from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.user import User
@@ -124,7 +125,10 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
     ) -> None:
         statement = (
             sql.update(Pledge)
-            .where(Pledge.issue_id == issue_id, Pledge.state == PledgeState.created)
+            .where(
+                Pledge.issue_id == issue_id,
+                Pledge.state.in_(PledgeState.to_pending_states()),
+            )
             .values(
                 state=PledgeState.pending,
                 scheduled_payout_at=date.today() + timedelta(days=14),
@@ -138,7 +142,10 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
     ) -> None:
         statement = (
             sql.update(Pledge)
-            .where(Pledge.id == pledge_id, Pledge.state == PledgeState.created)
+            .where(
+                Pledge.id == pledge_id,
+                Pledge.state.in_(PledgeState.to_pending_states()),
+            )
             .values(
                 state=PledgeState.pending,
                 scheduled_payout_at=date.today() + timedelta(days=14),
@@ -170,6 +177,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         pledge = await self.get_by_payment_id(session, payment_id)
         if pledge:
             pledge.state = PledgeState.paid
+            pledge.transfer_id = transaction_id
             session.add(pledge)
             session.add(
                 PledgeTransaction(
@@ -186,11 +194,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
     ) -> None:
         pledge = await self.get_by_payment_id(session, payment_id)
         if pledge:
-            if pledge.state in [
-                PledgeState.created,
-                PledgeState.pending,
-                PledgeState.disputed,
-            ]:
+            if pledge.state in PledgeState.to_refunded_states():
                 if amount == pledge.amount:
                     pledge.state = PledgeState.refunded
                 elif amount < pledge.amount:
@@ -211,12 +215,12 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             )
             await session.commit()
 
-    async def mark_disputed_by_payment_id(
+    async def mark_charge_disputed_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
     ) -> None:
         pledge = await self.get_by_payment_id(session, payment_id)
         if pledge:
-            pledge.state = PledgeState.disputed
+            pledge.state = PledgeState.charge_disputed
             session.add(pledge)
             session.add(
                 PledgeTransaction(
@@ -232,8 +236,12 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         pledge = await self.get(session, id=pledge_id)
         if not pledge:
             raise ResourceNotFound(f"Pledge not found with id: {pledge_id}")
-        if pledge.state != PledgeState.pending:
+        if pledge.state not in PledgeState.to_paid_states():
             raise NotPermitted("Pledge is not in pending state")
+        if pledge.scheduled_payout_at and pledge.scheduled_payout_at > utc_now():
+            raise NotPermitted(
+                "Pledge is not ready for payput (still in dispute window)"
+            )
 
         organization = await organization_service.get(
             session, id=pledge.organization_id

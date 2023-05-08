@@ -1,4 +1,6 @@
+from datetime import datetime
 from typing import Self
+from uuid import UUID
 from polar.models.pledge import Pledge
 from polar.pledge.schemas import PledgeRead, PledgeState
 
@@ -9,6 +11,10 @@ class BackofficePledgeRead(PledgeRead):
     receiver_org_name: str
     issue_title: str
     issue_url: str
+
+    dispute_reason: str | None
+    disputed_by_user_id: UUID | None
+    disputed_at: datetime | None
 
     @classmethod
     def from_db(cls, o: Pledge) -> Self:
@@ -36,4 +42,8 @@ class BackofficePledgeRead(PledgeRead):
             issue_title=o.issue.title,
             issue_url=f"https://github.com/{o.issue.organization.name}/{o.issue.repository.name}/issues/{o.issue.number}",
             receiver_org_name=o.issue.organization.name,
+            dispute_reason=o.dispute_reason,
+            disputed_at=o.disputed_at,
+            disputed_by_user_id=o.disputed_by_user_id,
+            scheduled_payout_at=o.scheduled_payout_at,
         )

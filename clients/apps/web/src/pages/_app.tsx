@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/nextjs'
 import TopbarLayout from 'components/Layout/TopbarLayout'
 import type { AppProps } from 'next/app'
+import Head from 'next/head'
 import { CONFIG } from 'polarkit'
 import { queryClient, QueryClientProvider } from 'polarkit/api'
 import type { ReactElement } from 'react'
@@ -29,9 +30,14 @@ const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {getLayout(<Component {...pageProps} />)}
-    </QueryClientProvider>
+    <>
+      <Head>
+        <title>Polar</title>
+      </Head>
+      <QueryClientProvider client={queryClient}>
+        {getLayout(<Component {...pageProps} />)}
+      </QueryClientProvider>
+    </>
   )
 }
 

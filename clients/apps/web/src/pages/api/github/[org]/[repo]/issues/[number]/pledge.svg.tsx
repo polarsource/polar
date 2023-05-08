@@ -33,7 +33,12 @@ const getBadgeData = async (
   return res
 }
 
-const generateBadge = async (org: string, repo: string, number: number) => {
+const generateBadge = async (
+  org: string,
+  repo: string,
+  number: number,
+  isDarkmode: boolean,
+) => {
   const badge = await getBadgeData(org, repo, number)
   let hasAmount = badge.amount !== null
 
@@ -44,7 +49,11 @@ const generateBadge = async (org: string, repo: string, number: number) => {
     : undefined
 
   const svg = await satori(
-    <Badge showAmountRaised={hasAmount} amountRaised={amountRaised} />,
+    <Badge
+      showAmountRaised={hasAmount}
+      amountRaised={amountRaised}
+      darkmode={isDarkmode}
+    />,
     {
       height: 60,
       width: 400,
@@ -70,9 +79,10 @@ export default async function handler(
   org = typeof org === 'string' ? org : ''
   repo = typeof repo === 'string' ? repo : ''
   const intNumber = typeof number === 'string' ? parseInt(number) : 0
+  const isDarkmode = req.query?.darkmode ? true : false
 
   try {
-    const svg = await generateBadge(org, repo, intNumber)
+    const svg = await generateBadge(org, repo, intNumber, isDarkmode)
     res.setHeader('Content-Type', 'image/svg+xml')
     res.end(svg)
   } catch (error) {

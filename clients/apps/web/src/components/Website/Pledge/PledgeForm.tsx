@@ -269,7 +269,7 @@ const PledgeForm = ({
               loading={isSyncing}
               onClick={() => false}
             >
-              Pledge ${getCentsInDollarString(MINIMUM_PLEDGE)}
+              Pay ${getCentsInDollarString(MINIMUM_PLEDGE)}
             </PrimaryButton>
           </div>
         )}

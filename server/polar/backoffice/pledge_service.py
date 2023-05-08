@@ -1,4 +1,5 @@
 from __future__ import annotations
+from sqlalchemy import desc
 import structlog
 from polar.backoffice.schemas import BackofficePledgeRead
 from polar.kit.extensions.sqlalchemy import sql
@@ -37,6 +38,8 @@ class BackofficePledgeService:
         # Pledges to non customers
         if customers is False:
             stmt = stmt.where(Account.id.is_(None))
+
+        stmt = stmt.order_by(desc(Pledge.created_at))
 
         res = await session.execute(stmt)
         pledges = res.scalars().unique().all()

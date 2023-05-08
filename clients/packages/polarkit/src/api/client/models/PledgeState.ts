@@ -12,4 +12,5 @@ export enum PledgeState {
   PAID = 'paid',
   REFUNDED = 'refunded',
   DISPUTED = 'disputed',
+  CHARGE_DISPUTED = 'charge_disputed',
 }

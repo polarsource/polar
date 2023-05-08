@@ -53,6 +53,24 @@ export const useBackofficePledgeMarkPending = () =>
     },
   })
 
+export const useBackofficePledgeMarkDisputed = () =>
+  useMutation({
+    mutationFn: (variables: { pledgeId: string }) => {
+      return api.backoffice.pledgeMarkDisputed({
+        pledgeId: variables.pledgeId,
+      })
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.setQueryData<Array<PledgeRead> | undefined>(
+        ['backofficeAllPledges'],
+        (oldData) =>
+          oldData
+            ? oldData.map((p) => (p.id === result.id ? result : p))
+            : oldData,
+      )
+    },
+  })
+
 export const useBackofficeListInvites = () =>
   useQuery(['useBackofficeListInvites'], () => api.backoffice.invitesList(), {
     retry: defaultRetry,

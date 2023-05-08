@@ -13,9 +13,12 @@ async def payment_intent_succeeded(
         async with AsyncSessionLocal() as session:
             payment_intent = event["data"]["object"]
             await pledge_service.mark_created_by_payment_id(
-                session=session, payment_id=payment_intent["id"],
+                session=session,
+                payment_id=payment_intent["id"],
                 amount=payment_intent["amount"],
-                transaction_id=payment_intent["latest_charge"])
+                transaction_id=payment_intent["latest_charge"],
+            )
+
 
 @task("stripe.webhook.charge.refunded")
 async def charge_refunded(
@@ -25,9 +28,12 @@ async def charge_refunded(
         async with AsyncSessionLocal() as session:
             charge = event["data"]["object"]
             await pledge_service.refund_by_payment_id(
-                session=session, payment_id=charge["payment_intent"],
+                session=session,
+                payment_id=charge["payment_intent"],
                 amount=charge["amount_refunded"],
-                transaction_id=charge["id"])
+                transaction_id=charge["id"],
+            )
+
 
 @task("stripe.webhook.charge.dispute.created")
 async def charge_dispute_created(
@@ -36,7 +42,9 @@ async def charge_dispute_created(
     with polar_context.to_execution_context() as context:
         async with AsyncSessionLocal() as session:
             dispute = event["data"]["object"]
-            await pledge_service.mark_disputed_by_payment_id(
-                session=session, payment_id=dispute["payment_intent"],
+            await pledge_service.mark_charge_disputed_by_payment_id(
+                session=session,
+                payment_id=dispute["payment_intent"],
                 amount=dispute["amount"],
-                transaction_id=dispute["id"])
+                transaction_id=dispute["id"],
+            )

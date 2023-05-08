@@ -1,3 +1,4 @@
+import { CONFIG } from 'polarkit'
 import { Badge } from 'polarkit/components'
 
 const FakePullRequest = ({ showAmount }: { showAmount: boolean }) => {
@@ -6,7 +7,7 @@ const FakePullRequest = ({ showAmount }: { showAmount: boolean }) => {
       <div className="inline-flex w-full items-center space-x-2 border-b-[1px] border-[#C8CFDA] bg-[#F6F8FA] px-4 py-2 text-sm text-[#909FB1]">
         <span>
           <strong className="font-medium text-black/70">janedoe</strong>{' '}
-          commented 2 days ago &mdash; edited by Polar
+          commented 2 days ago &mdash; edited by {CONFIG.GITHUB_APP_NAMESPACE}
         </span>
         <div className="rounded-full border-[1px] border-[#C8CFDA] px-2 py-0.5">
           bot

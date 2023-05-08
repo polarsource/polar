@@ -173,27 +173,12 @@ async def update_pledge(
         issue=number,
     )
 
-    pledge = await get_pledge_or_404(session, pledge_id=pledge_id, for_repository=repo)
-
-    payment_intent = None
-
-    if updates.amount and updates.amount != pledge.amount:
-        pledge.amount = updates.amount
-        payment_intent = stripe.modify_intent(pledge.payment_id, amount=pledge.amount)
-
-    if updates.email and updates.email != pledge.email:
-        pledge.email = updates.email
-
-    if payment_intent is None:
-        payment_intent = stripe.retrieve_intent(pledge.payment_id)
-
-    await pledge.save(session=session)
-
-    ret = PledgeMutationResponse.from_orm(pledge)
-    ret.client_secret = payment_intent.client_secret
-
-    return ret
-
+    return await pledge_service.modify_pledge(
+        session=session,
+        repo=repo,
+        pledge_id=pledge_id,
+        updates=updates
+    )
 
 @router.get(
     "/me/pledges",

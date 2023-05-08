@@ -53,6 +53,8 @@ class PledgeUpdate(Schema):
 class PledgeMutationResponse(PledgeCreate):
     id: UUID
     state: PledgeState
+    fee: int
+    amount_including_fee: int
     client_secret: str | None = None
 
     class Config:

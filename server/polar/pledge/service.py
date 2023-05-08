@@ -159,7 +159,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             raise NotPermitted("pledge.email is required for anonymous pledges")
 
         # Create the pledge
-        created = await self.create_db_pledge(
+        db_pledge = await self.create_db_pledge(
             session=session,
             issue=issue,
             repo=repo,
@@ -169,17 +169,17 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
 
         # Create a payment intent with Stripe
         payment_intent = stripe.create_anonymous_intent(
-            amount=pledge.amount, # TODO: total amount
-            transfer_group=f"{created.id}",
+            amount=db_pledge.amount_including_fee,
+            transfer_group=f"{db_pledge.id}",
             issue=issue,
             anonymous_email=pledge.email,
         )
 
         # Store the intent id
-        created.payment_id = payment_intent.id
-        await created.save(session)
+        db_pledge.payment_id = payment_intent.id
+        await db_pledge.save(session)
 
-        ret = PledgeMutationResponse.from_orm(created)
+        ret = PledgeMutationResponse.from_orm(db_pledge)
         ret.client_secret = payment_intent.client_secret
 
         return ret
@@ -196,7 +196,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         session: AsyncSession,
     ) -> PledgeMutationResponse:
         # Create the pledge
-        created = await self.create_db_pledge(
+        db_pledge = await self.create_db_pledge(
             session=session,
             issue=issue,
             repo=repo,
@@ -207,17 +207,17 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
 
         # Create a payment intent with Stripe
         payment_intent = stripe.create_user_intent(
-            amount=pledge.amount, # TODO: total amount
-            transfer_group=f"{created.id}",
+            amount=db_pledge.amount_including_fee,
+            transfer_group=f"{db_pledge.id}",
             issue=issue,
             user=user,
         )
 
         # Store the intent id
-        created.payment_id = payment_intent.id
-        await created.save(session)
+        db_pledge.payment_id = payment_intent.id
+        await db_pledge.save(session)
 
-        ret = PledgeMutationResponse.from_orm(created)
+        ret = PledgeMutationResponse.from_orm(db_pledge)
         ret.client_secret = payment_intent.client_secret
 
         # User pledged, allow into the beta!
@@ -253,7 +253,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             raise ResourceNotFound("Not found")
 
         # Create the pledge
-        created = await self.create_db_pledge(
+        db_pledge = await self.create_db_pledge(
             session=session,
             issue=issue,
             repo=repo,
@@ -265,18 +265,51 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         # Create a payment intent with Stripe
         payment_intent = await stripe.create_confirmed_payment_intent_for_organization(
             session,
-            amount=pledge.amount,
-            transfer_group=f"{created.id}",
+            amount=db_pledge.amount_including_fee,
+            transfer_group=f"{db_pledge.id}",
             issue=issue,
             organization=pledge_as_org,
         )
 
         # Store the intent id and the fact that we received the money
-        created.state = PledgeState.created
-        created.payment_id = payment_intent.id
-        await created.save(session)
+        db_pledge.state = PledgeState.created
+        db_pledge.payment_id = payment_intent.id
+        await db_pledge.save(session)
 
-        ret = PledgeMutationResponse.from_orm(created)
+        ret = PledgeMutationResponse.from_orm(db_pledge)
+
+        return ret
+
+    async def modify_pledge(
+        self,
+        session: AsyncSession,
+        repo: Repository,
+        pledge_id: UUID,
+        updates: PledgeUpdate
+    ) -> PledgeMutationResponse:
+        payment_intent = None
+
+        pledge = await self.get_by(session=session, pledge_id=pledge_id)
+
+        if not pledge or pledge.repository_id != repo.id:
+            raise ResourceNotFound('Pledge not found')
+
+        if updates.amount and updates.amount != pledge.amount:
+            pledge.amount = updates.amount
+            pledge.fee = self.calculate_fee(pledge.amount)
+            payment_intent = stripe.modify_intent(pledge.payment_id,
+                                                  amount=pledge.amount_including_fee)
+
+        if updates.email and updates.email != pledge.email:
+            pledge.email = updates.email
+
+        if payment_intent is None:
+            payment_intent = stripe.retrieve_intent(pledge.payment_id)
+
+        await pledge.save(session=session)
+
+        ret = PledgeMutationResponse.from_orm(pledge)
+        ret.client_secret = payment_intent.client_secret
 
         return ret
 
@@ -290,8 +323,6 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         by_user: User | None = None,
         by_organization: Organization | None = None,
     ) -> Pledge:
-        # TODO: Calculate fee
-
         return await Pledge.create(
             session=session,
             issue_id=issue.id,
@@ -299,10 +330,14 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             organization_id=org.id,
             email=pledge.email,
             amount=pledge.amount,
+            fee=self.calculate_fee(pledge.amount),
             state=PledgeState.initiated,
             by_user=by_user and by_user.id or None,
             by_organization_id=by_organization and by_organization.id or None,
         )
+
+    def calculate_fee(self, amount: int) -> int:
+        return round(amount * 0.029 + 30)
 
     async def connect_backer(
         self,

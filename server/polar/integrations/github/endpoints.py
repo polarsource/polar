@@ -141,13 +141,14 @@ async def get_badge_settings(
         repository_id=repository.id,
         number=number,
     )
+
     if not issue:
         raise HTTPException(status_code=404, detail="Issue not found")
 
-    if not issue.pledge_badge_embedded_at:
-        raise HTTPException(status_code=404, detail="Pledge badge not found")
+    pledges = await pledge_service.get_by_issue_ids(session, [issue.id])
+    amount = sum([p.amount for p in pledges]) or 0
 
-    badge = GithubBadgeRead(badge_type=badge_type, amount=None)
+    badge = GithubBadgeRead(badge_type=badge_type, amount=amount)
     return badge
 
 

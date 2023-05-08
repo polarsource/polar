@@ -15,7 +15,6 @@ export type { AccountRead } from './models/AccountRead';
 export { AccountType } from './models/AccountType';
 export type { AuthorizationResponse } from './models/AuthorizationResponse';
 export type { BackofficePledgeRead } from './models/BackofficePledgeRead';
-export type { BadgeAmount } from './models/BadgeAmount';
 export type { Entry_Any_ } from './models/Entry_Any_';
 export type { Entry_IssueDashboardRead_ } from './models/Entry_IssueDashboardRead_';
 export type { ExternalGitHubCommitReference } from './models/ExternalGitHubCommitReference';

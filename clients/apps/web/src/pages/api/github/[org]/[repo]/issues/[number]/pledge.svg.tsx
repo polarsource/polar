@@ -1,20 +1,11 @@
 import { promises as fs } from 'fs'
 import { NextApiRequest, NextApiResponse } from 'next'
 import path from 'path'
+import { api } from 'polarkit/api'
+import { GithubBadgeRead } from 'polarkit/api/client'
 import { Badge } from 'polarkit/components'
+import { getCentsInDollarString } from 'polarkit/utils'
 import satori from 'satori'
-
-type BadgeAmount = {
-  currency: string
-  amount: number
-}
-
-type BadgeData = {
-  badge_type: string
-  width: number
-  height: number
-  amount: BadgeAmount | null
-}
 
 const readPublicFileBuffer = async (filename: string) => {
   const publicDirectory = path.join(process.cwd(), '/public')
@@ -30,41 +21,43 @@ const getFontBuffer = async (name: string) => {
 const getBadgeData = async (
   org: string,
   repo: string,
-  number: string,
-): Promise<BadgeData> => {
-  const base = process.env.NEXT_PUBLIC_API_URL
-  // TODO: Store this in an environment variable for easier customization?
-  const endpoint = `${base}/api/v1/integrations/github/${org}/${repo}/issues/${number}/badges/pledge`
-  const response = await fetch(endpoint)
-  const data = await response.json()
-  if (!data.badge_type) throw new Error('Invalid badge response')
-  return data as BadgeData
+  number: number,
+): Promise<GithubBadgeRead> => {
+  const res = await api.integrations.getBadgeSettings({
+    org,
+    repo,
+    number,
+    badgeType: 'pledge',
+  })
+  if (!res.badge_type) throw new Error('Invalid badge response')
+  return res
 }
 
-const generateBadge = async (
-  org: string,
-  repo: string,
-  number: string,
-  debug: string,
-) => {
+const generateBadge = async (org: string, repo: string, number: number) => {
   const badge = await getBadgeData(org, repo, number)
   let hasAmount = badge.amount !== null
-  // hasAmount = true // debugging purposes
 
   const interRegular = await getFontBuffer('Inter-Regular.ttf')
-  const svg = await satori(<Badge showAmountRaised={hasAmount} />, {
-    width: badge.width,
-    height: badge.height,
-    fonts: [
-      {
-        name: 'Inter',
-        data: interRegular,
-        weight: 400,
-        style: 'normal',
-      },
-    ],
-    debug: parseInt(debug) === 1,
-  })
+
+  const amountRaised = badge.amount
+    ? getCentsInDollarString(badge.amount)
+    : undefined
+
+  const svg = await satori(
+    <Badge showAmountRaised={hasAmount} amountRaised={amountRaised} />,
+    {
+      height: 60,
+      width: 400,
+      fonts: [
+        {
+          name: 'Inter',
+          data: interRegular,
+          weight: 500,
+          style: 'normal',
+        },
+      ],
+    },
+  )
 
   return svg
 }
@@ -73,17 +66,17 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  let { org, repo, number, debug } = req.query
+  let { org, repo, number } = req.query
   org = typeof org === 'string' ? org : ''
   repo = typeof repo === 'string' ? repo : ''
-  number = typeof number === 'string' ? number : ''
-  debug = typeof debug === 'string' ? debug : ''
+  const intNumber = typeof number === 'string' ? parseInt(number) : 0
 
   try {
-    const svg = await generateBadge(org, repo, number, debug)
+    const svg = await generateBadge(org, repo, intNumber)
     res.setHeader('Content-Type', 'image/svg+xml')
     res.end(svg)
   } catch (error) {
+    console.log({ error })
     res.status(404).end()
     // TODO: Return 1x1 pixel transparent SVG to avoid browser issues
   }

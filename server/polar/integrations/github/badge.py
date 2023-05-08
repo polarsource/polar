@@ -19,7 +19,9 @@ ShouldEmbed = bool
 ShouldEmbedReason = str
 
 
-PLEDGE_BADGE_COMMENT = "<!-- POLAR PLEDGE BADGE -->"
+PLEDGE_BADGE_COMMENT_LEGACY = "<!-- POLAR PLEDGE BADGE -->"
+PLEDGE_BADGE_COMMENT_START = "<!-- POLAR PLEDGE BADGE START -->"
+PLEDGE_BADGE_COMMENT_END = "<!-- POLAR PLEDGE BADGE END -->"
 
 
 class GithubBadge:
@@ -66,12 +68,13 @@ class GithubBadge:
 
         return (False, "org_disabled_retroactive_embed")
 
-    def generate_svg_url(self) -> str:
-        return "{base}/api/github/{org}/{repo}/issues/{number}/pledge.svg".format(
+    def generate_svg_url(self, darkmode=False) -> str:
+        return "{base}/api/github/{org}/{repo}/issues/{number}/pledge.svg{maybeDarkmode}".format(  # noqa: E501
             base=settings.FRONTEND_BASE_URL,
             org=self.organization.name,
             repo=self.repository.name,
             number=self.issue.number,
+            maybeDarkmode="?darkmode=1" if darkmode else "",
         )
 
     def generate_funding_url(self) -> str:
@@ -83,44 +86,50 @@ class GithubBadge:
         )
 
     def _badge_markdown(self) -> str:
+        funding_url = self.generate_funding_url()
+
+        darkmode_url = self.generate_svg_url(darkmode=True)
+        lightmode_url = self.generate_svg_url(darkmode=False)
+
+        return f"""{PLEDGE_BADGE_COMMENT_START}
+<a href="{funding_url}"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="{darkmode_url}">
+  <img alt="Fund with Polar" src="{lightmode_url}">
+</picture></a>
+{PLEDGE_BADGE_COMMENT_END}
+"""
+
+    def _legacy_badge_markdown(self) -> str:
         svg_url = self.generate_svg_url()
         funding_url = self.generate_funding_url()
         svg_markdown = f"![Fund with Polar]({svg_url})"
-        return f"{PLEDGE_BADGE_COMMENT}\n[{svg_markdown}]({funding_url})"
+        return f"{PLEDGE_BADGE_COMMENT_LEGACY}\n[{svg_markdown}]({funding_url})"
 
     def generate_body_with_badge(self, body: str) -> str:
         return f"{body}\n\n{self._badge_markdown()}"
 
     def generate_body_without_badge(self, body: str) -> str:
-        badge_markdown = self._badge_markdown()
-        if body.endswith(badge_markdown):
+        # Remove content between tags
+        if PLEDGE_BADGE_COMMENT_START in body and PLEDGE_BADGE_COMMENT_END in body:
+            start_idx = body.rfind(PLEDGE_BADGE_COMMENT_START)
+            end_idx = body.rfind(PLEDGE_BADGE_COMMENT_END)
+            res = body[0:start_idx] + body[end_idx + len(PLEDGE_BADGE_COMMENT_END) :]
+            return res.rstrip()
+
+        legacy_badge_markdown = self._legacy_badge_markdown()
+
+        if body.endswith(legacy_badge_markdown):
             # If the badge is at the end of the body, we remove it plus any trailing
             # whitespace (as we added some)
-            return body[: -len(badge_markdown)].rstrip()
+            return body[: -len(legacy_badge_markdown)].rstrip()
         else:
             # Otherwise, we just remove the (first) badge markdown
-            return body.replace(badge_markdown, "", 1)
-
-    def legacy_badge_is_embedded(self, body: str) -> bool:
-        # Search for legacy markdown.
-        #
-        # TODO: Remove this? Will only impact our internal Polar repositories
-        # which had the old format before comment prefix. They would get duplicates.
-        markdown_legacy = "![Funding with Polar]("
-        index = body.rfind(markdown_legacy)
-        if index != -1:
-            return True
-
-        svg_url = self.generate_svg_url()
-        index = body.rfind(svg_url)
-        return index != -1
+            return body.replace(legacy_badge_markdown, "", 1)
 
     def badge_is_embedded(self, body: str) -> bool:
-        index = body.rfind(PLEDGE_BADGE_COMMENT)
-        if index != -1:
+        if PLEDGE_BADGE_COMMENT_START in body or PLEDGE_BADGE_COMMENT_LEGACY in body:
             return True
-
-        return self.legacy_badge_is_embedded(body)
+        return False
 
     async def get_current_body(
         self, client: GitHub[AppInstallationAuthStrategy]

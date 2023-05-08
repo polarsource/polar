@@ -295,12 +295,6 @@ export function RepoSelection(props: {
                         <Text>{org.name}</Text>
                       </Left>
 
-                      {dropdownSelectedOrg && (
-                        <span className="ml-2 text-xs italic text-gray-500">
-                          Entire org
-                        </span>
-                      )}
-
                       {!dropdownSelectedOrg &&
                         props.showOrganizationRepositoryCount && (
                           <Badge>

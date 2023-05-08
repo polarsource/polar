@@ -43,9 +43,8 @@ const IssueListItemDecoration = ({
         )
       : 0
 
-  const disputedPledges = pledges.filter(
-    (p) => p.state === PledgeState.DISPUTED,
-  )
+  const disputedPledges =
+    pledges?.filter((p) => p.state === PledgeState.DISPUTED) || []
 
   const showDisputeBox = disputedPledges.length > 0 || canDisputeAny
 

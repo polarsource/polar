@@ -1,32 +1,35 @@
 {
-    "name": "Polar Browser Extension",
-    "version": "0.0.1",
-    "manifest_version": 3,
-    "permissions": [
-        "storage"
-    ],
-    "content_scripts": [
-        {
-            "run_at": "document_end",
-            "js": ["content.js"],
-            "matches": [
-                "*://github.com/*/*/issues",
-                "*://github.com/*/*/issues?*",
-                "*://github.com/*/*/issues/*"
-            ]
-        },
-        {
-            "js": ["auth.js"],
-            "matches": [
-                "*://dashboard.polar.sh/dashboard/settings/extension",
-                "http://127.0.0.1:3000/dashboard/settings/extension"
-            ]
-        }
-    ],
-    "web_accessible_resources": [
-        {
-            "resources": ["index.css"],
-            "matches": ["*://github.com/*"]
-        }
-    ]
+  "name": "Polar Browser Extension",
+  "version": "0.0.1",
+  "manifest_version": 3,
+  "permissions": ["storage", "webNavigation", "scripting"],
+  "host_permissions": ["https://github.com/"],
+  "content_scripts": [
+    {
+      "run_at": "document_end",
+      "js": ["content.js"],
+      "matches": [
+        "*://github.com/*/*/issues",
+        "*://github.com/*/*/issues?*",
+        "*://github.com/*/*/issues/*"
+      ]
+    },
+    {
+      "js": ["auth.js"],
+      "matches": [
+        "*://dashboard.polar.sh/dashboard/settings/extension",
+        "http://127.0.0.1:3000/dashboard/settings/extension"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["index.css"],
+      "matches": ["*://github.com/*"]
+    }
+  ],
+  "background": {
+    "service_worker": "content_script_on_soft_nav.js",
+    "type": "module"
+  }
 }

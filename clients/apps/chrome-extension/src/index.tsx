@@ -148,20 +148,26 @@ const main = async () => {
   }
 }
 
-if (orgName && repoName) {
-  // Install the CSS
-  const head = document.querySelector('head')
-  if (head) {
-    const link = document.createElement('link')
-    link.rel = 'stylesheet'
-    link.href = chrome.runtime.getURL('index.css')
-    head.appendChild(link)
+let win = window as any
+
+if (!win.__POLAR_IS_LOADED__) {
+  win.__POLAR_IS_LOADED__ = true
+
+  if (orgName && repoName) {
+    // Install the CSS
+    const head = document.querySelector('head')
+    if (head) {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = chrome.runtime.getURL('index.css')
+      head.appendChild(link)
+    }
+
+    main()
   }
 
-  main()
+  // If you want to start measuring performance in your app, pass a function
+  // to log results (for example: reportWebVitals(console.log))
+  // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+  reportWebVitals()
 }
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals()

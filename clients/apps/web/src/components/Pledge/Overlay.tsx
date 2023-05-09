@@ -31,22 +31,17 @@ const Overlay = ({
   const { currentUser } = useRequireAuth()
   const userOrgQuery = useUserOrganizations(currentUser)
 
-  const [pledgeAs, setPledgeAs] = useState('')
   const [pledge, setPledge] = useState<PledgeMutationResponse | undefined>(
     undefined,
   )
 
   const onSelectOrg = (selected: string) => {
-    setPledgeAs(selected)
+    const org = userOrgQuery.data?.find((o) => o.name === selected)
+    setSelectedOrg(org)
+    debouncedSync({ amount, pledgeAsOrg: org })
   }
 
   const [selectedOrg, setSelectedOrg] = useState<OrganizationRead>()
-
-  useEffect(() => {
-    const org = userOrgQuery.data?.find((o) => o.name === pledgeAs)
-    setSelectedOrg(org)
-    debouncedSync({ pledgeAsOrg: org })
-  }, [userOrgQuery, pledgeAs])
 
   const orgCustomer = useOrganizationCustomer(selectedOrg?.name)
   const customer = orgCustomer.data
@@ -78,7 +73,7 @@ const Overlay = ({
 
     setErrorMessage(null)
     setAmount(amountInCents)
-    debouncedSync({ amount: amountInCents })
+    debouncedSync({ amount: amountInCents, pledgeAsOrg: selectedOrg })
   }
 
   const [havePaymentMethod, setHavePaymentMethod] = useState(false)

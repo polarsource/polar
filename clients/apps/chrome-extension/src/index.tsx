@@ -1,5 +1,6 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
+import Frame, { FrameContextConsumer } from 'react-frame-component'
 import { isAuthenticated } from './api'
 import AuthorizationBanner from './components/AuthorizationBanner'
 import CachedIssueListItemDecoration from './components/CachedIssueListItemDecoration'
@@ -53,11 +54,34 @@ const mountAuthorizationBanner = () => {
   )
   if (heading) {
     const badge = document.createElement('div')
+    badge.id = 'polar-authorize-banner'
+    badge.style.height = '72px'
+
     heading.insertAdjacentElement('afterend', badge)
     const root = createRoot(badge)
     root.render(
       <React.StrictMode>
-        <AuthorizationBanner />
+        <Frame
+          head={[
+            <link
+              type="text/css"
+              rel="stylesheet"
+              href={chrome.runtime.getURL('frame.css')}
+            ></link>,
+          ]}
+          style={{
+            overflow: 'hidden',
+            width: '100%',
+            border: 'none',
+            height: 72,
+          }}
+        >
+          <FrameContextConsumer>
+            {({ document, window }) => {
+              return <AuthorizationBanner />
+            }}
+          </FrameContextConsumer>
+        </Frame>
       </React.StrictMode>,
     )
   }

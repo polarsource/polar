@@ -31,7 +31,7 @@ export const Badge = ({
         <div
           style={{
             height: 40,
-            minWidth: 288,
+            minWidth: 300,
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
@@ -50,7 +50,6 @@ export const Badge = ({
               color: 'white',
               padding: 4,
               marginLeft: 6,
-              marginRight: 15,
               borderRadius: 6,
               fontWeight: 500,
               fontSize: 13,
@@ -65,25 +64,32 @@ export const Badge = ({
             style={{
               display: 'flex',
               marginRight: 9,
+              marginLeft: 9,
               flexGrow: 1,
               fontWeight: 500,
               fontSize: 13,
               lineHeight: 20,
               color: darkmode ? 'white' : '#3E3F42', // gray-700
+              justifyContent: 'space-around',
             }}
           >
-            {showAmountRaised && amountRaised && (
-              <>
-                <span style={{ whiteSpace: 'pre' }}>${amountRaised}&nbsp;</span>
-                <span
-                  style={{
-                    color: darkmode ? 'white' : '#727374',
-                  }}
-                >
-                  pledged
-                </span>
-              </>
-            )}
+            <div
+              style={{
+                display: 'flex',
+                opacity: showAmountRaised && amountRaised ? '100' : '0',
+                transitionProperty: 'all',
+                transitionDuration: '200ms',
+              }}
+            >
+              <span style={{ whiteSpace: 'pre' }}>${amountRaised}&nbsp;</span>
+              <span
+                style={{
+                  color: darkmode ? 'white' : '#727374',
+                }}
+              >
+                pledged
+              </span>
+            </div>
           </div>
           <div
             style={{
@@ -95,7 +101,6 @@ export const Badge = ({
               paddingLeft: 12,
               paddingRight: 12,
               borderLeft: '1px solid rgba(0, 0, 0, 0.05)',
-              // color: {darkmode ? '#FFFFFF' : '#364797'},
             }}
           >
             <svg

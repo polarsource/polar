@@ -1,7 +1,13 @@
 {
-  "name": "Polar Browser Extension",
+  "name": "Polar",
   "version": "0.0.1",
   "manifest_version": 3,
+  "icons": {
+    "16": "Icon_16.png",
+    "32": "Icon_32.png",
+    "48": "Icon_48.png",
+    "128": "Icon_128.png"
+  },
   "permissions": ["storage", "webNavigation", "scripting"],
   "host_permissions": [
     "https://github.com/",

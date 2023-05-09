@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 
 from polar.auth.dependencies import Auth
 from polar.models import Organization, User
-from polar.organization.schemas import OrganizationRead
+from polar.organization.schemas import OrganizationPrivateRead
 from polar.organization.service import organization
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.schemas import RepositoryRead
@@ -12,17 +12,17 @@ from polar.repository.schemas import RepositoryRead
 router = APIRouter(prefix="/user/organizations", tags=["user.organizations"])
 
 
-@router.get("", response_model=list[OrganizationRead])
+@router.get("", response_model=list[OrganizationPrivateRead])
 async def get_user_organizations(
     auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
-) -> Sequence[OrganizationRead]:
+) -> Sequence[OrganizationPrivateRead]:
     orgs = await organization.get_all_org_repos_by_user_id(session, auth.user.id)
 
     # Fast API doesn't support nested schemas yet, so we have to do this manually
     # See https://github.com/tiangolo/fastapi/issues/1645
-    def expand_children(org: Organization) -> OrganizationRead:
-        o = OrganizationRead.from_orm(org)
+    def expand_children(org: Organization) -> OrganizationPrivateRead:
+        o = OrganizationPrivateRead.from_orm(org)
 
         o.repositories = [
             RepositoryRead.from_orm(repo)

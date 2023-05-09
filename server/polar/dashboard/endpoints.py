@@ -1,5 +1,4 @@
-from datetime import datetime
-from typing import Any, Dict, List, Sequence, Set, Tuple, Union
+from typing import Any, Dict, List, Sequence, Union
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -21,10 +20,10 @@ from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.models.user import User
-from polar.organization.schemas import OrganizationRead
+from polar.organization.schemas import OrganizationPublicRead
 from polar.repository.schemas import RepositoryRead
 from polar.issue.service import issue
-from polar.pledge.schemas import PledgeRead, PledgeState
+from polar.pledge.schemas import PledgeRead
 from polar.repository.service import repository
 from polar.auth.dependencies import Auth
 from polar.postgres import AsyncSession, get_db_session, sql
@@ -241,7 +240,7 @@ async def dashboard(
         included[str(i.organization_id)] = Entry(
             id=i.organization_id,
             type="organization",
-            attributes=OrganizationRead.from_orm(
+            attributes=OrganizationPublicRead.from_orm(
                 [o for o in issue_organizations if o.id == i.organization_id][0]
             ),
         )
@@ -319,7 +318,7 @@ async def dashboard(
             included[str(dependent_issue.organization_id)] = Entry(
                 id=dependent_issue.organization_id,
                 type="organization",
-                attributes=OrganizationRead.from_orm(
+                attributes=OrganizationPublicRead.from_orm(
                     [
                         o
                         for o in issue_organizations

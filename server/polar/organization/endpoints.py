@@ -13,7 +13,7 @@ from polar.user_organization.service import (
 )
 
 from .schemas import (
-    OrganizationRead,
+    OrganizationPrivateRead,
     OrganizationSettingsUpdate,
     OrganizationSetupIntentRead,
     OrganizationStripeCustomerRead,
@@ -28,20 +28,20 @@ log = structlog.get_logger()
 router = APIRouter(tags=["organizations"])
 
 
-@router.get("/{platform}/{org_name}", response_model=OrganizationRead)
+@router.get("/{platform}/{org_name}", response_model=OrganizationPrivateRead)
 async def get(
     platform: Platforms,
     org_name: str,
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
-) -> OrganizationRead:
+) -> OrganizationPrivateRead:
     return await _get_org_for_user(session, auth.organization, auth.user)
 
 
 async def _get_org_for_user(
     session: AsyncSession, org: Organization, user: User
-) -> OrganizationRead:
-    res = OrganizationRead.from_orm(org)
+) -> OrganizationPrivateRead:
+    res = OrganizationPrivateRead.from_orm(org)
 
     # Get personal settings
     settings = await user_organization_service.get_settings(session, user.id, org.id)
@@ -70,14 +70,14 @@ async def _get_org_for_user(
     return res
 
 
-@router.put("/{platform}/{org_name}/settings", response_model=OrganizationRead)
+@router.put("/{platform}/{org_name}/settings", response_model=OrganizationPrivateRead)
 async def update_settings(
     platform: Platforms,
     org_name: str,
     settings: OrganizationSettingsUpdate,
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
-) -> OrganizationRead:
+) -> OrganizationPrivateRead:
     updated = await organization.update_settings(session, auth.organization, settings)
 
     # update user settings

@@ -42,11 +42,11 @@ class OrganizationSettingsUpdate(Schema):
     billing_email: str | None = None
 
 
-class Base(Schema):
+class OrganizationPrivateBase(Schema):
     platform: Platforms
     name: str
-    external_id: int
     avatar_url: str
+    external_id: int
     is_personal: bool
     installation_id: int | None = None
     installation_created_at: datetime | None = None
@@ -55,7 +55,7 @@ class Base(Schema):
     onboarded_at: datetime | None = None
 
 
-class OrganizationCreate(Base):
+class OrganizationCreate(OrganizationPrivateBase):
     @classmethod
     def from_github_installation(
         cls, installation: github.rest.Installation
@@ -92,8 +92,19 @@ class OrganizationUpdate(OrganizationCreate):
     ...
 
 
-class OrganizationRead(Base, OrganizationSettingsRead):
+class OrganizationPublicRead(Schema):
     id: UUID
+    platform: Platforms
+    name: str
+    avatar_url: str
+
+    class Config:
+        orm_mode = True
+
+
+class OrganizationPrivateRead(OrganizationPrivateBase, OrganizationSettingsRead):
+    id: UUID
+
     # TODO: Different schema for unauthenticated requests? If we introduce them
     status: Organization.Status
     created_at: datetime

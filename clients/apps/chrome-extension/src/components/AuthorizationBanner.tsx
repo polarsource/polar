@@ -2,7 +2,7 @@ import { LogoType70 } from 'polarkit/components/brand'
 import { CONFIG } from '../config'
 
 const AuthorizationBanner = () => (
-  <div className="flex items-center space-x-4 p-3">
+  <div className="flex items-center space-x-4">
     <LogoType70 className="h-12" />
     <a
       href={`${CONFIG.WEB_URL}/dashboard/settings/extension`}
@@ -12,6 +12,9 @@ const AuthorizationBanner = () => (
     >
       Connect Polar
     </a>
+    <span className="text-sm text-gray-500">
+      Connect Polar to see pledges here on GitHub
+    </span>
   </div>
 )
 

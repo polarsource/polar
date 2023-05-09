@@ -5,7 +5,9 @@ import Box from 'components/Settings/Box'
 import NotificationSettings, {
   type Settings as NotificationSettingsValues,
 } from 'components/Settings/NotificationSettings'
-import PaymentSettings from 'components/Settings/PaymentSettings'
+import PaymentSettings, {
+  type Settings as PaymentSettingsValues,
+} from 'components/Settings/PaymentSettings'
 import Spinner from 'components/Shared/Spinner'
 import Topbar from 'components/Shared/Topbar'
 import { NextLayoutComponentType } from 'next'
@@ -32,6 +34,9 @@ const SettingsPage: NextLayoutComponentType = () => {
 
   const [notificationSettings, setNotificationSettings] =
     useState<NotificationSettingsValues>()
+
+  const [paymentSettings, setPaymentSettings] =
+    useState<PaymentSettingsValues>()
 
   const didFirstSetForOrg = useRef<string>('')
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
@@ -68,6 +73,10 @@ const SettingsPage: NextLayoutComponentType = () => {
         org.email_notification_backed_issue_pull_request_created,
       email_notification_backed_issue_pull_request_merged:
         org.email_notification_backed_issue_pull_request_merged,
+    })
+
+    setPaymentSettings({
+      billing_email: org.billing_email,
     })
 
     didFirstSetForOrg.current = org.id
@@ -108,6 +117,11 @@ const SettingsPage: NextLayoutComponentType = () => {
   const onNotificationSettingsUpdated = (val: NotificationSettingsValues) => {
     save(val)
     setNotificationSettings(val)
+  }
+
+  const onPaymentSettingsUpdated = (val: PaymentSettingsValues) => {
+    save(val)
+    setPaymentSettings(val)
   }
 
   if (orgData.isError) {
@@ -156,7 +170,11 @@ const SettingsPage: NextLayoutComponentType = () => {
             />
 
             <Box>
-              <PaymentSettings org={org} />
+              <PaymentSettings
+                org={org}
+                onUpdated={onPaymentSettingsUpdated}
+                settings={paymentSettings}
+              />
             </Box>
           </Section>
 

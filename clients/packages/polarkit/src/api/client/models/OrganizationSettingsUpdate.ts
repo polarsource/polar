@@ -12,5 +12,6 @@ export type OrganizationSettingsUpdate = {
   email_notification_backed_issue_branch_created?: boolean;
   email_notification_backed_issue_pull_request_created?: boolean;
   email_notification_backed_issue_pull_request_merged?: boolean;
+  billing_email?: string;
 };
 

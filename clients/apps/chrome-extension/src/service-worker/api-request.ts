@@ -1,19 +1,17 @@
 import { Platforms } from 'polarkit/api/client'
-import api from './api'
+import api from '../api'
 
 const apiRequestDecoration = async (
   orgName: string,
   repoName: string,
   issueNumbers: string[],
 ) => {
-  console.log('BEFORE')
   const extensionIssues = await api.extension.listIssuesForExtension({
     platform: Platforms.GITHUB,
     orgName,
     repoName,
     numbers: issueNumbers.join(','),
   })
-  console.log('AFTER')
 
   // Add all the issues to chrome.storage
   const itemsToAdd = {}

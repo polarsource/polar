@@ -291,8 +291,10 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         if updates.amount and updates.amount != pledge.amount:
             pledge.amount = updates.amount
             pledge.fee = self.calculate_fee(pledge.amount)
-            payment_intent = stripe.modify_intent(pledge.payment_id,
-                                                  amount=pledge.amount_including_fee)
+            if pledge.payment_id:
+                # Some pledges (those created by orgs) don't have a payment intent
+                payment_intent = stripe.modify_intent(pledge.payment_id,
+                    amount=pledge.amount_including_fee)
 
         if updates.email and updates.email != pledge.email:
             pledge.email = updates.email
@@ -308,13 +310,14 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             if pledge_as_org:
                 pledge.by_organization_id = pledge_as_org.id
 
-        if payment_intent is None:
+        if payment_intent is None and pledge.payment_id:
             payment_intent = stripe.retrieve_intent(pledge.payment_id)
 
         await pledge.save(session=session)
 
         ret = PledgeMutationResponse.from_orm(pledge)
-        ret.client_secret = payment_intent.client_secret
+        if payment_intent:
+            ret.client_secret = payment_intent.client_secret
 
         return ret
 

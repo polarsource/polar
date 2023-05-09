@@ -32,6 +32,7 @@ const mountDecoration = (issues: NodeListOf<Element>) => {
     const issueNumber = parseInt(issue.id.replace('issue_', ''))
     const badge = document.createElement('div')
     badge.classList.add('polar-extension-decoration-root')
+    badge.style.display = 'flex'
     issue.insertAdjacentElement('afterend', badge)
     const root = createRoot(badge)
     root.render(

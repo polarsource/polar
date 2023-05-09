@@ -1,5 +1,8 @@
 import { IssueExtensionRead } from 'polarkit/api/client'
-import { IssueListItemDecoration } from 'polarkit/components/Issue'
+import {
+  IssueListItemDecoration,
+  getExpectedHeight,
+} from 'polarkit/components/Issue'
 import Frame, { FrameContextConsumer } from 'react-frame-component'
 import { useChromeStorageLocal } from 'use-chrome-storage'
 
@@ -21,6 +24,11 @@ const CachedIssueListItemDecoration = ({
     )
 
   if (isInitialStateResolved && value) {
+    const height = getExpectedHeight({
+      pledges: value.pledges,
+      references: value.references,
+    })
+
     return (
       <Frame
         head={[
@@ -30,11 +38,18 @@ const CachedIssueListItemDecoration = ({
             href={chrome.runtime.getURL('frame.css')}
           ></link>,
         ]}
+        style={{
+          height,
+          overflow: 'hidden',
+          width: '100%',
+          border: 'none',
+          backgroundColor: '#F2F6FC', // bg-blue-50
+        }}
       >
         <FrameContextConsumer>
           {({ document, window }) => {
             return (
-              <div className="bg-blue-50 px-3.5 py-2.5">
+              <div className="bg-blue-50">
                 <IssueListItemDecoration
                   orgName={orgName}
                   repoName={repoName}

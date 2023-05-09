@@ -7,6 +7,18 @@ import { classNames, getCentsInDollarString } from 'polarkit/utils'
 import IssuePledge from './IssuePledge'
 import IssueReference from './Reference'
 
+// When rendering in the Chrome Extension, the iframe needs to know it's expected height in pixels
+export const getExpectedHeight = ({
+  pledges,
+  references,
+}: {
+  pledges: PledgeRead[]
+  references: IssueReferenceRead[]
+}): number => {
+  const inner = 32 * Math.max(pledges.length, references.length)
+  return inner + 24
+}
+
 const IssueListItemDecoration = ({
   orgName,
   repoName,
@@ -65,7 +77,9 @@ const IssueListItemDecoration = ({
           </div>
         )}
 
-        <div className={classNames(pledges ? 'border-l pl-4' : '', 'flex-1')}>
+        <div
+          className={classNames(showPledges ? 'border-l pl-4' : '', 'flex-1')}
+        >
           {references &&
             references.map((r: IssueReferenceRead) => {
               return (

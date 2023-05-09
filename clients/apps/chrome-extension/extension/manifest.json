@@ -16,6 +16,7 @@
             ]
         },
         {
+            "run_at": "document_end",
             "js": ["auth.js"],
             "matches": [
                 "*://dashboard.polar.sh/dashboard/settings/extension",

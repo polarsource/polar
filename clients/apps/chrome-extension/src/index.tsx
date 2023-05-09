@@ -1,7 +1,6 @@
-import { Platforms } from 'polarkit/api/client'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import api, { isAuthenticated } from './api'
+import { isAuthenticated } from './api'
 import AuthorizationBanner from './components/AuthorizationBanner'
 import CachedIssueListItemDecoration from './components/CachedIssueListItemDecoration'
 import './index.css'
@@ -20,34 +19,13 @@ const getIssueNumbers = (issues: NodeListOf<Element>) => {
   return issueNumbers
 }
 
-const apiRequestDecoration = (issueNumbers: string[]) => {
-  api.extension
-    .listIssuesForExtension({
-      platform: Platforms.GITHUB,
-      orgName,
-      repoName,
-      numbers: issueNumbers.join(','),
-    })
-    .then((extensionIssues) => {
-      // Add all the issues to chrome.storage
-      const itemsToAdd = {}
-      extensionIssues.forEach((issue) => {
-        itemsToAdd[`issues/${orgName}/${repoName}/${issue.number}`] = issue
-      })
-      chrome.storage.local.set(itemsToAdd)
-
-      // Remove the issues we asked for but didn't get a response for from the cache
-      const keysToRemove = issueNumbers.filter(
-        (issueNumber) =>
-          !extensionIssues.some(
-            (extensionIssue) =>
-              extensionIssue.number.toString() === issueNumber,
-          ),
-      )
-      chrome.storage.local.remove(
-        keysToRemove.map((k) => `issues/${orgName}/${repoName}/${k}`),
-      )
-    })
+const requestDecoration = (issueNumbers: string[]) => {
+  return chrome.runtime.sendMessage({
+    type: 'decorate-issues',
+    orgName,
+    repoName,
+    issueNumbers,
+  })
 }
 
 const mountDecoration = (issues: NodeListOf<Element>) => {
@@ -89,7 +67,7 @@ const decorateIssues = () => {
   const issues = findIssueNodes(document)
   if (issues.length > 0) {
     const issueNumbers = getIssueNumbers(issues)
-    apiRequestDecoration(issueNumbers)
+    requestDecoration(issueNumbers)
     mountDecoration(issues)
   }
 
@@ -106,7 +84,7 @@ const decorateIssues = () => {
               const issues = findIssueNodes(element)
               if (issues.length > 0) {
                 const issueNumbers = getIssueNumbers(issues)
-                apiRequestDecoration(issueNumbers)
+                requestDecoration(issueNumbers)
                 mountDecoration(issues)
               }
             }

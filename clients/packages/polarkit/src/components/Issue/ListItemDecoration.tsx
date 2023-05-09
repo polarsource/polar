@@ -15,7 +15,9 @@ export const getExpectedHeight = ({
   pledges: PledgeRead[]
   references: IssueReferenceRead[]
 }): number => {
-  const inner = 32 * Math.max(pledges.length, references.length)
+  const pledgeHeight = pledges.length > 0 ? 32 : 0
+  const referenceHeight = 32 * references.length
+  const inner = Math.max(pledgeHeight, referenceHeight)
   return inner + 24
 }
 
@@ -68,6 +70,8 @@ const IssueListItemDecoration = ({
     onDispute(canDisputeAny)
   }
 
+  const haveReferences = references && references.length > 0
+
   return (
     <div>
       <div className="flex flex-row items-center px-4 py-3">
@@ -80,7 +84,7 @@ const IssueListItemDecoration = ({
         <div
           className={classNames(showPledges ? 'border-l pl-4' : '', 'flex-1')}
         >
-          {references &&
+          {haveReferences &&
             references.map((r: IssueReferenceRead) => {
               return (
                 <IssueReference
@@ -92,7 +96,7 @@ const IssueListItemDecoration = ({
               )
             })}
 
-          {!references && (
+          {!haveReferences && (
             <p className="text-sm italic text-gray-400">Not picked up yet</p>
           )}
         </div>

@@ -345,10 +345,14 @@ class OrganizationService(
             )
             .join(
                 PullRequest,
-                PullRequest.state == "open",
+                PullRequest.repository_id == Repository.id,
                 isouter=True,
             )
-            .where(Repository.organization_id == organization.id)
+            .where(
+                Repository.organization_id == organization.id,
+                PullRequest.state == "open",
+                Issue.state == "open",
+            )
             .group_by(Repository.id)
         )
 

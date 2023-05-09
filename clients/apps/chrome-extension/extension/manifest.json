@@ -24,6 +24,9 @@
             ]
         }
     ],
+    "background": {
+        "service_worker": "service-worker.js"
+    },
     "web_accessible_resources": [
         {
             "resources": ["index.css"],

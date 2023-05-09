@@ -6,12 +6,14 @@ const apiRequestDecoration = async (
   repoName: string,
   issueNumbers: string[],
 ) => {
+  console.log('BEFORE')
   const extensionIssues = await api.extension.listIssuesForExtension({
     platform: Platforms.GITHUB,
     orgName,
     repoName,
     numbers: issueNumbers.join(','),
   })
+  console.log('AFTER')
 
   // Add all the issues to chrome.storage
   const itemsToAdd = {}

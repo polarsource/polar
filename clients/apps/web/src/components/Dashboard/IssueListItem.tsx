@@ -15,7 +15,7 @@ import {
 } from 'polarkit/components/Issue'
 import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString, githubIssueUrl } from 'polarkit/utils'
-import { ChangeEvent, useState } from 'react'
+import React, { ChangeEvent, useState } from 'react'
 import PledgeNow from '../Pledge/PledgeNow'
 import IconCounter from './IconCounter'
 import IssueLabel, { LabelSchema } from './IssueLabel'
@@ -220,15 +220,25 @@ const generateMarkdownTitle = (
   for (const match of matches) {
     i += 1
     if (offset < match.index) {
-      nodes.push(<>{title.substring(offset, match.index)}</>)
+      nodes.push(
+        <React.Fragment key={`0-${i}`}>
+          {title.substring(offset, match.index)}
+        </React.Fragment>,
+      )
     }
 
     nodes.push(
-      <span className="rounded-md bg-gray-100 py-0.5 px-1.5">{match[1]}</span>,
+      <span key={`1-${i}`} className="rounded-md bg-gray-100 py-0.5 px-1.5">
+        {match[1]}
+      </span>,
     )
     offset = match.index + match[0].length
     if (i === matchCount) {
-      nodes.push(<>{title.substring(offset, title.length)}</>)
+      nodes.push(
+        <React.Fragment key={`3-${i}`}>
+          {title.substring(offset, title.length)}
+        </React.Fragment>,
+      )
     }
   }
   return nodes

@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client'
 import { isAuthenticated } from './api'
 import AuthorizationBanner from './components/AuthorizationBanner'
 import CachedIssueListItemDecoration from './components/CachedIssueListItemDecoration'
-import './index.css'
 import reportWebVitals from './reportWebVitals'
 
 const [, orgName, repoName] = window.location.pathname.split('/')
@@ -32,6 +31,7 @@ const mountDecoration = (issues: NodeListOf<Element>) => {
   issues.forEach((issue) => {
     const issueNumber = parseInt(issue.id.replace('issue_', ''))
     const badge = document.createElement('div')
+    badge.classList.add('polar-extension-decoration-root')
     issue.insertAdjacentElement('afterend', badge)
     const root = createRoot(badge)
     root.render(

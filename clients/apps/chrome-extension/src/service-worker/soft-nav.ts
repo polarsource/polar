@@ -1,5 +1,3 @@
-console.log('Loaded Polar background script')
-
 // Reload content_script on navigation to any of the pages that matches the original content script matches
 //
 // This makes sure that the extension is loaded when navigating to the issues pages from other pages when navigating

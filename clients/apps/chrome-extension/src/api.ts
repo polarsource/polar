@@ -1,42 +1,62 @@
-import { PolarAPI } from 'polarkit/api/client'
+import { IssueExtensionRead, Platforms } from 'polarkit/api/client'
 import { CONFIG } from './config'
 
-const headers = {}
+let token: string | undefined = undefined
 
 // The alternative here would be to always read from storage, but since
 // token changes so seldom, that seems like a waste.
-const getHeaders = async (): Promise<Record<string, string>> => {
-  if (headers['Authorization']) {
-    return headers
+const getToken = async (): Promise<string | undefined> => {
+  if (token) {
+    return token
   }
 
   return new Promise((resolve) => {
     chrome.storage.local.get('token', (result) => {
       if (result.token) {
-        headers['Authorization'] = `Bearer ${result.token}`
+        token = result.token
       }
-      resolve(headers)
+      resolve(token)
     })
   })
 }
 
 export const isAuthenticated = async (): Promise<boolean> => {
-  const headers = await getHeaders()
-  return !!headers['Authorization']
+  return !!(await getToken())
 }
 
 chrome.storage.local.onChanged.addListener(
   (changes: { [key: string]: chrome.storage.StorageChange }) => {
     if (changes.token && changes.token.newValue) {
-      headers['Authorization'] = `Bearer ${changes.token.newValue}`
+      token = changes.token.newValue
     }
   },
 )
 
-const api = new PolarAPI({
-  BASE: CONFIG.API_URL,
-  WITH_CREDENTIALS: false,
-  HEADERS: getHeaders,
-})
+const listIssuesForExtension = async ({
+  platform,
+  orgName,
+  repoName,
+  numbers,
+}: {
+  platform: Platforms
+  orgName: string
+  repoName: string
+  numbers: string
+}): Promise<Array<IssueExtensionRead>> => {
+  const authorization = await getToken()
+  const response = await fetch(
+    `${CONFIG.API_URL}/api/v1/extension/${platform}/${orgName}/${repoName}/issues?numbers=${numbers}&auth_token=${authorization}`,
+    {
+      // If we do 'include' here instead, the cookie is included and we could scrap the entire
+      // auth mechanism. Let's not for now.
+      credentials: 'omit',
+      mode: 'no-cors',
+    },
+  )
+  const body = await response.json()
+  return body as Array<IssueExtensionRead>
+}
 
-export default api
+export default {
+  extension: { listIssuesForExtension },
+}

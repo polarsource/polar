@@ -75,7 +75,9 @@ class AuthService:
         if not token:
             token = cls.get_token_from_auth_header(request=request)
             if not token:
-                return None
+                token = cls.get_token_from_auth_token_query(request=request)
+                if not token:
+                    return None
 
         try:
             decoded = jwt.decode(token=token, secret=settings.SECRET)
@@ -96,6 +98,10 @@ class AuthService:
         if method != "Bearer":
             return None
         return token
+
+    @classmethod
+    def get_token_from_auth_token_query(cls, *, request: Request) -> str | None:
+        return request.query_params.get('auth_token')
 
     @classmethod
     def generate_logout_response(cls, *, response: Response) -> LogoutResponse:

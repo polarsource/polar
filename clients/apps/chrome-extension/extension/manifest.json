@@ -3,7 +3,11 @@
   "version": "0.0.1",
   "manifest_version": 3,
   "permissions": ["storage", "webNavigation", "scripting"],
-  "host_permissions": ["https://github.com/"],
+  "host_permissions": [
+    "https://github.com/",
+    "*://api.polar.sh/*",
+    "http://127.0.0.1:8000/*"
+  ],
   "content_scripts": [
     {
       "run_at": "document_end",
@@ -22,14 +26,13 @@
       ]
     }
   ],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
   "web_accessible_resources": [
     {
       "resources": ["index.css"],
       "matches": ["*://github.com/*"]
     }
-  ],
-  "background": {
-    "service_worker": "content_script_on_soft_nav.js",
-    "type": "module"
-  }
+  ]
 }

@@ -1,12 +1,15 @@
 import { useRouter } from 'next/router'
-import type { OrganizationRead, RepositoryRead } from 'polarkit/api/client'
+import type {
+  OrganizationPrivateRead,
+  RepositoryRead,
+} from 'polarkit/api/client'
 import { useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { useEffect, useState } from 'react'
 import { useRequireAuth } from './auth'
 
 export const useCurrentOrgAndRepoFromURL = (): {
-  org: OrganizationRead | undefined
+  org: OrganizationPrivateRead | undefined
   repo: RepositoryRead | undefined
   isLoaded: boolean
   haveOrgs: boolean
@@ -15,7 +18,7 @@ export const useCurrentOrgAndRepoFromURL = (): {
   const { organization: queryOrg, repo: queryRepo } = router.query
   const { currentUser } = useRequireAuth()
   const userOrgQuery = useUserOrganizations(currentUser)
-  const [org, setOrg] = useState<OrganizationRead | undefined>(undefined)
+  const [org, setOrg] = useState<OrganizationPrivateRead | undefined>(undefined)
   const [repo, setRepo] = useState<RepositoryRead | undefined>(undefined)
   const [haveOrgs, setHaveOrgs] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
@@ -27,12 +30,12 @@ export const useCurrentOrgAndRepoFromURL = (): {
     const orgSlug = typeof queryOrg === 'string' ? queryOrg : ''
     const repoSlug = typeof queryRepo === 'string' ? queryRepo : ''
 
-    let nextOrg: OrganizationRead | undefined
+    let nextOrg: OrganizationPrivateRead | undefined
     let nextRepo: RepositoryRead | undefined
 
     if (userOrgQuery.data) {
       nextOrg = userOrgQuery.data.find(
-        (org: OrganizationRead) => org.name === orgSlug,
+        (org: OrganizationPrivateRead) => org.name === orgSlug,
       )
       if (nextOrg && repoSlug) {
         nextRepo = nextOrg.repositories?.find((r) => r.name === repoSlug)

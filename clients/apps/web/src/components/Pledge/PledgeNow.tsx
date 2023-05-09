@@ -1,6 +1,6 @@
 import {
   IssueDashboardRead,
-  OrganizationRead,
+  OrganizationPublicRead,
   RepositoryRead,
 } from 'polarkit/api/client'
 import { useState, type MouseEvent } from 'react'
@@ -12,7 +12,7 @@ const PledgeNow = ({
   repo,
 }: {
   issue: IssueDashboardRead
-  org: OrganizationRead
+  org: OrganizationPublicRead
   repo: RepositoryRead
 }) => {
   const [open, setOpen] = useState(false)

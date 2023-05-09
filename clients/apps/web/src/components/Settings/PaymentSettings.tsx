@@ -1,4 +1,4 @@
-import { OrganizationRead } from 'polarkit/api/client'
+import { OrganizationPrivateRead } from 'polarkit/api/client'
 import { useState, type MouseEvent } from 'react'
 
 import { Elements } from '@stripe/react-stripe-js'
@@ -28,7 +28,7 @@ const PaymentSettings = ({
   onUpdated,
   settings,
 }: {
-  org: OrganizationRead
+  org: OrganizationPrivateRead
   settings: Settings
   onUpdated: (s: Settings) => void
 }) => {

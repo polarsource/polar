@@ -3,7 +3,7 @@ import {
   IssueListType,
   IssueSortBy,
   IssueStatus,
-  OrganizationRead,
+  OrganizationPublicRead,
   RepositoryRead,
 } from 'polarkit/api/client'
 import { useSSE } from 'polarkit/hooks'
@@ -60,7 +60,7 @@ const Dashboard = ({
   repo,
   isPersonal,
 }: {
-  org: OrganizationRead | undefined
+  org: OrganizationPublicRead | undefined
   repo: RepositoryRead | undefined
   isPersonal: boolean
 }) => {

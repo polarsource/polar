@@ -1,4 +1,4 @@
-import { type OrganizationRead, type RepositoryRead } from '../../api/client'
+import { OrganizationPublicRead, type RepositoryRead } from '../../api/client'
 import { githubRepoUrl } from '../../utils/github'
 import { GrayCard } from '../ui/Cards'
 
@@ -25,7 +25,7 @@ const RepositoryCard = ({
   organization,
   repository,
 }: {
-  organization: OrganizationRead
+  organization: OrganizationPublicRead
   repository: RepositoryRead
 }) => {
   const repoURL = githubRepoUrl(organization.name, repository.name)

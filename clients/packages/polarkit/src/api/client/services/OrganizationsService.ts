@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { OrganizationRead } from '../models/OrganizationRead';
+import type { OrganizationPrivateRead } from '../models/OrganizationPrivateRead';
 import type { OrganizationSettingsUpdate } from '../models/OrganizationSettingsUpdate';
 import type { OrganizationSetupIntentRead } from '../models/OrganizationSetupIntentRead';
 import type { OrganizationStripeCustomerRead } from '../models/OrganizationStripeCustomerRead';
@@ -17,7 +17,7 @@ export class OrganizationsService {
 
   /**
    * Get
-   * @returns OrganizationRead Successful Response
+   * @returns OrganizationPrivateRead Successful Response
    * @throws ApiError
    */
   public get({
@@ -26,7 +26,7 @@ export class OrganizationsService {
   }: {
     platform: Platforms,
     orgName: string,
-  }): CancelablePromise<OrganizationRead> {
+  }): CancelablePromise<OrganizationPrivateRead> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/{platform}/{org_name}',
@@ -42,7 +42,7 @@ export class OrganizationsService {
 
   /**
    * Update Settings
-   * @returns OrganizationRead Successful Response
+   * @returns OrganizationPrivateRead Successful Response
    * @throws ApiError
    */
   public updateSettings({
@@ -53,7 +53,7 @@ export class OrganizationsService {
     platform: Platforms,
     orgName: string,
     requestBody: OrganizationSettingsUpdate,
-  }): CancelablePromise<OrganizationRead> {
+  }): CancelablePromise<OrganizationPrivateRead> {
     return this.httpRequest.request({
       method: 'PUT',
       url: '/api/v1/{platform}/{org_name}/settings',

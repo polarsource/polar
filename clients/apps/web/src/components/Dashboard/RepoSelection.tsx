@@ -5,7 +5,12 @@ import {
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { Command } from 'cmdk'
 import { useRequireAuth } from 'hooks'
-import { OrganizationRead, RepositoryRead, UserRead } from 'polarkit/api/client'
+import {
+  OrganizationPrivateRead,
+  OrganizationPublicRead,
+  RepositoryRead,
+  UserRead,
+} from 'polarkit/api/client'
 import { CONFIG } from 'polarkit/config'
 import { useUserOrganizations } from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
@@ -24,7 +29,7 @@ export function RepoSelection(props: {
   onSelectRepo?: (org: string, repo: string) => void
   onSelectOrg?: (org: string) => void
   onSelectUser?: () => void
-  currentOrg?: OrganizationRead
+  currentOrg?: OrganizationPrivateRead
   currentRepo?: RepositoryRead
   fullWidth?: boolean
   showUserInDropdown?: boolean
@@ -47,7 +52,7 @@ export function RepoSelection(props: {
   const organizations = userOrgQuery.data
 
   const [dropdownSelectedOrg, setDropdowndropdownSelectedOrg] = useState<
-    OrganizationRead | undefined
+    OrganizationPublicRead | undefined
   >()
 
   const resetDropdown = () => {
@@ -56,7 +61,7 @@ export function RepoSelection(props: {
     setInputValue('')
   }
 
-  const onSelectOrg = (org: OrganizationRead) => {
+  const onSelectOrg = (org: OrganizationPublicRead) => {
     // If show repositories, open selection to show repositories
     if (props.showRepositories) {
       // Select org again, go to it!
@@ -80,7 +85,7 @@ export function RepoSelection(props: {
     }
   }
 
-  const onSelectRepo = (org: OrganizationRead, repo: RepositoryRead) => {
+  const onSelectRepo = (org: OrganizationPublicRead, repo: RepositoryRead) => {
     if (org && repo) {
       resetDropdown()
       if (props.onSelectRepo) {
@@ -119,7 +124,7 @@ export function RepoSelection(props: {
     }
   }
 
-  type ListOrg = OrganizationRead & { unfilteredRepositoryCount: number }
+  type ListOrg = OrganizationPrivateRead & { unfilteredRepositoryCount: number }
 
   const [listOrgs, setListOrgs] = useState<ListOrg[]>([])
 
@@ -439,7 +444,7 @@ const SelectedOrgRepo = ({
   repo,
   onClick,
 }: {
-  org: OrganizationRead
+  org: OrganizationPublicRead
   repo: RepositoryRead | undefined
   onClick: () => void
 }) => {

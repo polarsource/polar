@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { type OrganizationRead } from 'polarkit/api/client'
+import { type OrganizationPrivateRead } from 'polarkit/api/client'
 import { useOrganizationsRepositorySyncedIssues, useSSE } from 'polarkit/hooks'
 import { useEffect, useRef, useState } from 'react'
 import { useTimeoutFn } from 'react-use'
@@ -17,7 +17,7 @@ const sortRepos = (a: RepoSyncState, b: RepoSyncState) => {
 }
 
 const getInitializedSyncState = (
-  org: OrganizationRead,
+  org: OrganizationPrivateRead,
 ): { [id: string]: RepoSyncState } => {
   let totalExpected = 0
   let initialSyncStates = {}
@@ -58,7 +58,7 @@ export const SynchronizeRepositories = ({
   setShowControls,
   setSyncIssuesCount,
 }: {
-  org: OrganizationRead
+  org: OrganizationPrivateRead
   showSetup: boolean
   setShowSetup: (state: boolean) => void
   setShowControls: (state: boolean) => void

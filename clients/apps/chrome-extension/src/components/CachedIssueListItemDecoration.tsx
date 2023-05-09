@@ -50,6 +50,8 @@ const CachedIssueListItemDecoration = ({
           {({ document, window }) => {
             return (
               <div className="bg-blue-50">
+                {/* open all links in the parent frame */}
+                <base target="_parent"></base>
                 <IssueListItemDecoration
                   orgName={orgName}
                   repoName={repoName}

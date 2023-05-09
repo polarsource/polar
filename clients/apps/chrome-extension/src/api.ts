@@ -44,15 +44,16 @@ const listIssuesForExtension = async ({
   numbers: string
 }): Promise<Array<IssueExtensionRead>> => {
   const authorization = await getToken()
-  const respose = await fetch(
+  const response = await fetch(
     `${CONFIG.API_URL}/api/v1/extension/${platform}/${orgName}/${repoName}/issues?numbers=${numbers}&auth_token=${authorization}`,
     {
+      // If we do 'include' here instead, the cookie is included and we could scrap the entire
+      // auth mechanism. Let's not for now.
+      credentials: 'omit',
       mode: 'no-cors',
     },
   )
-  console.log('RESPONSE', respose)
-  const body = await respose.json()
-  console.log('BODY', body)
+  const body = await response.json()
   return body as Array<IssueExtensionRead>
 }
 

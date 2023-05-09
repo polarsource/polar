@@ -27,6 +27,10 @@
     "background": {
         "service_worker": "service-worker.js"
     },
+    "host_permissions": [
+        "*://api.polar.sh/*",
+        "http://127.0.0.1:8000/*"
+    ],
     "web_accessible_resources": [
         {
             "resources": ["index.css"],

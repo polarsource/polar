@@ -16,6 +16,7 @@ export type OrganizationRead = {
   email_notification_backed_issue_branch_created?: boolean;
   email_notification_backed_issue_pull_request_created?: boolean;
   email_notification_backed_issue_pull_request_merged?: boolean;
+  billing_email?: string;
   platform: Platforms;
   name: string;
   external_id: number;

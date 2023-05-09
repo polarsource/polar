@@ -20,7 +20,7 @@ from polar.config import settings
 from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.models import Organization
-from polar.organization.schemas import OrganizationRead
+from polar.organization.schemas import OrganizationPrivateRead
 from polar.postgres import AsyncSession, get_db_session
 from polar.worker import enqueue_job
 from polar.auth.service import AuthService, LoginResponse
@@ -162,7 +162,7 @@ class InstallationCreate(BaseModel):
     external_id: int
 
 
-@router.post("/installations", response_model=OrganizationRead)
+@router.post("/installations", response_model=OrganizationPrivateRead)
 async def install(
     installation: InstallationCreate,
     session: AsyncSession = Depends(get_db_session),

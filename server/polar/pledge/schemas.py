@@ -6,7 +6,7 @@ from enum import Enum
 
 from polar.kit.schemas import Schema
 from polar.models.pledge import Pledge
-from polar.organization.schemas import OrganizationRead
+from polar.organization.schemas import OrganizationPublicRead
 from polar.repository.schemas import RepositoryRead
 from polar.issue.schemas import IssueRead
 
@@ -139,5 +139,5 @@ class PledgeRead(Schema):
 class PledgeResources(Schema):
     pledge: PledgeRead | None
     issue: IssueRead | None
-    organization: OrganizationRead | None
+    organization: OrganizationPublicRead | None
     repository: RepositoryRead | None

@@ -1,19 +1,15 @@
 from typing import Sequence
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
 from polar.models import Pledge, Repository
 from polar.exceptions import ResourceNotFound, NotPermitted
 from polar.enums import Platforms
-from polar.models.issue import Issue
-from polar.models.organization import Organization
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession, get_db_session
-
-from polar.integrations.stripe.service import stripe
-from polar.organization.schemas import OrganizationRead
+from polar.organization.schemas import OrganizationPublicRead
 from polar.organization.service import organization as organization_service
 from polar.repository.schemas import RepositoryRead
 from polar.issue.schemas import IssueRead
@@ -91,7 +87,7 @@ async def get_pledge_with_resources(
 
         included_org = None
         if "organization" in includes:
-            included_org = OrganizationRead.from_orm(org)
+            included_org = OrganizationPublicRead.from_orm(org)
 
         included_repo = None
         if "repository" in includes:
@@ -185,8 +181,9 @@ async def update_pledge(
         repo=repo,
         user=auth.user,
         pledge_id=pledge_id,
-        updates=updates
+        updates=updates,
     )
+
 
 @router.post(
     "/{platform}/{org_name}/{repo_name}/issues/{number}/pledges/{pledge_id}/confirm",
@@ -213,6 +210,7 @@ async def confirm_pledge(
         repo=repo,
         pledge_id=pledge_id,
     )
+
 
 @router.get(
     "/me/pledges",

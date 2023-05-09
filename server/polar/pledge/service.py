@@ -372,7 +372,8 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         )
 
     def calculate_fee(self, amount: int) -> int:
-        return round(amount * 0.029 + 30)
+        # 2.9% + potentially 1.5% for international cards plus a fixed fee of 30 cents
+        return round(amount * 0.044 + 30)
 
     async def connect_backer(
         self,

@@ -28,6 +28,7 @@ class StripeService:
                 "anonymous": "true",
                 "anonymous_email": anonymous_email,
             },
+            receipt_email=anonymous_email,
         )
 
     def create_user_intent(
@@ -48,6 +49,7 @@ class StripeService:
                 "user_username": user.username,
                 "user_email": user.email,
             },
+            receipt_email=user.email,
         )
 
     async def create_confirmed_payment_intent_for_organization(
@@ -83,6 +85,7 @@ class StripeService:
             payment_method=customer.invoice_settings.default_payment_method,
             confirm="true",
             off_session="true",
+            receipt_email=organization.billing_email,
         )
 
     def modify_intent(self, id: str, amount: int) -> stripe_lib.PaymentIntent:
@@ -95,13 +98,15 @@ class StripeService:
         return stripe_lib.PaymentIntent.retrieve(id)
 
     def create_account(self, account: AccountCreate) -> stripe_lib.Account:
-        tos_acceptance = account.country != 'US' and \
-            {"service_agreement": "recipient"} or None
+        tos_acceptance = (
+            {"service_agreement": "recipient"} if account.country != "US" else None
+        )
         return stripe_lib.Account.create(
             country=account.country,
             type="express",
             tos_acceptance=tos_acceptance,
-            capabilities={"transfers": {"requested": True}})
+            capabilities={"transfers": {"requested": True}},
+        )
 
     def retrieve_account(self, id: str) -> stripe_lib.Account:
         return stripe_lib.Account.retrieve(id)

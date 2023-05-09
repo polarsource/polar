@@ -1,6 +1,8 @@
 import IssueActivityBox from './IssueActivityBox'
 import IssuePledge from './IssuePledge'
-import IssueListItemDecoration from './ListItemDecoration'
+import IssueListItemDecoration, {
+  getExpectedHeight,
+} from './ListItemDecoration'
 import IssueReference from './Reference'
 
 export {
@@ -8,4 +10,5 @@ export {
   IssueListItemDecoration,
   IssuePledge,
   IssueReference,
+  getExpectedHeight,
 }

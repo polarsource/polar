@@ -131,6 +131,8 @@ async def pledge(
     issue: Issue,
     pledging_organization: Organization,
 ) -> Pledge:
+    amount = secrets.randbelow(100000) + 1
+    fee = round(amount * 0.05)
     pledge = await Pledge.create(
         session=session,
         id=uuid.uuid4(),
@@ -138,7 +140,8 @@ async def pledge(
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
-        amount=12345,
+        amount=amount,
+        fee=fee,
         state=PledgeState.created,
     )
 

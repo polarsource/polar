@@ -5,14 +5,17 @@ import {
   IssueDashboardRead,
   OrganizationRead,
   OrganizationStripeCustomerRead,
+  PledgeMutationResponse,
   RepositoryRead,
 } from 'polarkit/api/client'
 import { IssueCard, RepositoryCard } from 'polarkit/components/pledge'
 import { GreenBanner, PrimaryButton, RedBanner } from 'polarkit/components/ui'
 import { useOrganizationCustomer, useUserOrganizations } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/utils'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRequireAuth } from '../../hooks'
+
+type PledgeSync = { amount?: number; pledgeAsOrg?: OrganizationRead }
 
 const Overlay = ({
   onClose,
@@ -28,18 +31,17 @@ const Overlay = ({
   const { currentUser } = useRequireAuth()
   const userOrgQuery = useUserOrganizations(currentUser)
 
-  const [pledgeAs, setPledgeAs] = useState('')
+  const [pledge, setPledge] = useState<PledgeMutationResponse | undefined>(
+    undefined,
+  )
 
   const onSelectOrg = (selected: string) => {
-    setPledgeAs(selected)
+    const org = userOrgQuery.data?.find((o) => o.name === selected)
+    setSelectedOrg(org)
+    debouncedSync({ amount, pledgeAsOrg: org })
   }
 
   const [selectedOrg, setSelectedOrg] = useState<OrganizationRead>()
-
-  useEffect(() => {
-    const org = userOrgQuery.data?.find((o) => o.name === pledgeAs)
-    setSelectedOrg(org)
-  }, [userOrgQuery, pledgeAs])
 
   const orgCustomer = useOrganizationCustomer(selectedOrg?.name)
   const customer = orgCustomer.data
@@ -50,27 +52,27 @@ const Overlay = ({
       : CONFIG.MINIMUM_PLEDGE_AMOUNT
 
   const [amount, setAmount] = useState(MINIMUM_PLEDGE)
-  const [errorMessage, setErrorMessage] = useState<string | null>()
+  const [errorMessage, setErrorMessage] = useState<string | undefined>()
+  const [isSyncing, setSyncing] = useState(false)
 
   const onAmountChange = (event) => {
     const amount = parseInt(event.target.value)
     if (isNaN(amount)) {
       setErrorMessage('Please enter a valid amount')
-      setAmount(0)
       return
     }
     const amountInCents = amount * 100
 
     if (amountInCents < MINIMUM_PLEDGE) {
       setErrorMessage(
-        `Minimum amount is ${getCentsInDollarString(MINIMUM_PLEDGE)}`,
+        `Minimum amount is $${getCentsInDollarString(MINIMUM_PLEDGE)}`,
       )
-      setAmount(0)
       return
     }
 
     setErrorMessage(null)
     setAmount(amountInCents)
+    debouncedSync({ amount: amountInCents, pledgeAsOrg: selectedOrg })
   }
 
   const [havePaymentMethod, setHavePaymentMethod] = useState(false)
@@ -81,34 +83,95 @@ const Overlay = ({
   }, [customer])
 
   const [isDone, setIsDone] = useState(false)
-  const [loadingPledge, setLoadingPledge] = useState(false)
 
-  const createPledge = async () => {
-    if (!selectedOrg) {
-      return
+  const syncTimeout = useRef(null)
+
+  const shouldSynchronizePledge = () => {
+    if (amount < MINIMUM_PLEDGE) {
+      return false
     }
 
-    setLoadingPledge(true)
+    // Sync if pledge is missing
+    if (!pledge) {
+      return true
+    }
 
-    await api.pledges.createPledge({
+    // Sync if amount has chagned
+    if (pledge && pledge.amount !== amount) {
+      return true
+    }
+
+    return false
+  }
+
+  const createPledge = (pledgeSync: PledgeSync) =>
+    api.pledges.createPledge({
       platform: issue.platform,
       orgName: issueOrg.name,
       repoName: issueRepo.name,
       number: issue.number,
       requestBody: {
         issue_id: issue.id,
-        amount: amount,
-        pledge_as_org: selectedOrg.id,
+        amount: pledgeSync.amount,
+        pledge_as_org: pledgeSync.pledgeAsOrg?.id,
       },
     })
 
-    setLoadingPledge(false)
-    setIsDone(true)
+  const updatePledge = (pledgeSync: PledgeSync) =>
+    api.pledges.updatePledge({
+      platform: issue.platform,
+      orgName: issueOrg.name,
+      repoName: issueRepo.name,
+      number: issue.number,
+      pledgeId: pledge.id,
+      requestBody: {
+        amount: pledgeSync.amount,
+        pledge_as_org: pledgeSync.pledgeAsOrg?.id,
+      },
+    })
+
+  const payPledge = async () => {
+    return await api.pledges.confirmPledge({
+      platform: issue.platform,
+      orgName: issueOrg.name,
+      repoName: issueRepo.name,
+      number: issue.number,
+      pledgeId: pledge.id,
+    })
+  }
+
+  const synchronizePledge = async (pledgeSync: PledgeSync) => {
+    if (!selectedOrg) {
+      return
+    }
+
+    if (!shouldSynchronizePledge()) {
+      return
+    }
+
+    setSyncing(true)
+    let updatedPledge: PledgeMutationResponse
+    if (!pledge) {
+      updatedPledge = await createPledge(pledgeSync)
+    } else {
+      updatedPledge = await updatePledge(pledgeSync)
+    }
+
+    if (updatedPledge) {
+      setPledge(updatedPledge)
+    }
+    setSyncing(false)
+  }
+
+  const debouncedSync = (pledgeSync: PledgeSync) => {
+    clearTimeout(syncTimeout.current)
+    syncTimeout.current = setTimeout(() => synchronizePledge(pledgeSync), 500)
   }
 
   const onClickPledge = async (e) => {
     e.preventDefault()
-    await createPledge()
+    await payPledge()
+    setIsDone(true)
   }
 
   return (
@@ -203,13 +266,39 @@ const Overlay = ({
 
             <div className="md:flex-1"></div>
 
+            {pledge && (
+              <>
+                <div className="mt-6 flex w-full">
+                  <div className="w-full">Pledge</div>
+                  <div className="w-full text-right">
+                    ${getCentsInDollarString(pledge.amount, true)}
+                  </div>
+                </div>
+                <div className="flex w-full">
+                  <div className="w-full">Service fee</div>
+                  <div className="w-full text-right">
+                    ${getCentsInDollarString(pledge.fee, true)}
+                  </div>
+                </div>
+                <div className="mb-6 flex w-full">
+                  <div className="w-full">Total</div>
+                  <div className="w-full text-right">
+                    ${getCentsInDollarString(pledge.amount_including_fee, true)}
+                  </div>
+                </div>
+              </>
+            )}
+
             {!isDone && (
               <PrimaryButton
                 onClick={onClickPledge}
-                loading={loadingPledge}
-                disabled={!havePaymentMethod || !amount}
+                loading={isSyncing}
+                disabled={!havePaymentMethod || !pledge || isSyncing}
               >
-                Pledge ${getCentsInDollarString(amount)}
+                Pay $
+                {getCentsInDollarString(
+                  pledge ? pledge.amount_including_fee : MINIMUM_PLEDGE,
+                )}
               </PrimaryButton>
             )}
 

@@ -5,5 +5,6 @@
 export type PledgeUpdate = {
   email?: string;
   amount?: number;
+  pledge_as_org?: string;
 };
 

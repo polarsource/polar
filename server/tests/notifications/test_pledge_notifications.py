@@ -29,6 +29,7 @@ async def test_create_pledge_from_created(
         repository_id=repository.id,
         organization_id=organization.id,
         amount=12300,
+        fee=123,
         by_organization_id=organization.id,
         state="created",
     )
@@ -64,6 +65,7 @@ async def test_create_pledge_initiated_then_created(
         repository_id=repository.id,
         organization_id=organization.id,
         amount=12300,
+        fee=123,
         by_organization_id=organization.id,
         state="initiated",
     )
@@ -105,6 +107,7 @@ async def test_deduplicate(
         repository_id=repository.id,
         organization_id=organization.id,
         amount=12300,
+        fee=123,
         by_organization_id=organization.id,
         state="initiated",
     )

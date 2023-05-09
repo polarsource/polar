@@ -11,6 +11,8 @@ export type PledgeMutationResponse = {
   pledge_as_org?: string;
   id: string;
   state: PledgeState;
+  fee: number;
+  amount_including_fee: number;
   client_secret?: string;
 };
 

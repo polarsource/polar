@@ -473,7 +473,7 @@ const SelectedOrgRepo = ({
 const SelectedEmpty = ({ onClick }: { onClick: () => void }) => {
   return (
     <SelectedBox onClick={onClick}>
-      <div className="text-gray-500">Select a organization</div>
+      <div className="text-gray-500">Select an organization</div>
     </SelectedBox>
   )
 }

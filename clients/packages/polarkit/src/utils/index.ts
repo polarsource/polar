@@ -9,9 +9,12 @@ export const getServerURL = (path?: string): string => {
   return baseWithPath
 }
 
-export const getCentsInDollarString = (cents: number): string => {
+export const getCentsInDollarString = (
+  cents: number,
+  showCents = false,
+): string => {
   const dollars = cents / 100
-  if (cents % 100 === 0) {
+  if (cents % 100 === 0 && !showCents) {
     return dollars.toFixed(0)
   } else {
     return dollars.toFixed(2)

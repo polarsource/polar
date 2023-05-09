@@ -137,6 +137,7 @@ async def predictable_pledge(
         repository_id=predictable_repository.id,
         organization_id=predictable_organization.id,
         amount=12345,
+        fee=123,
         state=PledgeState.created,
     )
 

@@ -51,6 +51,8 @@ const PaymentForm = ({
   const [isStripeCompleted, setStripeCompleted] = useState(false)
   const canSubmit = !isSyncing && pledge && isStripeCompleted
   const amount = pledge?.amount || 0
+  const fee = pledge?.fee || 0
+  const amountIncludingFee = pledge?.amount_including_fee || 0
 
   const handlePayment = (paymentIntent) => {
     switch (paymentIntent.status) {
@@ -106,13 +108,31 @@ const PaymentForm = ({
     <div className="mt-5">
       <PaymentElement onChange={onStripeFormChange} />
 
+      <div className="mt-6 flex w-full">
+        <div className="w-full">Pledge</div>
+        <div className="w-full text-right">
+          ${getCentsInDollarString(amount, true)}
+        </div>
+      </div>
+      <div className="flex w-full">
+        <div className="w-full">Service fee</div>
+        <div className="w-full text-right">
+          ${getCentsInDollarString(fee, true)}
+        </div>
+      </div>
+      <div className="mb-6 flex w-full">
+        <div className="w-full">Total</div>
+        <div className="w-full text-right">
+          ${getCentsInDollarString(amountIncludingFee, true)}
+        </div>
+      </div>
       <div className="mt-6">
         <PrimaryButton
           disabled={!canSubmit}
           loading={isSyncing}
           onClick={onSubmit}
         >
-          Pledge ${getCentsInDollarString(amount)}
+          Pay ${getCentsInDollarString(amountIncludingFee)}
         </PrimaryButton>
       </div>
     </div>

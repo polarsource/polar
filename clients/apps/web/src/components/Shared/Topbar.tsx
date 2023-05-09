@@ -1,9 +1,8 @@
 import Link from 'next/link'
+import { LogoIcon, LogoType } from 'polarkit/components/brand'
 import { classNames } from 'polarkit/utils'
 import { useAuth } from '../../hooks'
 import Popover from '../Notifications/Popover'
-import LogoIcon from './LogoIcon'
-import LogoType from './LogoType'
 import Profile from './Profile'
 
 const Topbar = (props: {

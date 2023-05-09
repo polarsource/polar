@@ -9,11 +9,11 @@ import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
-import { type OrganizationRead } from 'polarkit/api/client'
 import { ReactElement, useState } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
 
 import OnboardingControls from 'components/Dashboard/Onboarding/OnboardingControls'
+import { OrganizationPrivateRead } from 'polarkit/api/client'
 
 const Page: NextLayoutComponentType = () => {
   const [showControls, setShowControls] = useState<boolean>(false)
@@ -38,7 +38,7 @@ const Page: NextLayoutComponentType = () => {
           pledge_badge_show_amount: badgeShowRaised,
         },
       })
-      .then((updatedOrg: OrganizationRead) => {
+      .then((updatedOrg: OrganizationPrivateRead) => {
         redirectToOrg()
       })
   }

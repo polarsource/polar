@@ -4,7 +4,7 @@ import {
   IssueDashboardRead,
   IssueReferenceRead,
   IssueStatus,
-  OrganizationRead,
+  OrganizationPublicRead,
   RepositoryRead,
   type PledgeRead,
 } from 'polarkit/api/client'
@@ -22,11 +22,11 @@ import IssueLabel, { LabelSchema } from './IssueLabel'
 import IssueProgress, { Progress } from './IssueProgress'
 
 interface Issue extends IssueDashboardRead {
-  organization?: OrganizationRead
+  organization?: OrganizationPublicRead
 }
 
 const IssueListItem = (props: {
-  org: OrganizationRead
+  org: OrganizationPublicRead
   repo: RepositoryRead
   issue: Issue
   references: IssueReferenceRead[]

@@ -2,7 +2,7 @@ import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
 import { PolarTimeAgo } from 'polarkit/components/ui'
 import {
   IssueDashboardRead,
-  OrganizationRead,
+  OrganizationPublicRead,
   RepositoryRead,
   type IssueRead,
 } from '../../api/client'
@@ -16,7 +16,7 @@ const IssueCard = ({
 }: {
   issue: IssueRead | IssueDashboardRead
   className: string
-  organization: OrganizationRead
+  organization: OrganizationPublicRead
   repository: RepositoryRead
 }) => {
   const url = githubIssueUrl(organization.name, repository.name, issue.number)

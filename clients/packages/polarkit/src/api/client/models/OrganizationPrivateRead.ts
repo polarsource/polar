@@ -6,7 +6,7 @@ import type { Platforms } from './Platforms';
 import type { RepositoryRead } from './RepositoryRead';
 import type { Status } from './Status';
 
-export type OrganizationRead = {
+export type OrganizationPrivateRead = {
   pledge_badge_retroactive?: boolean;
   pledge_badge_show_amount?: boolean;
   email_notification_maintainer_issue_receives_backing?: boolean;
@@ -19,8 +19,8 @@ export type OrganizationRead = {
   billing_email?: string;
   platform: Platforms;
   name: string;
-  external_id: number;
   avatar_url: string;
+  external_id: number;
   is_personal: boolean;
   installation_id?: number;
   installation_created_at?: string;

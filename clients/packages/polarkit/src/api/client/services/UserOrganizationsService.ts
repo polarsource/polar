@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { OrganizationRead } from '../models/OrganizationRead';
+import type { OrganizationPrivateRead } from '../models/OrganizationPrivateRead';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -12,10 +12,10 @@ export class UserOrganizationsService {
 
   /**
    * Get User Organizations
-   * @returns OrganizationRead Successful Response
+   * @returns OrganizationPrivateRead Successful Response
    * @throws ApiError
    */
-  public getUserOrganizations(): CancelablePromise<Array<OrganizationRead>> {
+  public getUserOrganizations(): CancelablePromise<Array<OrganizationPrivateRead>> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/user/organizations',

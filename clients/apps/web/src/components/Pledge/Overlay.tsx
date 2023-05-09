@@ -3,7 +3,8 @@ import RepoSelection from 'components/Dashboard/RepoSelection'
 import { api, CONFIG } from 'polarkit'
 import {
   IssueDashboardRead,
-  OrganizationRead,
+  OrganizationPrivateRead,
+  OrganizationPublicRead,
   OrganizationStripeCustomerRead,
   PledgeMutationResponse,
   RepositoryRead,
@@ -15,7 +16,7 @@ import { getCentsInDollarString } from 'polarkit/utils'
 import { useEffect, useRef, useState } from 'react'
 import { useRequireAuth } from '../../hooks'
 
-type PledgeSync = { amount?: number; pledgeAsOrg?: OrganizationRead }
+type PledgeSync = { amount?: number; pledgeAsOrg?: OrganizationPrivateRead }
 
 const Overlay = ({
   onClose,
@@ -25,7 +26,7 @@ const Overlay = ({
 }: {
   onClose: () => void
   issue: IssueDashboardRead
-  issueOrg: OrganizationRead
+  issueOrg: OrganizationPublicRead
   issueRepo: RepositoryRead
 }) => {
   const { currentUser } = useRequireAuth()
@@ -41,7 +42,7 @@ const Overlay = ({
     debouncedSync({ amount, pledgeAsOrg: org })
   }
 
-  const [selectedOrg, setSelectedOrg] = useState<OrganizationRead>()
+  const [selectedOrg, setSelectedOrg] = useState<OrganizationPrivateRead>()
 
   const orgCustomer = useOrganizationCustomer(selectedOrg?.name)
   const customer = orgCustomer.data

@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
+  OrganizationPrivateRead,
   OrganizationSettingsUpdate,
-  type OrganizationRead,
   type RepositoryRead,
   type UserRead,
 } from 'polarkit/api/client'
@@ -10,7 +10,7 @@ import { Platforms } from '../../api/client'
 import { defaultRetry } from './retry'
 
 export type RepoListItem = RepositoryRead & {
-  organization: OrganizationRead
+  organization: OrganizationPrivateRead
 }
 
 export * from './backoffice'

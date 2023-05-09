@@ -5,7 +5,7 @@ import type { AuthorizationResponse } from '../models/AuthorizationResponse';
 import type { GithubBadgeRead } from '../models/GithubBadgeRead';
 import type { InstallationCreate } from '../models/InstallationCreate';
 import type { LoginResponse } from '../models/LoginResponse';
-import type { OrganizationRead } from '../models/OrganizationRead';
+import type { OrganizationPrivateRead } from '../models/OrganizationPrivateRead';
 import type { Platforms } from '../models/Platforms';
 import type { polar__integrations__github__endpoints__WebhookResponse } from '../models/polar__integrations__github__endpoints__WebhookResponse';
 import type { polar__integrations__stripe__endpoints__WebhookResponse } from '../models/polar__integrations__stripe__endpoints__WebhookResponse';
@@ -106,14 +106,14 @@ export class IntegrationsService {
 
   /**
    * Install
-   * @returns OrganizationRead Successful Response
+   * @returns OrganizationPrivateRead Successful Response
    * @throws ApiError
    */
   public install({
     requestBody,
   }: {
     requestBody: InstallationCreate,
-  }): CancelablePromise<OrganizationRead> {
+  }): CancelablePromise<OrganizationPrivateRead> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/integrations/github/installations',

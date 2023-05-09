@@ -3,7 +3,7 @@
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { SetupIntent } from '@stripe/stripe-js'
 import { useRouter } from 'next/router'
-import { OrganizationRead } from 'polarkit/api/client'
+import { OrganizationPrivateRead } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { useOrganizationSetDefaultPaymentMethod } from 'polarkit/hooks'
 import { useState } from 'react'
@@ -15,7 +15,7 @@ const PaymentMethodForm = ({
   setErrorMessage,
   onSuccess,
 }: {
-  organization: OrganizationRead
+  organization: OrganizationPrivateRead
   isSyncing: boolean
   setSyncing: (isLocked: boolean) => void
   setErrorMessage: (message: string) => void

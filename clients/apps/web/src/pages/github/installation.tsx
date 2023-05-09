@@ -5,7 +5,10 @@ import Layout from 'components/Layout/EmptyLayout'
 import GithubLoginButton from 'components/Shared/GithubLoginButton'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit'
-import { InstallationCreate, OrganizationRead } from 'polarkit/api/client'
+import {
+  InstallationCreate,
+  OrganizationPrivateRead,
+} from 'polarkit/api/client'
 import type { ReactElement } from 'react'
 import { useEffect, useState } from 'react'
 import { NextPageWithLayout } from 'utils/next'
@@ -13,7 +16,9 @@ import { NextPageWithLayout } from 'utils/next'
 const GithubInstallationPage: NextPageWithLayout = () => {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
-  const [installed, setInstalled] = useState<OrganizationRead | null>(null)
+  const [installed, setInstalled] = useState<OrganizationPrivateRead | null>(
+    null,
+  )
   const query = router.query
   const [showLogin, setShowLogin] = useState(false)
 

@@ -1,3 +1,4 @@
+import LoadingScreen from 'components/Dashboard/LoadingScreen'
 import Layout from 'components/Layout/EmptyLayout'
 import { api } from 'polarkit'
 import { ReactElement, useEffect, useState } from 'react'
@@ -7,18 +8,23 @@ const ExtensionSettingsPage: NextPageWithLayout = () => {
   const [token, setToken] = useState<string>()
 
   useEffect(() => {
-    ;(async () => {
-      const response = await api.users.createToken()
+    api.users.createToken().then((response) => {
       if (response.token) {
         setToken(response.token)
       }
-    })()
+    })
   }, [])
 
   return (
-    <div id="polar-token" style={{ color: 'white' }}>
-      {token}
-    </div>
+    <>
+      <div id="polar-token" style={{ color: 'white' }}>
+        {token}
+      </div>
+
+      <LoadingScreen>
+        <>One second, creating a connection...</>
+      </LoadingScreen>
+    </>
   )
 }
 

@@ -62,6 +62,18 @@ async def pledge_mark_pending(
     return await get_pledge(session, pledge_id)
 
 
+@router.post("/pledges/mark_disputed/{pledge_id}", response_model=BackofficePledgeRead)
+async def pledge_mark_disputed(
+    pledge_id: UUID,
+    auth: Auth = Depends(Auth.backoffice_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> BackofficePledgeRead:
+    await pledge_service.mark_disputed(
+        session, pledge_id, by_user_id=auth.user.id, reason="Disputed via Backoffice"
+    )
+    return await get_pledge(session, pledge_id)
+
+
 @router.post("/invites/create_code", response_model=InviteRead)
 async def invites_create_code(
     auth: Auth = Depends(Auth.backoffice_user),

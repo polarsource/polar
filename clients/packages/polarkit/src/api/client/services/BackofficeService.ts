@@ -80,6 +80,28 @@ export class BackofficeService {
   }
 
   /**
+   * Pledge Mark Disputed
+   * @returns BackofficePledgeRead Successful Response
+   * @throws ApiError
+   */
+  public pledgeMarkDisputed({
+    pledgeId,
+  }: {
+    pledgeId: string,
+  }): CancelablePromise<BackofficePledgeRead> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/backoffice/pledges/mark_disputed/{pledge_id}',
+      path: {
+        'pledge_id': pledgeId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
    * Invites Create Code
    * @returns InviteRead Successful Response
    * @throws ApiError

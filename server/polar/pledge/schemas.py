@@ -17,14 +17,45 @@ class PledgeState(str, Enum):
     pending = "pending"  # The issue has been closed, but the pledge has not been paid.
     paid = "paid"  # The pledge has been paid out to the maintainer.
     refunded = "refunded"  # The pledge was refunded in full before being paid out.
-    disputed = "disputed"  # The charge was disputed by the customer.
+    disputed = "disputed"  # The pledge was disputed by the customer (via Polar)
+    # The charge was disputed by the customer (via Stripe, aka "chargeback")
+    charge_disputed = "charge_disputed"
 
     # The states in which this pledge is "active", i.e. is listed on the issue
     @classmethod
     def active_states(cls) -> list[PledgeState]:
-        return [cls.created, cls.pending, cls.paid]
+        return [cls.created, cls.pending, cls.paid, cls.disputed]
 
-    # Happy path: initiated -> created -> pending -> paid
+    # Happy path:
+    # initiated -> created -> pending -> paid
+
+    @classmethod
+    def to_pending_states(cls) -> list[PledgeState]:
+        """
+        Allowed states to move into pending from
+        """
+        return [cls.created, cls.disputed]
+
+    @classmethod
+    def to_disputed_states(cls) -> list[PledgeState]:
+        """
+        Allowed states to move into disputed from
+        """
+        return [cls.created, cls.pending]
+
+    @classmethod
+    def to_paid_states(cls) -> list[PledgeState]:
+        """
+        Allowed states to move into paid from
+        """
+        return [cls.pending]
+
+    @classmethod
+    def to_refunded_states(cls) -> list[PledgeState]:
+        """
+        Allowed states to move into refunded from
+        """
+        return [cls.created, cls.pending, cls.disputed]
 
     @classmethod
     def from_str(cls, s: str) -> PledgeState:
@@ -77,6 +108,9 @@ class PledgeRead(Schema):
     pledger_name: str | None
     pledger_avatar: str | None
 
+    authed_user_can_admin: bool = False
+    scheduled_payout_at: datetime | None = None
+
     @classmethod
     def from_db(cls, o: Pledge) -> PledgeRead:
         pledger_name = None
@@ -98,6 +132,7 @@ class PledgeRead(Schema):
             state=PledgeState.from_str(o.state),
             pledger_name=pledger_name,
             pledger_avatar=pledger_avatar,
+            scheduled_payout_at=o.scheduled_payout_at,
         )
 
 

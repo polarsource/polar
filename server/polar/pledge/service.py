@@ -1,4 +1,6 @@
 from __future__ import annotations
+from datetime import date, timedelta
+import datetime
 
 from uuid import UUID
 from typing import List, Sequence
@@ -8,6 +10,7 @@ from polar.enums import Platforms
 
 from polar.kit.services import ResourceService
 from polar.integrations.stripe.service import stripe
+from polar.kit.utils import utc_now
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge_transaction import PledgeTransaction
@@ -53,7 +56,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             sql.select(Pledge)
             .where(
                 Pledge.repository_id == repository_id,
-                Pledge.state.in_(PledgeState.active_states())
+                Pledge.state.in_(PledgeState.active_states()),
             )
             .options(
                 joinedload(Pledge.user),
@@ -71,7 +74,8 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             sql.select(Pledge)
             .where(
                 Pledge.by_user_id == user_id,
-                Pledge.state.in_(PledgeState.active_states()))
+                Pledge.state.in_(PledgeState.active_states()),
+            )
             .options(
                 joinedload(Pledge.user),
                 joinedload(Pledge.organization),
@@ -96,7 +100,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             )
             .filter(
                 Pledge.issue_id.in_(issue_ids),
-                Pledge.state.in_(PledgeState.active_states())
+                Pledge.state.in_(PledgeState.active_states()),
             )
         )
         res = await session.execute(statement)
@@ -397,8 +401,14 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
     ) -> None:
         statement = (
             sql.update(Pledge)
-            .where(Pledge.issue_id == issue_id, Pledge.state == PledgeState.created)
-            .values(state=PledgeState.pending)
+            .where(
+                Pledge.issue_id == issue_id,
+                Pledge.state.in_(PledgeState.to_pending_states()),
+            )
+            .values(
+                state=PledgeState.pending,
+                scheduled_payout_at=date.today() + timedelta(days=14),
+            )
         )
         await session.execute(statement)
         await session.commit()
@@ -408,8 +418,14 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
     ) -> None:
         statement = (
             sql.update(Pledge)
-            .where(Pledge.id == pledge_id, Pledge.state == PledgeState.created)
-            .values(state=PledgeState.pending)
+            .where(
+                Pledge.id == pledge_id,
+                Pledge.state.in_(PledgeState.to_pending_states()),
+            )
+            .values(
+                state=PledgeState.pending,
+                scheduled_payout_at=date.today() + timedelta(days=14),
+            )
         )
         await session.execute(statement)
         await session.commit()
@@ -437,6 +453,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         pledge = await self.get_by_payment_id(session, payment_id)
         if pledge:
             pledge.state = PledgeState.paid
+            pledge.transfer_id = transaction_id
             session.add(pledge)
             session.add(
                 PledgeTransaction(
@@ -453,17 +470,15 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
     ) -> None:
         pledge = await self.get_by_payment_id(session, payment_id)
         if pledge:
-            if pledge.state in [PledgeState.created, PledgeState.pending]:
+            if pledge.state in PledgeState.to_refunded_states():
                 if amount == pledge.amount:
                     pledge.state = PledgeState.refunded
                 elif amount < pledge.amount:
                     pledge.amount -= amount
                 else:
-                    # Not possible
-                    ...
+                    raise NotPermitted("Refunding error, unexpected amount!")
             else:
-                # TODO: Log to sentry
-                ...
+                raise NotPermitted("Refunding error, unexpected pledge status")
 
             session.add(pledge)
             session.add(
@@ -476,12 +491,12 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             )
             await session.commit()
 
-    async def mark_disputed_by_payment_id(
+    async def mark_charge_disputed_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
     ) -> None:
         pledge = await self.get_by_payment_id(session, payment_id)
         if pledge:
-            pledge.state = PledgeState.disputed
+            pledge.state = PledgeState.charge_disputed
             session.add(pledge)
             session.add(
                 PledgeTransaction(
@@ -497,8 +512,12 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         pledge = await self.get(session, id=pledge_id)
         if not pledge:
             raise ResourceNotFound(f"Pledge not found with id: {pledge_id}")
-        if pledge.state != PledgeState.pending:
+        if pledge.state not in PledgeState.to_paid_states():
             raise NotPermitted("Pledge is not in pending state")
+        if pledge.scheduled_payout_at and pledge.scheduled_payout_at > utc_now():
+            raise NotPermitted(
+                "Pledge is not ready for payput (still in dispute window)"
+            )
 
         organization = await organization_service.get(
             session, id=pledge.organization_id
@@ -546,6 +565,26 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             .values(pledged_amount_sum=summed)
         )
 
+        await session.execute(stmt)
+        await session.commit()
+
+    async def mark_disputed(
+        self,
+        session: AsyncSession,
+        pledge_id: UUID,
+        by_user_id: UUID,
+        reason: str,
+    ) -> None:
+        stmt = (
+            sql.update(Pledge)
+            .where(Pledge.id == pledge_id)
+            .values(
+                state=PledgeState.disputed,
+                dispute_reason=reason,
+                disputed_at=datetime.datetime.now(),
+                disputed_by_user_id=by_user_id,
+            )
+        )
         await session.execute(stmt)
         await session.commit()
 

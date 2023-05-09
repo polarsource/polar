@@ -1,6 +1,7 @@
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import String, BigInteger, ForeignKey
+from sqlalchemy import TIMESTAMP, String, BigInteger, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
@@ -32,6 +33,21 @@ class Pledge(RecordModel):
         return self.amount + self.fee
 
     state: Mapped[str] = mapped_column(String, nullable=False, default="initiated")
+
+    # 14 days after the state changes to pending
+    scheduled_payout_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+
+    dispute_reason: Mapped[str | None] = mapped_column(String, nullable=True)
+    disputed_by_user_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("users.id"),
+        nullable=True,
+    )
+    disputed_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
 
     by_user_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,

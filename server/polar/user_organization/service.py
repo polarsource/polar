@@ -24,6 +24,13 @@ class UserOrganizationervice:
         res = await session.execute(stmt)
         return res.scalars().unique().all()
 
+    async def list_by_user_id(
+        self, session: AsyncSession, user_id: UUID
+    ) -> Sequence[UserOrganization]:
+        stmt = sql.select(UserOrganization).where(UserOrganization.user_id == user_id)
+        res = await session.execute(stmt)
+        return res.scalars().unique().all()
+
     async def get_settings(
         self,
         session: AsyncSession,
@@ -49,7 +56,6 @@ class UserOrganizationervice:
         org_id: UUID,
         set: UserOrganizationSettingsUpdate,
     ) -> None:
-
         values: dict[str, Any] = {"user_id": user_id, "organization_id": org_id}
         for k, v in set.dict().items():
             if v is not None:

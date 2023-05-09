@@ -20,16 +20,9 @@ class OAuthAccessToken(Schema):
     refresh_token_expires_in: int
 
 
-class BadgeAmount(Schema):
-    currency: str
-    amount: float
-
-
 class GithubBadgeRead(Schema):
     badge_type: Literal["pledge"]
-    width: int = 445
-    height: int = 44
-    amount: BadgeAmount | None = None
+    amount: int
 
 
 class GithubIssueDependency(Schema):

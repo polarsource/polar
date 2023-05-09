@@ -1,10 +1,11 @@
-import type { NextPage } from 'next'
+import Login from 'components/Auth/Login'
+import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { ReactElement, useEffect } from 'react'
 import { useAuth } from '../hooks'
 
-const Home: NextPage = () => {
+const Page: NextLayoutComponentType = () => {
   const { currentUser } = useAuth()
   const router = useRouter()
 
@@ -20,8 +21,13 @@ const Home: NextPage = () => {
       <Head>
         <title>Polar</title>
       </Head>
+      <Login />
     </>
   )
 }
 
-export default Home
+Page.getLayout = (page: ReactElement) => {
+  return <div>{page}</div>
+}
+
+export default Page

@@ -17,6 +17,8 @@ from .schemas import (
     OrganizationSettingsUpdate,
     OrganizationSetupIntentRead,
     OrganizationStripeCustomerRead,
+    OrganizationSyncedRead,
+    OrganizationSyncedRepositoryRead,
     PaymentMethod,
 )
 from .service import organization
@@ -142,7 +144,6 @@ async def create_setup_intent(
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationSetupIntentRead:
-
     setup_intent = await stripe.create_setup_intent(session, auth.organization)
 
     if not setup_intent:
@@ -170,3 +171,19 @@ async def set_default_payment_method(
         session, auth.organization, payment_method_id
     )
     return await get_stripe_customer(platform, org_name, auth, session)
+
+
+@router.get("/{platform}/{org_name}/synced", response_model=OrganizationSyncedRead)
+async def get_synced(
+    platform: Platforms,
+    org_name: str,
+    auth: Auth = Depends(Auth.user_with_org_access),
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationSyncedRead:
+    counts = await organization.repositories_issues_synced(session, auth.organization)
+    return OrganizationSyncedRead(
+        repos=[
+            OrganizationSyncedRepositoryRead(id=k, synced_issues_count=counts[k])
+            for k in counts
+        ]
+    )

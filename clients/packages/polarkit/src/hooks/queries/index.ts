@@ -16,6 +16,7 @@ export type RepoListItem = RepositoryRead & {
 export * from './backoffice'
 export * from './dashboard'
 export * from './invite'
+export * from './onboarding'
 export * from './pledges'
 
 export const useUserOrganizations = (currentUser: UserRead | undefined) => {

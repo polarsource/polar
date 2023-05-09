@@ -31,7 +31,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["index.css"],
+      "resources": ["frame.css", "app.css"],
       "matches": ["*://github.com/*"]
     }
   ]

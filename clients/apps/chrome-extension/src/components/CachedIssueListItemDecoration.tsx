@@ -1,5 +1,6 @@
 import { IssueExtensionRead } from 'polarkit/api/client'
 import { IssueListItemDecoration } from 'polarkit/components/Issue'
+import Frame, { FrameContextConsumer } from 'react-frame-component'
 import { useChromeStorageLocal } from 'use-chrome-storage'
 
 /*
@@ -21,14 +22,30 @@ const CachedIssueListItemDecoration = ({
 
   if (isInitialStateResolved && value) {
     return (
-      <div className="bg-blue-50 px-3.5 py-2.5">
-        <IssueListItemDecoration
-          orgName={orgName}
-          repoName={repoName}
-          pledges={value.pledges}
-          references={value.references}
-        />
-      </div>
+      <Frame
+        head={[
+          <link
+            type="text/css"
+            rel="stylesheet"
+            href={chrome.runtime.getURL('frame.css')}
+          ></link>,
+        ]}
+      >
+        <FrameContextConsumer>
+          {({ document, window }) => {
+            return (
+              <div className="bg-blue-50 px-3.5 py-2.5">
+                <IssueListItemDecoration
+                  orgName={orgName}
+                  repoName={repoName}
+                  pledges={value.pledges}
+                  references={value.references}
+                />
+              </div>
+            )
+          }}
+        </FrameContextConsumer>
+      </Frame>
     )
   } else {
     return null

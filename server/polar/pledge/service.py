@@ -25,7 +25,8 @@ from polar.organization.service import organization as organization_service
 from polar.account.service import account as account_service
 from polar.exceptions import ResourceNotFound, NotPermitted
 
-from .schemas import PledgeCreate, PledgeMutationResponse, PledgeTransactionType, PledgeUpdate, PledgeState
+from .schemas import (PledgeCreate, PledgeMutationResponse, PledgeTransactionType,
+    PledgeUpdate, PledgeState)
 
 log = structlog.get_logger()
 

@@ -48,6 +48,7 @@ async def test_pledged_issue_pull_request_created(
         repository_id=repository.id,
         organization_id=organization.id,
         amount=12300,
+        fee=123,
         by_organization_id=pledging_organization.id,
         state="created",
     )
@@ -124,6 +125,7 @@ async def test_pledged_issue_pull_request_merged(
         repository_id=repository.id,
         organization_id=organization.id,
         amount=12300,
+        fee=123,
         by_organization_id=pledging_organization.id,
         state="created",
     )
@@ -201,6 +203,7 @@ async def test_pledged_issue_branch_created(
         repository_id=predictable_repository.id,
         organization_id=predictable_organization.id,
         amount=12300,
+        fee=123,
         by_organization_id=predictable_pledging_organization.id,
         state="created",
     )

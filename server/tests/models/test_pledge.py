@@ -29,6 +29,7 @@ async def test_pledge(
         organization_id=organization.id,
         email=email,
         amount=int(test_amount),
+        fee=0,
     )
 
     assert created.id is not None

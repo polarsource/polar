@@ -3,7 +3,7 @@ from uuid import UUID
 from datetime import datetime, timezone
 
 import structlog
-from sqlalchemy import and_, distinct
+from sqlalchemy import and_, or_, distinct
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import (
     InstrumentedAttribute,
@@ -350,8 +350,8 @@ class OrganizationService(
             )
             .where(
                 Repository.organization_id == organization.id,
-                PullRequest.state == "open",
-                Issue.state == "open",
+                or_(PullRequest.state == "open", PullRequest.state == None),  # noqa
+                or_(Issue.state == "open", Issue.state == None),  # noqa
             )
             .group_by(Repository.id)
         )

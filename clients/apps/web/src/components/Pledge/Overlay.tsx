@@ -57,7 +57,6 @@ const Overlay = ({
 
   const onAmountChange = (event) => {
     const amount = parseInt(event.target.value)
-    console.log('AMOUNT CHANGE', amount)
     if (isNaN(amount)) {
       setErrorMessage('Please enter a valid amount')
       return
@@ -105,9 +104,8 @@ const Overlay = ({
     return false
   }
 
-  const createPledge = async (pledgeSync: PledgeSync) => {
-    console.log('CREATE PLEDGE', pledgeSync)
-    return await api.pledges.createPledge({
+  const createPledge = (pledgeSync: PledgeSync) =>
+    api.pledges.createPledge({
       platform: issue.platform,
       orgName: issueOrg.name,
       repoName: issueRepo.name,
@@ -118,11 +116,9 @@ const Overlay = ({
         pledge_as_org: pledgeSync.pledgeAsOrg?.id,
       },
     })
-  }
 
-  const updatePledge = async (pledgeSync: PledgeSync) => {
-    console.log('UPDATE PLEDGE', pledgeSync)
-    return await api.pledges.updatePledge({
+  const updatePledge = (pledgeSync: PledgeSync) =>
+    api.pledges.updatePledge({
       platform: issue.platform,
       orgName: issueOrg.name,
       repoName: issueRepo.name,
@@ -133,7 +129,6 @@ const Overlay = ({
         pledge_as_org: pledgeSync.pledgeAsOrg?.id,
       },
     })
-  }
 
   const payPledge = async () => {
     return await api.pledges.confirmPledge({
@@ -146,19 +141,13 @@ const Overlay = ({
   }
 
   const synchronizePledge = async (pledgeSync: PledgeSync) => {
-    console.log('SYNC 1')
-
     if (!selectedOrg) {
       return
     }
 
-    console.log('SYNC 2')
-
     if (!shouldSynchronizePledge()) {
       return
     }
-
-    console.log('SYNC 3')
 
     setSyncing(true)
     let updatedPledge: PledgeMutationResponse

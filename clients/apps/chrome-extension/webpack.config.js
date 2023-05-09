@@ -4,6 +4,7 @@ module.exports = {
   entry: {
     content: "./src/index.tsx",
     auth: "./src/auth.ts",
+    content_script_on_soft_nav: "./src/background/content_script_on_soft_nav.ts",
   },
   mode: "production",
   module: {

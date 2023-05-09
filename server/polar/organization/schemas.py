@@ -24,6 +24,8 @@ class OrganizationSettingsRead(BaseModel):
     email_notification_backed_issue_pull_request_created: bool = False
     email_notification_backed_issue_pull_request_merged: bool = False
 
+    billing_email: str | None = None
+
 
 class OrganizationSettingsUpdate(Schema):
     pledge_badge_retroactive: bool | None = None
@@ -36,6 +38,8 @@ class OrganizationSettingsUpdate(Schema):
     email_notification_backed_issue_branch_created: bool | None = None
     email_notification_backed_issue_pull_request_created: bool | None = None
     email_notification_backed_issue_pull_request_merged: bool | None = None
+
+    billing_email: str | None = None
 
 
 class Base(Schema):

@@ -88,6 +88,10 @@ class Organization(RecordModel):
         String(length=50), nullable=True, unique=True, default=None
     )
 
+    billing_email: Mapped[str | None] = mapped_column(
+        String(length=120), nullable=True, default=None
+    )
+
     repos: "Mapped[list[Repository]]" = relationship(
         "Repository",
         back_populates="organization",

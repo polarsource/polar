@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, Set, Union
 from uuid import UUID
 from githubkit import GitHub, Response
+from githubkit.exception import RequestFailed
 from pydantic import parse_obj_as
 
 import structlog
@@ -319,15 +320,22 @@ class GitHubIssueReferencesService:
         for page in range(1, 100):
             first_page = page == 1
 
-            res = await self.async_list_events_for_timeline_with_headers(
-                client,
-                owner=org.name,
-                repo=repo.name,
-                issue_number=issue.number,
-                page=page,
-                per_page=100,
-                etag=issue.github_timeline_etag if first_page else None,
-            )
+            try:
+                res = await self.async_list_events_for_timeline_with_headers(
+                    client,
+                    owner=org.name,
+                    repo=repo.name,
+                    issue_number=issue.number,
+                    page=page,
+                    per_page=100,
+                    etag=issue.github_timeline_etag if first_page else None,
+                )
+            except RequestFailed as e:
+                if e.response.status_code == 404:
+                    issue.github_timeline_fetched_at = datetime.utcnow()
+                    await issue.save(session)
+                    log.info("github.sync_issue_references.404.marking_as_crawled")
+                    return
 
             # Cache hit, nothing new
             if first_page and res.status_code == 304:

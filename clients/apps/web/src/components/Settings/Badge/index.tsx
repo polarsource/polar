@@ -14,6 +14,7 @@ import Box from '../Box'
 import FakePullRequest from '../FakePullRequest'
 import SettingsCheckbox from '../SettingsCheckbox'
 import BadgeRepositories from './Repositories'
+import { AllRetroactiveChanges } from './types'
 
 const continueTimeoutSeconds = 10
 
@@ -24,7 +25,6 @@ interface SSEIssueSyncEvent {
 }
 
 interface MappedRepoSettings {
-  retroactive: boolean
   show_amount: boolean
   repositories: {
     [id: string]: RepositoryBadgeSettingsRead
@@ -45,12 +45,30 @@ const getMappedSettings = (
   })
 
   let ret = {
-    retroactive: current.retroactive,
     show_amount: current.show_amount,
     repositories: mapped,
     repositories_order: order,
   }
   return ret
+}
+
+const getRetroactiveChanges = (
+  repos: RepositoryBadgeSettingsRead[],
+): AllRetroactiveChanges => {
+  return repos.reduce((ret, repo) => {
+    let changes = {
+      additions: 0,
+      removals: 0,
+    }
+    if (repo.badge_enabled) {
+      changes.additions = repo.synced_issues - repo.embedded_issues
+    } else {
+      changes.removals = repo.embedded_issues
+    }
+
+    ret[repo.id] = changes
+    return ret
+  }, {})
 }
 
 const BadgeSetup = ({
@@ -71,6 +89,7 @@ const BadgeSetup = ({
     undefined,
   )
   const [showControls, setShowControls] = useState<boolean>(false)
+  const [isRetroactiveEnabled, setRetroactiveEnabled] = useState<boolean>(false)
   const emitter = useSSE(org.platform, org.name)
 
   useEffect(() => {
@@ -164,15 +183,7 @@ const BadgeSetup = ({
     return settings.repositories[id]
   })
 
-  let toBadgeCount = 0
-  if (settings.retroactive) {
-    toBadgeCount = sortedRepos.reduce((count, repo) => {
-      if (settings.repositories[repo.id].badge_enabled) {
-        return count + repo.open_issues
-      }
-      return count
-    }, 0)
-  }
+  const retroactiveChanges = getRetroactiveChanges(sortedRepos)
 
   return (
     <div className="w-full">
@@ -206,38 +217,6 @@ const BadgeSetup = ({
               })
             }}
           />
-          <strong>Which issues should we badge?</strong>
-          <SettingsCheckbox
-            id="badge-scope-new"
-            name="badge-scope"
-            title="New issues only"
-            type="radio"
-            isChecked={!settings.retroactive}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-              setSettings((prev) => {
-                return {
-                  ...prev,
-                  retroactive: false,
-                }
-              })
-            }}
-          />
-          <SettingsCheckbox
-            id="badge-scope-all"
-            name="badge-scope"
-            title="All open issues"
-            type="radio"
-            description="Could impact sorting on GitHub"
-            isChecked={settings.retroactive}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-              setSettings((prev) => {
-                return {
-                  ...prev,
-                  retroactive: true,
-                }
-              })
-            }}
-          />
         </Box>
       </motion.div>
 
@@ -245,6 +224,7 @@ const BadgeSetup = ({
         repos={sortedRepos}
         isSettingPage={isSettingPage}
         showSetup={showSetup}
+        retroactiveChanges={isRetroactiveEnabled && retroactiveChanges}
         onEnableBadgeChange={(
           repo: RepositoryBadgeSettingsRead,
           enabled: boolean,
@@ -283,7 +263,9 @@ const BadgeSetup = ({
             org={org}
             showSetup={showSetup}
             setShowSetup={setShowSetup}
-            toBadgeCount={toBadgeCount}
+            isRetroactiveEnabled={isRetroactiveEnabled}
+            setRetroactiveEnabled={setRetroactiveEnabled}
+            retroactiveChanges={retroactiveChanges}
             settings={settings}
             skippable={showSetup}
           />
@@ -297,14 +279,18 @@ const Controls = ({
   org,
   showSetup,
   setShowSetup,
-  toBadgeCount,
+  isRetroactiveEnabled,
+  setRetroactiveEnabled,
+  retroactiveChanges,
   settings,
   skippable = false,
 }: {
   org: OrganizationPrivateRead
   showSetup: boolean
   setShowSetup: (state: boolean) => void
-  toBadgeCount: number
+  isRetroactiveEnabled: boolean
+  setRetroactiveEnabled: (state: boolean) => void
+  retroactiveChanges: AllRetroactiveChanges | undefined
   settings: MappedRepoSettings
   skippable?: boolean
 }) => {
@@ -314,15 +300,23 @@ const Controls = ({
     router.push(`/dashboard/${org.name}`)
   }
 
+  const isRetroactiveApplicable = (
+    repo: RepositoryBadgeSettingsRead,
+  ): boolean => {
+    if (!isRetroactiveEnabled) return false
+
+    const changes = retroactiveChanges[repo.id]
+    return changes.additions > 0 || changes.removals > 0
+  }
+
   const save = () => {
-    console.log('Save badge...', settings)
     const data: OrganizationBadgeSettingsUpdate = {
-      retroactive: settings.retroactive,
       show_amount: settings.show_amount,
       repositories: Object.values(settings.repositories).map((repo) => {
         return {
           id: repo.id,
-          badge_enabled: repo.badge_enabled || false,
+          badge_enabled: repo.badge_enabled,
+          retroactive: isRetroactiveApplicable(repo),
         }
       }),
     }
@@ -354,10 +348,41 @@ const Controls = ({
     }
   }
 
+  let retroactiveAdditions = 0
+  let retroactiveRemovals = 0
+  if (retroactiveChanges) {
+    Object.values(retroactiveChanges).map((changes) => {
+      retroactiveAdditions += changes.additions
+      retroactiveRemovals += changes.removals
+    })
+  }
+
   return (
     <>
       <div className="mt-10 flex flex-col justify-center">
-        {toBadgeCount > 0 && <p>Issues to be badged: {toBadgeCount}</p>}
+        {retroactiveChanges && (
+          <div className="flex flex-row">
+            <input
+              type="checkbox"
+              className="mr-2"
+              checked={isRetroactiveEnabled}
+              onChange={(e) => {
+                setRetroactiveEnabled(e.target.checked)
+              }}
+            />
+            <strong className="text-sm font-semibold">
+              Update open issues
+            </strong>
+            <p>
+              {retroactiveAdditions > 0 && (
+                <> {retroactiveAdditions} issues will be embedded.</>
+              )}
+              {retroactiveRemovals > 0 && (
+                <> {retroactiveRemovals} issues will be removed.</>
+              )}
+            </p>
+          </div>
+        )}
         <button
           className="m-auto w-32 rounded-xl bg-blue-600 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-500"
           onClick={clickedContinue}

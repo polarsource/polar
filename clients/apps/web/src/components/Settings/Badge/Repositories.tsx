@@ -2,15 +2,18 @@ import { motion } from 'framer-motion'
 import { type RepositoryBadgeSettingsRead } from 'polarkit/api/client'
 
 import BadgeRepository from './Repository'
+import { AllRetroactiveChanges } from './types'
 
 export const BadgeRepositories = ({
   repos,
   showSetup,
+  retroactiveChanges,
   onEnableBadgeChange,
   isSettingPage = false,
 }: {
   repos: RepositoryBadgeSettingsRead[]
   showSetup: boolean
+  retroactiveChanges: AllRetroactiveChanges | false
   onEnableBadgeChange: (
     repo: RepositoryBadgeSettingsRead,
     enabled: boolean,
@@ -58,7 +61,10 @@ export const BadgeRepositories = ({
                 repo={repo}
                 isSettingPage={isSettingPage}
                 showSetup={showSetup}
-                isBadgeEnabled={repo.badge_enabled || false}
+                retroactiveChanges={
+                  retroactiveChanges && retroactiveChanges[repo.id]
+                }
+                isBadgeEnabled={repo.badge_enabled}
                 onEnableBadgeChange={(badge: boolean) =>
                   onEnableBadgeChange(repo, badge)
                 }

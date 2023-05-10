@@ -2,6 +2,7 @@ import { CheckCircleIcon } from '@heroicons/react/24/solid'
 import { motion } from 'framer-motion'
 import { type RepositoryBadgeSettingsRead } from 'polarkit/api/client'
 import { classNames } from 'polarkit/utils'
+import { RetroactiveChanges } from './types'
 
 const ProgressText = ({
   progress,
@@ -79,25 +80,52 @@ const Progress = ({
 }
 
 const BadgeSwitch = ({
+  repo,
   checked,
   onChange,
 }: {
+  repo: RepositoryBadgeSettingsRead
   checked: boolean
   onChange: (state: boolean) => void
 }) => {
+  const id = `toggle-badge-${repo.id}`
   return (
     <>
-      <label htmlFor="toogleA" className="flex cursor-pointer items-center">
-        Badge
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            onChange(e.target.checked)
-          }}
-        />
+      <label
+        htmlFor={id}
+        className="mr-4 flex cursor-pointer items-center text-xs"
+      >
+        Embed badge
       </label>
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+          onChange(e.target.checked)
+        }}
+      />
     </>
+  )
+}
+
+const IssueChanges = ({ changes }: { changes: RetroactiveChanges }) => {
+  if (changes.additions === 0 && changes.removals === 0) {
+    return <></>
+  }
+
+  const n = changes.additions > 0 ? changes.additions : changes.removals
+  return (
+    <p className="mr-10 align-middle text-xs">
+      <span
+        className={classNames(
+          changes.additions > 0 ? 'text-green-500' : 'text-red-500',
+        )}
+      >
+        {n}
+      </span>{' '}
+      issues
+    </p>
   )
 }
 
@@ -105,12 +133,14 @@ export const BadgeRepository = ({
   repo,
   showSetup,
   isBadgeEnabled,
+  retroactiveChanges,
   onEnableBadgeChange,
   isSettingPage = false,
 }: {
   repo: RepositoryBadgeSettingsRead
   showSetup: boolean
   isBadgeEnabled: boolean
+  retroactiveChanges: RetroactiveChanges | false
   onEnableBadgeChange: (badge: boolean) => void
   isSettingPage?: boolean
 }) => {
@@ -154,18 +184,26 @@ export const BadgeRepository = ({
               completed={repo.is_sync_completed}
             />
           )}
-          {showSetup && repo.is_private && (
-            <p className="inline rounded-xl bg-gray-100 py-1 px-2 text-sm text-gray-600">
-              Private
-            </p>
-          )}
-          {showSetup && !repo.is_private && (
-            <BadgeSwitch
-              checked={isBadgeEnabled}
-              onChange={(badge: boolean) => {
-                onEnableBadgeChange(badge)
-              }}
-            />
+          {showSetup && (
+            <div className="flex flex-row justify-end align-middle">
+              {retroactiveChanges && (
+                <IssueChanges changes={retroactiveChanges} />
+              )}
+              {repo.is_private && (
+                <p className="inline rounded-xl bg-gray-100 py-1 px-2 text-sm text-gray-600">
+                  Private
+                </p>
+              )}
+              {!repo.is_private && (
+                <BadgeSwitch
+                  repo={repo}
+                  checked={isBadgeEnabled}
+                  onChange={(badge: boolean) => {
+                    onEnableBadgeChange(badge)
+                  }}
+                />
+              )}
+            </div>
           )}
         </div>
       </div>

@@ -103,6 +103,5 @@ class Organization(RecordModel):
         "installation_updated_at",
         "installation_suspended_at",
         "status",
-        "pledge_badge_retroactive",
         "pledge_badge_show_amount",
     }

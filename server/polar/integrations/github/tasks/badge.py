@@ -7,7 +7,6 @@ from polar.postgres import AsyncSessionLocal
 
 from .utils import get_organization_and_repo
 from ..service.issue import github_issue
-from polar.repository.service import repository
 from polar.issue.service import issue
 
 log = structlog.get_logger()
@@ -38,23 +37,6 @@ async def embed_badge(
             )
 
 
-@task("github.badge.embed_retroactively_on_organization")
-async def embed_badge_retroactively_on_organization(
-    ctx: JobContext,
-    organization_id: UUID,
-    polar_context: PolarWorkerContext,
-) -> None:
-    with polar_context.to_execution_context() as context:
-        async with AsyncSessionLocal() as session:
-            repos = await repository.list_by_organization(session, organization_id)
-            for repo in repos:
-                await enqueue_job(
-                    "github.badge.embed_retroactively_on_repository",
-                    organization_id,
-                    repo.id,
-                )
-
-
 @task("github.badge.embed_retroactively_on_repository")
 async def embed_badge_retroactively_on_repository(
     ctx: JobContext,
@@ -78,23 +60,6 @@ async def embed_badge_retroactively_on_repository(
             for i in reversed(issues):
                 await github_issue.embed_badge(
                     session, organization=organization, repository=repository, issue=i
-                )
-
-
-@task("github.badge.remove_on_organization")
-async def remove_badges_on_organization(
-    ctx: JobContext,
-    organization_id: UUID,
-    polar_context: PolarWorkerContext,
-) -> None:
-    with polar_context.to_execution_context() as context:
-        async with AsyncSessionLocal() as session:
-            repos = await repository.list_by_organization(session, organization_id)
-            for repo in repos:
-                await enqueue_job(
-                    "github.badge.remove_on_repository",
-                    organization_id,
-                    repo.id,
                 )
 
 

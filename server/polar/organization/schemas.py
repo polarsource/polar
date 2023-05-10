@@ -143,26 +143,28 @@ class OrganizationSetupIntentRead(Schema):
 
 class RepositoryBadgeSettingsUpdate(Schema):
     id: UUID
-    badge_enabled: bool | None
+    badge_enabled: bool
+    retroactive: bool
 
 
-class RepositoryBadgeSettingsRead(RepositoryBadgeSettingsUpdate):
+class RepositoryBadgeSettingsRead(Schema):
     id: UUID
     avatar_url: str | None
     name: str
     synced_issues: int
     open_issues: int
+    badge_enabled: bool
     is_private: bool
     is_sync_completed: bool
 
 
 class OrganizationBadgeSettingsUpdate(Schema):
-    retroactive: bool
     show_amount: bool
     repositories: Sequence[RepositoryBadgeSettingsUpdate]
 
 
-class OrganizationBadgeSettingsRead(OrganizationBadgeSettingsUpdate):
+class OrganizationBadgeSettingsRead(Schema):
+    show_amount: bool
     repositories: Sequence[RepositoryBadgeSettingsRead]
 
 

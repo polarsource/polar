@@ -66,6 +66,11 @@ class Repository(RecordModel):
         TIMESTAMP(timezone=True), nullable=True
     )
 
+    # Badge issues in this repository?
+    pledge_badge: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+
     ###############################################################################
     # FEATURE & STATUS FLAGS
     ###############################################################################

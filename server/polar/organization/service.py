@@ -294,7 +294,15 @@ class OrganizationService(
         repos = []
         for repo in repositories:
             open_issues = repo.open_issues or 0
-            synced_issues = synced.get(repo.id, 0)
+            synced_data = synced.get(
+                repo.id,
+                {
+                    "synced_issues": 0,
+                    "embedded_issues": 0,
+                    "pull_requests": 0,
+                },
+            )
+            synced_issues = synced_data["synced_issues"]
             if synced_issues > open_issues:
                 open_issues = synced_issues
 
@@ -307,6 +315,8 @@ class OrganizationService(
                     badge_enabled=repo.pledge_badge,
                     name=repo.name,
                     synced_issues=synced_issues,
+                    embedded_issues=synced_data["embedded_issues"],
+                    pull_requests=synced_data["pull_requests"],
                     open_issues=open_issues,
                     is_private=repo.is_private,
                     is_sync_completed=is_sync_completed,
@@ -377,12 +387,11 @@ class OrganizationService(
         self,
         session: AsyncSession,
         organization: Organization,
-    ) -> dict[UUID, int]:
-        repo_count: dict[UUID, int] = dict()
-
+    ) -> dict[UUID, dict[str, int]]:
         stmt = (
             sql.select(
                 Repository.id,
+                (Issue.pledge_badge_embedded_at != None).label("embedded"),  # noqa
                 sql.func.count(distinct(Issue.id)).label("issue_count"),
                 sql.func.count(distinct(PullRequest.id)).label("pull_request_count"),
             )
@@ -403,16 +412,37 @@ class OrganizationService(
                     or_(Issue.state == "open", Issue.state == None),  # noqa
                 ),
             )
-            .group_by(Repository.id)
+            .group_by(Repository.id, "embedded")
         )
 
         res = await session.execute(stmt)
         rows = res.unique().all()
 
+        prs: dict[UUID, bool] = {}
+        ret: dict[UUID, dict[str, int]] = {}
         for r in rows:
-            repo_count[r[0]] = int(r[1]) + int(r[2])
+            mapped = r._mapping
+            repo_id = mapped["id"]
+            repo = ret.setdefault(
+                repo_id,
+                {
+                    "synced_issues": 0,
+                    "embedded_issues": 0,
+                    # We get duplicate PR counts due to grouping of
+                    # embedded on issues. So we only need to set it
+                    # once at initation here.
+                    "pull_requests": mapped["pull_request_count"],
+                },
+            )
+            repo["synced_issues"] += mapped["issue_count"]
+            if mapped["embedded"]:
+                repo["embedded_issues"] += mapped["issue_count"]
 
-        return repo_count
+            if repo_id not in prs:
+                repo["synced_issues"] += mapped["pull_request_count"]
+                prs[repo_id] = True
+
+        return ret
 
 
 organization = OrganizationService(Organization)

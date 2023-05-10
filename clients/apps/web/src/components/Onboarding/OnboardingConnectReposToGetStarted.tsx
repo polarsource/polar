@@ -26,6 +26,7 @@ const OnboardingConnectReposToGetStarted = () => {
       </div>
       <Image
         src={screenshot}
+        priority={true}
         alt="Sreenshot of the Polar dashboard with connected repositories"
       />
     </div>

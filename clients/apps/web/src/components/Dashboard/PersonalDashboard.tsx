@@ -3,8 +3,8 @@ import OnboardingConnectPersonalDashboard from 'components/Onboarding/Onboarding
 import { IssueStatus } from 'polarkit/api/client'
 import { usePersonalDashboard } from 'polarkit/hooks'
 import { Dispatch, SetStateAction } from 'react'
-import { DashboardFilters } from './filters'
 import IssueList from './IssueList'
+import { DashboardFilters } from './filters'
 
 const PersonalDashboard = ({
   filters,
@@ -30,7 +30,7 @@ const PersonalDashboard = ({
       filters={filters}
       onSetFilters={onSetFilters}
       showSidebar={true}
-      isPersonalDashboard={false}
+      isPersonalDashboard={true}
     >
       <div>
         <OnboardingConnectPersonalDashboard />

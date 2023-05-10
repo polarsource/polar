@@ -74,7 +74,6 @@ const PersonalDashboardNav = () => {
         defaultToUser={true}
         showOrganizationRepositoryCount={true}
       />
-      <SettingsLink />
     </>
   )
 }

@@ -2,9 +2,9 @@ import DashboardLayout from 'components/Layout/DashboardLayout'
 import OnboardingConnectReposToGetStarted from 'components/Onboarding/OnboardingConnectReposToGetStarted'
 import { IssueStatus } from 'polarkit/api/client'
 import { useDashboard } from 'polarkit/hooks'
-import { Dispatch, SetStateAction, useState } from 'react'
-import { DashboardFilters } from './filters'
+import { Dispatch, SetStateAction } from 'react'
 import IssueList from './IssueList'
+import { DashboardFilters } from './filters'
 
 const OrganizationDashboard = ({
   orgName,
@@ -29,7 +29,6 @@ const OrganizationDashboard = ({
     filters.onlyPledged,
   )
   const dashboard = dashboardQuery.data
-  const [showOnboardConnectPopup, setShowOnboardConnectPopup] = useState(false)
   const totalCount = dashboard?.pages[0].pagination.total_count || undefined
 
   return (
@@ -40,7 +39,7 @@ const OrganizationDashboard = ({
       isPersonalDashboard={false}
     >
       <div>
-        {showOnboardConnectPopup && <OnboardingConnectReposToGetStarted />}
+        <OnboardingConnectReposToGetStarted />
         <IssueList
           totalCount={totalCount}
           loading={dashboardQuery.isLoading}

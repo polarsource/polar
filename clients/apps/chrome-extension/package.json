@@ -12,18 +12,22 @@
     "react-dom": "^18.2.0",
     "react-frame-component": "^5.2.6",
     "react-scripts": "5.0.1",
-    "typescript": "5.0.4",
     "use-chrome-storage": "^1.2.1",
-    "web-vitals": "^2.1.0"
+    "web-vitals": "^2.1.0",
+    "typescript": "5.0.4"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "npm run build:js && npm run build:css",
-    "build:prod": "API_URL=https://api.polar.sh WEB_URL=https://dashboard.polar.sh npm run build",
+    "build": "npm run clean && npm run build:js && npm run build:css && npm run build:manifest-dev",
+    "build:prod": "npm run clean && API_URL=https://api.polar.sh WEB_URL=https://dashboard.polar.sh npm run build && npm run build:css && npm run build:manifest-prod",
     "build:css": "tailwindcss -i ./src/frame.css -o ./extension/frame.css",
     "build:js": "webpack --config webpack.config.js && mv dist/content.js ./extension && mv dist/auth.js ./extension && mv dist/service-worker.js ./extension",
+    "build:manifest-dev": "npx ts-node-esm create-manifest.mts --dev > ./extension/manifest.json",
+    "build:manifest-prod": "npx ts-node-esm create-manifest.mts --production > ./extension/manifest.json",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "clean": "rm ./extension/*.{js,css} || true",
+    "package": "zip extension.zip extension/*"
   },
   "eslintConfig": {
     "extends": [
@@ -53,6 +57,7 @@
     "svg-inline-loader": "^0.8.2",
     "tailwindcss": "^3.1.8",
     "ts-loader": "^9.4.2",
+    "ts-node": "^10.9.1",
     "url-loader": "^4.1.1",
     "webpack": "^5.79.0",
     "webpack-cli": "^5.0.1"

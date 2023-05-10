@@ -7,12 +7,12 @@ const ProgressText = ({
   progress,
   target,
   completed,
-  animate = true,
+  isSettingPage = false,
 }: {
   progress: number
   target: number
   completed: boolean
-  animate?: boolean
+  isSettingPage?: boolean
 }) => {
   const shouldSync = target > 0
 
@@ -27,7 +27,7 @@ const ProgressText = ({
       {completed && (
         <motion.span
           className="flex flex-row items-center text-gray-500"
-          initial={animate ? 'hidden' : false}
+          initial={isSettingPage ? false : 'hidden'}
           animate={{
             opacity: [0, 1],
           }}
@@ -51,12 +51,12 @@ const Progress = ({
   progress,
   target,
   completed,
-  animate = true,
+  isSettingPage = false,
 }: {
   progress: number
   target: number
   completed: boolean
-  animate?: boolean
+  isSettingPage?: boolean
 }) => {
   if (target === 0) return <></>
 
@@ -69,7 +69,7 @@ const Progress = ({
     <div className="h-2.5 w-full rounded-full bg-gray-200">
       <motion.div
         className="h-2.5 w-[0%] rounded-full bg-blue-600"
-        initial={animate ? 'hidden' : false}
+        initial={isSettingPage ? false : 'hidden'}
         animate={{
           width: `${percent}%`,
         }}
@@ -106,13 +106,13 @@ export const BadgeRepository = ({
   showSetup,
   isBadgeEnabled,
   onEnableBadgeChange,
-  animate = true,
+  isSettingPage = false,
 }: {
   repo: RepositoryBadgeSettingsRead
   showSetup: boolean
   isBadgeEnabled: boolean
   onEnableBadgeChange: (badge: boolean) => void
-  animate?: boolean
+  isSettingPage?: boolean
 }) => {
   /*
    * Use the Polarkit ShadowBox component instead of custom.
@@ -140,7 +140,7 @@ export const BadgeRepository = ({
       </div>
       <div className="my-auto flex basis-4/6 flex-row items-center">
         <ProgressText
-          animate={animate}
+          isSettingPage={isSettingPage}
           progress={repo.synced_issues}
           target={repo.open_issues}
           completed={repo.is_sync_completed}
@@ -148,7 +148,7 @@ export const BadgeRepository = ({
         <div className="w-full text-right">
           {!showSetup && (
             <Progress
-              animate={animate}
+              isSettingPage={isSettingPage}
               progress={repo.synced_issues}
               target={repo.open_issues}
               completed={repo.is_sync_completed}

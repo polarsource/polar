@@ -50,6 +50,7 @@ const Page: NextLayoutComponentType = () => {
             showSetup={showSetup}
             setShowSetup={setShowSetup}
             setSyncIssuesCount={setSyncIssuesCount}
+            isSettingPage={false}
           />
         </div>
       </div>

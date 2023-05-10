@@ -1,6 +1,6 @@
 import { ArrowLeftIcon } from '@heroicons/react/24/solid'
 import RepoSelection from 'components/Dashboard/RepoSelection'
-import { default as BadgeSetup } from 'components/Settings/Badge'
+import BadgeSetup from 'components/Settings/Badge'
 import Box from 'components/Settings/Box'
 import NotificationSettings, {
   type Settings as NotificationSettingsValues,
@@ -178,10 +178,10 @@ const SettingsPage: NextLayoutComponentType = () => {
 
             <BadgeSetup
               org={org}
-              animate={false}
               showSetup={true}
               setShowSetup={() => true}
               setSyncIssuesCount={(value: number) => true}
+              isSettingPage={true}
             />
           </Section>
           <Section>

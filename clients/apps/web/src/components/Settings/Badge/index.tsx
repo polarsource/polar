@@ -58,13 +58,13 @@ const BadgeSetup = ({
   showSetup,
   setShowSetup,
   setSyncIssuesCount,
-  animate = true,
+  isSettingPage = false,
 }: {
   org: OrganizationPrivateRead
   showSetup: boolean
   setShowSetup: (state: boolean) => void
   setSyncIssuesCount: (state: number) => void
-  animate?: boolean
+  isSettingPage?: boolean
 }) => {
   const remoteSettings = useBadgeSettings(org.platform, org.name)
   const [settings, setSettings] = useState<MappedRepoSettings | undefined>(
@@ -187,7 +187,7 @@ const BadgeSetup = ({
             scale: [1, 1.05, 1],
           },
         }}
-        initial={animate ? 'hidden' : false}
+        initial={isSettingPage ? false : 'hidden'}
         animate="show"
         className="mb-11"
       >
@@ -243,7 +243,7 @@ const BadgeSetup = ({
 
       <BadgeRepositories
         repos={sortedRepos}
-        animate={animate}
+        isSettingPage={isSettingPage}
         showSetup={showSetup}
         onEnableBadgeChange={(
           repo: RepositoryBadgeSettingsRead,
@@ -276,7 +276,7 @@ const BadgeSetup = ({
               scale: [1, 1.1, 1],
             },
           }}
-          initial={animate ? 'hidden' : false}
+          initial={isSettingPage ? false : 'hidden'}
           animate="show"
         >
           <Controls

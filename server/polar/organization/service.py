@@ -338,18 +338,16 @@ class OrganizationService(
             organization.pledge_badge_show_amount = settings.show_amount
 
         repositories = await repository_service.list_by_ids_and_organization(
-            session, [r.id for r in settings.repositories], organization.id)
+            session, [r.id for r in settings.repositories], organization.id
+        )
         for repository_settings in settings.repositories:
-            repository = next((r for r in repositories
-                               if r.id == repository_settings.id), None)
+            repository = next(
+                (r for r in repositories if r.id == repository_settings.id), None
+            )
             if repository:
                 await repository_service.update_badge_settings(
-                    session,
-                    organization,
-                    repository,
-                    repository_settings
+                    session, organization, repository, repository_settings
                 )
-            
 
         await organization.save(session)
         log.info(

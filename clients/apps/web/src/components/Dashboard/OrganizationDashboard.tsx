@@ -1,5 +1,5 @@
 import DashboardLayout from 'components/Layout/DashboardLayout'
-import OnboardingConnectReposToGetStarted from 'components/Onboarding/OnboardingConnectReposToGetStarted'
+import OnboardingInstallChromeExtension from 'components/Onboarding/OnboardingInstallChromeExtension'
 import { IssueStatus } from 'polarkit/api/client'
 import { useDashboard } from 'polarkit/hooks'
 import { Dispatch, SetStateAction } from 'react'
@@ -39,7 +39,7 @@ const OrganizationDashboard = ({
       isPersonalDashboard={false}
     >
       <div>
-        <OnboardingConnectReposToGetStarted />
+        <OnboardingInstallChromeExtension />
         <IssueList
           totalCount={totalCount}
           loading={dashboardQuery.isLoading}

@@ -1,15 +1,18 @@
 import { PlusIcon } from '@heroicons/react/24/solid'
 import Image from 'next/image'
-import { CONFIG } from 'polarkit'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { useStore } from 'polarkit/store'
 import { classNames } from 'polarkit/utils'
 import { MouseEvent, useEffect, useState } from 'react'
 import screenshot from './ScreenshotDashboard.png'
 
-const OnboardingConnectPersonalDashboard = () => {
-  const isSkipped = useStore((store) => store.onboardingDashboardSkip)
-  const setIsSkipped = useStore((store) => store.setOnboardingDashboardSkip)
+const OnboardingInstallChromeExtension = () => {
+  const isSkipped = useStore(
+    (store) => store.onboardingDashboardInstallChromeExtensionSkip,
+  )
+  const setIsSkipped = useStore(
+    (store) => store.setOnboardingDashboardInstallChromeExtensionSkip,
+  )
 
   const hideDashboardBanner = (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
@@ -35,9 +38,7 @@ const OnboardingConnectPersonalDashboard = () => {
       >
         <div className="flex-1">
           <div className="flex h-full flex-col space-y-4 p-6">
-            <h2 className="text-xl text-black">
-              Track and pledge issues in your dependencies
-            </h2>
+            <h2 className="text-xl text-black">Install Chrome extension</h2>
             <p className="flex-1 text-sm text-gray-500">
               Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec vel
               congue nisi. Curabitur venenatis maximus ex, eu rutrum lacus
@@ -48,11 +49,11 @@ const OnboardingConnectPersonalDashboard = () => {
                 color="blue"
                 fullWidth={false}
                 onClick={() => {
-                  window.open(CONFIG.GITHUB_INSTALLATION_URL, '_blank')
+                  window.open('https://polar.sh/', '_blank')
                 }}
               >
                 <PlusIcon className="h-6 w-6" />
-                <span>Connect a repository</span>
+                <span>Go to Chrome Web Store</span>
               </PrimaryButton>
               <button
                 type="button"
@@ -77,4 +78,4 @@ const OnboardingConnectPersonalDashboard = () => {
   )
 }
 
-export default OnboardingConnectPersonalDashboard
+export default OnboardingInstallChromeExtension

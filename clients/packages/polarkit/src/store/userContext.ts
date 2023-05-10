@@ -21,6 +21,9 @@ export interface UserState {
 export interface OnboardingState {
   onboardingDashboardSkip: boolean
   setOnboardingDashboardSkip: (skip: boolean) => void
+
+  onboardingDashboardInstallChromeExtensionSkip: boolean
+  setOnboardingDashboardInstallChromeExtensionSkip: (skip: boolean) => void
 }
 
 export interface ContextState {
@@ -43,6 +46,7 @@ const emptyState = {
   authenticated: false,
   currentUser: undefined,
   onboardingDashboardSkip: false,
+  onboardingDashboardInstallChromeExtensionSkip: false,
   userHaveOrgs: false,
   currentOrg: undefined,
   currentRepo: undefined,
@@ -93,6 +97,11 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
   setOnboardingDashboardSkip: (skip: boolean) => {
     set({
       onboardingDashboardSkip: skip,
+    })
+  },
+  setOnboardingDashboardInstallChromeExtensionSkip: (skip: boolean) => {
+    set({
+      onboardingDashboardInstallChromeExtensionSkip: skip,
     })
   },
 })

@@ -62,11 +62,6 @@ class Organization(RecordModel):
         StringEnum(Status), nullable=False, default=Status.ACTIVE
     )
 
-    # Add badge to all historical & open issues before onboarding?
-    pledge_badge_retroactive: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
-
     # Whether to show pledged amount in the badge
     pledge_badge_show_amount: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False

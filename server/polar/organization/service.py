@@ -304,7 +304,7 @@ class OrganizationService(
                 RepositoryBadgeSettingsRead(
                     id=repo.id,
                     avatar_url=organization.avatar_url,
-                    badge_enabled=None,
+                    badge_enabled=repo.pledge_badge,
                     name=repo.name,
                     synced_issues=synced_issues,
                     open_issues=open_issues,
@@ -314,7 +314,6 @@ class OrganizationService(
             )
 
         return OrganizationBadgeSettingsRead(
-            retroactive=organization.pledge_badge_retroactive,
             show_amount=organization.pledge_badge_show_amount,
             repositories=repos,
         )
@@ -325,6 +324,30 @@ class OrganizationService(
         organization: Organization,
         settings: OrganizationBadgeSettingsUpdate,
     ) -> OrganizationBadgeSettingsUpdate:
+        if settings.show_amount is not None:
+            organization.pledge_badge_show_amount = settings.show_amount
+
+        repositories = await repository_service.list_by_ids_and_organization(
+            session, [r.id for r in settings.repositories], organization.id)
+        for repository_settings in settings.repositories:
+            repository = next((r for r in repositories
+                               if r.id == repository_settings.id), None)
+            if repository:
+                await repository_service.update_badge_settings(
+                    session,
+                    organization,
+                    repository,
+                    repository_settings
+                )
+            
+
+        await organization.save(session)
+        log.info(
+            "organization.update_badge_settings",
+            organization_id=organization.id,
+            settings=settings.dict(),
+        )
+
         return settings
 
     async def update_settings(
@@ -334,25 +357,6 @@ class OrganizationService(
         settings: OrganizationSettingsUpdate,
     ) -> Organization:
         # Leverage .update() in case we expand this with additional settings
-        enabled_pledge_badge_retroactive = False
-        disabled_pledge_badge_retroactive = False
-
-        if settings.pledge_badge_retroactive is not None:
-            if (
-                not organization.pledge_badge_retroactive
-                and settings.pledge_badge_retroactive
-            ):
-                enabled_pledge_badge_retroactive = True
-            elif (
-                organization.pledge_badge_retroactive
-                and not settings.pledge_badge_retroactive
-            ):
-                disabled_pledge_badge_retroactive = True
-
-            organization.pledge_badge_retroactive = settings.pledge_badge_retroactive
-
-        if settings.pledge_badge_show_amount is not None:
-            organization.pledge_badge_show_amount = settings.pledge_badge_show_amount
 
         if settings.billing_email is not None:
             organization.billing_email = settings.billing_email
@@ -366,13 +370,6 @@ class OrganizationService(
             organization_id=organization.id,
             settings=settings.dict(),
         )
-
-        if enabled_pledge_badge_retroactive:
-            await enqueue_job(
-                "github.badge.embed_retroactively_on_organization", organization.id
-            )
-        elif disabled_pledge_badge_retroactive:
-            await enqueue_job("github.badge.remove_on_organization", organization.id)
 
         return updated
 

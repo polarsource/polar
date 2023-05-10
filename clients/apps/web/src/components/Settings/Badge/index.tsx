@@ -4,7 +4,7 @@ import { api } from 'polarkit/api'
 import {
   type OrganizationBadgeSettingsRead,
   type OrganizationBadgeSettingsUpdate,
-  type OrganizationRead,
+  type OrganizationPrivateRead,
   type RepositoryBadgeSettingsRead,
 } from 'polarkit/api/client'
 import { useBadgeSettings, useSSE } from 'polarkit/hooks'
@@ -59,7 +59,7 @@ const BadgeSetup = ({
   setShowSetup,
   setSyncIssuesCount,
 }: {
-  org: OrganizationRead
+  org: OrganizationPrivateRead
   showSetup: boolean
   setShowSetup: (state: boolean) => void
   setSyncIssuesCount: (state: number) => void
@@ -298,7 +298,7 @@ const Controls = ({
   settings,
   skippable = false,
 }: {
-  org: OrganizationRead
+  org: OrganizationPrivateRead
   showSetup: boolean
   setShowSetup: (state: boolean) => void
   toBadgeCount: number

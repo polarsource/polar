@@ -23,9 +23,7 @@ async def schedule_embed_badge_task(
     issue: Issue,
     session: AsyncSession,
 ) -> None:
-    should_embed, _ = GithubBadge.should_embed(
-        organization, repository, issue, setting_retroactive_override=False
-    )
+    should_embed, _ = GithubBadge.should_embed(organization, repository, issue)
     if not should_embed:
         return
 

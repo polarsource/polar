@@ -48,25 +48,14 @@ class GithubBadge:
         organization: Organization,
         repository: Repository,
         issue: Issue,
-        setting_retroactive_override: bool | None = None,
     ) -> tuple[ShouldEmbed, ShouldEmbedReason]:
         if organization.onboarded_at is None:
             return (False, "org_not_onboarded")
 
-        is_retroactive = issue.issue_created_at < organization.onboarded_at
-        if not is_retroactive:
-            return (True, "new_issue_post_onboarding")
+        if repository.pledge_badge:
+            return (True, "repository_pledge_badge_enabled")
 
-        if setting_retroactive_override is False:
-            return (False, "retroactive_disabled_by_override")
-
-        if setting_retroactive_override is True:
-            return (True, "retroactive_enforced_by_override")
-
-        if organization.pledge_badge_retroactive:
-            return (True, "org_enabled_retroactive_embed")
-
-        return (False, "org_disabled_retroactive_embed")
+        return (False, "repository_pledge_badge_disabled")
 
     def generate_svg_url(self, darkmode=False) -> str:
         return "{base}/api/github/{org}/{repo}/issues/{number}/pledge.svg{maybeDarkmode}".format(  # noqa: E501

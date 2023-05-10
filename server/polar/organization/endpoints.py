@@ -17,8 +17,8 @@ from .schemas import (
     OrganizationSettingsUpdate,
     OrganizationSetupIntentRead,
     OrganizationStripeCustomerRead,
-    OrganizationSyncedRead,
-    OrganizationSyncedRepositoryRead,
+    OrganizationBadgeSettingsUpdate,
+    OrganizationBadgeSettingsRead,
     PaymentMethod,
 )
 from .service import organization
@@ -68,6 +68,37 @@ async def _get_org_for_user(
     )
 
     return res
+
+
+@router.get(
+    "/{platform}/{org_name}/badge_settings",
+    response_model=OrganizationBadgeSettingsRead,
+)
+async def get_badge_settings(
+    platform: Platforms,
+    org_name: str,
+    auth: Auth = Depends(Auth.user_with_org_access),
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationBadgeSettingsRead:
+    settings = await organization.get_badge_settings(session, auth.organization)
+    return settings
+
+
+@router.put(
+    "/{platform}/{org_name}/badge_settings",
+    response_model=OrganizationBadgeSettingsUpdate,
+)
+async def update_badge_settings(
+    platform: Platforms,
+    org_name: str,
+    settings: OrganizationBadgeSettingsUpdate,
+    auth: Auth = Depends(Auth.user_with_org_access),
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationBadgeSettingsUpdate:
+    updated = await organization.update_badge_settings(
+        session, auth.organization, settings
+    )
+    return updated
 
 
 @router.put("/{platform}/{org_name}/settings", response_model=OrganizationPrivateRead)
@@ -171,19 +202,3 @@ async def set_default_payment_method(
         session, auth.organization, payment_method_id
     )
     return await get_stripe_customer(platform, org_name, auth, session)
-
-
-@router.get("/{platform}/{org_name}/synced", response_model=OrganizationSyncedRead)
-async def get_synced(
-    platform: Platforms,
-    org_name: str,
-    auth: Auth = Depends(Auth.user_with_org_access),
-    session: AsyncSession = Depends(get_db_session),
-) -> OrganizationSyncedRead:
-    counts = await organization.repositories_issues_synced(session, auth.organization)
-    return OrganizationSyncedRead(
-        repos=[
-            OrganizationSyncedRepositoryRead(id=k, synced_issues_count=counts[k])
-            for k in counts
-        ]
-    )

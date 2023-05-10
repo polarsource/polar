@@ -1,11 +1,17 @@
 import { motion } from 'framer-motion'
-import { type OrganizationPrivateRead } from 'polarkit/api/client'
-import { useOrganizationsRepositorySyncedIssues, useSSE } from 'polarkit/hooks'
+import { type OrganizationRead } from 'polarkit/api/client'
+import {
+  useBadgeSettings,
+  useOrganizationsRepositorySyncedIssues,
+  useSSE,
+} from 'polarkit/hooks'
 import { useEffect, useRef, useState } from 'react'
 import { useTimeoutFn } from 'react-use'
+import Box from '../Box'
+import FakePullRequest from '../FakePullRequest'
+import SettingsCheckbox from '../SettingsCheckbox'
+import BadgeRepositories from './Repositories'
 import { type RepoSyncState, type SyncEvent } from './types'
-
-import SynchronizeRepository from './SynchronizeRepository'
 
 const continueTimeoutSeconds = 10
 
@@ -17,10 +23,14 @@ const sortRepos = (a: RepoSyncState, b: RepoSyncState) => {
 }
 
 const getInitializedSyncState = (
-  org: OrganizationPrivateRead,
+  org: OrganizationRead,
 ): { [id: string]: RepoSyncState } => {
   let totalExpected = 0
   let initialSyncStates = {}
+  if (!org?.repositories) {
+    return initialSyncStates
+  }
+
   for (let repo of org.repositories) {
     initialSyncStates[repo.id] = {
       id: repo.id,
@@ -37,34 +47,31 @@ const getInitializedSyncState = (
   return initialSyncStates
 }
 
-const max = (a: number, b: number): number => {
-  if (a > b) {
-    return a
-  }
-  return b
-}
-
-const min = (a: number, b: number): number => {
-  if (a < b) {
-    return a
-  }
-  return b
-}
-
-export const SynchronizeRepositories = ({
+const BadgeSetup = ({
   org,
   showSetup,
   setShowSetup,
   setShowControls,
   setSyncIssuesCount,
 }: {
-  org: OrganizationPrivateRead
+  org: OrganizationRead
   showSetup: boolean
   setShowSetup: (state: boolean) => void
   setShowControls: (state: boolean) => void
   setSyncIssuesCount: (state: number) => void
 }) => {
+  /**
+   * TODO:
+   * - [ ] Initiate settings with proper repository defaults
+   * - [ ] Update backend API to receive new settings
+   * - [ ] Update sync API call to get badge settings + synced
+   * - [ ] Fix implementation in settings too
+   * - [ ] Styling
+   */
+  const badgeSettings = useBadgeSettings(org.platform, org.name)
+
   let initialSyncStates = getInitializedSyncState(org)
+  console.log('Initial sync', initialSyncStates)
   const emitter = useSSE(org.platform, org.name)
 
   const [syncingRepos, setSyncingRepos] = useState<{
@@ -99,8 +106,8 @@ export const SynchronizeRepositories = ({
           continue
         }
 
-        const processed = min(
-          max(k.synced_issues_count, prev[k.id].processed), // highest of the response from this API, or from SSE
+        const processed = Math.min(
+          Math.max(k.synced_issues_count, prev[k.id].processed), // highest of the response from this API, or from SSE
           prev[k.id].expected, // not higher than the expected number
         )
 
@@ -160,7 +167,7 @@ export const SynchronizeRepositories = ({
         [data.repository_id]: {
           ...repo,
           // Make sure that processed doesn't decrease
-          processed: max(processed, repo?.processed || 0),
+          processed: Math.max(processed, repo?.processed || 0),
           expected: data.expected,
           completed,
         },
@@ -186,50 +193,112 @@ export const SynchronizeRepositories = ({
     }
   }, [emitter])
 
+  if (!badgeSettings.data) return <></>
+
+  const settings = badgeSettings.data
+
+  if (!settings) return <></>
+
+  let toBadgeCount = 0
+  if (settings.retroactive) {
+    toBadgeCount = sortedRepos.reduce((count, repo) => {
+      if (settings.repositories[repo.id]) {
+        return count + repo.processed
+      }
+      return count + 0
+    }, 0)
+  }
+
   return (
-    <ul>
-      {sortedRepos.map((repo, index) => {
-        return (
-          <motion.ul
-            key={repo.id}
-            variants={{
-              hidden: { opacity: 0 },
-              show: {
-                opacity: 1,
-                transition: {
-                  delayChildren: 0.5,
-                },
-              },
+    <>
+      <motion.div
+        variants={{
+          hidden: {
+            opacity: 0,
+            scale: 0.95,
+          },
+          show: {
+            opacity: 1,
+            scale: [1, 1.05, 1],
+          },
+        }}
+        initial="hidden"
+        animate="show"
+        className="mb-11"
+      >
+        <Box>
+          <FakePullRequest showAmount={settings.show_amount} />
+          <SettingsCheckbox
+            id="show-raised"
+            title="Show amount pledged"
+            isChecked={settings.show_amount}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              // setSettings((prev) => {
+              //   return {
+              //     ...prev,
+              //     pledges: {
+              //       ...prev.pledges,
+              //       show: e.target.checked,
+              //     },
+              //   }
+              // })
             }}
-            initial="hidden"
-            animate="show"
-          >
-            <motion.li
-              key={repo.id}
-              className="mb-5"
-              variants={{
-                hidden: {
-                  opacity: 0,
-                  translateY: '100%',
-                  scale: 0.95,
-                },
-                show: {
-                  opacity: 1,
-                  scale: [0.95, 1.05, 1],
-                  translateY: 0,
-                  transition: {
-                    delay: 0.3 * index,
-                  },
-                },
-              }}
-            >
-              <SynchronizeRepository repo={repo} showSetup={showSetup} />
-            </motion.li>
-          </motion.ul>
-        )
-      })}
-    </ul>
+          />
+          <strong>Which issues should we badge?</strong>
+          <SettingsCheckbox
+            id="badge-scope-new"
+            name="badge-scope"
+            title="New issues only"
+            type="radio"
+            isChecked={!settings.retroactive}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              // setSettings((prev) => {
+              //   return {
+              //     ...prev,
+              //     scope: 'new',
+              //   }
+              // })
+            }}
+          />
+          <SettingsCheckbox
+            id="badge-scope-all"
+            name="badge-scope"
+            title="All open issues"
+            type="radio"
+            description="Could impact sorting on GitHub"
+            isChecked={settings.retroactive}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              // setSettings((prev) => {
+              //   return {
+              //     ...prev,
+              //     scope: 'all',
+              //   }
+              // })
+            }}
+          />
+        </Box>
+      </motion.div>
+
+      <BadgeRepositories
+        repos={sortedRepos}
+        showSetup={showSetup}
+        settings={settings}
+        onEnableBadgeChange={(repoId: string, enabled: boolean) => {
+          // setSettings((prev) => {
+          //   return {
+          //     ...prev,
+          //     repositories: {
+          //       ...prev.repositories,
+          //       [repoId]: enabled,
+          //     },
+          //   }
+          // })
+        }}
+      />
+
+      {toBadgeCount > 0 && <p>Issues to be badged: {toBadgeCount}</p>}
+    </>
   )
 }
 
-export default SynchronizeRepositories
+export default BadgeSetup

@@ -17,12 +17,16 @@ from polar.enums import Platforms
 from polar.models.pull_request import PullRequest
 from polar.postgres import AsyncSession, sql
 from polar.issue.service import issue as issue_service
+from polar.repository.service import repository as repository_service
 from polar.worker import enqueue_job
 
 from .schemas import (
     OrganizationCreate,
     OrganizationSettingsUpdate,
     OrganizationUpdate,
+    RepositoryBadgeSettingsRead,
+    OrganizationBadgeSettingsRead,
+    OrganizationBadgeSettingsUpdate,
 )
 
 log = structlog.get_logger()
@@ -276,6 +280,53 @@ class OrganizationService(
         await session.execute(stmt)
         await session.commit()
 
+    async def get_badge_settings(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> OrganizationBadgeSettingsRead:
+        repositories = await repository_service.list_by_organization(
+            session, organization.id, order_by_open_source=True
+        )
+
+        synced = await self.get_repositories_synced_count(session, organization)
+
+        repos = []
+        for repo in repositories:
+            open_issues = repo.open_issues or 0
+            synced_issues = synced.get(repo.id, 0)
+            if synced_issues > open_issues:
+                open_issues = synced_issues
+
+            is_sync_completed = synced_issues == open_issues
+
+            repos.append(
+                RepositoryBadgeSettingsRead(
+                    id=repo.id,
+                    avatar_url=organization.avatar_url,
+                    badge_enabled=None,
+                    name=repo.name,
+                    synced_issues=synced_issues,
+                    open_issues=open_issues,
+                    is_private=repo.is_private,
+                    is_sync_completed=is_sync_completed,
+                )
+            )
+
+        return OrganizationBadgeSettingsRead(
+            retroactive=organization.pledge_badge_retroactive,
+            show_amount=organization.pledge_badge_show_amount,
+            repositories=repos,
+        )
+
+    async def update_badge_settings(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        settings: OrganizationBadgeSettingsUpdate,
+    ) -> OrganizationBadgeSettingsUpdate:
+        return settings
+
     async def update_settings(
         self,
         session: AsyncSession,
@@ -325,7 +376,7 @@ class OrganizationService(
 
         return updated
 
-    async def repositories_issues_synced(
+    async def get_repositories_synced_count(
         self,
         session: AsyncSession,
         organization: Organization,
@@ -350,8 +401,10 @@ class OrganizationService(
             )
             .where(
                 Repository.organization_id == organization.id,
-                or_(PullRequest.state == "open", PullRequest.state == None),  # noqa
-                or_(Issue.state == "open", Issue.state == None),  # noqa
+                or_(
+                    or_(PullRequest.state == "open", PullRequest.state == None),  # noqa
+                    or_(Issue.state == "open", Issue.state == None),  # noqa
+                ),
             )
             .group_by(Repository.id)
         )

@@ -1,6 +1,6 @@
 import { ArrowLeftIcon } from '@heroicons/react/24/solid'
 import RepoSelection from 'components/Dashboard/RepoSelection'
-import { BadgeSettings } from 'components/Settings/BadgeSettings'
+import { default as BadgeSetup } from 'components/Settings/Badge'
 import Box from 'components/Settings/Box'
 import NotificationSettings, {
   type Settings as NotificationSettingsValues,
@@ -29,9 +29,6 @@ const SettingsPage: NextLayoutComponentType = () => {
   const orgData = useOrganization(handle)
   const org = orgData.data
 
-  const [badgeShowRaised, setBadgeShowRaised] = useState(false)
-  const [badgeAddOldIssues, setBadgeAddOldIssues] = useState(false)
-
   const [notificationSettings, setNotificationSettings] =
     useState<NotificationSettingsValues>()
 
@@ -52,11 +49,6 @@ const SettingsPage: NextLayoutComponentType = () => {
     if (didFirstSetForOrg.current === org.id) {
       return
     }
-
-    // On first load, set values from API
-    // After first load, treat local values as the source of truth, and send them to the API
-    setBadgeAddOldIssues(!!org.pledge_badge_retroactive)
-    setBadgeShowRaised(!!org.pledge_badge_show_amount)
 
     setNotificationSettings({
       email_notification_maintainer_issue_receives_backing:
@@ -184,20 +176,13 @@ const SettingsPage: NextLayoutComponentType = () => {
               description="Polar will inject this badge into new issues on Github."
             />
 
-            <Box>
-              <BadgeSettings
-                badgeAddOldIssues={badgeAddOldIssues}
-                badgeShowRaised={badgeShowRaised}
-                setBadgeAddOldIssues={(value) => {
-                  setBadgeAddOldIssues(value)
-                  save({ pledge_badge_retroactive: value })
-                }}
-                setBadgeShowRaised={(value) => {
-                  setBadgeShowRaised(value)
-                  save({ pledge_badge_show_amount: value })
-                }}
-              />
-            </Box>
+            <BadgeSetup
+              org={org}
+              showSetup={true}
+              setShowSetup={() => true}
+              setShowControls={() => true}
+              setSyncIssuesCount={(value: number) => true}
+            />
           </Section>
           <Section>
             <SectionDescription

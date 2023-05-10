@@ -3,14 +3,11 @@ import { api } from '../../api'
 import { Platforms } from '../../api/client'
 import { defaultRetry } from './retry'
 
-export const useOrganizationsRepositorySyncedIssues = (
-  platform: Platforms,
-  orgName: string,
-) =>
+export const useBadgeSettings = (platform: Platforms, orgName: string) =>
   useQuery(
-    ['organizationsRepositorySyncedIssues'],
+    ['organizationBadgeSettings'],
     () =>
-      api.organizations.getSynced({
+      api.organizations.getBadgeSettings({
         platform: platform,
         orgName: orgName,
       }),

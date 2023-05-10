@@ -25,10 +25,10 @@ async def on_issue_synced(
     record: Issue,
     repository: Repository,
     organization: Organization,
-    processed: int,
+    synced: int,
     session: AsyncSession,
 ) -> None:
-    log.info("issue.synced", issue=record.id, title=record.title, processed=processed)
+    log.info("issue.synced", issue=record.id, title=record.title, synced=synced)
     await publish(
         "issue.synced",
         {
@@ -36,8 +36,8 @@ async def on_issue_synced(
                 "id": record.id,
                 "title": record.title,
             },
-            "expected": repository.open_issues or 0,
-            "processed": processed,
+            "open_issues": repository.open_issues or 0,
+            "synced_issues": synced,
             "repository_id": repository.id,
         },
         organization_id=organization.id,
@@ -50,15 +50,15 @@ async def on_issue_sync_completed(
     *,
     repository: Repository,
     organization: Organization,
-    processed: int,
+    synced: int,
     session: AsyncSession,
 ) -> None:
-    log.info("issue.sync.completed", repository=repository.id, processed=processed)
+    log.info("issue.sync.completed", repository=repository.id, synced=synced)
     await publish(
         "issue.sync.completed",
         {
-            "expected": repository.open_issues or 0,
-            "processed": processed,
+            "open_issues": repository.open_issues or 0,
+            "synced_issues": synced,
             "repository_id": repository.id,
         },
         organization_id=organization.id,

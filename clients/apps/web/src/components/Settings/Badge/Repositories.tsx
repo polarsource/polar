@@ -7,7 +7,7 @@ export const BadgeRepositories = ({
   repos,
   showSetup,
   onEnableBadgeChange,
-  animate = true,
+  isSettingPage = false,
 }: {
   repos: RepositoryBadgeSettingsRead[]
   showSetup: boolean
@@ -15,7 +15,7 @@ export const BadgeRepositories = ({
     repo: RepositoryBadgeSettingsRead,
     enabled: boolean,
   ) => void
-  animate?: boolean
+  isSettingPage?: boolean
 }) => {
   return (
     <ul>
@@ -32,12 +32,12 @@ export const BadgeRepositories = ({
                 },
               },
             }}
-            initial={animate ? 'hidden' : false}
+            initial={isSettingPage ? false : 'hidden'}
             animate="show"
           >
             <motion.li
               key={repo.id}
-              className="mb-5"
+              className={isSettingPage ? '' : 'mb-5'}
               variants={{
                 hidden: {
                   opacity: 0,
@@ -56,7 +56,7 @@ export const BadgeRepositories = ({
             >
               <BadgeRepository
                 repo={repo}
-                animate={animate}
+                isSettingPage={isSettingPage}
                 showSetup={showSetup}
                 isBadgeEnabled={repo.badge_enabled || false}
                 onEnableBadgeChange={(badge: boolean) =>

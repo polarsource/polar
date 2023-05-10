@@ -68,6 +68,7 @@ const OnboardingConnectPersonalDashboard = () => {
           <Image
             src={screenshot}
             alt="Polar dashboard screenshot"
+            priority={true}
             className="w-full"
           />
         </div>

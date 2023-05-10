@@ -2,8 +2,8 @@
 /* tslint:disable */
 /* eslint-disable */
 
-export type OrganizationSyncedRepositoryRead = {
+export type RepositoryBadgeSettingsUpdate = {
   id: string;
-  synced_issues_count: number;
+  badge_enabled?: boolean;
 };
 

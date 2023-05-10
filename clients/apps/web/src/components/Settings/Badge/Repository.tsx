@@ -1,7 +1,7 @@
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
 import { motion } from 'framer-motion'
+import { type RepositoryBadgeSettingsRead } from 'polarkit/api/client'
 import { classNames } from 'polarkit/utils'
-import { type RepoSyncState } from './types'
 
 const ProgressText = ({
   progress,
@@ -15,7 +15,9 @@ const ProgressText = ({
   const shouldSync = target > 0
 
   if (!shouldSync) {
-    return <span className="text-xs text-gray-500">No issues to fetch</span>
+    return (
+      <span className="w-36 text-xs text-gray-500">No issues to fetch</span>
+    )
   }
 
   return (
@@ -72,24 +74,52 @@ const Progress = ({
   )
 }
 
-export const SynchronizeRepository = ({
+const BadgeSwitch = ({
+  checked,
+  onChange,
+}: {
+  checked: boolean
+  onChange: (state: boolean) => void
+}) => {
+  return (
+    <>
+      <label htmlFor="toogleA" className="flex cursor-pointer items-center">
+        Badge
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+            onChange(e.target.checked)
+          }}
+        />
+      </label>
+    </>
+  )
+}
+
+export const BadgeRepository = ({
   repo,
   showSetup,
+  isBadgeEnabled,
+  onEnableBadgeChange,
 }: {
-  repo: RepoSyncState
+  repo: RepositoryBadgeSettingsRead
   showSetup: boolean
+  isBadgeEnabled: boolean
+  onEnableBadgeChange: (badge: boolean) => void
 }) => {
-  const showBadgeSettings = showSetup && repo.isOpen
   /*
    * Use the Polarkit ShadowBox component instead of custom.
    *
    * We need to switch our classNames to the npm version which allows for better
    * merging of classnames so that we can do overrides etc, i.e smaller padding here.
    */
+
   return (
     <div
       className={classNames(
-        'flex flex-row rounded-xl bg-white px-5 py-4 shadow',
+        showSetup && repo.is_private ? 'bg-gray-50' : 'bg-white',
+        'flex flex-row rounded-xl px-5 py-4 shadow',
       )}
     >
       <div className="my-auto basis-2/6">
@@ -104,19 +134,35 @@ export const SynchronizeRepository = ({
       </div>
       <div className="my-auto flex basis-4/6 flex-row items-center">
         <ProgressText
-          progress={repo.processed}
-          target={repo.expected}
-          completed={repo.completed}
+          progress={repo.synced_issues}
+          target={repo.open_issues}
+          completed={repo.is_sync_completed}
         />
-        <Progress
-          progress={repo.processed}
-          target={repo.expected}
-          completed={repo.completed}
-        />
-        {showBadgeSettings && <p></p>}
+        <div className="w-full text-right">
+          {!showSetup && (
+            <Progress
+              progress={repo.synced_issues}
+              target={repo.open_issues}
+              completed={repo.is_sync_completed}
+            />
+          )}
+          {showSetup && repo.is_private && (
+            <p className="inline rounded-xl bg-gray-100 py-1 px-2 text-sm text-gray-600">
+              Private
+            </p>
+          )}
+          {showSetup && !repo.is_private && (
+            <BadgeSwitch
+              checked={isBadgeEnabled}
+              onChange={(badge: boolean) => {
+                onEnableBadgeChange(badge)
+              }}
+            />
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-export default SynchronizeRepository
+export default BadgeRepository

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from uuid import UUID
+from typing import Literal, Sequence
 from datetime import datetime
 
 from pydantic import BaseModel
@@ -138,6 +139,31 @@ class OrganizationSetupIntentRead(Schema):
     id: str
     status: str
     client_secret: str
+
+
+class RepositoryBadgeSettingsUpdate(Schema):
+    id: UUID
+    badge_enabled: bool | None
+
+
+class RepositoryBadgeSettingsRead(RepositoryBadgeSettingsUpdate):
+    id: UUID
+    avatar_url: str | None
+    name: str
+    synced_issues: int
+    open_issues: int
+    is_private: bool
+    is_sync_completed: bool
+
+
+class OrganizationBadgeSettingsUpdate(Schema):
+    retroactive: bool
+    show_amount: bool
+    repositories: Sequence[RepositoryBadgeSettingsUpdate]
+
+
+class OrganizationBadgeSettingsRead(OrganizationBadgeSettingsUpdate):
+    repositories: Sequence[RepositoryBadgeSettingsRead]
 
 
 class OrganizationSyncedRepositoryRead(Schema):

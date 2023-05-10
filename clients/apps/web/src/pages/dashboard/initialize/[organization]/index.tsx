@@ -1,47 +1,16 @@
 import Gatekeeper from 'components/Dashboard/Gatekeeper/Gatekeeper'
-import SynchronizeRepositories from 'components/Dashboard/Onboarding/SynchronizeRepositories'
-import { BadgeSettings } from 'components/Settings/BadgeSettings'
-import Box from 'components/Settings/Box'
+import BadgeSetup from 'components/Settings/Badge'
 import Spinner from 'components/Shared/Spinner'
 import Topbar from 'components/Shared/Topbar'
-import { motion } from 'framer-motion'
 import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
-import { useRouter } from 'next/router'
-import { api } from 'polarkit/api'
 import { ReactElement, useState } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
 
-import OnboardingControls from 'components/Dashboard/Onboarding/OnboardingControls'
-import { OrganizationPrivateRead } from 'polarkit/api/client'
-
 const Page: NextLayoutComponentType = () => {
-  const [showControls, setShowControls] = useState<boolean>(false)
   const [showSetup, setShowSetup] = useState<boolean>(false)
   const [syncedIssuesCount, setSyncIssuesCount] = useState<number>(0)
-  const [badgeAddOldIssues, setBadgeAddOldIssues] = useState<boolean>(true)
-  const [badgeShowRaised, setBadgeShowRaised] = useState<boolean>(false)
   const { org } = useCurrentOrgAndRepoFromURL()
-  const router = useRouter()
-
-  const redirectToOrg = () => {
-    router.push(`/dashboard/${org.name}`)
-  }
-
-  const onClickContinue = async () => {
-    const response = api.organizations
-      .updateSettings({
-        platform: org.platform,
-        orgName: org.name,
-        requestBody: {
-          pledge_badge_retroactive: badgeAddOldIssues,
-          pledge_badge_show_amount: badgeShowRaised,
-        },
-      })
-      .then((updatedOrg: OrganizationPrivateRead) => {
-        redirectToOrg()
-      })
-  }
 
   if (!org) {
     return <></>
@@ -50,10 +19,19 @@ const Page: NextLayoutComponentType = () => {
   return (
     <>
       <Head>
-        <title>Polar {org.name}</title>
+        <title>Polar | Setup {org.name}</title>
       </Head>
       <div className="flex h-screen">
         <div className="m-auto w-[700px]">
+          {!showSetup && (
+            <h1 className="flex-column mb-11 flex items-center justify-center text-center text-xl font-normal text-gray-500">
+              Connecting repositories
+              <span className="ml-4">
+                <Spinner />
+              </span>
+            </h1>
+          )}
+
           {showSetup && (
             <>
               <div className="mb-11 text-center">
@@ -64,79 +42,15 @@ const Page: NextLayoutComponentType = () => {
                   Add the Polar badge on your open source issues
                 </h1>
               </div>
-
-              <motion.div
-                variants={{
-                  hidden: {
-                    opacity: 0,
-                    scale: 0.95,
-                  },
-                  show: {
-                    opacity: 1,
-                    scale: [1, 1.05, 1],
-                  },
-                }}
-                initial="hidden"
-                animate="show"
-                className="mb-11"
-              >
-                <Box>
-                  <BadgeSettings
-                    badgeAddOldIssues={badgeAddOldIssues}
-                    badgeShowRaised={badgeShowRaised}
-                    setBadgeAddOldIssues={setBadgeAddOldIssues}
-                    setBadgeShowRaised={setBadgeShowRaised}
-                  />
-                </Box>
-              </motion.div>
             </>
           )}
 
-          {!showSetup && (
-            <h1 className="flex-column mb-11 flex items-center justify-center text-center text-xl font-normal text-gray-500">
-              Connecting repositories
-              <span className="ml-4">
-                <Spinner />
-              </span>
-            </h1>
-          )}
-
-          <SynchronizeRepositories
+          <BadgeSetup
             org={org}
             showSetup={showSetup}
             setShowSetup={setShowSetup}
-            setShowControls={setShowControls}
             setSyncIssuesCount={setSyncIssuesCount}
           />
-
-          {showControls && (
-            <motion.div
-              variants={{
-                hidden: {
-                  opacity: 0,
-                  scale: 1,
-                },
-                show: {
-                  opacity: 1,
-                  scale: [1, 1.1, 1],
-                },
-              }}
-              initial="hidden"
-              animate="show"
-            >
-              <OnboardingControls
-                onClickContinue={() => {
-                  if (!showSetup) {
-                    setShowSetup(true)
-                  } else {
-                    onClickContinue()
-                  }
-                }}
-                skippable={showSetup}
-                onClickSkip={redirectToOrg}
-              />
-            </motion.div>
-          )}
         </div>
       </div>
     </>

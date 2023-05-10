@@ -53,9 +53,9 @@ class GithubRepositoryService(RepositoryService):
         on_sync_signal: Signal | None = None,
         on_completed_signal: Signal | None = None,
     ) -> tuple[SyncedCount, ErrorCount]:
-        processed, errors = 0, 0
+        synced, errors = 0, 0
         async for data in paginator:
-            processed += 1
+            synced += 1
 
             if skip_condition and skip_condition(data):
                 continue
@@ -91,14 +91,14 @@ class GithubRepositoryService(RepositoryService):
                     repository=repository,
                     organization=organization,
                     record=record,
-                    processed=processed,
+                    synced=synced,
                 )
 
         log.info(
             f"{resource_type}.sync.completed",
             organization_id=organization.id,
             repository_id=repository.id,
-            processed=processed,
+            synced=synced,
             errors=errors,
         )
 
@@ -108,10 +108,10 @@ class GithubRepositoryService(RepositoryService):
                 session=session,
                 repository=repository,
                 organization=organization,
-                processed=processed,
+                synced=synced,
             )
 
-        return (processed, errors)
+        return (synced, errors)
 
     async def sync_issues(
         self,

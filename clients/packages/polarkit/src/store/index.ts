@@ -3,9 +3,9 @@ import { devtools, persist } from 'zustand/middleware'
 import { CONFIG } from '../config'
 import {
   ContextState,
-  createUserContextSlice,
   UserContextState,
   UserState,
+  createUserContextSlice,
 } from './userContext'
 
 // https://docs.pmnd.rs/zustand/guides/typescript#slices-pattern
@@ -22,6 +22,8 @@ const useStore = create<UserContextState>()(
           authenticated: state.authenticated,
           currentUser: state.currentUser,
           onboardingDashboardSkip: state.onboardingDashboardSkip,
+          onboardingDashboardInstallChromeExtensionSkip:
+            state.onboardingDashboardInstallChromeExtensionSkip,
         }),
       },
     ),

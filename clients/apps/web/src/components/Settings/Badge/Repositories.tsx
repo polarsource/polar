@@ -7,6 +7,7 @@ export const BadgeRepositories = ({
   repos,
   showSetup,
   onEnableBadgeChange,
+  animate = true,
 }: {
   repos: RepositoryBadgeSettingsRead[]
   showSetup: boolean
@@ -14,6 +15,7 @@ export const BadgeRepositories = ({
     repo: RepositoryBadgeSettingsRead,
     enabled: boolean,
   ) => void
+  animate?: boolean
 }) => {
   return (
     <ul>
@@ -30,7 +32,7 @@ export const BadgeRepositories = ({
                 },
               },
             }}
-            initial="hidden"
+            initial={animate ? 'hidden' : false}
             animate="show"
           >
             <motion.li
@@ -54,6 +56,7 @@ export const BadgeRepositories = ({
             >
               <BadgeRepository
                 repo={repo}
+                animate={animate}
                 showSetup={showSetup}
                 isBadgeEnabled={repo.badge_enabled || false}
                 onEnableBadgeChange={(badge: boolean) =>

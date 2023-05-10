@@ -29,7 +29,7 @@ const PledgeStatusPage: NextLayoutComponentType = ({
 
   return (
     <>
-      <div className="mx-auto mt-24 w-[768px]">
+      <div className="mx-auto p-4 md:mt-24 md:w-[768px] md:p-0">
         <div className="flex flex-row items-center">
           <h1 className="w-1/2 text-2xl font-normal text-gray-800">
             <CheckCircleIcon className="inline-block h-10 w-10 text-blue-500" />{' '}
@@ -53,12 +53,12 @@ const PledgeStatusPage: NextLayoutComponentType = ({
         {!currentUser && (
           <>
             <WhiteCard className="mt-11 flex flex-row" padding={false}>
-              <div className="w-2/5 p-5">
+              <div className="flex flex-col space-y-5 p-5 md:w-2/5">
                 <h2 className="text-lg text-gray-900">Sign up to Polar</h2>
                 <GithubLoginButton pledgeId={pledge.id} />
 
                 <ul>
-                  <li className="mt-5 flex flex-row items-center">
+                  <li className="flex flex-row items-center">
                     <svg
                       className="mr-3 h-6 w-6"
                       viewBox="0 0 24 24"
@@ -137,7 +137,7 @@ const PledgeStatusPage: NextLayoutComponentType = ({
                   </li>
                 </ul>
               </div>
-              <div className="w-3/5 border-l border-gray-200 bg-gray-50"></div>
+              <div className="hidden w-3/5  border-l border-gray-200 bg-gray-50 md:block"></div>
             </WhiteCard>
           </>
         )}

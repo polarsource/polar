@@ -10,7 +10,7 @@ const HowItWorks: NextLayoutComponentType = () => {
     <>
       <div className="text-center">
         <h4 className="text-lg font-normal text-gray-600">How does it work?</h4>
-        <ul className="mt-8 flex flex-row justify-center space-x-16">
+        <ul className="mt-8 flex flex-col items-center justify-center space-y-8 md:flex-row md:space-y-0 md:space-x-16">
           <li className="flex w-56 flex-col text-center">
             <div className="mx-auto w-7 rounded-full border-2 border-blue-800">
               <span className="text-sm font-bold text-blue-800">1</span>
@@ -67,7 +67,7 @@ const PledgePage: NextPage = ({
       <Head>
         <title>Polar | {issue.title}</title>
       </Head>
-      <div className="mx-auto mt-24 w-[826px]">
+      <div className="mx-auto mt-24 md:w-[826px]">
         <h1 className="text-center text-4xl font-normal text-gray-800">
           Complete your backing
         </h1>

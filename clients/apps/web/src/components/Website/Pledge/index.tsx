@@ -15,10 +15,10 @@ const Pledge = ({
     <>
       <div className="my-14 flex flex-col">
         <WhiteCard
-          className="flex flex-row items-stretch p-2 text-center"
+          className="flex flex-col items-stretch p-2 text-center md:flex-row"
           padding={false}
         >
-          <div className="w-1/2">
+          <div className="md:w-1/2">
             <IssueCard
               issue={issue}
               className="bg-blue-50"
@@ -26,7 +26,7 @@ const Pledge = ({
               repository={repository}
             />
           </div>
-          <div className="w-1/2 text-left">
+          <div className="text-left md:w-1/2">
             <div className="py-5 px-6">
               <PledgeForm
                 organization={organization}

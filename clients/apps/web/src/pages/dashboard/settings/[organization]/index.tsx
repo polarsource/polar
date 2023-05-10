@@ -180,7 +180,6 @@ const SettingsPage: NextLayoutComponentType = () => {
               org={org}
               showSetup={true}
               setShowSetup={() => true}
-              setShowControls={() => true}
               setSyncIssuesCount={(value: number) => true}
             />
           </Section>

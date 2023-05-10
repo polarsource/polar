@@ -8,6 +8,8 @@ export type RepositoryBadgeSettingsRead = {
   name: string;
   synced_issues: number;
   open_issues: number;
+  embedded_issues: number;
+  pull_requests: number;
   badge_enabled: boolean;
   is_private: boolean;
   is_sync_completed: boolean;

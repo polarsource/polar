@@ -1,19 +1,19 @@
-const EnvironmentPlugin = require("webpack").EnvironmentPlugin
+const EnvironmentPlugin = require('webpack').EnvironmentPlugin
 
 module.exports = {
   entry: {
-    content: "./src/index.tsx",
-    auth: "./src/auth.ts",
-    "service-worker": "./src/service-worker/index.ts",
+    content: './src/index.tsx',
+    auth: './src/auth.ts',
+    'service-worker': './src/service-worker/index.ts',
   },
-  mode: "production",
+  mode: 'production',
   module: {
     rules: [
       {
         test: /\.tsx?$/,
         use: [
           {
-            loader: "ts-loader",
+            loader: 'ts-loader',
             options: {
               compilerOptions: { noEmit: false },
             },
@@ -25,10 +25,10 @@ module.exports = {
         test: /\.css$/,
         use: [
           {
-            loader: "style-loader",
+            loader: 'style-loader',
           },
           {
-            loader: "css-loader",
+            loader: 'css-loader',
           },
         ],
         exclude: /node_modules/,
@@ -37,7 +37,7 @@ module.exports = {
         test: /\.svg$/,
         use: [
           {
-            loader: "url-loader",
+            loader: 'url-loader',
           },
         ],
         exclude: /node_modules/,
@@ -45,13 +45,15 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: [".tsx", ".ts", ".js"],
+    extensions: ['.tsx', '.ts', '.js'],
   },
-  plugins: [new EnvironmentPlugin({
-    "API_URL": '',
-    "WEB_URL": '',
-  })],
+  plugins: [
+    new EnvironmentPlugin({
+      API_URL: '',
+      WEB_URL: '',
+    }),
+  ],
   output: {
-    filename: "[name].js",
+    filename: '[name].js',
   },
 }

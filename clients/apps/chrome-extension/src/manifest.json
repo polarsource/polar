@@ -1,6 +1,7 @@
 {
   "name": "Polar",
   "version": "0.0.1",
+  "description": "Adds Polar data to GitHub",
   "manifest_version": 3,
   "icons": {
     "16": "Icon_16.png",
@@ -9,27 +10,20 @@
     "128": "Icon_128.png"
   },
   "permissions": ["storage", "webNavigation", "scripting"],
-  "host_permissions": [
-    "https://github.com/",
-    "*://api.polar.sh/*",
-    "http://127.0.0.1:8000/*"
-  ],
+  "host_permissions": ["https://github.com/", "https://api.polar.sh/*"],
   "content_scripts": [
     {
       "run_at": "document_end",
       "js": ["content.js"],
       "matches": [
-        "*://github.com/*/*/issues",
-        "*://github.com/*/*/issues?*",
-        "*://github.com/*/*/issues/*"
+        "https://github.com/*/*/issues",
+        "https://github.com/*/*/issues?*",
+        "https://github.com/*/*/issues/*"
       ]
     },
     {
       "js": ["auth.js"],
-      "matches": [
-        "*://dashboard.polar.sh/dashboard/settings/extension",
-        "http://127.0.0.1:3000/dashboard/settings/extension"
-      ]
+      "matches": ["https://dashboard.polar.sh/dashboard/settings/extension"]
     }
   ],
   "background": {
@@ -38,7 +32,7 @@
   "web_accessible_resources": [
     {
       "resources": ["frame.css"],
-      "matches": ["*://github.com/*"]
+      "matches": ["https://github.com/*"]
     }
   ]
 }

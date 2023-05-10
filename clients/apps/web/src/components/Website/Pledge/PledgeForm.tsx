@@ -17,6 +17,12 @@ import PaymentForm, { generateRedirectURL } from './PaymentForm'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY)
 
+type PledgeSync = {
+  amount: number
+  email: string
+  approvedTos: boolean
+}
+
 const PledgeForm = ({
   organization,
   repository,
@@ -49,7 +55,7 @@ const PledgeForm = ({
     }
   }, [currentUser])
 
-  const createPledge = async () => {
+  const createPledge = async (pledgeSync: PledgeSync) => {
     return await api.pledges.createPledge({
       platform: organization.platform,
       orgName: organization.name,
@@ -57,13 +63,13 @@ const PledgeForm = ({
       number: issue.number,
       requestBody: {
         issue_id: issue.id,
-        amount: amount,
-        email: email,
+        amount: pledgeSync.amount,
+        email: pledgeSync.email,
       },
     })
   }
 
-  const updatePledge = async () => {
+  const updatePledge = async (pledgeSync: PledgeSync) => {
     return await api.pledges.updatePledge({
       platform: organization.platform,
       orgName: organization.name,
@@ -71,22 +77,22 @@ const PledgeForm = ({
       number: issue.number,
       pledgeId: pledge.id,
       requestBody: {
-        amount: amount,
-        email: email,
+        amount: pledgeSync.amount,
+        email: pledgeSync.email,
       },
     })
   }
 
-  const shouldSynchronizePledge = () => {
-    if (amount < MINIMUM_PLEDGE) {
+  const shouldSynchronizePledge = (pledgeSync: PledgeSync) => {
+    if (pledgeSync.amount < MINIMUM_PLEDGE) {
       return false
     }
 
-    if (!validateEmail(email)) {
+    if (!validateEmail(pledgeSync.email)) {
       return false
     }
 
-    if (!approvedTos) {
+    if (!pledgeSync.approvedTos) {
       return false
     }
 
@@ -96,29 +102,29 @@ const PledgeForm = ({
     }
 
     // Sync if amount has chagned
-    if (pledge && pledge.amount !== amount) {
+    if (pledge && pledge.amount !== pledgeSync.amount) {
       return true
     }
 
     // Sync if email has changed
-    if (pledge && pledge.email !== email) {
+    if (pledge && pledge.email !== pledgeSync.email) {
       return true
     }
 
     return false
   }
 
-  const synchronizePledge = async () => {
-    if (!shouldSynchronizePledge()) {
+  const synchronizePledge = async (pledgeSync: PledgeSync) => {
+    if (!shouldSynchronizePledge(pledgeSync)) {
       return
     }
 
     setSyncing(true)
     let updatedPledge: PledgeMutationResponse
     if (!pledge) {
-      updatedPledge = await createPledge()
+      updatedPledge = await createPledge(pledgeSync)
     } else {
-      updatedPledge = await updatePledge()
+      updatedPledge = await updatePledge(pledgeSync)
     }
 
     if (updatedPledge) {
@@ -144,20 +150,20 @@ const PledgeForm = ({
 
     setErrorMessage(null)
     setAmount(amountInCents)
-    debouncedSync()
+    debouncedSync({ amount: amountInCents, email, approvedTos })
   }
 
   const syncTimeout = useRef(null)
 
-  const debouncedSync = () => {
+  const debouncedSync = (pledgeSync: PledgeSync) => {
     clearTimeout(syncTimeout.current)
-    syncTimeout.current = setTimeout(synchronizePledge, 500)
+    syncTimeout.current = setTimeout(() => synchronizePledge(pledgeSync), 500)
   }
 
   const onEmailChange = (event) => {
     const email = event.target.value
     setEmail(email)
-    debouncedSync()
+    debouncedSync({ amount, email, approvedTos })
   }
 
   const router = useRouter()
@@ -174,7 +180,9 @@ const PledgeForm = ({
   }
 
   const onChangeAcceptTos = (e: ChangeEvent<HTMLInputElement>) => {
-    setApprovedTos(e.target.checked)
+    const approvedTos = e.target.checked
+    setApprovedTos(approvedTos)
+    debouncedSync({ amount, email, approvedTos })
   }
 
   const showStripeForm = pledge && approvedTos

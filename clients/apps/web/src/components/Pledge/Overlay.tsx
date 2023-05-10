@@ -16,7 +16,10 @@ import { getCentsInDollarString } from 'polarkit/utils'
 import { useEffect, useRef, useState } from 'react'
 import { useRequireAuth } from '../../hooks'
 
-type PledgeSync = { amount?: number; pledgeAsOrg?: OrganizationPrivateRead }
+type PledgeSync = {
+  amount: number
+  pledgeAsOrg: OrganizationPrivateRead
+}
 
 const Overlay = ({
   onClose,
@@ -52,7 +55,7 @@ const Overlay = ({
       ? parseInt(CONFIG.MINIMUM_PLEDGE_AMOUNT)
       : CONFIG.MINIMUM_PLEDGE_AMOUNT
 
-  const [amount, setAmount] = useState(MINIMUM_PLEDGE)
+  const [amount, setAmount] = useState(0)
   const [errorMessage, setErrorMessage] = useState<string | undefined>()
   const [isSyncing, setSyncing] = useState(false)
 
@@ -87,8 +90,8 @@ const Overlay = ({
 
   const syncTimeout = useRef(null)
 
-  const shouldSynchronizePledge = () => {
-    if (amount < MINIMUM_PLEDGE) {
+  const shouldSynchronizePledge = (pledgeSync: PledgeSync) => {
+    if (pledgeSync.amount < MINIMUM_PLEDGE) {
       return false
     }
 
@@ -98,7 +101,7 @@ const Overlay = ({
     }
 
     // Sync if amount has chagned
-    if (pledge && pledge.amount !== amount) {
+    if (pledge && pledge.amount !== pledgeSync.amount) {
       return true
     }
 
@@ -142,11 +145,11 @@ const Overlay = ({
   }
 
   const synchronizePledge = async (pledgeSync: PledgeSync) => {
-    if (!selectedOrg) {
+    if (!pledgeSync.pledgeAsOrg) {
       return
     }
 
-    if (!shouldSynchronizePledge()) {
+    if (!shouldSynchronizePledge(pledgeSync)) {
       return
     }
 

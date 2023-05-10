@@ -213,14 +213,6 @@ const SettingsPage: NextLayoutComponentType = () => {
               />
             </Box>
           </Section>
-
-          <Section>
-            <SectionDescription title="Delete account" description="" />
-
-            <Box>
-              <>xx</>
-            </Box>
-          </Section>
         </div>
       </div>
     </>

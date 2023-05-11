@@ -207,6 +207,8 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             )
         elif sort_by == IssueSortBy.dependencies_default:
             statement = statement.order_by(nullslast(desc(sql.func.sum(Pledge.amount))))
+        elif sort_by == IssueSortBy.recently_updated:
+            statement = statement.order_by(Issue.issue_modified_at)
         else:
             raise Exception("unknown sort_by")
 

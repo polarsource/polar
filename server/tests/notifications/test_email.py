@@ -155,7 +155,9 @@ async def test_pledger_pull_request_merged(
 pr_creator_login just merged a <a href="https://github.com/testorg/testrepo/pull/5555">pull request</a> to testorg/testrepo that solves
 the issue <a href="https://github.com/testorg/testrepo/issues/123">issue title</a> that you've backed!<br><br>
 
-The money will soon be paid out to testorg."""  # noqa: E501
+The money will soon be paid out to testorg.<br><br>
+
+If the issue is not solved, dispute the pledge within 14 days from the <a href="https://dashboard.polar/sh">Polar</a> dashboard, or by replying to this email."""  # noqa: E501
     )
 
 

@@ -47,6 +47,7 @@ const defaultProps = {
   href: undefined,
   color: 'blue',
   fullWidth: true,
+  classNames: '',
 }
 
 const bg = (color: Color, loading: boolean, disabled: boolean) => {
@@ -99,14 +100,16 @@ const PrimaryButton = (props: ButtonProps) => {
     bg(props.color, props.loading, disabled),
     text(props.color, props.loading, disabled),
     props.fullWidth ? 'w-full' : '',
-    'rounded-lg px-8 py-2 text-center text-sm font-medium inline-flex items-center space-x-2 transition-colors duration-100',
+    'rounded-lg px-8 py-2 min-h-6 text-center text-sm font-medium inline-flex items-center space-x-2 transition-colors duration-100',
+    props.classNames,
   )
-
   return (
     <>
       <button className={classes} onClick={props.onClick} disabled={disabled}>
         {!props.loading && (
-          <div className="h-6">{/* Same height as LoadingSpinner */}</div>
+          <div className="-mr-2 h-6 w-0">
+            {/* Same height as LoadingSpinner */}
+          </div>
         )}
         {props.loading && <LoadingSpinner disabled={disabled} />}
         {!props.loading && props.children}

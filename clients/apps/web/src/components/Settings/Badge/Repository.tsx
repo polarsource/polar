@@ -17,7 +17,10 @@ const ProgressText = ({
 }) => {
   const shouldSync = target > 0
 
-  if (!shouldSync) {
+  if (!shouldSync && isSettingPage) {
+    return <span className="w-36 text-xs text-gray-500">No open issues</span>
+  }
+  if (!shouldSync && !isSettingPage) {
     return (
       <span className="w-36 text-xs text-gray-500">No issues to fetch</span>
     )
@@ -34,8 +37,9 @@ const ProgressText = ({
           }}
         >
           <CheckCircleIcon className="mr-1 h-4 w-4 text-blue-600" />{' '}
-          <strong className="mr-1 text-blue-600">{target}</strong> issues
-          fetched
+          <strong className="mr-1 text-blue-600">{target}</strong>
+          {isSettingPage && <>open issues</>}
+          {!isSettingPage && <>issues fetched</>}
         </motion.span>
       )}
       {!completed && (

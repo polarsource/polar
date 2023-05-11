@@ -219,13 +219,21 @@ const IssueReferencePullRequest = (props: {
       titleClasses: '',
       iconClasses: 'bg-red-100 border-red-200',
     }
+  } else if (pr.is_draft) {
+    isOpen = true
+    formatting = {
+      label: 'opened',
+      timestamp: pr.created_at,
+      titleClasses: '',
+      iconClasses: 'bg-gray-100 border-gray-200 text-gray-500',
+    }
   } else {
     isOpen = true
     formatting = {
       label: 'opened',
       timestamp: pr.created_at,
       titleClasses: '',
-      iconClasses: 'bg-green-100 border-green-200',
+      iconClasses: 'bg-green-100 border-green-200 text-[#26A869]',
     }
   }
 

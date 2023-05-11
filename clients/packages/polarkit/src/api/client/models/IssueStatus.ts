@@ -7,7 +7,9 @@
  */
 export enum IssueStatus {
   BACKLOG = 'backlog',
-  BUILDING = 'building',
+  TRIAGED = 'triaged',
+  IN_PROGRESS = 'in_progress',
   PULL_REQUEST = 'pull_request',
   COMPLETED = 'completed',
+  BUILDING = 'building',
 }

@@ -14,5 +14,6 @@ export type PullRequestReference = {
   created_at: string;
   merged_at?: string;
   closed_at?: string;
+  is_draft: boolean;
 };
 

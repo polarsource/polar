@@ -99,7 +99,13 @@ const Progress100 = () => (
   </svg>
 )
 
-export type Progress = 'backlog' | 'building' | 'pull_request' | 'completed'
+export type Progress =
+  | 'backlog'
+  | 'building'
+  | 'pull_request'
+  | 'completed'
+  | 'triaged'
+  | 'in_progress'
 
 const IssueProgress = (props: { progress: Progress }) => {
   const { progress } = props
@@ -108,7 +114,9 @@ const IssueProgress = (props: { progress: Progress }) => {
     <div className="flex items-center text-gray-500">
       <span className="text-sm capitalize">{pretty}</span>
       {progress === 'backlog' && <Progress0 />}
+      {progress === 'triaged' && <Progress50 />}
       {progress === 'building' && <Progress50 />}
+      {progress === 'in_progress' && <Progress50 />}
       {progress === 'pull_request' && <Progress75 />}
       {progress === 'completed' && <Progress100 />}
     </div>

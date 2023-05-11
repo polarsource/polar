@@ -7,6 +7,7 @@ import {
   type OrganizationPrivateRead,
   type RepositoryBadgeSettingsRead,
 } from 'polarkit/api/client'
+import { PrimaryButton } from 'polarkit/components/ui'
 import { useBadgeSettings, useSSE } from 'polarkit/hooks'
 import { useEffect, useState, type MouseEvent } from 'react'
 import { useTimeoutFn } from 'react-use'
@@ -266,6 +267,7 @@ const BadgeSetup = ({
             setRetroactiveEnabled={setRetroactiveEnabled}
             retroactiveChanges={retroactiveChanges}
             settings={settings}
+            isSettingPage={isSettingPage}
           />
         </motion.div>
       )}
@@ -281,6 +283,7 @@ const Controls = ({
   setRetroactiveEnabled,
   retroactiveChanges,
   settings,
+  isSettingPage,
 }: {
   org: OrganizationPrivateRead
   showSetup: boolean
@@ -289,6 +292,7 @@ const Controls = ({
   setRetroactiveEnabled: (state: boolean) => void
   retroactiveChanges: AllRetroactiveChanges | undefined
   settings: MappedRepoSettings
+  isSettingPage: boolean
 }) => {
   const router = useRouter()
 
@@ -305,7 +309,9 @@ const Controls = ({
     return changes.additions > 0 || changes.removals > 0
   }
 
-  const save = () => {
+  const [isSaving, setIsSaving] = useState(false)
+
+  const save = async () => {
     const data: OrganizationBadgeSettingsUpdate = {
       show_amount: settings.show_amount,
       repositories: Object.values(settings.repositories).map((repo) => {
@@ -316,25 +322,31 @@ const Controls = ({
         }
       }),
     }
-    const response = api.organizations
-      .updateBadgeSettings({
-        platform: org.platform,
-        orgName: org.name,
-        requestBody: data,
-      })
-      .then((response) => {
-        console.log('Response', response)
-        redirectToOrgDashboard()
-      })
+
+    setIsSaving(true)
+
+    await api.organizations.updateBadgeSettings({
+      platform: org.platform,
+      orgName: org.name,
+      requestBody: data,
+    })
+
+    setIsSaving(false)
   }
 
-  const clickedContinue = (event: MouseEvent<HTMLButtonElement>) => {
+  const clickedContinue = async (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
     if (!showSetup) {
       setShowSetup(true)
     } else {
-      save()
+      await save()
+      redirectToOrgDashboard()
     }
+  }
+
+  const clickedSave = async (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    await save()
   }
 
   const [additions, setAdditions] = useState(0)
@@ -372,26 +384,46 @@ const Controls = ({
             />
 
             <div className="flex flex-col text-sm leading-6 text-gray-500">
-              {additions > 0 && (
-                <span className="h-6 ">
-                  Will add badge to {additions} issues
-                </span>
-              )}
-              {deletions > 0 && (
-                <span>Will reomve badge from {deletions} issue.</span>
+              {isRetroactiveEnabled && (
+                <>
+                  {additions > 0 && (
+                    <span>Will add badge to {additions} issues</span>
+                  )}
+                  {deletions > 0 && (
+                    <span>Will reomve badge from {deletions} issue.</span>
+                  )}
+                  {deletions === 0 && additions === 0 && (
+                    <span>No changes</span>
+                  )}
+                </>
               )}
             </div>
           </div>
         )}
       </div>
-      <div className="flex flex-col justify-center">
-        <button
-          className="m-auto w-32 rounded-xl bg-blue-600 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-500"
-          onClick={clickedContinue}
-        >
-          Continue
-        </button>
-      </div>
+
+      {isSettingPage && (
+        <div className="">
+          <PrimaryButton
+            fullWidth={false}
+            loading={isSaving}
+            onClick={clickedSave}
+          >
+            Save
+          </PrimaryButton>
+        </div>
+      )}
+
+      {!isSettingPage && (
+        <div className="flex flex-col items-center">
+          <button
+            className="rounded-xl bg-blue-600 px-8 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-500"
+            onClick={clickedContinue}
+          >
+            Continue
+          </button>
+        </div>
+      )}
     </>
   )
 }

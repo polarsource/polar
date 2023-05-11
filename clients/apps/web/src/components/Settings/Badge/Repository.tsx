@@ -99,13 +99,11 @@ const EmbedSwitch = ({
 export const BadgeRepository = ({
   repo,
   showSetup,
-  isBadgeEnabled,
   onEnableBadgeChange,
   isSettingPage = false,
 }: {
   repo: RepositoryBadgeSettingsRead
   showSetup: boolean
-  isBadgeEnabled: boolean
   onEnableBadgeChange: (badge: boolean) => void
   isSettingPage?: boolean
 }) => {
@@ -120,7 +118,8 @@ export const BadgeRepository = ({
     <div
       className={classNames(
         showSetup && repo.is_private ? 'bg-gray-50' : 'bg-white',
-        'flex flex-row rounded-xl px-5 py-4 shadow',
+        'flex flex-row px-5 py-4',
+        isSettingPage ? '' : 'rounded-xl shadow',
       )}
     >
       <div className="my-auto basis-2/6">
@@ -159,7 +158,7 @@ export const BadgeRepository = ({
               {!repo.is_private && (
                 <EmbedSwitch
                   repo={repo}
-                  checked={isBadgeEnabled}
+                  checked={repo.badge_enabled}
                   onChange={(badge: boolean) => {
                     onEnableBadgeChange(badge)
                   }}

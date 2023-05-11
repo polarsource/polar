@@ -195,7 +195,9 @@ PLEDGER_ISSUE_PULL_REQUEST_MERGED = """Hi {{username}},<br><br>
 {{pull_request_creator_username}} just merged a <a href="{{pull_request_url}}">pull request</a> to {{repo_owner}}/{{repo_name}} that solves
 the issue <a href="{{issue_url}}">{{issue_title}}</a> that you've backed!<br><br>
 
-The money will soon be paid out to {{repo_owner}}.
+The money will soon be paid out to {{repo_owner}}.<br><br>
+
+If the issue is not solved, dispute the pledge within 14 days from the <a href="https://dashboard.polar/sh">Polar</a> dashboard, or by replying to this email.
 """  # noqa: E501
 
 PLEDGER_ISSUE_BRANCH_CREATED = """Hi {{username}},<br><br>
@@ -215,7 +217,7 @@ MAINTAINER_ISSUE_PULL_REQUEST_MERGED = """Hi {{username}},<br><br>
 {{pull_request_creator_username}} just merged a <a href="{{pull_request_url}}">pull request</a> to {{repo_owner}}/{{repo_name}} that solves
 the issue <a href="{{issue_url}}">{{issue_title}}</a> that has been pledged on Polar.<br><br>
 
-Check <a href="https://polar.sh/">polar.sh</a> to manage your payout details.
+Check <a href="https://dashboard.polar.sh/">polar.sh</a> to manage your payout details.
 """  # noqa: E501
 
 MAINTAINER_ISSUE_BRANCH_CREATED = """Hi {{username}},<br><br>

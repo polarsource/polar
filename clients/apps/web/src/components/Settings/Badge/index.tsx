@@ -9,6 +9,7 @@ import {
 } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { useBadgeSettings, useSSE } from 'polarkit/hooks'
+import { classNames } from 'polarkit/utils'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useTimeoutFn } from 'react-use'
 import Box from '../Box'
@@ -317,6 +318,7 @@ const Controls = ({
   }
 
   const [isSaving, setIsSaving] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
 
   const save = async () => {
     const data: OrganizationBadgeSettingsUpdate = {
@@ -339,6 +341,11 @@ const Controls = ({
     })
 
     setIsSaving(false)
+    setIsSaved(true)
+
+    setTimeout(() => {
+      setIsSaved(false)
+    }, 5000)
   }
 
   const clickedContinue = async (event: MouseEvent<HTMLButtonElement>) => {
@@ -442,15 +449,34 @@ const Controls = ({
       </div>
 
       {isSettingPage && (
-        <div className="">
+        <div className="flex items-center space-x-8">
           <PrimaryButton
             fullWidth={false}
             loading={isSaving}
             onClick={clickedSave}
             disabled={!canSave}
+            classNames="min-w-[100px]"
           >
-            Save
+            <span>Save</span>
           </PrimaryButton>
+
+          <span
+            className={classNames(
+              'text-sm leading-6 text-gray-500 transition-all duration-500',
+              isSaved ? 'opacity-1' : 'opacity-0',
+            )}
+          >
+            Changes saved.
+            {additions > 0 && deletions > 0 && (
+              <> Will add and remove badges in the background...</>
+            )}
+            {additions > 0 && deletions === 0 && (
+              <> Will add badges in the background...</>
+            )}
+            {additions === 0 && deletions > 0 && (
+              <> Will remove existing badges in the background...</>
+            )}
+          </span>
         </div>
       )}
 

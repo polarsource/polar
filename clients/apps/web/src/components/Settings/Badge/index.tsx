@@ -9,7 +9,7 @@ import {
 } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { useBadgeSettings, useSSE } from 'polarkit/hooks'
-import { useEffect, useState, type MouseEvent } from 'react'
+import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useTimeoutFn } from 'react-use'
 import Box from '../Box'
 import FakePullRequest from '../FakePullRequest'
@@ -178,13 +178,35 @@ const BadgeSetup = ({
     }
   }, [emitter])
 
-  if (!settings) return <></>
-
-  const sortedRepos = settings.repositories_order.map((id) => {
-    return settings.repositories[id]
-  })
+  const sortedRepos =
+    settings?.repositories_order.map((id) => {
+      return settings.repositories[id]
+    }) || []
 
   const retroactiveChanges = getRetroactiveChanges(sortedRepos)
+
+  const [anyBadgeSettingChanged, setAnyBadgeSettingChanged] = useState(false)
+
+  const onEnableBadgeChange = (
+    repo: RepositoryBadgeSettingsRead,
+    enabled: boolean,
+  ) => {
+    setAnyBadgeSettingChanged(true)
+    setSettings((prev) => {
+      return {
+        ...prev,
+        repositories: {
+          ...prev.repositories,
+          [repo.id]: {
+            ...prev.repositories[repo.id],
+            badge_enabled: enabled,
+          },
+        },
+      }
+    })
+  }
+
+  if (!settings) return <></>
 
   return (
     <div className="w-full space-y-8">
@@ -223,23 +245,7 @@ const BadgeSetup = ({
         repos={sortedRepos}
         isSettingPage={isSettingPage}
         showControls={showControls}
-        onEnableBadgeChange={(
-          repo: RepositoryBadgeSettingsRead,
-          enabled: boolean,
-        ) => {
-          setSettings((prev) => {
-            return {
-              ...prev,
-              repositories: {
-                ...prev.repositories,
-                [repo.id]: {
-                  ...prev.repositories[repo.id],
-                  badge_enabled: enabled,
-                },
-              },
-            }
-          })
-        }}
+        onEnableBadgeChange={onEnableBadgeChange}
       />
       {showControls && (
         <motion.div
@@ -266,6 +272,7 @@ const BadgeSetup = ({
             retroactiveChanges={retroactiveChanges}
             settings={settings}
             isSettingPage={isSettingPage}
+            anyBadgeSettingChanged={anyBadgeSettingChanged}
           />
         </motion.div>
       )}
@@ -282,6 +289,7 @@ const Controls = ({
   retroactiveChanges,
   settings,
   isSettingPage,
+  anyBadgeSettingChanged,
 }: {
   org: OrganizationPrivateRead
   showControls: boolean
@@ -291,6 +299,7 @@ const Controls = ({
   retroactiveChanges: AllRetroactiveChanges | undefined
   settings: MappedRepoSettings
   isSettingPage: boolean
+  anyBadgeSettingChanged: boolean
 }) => {
   const router = useRouter()
 
@@ -367,11 +376,43 @@ const Controls = ({
     }
   }, [retroactiveChanges, isRetroactiveEnabled])
 
+  const [showRetroactiveChanges, setShowRetroactiveChanges] = useState(false)
+
+  useEffect(() => {
+    setShowRetroactiveChanges(retroactiveChanges && anyBadgeSettingChanged)
+  }, [retroactiveChanges])
+
+  const canSave = useMemo(() => {
+    if (isSettingPage) {
+      if (anyBadgeSettingChanged) {
+        return true
+      }
+      return false
+    }
+
+    return true
+  }, [isSettingPage, anyBadgeSettingChanged])
+
   return (
     <>
       <div className="flex flex-col justify-center">
-        {retroactiveChanges && (
-          <div className="flex flex-row space-x-8 rounded-xl border bg-white p-4">
+        {showRetroactiveChanges && (
+          <motion.div
+            variants={{
+              hidden: {
+                opacity: 0,
+                scale: 1,
+              },
+              show: {
+                opacity: 1,
+                scale: [1, 1.1, 1],
+              },
+            }}
+            initial={showRetroactiveChanges}
+            animate="show"
+            hidden={!showRetroactiveChanges}
+            className="flex flex-row space-x-8 rounded-xl border bg-white p-4"
+          >
             <SettingsCheckbox
               id="retroactive_embed"
               title="Update badge on open issues"
@@ -396,7 +437,7 @@ const Controls = ({
                 </>
               )}
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
 
@@ -406,6 +447,7 @@ const Controls = ({
             fullWidth={false}
             loading={isSaving}
             onClick={clickedSave}
+            disabled={!canSave}
           >
             Save
           </PrimaryButton>

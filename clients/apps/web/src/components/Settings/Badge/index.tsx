@@ -267,7 +267,6 @@ const BadgeSetup = ({
             setRetroactiveEnabled={setRetroactiveEnabled}
             retroactiveChanges={retroactiveChanges}
             settings={settings}
-            skippable={showSetup}
           />
         </motion.div>
       )}
@@ -283,7 +282,6 @@ const Controls = ({
   setRetroactiveEnabled,
   retroactiveChanges,
   settings,
-  skippable = false,
 }: {
   org: OrganizationPrivateRead
   showSetup: boolean
@@ -292,7 +290,6 @@ const Controls = ({
   setRetroactiveEnabled: (state: boolean) => void
   retroactiveChanges: AllRetroactiveChanges | undefined
   settings: MappedRepoSettings
-  skippable?: boolean
 }) => {
   const router = useRouter()
 
@@ -341,13 +338,6 @@ const Controls = ({
     }
   }
 
-  const clickedSkip = (event: MouseEvent<HTMLAnchorElement>) => {
-    event.preventDefault()
-    if (skippable) {
-      redirectToOrgDashboard()
-    }
-  }
-
   let retroactiveAdditions = 0
   let retroactiveRemovals = 0
   if (retroactiveChanges) {
@@ -389,15 +379,6 @@ const Controls = ({
         >
           Continue
         </button>
-        {skippable && (
-          <a
-            href="#"
-            className="mt-2 text-center font-medium text-blue-600 hover:underline hover:underline-offset-2"
-            onClick={clickedSkip}
-          >
-            Skip
-          </a>
-        )}
       </div>
     </>
   )

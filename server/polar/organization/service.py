@@ -337,6 +337,11 @@ class OrganizationService(
         if settings.show_amount is not None:
             organization.pledge_badge_show_amount = settings.show_amount
 
+        if organization.onboarded_at is None:
+            organization.onboarded_at = datetime.now(timezone.utc)
+
+        await organization.save(session)
+
         repositories = await repository_service.list_by_ids_and_organization(
             session, [r.id for r in settings.repositories], organization.id
         )
@@ -349,7 +354,6 @@ class OrganizationService(
                     session, organization, repository, repository_settings
                 )
 
-        await organization.save(session)
         log.info(
             "organization.update_badge_settings",
             organization_id=organization.id,

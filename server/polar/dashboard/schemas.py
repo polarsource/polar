@@ -16,9 +16,13 @@ class IssueListType(str, Enum):
 
 class IssueStatus(str, Enum):
     backlog = "backlog"
-    building = "building"
+    triaged = "triaged"
+    in_progress = "in_progress"
     pull_request = "pull_request"
     completed = "completed"
+
+    # deprecated
+    building = "building"
 
 
 class IssueSortBy(str, Enum):

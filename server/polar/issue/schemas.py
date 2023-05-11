@@ -194,6 +194,7 @@ class PullRequestReference(Schema):
     created_at: datetime
     merged_at: datetime | None
     closed_at: datetime | None
+    is_draft: bool
 
 
 class ExternalGitHubPullRequestReference(Schema):
@@ -258,6 +259,7 @@ class IssueReferenceRead(Schema):
                             created_at=pr.issue_created_at,
                             merged_at=pr.merged_at,
                             closed_at=pr.issue_closed_at,
+                            is_draft=pr.is_draft,
                         ),
                     )
 

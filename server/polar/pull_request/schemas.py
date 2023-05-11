@@ -30,6 +30,8 @@ class MinimalPullRequestCreate(IssueCreate):
     head: JSONAny
     base: JSONAny
 
+    is_draft: bool | None = None
+
     # TODO: Rename to something like source_created_at
     # So it's the same across the board reflecting the platform source fields
     # and avoiding overriding our internal ones
@@ -44,6 +46,7 @@ class MinimalPullRequestCreate(IssueCreate):
         "head",
         "base",
         "issue_created_at",
+        "is_draft",
     }
 
     @classmethod
@@ -72,6 +75,7 @@ class MinimalPullRequestCreate(IssueCreate):
         create.merge_commit_sha = pr.merge_commit_sha
         create.head = github.jsonify(pr.head)
         create.base = github.jsonify(pr.base)
+        create.is_draft = True if pr.draft else False
 
         return create
 

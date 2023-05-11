@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from uuid import UUID
 from typing import List, Sequence, Tuple
-from sqlalchemy import Integer, desc, func, nullslast, or_, and_, ColumnElement
+from sqlalchemy import Integer, desc, func, not_, nullslast, or_, and_, ColumnElement
 from sqlalchemy.orm import joinedload
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
-from polar.dashboard.schemas import IssueListType, IssueSortBy
+from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
 
 from polar.kit.services import ResourceService
 from polar.models.issue import Issue
@@ -84,7 +84,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
     async def list_by_repository_type_and_status(
         self,
         session: AsyncSession,
-        repository_ids: List[UUID],
+        repository_ids: list[UUID],
         issue_list_type: IssueListType,
         text: str | None = None,
         include_open: bool = True,
@@ -99,6 +99,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         sort_by: IssueSortBy = IssueSortBy.newest,
         offset: int = 0,
         limit: int | None = None,
+        include_statuses: list[IssueStatus] = [],
     ) -> Tuple[Sequence[Issue], int]:  # (issues, total_issue_count)
         pledge_statuses = list(
             set(PledgeState.active_states()) | set([PledgeState.disputed])
@@ -158,6 +159,30 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 statement = statement.where(Pledge.id.is_not(None))
             else:
                 statement = statement.where(Pledge.id.is_(None))
+
+        if include_statuses:
+            conds: list[ColumnElement[bool]] = []
+
+            for status in include_statuses:
+                if status == IssueStatus.triaged:
+                    conds.append(
+                        and_(
+                            or_(
+                                Issue.labels.is_not(None),
+                                Issue.assignee.is_not(None),
+                                Issue.assignees.is_not(None),
+                            ),
+                            # not IssueStatus.completed
+                            not_(Issue.issue_closed_at.is_not(None)),
+                        )
+                    )
+
+                # if status == IssueStatus.pull_request:
+
+                if status == IssueStatus.completed:
+                    conds.append(Issue.issue_closed_at.is_not(None))
+
+            statement = statement.where(or_(*conds))
 
         # free text search
         if text:

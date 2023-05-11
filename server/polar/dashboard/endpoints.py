@@ -371,8 +371,8 @@ async def dashboard(
 
     # filter issues to only include issues with any of the expected statuses
     # TODO: we should be able to do this in the database
-    if status:
-        issues = [i for i in issues if issue_progress(i) in status]
+    # if status:
+    #    issues = [i for i in issues if issue_progress(i) in status]
 
     next_page = page + 1 if total_issue_count > page * limit else None
 
@@ -402,11 +402,25 @@ def issue_to_schema(issue: Issue) -> IssueDashboardRead:
 
 
 def issue_progress(issue: Issue) -> IssueStatus:
+    # completed
     if issue.issue_closed_at:
         return IssueStatus.completed
+
+    # pull_request
     for r in issue.references:
-        if r.pull_request:
+        if r.pull_request and not r.pull_request.is_draft:
             return IssueStatus.pull_request
+
+    # building
+    for r in issue.references:
+        if r.pull_request and r.pull_request.is_draft:
+            return IssueStatus.building
     if issue.references:
         return IssueStatus.building
+
+    # triaged
+    if issue.labels or issue.assignee or issue.assignees:
+        return IssueStatus.triaged
+
+    # backlog
     return IssueStatus.backlog

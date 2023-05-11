@@ -67,6 +67,7 @@ async def trigger_issue_sync(session: AsyncSession, org: Organization) -> None:
 
     for repository in repositories:
         await enqueue_job("github.repo.sync.issues", org.id, repository.id)
+        await enqueue_job("github.repo.sync.pull_requests", org.id, repository.id)
         typer.echo(f"Triggered issue sync for {org.name}/{repository.name}")
 
 

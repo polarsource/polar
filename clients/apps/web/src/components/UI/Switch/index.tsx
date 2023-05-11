@@ -11,6 +11,7 @@ const Switch = (props: SwitchProps) => {
   return (
     <SwitchPrimitive.Root
       id={props.id}
+      checked={props.checked}
       onCheckedChange={(checked: boolean) => {
         props.onChange(checked)
       }}

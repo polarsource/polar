@@ -4,12 +4,12 @@ import { classNames } from '../../utils/dom'
 const LoadingSpinner = (props: { disabled: boolean }) => {
   const classes = classNames(
     props.disabled ? 'fill-gray-300 text-gray-200' : 'fill-white text-blue-300',
-    'inline h-6 w-6 animate-spin',
+    'h-6 w-6 animate-spin',
   )
 
   return (
     <>
-      <div role="status" className="w-full text-center">
+      <div role="status">
         <svg
           aria-hidden="true"
           className={classes}
@@ -99,13 +99,15 @@ const PrimaryButton = (props: ButtonProps) => {
     bg(props.color, props.loading, disabled),
     text(props.color, props.loading, disabled),
     props.fullWidth ? 'w-full' : '',
-    'rounded-lg p-2 px-3 text-center text-sm font-medium inline-flex items-center space-x-2 transition-colors duration-100',
+    'rounded-lg px-8 py-2 text-center text-sm font-medium inline-flex items-center space-x-2 transition-colors duration-100',
   )
 
   return (
     <>
       <button className={classes} onClick={props.onClick} disabled={disabled}>
-        <div className="h-6">{/* Same height as LoadingSpinner */}</div>
+        {!props.loading && (
+          <div className="h-6">{/* Same height as LoadingSpinner */}</div>
+        )}
         {props.loading && <LoadingSpinner disabled={disabled} />}
         {!props.loading && props.children}
       </button>

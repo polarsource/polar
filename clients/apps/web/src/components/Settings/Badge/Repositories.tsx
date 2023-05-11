@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { type RepositoryBadgeSettingsRead } from 'polarkit/api/client'
 
+import { classNames } from 'polarkit/utils'
 import BadgeRepository from './Repository'
 
 export const BadgeRepositories = ({
@@ -22,7 +23,13 @@ export const BadgeRepositories = ({
       <h2 className="text-center text-base text-gray-500">
         Badge repositories
       </h2>
-      <ul>
+      <ul
+        className={classNames(
+          isSettingPage
+            ? 'divide-y divide-gray-300 overflow-hidden rounded-xl shadow'
+            : '',
+        )}
+      >
         {repos.map((repo, index) => {
           return (
             <motion.ul
@@ -62,7 +69,6 @@ export const BadgeRepositories = ({
                   repo={repo}
                   isSettingPage={isSettingPage}
                   showSetup={showSetup}
-                  isBadgeEnabled={repo.badge_enabled}
                   onEnableBadgeChange={(badge: boolean) =>
                     onEnableBadgeChange(repo, badge)
                   }

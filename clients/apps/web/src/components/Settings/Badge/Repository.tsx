@@ -108,12 +108,12 @@ const EmbedSwitch = ({
 
 export const BadgeRepository = ({
   repo,
-  showSetup,
+  showControls,
   onEnableBadgeChange,
   isSettingPage = false,
 }: {
   repo: RepositoryBadgeSettingsRead
-  showSetup: boolean
+  showControls: boolean
   onEnableBadgeChange: (badge: boolean) => void
   isSettingPage?: boolean
 }) => {
@@ -127,7 +127,7 @@ export const BadgeRepository = ({
   return (
     <div
       className={classNames(
-        showSetup && repo.is_private ? 'bg-gray-50' : 'bg-white',
+        showControls && repo.is_private ? 'bg-gray-50' : 'bg-white',
         'flex flex-row px-5 py-4',
         isSettingPage ? '' : 'rounded-xl shadow',
       )}
@@ -150,7 +150,7 @@ export const BadgeRepository = ({
           completed={repo.is_sync_completed}
         />
         <div className="w-full text-right">
-          {!showSetup && (
+          {!showControls && (
             <Progress
               isSettingPage={isSettingPage}
               progress={repo.synced_issues}
@@ -158,7 +158,7 @@ export const BadgeRepository = ({
               completed={repo.is_sync_completed}
             />
           )}
-          {showSetup && (
+          {showControls && (
             <div className="flex flex-row justify-end align-middle">
               {repo.is_private && (
                 <p className="inline rounded-xl bg-gray-100 py-1 px-2 text-sm text-gray-600">

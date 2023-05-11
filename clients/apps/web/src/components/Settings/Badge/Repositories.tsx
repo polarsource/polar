@@ -6,12 +6,12 @@ import BadgeRepository from './Repository'
 
 export const BadgeRepositories = ({
   repos,
-  showSetup,
+  showControls,
   onEnableBadgeChange,
   isSettingPage = false,
 }: {
   repos: RepositoryBadgeSettingsRead[]
-  showSetup: boolean
+  showControls: boolean
   onEnableBadgeChange: (
     repo: RepositoryBadgeSettingsRead,
     enabled: boolean,
@@ -68,7 +68,7 @@ export const BadgeRepositories = ({
                 <BadgeRepository
                   repo={repo}
                   isSettingPage={isSettingPage}
-                  showSetup={showSetup}
+                  showControls={showControls}
                   onEnableBadgeChange={(badge: boolean) =>
                     onEnableBadgeChange(repo, badge)
                   }

@@ -74,14 +74,14 @@ const getRetroactiveChanges = (
 
 const BadgeSetup = ({
   org,
-  showSetup,
-  setShowSetup,
+  showControls,
+  setShowControls,
   setSyncIssuesCount,
   isSettingPage = false,
 }: {
   org: OrganizationPrivateRead
-  showSetup: boolean
-  setShowSetup: (state: boolean) => void
+  showControls: boolean
+  setShowControls: (state: boolean) => void
   setSyncIssuesCount: (state: number) => void
   isSettingPage?: boolean
 }) => {
@@ -89,7 +89,7 @@ const BadgeSetup = ({
   const [settings, setSettings] = useState<MappedRepoSettings | undefined>(
     undefined,
   )
-  const [showControls, setShowControls] = useState<boolean>(false)
+  // const [showControls, setShowControls] = useState<boolean>(false)
   const [isRetroactiveEnabled, setRetroactiveEnabled] = useState<boolean>(false)
   const emitter = useSSE(org.platform, org.name)
 
@@ -114,14 +114,14 @@ const BadgeSetup = ({
     const isSyncCompleted = countSyncedIssues === countOpenIssues
 
     // Goto next step and setup in case syncing is complete
-    setShowSetup(isSyncCompleted)
-    setShowControls(isSyncCompleted)
     setSyncIssuesCount(countSyncedIssues)
 
     if (countSyncedIssues / countOpenIssues > 0.4) {
       setShowControls(true)
+    } else {
+      setShowControls(isSyncCompleted)
     }
-  }, [settings, setShowControls, setShowSetup, setSyncIssuesCount])
+  }, [settings, setShowControls, setSyncIssuesCount])
 
   // // Show continue button after a few seconds OR once 40% sync is complete
   useTimeoutFn(() => setShowControls(true), continueTimeoutSeconds * 1000)
@@ -219,11 +219,10 @@ const BadgeSetup = ({
           />
         </Box>
       </motion.div>
-
       <BadgeRepositories
         repos={sortedRepos}
         isSettingPage={isSettingPage}
-        showSetup={showSetup}
+        showControls={showControls}
         onEnableBadgeChange={(
           repo: RepositoryBadgeSettingsRead,
           enabled: boolean,
@@ -242,7 +241,6 @@ const BadgeSetup = ({
           })
         }}
       />
-
       {showControls && (
         <motion.div
           variants={{
@@ -261,8 +259,8 @@ const BadgeSetup = ({
         >
           <Controls
             org={org}
-            showSetup={showSetup}
-            setShowSetup={setShowSetup}
+            showControls={showControls}
+            setShowControls={setShowControls}
             isRetroactiveEnabled={isRetroactiveEnabled}
             setRetroactiveEnabled={setRetroactiveEnabled}
             retroactiveChanges={retroactiveChanges}
@@ -277,8 +275,8 @@ const BadgeSetup = ({
 
 const Controls = ({
   org,
-  showSetup,
-  setShowSetup,
+  showControls,
+  setShowControls,
   isRetroactiveEnabled,
   setRetroactiveEnabled,
   retroactiveChanges,
@@ -286,8 +284,8 @@ const Controls = ({
   isSettingPage,
 }: {
   org: OrganizationPrivateRead
-  showSetup: boolean
-  setShowSetup: (state: boolean) => void
+  showControls: boolean
+  setShowControls: (state: boolean) => void
   isRetroactiveEnabled: boolean
   setRetroactiveEnabled: (state: boolean) => void
   retroactiveChanges: AllRetroactiveChanges | undefined
@@ -336,8 +334,8 @@ const Controls = ({
 
   const clickedContinue = async (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
-    if (!showSetup) {
-      setShowSetup(true)
+    if (!showControls) {
+      setShowControls(true)
     } else {
       await save()
       redirectToOrgDashboard()
@@ -376,7 +374,7 @@ const Controls = ({
           <div className="flex flex-row space-x-8 rounded-xl border bg-white p-4">
             <SettingsCheckbox
               id="retroactive_embed"
-              title="Update open issues"
+              title="Update badge on open issues"
               isChecked={isRetroactiveEnabled}
               onChange={(e) => {
                 setRetroactiveEnabled(e.target.checked)
@@ -390,7 +388,7 @@ const Controls = ({
                     <span>Will add badge to {additions} issues</span>
                   )}
                   {deletions > 0 && (
-                    <span>Will reomve badge from {deletions} issue.</span>
+                    <span>Will remove badge from {deletions} issue.</span>
                   )}
                   {deletions === 0 && additions === 0 && (
                     <span>No changes</span>

@@ -8,7 +8,7 @@ import { ReactElement, useState } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
 
 const Page: NextLayoutComponentType = () => {
-  const [showSetup, setShowSetup] = useState<boolean>(false)
+  const [showControls, setShowControls] = useState<boolean>(false)
   const [syncedIssuesCount, setSyncIssuesCount] = useState<number>(0)
   const { org } = useCurrentOrgAndRepoFromURL()
 
@@ -23,7 +23,7 @@ const Page: NextLayoutComponentType = () => {
       </Head>
       <div className="flex min-h-screen py-8 px-2 md:px-0">
         <div className="mx-auto space-y-8 md:my-auto md:w-[700px]">
-          {!showSetup && (
+          {!showControls && (
             <h1 className="flex-column mb-11 flex items-center justify-center text-center text-xl font-normal text-gray-500">
               Connecting repositories
               <span className="ml-4">
@@ -32,7 +32,7 @@ const Page: NextLayoutComponentType = () => {
             </h1>
           )}
 
-          {showSetup && (
+          {showControls && (
             <>
               <div className="text-center">
                 <span className="rounded-2xl border border-gray-200 py-1 px-3 text-sm font-medium text-gray-500">
@@ -47,8 +47,8 @@ const Page: NextLayoutComponentType = () => {
 
           <BadgeSetup
             org={org}
-            showSetup={showSetup}
-            setShowSetup={setShowSetup}
+            showControls={showControls}
+            setShowControls={setShowControls}
             setSyncIssuesCount={setSyncIssuesCount}
             isSettingPage={false}
           />

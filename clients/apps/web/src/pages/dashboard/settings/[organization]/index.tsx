@@ -178,8 +178,8 @@ const SettingsPage: NextLayoutComponentType = () => {
 
             <BadgeSetup
               org={org}
-              showSetup={true}
-              setShowSetup={() => true}
+              showControls={true}
+              setShowControls={() => true}
               setSyncIssuesCount={(value: number) => true}
               isSettingPage={true}
             />

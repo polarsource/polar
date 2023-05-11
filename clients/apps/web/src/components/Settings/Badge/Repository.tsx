@@ -3,7 +3,6 @@ import { Switch } from 'components/UI/Switch'
 import { motion } from 'framer-motion'
 import { type RepositoryBadgeSettingsRead } from 'polarkit/api/client'
 import { classNames } from 'polarkit/utils'
-import { RetroactiveChanges } from './types'
 
 const ProgressText = ({
   progress,
@@ -92,34 +91,8 @@ const EmbedSwitch = ({
   const id = `toggle-badge-${repo.id}`
   return (
     <>
-      <label
-        htmlFor={id}
-        className="mr-4 flex cursor-pointer items-center text-xs"
-      >
-        Embed badge
-      </label>
       <Switch id={id} checked={checked} onChange={onChange} />
     </>
-  )
-}
-
-const IssueChanges = ({ changes }: { changes: RetroactiveChanges }) => {
-  if (changes.additions === 0 && changes.removals === 0) {
-    return <></>
-  }
-
-  const n = changes.additions > 0 ? changes.additions : changes.removals
-  return (
-    <p className="mr-10 align-middle text-xs">
-      <span
-        className={classNames(
-          changes.additions > 0 ? 'text-green-500' : 'text-red-500',
-        )}
-      >
-        {n}
-      </span>{' '}
-      issues
-    </p>
   )
 }
 
@@ -127,14 +100,12 @@ export const BadgeRepository = ({
   repo,
   showSetup,
   isBadgeEnabled,
-  retroactiveChanges,
   onEnableBadgeChange,
   isSettingPage = false,
 }: {
   repo: RepositoryBadgeSettingsRead
   showSetup: boolean
   isBadgeEnabled: boolean
-  retroactiveChanges: RetroactiveChanges | false
   onEnableBadgeChange: (badge: boolean) => void
   isSettingPage?: boolean
 }) => {
@@ -180,9 +151,6 @@ export const BadgeRepository = ({
           )}
           {showSetup && (
             <div className="flex flex-row justify-end align-middle">
-              {retroactiveChanges && (
-                <IssueChanges changes={retroactiveChanges} />
-              )}
               {repo.is_private && (
                 <p className="inline rounded-xl bg-gray-100 py-1 px-2 text-sm text-gray-600">
                   Private

@@ -22,7 +22,7 @@ const Page: NextLayoutComponentType = () => {
         <title>Polar | Setup {org.name}</title>
       </Head>
       <div className="flex h-screen">
-        <div className="m-auto w-[700px]">
+        <div className="m-auto w-[700px] space-y-8">
           {!showSetup && (
             <h1 className="flex-column mb-11 flex items-center justify-center text-center text-xl font-normal text-gray-500">
               Connecting repositories
@@ -34,7 +34,7 @@ const Page: NextLayoutComponentType = () => {
 
           {showSetup && (
             <>
-              <div className="mb-11 text-center">
+              <div className="text-center">
                 <span className="rounded-2xl border border-gray-200 py-1 px-3 text-sm font-medium text-gray-500">
                   {syncedIssuesCount} issues fetched
                 </span>

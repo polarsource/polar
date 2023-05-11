@@ -21,8 +21,8 @@ const Page: NextLayoutComponentType = () => {
       <Head>
         <title>Polar | Setup {org.name}</title>
       </Head>
-      <div className="flex h-screen">
-        <div className="m-auto w-[700px] space-y-8">
+      <div className="flex min-h-screen py-8 px-2 md:px-0">
+        <div className="mx-auto space-y-8 md:my-auto md:w-[700px]">
           {!showSetup && (
             <h1 className="flex-column mb-11 flex items-center justify-center text-center text-xl font-normal text-gray-500">
               Connecting repositories

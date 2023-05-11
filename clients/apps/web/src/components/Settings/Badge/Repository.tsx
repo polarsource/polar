@@ -1,4 +1,5 @@
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
+import { Switch } from 'components/UI/Switch'
 import { motion } from 'framer-motion'
 import { type RepositoryBadgeSettingsRead } from 'polarkit/api/client'
 import { classNames } from 'polarkit/utils'
@@ -79,7 +80,7 @@ const Progress = ({
   )
 }
 
-const BadgeSwitch = ({
+const EmbedSwitch = ({
   repo,
   checked,
   onChange,
@@ -97,14 +98,7 @@ const BadgeSwitch = ({
       >
         Embed badge
       </label>
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-          onChange(e.target.checked)
-        }}
-      />
+      <Switch id={id} checked={checked} onChange={onChange} />
     </>
   )
 }
@@ -195,7 +189,7 @@ export const BadgeRepository = ({
                 </p>
               )}
               {!repo.is_private && (
-                <BadgeSwitch
+                <EmbedSwitch
                   repo={repo}
                   checked={isBadgeEnabled}
                   onChange={(badge: boolean) => {

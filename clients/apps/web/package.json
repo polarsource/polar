@@ -14,6 +14,7 @@
   "dependencies": {
     "@heroicons/react": "^2.0.16",
     "@radix-ui/react-popover": "^1.0.5",
+    "@radix-ui/react-switch": "^1.0.2",
     "@sentry/nextjs": "^7.48.0",
     "@stripe/react-stripe-js": "^1.12.0",
     "@stripe/stripe-js": "^1.38.1",
@@ -30,6 +31,7 @@
     "react-use": "^17.4.0",
     "sass": "^1.59.3",
     "satori": "0.0.44",
+    "tailwindcss-radix": "^2.8.0",
     "yayson": "^3.0.0"
   },
   "devDependencies": {

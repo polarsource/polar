@@ -89,6 +89,7 @@ module.exports = {
   },
   plugins: [
     require('@tailwindcss/forms'),
+    require("tailwindcss-radix")(),
     plugin(function({ addUtilities }) {
       const displayStyle = {
         '.text-4xl': {

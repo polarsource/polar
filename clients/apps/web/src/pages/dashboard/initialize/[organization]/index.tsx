@@ -39,7 +39,7 @@ const Page: NextLayoutComponentType = () => {
                   {syncedIssuesCount} issues fetched
                 </span>
                 <h1 className="mt-8 text-xl font-normal text-gray-900">
-                  Add the Polar badge on your open source issues
+                  Embed the Polar badge to get backers
                 </h1>
               </div>
             </>

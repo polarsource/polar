@@ -145,8 +145,8 @@ const Header = (props: {
       newest: 'Newest',
       pledged_amount_desc: 'Pledged amount',
       relevance: 'Relevance',
-      dependencies_default: 'Default',
-      issues_default: 'Default',
+      dependencies_default: 'Most wanted',
+      issues_default: 'Most wanted',
     }
   }, [])
 
@@ -165,7 +165,7 @@ const Header = (props: {
   ])
 
   const width = useMemo(() => {
-    const t = title[props.filters.sort] || 'Newest'
+    const t = title[props.filters.sort] || 'Most wanted'
     return t.length * 7.5 + 35 // TODO(gustav): can we use the on-screen size instead somehow?
   }, [props.filters.sort, title])
 

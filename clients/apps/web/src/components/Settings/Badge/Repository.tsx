@@ -18,11 +18,17 @@ const ProgressText = ({
   const shouldSync = target > 0
 
   if (!shouldSync && isSettingPage) {
-    return <span className="w-36 text-xs text-gray-500">No open issues</span>
+    return (
+      <span className=" whitespace-nowrap text-xs text-gray-500">
+        No open issues
+      </span>
+    )
   }
   if (!shouldSync && !isSettingPage) {
     return (
-      <span className="w-36 text-xs text-gray-500">No issues to fetch</span>
+      <span className="whitespace-nowrap text-xs text-gray-500">
+        No issues to fetch
+      </span>
     )
   }
 

@@ -34,6 +34,7 @@ export type PullRequestRead = {
   merge_commit_sha?: string;
   head?: any;
   base?: any;
+  is_draft?: boolean;
   commits?: number;
   additions?: number;
   deletions?: number;

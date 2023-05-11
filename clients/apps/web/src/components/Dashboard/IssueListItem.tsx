@@ -62,7 +62,10 @@ const IssueListItem = (props: {
         return 'pull_request'
       case IssueStatus.COMPLETED:
         return 'completed'
-
+      case IssueStatus.IN_PROGRESS:
+        return 'in_progress'
+      case IssueStatus.TRIAGED:
+        return 'triaged'
       default:
         return 'backlog'
     }

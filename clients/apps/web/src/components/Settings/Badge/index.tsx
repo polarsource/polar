@@ -186,7 +186,7 @@ const BadgeSetup = ({
   const retroactiveChanges = getRetroactiveChanges(sortedRepos)
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-8">
       <motion.div
         variants={{
           hidden: {
@@ -200,7 +200,6 @@ const BadgeSetup = ({
         }}
         initial={isSettingPage ? false : 'hidden'}
         animate="show"
-        className="mb-11"
       >
         <Box>
           <FakePullRequest showAmount={settings.show_amount} />
@@ -224,7 +223,6 @@ const BadgeSetup = ({
         repos={sortedRepos}
         isSettingPage={isSettingPage}
         showSetup={showSetup}
-        retroactiveChanges={isRetroactiveEnabled && retroactiveChanges}
         onEnableBadgeChange={(
           repo: RepositoryBadgeSettingsRead,
           enabled: boolean,
@@ -258,6 +256,7 @@ const BadgeSetup = ({
           }}
           initial={isSettingPage ? false : 'hidden'}
           animate="show"
+          className="space-y-8"
         >
           <Controls
             org={org}
@@ -325,7 +324,7 @@ const Controls = ({
       })
       .then((response) => {
         console.log('Response', response)
-        // redirectToOrgDashboard()
+        redirectToOrgDashboard()
       })
   }
 
@@ -338,41 +337,54 @@ const Controls = ({
     }
   }
 
-  let retroactiveAdditions = 0
-  let retroactiveRemovals = 0
-  if (retroactiveChanges) {
-    Object.values(retroactiveChanges).map((changes) => {
-      retroactiveAdditions += changes.additions
-      retroactiveRemovals += changes.removals
-    })
-  }
+  const [additions, setAdditions] = useState(0)
+  const [deletions, setDeletions] = useState(0)
+
+  useEffect(() => {
+    if (!isRetroactiveEnabled) {
+      setAdditions(0)
+      setDeletions(0)
+    } else {
+      const add = Object.values(retroactiveChanges)
+        .map((c) => c.additions)
+        .reduce((a, b) => a + b, 0)
+      const del = Object.values(retroactiveChanges)
+        .map((c) => c.removals)
+        .reduce((a, b) => a + b, 0)
+
+      setAdditions(add)
+      setDeletions(del)
+    }
+  }, [retroactiveChanges, isRetroactiveEnabled])
 
   return (
     <>
-      <div className="mt-10 flex flex-col justify-center">
+      <div className="flex flex-col justify-center">
         {retroactiveChanges && (
-          <div className="flex flex-row">
-            <input
-              type="checkbox"
-              className="mr-2"
-              checked={isRetroactiveEnabled}
+          <div className="flex flex-row space-x-8 rounded-xl border bg-white p-4">
+            <SettingsCheckbox
+              id="retroactive_embed"
+              title="Update open issues"
+              isChecked={isRetroactiveEnabled}
               onChange={(e) => {
                 setRetroactiveEnabled(e.target.checked)
               }}
             />
-            <strong className="text-sm font-semibold">
-              Update open issues
-            </strong>
-            <p>
-              {retroactiveAdditions > 0 && (
-                <> {retroactiveAdditions} issues will be embedded.</>
+
+            <div className="flex flex-col text-sm leading-6 text-gray-500">
+              {additions > 0 && (
+                <span className="h-6 ">
+                  Will add badge to {additions} issues
+                </span>
               )}
-              {retroactiveRemovals > 0 && (
-                <> {retroactiveRemovals} issues will be removed.</>
+              {deletions > 0 && (
+                <span>Will reomve badge from {deletions} issue.</span>
               )}
-            </p>
+            </div>
           </div>
         )}
+      </div>
+      <div className="flex flex-col justify-center">
         <button
           className="m-auto w-32 rounded-xl bg-blue-600 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-500"
           onClick={clickedContinue}

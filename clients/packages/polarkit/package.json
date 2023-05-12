@@ -24,7 +24,6 @@
     "./package.json": "./package.json",
     "./*": "./src/*"
   },
-  "license": "MIT",
   "scripts": {
     "lint": "TIMING=1 eslint \"**/*.ts*\"",
     "generate": "node scripts/generate-schema.js http://127.0.0.1:8000/openapi.json openapi/source.json openapi/updated.json && openapi --input openapi/updated.json --output src/api/client --client axios --name PolarAPI --useOptions --indent 2 --exportSchemas false"

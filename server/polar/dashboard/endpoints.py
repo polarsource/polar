@@ -151,18 +151,6 @@ async def dashboard(
     only_pledged: bool = False,
     page: int = 1,
 ) -> IssueListResponse:
-    include_open = False
-    if status:
-        include_open = (
-            IssueStatus.backlog in status
-            or IssueStatus.building in status
-            or IssueStatus.pull_request in status
-        )
-
-    include_closed = False
-    if status:
-        include_closed = IssueStatus.completed in status
-
     # Default sorting
     if not sort:
         sort = default_sort(issue_list_type, q)
@@ -180,8 +168,6 @@ async def dashboard(
         [r.id for r in in_repos],
         issue_list_type=issue_list_type,
         text=q,
-        include_open=include_open,
-        include_closed=include_closed,
         pledged_by_org=for_org.id if for_org and IssueListType.dependencies else None,
         pledged_by_user=for_user.id
         if for_user and IssueListType.dependencies
@@ -189,6 +175,7 @@ async def dashboard(
         have_pledge=True if only_pledged else None,
         load_references=True,
         load_pledges=True,
+        include_statuses=status,
         sort_by=sort,
         limit=limit,
         offset=offset,

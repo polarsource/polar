@@ -37,7 +37,7 @@ class PullRequest(IssueFields, RecordModel):
     )
 
     # Part of Full Pull Request object, must be nullable
-    is_draft: Mapped[bool] = mapped_column(Boolean, nullable=True)
+    is_draft: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     is_rebaseable: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
     review_comments: Mapped[int | None] = mapped_column(Integer, nullable=True)

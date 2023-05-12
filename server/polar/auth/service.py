@@ -101,7 +101,7 @@ class AuthService:
 
     @classmethod
     def get_token_from_auth_token_query(cls, *, request: Request) -> str | None:
-        return request.query_params.get('auth_token')
+        return request.query_params.get("auth_token")
 
     @classmethod
     def generate_logout_response(cls, *, response: Response) -> LogoutResponse:

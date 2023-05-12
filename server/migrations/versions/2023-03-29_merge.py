@@ -13,8 +13,8 @@ import sqlalchemy as sa
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 # revision identifiers, used by Alembic.
-revision = '2c0195944541'
-down_revision = ('06e9299c802a', '04b3cb443b5a')
+revision = "2c0195944541"
+down_revision = ("06e9299c802a", "04b3cb443b5a")
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

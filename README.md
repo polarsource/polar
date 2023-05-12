@@ -1,13 +1,12 @@
 <p align="center">
   <a href="https://polar.sh">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="">
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/polarsource/polar/assets/281715/279ff15e-c9b1-4db4-9792-a6be0a4c3467">
     <source media="(prefers-color-scheme: light)" srcset="https://github.com/polarsource/polar/assets/281715/279ff15e-c9b1-4db4-9792-a6be0a4c3467">
     <img alt="Polar" src="https://github.com/polarsource/polar/assets/281715/279ff15e-c9b1-4db4-9792-a6be0a4c3467">
     </picture>
   </a>
 </p>
-
 
 <hr />
 <div align="center">
@@ -17,7 +16,6 @@
 <span>Private Alpha - <a href="https://polar.sh/request">Request early access</a></span>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://polar.sh/faq">FAQ</a>
-
 
 
 <p align="center">
@@ -34,12 +32,23 @@
 
 ## Introducing Polar
 
-**Polar is building a platform for open source maintainers to build, operate and grow independent businesses for their initiatives.** Be it full-time or on the side. 
+**Our goal is to build a subscription network for open source maintainers and their backers**. Empowering maintainers to start and grow independent businesses and for their backers to seamlessly opt-in to premium support, services and packages across their dependencies.
 
-`TODO: Finish this – have to run now`
+Great businesses are customer obsessed. So we're starting with issues and feature requests.
 
-#### Private Alpha
-Currently in Private Alpha. Sending out invites weekly as we build towards a public beta. [Request an invite](https://polar.sh/request).
+For maintainers:
+1. **Embedded pledges.** Our Github app can automatically embed the Polar badge to get backers and pledges.
+2. **Better backlog.** Sorted by feedback and pledges. Filters by progress and stage.
+3. **Chrome extension.** Bring Polar with you to enhance Github Issues.
+
+For backers:
+1. **Track dependencies.** Automatic detection of internal references to open source issues
+2. **Seamless pledging.** Ability to pledge behind them with a credit-card on file.
+3. **Monthly budget (Soon).** Automatically distribute a monthly budget across dependencies. Going from one-off to subscription. 
+
+
+#### Currently in Private Alpha
+[Request an invite](https://polar.sh/request). We'll shortly send out invites and on weekly basis as we build towards a public beta. 
 
 ## Roadmap, Issues & Feature Requests
 [Join our discussions](https://github.com/orgs/polarsource/discussions) to help shape the future of Polar and to see what we're working on. We're excited to hear from you!

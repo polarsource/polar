@@ -16,6 +16,7 @@ export default function Document() {
           href="https://fonts.googleapis.com/css2?family=Lexend:wght@350&display=swap"
           rel="stylesheet"
         ></link>
+        <link href="/favicon.png" rel="icon"></link>
       </Head>
       <body className="h-full">
         <Main />

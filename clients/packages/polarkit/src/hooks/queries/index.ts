@@ -60,15 +60,18 @@ export const useUserOrganizations = (currentUser: UserRead | undefined) => {
   }
 }
 
-export const useOrganizationAccounts = (repoOwner: string) =>
+export const useOrganizationAccounts = (repoOwner: string | undefined) =>
   useQuery(
     ['organization', repoOwner, 'account'],
     () =>
       api.accounts.getAccount({
         platform: Platforms.GITHUB,
-        orgName: repoOwner,
+        orgName: repoOwner || '',
       }),
-    { retry: defaultRetry },
+    {
+      enabled: !!repoOwner,
+      retry: defaultRetry,
+    },
   )
 
 export const useRepositoryIssues = (repoOwner: string, repoName: string) =>

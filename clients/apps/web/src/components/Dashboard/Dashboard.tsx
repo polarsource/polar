@@ -34,14 +34,14 @@ export const DefaultFilters: DashboardFilters = {
   onlyPledged: false,
 }
 
-const getTab = (tab: string): IssueListType => {
+const getTab = (tab: string | null): IssueListType => {
   if (tab === 'dependencies') {
     return IssueListType.DEPENDENCIES
   }
   return IssueListType.ISSUES
 }
 
-const getSort = (sort: string): IssueSortBy => {
+const getSort = (sort: string | null): IssueSortBy => {
   if (sort === 'newest') {
     return IssueSortBy.NEWEST
   }
@@ -90,18 +90,21 @@ const Dashboard = ({
         ? IssueListType.DEPENDENCIES
         : getTab(s.get('tab'))
 
-      const f = {
+      const f: DashboardFilters = {
         ...DefaultFilters,
-        q: s.get('q'),
+        q: s.get('q') || '',
         tab: useTab,
       }
       if (s.has('statuses')) {
-        const statuses = s.get('statuses').split(',')
-        f.statusBacklog = statuses.includes('backlog')
-        f.statusTriaged = statuses.includes('triaged')
-        f.statusInProgress = statuses.includes('in_progress')
-        f.statusPullRequest = statuses.includes('pull_request')
-        f.statusCompleted = statuses.includes('completed')
+        const stat = s.get('statuses')
+        if (stat) {
+          const statuses = stat.split(',')
+          f.statusBacklog = statuses.includes('backlog')
+          f.statusTriaged = statuses.includes('triaged')
+          f.statusInProgress = statuses.includes('in_progress')
+          f.statusPullRequest = statuses.includes('pull_request')
+          f.statusCompleted = statuses.includes('completed')
+        }
       }
       if (s.has('sort')) {
         f.sort = getSort(s.get('sort'))

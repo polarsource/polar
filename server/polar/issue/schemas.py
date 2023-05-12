@@ -259,7 +259,7 @@ class IssueReferenceRead(Schema):
                             created_at=pr.issue_created_at,
                             merged_at=pr.merged_at,
                             closed_at=pr.issue_closed_at,
-                            is_draft=pr.is_draft,
+                            is_draft=True if pr.is_draft else False,
                         ),
                     )
 

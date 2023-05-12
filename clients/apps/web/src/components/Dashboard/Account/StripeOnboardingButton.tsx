@@ -12,6 +12,10 @@ const StripeOnboardingButton = ({
 }) => {
   const currentOrg = useStore((store) => store.currentOrg)
   const onboard = async () => {
+    if (!currentOrg) {
+      return
+    }
+
     if (!stripeId) {
       showSetupAccount(true)
     } else {

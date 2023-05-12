@@ -8,6 +8,10 @@ import BalanceBadgeBox from './BalanceBadgeBox'
 const BalanceBadge = ({ account }: { account: AccountRead }) => {
   const currentOrg = useStore((store) => store.currentOrg)
   const visitDashboard = async () => {
+    if (!currentOrg) {
+      return
+    }
+
     if (account.is_details_submitted) {
       const link = await api.accounts.dashboardLink({
         platform: Platforms.GITHUB,
@@ -16,6 +20,10 @@ const BalanceBadge = ({ account }: { account: AccountRead }) => {
       })
       window.location.href = link.url
     }
+  }
+
+  if (!currentOrg || !account || account.balance === undefined) {
+    return <></>
   }
 
   return (

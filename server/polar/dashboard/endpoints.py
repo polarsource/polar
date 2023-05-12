@@ -352,15 +352,6 @@ async def dashboard(
             if isinstance(ir.data, list):  # it always is
                 ir.data.append(RelationshipData(type="issue", id=dependent_issue.id))
 
-    #
-    # Filtering
-    #
-
-    # filter issues to only include issues with any of the expected statuses
-    # TODO: we should be able to do this in the database
-    # if status:
-    #    issues = [i for i in issues if issue_progress(i) in status]
-
     next_page = page + 1 if total_issue_count > page * limit else None
 
     return IssueListResponse(

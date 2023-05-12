@@ -35,11 +35,11 @@
             "name": "Worker",
             "type": "python",
             "request": "launch",
-            "module": "celery",
+            "module": "arq",
             "args": [
-                "-A",
-                "run_worker:app",
-                "worker",
+                "run_worker.WorkerSettings",
+                "--watch",
+                "polar",
             ],
             "justMyCode": false,
         }

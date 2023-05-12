@@ -15,13 +15,17 @@ const SetupAccount = ({ onClose }: { onClose: () => void }) => {
 
   const [loadingStripe, setLoadingStripe] = useState(false)
 
-  const onChangeCountry = (countryCode) => {
+  const onChangeCountry = (countryCode: string) => {
     setErrorMessage(undefined)
     setCountry(countryCode)
   }
 
   const onConfirm = async () => {
     setLoadingStripe(true)
+
+    if (!currentOrg) {
+      throw Error('no org set')
+    }
 
     try {
       const account = await api.accounts.createAccount({

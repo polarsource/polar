@@ -48,7 +48,7 @@ const OrganizationDashboard = ({
           onSetFilters={onSetFilters}
           isFetching={dashboardQuery.isFetching}
           isFetchingNextPage={dashboardQuery.isFetchingNextPage}
-          hasNextPage={dashboardQuery.hasNextPage}
+          hasNextPage={dashboardQuery.hasNextPage || false}
           fetchNextPage={dashboardQuery.fetchNextPage}
         />
       </div>

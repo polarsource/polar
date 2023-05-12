@@ -44,9 +44,14 @@ const Search = (props: {
   const onStatusChange = (event: ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation()
 
-    const id = event.target.id
-    let f: DashboardFilters = { ...filters }
-    f[id] = event.target.checked
+    type F = keyof DashboardFilters
+    const id = event.target.id as F
+
+    const f: DashboardFilters = {
+      ...filters,
+      [id]: event.target.checked,
+    }
+
     onSetFilters(f)
     navigate(router, f)
   }
@@ -81,23 +86,25 @@ const Search = (props: {
   return (
     <div className="flex w-full flex-col space-y-3">
       <Tabs>
-        {showTabs.includes(IssueListType.ISSUES) && (
-          <Tab
-            active={filters.tab === IssueListType.ISSUES}
-            onClick={() => onTabChange(IssueListType.ISSUES)}
-          >
-            Issues
-          </Tab>
-        )}
+        <>
+          {showTabs.includes(IssueListType.ISSUES) && (
+            <Tab
+              active={filters.tab === IssueListType.ISSUES}
+              onClick={() => onTabChange(IssueListType.ISSUES)}
+            >
+              Issues
+            </Tab>
+          )}
 
-        {showTabs.includes(IssueListType.DEPENDENCIES) && (
-          <Tab
-            active={filters.tab === IssueListType.DEPENDENCIES}
-            onClick={() => onTabChange(IssueListType.DEPENDENCIES)}
-          >
-            Dependencies
-          </Tab>
-        )}
+          {showTabs.includes(IssueListType.DEPENDENCIES) && (
+            <Tab
+              active={filters.tab === IssueListType.DEPENDENCIES}
+              onClick={() => onTabChange(IssueListType.DEPENDENCIES)}
+            >
+              Dependencies
+            </Tab>
+          )}
+        </>
       </Tabs>
       <form className="space-y-4" onSubmit={onSubmit}>
         <div>

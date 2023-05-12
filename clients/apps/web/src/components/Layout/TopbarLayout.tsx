@@ -1,11 +1,13 @@
 import Topbar from '../Shared/Topbar'
 import EmptyLayout from './EmptyLayout'
 
-const TopbarLayout = ({ children }) => {
+const TopbarLayout = ({ children }: { children: React.ReactElement }) => {
   return (
     <EmptyLayout>
-      <Topbar />
-      {children}
+      <>
+        <Topbar />
+        {children}
+      </>
     </EmptyLayout>
   )
 }

@@ -63,11 +63,14 @@ const IssueList = (props: {
         </PrimaryButton>
       )}
 
-      {props.totalCount > 100 && !hasNextPage && (
-        <div className="p-4 text-center text-gray-500">
-          You&apos;ve reached the bottom... 🏝️
-        </div>
-      )}
+      {props &&
+        props.totalCount !== undefined &&
+        props.totalCount > 100 &&
+        !hasNextPage && (
+          <div className="p-4 text-center text-gray-500">
+            You&apos;ve reached the bottom... 🏝️
+          </div>
+        )}
     </div>
   )
 }
@@ -123,15 +126,16 @@ const Header = (props: {
   const onSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value
 
-    let sort: IssueSortBy = {
-      newest: IssueSortBy.NEWEST,
-      pledged_amount_desc: IssueSortBy.PLEDGED_AMOUNT_DESC,
-      relevance: IssueSortBy.RELEVANCE,
-      dependencies_default: IssueSortBy.DEPENDENCIES_DEFAULT,
-      issues_default: IssueSortBy.ISSUES_DEFAULT,
-    }[value]
+    let sort: IssueSortBy =
+      {
+        newest: IssueSortBy.NEWEST,
+        pledged_amount_desc: IssueSortBy.PLEDGED_AMOUNT_DESC,
+        relevance: IssueSortBy.RELEVANCE,
+        dependencies_default: IssueSortBy.DEPENDENCIES_DEFAULT,
+        issues_default: IssueSortBy.ISSUES_DEFAULT,
+      }[value] || IssueSortBy.NEWEST
 
-    const filters = {
+    const filters: DashboardFilters = {
       ...props.filters,
       sort,
     }
@@ -140,34 +144,49 @@ const Header = (props: {
     navigate(router, filters)
   }
 
-  const title = useMemo(() => {
-    return {
-      newest: 'Newest',
-      pledged_amount_desc: 'Pledged amount',
-      relevance: 'Relevance',
-      dependencies_default: 'Most wanted',
-      issues_default: 'Most wanted',
+  const getTitle = (sortBy: IssueSortBy): string => {
+    if (sortBy == IssueSortBy.NEWEST) {
+      return 'Newest'
     }
-  }, [])
+    if (sortBy == IssueSortBy.PLEDGED_AMOUNT_DESC) {
+      return 'Pledged amount'
+    }
+    if (sortBy == IssueSortBy.RELEVANCE) {
+      return 'Relevance'
+    }
+    if (sortBy == IssueSortBy.DEPENDENCIES_DEFAULT) {
+      return 'Most wanted'
+    }
+    if (sortBy == IssueSortBy.ISSUES_DEFAULT) {
+      return 'Most wanted'
+    }
+    return 'Most wanted'
+  }
 
-  const issuesTabFilters = ['issues_default']
-  const dependenciesTabFilters = ['dependencies_default']
+  const issuesTabFilters = [IssueSortBy.ISSUES_DEFAULT]
+  const dependenciesTabFilters = [IssueSortBy.DEPENDENCIES_DEFAULT]
 
-  const tabFilters =
-    props.filters.tab === IssueListType.ISSUES
+  const tabFilters: IssueSortBy[] = useMemo(() => {
+    return props.filters.tab === IssueListType.ISSUES
       ? issuesTabFilters
       : dependenciesTabFilters
+  }, [props.filters.tab])
 
-  const options = [].concat(tabFilters, [
-    'newest',
-    'pledged_amount_desc',
-    'relevance',
-  ])
+  const options: IssueSortBy[] = useMemo(() => {
+    return [
+      ...tabFilters,
+      ...[
+        IssueSortBy.NEWEST,
+        IssueSortBy.PLEDGED_AMOUNT_DESC,
+        IssueSortBy.RELEVANCE,
+      ],
+    ]
+  }, [tabFilters])
 
   const width = useMemo(() => {
-    const t = title[props.filters.sort] || 'Most wanted'
+    const t = getTitle(props.filters.sort || tabFilters[0])
     return t.length * 7.5 + 35 // TODO(gustav): can we use the on-screen size instead somehow?
-  }, [props.filters.sort, title])
+  }, [props.filters.sort])
 
   return (
     <div className="flex h-12 items-center justify-between px-2">
@@ -192,7 +211,7 @@ const Header = (props: {
         >
           {options.map((v) => (
             <option key={v} value={v}>
-              {title[v]}
+              {getTitle(v)}
             </option>
           ))}
         </select>

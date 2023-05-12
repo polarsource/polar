@@ -217,14 +217,17 @@ const Pill = ({ className }: { className: string }) => (
 )
 
 const Pills = ({ state }: { state: string }) => {
-  const states = {
-    created: { num: 1, color: 'bg-blue-400' },
-    pending: { num: 2, color: 'bg-blue-400' },
-    paid: { num: 3, color: 'bg-blue-400' },
-    refunded: { num: 2, color: 'bg-red-400' },
-    disputed: { num: 4, color: 'bg-red-400' },
-  }
-  const pillState = states[state] || { num: 0, color: 'bg-blue-400' }
+  const states: Map<string, { num: number; color: string }> = new Map(
+    Object.entries({
+      created: { num: 1, color: 'bg-blue-400' },
+      pending: { num: 2, color: 'bg-blue-400' },
+      paid: { num: 3, color: 'bg-blue-400' },
+      refunded: { num: 2, color: 'bg-red-400' },
+      disputed: { num: 4, color: 'bg-red-400' },
+    }),
+  )
+
+  const pillState = states.get(state) || { num: 0, color: 'bg-blue-400' }
   const filled = [...Array(pillState.num)]
   const pending = [...Array(4 - pillState.num)]
 

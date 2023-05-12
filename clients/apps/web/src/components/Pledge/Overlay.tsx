@@ -13,7 +13,7 @@ import { IssueCard, RepositoryCard } from 'polarkit/components/pledge'
 import { GreenBanner, PrimaryButton, RedBanner } from 'polarkit/components/ui'
 import { useOrganizationCustomer, useUserOrganizations } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/utils'
-import { useEffect, useRef, useState } from 'react'
+import { ChangeEvent, useEffect, useRef, useState } from 'react'
 import { useRequireAuth } from '../../hooks'
 
 type PledgeSync = {
@@ -38,57 +38,6 @@ const Overlay = ({
   const [pledge, setPledge] = useState<PledgeMutationResponse | undefined>(
     undefined,
   )
-
-  const onSelectOrg = (selected: string) => {
-    const org = userOrgQuery.data?.find((o) => o.name === selected)
-    setSelectedOrg(org)
-    debouncedSync({ amount, pledgeAsOrg: org })
-  }
-
-  const [selectedOrg, setSelectedOrg] = useState<OrganizationPrivateRead>()
-
-  const orgCustomer = useOrganizationCustomer(selectedOrg?.name)
-  const customer = orgCustomer.data
-
-  const MINIMUM_PLEDGE =
-    typeof CONFIG.MINIMUM_PLEDGE_AMOUNT === 'string'
-      ? parseInt(CONFIG.MINIMUM_PLEDGE_AMOUNT)
-      : CONFIG.MINIMUM_PLEDGE_AMOUNT
-
-  const [amount, setAmount] = useState(0)
-  const [errorMessage, setErrorMessage] = useState<string | undefined>()
-  const [isSyncing, setSyncing] = useState(false)
-
-  const onAmountChange = (event) => {
-    const amount = parseInt(event.target.value)
-    if (isNaN(amount)) {
-      setErrorMessage('Please enter a valid amount')
-      return
-    }
-    const amountInCents = amount * 100
-
-    if (amountInCents < MINIMUM_PLEDGE) {
-      setErrorMessage(
-        `Minimum amount is $${getCentsInDollarString(MINIMUM_PLEDGE)}`,
-      )
-      return
-    }
-
-    setErrorMessage(null)
-    setAmount(amountInCents)
-    debouncedSync({ amount: amountInCents, pledgeAsOrg: selectedOrg })
-  }
-
-  const [havePaymentMethod, setHavePaymentMethod] = useState(false)
-  useEffect(() => {
-    setHavePaymentMethod(
-      customer?.default_payment_method?.card_last4 !== undefined,
-    )
-  }, [customer])
-
-  const [isDone, setIsDone] = useState(false)
-
-  const syncTimeout = useRef(null)
 
   const shouldSynchronizePledge = (pledgeSync: PledgeSync) => {
     if (pledgeSync.amount < MINIMUM_PLEDGE) {
@@ -121,8 +70,13 @@ const Overlay = ({
       },
     })
 
-  const updatePledge = (pledgeSync: PledgeSync) =>
-    api.pledges.updatePledge({
+  const updatePledge = async (
+    pledgeSync: PledgeSync,
+  ): Promise<PledgeMutationResponse> => {
+    if (!pledge) {
+      throw Error('no pledge to update')
+    }
+    return await api.pledges.updatePledge({
       platform: issue.platform,
       orgName: issueOrg.name,
       repoName: issueRepo.name,
@@ -132,15 +86,6 @@ const Overlay = ({
         amount: pledgeSync.amount,
         pledge_as_org: pledgeSync.pledgeAsOrg?.id,
       },
-    })
-
-  const payPledge = async () => {
-    return await api.pledges.confirmPledge({
-      platform: issue.platform,
-      orgName: issueOrg.name,
-      repoName: issueRepo.name,
-      number: issue.number,
-      pledgeId: pledge.id,
     })
   }
 
@@ -167,12 +112,83 @@ const Overlay = ({
     setSyncing(false)
   }
 
+  const syncTimeout = useRef<ReturnType<typeof setTimeout>>()
   const debouncedSync = (pledgeSync: PledgeSync) => {
     clearTimeout(syncTimeout.current)
     syncTimeout.current = setTimeout(() => synchronizePledge(pledgeSync), 500)
   }
 
-  const onClickPledge = async (e) => {
+  const onSelectOrg = (selected: string) => {
+    const org = userOrgQuery.data?.find((o) => o.name === selected)
+    if (!org) {
+      return
+    }
+    setSelectedOrg(org)
+    debouncedSync({ amount, pledgeAsOrg: org })
+  }
+
+  const [selectedOrg, setSelectedOrg] = useState<OrganizationPrivateRead>()
+
+  const orgCustomer = useOrganizationCustomer(selectedOrg?.name)
+  const customer = orgCustomer.data
+
+  const MINIMUM_PLEDGE =
+    typeof CONFIG.MINIMUM_PLEDGE_AMOUNT === 'string'
+      ? parseInt(CONFIG.MINIMUM_PLEDGE_AMOUNT)
+      : CONFIG.MINIMUM_PLEDGE_AMOUNT
+
+  const [amount, setAmount] = useState(0)
+  const [errorMessage, setErrorMessage] = useState<string | undefined>()
+  const [isSyncing, setSyncing] = useState(false)
+
+  const onAmountChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const amount = parseInt(event.target.value)
+    if (isNaN(amount)) {
+      setErrorMessage('Please enter a valid amount')
+      return
+    }
+    const amountInCents = amount * 100
+
+    if (amountInCents < MINIMUM_PLEDGE) {
+      setErrorMessage(
+        `Minimum amount is $${getCentsInDollarString(MINIMUM_PLEDGE)}`,
+      )
+      return
+    }
+
+    setErrorMessage(undefined)
+    setAmount(amountInCents)
+
+    if (!selectedOrg) {
+      return
+    }
+
+    debouncedSync({ amount: amountInCents, pledgeAsOrg: selectedOrg })
+  }
+
+  const [havePaymentMethod, setHavePaymentMethod] = useState(false)
+  useEffect(() => {
+    setHavePaymentMethod(
+      customer?.default_payment_method?.card_last4 !== undefined,
+    )
+  }, [customer])
+
+  const [isDone, setIsDone] = useState(false)
+
+  const payPledge = async () => {
+    if (!pledge) {
+      throw Error('no pledge')
+    }
+    return await api.pledges.confirmPledge({
+      platform: issue.platform,
+      orgName: issueOrg.name,
+      repoName: issueRepo.name,
+      number: issue.number,
+      pledgeId: pledge.id,
+    })
+  }
+
+  const onClickPledge = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     await payPledge()
     setIsDone(true)

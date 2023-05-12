@@ -9,10 +9,10 @@ import DashboardTopbar, {
 
 const DashboardLayout = (props: {
   children: any
-  filters?: DashboardFilters
+  filters: DashboardFilters
   showSidebar: boolean
   isPersonalDashboard: boolean
-  onSetFilters?: Dispatch<SetStateAction<DashboardFilters>>
+  onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
 }) => {
   const { filters, onSetFilters, children, showSidebar } = props
 

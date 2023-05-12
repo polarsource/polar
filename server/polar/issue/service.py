@@ -2,7 +2,18 @@ from __future__ import annotations
 
 from uuid import UUID
 from typing import List, Sequence, Tuple
-from sqlalchemy import Integer, desc, func, not_, nullslast, or_, and_, ColumnElement
+from sqlalchemy import (
+    Integer,
+    String,
+    desc,
+    distinct,
+    func,
+    not_,
+    nullslast,
+    or_,
+    and_,
+    ColumnElement,
+)
 from sqlalchemy.orm import joinedload
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
@@ -11,6 +22,7 @@ from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
 from polar.kit.services import ResourceService
 from polar.models.issue import Issue
 from polar.models.pledge import Pledge
+from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
 from polar.enums import Platforms
 from polar.models.issue_dependency import IssueDependency
@@ -87,8 +99,6 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         repository_ids: list[UUID],
         issue_list_type: IssueListType,
         text: str | None = None,
-        include_open: bool = True,
-        include_closed: bool = False,
         pledged_by_org: UUID
         | None = None,  # Only include issues that have been pledged by this org
         pledged_by_user: UUID
@@ -99,7 +109,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         sort_by: IssueSortBy = IssueSortBy.newest,
         offset: int = 0,
         limit: int | None = None,
-        include_statuses: list[IssueStatus] = [],
+        include_statuses: list[IssueStatus] | None = None,
     ) -> Tuple[Sequence[Issue], int]:  # (issues, total_issue_count)
         pledge_statuses = list(
             set(PledgeState.active_states()) | set([PledgeState.disputed])
@@ -145,14 +155,6 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         else:
             raise ValueError(f"Unknown issue list type: {issue_list_type}")
 
-        filters = []
-        if include_open:
-            filters.append(Issue.issue_closed_at.is_(None))
-        if include_closed:
-            filters.append(Issue.issue_closed_at.is_not(None))
-
-        statement = statement.where(or_(*filters))
-
         # pledge filter
         if have_pledge is not None:
             if have_pledge:
@@ -163,24 +165,48 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         if include_statuses:
             conds: list[ColumnElement[bool]] = []
 
+            is_completed = Issue.issue_closed_at.is_not(None)
+
+            is_pull_request = and_(
+                Issue.issue_has_pull_request_relationship.is_(True), not_(is_completed)
+            )
+
+            is_in_progress = and_(
+                Issue.issue_has_in_progress_relationship.is_(True),
+                not_(is_pull_request),
+                not_(is_completed),
+            )
+
+            is_triaged = and_(
+                or_(
+                    Issue.labels.is_not(None),
+                    Issue.assignee.is_not(None),
+                    Issue.assignees.is_not(None),
+                ),
+                not_(is_in_progress),
+                not_(is_pull_request),
+                not_(is_completed),
+            )
+
+            # backlog
+            is_backlog: ColumnElement[bool] = and_(
+                not_(is_triaged),
+                not_(is_in_progress),
+                not_(is_pull_request),
+                not_(is_completed),
+            )
+
             for status in include_statuses:
+                if status == IssueStatus.backlog:
+                    conds.append(is_backlog)
                 if status == IssueStatus.triaged:
-                    conds.append(
-                        and_(
-                            or_(
-                                Issue.labels.is_not(None),
-                                Issue.assignee.is_not(None),
-                                Issue.assignees.is_not(None),
-                            ),
-                            # not IssueStatus.completed
-                            not_(Issue.issue_closed_at.is_not(None)),
-                        )
-                    )
-
-                # if status == IssueStatus.pull_request:
-
+                    conds.append(is_triaged)
+                if status == IssueStatus.in_progress:
+                    conds.append(is_in_progress)
+                if status == IssueStatus.pull_request:
+                    conds.append(is_pull_request)
                 if status == IssueStatus.completed:
-                    conds.append(Issue.issue_closed_at.is_not(None))
+                    conds.append(is_completed)
 
             statement = statement.where(or_(*conds))
 
@@ -312,6 +338,34 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         res = await session.execute(stmt)
         deps = res.scalars().unique().all()
         return deps
+
+    async def update_issue_reference_state(
+        self,
+        session: AsyncSession,
+        issue: Issue,
+    ) -> None:
+        refs = await self.list_issue_references(session, issue)
+
+        in_progress = False
+        pull_request = False
+
+        for r in refs:
+            if r.pull_request and not r.pull_request.is_draft:
+                pull_request = True
+            else:
+                in_progress = True
+
+        stmt = (
+            sql.update(Issue)
+            .where(Issue.id == issue.id)
+            .values(
+                issue_has_in_progress_relationship=in_progress,
+                issue_has_pull_request_relationship=pull_request,
+            )
+        )
+
+        await session.execute(stmt)
+        await session.commit()
 
 
 issue = IssueService(Issue)

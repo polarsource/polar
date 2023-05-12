@@ -1,0 +1,22 @@
+digraph {
+    node [shape = record;];
+    
+    rankdir = LR;
+    
+    
+    
+    # Happy path
+    subgraph happy_path {
+        node [color = green; style = filled;];
+        initiated -> created -> pending -> paid [color = blue;];
+    }
+    
+    subgraph errors {
+        node [color = red; style = filled;];
+        disputed;
+        refunded;
+    }
+    
+    {created pending} -> disputed -> {refunded paid};
+    {created pending} -> refunded;
+}

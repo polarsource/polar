@@ -6,6 +6,7 @@ from datetime import datetime
 from sqlalchemy import (
     TIMESTAMP,
     BigInteger,
+    Boolean,
     ForeignKey,
     Index,
     Integer,
@@ -85,23 +86,27 @@ class IssueFields:
     body: Mapped[str | None] = mapped_column(Text, nullable=True)
     comments: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    author: Mapped[JSONDict | None] = mapped_column(JSONB, nullable=True, default=dict)
+    author: Mapped[JSONDict | None] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=dict
+    )
     author_association: Mapped[str | None] = mapped_column(String, nullable=True)
-    labels: Mapped[JSONList | None] = mapped_column(JSONB, nullable=True, default=list)
+    labels: Mapped[JSONList | None] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=list
+    )
     assignee: Mapped[JSONDict | None] = mapped_column(
-        JSONB, nullable=True, default=dict
+        JSONB(none_as_null=True), nullable=True, default=dict
     )
     assignees: Mapped[JSONList | None] = mapped_column(
-        JSONB, nullable=True, default=list
+        JSONB(none_as_null=True), nullable=True, default=list
     )
     milestone: Mapped[JSONDict | None] = mapped_column(
-        JSONB, nullable=True, default=dict
+        JSONB(none_as_null=True), nullable=True, default=dict
     )
     closed_by: Mapped[JSONDict | None] = mapped_column(
-        JSONB, nullable=True, default=dict
+        JSONB(none_as_null=True), nullable=True, default=dict
     )
     reactions: Mapped[JSONDict | None] = mapped_column(
-        JSONB, nullable=True, default=dict
+        JSONB(none_as_null=True), nullable=True, default=dict
     )
 
     state: Mapped[str] = mapped_column(StringEnum(State), nullable=False)
@@ -192,6 +197,14 @@ class Issue(IssueFields, RecordModel):
     # not to be exported through APIs
     pledged_amount_sum: Mapped[int] = mapped_column(
         BigInteger, nullable=False, default=0
+    )
+
+    issue_has_in_progress_relationship: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
+
+    issue_has_pull_request_relationship: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
     )
 
     on_created_signal = issue_created

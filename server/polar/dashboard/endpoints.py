@@ -414,9 +414,9 @@ def issue_progress(issue: Issue) -> IssueStatus:
     # building
     for r in issue.references:
         if r.pull_request and r.pull_request.is_draft:
-            return IssueStatus.building
+            return IssueStatus.in_progress
     if issue.references:
-        return IssueStatus.building
+        return IssueStatus.in_progress
 
     # triaged
     if issue.labels or issue.assignee or issue.assignees:

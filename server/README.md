@@ -27,7 +27,7 @@ poetry run task db_migrate
 # Fast API backend
 poetry run task api
 
-# (in another terminal) Start the celery worker
+# (in another terminal) Start the arq worker
 poetry run task worker
 
 # Run the tests

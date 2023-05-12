@@ -56,7 +56,6 @@ class RepositoryService(
         res = await session.execute(statement)
         return res.scalars().unique().all()
 
-
     async def update_badge_settings(
         self,
         session: AsyncSession,
@@ -84,14 +83,15 @@ class RepositoryService(
         if enabled_pledge_badge and settings.retroactive:
             await enqueue_job(
                 "github.badge.embed_retroactively_on_repository",
-                organization.id, repository.id
+                organization.id,
+                repository.id,
             )
         elif disabled_pledge_badge and settings.retroactive:
             await enqueue_job(
-                "github.badge.remove_on_repository",
-                organization.id, repository.id
+                "github.badge.remove_on_repository", organization.id, repository.id
             )
 
         return settings
+
 
 repository = RepositoryService(Repository)

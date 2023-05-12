@@ -22,4 +22,5 @@ class PledgeTransaction(RecordModel):
     transaction_id: Mapped[str] = mapped_column(String, nullable=True)
 
     pledge: Mapped[Pledge] = relationship(
-        "Pledge", foreign_keys=[pledge_id], lazy="raise")
+        "Pledge", foreign_keys=[pledge_id], lazy="raise"
+    )

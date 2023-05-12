@@ -25,8 +25,13 @@ from polar.organization.service import organization as organization_service
 from polar.account.service import account as account_service
 from polar.exceptions import ResourceNotFound, NotPermitted
 
-from .schemas import (PledgeCreate, PledgeMutationResponse, PledgeTransactionType,
-    PledgeUpdate, PledgeState)
+from .schemas import (
+    PledgeCreate,
+    PledgeMutationResponse,
+    PledgeTransactionType,
+    PledgeUpdate,
+    PledgeState,
+)
 
 log = structlog.get_logger()
 
@@ -117,7 +122,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         repo: Repository,
         issue: Issue,
         session: AsyncSession,
-    ) ->  PledgeMutationResponse:
+    ) -> PledgeMutationResponse:
         # Pre-authenticated pledge flow (with saved CC)
         if pledge.pledge_as_org and user:
             return await self.create_pledge_as_org(
@@ -189,7 +194,6 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
 
         return ret
 
-
     async def create_pledge_user(
         self,
         platform: Platforms,
@@ -231,7 +235,6 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             await user.save(session)
 
         return ret
-
 
     async def create_pledge_as_org(
         self,
@@ -281,31 +284,35 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         repo: Repository,
         user: User | None,
         pledge_id: UUID,
-        updates: PledgeUpdate
+        updates: PledgeUpdate,
     ) -> PledgeMutationResponse:
         payment_intent = None
 
         pledge = await self.get(session=session, id=pledge_id)
 
         if not pledge or pledge.repository_id != repo.id:
-            raise ResourceNotFound('Pledge not found')
+            raise ResourceNotFound("Pledge not found")
 
         if updates.pledge_as_org and not user:
-            raise NotPermitted('Logged-in user required')
+            raise NotPermitted("Logged-in user required")
 
         if updates.amount and updates.amount != pledge.amount:
             pledge.amount = updates.amount
             pledge.fee = self.calculate_fee(pledge.amount)
             if pledge.payment_id:
                 # Some pledges (those created by orgs) don't have a payment intent
-                payment_intent = stripe.modify_intent(pledge.payment_id,
-                    amount=pledge.amount_including_fee)
+                payment_intent = stripe.modify_intent(
+                    pledge.payment_id, amount=pledge.amount_including_fee
+                )
 
         if updates.email and updates.email != pledge.email:
             pledge.email = updates.email
 
-        if user and updates.pledge_as_org and \
-            updates.pledge_as_org != pledge.organization_id:
+        if (
+            user
+            and updates.pledge_as_org
+            and updates.pledge_as_org != pledge.organization_id
+        ):
             pledge_as_org = await organization_service.get_by_id_for_user(
                 session=session,
                 platform=platform,
@@ -335,7 +342,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         pledge = await self.get_with_loaded(session=session, pledge_id=pledge_id)
 
         if not pledge or pledge.repository_id != repo.id:
-            raise ResourceNotFound('Pledge not found')
+            raise ResourceNotFound("Pledge not found")
 
         payment_intent = await stripe.create_confirmed_payment_intent_for_organization(
             session=session,

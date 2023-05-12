@@ -55,8 +55,10 @@ const Popover = () => {
       haveNotifications &&
       notifs.data.last_read_notification_id !== notifs.data.notifications[0].id
 
-    const showBadge =
-      haveNotifications && (noReadNotifications || lastNotificationIsUnread)
+    const showBadge = !!(
+      haveNotifications &&
+      (noReadNotifications || lastNotificationIsUnread)
+    )
 
     setShowBadge(showBadge)
   }, [notifs, notifs.data])
@@ -74,7 +76,7 @@ const Popover = () => {
         )}
       </div>
 
-      {show && (
+      {show && notifs.data && (
         <div
           aria-live="assertive"
           className="pointer-events-none fixed inset-0 top-6 flex items-end px-4 py-6 sm:items-start sm:p-6"

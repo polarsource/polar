@@ -5,7 +5,8 @@ export type DashboardFilters = {
   q: string
   tab: IssueListType
   statusBacklog: boolean
-  statusBuild: boolean
+  statusTriaged: boolean
+  statusInProgress: boolean
   statusPullRequest: boolean
   statusCompleted: boolean
   onlyPledged: boolean
@@ -19,8 +20,11 @@ export const navigate = (router: NextRouter, filters: DashboardFilters) => {
   if (filters.statusBacklog) {
     statuses.push('backlog')
   }
-  if (filters.statusBuild) {
-    statuses.push('build')
+  if (filters.statusTriaged) {
+    statuses.push('triaged')
+  }
+  if (filters.statusInProgress) {
+    statuses.push('in_progress')
   }
   if (filters.statusPullRequest) {
     statuses.push('pull_request')

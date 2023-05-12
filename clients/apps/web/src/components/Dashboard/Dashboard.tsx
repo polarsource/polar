@@ -15,7 +15,8 @@ import { DashboardFilters } from './filters'
 const buildStatusesFilter = (filters: DashboardFilters): Array<IssueStatus> => {
   const next = []
   filters.statusBacklog && next.push(IssueStatus.BACKLOG)
-  filters.statusBuild && next.push(IssueStatus.BUILDING)
+  filters.statusTriaged && next.push(IssueStatus.TRIAGED)
+  filters.statusInProgress && next.push(IssueStatus.IN_PROGRESS)
   filters.statusPullRequest && next.push(IssueStatus.PULL_REQUEST)
   filters.statusCompleted && next.push(IssueStatus.COMPLETED)
   return next
@@ -25,7 +26,8 @@ export const DefaultFilters: DashboardFilters = {
   tab: IssueListType.ISSUES,
   q: '',
   statusBacklog: true,
-  statusBuild: true,
+  statusTriaged: true,
+  statusInProgress: true,
   statusPullRequest: true,
   statusCompleted: false,
   sort: undefined,
@@ -96,7 +98,8 @@ const Dashboard = ({
       if (s.has('statuses')) {
         const statuses = s.get('statuses').split(',')
         f.statusBacklog = statuses.includes('backlog')
-        f.statusBuild = statuses.includes('build')
+        f.statusTriaged = statuses.includes('triaged')
+        f.statusInProgress = statuses.includes('in_progress')
         f.statusPullRequest = statuses.includes('pull_request')
         f.statusCompleted = statuses.includes('completed')
       }

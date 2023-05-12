@@ -336,6 +336,8 @@ class GitHubIssueReferencesService:
                     await issue.save(session)
                     log.info("github.sync_issue_references.404.marking_as_crawled")
                     return
+                else:
+                    raise e
 
             # Cache hit, nothing new
             if first_page and res.status_code == 304:

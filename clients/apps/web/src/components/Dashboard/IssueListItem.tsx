@@ -89,6 +89,10 @@ const IssueListItem = (props: {
     setShowDisputeModalForPledge(undefined)
   }
 
+  if (!props.issue.organization) {
+    return <></>
+  }
+
   return (
     <>
       <div>
@@ -210,7 +214,7 @@ const IssueListItem = (props: {
 const generateMarkdownTitle = (
   title: string,
 ): React.ReactElement | React.ReactElement[] => {
-  const matches = [...title.matchAll(/`([^`]*)`/g)]
+  const matches: RegExpMatchArray[] = [...title.matchAll(/`([^`]*)`/g)]
   if (matches.length === 0) {
     return <>{title}</>
   }
@@ -221,6 +225,10 @@ const generateMarkdownTitle = (
   const matchCount = matches.length
 
   for (const match of matches) {
+    if (!match.index) {
+      continue
+    }
+
     i += 1
     if (offset < match.index) {
       nodes.push(

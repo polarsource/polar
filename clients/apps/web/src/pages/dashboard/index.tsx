@@ -1,4 +1,4 @@
-import Dashboard from 'components/Dashboard/Dashboard'
+import Dashboard, { DefaultFilters } from 'components/Dashboard/Dashboard'
 import Gatekeeper from 'components/Dashboard/Gatekeeper/Gatekeeper'
 import DashboardLayout from 'components/Layout/DashboardLayout'
 import OnboardingConnectReposToGetStarted from 'components/Onboarding/OnboardingConnectReposToGetStarted'
@@ -41,7 +41,12 @@ const Page: NextLayoutComponentType = () => {
 
   if (!haveOrgs) {
     return (
-      <DashboardLayout showSidebar={false} isPersonalDashboard={false}>
+      <DashboardLayout
+        showSidebar={false}
+        isPersonalDashboard={false}
+        filters={DefaultFilters}
+        onSetFilters={() => {}}
+      >
         <OnboardingConnectReposToGetStarted />
       </DashboardLayout>
     )

@@ -20,7 +20,7 @@ import yayson from 'yayson'
 import IssueListItem from './IssueListItem'
 
 const IssueList = (props: {
-  dashboard: InfiniteData<IssueListResponse>
+  dashboard?: InfiniteData<IssueListResponse>
   filters: DashboardFilters
   loading: boolean
   totalCount?: number

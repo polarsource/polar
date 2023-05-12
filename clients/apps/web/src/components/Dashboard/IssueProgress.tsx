@@ -16,6 +16,31 @@ const Progress0 = () => (
   </svg>
 )
 
+const Progress25 = () => (
+  <svg
+    width="32"
+    height="32"
+    viewBox="0 0 32 32"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M16 8.5C16.9849 8.5 17.9602 8.69399 18.8701 9.0709C19.7801 9.44781 20.6069 10.0003 21.3033 10.6967C21.9997 11.3931 22.5522 12.2199 22.9291 13.1299C23.306 14.0398 23.5 15.0151 23.5 16C23.5 16.9849 23.306 17.9602 22.9291 18.8701C22.5522 19.7801 21.9997 20.6069 21.3033 21.3033C20.6069 21.9997 19.7801 22.5522 18.8701 22.9291C17.9602 23.306 16.9849 23.5 16 23.5C15.0151 23.5 14.0398 23.306 13.1299 22.9291C12.2199 22.5522 11.3931 21.9997 10.6967 21.3033C10.0003 20.6069 9.44781 19.7801 9.0709 18.8701C8.69399 17.9602 8.5 16.9849 8.5 16C8.5 15.0151 8.69399 14.0398 9.07091 13.1299C9.44782 12.2199 10.0003 11.3931 10.6967 10.6967C11.3931 10.0003 12.2199 9.44781 13.1299 9.0709C14.0398 8.69399 15.0151 8.5 16 8.5L16 8.5Z"
+      stroke="#EAECF0"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M16 8.5C16.9849 8.5 17.9602 8.69399 18.8701 9.0709C19.7801 9.44781 20.6069 10.0003 21.3033 10.6967C21.9997 11.3931 22.5522 12.2199 22.9291 13.1299C23.306 14.0398 23.5 15.0151 23.5 16"
+      stroke="#5A82D7"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+)
+
 const Progress50 = () => (
   <svg
     width="30"
@@ -114,7 +139,7 @@ const IssueProgress = (props: { progress: Progress }) => {
     <div className="flex items-center text-gray-500">
       <span className="text-sm capitalize">{pretty}</span>
       {progress === 'backlog' && <Progress0 />}
-      {progress === 'triaged' && <Progress50 />}
+      {progress === 'triaged' && <Progress25 />}
       {progress === 'building' && <Progress50 />}
       {progress === 'in_progress' && <Progress50 />}
       {progress === 'pull_request' && <Progress75 />}

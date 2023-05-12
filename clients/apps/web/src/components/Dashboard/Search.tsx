@@ -24,7 +24,7 @@ const Search = (props: {
       sort = IssueSortBy.DEPENDENCIES_DEFAULT
     }
 
-    const f = { ...filters, tab, sort }
+    const f: DashboardFilters = { ...filters, tab, sort }
     onSetFilters(f)
     navigate(router, f)
   }
@@ -35,7 +35,7 @@ const Search = (props: {
 
     // if not set, set to relevance
     const sort = filters.sort || IssueSortBy.RELEVANCE
-    const f = { ...filters, q: event.target.value, sort }
+    const f: DashboardFilters = { ...filters, q: event.target.value, sort }
     onSetFilters(f)
 
     navigate(router, f)
@@ -45,7 +45,7 @@ const Search = (props: {
     event.stopPropagation()
 
     const id = event.target.id
-    let f = { ...filters }
+    let f: DashboardFilters = { ...filters }
     f[id] = event.target.checked
     onSetFilters(f)
     navigate(router, f)
@@ -57,10 +57,11 @@ const Search = (props: {
   }
 
   const resetStatus = () => {
-    const f = {
+    const f: DashboardFilters = {
       ...filters,
       statusBacklog: true,
-      statusBuild: true,
+      statusTriaged: true,
+      statusInProgress: true,
       statusPullRequest: true,
       statusCompleted: false,
     }
@@ -69,7 +70,7 @@ const Search = (props: {
   }
 
   const resetFilters = () => {
-    const f = {
+    const f: DashboardFilters = {
       ...filters,
       onlyPledged: false,
     }

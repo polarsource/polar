@@ -1,6 +1,6 @@
 from uuid import UUID
 import structlog
-from polar.dashboard.schemas import IssueListType, IssueSortBy
+from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
 
 from polar.worker import JobContext, PolarWorkerContext, enqueue_job, task
 from polar.postgres import AsyncSessionLocal
@@ -55,6 +55,12 @@ async def embed_badge_retroactively_on_repository(
                 repository_ids=[repository.id],
                 issue_list_type=IssueListType.issues,
                 sort_by=IssueSortBy.recently_updated,
+                include_statuses=[
+                    IssueStatus.backlog,
+                    IssueStatus.triaged,
+                    IssueStatus.in_progress,
+                    IssueStatus.pull_request,
+                ],
             )
 
             for i in reversed(issues):
@@ -80,7 +86,6 @@ async def remove_badges_on_repository(
                 session=session,
                 repository_ids=[repository.id],
                 issue_list_type=IssueListType.issues,
-                include_closed=True,  # Remove badge on closed issues too
                 sort_by=IssueSortBy.recently_updated,
             )
 

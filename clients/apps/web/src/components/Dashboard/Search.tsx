@@ -136,11 +136,18 @@ const Search = (props: {
             Backlog
           </Checkbox>
           <Checkbox
-            id="statusBuild"
-            value={filters.statusBuild}
+            id="statusTriaged"
+            value={filters.statusTriaged}
             onChange={onStatusChange}
           >
-            Build
+            Triaged
+          </Checkbox>
+          <Checkbox
+            id="statusInProgress"
+            value={filters.statusInProgress}
+            onChange={onStatusChange}
+          >
+            In progress
           </Checkbox>
           <Checkbox
             id="statusPullRequest"

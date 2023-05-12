@@ -43,6 +43,7 @@ const Page: NextLayoutComponentType = () => {
     deletions: 2,
     state: 'open',
     created_at: '2023-04-08',
+    is_draft: false,
   }
 
   const references: IssueReferenceRead[] = [

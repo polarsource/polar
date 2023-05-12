@@ -35,7 +35,7 @@ type Color = 'blue' | 'gray' | 'red' | 'green' | 'lightblue'
 
 type ButtonProps = {
   children: React.ReactNode
-  href: string | undefined
+  href?: string
   color: Color
   fullWidth: boolean
   onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
@@ -44,7 +44,6 @@ type ButtonProps = {
 const defaultProps = {
   disabled: false,
   loading: false,
-  href: undefined,
   color: 'blue',
   fullWidth: true,
   classNames: '',

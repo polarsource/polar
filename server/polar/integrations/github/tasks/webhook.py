@@ -253,6 +253,78 @@ async def issue_labeled_async(
     return dict(success=True, issue=schema.dict())
 
 
+@task("github.webhook.issues.assigned")
+async def issue_assigned(
+    ctx: JobContext,
+    scope: str,
+    action: str,
+    payload: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> dict[str, Any]:
+    with polar_context.to_execution_context() as context:
+        parsed = github.webhooks.parse_obj(scope, payload)
+        if not isinstance(parsed, github.webhooks.IssuesAssigned):
+            log.error("github.webhook.unexpected_type")
+            raise Exception("unexpected webhook payload")
+
+        async with AsyncSessionLocal() as session:
+            return await issue_assigned_async(session, scope, action, parsed)
+
+
+@task("github.webhook.issues.unassigned")
+async def issue_unassigned(
+    ctx: JobContext,
+    scope: str,
+    action: str,
+    payload: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> dict[str, Any]:
+    with polar_context.to_execution_context() as context:
+        parsed = github.webhooks.parse_obj(scope, payload)
+        if not isinstance(parsed, github.webhooks.IssuesUnassigned):
+            log.error("github.webhook.unexpected_type")
+            raise Exception("unexpected webhook payload")
+
+        async with AsyncSessionLocal() as session:
+            return await issue_assigned_async(session, scope, action, parsed)
+
+
+async def issue_assigned_async(
+    session: AsyncSession,
+    scope: str,
+    action: str,
+    event: Union[
+        github.webhooks.IssuesAssigned,
+        github.webhooks.IssuesUnassigned,
+    ],
+) -> dict[str, Any]:
+    issue = await service.github_issue.get_by_external_id(session, event.issue.id)
+    if not issue:
+        # TODO: Handle better
+        return dict(success=False, reason="issue not found")
+
+    # modify assignee
+    stmt = (
+        sql.Update(Issue)
+        .where(Issue.id == issue.id)
+        .values(
+            assignee=github.jsonify(event.issue.assignee),
+            assignees=github.jsonify(event.issue.assignees),
+        )
+    )
+    await session.execute(stmt)
+    await session.commit()
+
+    # get for return
+    issue = await service.github_issue.get_by_external_id(session, event.issue.id)
+    if not issue:
+        # TODO: Handle better
+        return dict(success=False, reason="issue not found")
+
+    schema = IssueRead.from_orm(issue)
+    return dict(success=True, issue=schema.dict())
+
+
 # ------------------------------------------------------------------------------
 # PULL REQUESTS
 # ------------------------------------------------------------------------------

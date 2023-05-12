@@ -77,11 +77,11 @@ const AcceptTerms = () => {
               onChange={onChangeAcceptTos}
             >
               I accept the{' '}
-              <Link href="/tos" className="underline">
+              <Link href="https://polar.sh/legal/terms" className="underline">
                 Terms of Service
               </Link>{' '}
               and{' '}
-              <Link href="/privacy" className="underline">
+              <Link href="https://polar.sh/legal/privacy" className="underline">
                 Privacy Policy
               </Link>
             </Checkbox>

@@ -32,8 +32,6 @@
 
 ## Introducing Polar
 
-Let’s fix open source funding. Sponsorship is fantastic, but not enough and never will be. Capital is always in pursuit of additional value – additional being the operative word. 
-
 **Polar is building a subscription network for open source maintainers and their backers.** Empowering maintainers to start and grow independent businesses and for their backers to seamlessly back impactful efforts and opt-in to premium- support, services and packages across their dependencies.
 
 Great businesses are customer obsessed. So we're starting with issues and feature requests.
@@ -64,7 +62,6 @@ Read more in our [Hello World](https://github.com/orgs/polarsource/discussions/3
 Documentation on how to setup a development environment is incoming. Until then, if you're feeling adventurous checkout our repository structure below and [clients/README](./clients/README.md) and [server/README](./server/README.md) in particular.
 
 ## Monorepo
-
 * **[server](./server/README.md)** – Python / FastAPI / Arq / SQLAlchemy (PostgreSQL) / Redis
 * **[clients](./clients/README.md)** – Turborepo
   * [web](./clients/apps/web) (Dashboard) – NextJS (TypeScript)

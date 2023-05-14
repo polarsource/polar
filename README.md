@@ -32,7 +32,9 @@
 
 ## Introducing Polar
 
-**Our goal is to build a subscription network for open source maintainers and their backers**. Empowering maintainers to start and grow independent businesses and for their backers to seamlessly opt-in to premium support, services and packages across their dependencies.
+Let’s fix open source funding. Sponsorship is fantastic, but not enough and never will be. Capital is always in pursuit of additional value – additional being the operative word. 
+
+**Polar is building a subscription network for open source maintainers and their backers.** Empowering maintainers to start and grow independent businesses and for their backers to seamlessly back impactful efforts and opt-in to premium- support, services and packages across their dependencies.
 
 Great businesses are customer obsessed. So we're starting with issues and feature requests.
 
@@ -74,7 +76,7 @@ Documentation on how to setup a development environment is incoming. Until then,
 ## Join the team
 [We're hiring](https://polar.sh/careers)!
 
-Our team is based in Stockholm, Sweden today during this founding stage. In the future we intend to go fully remote, and gradually over timezones, but exceptional talent can certainly accelerate our timeline.
+Our team is based in Stockholm, Sweden today during this founding stage. In the future we intend to go fully remote, and gradually over time zones, but exceptional talent can certainly accelerate our timeline.
 
 ## Security
 If you believe you have found a security vulnerability in Polar, we encourage you to responsibly disclose this and not open a public issue. We will investigate all legitimate reports and greatly appreciate your help. Email security@polar.sh to disclose any security vulnerabilities.

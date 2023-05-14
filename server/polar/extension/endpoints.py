@@ -19,9 +19,10 @@ from polar.pledge.service import pledge as pledge_service
 
 router = APIRouter(tags=["extension"])
 
+
 @router.get(
     "/extension/{platform}/{org_name}/{repo_name}/issues",
-    response_model=list[IssueExtensionRead]
+    response_model=list[IssueExtensionRead],
 )
 async def list_issues_for_extension(
     platform: Platforms,
@@ -33,7 +34,8 @@ async def list_issues_for_extension(
 ) -> list[IssueExtensionRead]:
     issue_numbers = [int(number) for number in numbers.split(",")]
     issues = await issue_service.list_by_repository_and_numbers(
-        session=session, repository_id=auth.repository.id, numbers=issue_numbers)
+        session=session, repository_id=auth.repository.id, numbers=issue_numbers
+    )
 
     issue_ids = [issue.id for issue in issues]
     pledges = await pledge_service.get_by_issue_ids(

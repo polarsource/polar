@@ -48,6 +48,7 @@ For backers:
 2. **Seamless pledging.** Ability to pledge behind them with a credit-card on file.
 3. **Monthly budget (Soon).** Automatically distribute a monthly budget across dependencies. Going from one-off to subscription. 
 
+Read more in our [Hello World](https://github.com/orgs/polarsource/discussions/391) announcement.
 
 #### Currently in Private Alpha
 [Request an invite](https://polar.sh/request). We'll shortly send out invites and on weekly basis as we build towards a public beta. 

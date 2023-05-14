@@ -1,5 +1,4 @@
 {
-    // "python.defaultInterpreterPath": "${workspaceFolder}/server/.venv/bin/python",
     "files.exclude": {
         "**/.git": true,
         /*

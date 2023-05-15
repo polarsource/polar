@@ -4,14 +4,14 @@ from enum import Enum
 from pydantic import AnyHttpUrl, BaseSettings, PostgresDsn, validator
 
 
-class Environment(Enum):
+class Environment(str, Enum):
     development = "development"
     testing = "testing"
     staging = "staging"
     production = "production"
 
 
-class EmailSender(Enum):
+class EmailSender(str, Enum):
     logger = "logger"
     sendgrid = "sendgrid"
 
@@ -139,5 +139,4 @@ env_file = ".env"
 if env == Environment.testing:
     env_file = ".env.testing"
 
-settings = Settings(_env_file=env_file, ENV=env)  # type: ignore
 settings = Settings(_env_file=env_file, ENV=env)  # type: ignore

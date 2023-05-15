@@ -83,6 +83,7 @@ services:
 
       - fromGroup: github-production
       - fromGroup: server-common
+      - fromGroup: server-stripe
 
 
 
@@ -135,6 +136,7 @@ services:
 
       - fromGroup: github-production
       - fromGroup: server-common
+      - fromGroup: server-stripe
 
   - type: redis
     name: polar-tasks
@@ -183,6 +185,13 @@ envVarGroups:
   - key: POLAR_EMAIL_SENDER
     value: "sendgrid"
   - key: POLAR_SENDGRID_API_KEY
+    sync: false
+
+- name: server-stripe
+  envVars:
+  - key: POLAR_STRIPE_SECRET_KEY
+    sync: false
+  - key: POLAR_STRIPE_WEBHOOK_SECRET
     sync: false
 
 - name: web-stripe

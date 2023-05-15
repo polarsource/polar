@@ -385,6 +385,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         )
 
     def calculate_fee(self, amount: int) -> int:
+        # 2.9% + potentially 1.5% for international cards plus a fixed fee of 30 cents
         # See https://support.stripe.com/questions/passing-the-stripe-fee-on-to-customers
         fee_percentage = 0.029 + 0.015
         fee_fixed = 30

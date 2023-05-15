@@ -1,6 +1,7 @@
 from __future__ import annotations
 from datetime import date, timedelta
 import datetime
+import math
 
 from uuid import UUID
 from typing import List, Sequence
@@ -385,7 +386,10 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
 
     def calculate_fee(self, amount: int) -> int:
         # 2.9% + potentially 1.5% for international cards plus a fixed fee of 30 cents
-        return round(amount * 0.044 + 30)
+        # See https://support.stripe.com/questions/passing-the-stripe-fee-on-to-customers
+        fee_percentage = 0.029 + 0.015
+        fee_fixed = 30
+        return math.ceil((amount + fee_fixed) / (1 - fee_percentage)) - amount
 
     async def connect_backer(
         self,

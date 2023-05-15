@@ -244,7 +244,7 @@ async def test_pledged_issue_branch_created(
                 notif=PartialNotification(
                     issue_id=predictable_issue.id,
                     payload=MaintainerIssueBranchCreated(
-                        issue_url="https://github.com/testorg/testrepo/issue/123",
+                        issue_url="https://github.com/testorg/testrepo/issues/123",
                         issue_title=predictable_issue.title,
                         issue_number=123,
                         branch_creator_username="ext_login",
@@ -260,7 +260,7 @@ async def test_pledged_issue_branch_created(
                 notif=PartialNotification(
                     issue_id=predictable_issue.id,
                     payload=IssuePledgedBranchCreated(
-                        issue_url="https://github.com/testorg/testrepo/issue/123",
+                        issue_url="https://github.com/testorg/testrepo/issues/123",
                         issue_title=predictable_issue.title,
                         issue_number=123,
                         branch_creator_username="ext_login",

@@ -6,8 +6,10 @@ import { useRouter } from 'next/router'
 import { CONFIG } from 'polarkit'
 import { api } from 'polarkit/api'
 import {
+  IssueRead,
+  OrganizationPublicRead,
   PledgeMutationResponse,
-  type PledgeResources,
+  RepositoryRead,
 } from 'polarkit/api/client'
 import { Checkbox, PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/utils'
@@ -15,7 +17,7 @@ import { ChangeEvent, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../../hooks/auth'
 import PaymentForm, { generateRedirectURL } from './PaymentForm'
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY)
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
 type PledgeSync = {
   amount: number
@@ -27,14 +29,15 @@ const PledgeForm = ({
   organization,
   repository,
   issue,
-  query,
-}: PledgeResources & {
-  query: any // TODO: Investigate & fix type
+}: {
+  issue: IssueRead
+  organization: OrganizationPublicRead
+  repository: RepositoryRead
 }) => {
   const [pledge, setPledge] = useState<PledgeMutationResponse | null>(null)
   const [amount, setAmount] = useState(0)
   const [email, setEmail] = useState('')
-  const [errorMessage, setErrorMessage] = useState(null)
+  const [errorMessage, setErrorMessage] = useState<string>('')
   const [isSyncing, setSyncing] = useState(false)
   const [approvedTos, setApprovedTos] = useState(false)
 
@@ -70,6 +73,10 @@ const PledgeForm = ({
   }
 
   const updatePledge = async (pledgeSync: PledgeSync) => {
+    if (!pledge) {
+      throw new Error('no pledge to update')
+    }
+
     return await api.pledges.updatePledge({
       platform: organization.platform,
       orgName: organization.name,
@@ -133,7 +140,7 @@ const PledgeForm = ({
     setSyncing(false)
   }
 
-  const onAmountChange = (event) => {
+  const onAmountChange = (event: ChangeEvent<HTMLInputElement>) => {
     const amount = parseInt(event.target.value)
     if (isNaN(amount)) {
       setErrorMessage('Please enter a valid amount')
@@ -148,19 +155,20 @@ const PledgeForm = ({
       return
     }
 
-    setErrorMessage(null)
+    setErrorMessage('')
     setAmount(amountInCents)
     debouncedSync({ amount: amountInCents, email, approvedTos })
   }
 
-  const syncTimeout = useRef(null)
+  type Timeout = ReturnType<typeof setTimeout>
+  const syncTimeout = useRef<Timeout | null>(null)
 
   const debouncedSync = (pledgeSync: PledgeSync) => {
-    clearTimeout(syncTimeout.current)
+    syncTimeout.current && clearTimeout(syncTimeout.current)
     syncTimeout.current = setTimeout(() => synchronizePledge(pledgeSync), 500)
   }
 
-  const onEmailChange = (event) => {
+  const onEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
     const email = event.target.value
     setEmail(email)
     debouncedSync({ amount, email, approvedTos })
@@ -173,6 +181,10 @@ const PledgeForm = ({
     // This pledge might have allowed them to use polar
     if (currentUser) {
       await reloadUser()
+    }
+
+    if (!pledge) {
+      throw new Error('got payment success but no pledge')
     }
 
     const location = generateRedirectURL(pledge, paymentIntent)

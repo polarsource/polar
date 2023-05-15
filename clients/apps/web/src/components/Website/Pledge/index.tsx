@@ -1,4 +1,8 @@
-import { type PledgeResources } from 'polarkit/api/client'
+import {
+  IssueRead,
+  OrganizationPublicRead,
+  RepositoryRead,
+} from 'polarkit/api/client'
 import { IssueCard, RepositoryCard } from 'polarkit/components/pledge'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
 import PledgeForm from './PledgeForm'
@@ -7,9 +11,10 @@ const Pledge = ({
   organization,
   repository,
   issue,
-  query,
-}: PledgeResources & {
-  query: any // TODO: Investigate & fix type
+}: {
+  issue: IssueRead
+  organization: OrganizationPublicRead
+  repository: RepositoryRead
 }) => {
   return (
     <>
@@ -32,7 +37,6 @@ const Pledge = ({
                 organization={organization}
                 repository={repository}
                 issue={issue}
-                query={query}
               />
             </div>
           </div>

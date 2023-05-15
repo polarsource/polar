@@ -29,7 +29,7 @@ const Topbar = (props: {
     <>
       <div className={className}>
         <div className="flex items-center space-x-4 md:flex-1">
-          {hasLeft && props.children.left}
+          {hasLeft && props.children && props.children.left}
         </div>
 
         {props.customLogoTitle && (
@@ -39,7 +39,7 @@ const Topbar = (props: {
           </div>
         )}
 
-        {hasMid && props.children.center}
+        {hasMid && props.children && props.children.center}
         {!hasMid && !props.customLogoTitle && (
           <>
             <Link

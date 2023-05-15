@@ -117,7 +117,7 @@ async def issue_reference_notifications(ref: IssueReference, session: AsyncSessi
             notif=PartialNotification(
                 issue_id=issue.id,
                 payload=MaintainerIssueBranchCreated(
-                    issue_url=f"https://github.com/{org.name}/{repo.name}/issue/{issue.number}",
+                    issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
                     issue_title=issue.title,
                     issue_number=issue.number,
                     branch_creator_username=ext_ref.user_login,
@@ -132,7 +132,7 @@ async def issue_reference_notifications(ref: IssueReference, session: AsyncSessi
             notif=PartialNotification(
                 issue_id=issue.id,
                 payload=IssuePledgedBranchCreated(
-                    issue_url=f"https://github.com/{org.name}/{repo.name}/issue/{issue.number}",
+                    issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
                     issue_title=issue.title,
                     issue_number=issue.number,
                     branch_creator_username=ext_ref.user_login,

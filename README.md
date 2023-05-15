@@ -1,9 +1,9 @@
 <p align="center">
   <a href="https://polar.sh">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/polarsource/polar/assets/281715/279ff15e-c9b1-4db4-9792-a6be0a4c3467">
-    <source media="(prefers-color-scheme: light)" srcset="https://github.com/polarsource/polar/assets/281715/279ff15e-c9b1-4db4-9792-a6be0a4c3467">
-    <img alt="Polar" src="https://github.com/polarsource/polar/assets/281715/279ff15e-c9b1-4db4-9792-a6be0a4c3467">
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/polarsource/polar/assets/1426460/5cb6879b-f359-457c-81ff-c807797f2b6f">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/polarsource/polar/assets/1426460/5cb6879b-f359-457c-81ff-c807797f2b6f">
+    <img alt="Polar" src="https://github.com/polarsource/polar/assets/1426460/5cb6879b-f359-457c-81ff-c807797f2b6f">
     </picture>
   </a>
 </p>

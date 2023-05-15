@@ -1,7 +1,10 @@
 'use client'
 
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
-import { PaymentIntent } from '@stripe/stripe-js'
+import {
+  PaymentIntent,
+  StripePaymentElementChangeEvent,
+} from '@stripe/stripe-js'
 import { PledgeMutationResponse } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/utils'
@@ -24,10 +27,12 @@ export const generateRedirectURL = (
    * by the payment method - easing the implementation.
    */
   statusURL.searchParams.append('payment_intent_id', paymentIntent.id)
-  statusURL.searchParams.append(
-    'payment_intent_client_secret',
-    paymentIntent.client_secret,
-  )
+  if (paymentIntent.client_secret) {
+    statusURL.searchParams.append(
+      'payment_intent_client_secret',
+      paymentIntent.client_secret,
+    )
+  }
   statusURL.searchParams.append('redirect_status', paymentIntent.status)
   return statusURL.toString()
 }
@@ -54,7 +59,7 @@ const PaymentForm = ({
   const fee = pledge?.fee || 0
   const amountIncludingFee = pledge?.amount_including_fee || 0
 
-  const handlePayment = (paymentIntent) => {
+  const handlePayment = (paymentIntent: PaymentIntent) => {
     switch (paymentIntent.status) {
       case 'succeeded':
       case 'processing':
@@ -71,7 +76,7 @@ const PaymentForm = ({
     }
   }
 
-  const onSubmit = async (event) => {
+  const onSubmit = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
 
     if (!stripe || !elements) {
@@ -80,8 +85,12 @@ const PaymentForm = ({
       return
     }
 
+    if (!pledge) {
+      return
+    }
+
     setSyncing(true)
-    setErrorMessage(null)
+    setErrorMessage('')
     return await stripe
       .confirmPayment({
         //`Elements` instance that was used to create the Payment Element
@@ -92,6 +101,9 @@ const PaymentForm = ({
         redirect: 'if_required',
       })
       .then(({ paymentIntent }) => {
+        if (!paymentIntent) {
+          throw new Error('No Payment Intent Created')
+        }
         handlePayment(paymentIntent)
       })
       .catch((error) => {
@@ -100,7 +112,7 @@ const PaymentForm = ({
       .finally(() => setSyncing(false))
   }
 
-  const onStripeFormChange = (event) => {
+  const onStripeFormChange = (event: StripePaymentElementChangeEvent) => {
     setStripeCompleted(event.complete)
   }
 

@@ -42,7 +42,7 @@ export const useGithubOAuthCallback = (
         })
         const response = await request
         if (response.success && !cancelled) {
-          setGotoUrl(response.goto_url)
+          setGotoUrl(response.goto_url || null)
           await login()
           return
         }

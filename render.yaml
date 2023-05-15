@@ -12,14 +12,13 @@ services:
     region: ohio
     plan: standard
     envVars:
-      - key: NEXT_PUBLIC_STRIPE_KEY
-        value: "pk_test_51Mo5SjLDfyYwjoMW825niva8LKZpVUZU0a9Dn47oHADJzZwwHbxdIJqjhucmueSRoLTBBctAD7mKyyNlzb3nmTBc00mzGtKVsD"
       - key: NEXT_PUBLIC_API_URL
         value: "https://api.polar.sh"
       - key: NEXT_PUBLIC_GITHUB_INSTALLATION_URL
         value: "https://github.com/apps/polar-sh/installations/new"
       - key: NEXT_PUBLIC_SENTRY_ENABLED
         value: "true"
+      - fromGroup: web-stripe
 
     domains:
       - dashboard.polar.sh
@@ -155,19 +154,14 @@ envVarGroups:
 - name: github-production
   envVars:
     - key: POLAR_GITHUB_APP_IDENTIFIER
-      # value: 321094
       sync: false
     - key: POLAR_GITHUB_APP_PRIVATE_KEY
-      # value: "-----BEGIN RSA PRIVATE KEY-----\nEXAMPLE\n-----END RSA PRIVATE KEY-----"
       sync: false
     - key: POLAR_GITHUB_APP_WEBHOOK_SECRET
-      # value: "xxx"
       sync: false
     - key: POLAR_GITHUB_CLIENT_ID
-      # value: "Iv1.17a5bded25063199"
       sync: false
     - key: POLAR_GITHUB_CLIENT_SECRET
-      # value: "xxx"
       sync: false
 
 - name: server-common
@@ -185,10 +179,13 @@ envVarGroups:
   - key: POLAR_FRONTEND_BASE_URL
     value: "https://dashboard.polar.sh"
   - key: POLAR_SENTRY_DSN
-    # value: "xxx"
     sync: false
   - key: POLAR_EMAIL_SENDER
     value: "sendgrid"
   - key: POLAR_SENDGRID_API_KEY
-    # value: "xxx"
+    sync: false
+
+- name: web-stripe
+  envVars:
+  - key: NEXT_PUBLIC_STRIPE_KEY
     sync: false

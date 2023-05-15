@@ -1,6 +1,8 @@
 import { IssueExtensionRead, Platforms } from 'polarkit/api/client'
 import { CONFIG } from './config'
 
+const extensionVersion = chrome.runtime.getManifest().version
+
 let token: string | undefined = undefined
 
 // The alternative here would be to always read from storage, but since
@@ -50,7 +52,10 @@ const listIssuesForExtension = async ({
       // If we do 'include' here instead, the cookie is included and we could scrap the entire
       // auth mechanism. Let's not for now.
       credentials: 'omit',
-      mode: 'no-cors',
+      mode: 'cors',
+      headers: {
+        'X-Polar-Agent': `Polar-Extension/${extensionVersion}`,
+      },
     },
   )
   const body = await response.json()

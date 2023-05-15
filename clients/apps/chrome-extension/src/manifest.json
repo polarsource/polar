@@ -10,7 +10,7 @@
     "128": "Icon_128.png"
   },
   "permissions": ["storage", "webNavigation", "scripting"],
-  "host_permissions": ["https://github.com/", "https://api.polar.sh/*"],
+  "host_permissions": ["https://github.com/"],
   "content_scripts": [
     {
       "run_at": "document_end",

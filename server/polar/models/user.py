@@ -1,7 +1,8 @@
+from datetime import datetime
 from uuid import UUID
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String
+from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -71,6 +72,13 @@ class User(RecordModel):
         Boolean,
         nullable=False,
         default=False,
+    )
+
+    last_seen_at_extension: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+    last_version_extension: Mapped[str] = mapped_column(
+        String(50), nullable=True
     )
 
     __mutables__ = {

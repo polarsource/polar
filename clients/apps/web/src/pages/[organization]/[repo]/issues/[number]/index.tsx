@@ -1,6 +1,10 @@
 import PageNotFound from 'components/Shared/PageNotFound'
 import Pledge from 'components/Website/Pledge'
-import type { NextLayoutComponentType, NextPage } from 'next'
+import type {
+  GetServerSideProps,
+  NextLayoutComponentType,
+  NextPage,
+} from 'next'
 import Head from 'next/head'
 import { api } from 'polarkit'
 import { Platforms, PledgeResources } from 'polarkit/api/client'
@@ -54,12 +58,12 @@ const PledgePage: NextPage = ({
   organization,
   repository,
   issue,
-  query,
-}: PledgeResources & {
-  query: any // TODO: Investigate & fix type
-}) => {
+}: PledgeResources) => {
   if (!issue) {
     return <PageNotFound />
+  }
+  if (!organization || !repository) {
+    return <></>
   }
 
   return (
@@ -76,7 +80,6 @@ const PledgePage: NextPage = ({
           organization={organization}
           repository={repository}
           issue={issue}
-          query={query}
         />
 
         <HowItWorks />
@@ -85,13 +88,21 @@ const PledgePage: NextPage = ({
   )
 }
 
-export const getServerSideProps = async (context) => {
+export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
+    if (
+      typeof context?.params?.organization !== 'string' ||
+      typeof context?.params?.repo !== 'string' ||
+      typeof context?.params?.number !== 'string'
+    ) {
+      return { props: {} }
+    }
+
     const res = await api.pledges.getPledgeWithResources({
       platform: Platforms.GITHUB,
       orgName: context.params.organization,
       repoName: context.params.repo,
-      number: context.params.number,
+      number: parseInt(context.params.number),
       include: 'issue,organization,repository',
     })
     const { organization, repository, issue } = res

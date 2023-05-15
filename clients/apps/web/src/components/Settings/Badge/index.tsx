@@ -16,7 +16,7 @@ import Box from '../Box'
 import FakePullRequest from '../FakePullRequest'
 import SettingsCheckbox from '../SettingsCheckbox'
 import BadgeRepositories from './Repositories'
-import { AllRetroactiveChanges } from './types'
+import { AllRetroactiveChanges, RetroactiveChanges } from './types'
 
 const continueTimeoutSeconds = 10
 
@@ -39,8 +39,8 @@ const getMappedSettings = (
 ): MappedRepoSettings | undefined => {
   if (!current) return undefined
 
-  let order = []
-  let mapped = {}
+  let order: string[] = []
+  let mapped: Record<string, RepositoryBadgeSettingsRead> = {}
   current.repositories.map((repo) => {
     order.push(repo.id)
     mapped[repo.id] = repo
@@ -57,20 +57,23 @@ const getMappedSettings = (
 const getRetroactiveChanges = (
   repos: RepositoryBadgeSettingsRead[],
 ): AllRetroactiveChanges => {
-  return repos.reduce((ret, repo) => {
-    let changes = {
-      additions: 0,
-      removals: 0,
-    }
-    if (repo.badge_enabled) {
-      changes.additions = repo.synced_issues - repo.embedded_issues
-    } else {
-      changes.removals = repo.embedded_issues
-    }
+  return repos.reduce(
+    (ret: Record<string, RetroactiveChanges>, repo): AllRetroactiveChanges => {
+      let changes: RetroactiveChanges = {
+        additions: 0,
+        removals: 0,
+      }
+      if (repo.badge_enabled) {
+        changes.additions = repo.synced_issues - repo.embedded_issues
+      } else {
+        changes.removals = repo.embedded_issues
+      }
 
-    ret[repo.id] = changes
-    return ret
-  }, {})
+      ret[repo.id] = changes
+      return ret
+    },
+    {},
+  )
 }
 
 const BadgeSetup = ({
@@ -87,17 +90,21 @@ const BadgeSetup = ({
   isSettingPage?: boolean
 }) => {
   const remoteSettings = useBadgeSettings(org.platform, org.name)
-  const [settings, setSettings] = useState<MappedRepoSettings | undefined>(
-    undefined,
-  )
-  // const [showControls, setShowControls] = useState<boolean>(false)
+  const [settings, setSettings] = useState<MappedRepoSettings>({
+    show_amount: false,
+    repositories: {},
+    repositories_order: [],
+  })
   const [isRetroactiveEnabled, setRetroactiveEnabled] = useState<boolean>(false)
   const emitter = useSSE(org.platform, org.name)
 
   useEffect(() => {
     if (!remoteSettings.data) return
 
-    setSettings(getMappedSettings(remoteSettings.data))
+    const settings = getMappedSettings(remoteSettings.data)
+    if (settings) {
+      setSettings(settings)
+    }
   }, [remoteSettings.data])
 
   useEffect(() => {
@@ -143,6 +150,7 @@ const BadgeSetup = ({
        */
       synced = data.open_issues
     }
+
     setSettings((prev) => {
       const repo = prev.repositories[data.repository_id]
       return {
@@ -312,6 +320,7 @@ const Controls = ({
     repo: RepositoryBadgeSettingsRead,
   ): boolean => {
     if (!isRetroactiveEnabled) return false
+    if (!retroactiveChanges) return false
 
     const changes = retroactiveChanges[repo.id]
     return changes.additions > 0 || changes.removals > 0
@@ -367,7 +376,7 @@ const Controls = ({
   const [deletions, setDeletions] = useState(0)
 
   useEffect(() => {
-    if (!isRetroactiveEnabled) {
+    if (!isRetroactiveEnabled || !retroactiveChanges) {
       setAdditions(0)
       setDeletions(0)
     } else {
@@ -386,7 +395,7 @@ const Controls = ({
   const [showRetroactiveChanges, setShowRetroactiveChanges] = useState(false)
 
   useEffect(() => {
-    setShowRetroactiveChanges(retroactiveChanges && anyBadgeSettingChanged)
+    setShowRetroactiveChanges(!!(retroactiveChanges && anyBadgeSettingChanged))
   }, [retroactiveChanges])
 
   const canSave = useMemo(() => {

@@ -1,9 +1,10 @@
 from typing import List, Sequence
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from polar.auth.dependencies import Auth
+from polar.kit import utils
 from polar.extension.schemas import IssueExtensionRead
 from polar.issue.schemas import IssueReferenceRead
 from polar.models import Issue
@@ -25,6 +26,7 @@ router = APIRouter(tags=["extension"])
     response_model=list[IssueExtensionRead],
 )
 async def list_issues_for_extension(
+    request: Request,
     platform: Platforms,
     org_name: str,
     repo_name: str,
@@ -32,6 +34,14 @@ async def list_issues_for_extension(
     auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> list[IssueExtensionRead]:
+    # Update when we last saw this user and on which extension version
+    auth.user.last_seen_at_extension = utils.utc_now()
+    if request.headers.get('x-polar-agent'):
+        parts = request.headers['x-polar-agent'].split('/')
+        if len(parts) == 2:
+            auth.user.last_version_extension = parts[1]
+    await auth.user.save(session=session)
+
     issue_numbers = [int(number) for number in numbers.split(",")]
     issues = await issue_service.list_by_repository_and_numbers(
         session=session, repository_id=auth.repository.id, numbers=issue_numbers

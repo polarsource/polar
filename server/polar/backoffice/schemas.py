@@ -16,6 +16,8 @@ class BackofficePledgeRead(PledgeRead):
     disputed_by_user_id: UUID | None
     disputed_at: datetime | None
 
+    pledger_email: str | None
+
     @classmethod
     def from_db(cls, o: Pledge) -> Self:
         pledger_name = None
@@ -37,6 +39,7 @@ class BackofficePledgeRead(PledgeRead):
             state=PledgeState.from_str(o.state),
             pledger_name=pledger_name,
             pledger_avatar=pledger_avatar,
+            pledger_email=o.email,
             payment_id=o.payment_id,
             transfer_id=o.transfer_id,
             issue_title=o.issue.title,

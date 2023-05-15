@@ -24,5 +24,6 @@ export type BackofficePledgeRead = {
   dispute_reason?: string;
   disputed_by_user_id?: string;
   disputed_at?: string;
+  pledger_email?: string;
 };
 

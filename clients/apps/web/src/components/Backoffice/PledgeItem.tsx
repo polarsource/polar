@@ -67,10 +67,15 @@ const PledgeItem = ({
       <tr>
         <td className="whitespace-nowrap px-2 py-2 text-sm font-medium text-gray-900">
           <div className="flex items-center space-x-1">
-            <img className="h-6 w-6" src={pledge.pledger_avatar} />
-            <a href={`https://github.com/${pledge.pledger_name}`}>
-              {pledge.pledger_name}
-            </a>
+            {pledge.pledger_avatar && (
+              <img className="h-6 w-6" src={pledge.pledger_avatar} />
+            )}
+            {pledge.pledger_name && (
+              <a href={`https://github.com/${pledge.pledger_name}`}>
+                {pledge.pledger_name}
+              </a>
+            )}
+            {pledge.pledger_email && <span>{pledge.pledger_email}</span>}
           </div>
         </td>
         <td className="whitespace-nowrap px-2 py-2 text-sm font-medium text-gray-900">

@@ -32,9 +32,7 @@
 
 ## Introducing Polar
 
-**Polar is building a subscription network for open source maintainers and their backers.** Empowering maintainers to start and grow independent businesses and for their backers to seamlessly back impactful efforts and opt-in to premium- support, services and packages across their dependencies.
-
-Great businesses are customer obsessed. So we're starting with issues and feature requests.
+Polar gives open source maintainers a better and funded backlog based on what drives the most impact within their community.
 
 For maintainers:
 1. **Embedded pledges.** Our Github app can automatically embed the Polar badge to get backers and pledges.

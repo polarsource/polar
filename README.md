@@ -23,7 +23,7 @@
     <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="Polar is released under the Apache 2.0 license." />
   </a>
 
-  <a href="https://twitter.com/intent/follow?screen_name=medusajs">
+  <a href="https://twitter.com/intent/follow?screen_name=polar_sh">
     <img src="https://img.shields.io/twitter/follow/polar_sh.svg?label=Follow%20@polar_sh" alt="Follow @polar_sh" />
   </a>
 </p>

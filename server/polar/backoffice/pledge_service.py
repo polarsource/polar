@@ -10,6 +10,7 @@ from polar.models.account import Account
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
+from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession
 
 
@@ -30,6 +31,8 @@ class BackofficePledgeService:
         stmt = stmt.join(
             Account, Account.organization_id == Pledge.organization_id, isouter=True
         )
+
+        stmt = stmt.where(Pledge.state != PledgeState.initiated)
 
         # Pledges to customers
         if customers is True:

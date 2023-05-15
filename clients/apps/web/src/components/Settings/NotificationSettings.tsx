@@ -37,7 +37,7 @@ const NotificationSettings = ({
         id="email-backing"
         title={`Issue in ${orgName} receives backing`}
         isChecked={
-          settings.email_notification_maintainer_issue_receives_backing
+          !!settings.email_notification_maintainer_issue_receives_backing
         }
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
           save({
@@ -50,7 +50,9 @@ const NotificationSettings = ({
       <SettingsCheckbox
         id="email_notification_maintainer_issue_branch_created"
         title={`Branch created for issue with backing in ${orgName}`}
-        isChecked={settings.email_notification_maintainer_issue_branch_created}
+        isChecked={
+          !!settings.email_notification_maintainer_issue_branch_created
+        }
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
           save({
             email_notification_maintainer_issue_branch_created:
@@ -61,7 +63,9 @@ const NotificationSettings = ({
       <SettingsCheckbox
         id="email_notification_maintainer_pull_request_created"
         title={`Pull request created for issue with backing in ${orgName}`}
-        isChecked={settings.email_notification_maintainer_pull_request_created}
+        isChecked={
+          !!settings.email_notification_maintainer_pull_request_created
+        }
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
           save({
             email_notification_maintainer_pull_request_created:
@@ -72,7 +76,7 @@ const NotificationSettings = ({
       <SettingsCheckbox
         id="email_notification_maintainer_pull_request_merged"
         title={`Pull request merged for issue with backing in ${orgName}`}
-        isChecked={settings.email_notification_maintainer_pull_request_merged}
+        isChecked={!!settings.email_notification_maintainer_pull_request_merged}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
           save({
             email_notification_maintainer_pull_request_merged: e.target.checked,
@@ -83,7 +87,7 @@ const NotificationSettings = ({
       <SettingsCheckbox
         id="email_notification_backed_issue_branch_created"
         title="Branch created for issue that you've backed"
-        isChecked={settings.email_notification_backed_issue_branch_created}
+        isChecked={!!settings.email_notification_backed_issue_branch_created}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
           save({
             email_notification_backed_issue_branch_created: e.target.checked,
@@ -94,7 +98,7 @@ const NotificationSettings = ({
         id="email_notification_backed_issue_pull_request_created"
         title="Pull request created for issue that you've backed"
         isChecked={
-          settings.email_notification_backed_issue_pull_request_created
+          !!settings.email_notification_backed_issue_pull_request_created
         }
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
           save({
@@ -106,7 +110,9 @@ const NotificationSettings = ({
       <SettingsCheckbox
         id="email_notification_backed_issue_pull_request_merged"
         title="Pull request merged for issue that you've backed"
-        isChecked={settings.email_notification_backed_issue_pull_request_merged}
+        isChecked={
+          !!settings.email_notification_backed_issue_pull_request_merged
+        }
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
           save({
             email_notification_backed_issue_pull_request_merged:

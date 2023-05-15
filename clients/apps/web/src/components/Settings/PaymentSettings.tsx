@@ -13,7 +13,7 @@ import {
 import PaymentMethodForm from './PaymentMethodForm'
 import SettingsInput from './SettingsInput'
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY)
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
 function capitalizeFirstLetter(string: string) {
   return string.charAt(0).toUpperCase() + string.slice(1)
@@ -35,7 +35,7 @@ const PaymentSettings = ({
   const customerData = useOrganizationCustomer(org?.name)
   const customer = customerData.data
 
-  const [errorMessage, setErrorMessage] = useState(null)
+  const [errorMessage, setErrorMessage] = useState<string>('')
   const [isSyncing, setSyncing] = useState(false)
   const [isDone, setIsDone] = useState(false)
   const [showStripeElements, setShowStripeElements] = useState(false)
@@ -43,7 +43,7 @@ const PaymentSettings = ({
   const createIntent = useOrganizationCreateIntent()
   const createSetupIntent = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
-    setErrorMessage(null)
+    setErrorMessage('')
 
     createIntent.mutate(
       { orgName: org?.name },
@@ -86,19 +86,20 @@ const PaymentSettings = ({
 
         {customer && customer.default_payment_method && (
           <>
-            {customer.default_payment_method.type === 'card' && (
-              <div>
-                Using your saved{' '}
-                {capitalizeFirstLetter(
-                  customer.default_payment_method.card_brand,
-                )}{' '}
-                card ending with{' '}
-                <span className="font-mono">
-                  {customer.default_payment_method.card_last4}
-                </span>{' '}
-                for future pledges.
-              </div>
-            )}
+            {customer.default_payment_method.type === 'card' &&
+              customer.default_payment_method.card_brand && (
+                <div>
+                  Using your saved{' '}
+                  {capitalizeFirstLetter(
+                    customer.default_payment_method.card_brand,
+                  )}{' '}
+                  card ending with{' '}
+                  <span className="font-mono">
+                    {customer.default_payment_method.card_last4}
+                  </span>{' '}
+                  for future pledges.
+                </div>
+              )}
             {customer.default_payment_method.type !== 'card' && (
               <div>
                 Using your saved {customer.default_payment_method.type} for
@@ -134,7 +135,7 @@ const PaymentSettings = ({
 
         {isDone && <div>Payment method saved!</div>}
 
-        {showStripeElements && (
+        {showStripeElements && createIntent && createIntent.data && (
           <>
             <h2 className="text-md font-medium">Add a new payment method</h2>
             <Elements
@@ -164,7 +165,7 @@ const PaymentSettings = ({
         onChange={onBillingEmailChanged}
         type="email"
         placeholder="billing@example.com"
-        value={settings.billing_email}
+        value={settings.billing_email || ''}
       />
     </div>
   )

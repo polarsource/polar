@@ -1,7 +1,7 @@
 'use client'
 
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
-import { SetupIntent } from '@stripe/stripe-js'
+import { SetupIntent, StripePaymentElementChangeEvent } from '@stripe/stripe-js'
 import { useRouter } from 'next/router'
 import { OrganizationPrivateRead } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
@@ -69,8 +69,7 @@ const PaymentMethodForm = ({
         break
     }
   }
-
-  const onSubmit = async (event) => {
+  const onSubmit = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
 
     if (!stripe || !elements) {
@@ -80,7 +79,7 @@ const PaymentMethodForm = ({
     }
 
     setSyncing(true)
-    setErrorMessage(null)
+    setErrorMessage('')
 
     return await stripe
       .confirmSetup({
@@ -105,7 +104,7 @@ const PaymentMethodForm = ({
       .finally(() => setSyncing(false))
   }
 
-  const onStripeFormChange = (event) => {
+  const onStripeFormChange = (event: StripePaymentElementChangeEvent) => {
     setStripeCompleted(event.complete)
   }
 

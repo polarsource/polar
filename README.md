@@ -1,9 +1,9 @@
 <p align="center">
   <a href="https://polar.sh">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/polarsource/polar/assets/1426460/5cb6879b-f359-457c-81ff-c807797f2b6f">
-    <source media="(prefers-color-scheme: light)" srcset="https://github.com/polarsource/polar/assets/1426460/5cb6879b-f359-457c-81ff-c807797f2b6f">
-    <img alt="Polar" src="https://github.com/polarsource/polar/assets/1426460/5cb6879b-f359-457c-81ff-c807797f2b6f">
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/polarsource/polar/assets/281715/210a6895-c194-4dd0-a081-a37cb8a40fab">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/polarsource/polar/assets/281715/210a6895-c194-4dd0-a081-a37cb8a40fab">
+    <img alt="Polar" src="https://github.com/polarsource/polar/assets/281715/210a6895-c194-4dd0-a081-a37cb8a40fab">
     </picture>
   </a>
 </p>
@@ -19,7 +19,7 @@
 
 
 <p align="center">
-  <a href="https://github.com/medusajs/medusa/blob/develop/LICENSE">
+  <a href="https://github.com/polarsource/polar/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="Polar is released under the Apache 2.0 license." />
   </a>
 

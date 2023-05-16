@@ -29,6 +29,9 @@ from polar.repository.service import repository as repository_service
 from polar.pledge.service import pledge as pledge_service
 from polar.pull_request.service import pull_request as pull_request_service
 from fastapi.encoders import jsonable_encoder
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 
 log = structlog.get_logger()
 
@@ -57,10 +60,6 @@ class NotificationsService:
     ) -> Sequence[Notification]:
         stmt = (
             sql.select(Notification)
-            .join(
-                UserOrganization,
-                UserOrganization.organization_id == Notification.organization_id,
-            )
             .join(Pledge, Pledge.id == Notification.pledge_id, isouter=True)
             .join(Issue, Issue.id == Notification.issue_id, isouter=True)
             .join(
@@ -68,7 +67,7 @@ class NotificationsService:
                 PullRequest.id == Notification.pull_request_id,
                 isouter=True,
             )
-            .where(UserOrganization.user_id == user_id)
+            .where(Notification.user_id == user_id)
             .order_by(desc(Notification.created_at))
             .limit(100)
         )
@@ -76,16 +75,16 @@ class NotificationsService:
         res = await session.execute(stmt)
         return res.scalars().unique().all()
 
-    async def create_for_org(
+    async def send_to_user(
         self,
         session: AsyncSession,
-        org_id: UUID,
+        user_id: UUID,
         typ: NotificationType,
         notif: PartialNotification,
     ) -> bool:
         dedup_key: str = "/".join(
             [
-                str(org_id),
+                str(user_id),
                 str(typ),
                 str(notif.issue_id) if notif.issue_id else "",
                 str(notif.pledge_id) if notif.pledge_id else "",
@@ -97,7 +96,7 @@ class NotificationsService:
 
         try:
             notification = Notification(
-                organization_id=org_id,
+                user_id=user_id,
                 type=typ,
                 issue_id=notif.issue_id,
                 pledge_id=notif.pledge_id,
@@ -116,6 +115,22 @@ class NotificationsService:
             await session.commit()
             return False
 
+    async def send_to_org(
+        self,
+        session: AsyncSession,
+        org_id: UUID,
+        typ: NotificationType,
+        notif: PartialNotification,
+    ) -> None:
+        members = await user_organization_service.list_by_org(session, org_id)
+        for member in members:
+            await self.send_to_user(
+                session=session,
+                user_id=member.user_id,
+                typ=typ,
+                notif=notif,
+            )
+
     async def create_for_issue(
         self,
         session: AsyncSession,
@@ -128,7 +143,8 @@ class NotificationsService:
 
         # send to owning org
         if issue.organization_id:
-            await self.create_for_org(
+            # send
+            await self.send_to_org(
                 session=session,
                 org_id=issue.organization_id,
                 typ=typ,
@@ -152,7 +168,7 @@ class NotificationsService:
                     if p.by_organization_id in sent_to:
                         continue
 
-                    await self.create_for_org(
+                    await self.send_to_org(
                         session=session,
                         org_id=p.by_organization_id,
                         typ=typ,

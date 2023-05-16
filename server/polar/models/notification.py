@@ -16,7 +16,8 @@ from sqlalchemy.dialects.postgresql import JSONB
 class Notification(RecordModel):
     __tablename__ = "notifications"
 
-    organization_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)
+    user_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)
+
     type: Mapped[str] = mapped_column(String, nullable=False)
 
     issue_id: Mapped[UUID] = mapped_column(

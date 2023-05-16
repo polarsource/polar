@@ -6,6 +6,7 @@ from polar.models.notification import Notification
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository
+from polar.models.user_organization import UserOrganization
 from polar.notifications.schemas import NotificationType
 from polar.notifications.service import NotificationsService, PartialNotification
 from polar.postgres import AsyncSession
@@ -20,8 +21,7 @@ async def test_create_pledge_from_created(
     issue: Issue,
     mocker: MockerFixture,
 ) -> None:
-
-    m = mocker.patch("polar.notifications.service.NotificationsService.create_for_org")
+    m = mocker.patch("polar.notifications.service.NotificationsService.send_to_org")
 
     pledge = await Pledge.create(
         session=session,
@@ -56,8 +56,7 @@ async def test_create_pledge_initiated_then_created(
     issue: Issue,
     mocker: MockerFixture,
 ) -> None:
-
-    m = mocker.patch("polar.notifications.service.NotificationsService.create_for_org")
+    m = mocker.patch("polar.notifications.service.NotificationsService.send_to_org")
 
     pledge = await Pledge.create(
         session=session,
@@ -96,10 +95,11 @@ async def test_deduplicate(
     organization: Organization,
     repository: Repository,
     issue: Issue,
+    user_organization: UserOrganization,
+    user_organization_second: UserOrganization,  # two members
     mocker: MockerFixture,
 ) -> None:
-
-    spy = mocker.spy(NotificationsService, "create_for_org")
+    spy = mocker.spy(NotificationsService, "send_to_org")
 
     pledge = await Pledge.create(
         session=session,
@@ -124,14 +124,32 @@ async def test_deduplicate(
     assert spy.call_count == 3
 
     # Check persisted notifications
-    all = (
+    all_first_user = (
         (
             await session.execute(
-                sql.select(Notification).where(Notification.issue_id == issue.id)
+                sql.select(Notification).where(
+                    Notification.issue_id == issue.id,
+                    Notification.user_id == user_organization.user_id,
+                )
             )
         )
         .unique()
         .all()
     )
 
-    assert len(all) == 1
+    assert len(all_first_user) == 1
+
+    all_second_user = (
+        (
+            await session.execute(
+                sql.select(Notification).where(
+                    Notification.issue_id == issue.id,
+                    Notification.user_id == user_organization_second.user_id,
+                )
+            )
+        )
+        .unique()
+        .all()
+    )
+
+    assert len(all_second_user) == 1

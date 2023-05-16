@@ -124,6 +124,22 @@ async def user(
 
 
 @pytest_asyncio.fixture(scope="function")
+async def user_second(
+    session: AsyncSession,
+) -> User:
+    user = await User.create(
+        session=session,
+        id=uuid.uuid4(),
+        username=rstr("testuser"),
+        email=rstr("test") + "@example.com",
+        invite_only_approved=True,
+    )
+
+    await session.commit()
+    return user
+
+
+@pytest_asyncio.fixture(scope="function")
 async def pledge(
     session: AsyncSession,
     organization: Organization,
@@ -184,6 +200,23 @@ async def user_organization(
         session=session,
         id=uuid.uuid4(),
         user_id=user.id,
+        organization_id=organization.id,
+    )
+
+    await session.commit()
+    return a
+
+
+@pytest_asyncio.fixture(scope="function")
+async def user_organization_second(
+    session: AsyncSession,
+    organization: Organization,
+    user_second: User,
+) -> UserOrganization:
+    a = await UserOrganization.create(
+        session=session,
+        id=uuid.uuid4(),
+        user_id=user_second.id,
         organization_id=organization.id,
     )
 

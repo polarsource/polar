@@ -39,7 +39,7 @@ async def test_pledged_issue_pull_request_created(
 ) -> None:
     m = mocker.spy(
         notifications,
-        "create_for_org",
+        "send_to_org",
     )
 
     pledge = await Pledge.create(
@@ -117,7 +117,7 @@ async def test_pledged_issue_pull_request_merged(
     mocker: MockerFixture,
     pledging_organization: Organization,
 ) -> None:
-    m = mocker.patch("polar.notifications.service.NotificationsService.create_for_org")
+    m = mocker.patch("polar.notifications.service.NotificationsService.send_to_org")
 
     pledge = await Pledge.create(
         session=session,
@@ -195,7 +195,7 @@ async def test_pledged_issue_branch_created(
     mocker: MockerFixture,
     predictable_pledging_organization: Organization,
 ) -> None:
-    m = mocker.spy(NotificationsService, "create_for_org")
+    m = mocker.spy(NotificationsService, "send_to_org")
 
     pledge = await Pledge.create(
         session=session,

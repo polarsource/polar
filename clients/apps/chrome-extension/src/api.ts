@@ -58,6 +58,14 @@ const listIssuesForExtension = async ({
       },
     },
   )
+  /*
+   * Always return an empty list of issues in case HTTP is not 200, e.g
+   * unauthenticated, no issues for repo etc.
+   */
+  if (!response.ok) {
+    return []
+  }
+
   const body = await response.json()
   return body as Array<IssueExtensionRead>
 }

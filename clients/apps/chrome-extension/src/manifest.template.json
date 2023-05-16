@@ -9,13 +9,25 @@
     "48": "Icon_48.png",
     "128": "Icon_128.png"
   },
-  "permissions": ["storage", "webNavigation", "scripting"],
-  "prod:host_permissions": ["https://github.com/", "https://api.polar.sh/"],
-  "dev:host_permissions": ["https://github.com/", "http://127.0.0.1:8000/"],
+  "permissions": [
+    "storage",
+    "webNavigation",
+    "scripting"
+  ],
+  "prod:host_permissions": [
+    "https://github.com/",
+    "https://api.polar.sh/"
+  ],
+  "dev:host_permissions": [
+    "https://github.com/",
+    "http://127.0.0.1:8000/"
+  ],
   "content_scripts": [
     {
       "run_at": "document_end",
-      "js": ["content.js"],
+      "js": [
+        "content.js"
+      ],
       "matches": [
         "https://github.com/*/*/issues",
         "https://github.com/*/*/issues?*",
@@ -23,9 +35,15 @@
       ]
     },
     {
-      "js": ["auth.js"],
-      "prod:matches": ["https://dashboard.polar.sh/dashboard/settings/extension"],
-      "dev:matches": ["http://127.0.0.1:3000/dashboard/settings/extension"]
+      "js": [
+        "auth.js"
+      ],
+      "prod:matches": [
+        "https://dashboard.polar.sh/dashboard/settings/extension"
+      ],
+      "dev:matches": [
+        "http://127.0.0.1:3000/dashboard/settings/extension"
+      ]
     }
   ],
   "background": {
@@ -33,8 +51,12 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["frame.css"],
-      "matches": ["https://github.com/*"]
+      "resources": [
+        "frame.css"
+      ],
+      "matches": [
+        "https://github.com/*"
+      ]
     }
   ]
 }

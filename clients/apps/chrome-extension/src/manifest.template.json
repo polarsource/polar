@@ -1,7 +1,7 @@
 {
   "name": "Polar",
   "version": "0.0.1",
-  "description": "Adds Polar data to GitHub",
+  "description": "Enhance Github Issues with Polar Pledges & Insights",
   "manifest_version": 3,
   "icons": {
     "16": "Icon_16.png",

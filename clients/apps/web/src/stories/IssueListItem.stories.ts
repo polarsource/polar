@@ -16,16 +16,6 @@ import {
 } from 'polarkit/api/client'
 import IssueListItem from '../components/Dashboard/IssueListItem'
 
-const meta: Meta<typeof IssueListItem> = {
-  title: 'IssueListItem',
-  component: IssueListItem,
-  // This component will have an automatically generated Autodocs entry: https://storybook.js.org/docs/react/writing-docs/autodocs
-  tags: ['autodocs'],
-  argTypes: {},
-}
-
-export default meta
-
 type Story = StoryObj<typeof IssueListItem>
 
 function addDays(date: Date, days: number) {
@@ -176,7 +166,57 @@ const repo: RepositoryRead = {
   is_private: false,
 }
 
-export const Default: Story = {
+const meta: Meta<typeof IssueListItem> = {
+  title: 'IssueListItem',
+  component: IssueListItem,
+  // This component will have an automatically generated Autodocs entry: https://storybook.js.org/docs/react/writing-docs/autodocs
+  tags: ['autodocs'],
+  argTypes: {
+    issue: {
+      options: ['Backlog', 'Triaged', 'InProgress', 'PullRequest', 'Completed'],
+      mapping: {
+        Backlog: issue,
+        Triaged: issueTriaged,
+        InProgress: issueInProgress,
+        PullRequest: issuePullRequest,
+        Completed: issueCompleted,
+      },
+      defaultValue: issuePullRequest,
+    },
+    pledges: {
+      options: ['None', 'Yes', 'Disputable'],
+      mapping: {
+        None: [],
+        Yes: pledges,
+        Disputable: pledgeDisputable,
+      },
+      defaultValue: pledges,
+    },
+    references: {
+      options: ['None', 'Draft', 'OpenPR', 'MergedPR'],
+      mapping: {
+        None: [],
+        Draft: referencesDraft,
+        OpenPR: references,
+        MergedPR: referencesMerged,
+      },
+      defaultValue: pledges,
+    },
+    repo: {
+      options: ['Repo'],
+      mapping: {
+        Repo: repo,
+      },
+      defaultValue: repo,
+    },
+    org: {
+      options: ['Org'],
+      mapping: {
+        Repo: org,
+      },
+      defaultValue: org,
+    },
+  },
   args: {
     pledges: pledges,
     references: references,
@@ -186,82 +226,65 @@ export const Default: Story = {
   },
 }
 
+export default meta
+
+export const Default: Story = {}
+
 export const StatusTriaged: Story = {
   args: {
-    pledges: pledges,
-    references: references,
-    repo: repo,
-    org: org,
+    ...Default.args,
     issue: issueTriaged,
   },
 }
 
 export const StatusInProgress: Story = {
   args: {
-    pledges: pledges,
+    ...Default.args,
     references: referencesDraft,
-    repo: repo,
-    org: org,
     issue: issueInProgress,
   },
 }
 
 export const StatusPullRequest: Story = {
   args: {
-    pledges: pledges,
-    references: references,
-    repo: repo,
-    org: org,
+    ...Default.args,
     issue: issuePullRequest,
   },
 }
 
 export const StatusCompleted: Story = {
   args: {
-    pledges: pledges,
+    ...Default.args,
     references: referencesMerged,
-    repo: repo,
-    org: org,
     issue: issueCompleted,
   },
 }
 
 export const TwoReferences: Story = {
   args: {
-    pledges: pledges,
+    ...Default.args,
     references: doubleReference,
-    repo: repo,
-    org: org,
-    issue: issue,
   },
 }
 
 export const ReferencesNoPledge: Story = {
   args: {
+    ...Default.args,
     pledges: [],
     references: doubleReference,
-    repo: repo,
-    org: org,
-    issue: issue,
   },
 }
 
 export const PledgeNoReferences: Story = {
   args: {
-    pledges: pledges,
+    ...Default.args,
     references: [],
-    repo: repo,
-    org: org,
-    issue: issue,
   },
 }
 
 export const PledgeCanDispute: Story = {
   args: {
+    ...Default.args,
     pledges: pledgeDisputable,
-    references: references,
-    repo: repo,
-    org: org,
-    issue: issue,
   },
 }

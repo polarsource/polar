@@ -4,6 +4,7 @@ import {
   IssueDashboardRead,
   IssueReferenceRead,
   IssueReferenceType,
+  IssueStatus,
   OrganizationPublicRead,
   Platforms,
   PledgeRead,
@@ -27,6 +28,12 @@ export default meta
 
 type Story = StoryObj<typeof IssueListItem>
 
+function addDays(date: Date, days: number) {
+  var result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
+}
+
 const pledges: PledgeRead[] = [
   {
     id: 'xx',
@@ -36,6 +43,21 @@ const pledges: PledgeRead[] = [
     repository_id: 'xx',
     organization_id: 'yy',
     state: PledgeState.CREATED,
+    pledger_name: 'zz',
+  },
+]
+
+const pledgeDisputable: PledgeRead[] = [
+  {
+    id: 'xx',
+    created_at: 'what',
+    issue_id: 'nah',
+    amount: 1234,
+    repository_id: 'xx',
+    organization_id: 'yy',
+    state: PledgeState.PENDING,
+    scheduled_payout_at: addDays(new Date(), 7).toISOString(),
+    authed_user_can_admin: true,
     pledger_name: 'zz',
   },
 ]
@@ -58,6 +80,30 @@ const references: IssueReferenceRead[] = [
     id: 'wha',
     type: IssueReferenceType.PULL_REQUEST,
     payload,
+  },
+]
+
+const referencesDraft: IssueReferenceRead[] = [
+  {
+    id: 'wha',
+    type: IssueReferenceType.PULL_REQUEST,
+    payload: {
+      ...payload,
+      is_draft: true,
+    },
+  },
+]
+
+const referencesMerged: IssueReferenceRead[] = [
+  {
+    id: 'wha',
+    type: IssueReferenceType.PULL_REQUEST,
+    payload: {
+      ...payload,
+      //is_draft: true,
+      state: 'closed',
+      merged_at: '2024-05-01',
+    },
   },
 ]
 
@@ -98,7 +144,28 @@ const issue: Issue = {
   id: 'cc',
   issue_created_at: '2023-04-08',
   organization: org,
+  progress: IssueStatus.BACKLOG,
 }
+
+const issueTriaged = {
+  ...issue,
+  progress: IssueStatus.TRIAGED,
+  labels: [
+    {
+      id: 'x',
+      name: 'feature',
+      color: '112233',
+    },
+    {
+      id: 'x',
+      name: 'bug',
+      color: '8811111',
+    },
+  ],
+}
+const issueInProgress = { ...issue, progress: IssueStatus.IN_PROGRESS }
+const issuePullRequest = { ...issue, progress: IssueStatus.PULL_REQUEST }
+const issueCompleted = { ...issue, progress: IssueStatus.COMPLETED }
 
 const repo: RepositoryRead = {
   platform: Platforms.GITHUB,
@@ -116,6 +183,46 @@ export const Default: Story = {
     repo: repo,
     org: org,
     issue: issue,
+  },
+}
+
+export const StatusTriaged: Story = {
+  args: {
+    pledges: pledges,
+    references: references,
+    repo: repo,
+    org: org,
+    issue: issueTriaged,
+  },
+}
+
+export const StatusInProgress: Story = {
+  args: {
+    pledges: pledges,
+    references: referencesDraft,
+    repo: repo,
+    org: org,
+    issue: issueInProgress,
+  },
+}
+
+export const StatusPullRequest: Story = {
+  args: {
+    pledges: pledges,
+    references: references,
+    repo: repo,
+    org: org,
+    issue: issuePullRequest,
+  },
+}
+
+export const StatusCompleted: Story = {
+  args: {
+    pledges: pledges,
+    references: referencesMerged,
+    repo: repo,
+    org: org,
+    issue: issueCompleted,
   },
 }
 
@@ -143,6 +250,16 @@ export const PledgeNoReferences: Story = {
   args: {
     pledges: pledges,
     references: [],
+    repo: repo,
+    org: org,
+    issue: issue,
+  },
+}
+
+export const PledgeCanDispute: Story = {
+  args: {
+    pledges: pledgeDisputable,
+    references: references,
     repo: repo,
     org: org,
     issue: issue,

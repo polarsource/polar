@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import Any, List, Set, Type, TypeVar, Union
+from typing import Any, List, Optional, Set, Type, TypeVar, Union
 from uuid import UUID
 from githubkit import GitHub, Response
+from githubkit.typing import QueryParamTypes
 from githubkit.exception import RequestFailed
 from pydantic import parse_obj_as
 
@@ -54,7 +55,7 @@ from githubkit.rest.models import (
     ConvertedNoteToIssueIssueEvent,
     MovedColumnInProjectIssueEvent,
     ReviewRequestRemovedIssueEvent,
-    Reaction,
+    Issue as GitHubIssue,
 )
 
 log = structlog.get_logger()
@@ -209,15 +210,9 @@ class GitHubIssueReferencesService:
         client: GitHub,
         url: str,
         response_model: Type[T],
-        per_page: int = 30,
-        page: int = 1,
+        params: Optional[QueryParamTypes] = None,
         etag: str | None = None
     ) -> Response[T]:
-        params = {
-            "per_page": per_page,
-            "page": page,
-        }
-
         headers = {
             "If-None-Match": etag if etag else UNSET,
             "X-GitHub-Api-Version": "2022-11-28",
@@ -226,7 +221,7 @@ class GitHubIssueReferencesService:
         return await client.arequest(
             "GET",
             url,
-            params=exclude_unset(params),
+            params=params,
             headers=exclude_unset(headers),
             response_model=response_model,
             error_models={
@@ -276,11 +271,15 @@ class GitHubIssueReferencesService:
     ]:
         url = f"/repos/{owner}/{repo}/issues/{issue_number}/timeline"
 
+        params = {
+            "per_page": per_page,
+            "page": page,
+        }
+
         return await self.async_request_with_headers(
             client=client,
             url=url,
-            per_page=per_page,
-            page=page,
+            params=exclude_unset(params),
             etag=etag,
             response_model=List[
                 Union[
@@ -311,25 +310,21 @@ class GitHubIssueReferencesService:
         )
 
     # client.rest.reactions.async_list_for_issue,
-    async def async_reactions_list_for_issue_with_headers(
+    async def async_issues_get_with_headers(
         self,
         client: GitHub,
         owner: str,
         repo: str,
         issue_number: int,
-        per_page: int = 30,
-        page: int = 1,
         etag: str | None = None,
-    ) -> Response[List[Reaction]]:
-        url = f"/repos/{owner}/{repo}/issues/{issue_number}/reactions"
+    ) -> Response[GitHubIssue]:
+        url = f"/repos/{owner}/{repo}/issues/{issue_number}"
 
         return await self.async_request_with_headers(
             client=client,
             url=url,
-            per_page=per_page,
-            page=page,
             etag=etag,
-            response_model=List[Reaction],
+            response_model=GitHubIssue,
         )
 
     async def sync_issue_references(

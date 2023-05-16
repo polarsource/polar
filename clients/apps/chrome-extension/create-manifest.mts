@@ -22,47 +22,37 @@ if (!forProduction && !forDevelopment) {
   process.exit(1)
 }
 
-export interface Manifest {
-  name: string
-  version: string
-  manifest_version: number
-  icons: Icons
-  permissions: string[]
-  host_permissions: string[]
-  content_scripts: ContentScript[]
-  background: Background
+// If development, keep keys starting with dev: but remove the prefix
+// If production, keep keys starting with prod: but remove the prefix
+const visit = (obj) => {
+  if (typeof obj !== 'object') {
+    return obj
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(visit)
+  }
+
+  const entries = Object.entries(obj)
+    .map(([key, value]) => {
+      if (key.startsWith('dev:')) {
+        return forDevelopment ? [key.slice(4), visit(value)] : undefined
+      }
+
+      if (key.startsWith('prod:')) {
+        return forProduction ? [key.slice(5), visit(value)] : undefined
+      }
+
+      return [key, visit(value)]
+    })
+    .filter((x) => x !== undefined)
+
+  return Object.fromEntries(entries)
 }
 
-export interface Icons {
-  '16': string
-  '32': string
-  '48': string
-  '128': string
-}
+const manifest = JSON.parse(
+  readFileSync('./src/manifest.template.json', 'utf-8'),
+)
 
-export interface ContentScript {
-  run_at?: string
-  js: string[]
-  matches: string[]
-}
-
-export interface Background {
-  service_worker: string
-}
-
-const file: Manifest = JSON.parse(
-  readFileSync('./src/manifest.json', 'utf-8'),
-) as Manifest
-
-if (forDevelopment) {
-  file['host_permissions'].push('http://127.0.0.1:8000/*')
-
-  file['content_scripts'].map((cs) => {
-    if (cs['js'] && cs['js'].includes('auth.js')) {
-      cs['matches'].push('http://127.0.0.1:3000/dashboard/settings/extension')
-    }
-    return cs
-  })
-}
-
-console.log(JSON.stringify(file, null, 2))
+const output = visit(manifest)
+console.log(JSON.stringify(output, null, 2))

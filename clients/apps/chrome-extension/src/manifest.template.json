@@ -10,7 +10,8 @@
     "128": "Icon_128.png"
   },
   "permissions": ["storage", "webNavigation", "scripting"],
-  "host_permissions": ["https://github.com/", "https://api.polar.sh/"],
+  "prod:host_permissions": ["https://github.com/", "https://api.polar.sh/"],
+  "dev:host_permissions": ["https://github.com/", "http://127.0.0.1:8000/"],
   "content_scripts": [
     {
       "run_at": "document_end",
@@ -23,7 +24,8 @@
     },
     {
       "js": ["auth.js"],
-      "matches": ["https://dashboard.polar.sh/dashboard/settings/extension"]
+      "prod:matches": ["https://dashboard.polar.sh/dashboard/settings/extension"],
+      "dev:matches": ["http://127.0.0.1:3000/dashboard/settings/extension"]
     }
   ],
   "background": {

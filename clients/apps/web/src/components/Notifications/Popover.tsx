@@ -137,7 +137,8 @@ const Item = ({
     </div>
   )
 }
-const IssuePledgeCreated = ({
+
+const IssuePledgeCreatedNotification = ({
   n,
   payload,
 }: {
@@ -246,7 +247,10 @@ const BranchCreatedNotification = ({
 const Notification = ({ n }: { n: NotificationRead }) => {
   if (n.type === 'issue_pledge_created') {
     return (
-      <IssuePledgeCreated n={n} payload={n.payload as IssuePledgeCreated} />
+      <IssuePledgeCreatedNotification
+        n={n}
+        payload={n.payload as IssuePledgeCreated}
+      />
     )
   }
 

@@ -157,15 +157,6 @@ if (!win.__POLAR_IS_LOADED__) {
   win.__POLAR_IS_LOADED__ = true
 
   if (orgName && repoName) {
-    // Install the CSS
-    const head = document.querySelector('head')
-    if (head) {
-      const link = document.createElement('link')
-      link.rel = 'stylesheet'
-      link.href = chrome.runtime.getURL('index.css')
-      head.appendChild(link)
-    }
-
     main()
   }
 

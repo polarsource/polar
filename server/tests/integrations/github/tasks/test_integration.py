@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import os
 from typing import Any
 from unittest.mock import ANY, call
 from arq import ArqRedis
@@ -47,11 +48,18 @@ FAKE_CTX: JobContext = {
 
 @pytest.mark.asyncio
 @pytest.mark.vcr
-# @pytest.mark.block_network
 async def test_installation_no_notifications(
     session: AsyncSession,
     mocker: MockerFixture,
 ) -> None:
+    """
+    This test uses real recorded traffic, saved in "casettes".
+    To re-generate the casette. Run the test with --record-mode=rewrite.
+
+    Example:
+        pytest -k test_installation_no_notifications --record-mode=rewrite
+    """
+
     async def in_process_enqueue_job(pool, name, *args, **kwargs):
         if name == "github.repo.sync.issues":
             return await tasks.repo.sync_repository_issues(
@@ -62,16 +70,20 @@ async def test_installation_no_notifications(
                 kwargs["polar_context"], *args, **kwargs
             )
         elif name == "github.issue.sync.issue_references":
-            return None  # skip
+            return await tasks.issue.issue_sync_issue_references(
+                kwargs["polar_context"], *args, **kwargs
+            )
         elif name == "github.repo.sync.issue_references":
-            return None  # skip
+            return await tasks.repo.repo_sync_issue_references(
+                kwargs["polar_context"], *args, **kwargs
+            )
         elif name == "github.issue.sync.issue_dependencies":
             return None  # skip
         else:
             raise Exception(f"unexpected job: {name}")
 
     with open(
-        "tests/integrations/github/tasks/testdata/github_webhook_installation_created_zegl.json",
+        "tests/integrations/github/tasks/testdata/github_webhook_installation_created_open-testing.json",
         "r",
     ) as fp:
         cassette: dict[str, Any] = json.loads(fp.read())
@@ -91,9 +103,9 @@ async def test_installation_no_notifications(
         await OAuthAccount.create(
             session=session,
             platform="github",
-            access_token="ghu_xxxx",
+            access_token=os.environ.get("POLAR_TEST_GITHUB_ACCESS_TOKEN", "ghu_xxx"),
             expires_at=1684258598,
-            refresh_token="ghr_yyyy",
+            refresh_token=os.environ.get("POLAR_TEST_GITHUB_REFRESH_TOKEN", "ghr_xxx"),
             account_id=str(cassette["sender"]["id"]),
             account_email="test_installation_no_notifications@test.polar.se",
             user_id=user.id,

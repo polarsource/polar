@@ -158,16 +158,13 @@ class NotificationsService:
         typ: NotificationType,
         notif: PartialNotification,
     ):
-        sent_to: set[UUID] = set()
+        sent_to_orgs: set[UUID] = set()
 
         # send to pledgers
         pledges = await pledge.get_by_issue_ids(session, [issue.id])
         if pledges:
             for p in pledges:
                 if p.by_organization_id:
-                    if p.by_organization_id in sent_to:
-                        continue
-
                     await self.send_to_org(
                         session=session,
                         org_id=p.by_organization_id,
@@ -175,7 +172,17 @@ class NotificationsService:
                         notif=notif,
                     )
 
-                    sent_to.add(p.by_organization_id)
+                    sent_to_orgs.add(p.by_organization_id)
+
+                if p.by_user_id:
+                    await self.send_to_user(
+                        session=session,
+                        user_id=p.by_user_id,
+                        typ=typ,
+                        notif=notif,
+                    )
+
+                # TODO: should we send emails if p.email is set?
 
     async def create_payload(
         self,

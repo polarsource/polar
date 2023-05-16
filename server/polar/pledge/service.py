@@ -380,7 +380,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
             amount=pledge.amount,
             fee=self.calculate_fee(pledge.amount),
             state=PledgeState.initiated,
-            by_user=by_user and by_user.id or None,
+            by_user_id=by_user and by_user.id or None,
             by_organization_id=by_organization and by_organization.id or None,
         )
 

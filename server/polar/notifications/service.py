@@ -79,12 +79,14 @@ class NotificationsService:
         self,
         session: AsyncSession,
         user_id: UUID,
+        for_org: UUID | None,
         typ: NotificationType,
         notif: PartialNotification,
     ) -> bool:
         dedup_key: str = "/".join(
             [
                 str(user_id),
+                str(for_org) if for_org else "",
                 str(typ),
                 str(notif.issue_id) if notif.issue_id else "",
                 str(notif.pledge_id) if notif.pledge_id else "",
@@ -127,6 +129,7 @@ class NotificationsService:
             await self.send_to_user(
                 session=session,
                 user_id=member.user_id,
+                for_org=org_id,
                 typ=typ,
                 notif=notif,
             )
@@ -180,6 +183,7 @@ class NotificationsService:
                         user_id=p.by_user_id,
                         typ=typ,
                         notif=notif,
+                        for_org=None,
                     )
 
                 # TODO: should we send emails if p.email is set?

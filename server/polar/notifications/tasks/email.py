@@ -48,52 +48,45 @@ async def notifications_send(
                 return
 
             # Get users to send to
-            users = await user_organization_service.list_by_org(
-                session, notif.organization_id
-            )
-            if not users:
-                log.warning("notifications.send.users_not_found")
+            user = await user_service.get(session, notif.user_id)
+            if not user:
+                log.warning("notifications.send.user_not_found", user_id=notif.user_id)
                 return
 
-            for user_org in users:
-                if not await should_send(session, user_org, notif):
-                    continue
+            if not await should_send(session, user, notif):
+                return
 
-                user = await user_service.get(session, user_org.user_id)
+            if not user.email:
+                log.warning("notifications.send.user_no_email", user_id=user.id)
+                return
 
-                if not user:
-                    log.warning(
-                        "notifications.send.user_not_found", user_id=user_org.user_id
-                    )
-                    continue
+            meta = notifications.parse_payload(notif)
 
-                if not user.email:
-                    log.warning("notifications.send.user_no_email", user_id=user.id)
-                    continue
-
-                meta = notifications.parse_payload(notif)
-
-                html = render_email(user, NotificationType.from_str(notif.type), meta)
-                if not html:
-                    log.error(
-                        "notifications.send.could_not_render",
-                        user=user,
-                        notif=notif,
-                    )
-                    continue
-
-                sender.send_to_user(
-                    to_email_addr=user.email,
-                    subject="[Polar] " + meta.issue_title,
-                    html_content=html,
+            html = render_email(user, NotificationType.from_str(notif.type), meta)
+            if not html:
+                log.error(
+                    "notifications.send.could_not_render",
+                    user=user,
+                    notif=notif,
                 )
+                return
+
+            sender.send_to_user(
+                to_email_addr=user.email,
+                subject="[Polar] " + meta.issue_title,
+                html_content=html,
+            )
 
 
-async def should_send(
-    session: AsyncSession, user: UserOrganization, notif: Notification
-) -> bool:
+async def should_send(session: AsyncSession, user: User, notif: Notification) -> bool:
+    # TODO: do we need personal notification and email preferences?
+    if not notif.organization_id:
+        return True
+
+    # Use user notificaiton preferences in the org that this notification originates
+    # from
     settings = await user_organization_service.get_settings(
-        session, user_id=user.user_id, org_id=user.organization_id
+        session, user_id=user.id, org_id=notif.organization_id
     )
 
     match notif.type:

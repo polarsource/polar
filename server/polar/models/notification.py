@@ -18,6 +18,10 @@ class Notification(RecordModel):
 
     user_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)
 
+    organization_id: Mapped[UUID] = mapped_column(
+        PostgresUUID, nullable=True, default=None
+    )
+
     type: Mapped[str] = mapped_column(String, nullable=False)
 
     issue_id: Mapped[UUID] = mapped_column(

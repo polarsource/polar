@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Set, Union
+from typing import Any, List, Set, Type, TypeVar, Union
 from uuid import UUID
 from githubkit import GitHub, Response
 from githubkit.exception import RequestFailed
@@ -54,6 +54,7 @@ from githubkit.rest.models import (
     ConvertedNoteToIssueIssueEvent,
     MovedColumnInProjectIssueEvent,
     ReviewRequestRemovedIssueEvent,
+    Reaction,
 )
 
 log = structlog.get_logger()
@@ -83,6 +84,8 @@ TimelineEventType = Union[
     github.rest.TimelineUnassignedIssueEvent,
     github.rest.StateChangeIssueEvent,
 ]
+
+T = TypeVar("T")
 
 
 class GitHubIssueReferencesService:
@@ -201,6 +204,38 @@ class GitHubIssueReferencesService:
 
     # Support for custom headers
     # TODO: https://github.com/yanyongyu/githubkit/issues/29
+    async def async_request_with_headers(
+        self,
+        client: GitHub,
+        url: str,
+        response_model: Type[T],
+        per_page: int = 30,
+        page: int = 1,
+        etag: str | None = None
+    ) -> Response[T]:
+        params = {
+            "per_page": per_page,
+            "page": page,
+        }
+
+        headers = {
+            "If-None-Match": etag if etag else UNSET,
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+
+        return await client.arequest(
+            "GET",
+            url,
+            params=exclude_unset(params),
+            headers=exclude_unset(headers),
+            response_model=response_model,
+            error_models={
+                "404": BasicError,
+                "410": BasicError,
+            },
+        )
+
+
     # client.rest.issues.async_list_events_for_timeline,
     async def async_list_events_for_timeline_with_headers(
         self,
@@ -241,21 +276,12 @@ class GitHubIssueReferencesService:
     ]:
         url = f"/repos/{owner}/{repo}/issues/{issue_number}/timeline"
 
-        params = {
-            "per_page": per_page,
-            "page": page,
-        }
-
-        headers = {
-            "If-None-Match": etag if etag else UNSET,
-            "X-GitHub-Api-Version": "2022-11-28",
-        }
-
-        return await client.arequest(
-            "GET",
-            url,
-            params=exclude_unset(params),
-            headers=exclude_unset(headers),
+        return await self.async_request_with_headers(
+            client=client,
+            url=url,
+            per_page=per_page,
+            page=page,
+            etag=etag,
             response_model=List[
                 Union[
                     LabeledIssueEvent,
@@ -282,10 +308,28 @@ class GitHubIssueReferencesService:
                     StateChangeIssueEvent,
                 ]
             ],
-            error_models={
-                "404": BasicError,
-                "410": BasicError,
-            },
+        )
+
+    # client.rest.reactions.async_list_for_issue,
+    async def async_reactions_list_for_issue_with_headers(
+        self,
+        client: GitHub,
+        owner: str,
+        repo: str,
+        issue_number: int,
+        per_page: int = 30,
+        page: int = 1,
+        etag: str | None = None,
+    ) -> Response[List[Reaction]]:
+        url = f"/repos/{owner}/{repo}/issues/{issue_number}/reactions"
+
+        return await self.async_request_with_headers(
+            client=client,
+            url=url,
+            per_page=per_page,
+            page=page,
+            etag=etag,
+            response_model=List[Reaction],
         )
 
     async def sync_issue_references(

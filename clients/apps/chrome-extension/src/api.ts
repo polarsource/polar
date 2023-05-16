@@ -47,13 +47,14 @@ const listIssuesForExtension = async ({
 }): Promise<Array<IssueExtensionRead>> => {
   const authorization = await getToken()
   const response = await fetch(
-    `${CONFIG.API_URL}/api/v1/extension/${platform}/${orgName}/${repoName}/issues?numbers=${numbers}&auth_token=${authorization}`,
+    `${CONFIG.API_URL}/api/v1/extension/${platform}/${orgName}/${repoName}/issues?numbers=${numbers}`,
     {
       // If we do 'include' here instead, the cookie is included and we could scrap the entire
       // auth mechanism. Let's not for now.
       credentials: 'omit',
       mode: 'cors',
       headers: {
+        Authorization: `Bearer ${authorization}`,
         'X-Polar-Agent': `Polar-Extension/${extensionVersion}`,
       },
     },

@@ -12,6 +12,38 @@ from ..service.issue import github_issue
 log = structlog.get_logger()
 
 
+@task("github.issue.sync")
+async def issue_sync(
+    ctx: JobContext,
+    issue_id: UUID,
+    polar_context: PolarWorkerContext,
+    crawl_with_installation_id: int
+    | None = None,  # Override which installation to use when crawling
+) -> None:
+    with polar_context.to_execution_context() as context:
+        async with AsyncSessionLocal() as session:
+            issue = await github_issue.get(session, issue_id)
+            if not issue or not issue.organization_id or not issue.repository_id:
+                log.warning(
+                    "github.issue.sync",
+                    error="issue not found",
+                    issue_id=issue_id,
+                )
+                return
+
+            organization, repository = await get_organization_and_repo(
+                session, issue.organization_id, issue.repository_id
+            )
+
+            await github_issue.sync_issue(
+                session,
+                org=organization,
+                repo=repository,
+                issue=issue,
+                crawl_with_installation_id=crawl_with_installation_id,
+            )
+
+
 @task("github.issue.sync.issue_references")
 async def issue_sync_issue_references(
     ctx: JobContext,
@@ -71,6 +103,23 @@ async def issue_sync_issue_dependencies(
                 repo=repository,
                 issue=issue,
             )
+
+
+@interval(
+    minute={2, 7, 12, 17, 22, 27, 32, 37, 42, 47, 52, 57},
+    second=0,
+)
+async def cron_refresh_issues(ctx: JobContext) -> None:
+    async with AsyncSessionLocal() as session:
+        issues = await github_issue.list_issues_to_crawl_issue(session)
+
+        log.info(
+            "github.issue.sync.cron_refresh_issues",
+            found_count=len(issues),
+        )
+
+        for issue in issues:
+            await enqueue_job("github.issue.sync", issue.id)
 
 
 @interval(

@@ -60,7 +60,17 @@ async def do_delete_issues(session: AsyncSession, org: Organization) -> None:
     await session.commit()
 
 
-async def trigger_issue_sync(session: AsyncSession, org: Organization) -> None:
+async def trigger_issue_sync(
+    session: AsyncSession,
+    org: Organization,
+    repo: Repository,
+    issue: Issue
+) -> None:
+    await enqueue_job("github.issue.sync", issue.id)
+    typer.echo(f"Triggered issue sync for {org.name}/{repo.name}/{issue.number}")
+
+
+async def trigger_issues_sync(session: AsyncSession, org: Organization) -> None:
     repositories = await get_repositories(session, org)
     if not repositories:
         raise RuntimeError(f"No repositories found for {org.name}")
@@ -122,7 +132,24 @@ async def resync_issues(org_name: str) -> None:
         if not org:
             raise RuntimeError(f"Organization {org_name} not found")
 
-        await trigger_issue_sync(session, org)
+        await trigger_issues_sync(session, org)
+
+
+@cli.command()
+@typer_async
+async def resync_issue(org_name: str, repo_name: str, issue_number: int) -> None:
+    async with AsyncSessionLocal() as session:
+        org, repo, issue = await github_organization.get_with_repo_and_issue(
+            session,
+            platform=Platforms.github,
+            org_name=org_name,
+            repo_name=repo_name,
+            issue=issue_number,
+        )
+        if not org:
+            raise RuntimeError(f"Organization {org_name} not found")
+
+        await trigger_issue_sync(session, org, repo, issue)
 
 
 @cli.command()

@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 import os
+import time
 from typing import Any
 from unittest.mock import ANY, call
 from arq import ArqRedis
@@ -104,7 +105,7 @@ async def test_installation_no_notifications(
             session=session,
             platform="github",
             access_token=os.environ.get("POLAR_TEST_GITHUB_ACCESS_TOKEN", "ghu_xxx"),
-            expires_at=1684258598,
+            expires_at=round(time.time() + 60 * 60 * 24),
             refresh_token=os.environ.get("POLAR_TEST_GITHUB_REFRESH_TOKEN", "ghr_xxx"),
             account_id=str(cassette["sender"]["id"]),
             account_email="test_installation_no_notifications@test.polar.se",

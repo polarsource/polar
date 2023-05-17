@@ -13,6 +13,7 @@ from polar.integrations.github.client import get_app_installation_client
 import polar.integrations.github.client as github
 from polar.integrations.github.service.pull_request import github_pull_request
 from polar.integrations.github.service.issue import github_issue
+from polar.integrations.github.service.api import github_api
 from polar.kit import utils
 
 from polar.models import Organization, Repository
@@ -32,7 +33,6 @@ from datetime import datetime
 from githubkit.utils import UNSET, exclude_unset
 
 from githubkit.rest.models import (
-    BasicError,
     LockedIssueEvent,
     LabeledIssueEvent,
     RenamedIssueEvent,
@@ -85,9 +85,6 @@ TimelineEventType = Union[
     github.rest.TimelineUnassignedIssueEvent,
     github.rest.StateChangeIssueEvent,
 ]
-
-T = TypeVar("T")
-
 
 class GitHubIssueReferencesService:
     async def sync_repo_references(
@@ -203,34 +200,6 @@ class GitHubIssueReferencesService:
 
         return res
 
-    # Support for custom headers
-    # TODO: https://github.com/yanyongyu/githubkit/issues/29
-    async def async_request_with_headers(
-        self,
-        client: GitHub,
-        url: str,
-        response_model: Type[T],
-        params: Optional[QueryParamTypes] = None,
-        etag: str | None = None
-    ) -> Response[T]:
-        headers = {
-            "If-None-Match": etag if etag else UNSET,
-            "X-GitHub-Api-Version": "2022-11-28",
-        }
-
-        return await client.arequest(
-            "GET",
-            url,
-            params=params,
-            headers=exclude_unset(headers),
-            response_model=response_model,
-            error_models={
-                "404": BasicError,
-                "410": BasicError,
-            },
-        )
-
-
     # client.rest.issues.async_list_events_for_timeline,
     async def async_list_events_for_timeline_with_headers(
         self,
@@ -276,7 +245,7 @@ class GitHubIssueReferencesService:
             "page": page,
         }
 
-        return await self.async_request_with_headers(
+        return await github_api.async_request_with_headers(
             client=client,
             url=url,
             params=exclude_unset(params),
@@ -307,24 +276,6 @@ class GitHubIssueReferencesService:
                     StateChangeIssueEvent,
                 ]
             ],
-        )
-
-    # client.rest.reactions.async_list_for_issue,
-    async def async_issues_get_with_headers(
-        self,
-        client: GitHub,
-        owner: str,
-        repo: str,
-        issue_number: int,
-        etag: str | None = None,
-    ) -> Response[GitHubIssue]:
-        url = f"/repos/{owner}/{repo}/issues/{issue_number}"
-
-        return await self.async_request_with_headers(
-            client=client,
-            url=url,
-            etag=etag,
-            response_model=GitHubIssue,
         )
 
     async def sync_issue_references(

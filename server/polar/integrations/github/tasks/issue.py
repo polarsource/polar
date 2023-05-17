@@ -35,7 +35,7 @@ async def issue_sync(
                 session, issue.organization_id, issue.repository_id
             )
 
-            await service.github_reference.sync_issue_references(
+            await github_issue.sync_issue(
                 session,
                 org=organization,
                 repo=repository,

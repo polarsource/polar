@@ -1,20 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 import {
+  ExternalGitHubCommitReference,
   IssueDashboardRead,
   IssueReferenceRead,
   IssueReferenceType,
   IssueStatus,
   OrganizationPublicRead,
-  Platforms,
   PledgeRead,
   PledgeState,
   PullRequestReference,
-  RepositoryRead,
-  State,
-  Visibility,
 } from 'polarkit/api/client'
+import { IssueReadWithRelations } from 'polarkit/api/types'
 import IssueListItem from '../components/Dashboard/IssueListItem'
+import { issue, org, repo } from './testdata'
 
 type Story = StoryObj<typeof IssueListItem>
 
@@ -122,35 +121,45 @@ const doubleReference: IssueReferenceRead[] = [
   },
 ]
 
-const org: OrganizationPublicRead = {
-  id: 'aa',
-  platform: Platforms.GITHUB,
-  name: 'bb',
-  avatar_url: 'cc',
-}
+const referencesCommit: IssueReferenceRead[] = [
+  {
+    id: 'wha',
+    type: IssueReferenceType.EXTERNAL_GITHUB_COMMIT,
+    payload: {
+      author_login: 'petterheterjag',
+      author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+      sha: '160a13da0ecedacb326de1b913186f448185ad9a',
+      organization_name: 'petterheterjag',
+      repository_name: 'polartest',
+      message: 'What is this',
+      branch_name: 'fix-1234',
+    } as ExternalGitHubCommitReference, // with branch name
+  },
+  {
+    id: 'wha',
+    type: IssueReferenceType.EXTERNAL_GITHUB_COMMIT,
+    payload: {
+      author_login: 'petterheterjag',
+      author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+      sha: '160a13da0ecedacb326de1b913186f448185ad9a',
+      organization_name: 'petterheterjag',
+      repository_name: 'polartest',
+      message: 'What is this',
+    } as ExternalGitHubCommitReference, // without branch name
+  },
+]
 
 interface Issue extends IssueDashboardRead {
   organization?: OrganizationPublicRead
 }
 
-const issue: Issue = {
-  platform: Platforms.GITHUB,
-  organization_id: 'aa',
-  repository_id: 'bb',
-  number: 222,
-  title: 'issue',
-  reactions: {
-    plus_one: 3,
-  },
-  state: State.OPEN,
-  id: 'cc',
-  issue_created_at: '2023-04-08',
+const dashboardIssue: Issue = {
+  ...issue,
   organization: org,
-  progress: IssueStatus.BACKLOG,
 }
 
 const issueTriaged = {
-  ...issue,
+  ...dashboardIssue,
   progress: IssueStatus.TRIAGED,
   labels: [
     {
@@ -165,29 +174,33 @@ const issueTriaged = {
     },
   ],
 }
-const issueInProgress = { ...issue, progress: IssueStatus.IN_PROGRESS }
-const issuePullRequest = { ...issue, progress: IssueStatus.PULL_REQUEST }
-const issueCompleted = { ...issue, progress: IssueStatus.COMPLETED }
+const issueInProgress = { ...dashboardIssue, progress: IssueStatus.IN_PROGRESS }
+const issuePullRequest = {
+  ...dashboardIssue,
+  progress: IssueStatus.PULL_REQUEST,
+}
+const issueCompleted = { ...dashboardIssue, progress: IssueStatus.COMPLETED }
 
-const repo: RepositoryRead = {
-  platform: Platforms.GITHUB,
-  external_id: 123,
-  name: 'aa',
-  id: 'bb',
-  visibility: Visibility.PUBLIC,
-  is_private: false,
+const dependents: IssueReadWithRelations = {
+  ...issue,
+  number: 123,
+  title: "Wow, we're blocked by this thing",
+  organization: { ...org, name: 'someorg' },
+  repository: { ...repo, name: 'somerepo' },
+  references: [],
+  pledges: [],
+  dependents: [],
 }
 
 const meta: Meta<typeof IssueListItem> = {
-  title: 'IssueListItem',
+  title: 'Organisms/IssueListItem',
   component: IssueListItem,
-  // This component will have an automatically generated Autodocs entry: https://storybook.js.org/docs/react/writing-docs/autodocs
   tags: ['autodocs'],
   argTypes: {
     issue: {
       options: ['Backlog', 'Triaged', 'InProgress', 'PullRequest', 'Completed'],
       mapping: {
-        Backlog: issue,
+        Backlog: dashboardIssue,
         Triaged: issueTriaged,
         InProgress: issueInProgress,
         PullRequest: issuePullRequest,
@@ -205,13 +218,14 @@ const meta: Meta<typeof IssueListItem> = {
       defaultValue: pledges,
     },
     references: {
-      options: ['None', 'Draft', 'OpenPR', 'MergedPR', 'ClosedPR'],
+      options: ['None', 'Draft', 'OpenPR', 'MergedPR', 'ClosedPR', 'Commits'],
       mapping: {
         None: [],
         Draft: referencesDraft,
         OpenPR: references,
         MergedPR: referencesMerged,
         ClosedPR: referencesClosed,
+        Commits: referencesCommit,
       },
       defaultValue: pledges,
     },
@@ -229,13 +243,21 @@ const meta: Meta<typeof IssueListItem> = {
       },
       defaultValue: org,
     },
+    dependents: {
+      options: ['No', 'Yes'],
+      mapping: {
+        No: [],
+        Yes: [dependents],
+      },
+      defaultValue: [],
+    },
   },
   args: {
     pledges: pledges,
     references: references,
     repo: repo,
     org: org,
-    issue: issue,
+    issue: dashboardIssue,
   },
 }
 
@@ -288,6 +310,13 @@ export const ReferencesNoPledge: Story = {
   },
 }
 
+export const ReferencesCommit: Story = {
+  args: {
+    ...Default.args,
+    references: referencesCommit,
+  },
+}
+
 export const PledgeNoReferences: Story = {
   args: {
     ...Default.args,
@@ -299,5 +328,12 @@ export const PledgeCanDispute: Story = {
   args: {
     ...Default.args,
     pledges: pledgeDisputable,
+  },
+}
+
+export const Dependency: Story = {
+  args: {
+    ...Default.args,
+    dependents: [dependents],
   },
 }

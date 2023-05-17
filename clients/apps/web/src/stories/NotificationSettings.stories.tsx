@@ -4,7 +4,7 @@ import Box from 'components/Settings/Box'
 import NotificationSettings from '../components/Settings/NotificationSettings'
 
 const meta: Meta<typeof NotificationSettings> = {
-  title: 'Settings/NotificationSettings',
+  title: 'Organisms/NotificationSettings',
   component: NotificationSettings,
   tags: ['autodocs'],
   args: {

@@ -202,35 +202,35 @@ const PledgeForm = ({
   return (
     <>
       <form className="flex flex-col">
-        <label htmlFor="amount" className="text-sm font-medium text-gray-600">
+        <label htmlFor="amount" className="text-sm font-medium text-gray-500">
           Choose amount to pledge
         </label>
-        <div className="mt-3 flex flex-row items-center space-x-4">
-          <div className="relative w-2/3">
+        <div className="mt-2 flex flex-row items-center space-x-4">
+          <div className="relative w-3/5">
             <input
               type="text"
               id="amount"
               name="amount"
-              className="block w-full rounded-md border-gray-200 py-3 px-4 pl-9 pr-16 text-sm shadow-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500"
+              className="block w-full rounded-lg border-gray-200 py-2 px-4 pl-7 pr-16 text-lg placeholder-gray-400 shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100"
               onChange={onAmountChange}
               onBlur={onAmountChange}
               placeholder={getCentsInDollarString(MINIMUM_PLEDGE)}
             />
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-20 flex items-center pl-4">
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-20 flex items-center pl-3 text-lg">
               <span className="text-gray-500">$</span>
             </div>
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-20 flex items-center pr-4">
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-20 flex items-center pr-4 text-sm">
               <span className="text-gray-500">USD</span>
             </div>
           </div>
-          <p className="w-1/3 text-xs text-gray-500">
+          <p className="w-2/5 text-xs text-gray-500">
             Minimum is ${getCentsInDollarString(MINIMUM_PLEDGE)}
           </p>
         </div>
 
         <label
           htmlFor="email"
-          className="mt-5 mb-2 text-sm font-medium text-gray-600"
+          className="mt-4 mb-2 text-sm font-medium text-gray-500"
         >
           Contact details
         </label>
@@ -240,7 +240,7 @@ const PledgeForm = ({
           onChange={onEmailChange}
           onBlur={onEmailChange}
           value={email}
-          className="block w-full rounded-md border-gray-200 py-3 px-4 text-sm shadow-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500"
+          className="block w-full rounded-lg border-gray-200 py-2.5 px-3 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100"
         />
 
         <div className="mt-5 mb-2">
@@ -265,6 +265,34 @@ const PledgeForm = ({
             stripe={stripePromise}
             options={{
               clientSecret: pledge.client_secret,
+              appearance: {
+                rules: {
+                  '.Label': {
+                    color: '#727374',
+                    fontWeight: '500',
+                    fontSize: '14px',
+                    marginBottom: '8px',
+                  },
+                  '.Input': {
+                    padding: '12px',
+                  },
+                  '.Input:focus': {
+                    //borderColor: 'green',
+                  },
+                },
+                variables: {
+                  borderRadius: '8px',
+                  fontFamily: '"Inter var", Inter, sans-serif',
+                  fontSizeBase: '14px',
+                  spacingGridRow: '18px',
+                },
+              },
+              fonts: [
+                {
+                  cssSrc:
+                    'https://fonts.googleapis.com/css2?family=Inter:wght@400;500',
+                },
+              ],
             }}
           >
             <PaymentForm

@@ -33,9 +33,9 @@ const RepositoryCard = ({
   return (
     <>
       <GrayCard className="mt-6 py-6 px-8 text-center" padding={false}>
-        <div className="flex flex-row justify-center space-x-2">
+        <div className="flex flex-row items-center justify-center space-x-2">
           <img
-            className="h-6 w-6 rounded-full"
+            className="h-8 w-8 rounded-full"
             src={organization.avatar_url}
             alt=""
           />
@@ -48,25 +48,25 @@ const RepositoryCard = ({
         </p>
         <div className="flex flex-row items-center justify-center space-x-4">
           {typeof repository.stars === 'number' && (
-            <p className="inline-flex items-center space-x-1 text-sm text-gray-600">
+            <p className="inline-flex items-center space-x-1 text-xs text-gray-600">
               <span className="font-medium">{abbrStars(repository.stars)}</span>
               <span>stars</span>
             </p>
           )}
 
           {repository.license && (
-            <a className="whitespace-pre text-sm text-[#8A63F9]" href={repoURL}>
+            <a className="whitespace-pre text-xs text-[#8A63F9]" href={repoURL}>
               {repository.license}
             </a>
           )}
           {!repository.license && (
-            <a className="text-sm text-gray-600" href={repoURL}>
+            <a className="text-xs text-gray-600" href={repoURL}>
               Unknown license
             </a>
           )}
 
           {repository.homepage && (
-            <a className="text-sm text-[#8A63F9]" href={repository.homepage}>
+            <a className="text-xs text-[#8A63F9]" href={repository.homepage}>
               {prettyURL(repository.homepage)}
             </a>
           )}

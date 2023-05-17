@@ -24,17 +24,17 @@ const IssueCard = ({
   return (
     <>
       <div
-        className={`h-full rounded-lg border border-gray-200 px-8 py-14 text-center ${className}`}
+        className={`flex h-full flex-col content-center justify-center rounded-lg border border-gray-200 py-8 px-6 ${className}`}
       >
         <strong className="text-sm font-medium text-gray-600">
           Issue to be fixed
         </strong>
-        <h1 className="my-2.5 text-lg font-normal">{issue.title}</h1>
+        <h1 className="my-2.5 text-xl font-normal">{issue.title}</h1>
         <p className="text-sm font-normal text-gray-500">
           <a href={url}>#{issue.number}</a> opened{' '}
           <PolarTimeAgo date={new Date(issue.issue_created_at)} />
         </p>
-        <div className="mt-6 flex flex-row justify-center space-x-4">
+        <div className="mt-3 flex flex-row justify-center space-x-4">
           <p className="w-16 text-sm text-gray-600">
             <span className="mr-2">👍</span> {issue.reactions.plus_one}
           </p>

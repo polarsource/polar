@@ -117,22 +117,22 @@ const PaymentForm = ({
   }
 
   return (
-    <div className="mt-5">
+    <div className="mt-3 border-t pt-5">
       <PaymentElement onChange={onStripeFormChange} />
 
-      <div className="mt-6 flex w-full">
+      <div className="mt-6 mb-1 flex w-full text-sm text-gray-500">
         <div className="w-full">Pledge</div>
         <div className="w-full text-right">
           ${getCentsInDollarString(amount, true)}
         </div>
       </div>
-      <div className="flex w-full">
+      <div className="w-ful mb-1 flex text-sm text-gray-500">
         <div className="w-full">Service fee</div>
         <div className="w-full text-right">
           ${getCentsInDollarString(fee, true)}
         </div>
       </div>
-      <div className="mb-6 flex w-full">
+      <div className="mb-6 flex w-full text-sm font-medium text-gray-900">
         <div className="w-full">Total</div>
         <div className="w-full text-right">
           ${getCentsInDollarString(amountIncludingFee, true)}

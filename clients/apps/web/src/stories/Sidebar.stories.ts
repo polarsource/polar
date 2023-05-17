@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import { DefaultFilters } from 'components/Dashboard/Dashboard'
-import { DashboardFilters } from 'components/Dashboard/filters'
+import { DefaultFilters } from '@/components/Dashboard/Dashboard'
+import { DashboardFilters } from '@/components/Dashboard/filters'
 import { IssueListType } from 'polarkit/api/client'
 import Sidebar from '../components/Dashboard/Sidebar'
 

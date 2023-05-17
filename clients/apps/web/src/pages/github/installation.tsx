@@ -1,8 +1,8 @@
 import LoadingScreen, {
   LoadingScreenError,
-} from 'components/Dashboard/LoadingScreen'
-import Layout from 'components/Layout/EmptyLayout'
-import GithubLoginButton from 'components/Shared/GithubLoginButton'
+} from '@/components/Dashboard/LoadingScreen'
+import Layout from '@/components/Layout/EmptyLayout'
+import GithubLoginButton from '@/components/Shared/GithubLoginButton'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit'
 import {

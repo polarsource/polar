@@ -1,10 +1,10 @@
+import { useRequireAuth } from '@/hooks'
 import {
   CodeBracketIcon as CodeBracketIconSmall,
   PlusIcon,
 } from '@heroicons/react/20/solid'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { Command } from 'cmdk'
-import { useRequireAuth } from 'hooks'
 import {
   OrganizationPrivateRead,
   OrganizationPublicRead,

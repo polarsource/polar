@@ -1,6 +1,6 @@
-import GithubLoginButton from 'components/Shared/GithubLoginButton'
 import { LogoType70 } from 'polarkit/components/brand'
 import { ShadowBox } from 'polarkit/components/ui'
+import GithubLoginButton from '../Shared/GithubLoginButton'
 
 const Login = () => {
   return (

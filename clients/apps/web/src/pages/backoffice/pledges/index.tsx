@@ -1,4 +1,4 @@
-import Pledges from 'components/Backoffice/Pledges'
+import Pledges from '@/components/Backoffice/Pledges'
 import type { NextLayoutComponentType } from 'next'
 import Link from 'next/link'
 import { ReactElement } from 'react'

@@ -1,4 +1,4 @@
-import Login from 'components/Auth/Login'
+import Login from '@/components/Auth/Login'
 import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'

@@ -1,5 +1,5 @@
-import PageNotFound from 'components/Shared/PageNotFound'
-import Pledge from 'components/Website/Pledge'
+import PageNotFound from '@/components/Shared/PageNotFound'
+import Pledge from '@/components/Website/Pledge'
 import type {
   GetServerSideProps,
   NextLayoutComponentType,

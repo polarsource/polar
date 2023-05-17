@@ -1,4 +1,4 @@
-import Invites from 'components/Backoffice/Invites'
+import Invites from '@/components/Backoffice/Invites'
 import type { NextLayoutComponentType } from 'next'
 import Link from 'next/link'
 import { ReactElement } from 'react'

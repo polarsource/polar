@@ -1,15 +1,15 @@
-import { ArrowLeftIcon } from '@heroicons/react/24/solid'
-import RepoSelection from 'components/Dashboard/RepoSelection'
-import BadgeSetup from 'components/Settings/Badge'
-import Box from 'components/Settings/Box'
+import RepoSelection from '@/components/Dashboard/RepoSelection'
+import BadgeSetup from '@/components/Settings/Badge'
+import Box from '@/components/Settings/Box'
 import NotificationSettings, {
   type Settings as NotificationSettingsValues,
-} from 'components/Settings/NotificationSettings'
+} from '@/components/Settings/NotificationSettings'
 import PaymentSettings, {
   type Settings as PaymentSettingsValues,
-} from 'components/Settings/PaymentSettings'
-import Spinner from 'components/Shared/Spinner'
-import Topbar from 'components/Shared/Topbar'
+} from '@/components/Settings/PaymentSettings'
+import Spinner from '@/components/Shared/Spinner'
+import Topbar from '@/components/Shared/Topbar'
+import { ArrowLeftIcon } from '@heroicons/react/24/solid'
 import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'

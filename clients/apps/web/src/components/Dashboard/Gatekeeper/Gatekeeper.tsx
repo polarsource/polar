@@ -1,5 +1,5 @@
-import InviteOnly from 'components/Dashboard/Gatekeeper/InviteOnly'
-import { useRequireAuth } from 'hooks'
+import InviteOnly from '@/components/Dashboard/Gatekeeper/InviteOnly'
+import { useRequireAuth } from '@/hooks'
 import AcceptTerms from './AcceptTerms'
 
 const Gatekeeper = (props: { children: React.ReactElement }) => {

@@ -37,7 +37,7 @@ export const useAuth = (): UserState & {
     }
   }, [authenticated, hasChecked, login])
 
-  const reloadUser = async (): CancelablePromise<UserRead> => {
+  const reloadUser = (): CancelablePromise<UserRead> => {
     setIsChecking(true)
     return login(() => {
       setIsChecking(false)

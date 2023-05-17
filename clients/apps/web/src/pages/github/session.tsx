@@ -1,7 +1,7 @@
 import LoadingScreen, {
   LoadingScreenError,
-} from 'components/Dashboard/LoadingScreen'
-import Layout from 'components/Layout/EmptyLayout'
+} from '@/components/Dashboard/LoadingScreen'
+import Layout from '@/components/Layout/EmptyLayout'
 import { useRouter } from 'next/router'
 import type { ReactElement } from 'react'
 import type { NextPageWithLayout } from 'utils/next'

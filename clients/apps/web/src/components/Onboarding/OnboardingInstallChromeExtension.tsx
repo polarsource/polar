@@ -19,6 +19,15 @@ const OnboardingInstallChromeExtension = () => {
     setIsSkipped(true)
   }
 
+  const onPrimary = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    setIsSkipped(true)
+    window.open(
+      'https://chrome.google.com/webstore/detail/polar/flgggfbldmglpjmagkhlhiohnkcmgbhi',
+      '_blank',
+    )
+  }
+
   const [show, setShow] = useState(false)
 
   useEffect(() => {
@@ -45,13 +54,7 @@ const OnboardingInstallChromeExtension = () => {
               ornare et.
             </p>
             <div className="flex items-center justify-between gap-4 lg:justify-start">
-              <PrimaryButton
-                color="blue"
-                fullWidth={false}
-                onClick={() => {
-                  window.open('https://polar.sh/', '_blank')
-                }}
-              >
+              <PrimaryButton color="blue" fullWidth={false} onClick={onPrimary}>
                 <PlusIcon className="h-6 w-6" />
                 <span>Go to Chrome Web Store</span>
               </PrimaryButton>

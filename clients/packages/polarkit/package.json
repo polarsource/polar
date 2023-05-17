@@ -50,6 +50,6 @@
     "form-data": "^4.0.0",
     "openapi-typescript-codegen": "^0.23.0",
     "tsconfig": "workspace:*",
-    "typescript": "4.8.3"
+    "typescript": "5.0.4"
   }
 }

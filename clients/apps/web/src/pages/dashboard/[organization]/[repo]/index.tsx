@@ -30,9 +30,7 @@ const Page: NextLayoutComponentType = () => {
   return (
     <>
       <Head>
-        <title>
-          Polar {org.name}/{repo.name}
-        </title>
+        <title>Polar{org && repo ? ` ${org.name}/${repo.name}` : ''}</title>
       </Head>
       <Dashboard key={key} org={org} repo={repo} isPersonal={false} />
     </>

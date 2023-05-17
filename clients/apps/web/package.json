@@ -61,6 +61,6 @@
     "storybook": "^7.0.12",
     "tailwindcss": "^3.1.8",
     "tsconfig": "workspace:*",
-    "typescript": "4.8.3"
+    "typescript": "5.0.4"
   }
 }

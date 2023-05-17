@@ -106,18 +106,34 @@ async def issue_sync_issue_dependencies(
 
 
 @interval(
-    minute={0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55},
+    minute={2, 7, 12, 17, 22, 27, 32, 37, 42, 47, 52, 57},
     second=0,
 )
-async def cron_refresh_issues_and_timelines(ctx: JobContext) -> None:
+async def cron_refresh_issues(ctx: JobContext) -> None:
     async with AsyncSessionLocal() as session:
-        issues = await github_issue.list_issues_to_crawl(session)
+        issues = await github_issue.list_issues_to_crawl_issue(session)
 
         log.info(
-            "github.issue.sync.cron_refresh_issues_and_timelines",
+            "github.issue.sync.cron_refresh_issues",
             found_count=len(issues),
         )
 
         for issue in issues:
             await enqueue_job("github.issue.sync", issue.id)
+
+
+@interval(
+    minute={0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55},
+    second=0,
+)
+async def cron_refresh_issue_timelines(ctx: JobContext) -> None:
+    async with AsyncSessionLocal() as session:
+        issues = await github_issue.list_issues_to_crawl_timeline(session)
+
+        log.info(
+            "github.issue.sync.cron_refresh_issue_timelines",
+            found_count=len(issues),
+        )
+
+        for issue in issues:
             await enqueue_job("github.issue.sync.issue_references", issue.id)

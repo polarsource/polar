@@ -186,7 +186,7 @@ class GithubIssueService(IssueService):
             )
         return False
 
-    async def list_issues_to_crawl(
+    async def list_issues_to_crawl_issue(
         self,
         session: AsyncSession,
     ) -> Sequence[Issue]:
@@ -208,6 +208,35 @@ class GithubIssueService(IssueService):
                 Organization.installation_id.is_not(None),
             )
             .order_by(asc(Issue.github_issue_fetched_at))
+            .limit(1000)
+        )
+
+        res = await session.execute(stmt)
+
+        return res.scalars().unique().all()
+
+    async def list_issues_to_crawl_timeline(
+        self,
+        session: AsyncSession,
+    ) -> Sequence[Issue]:
+        current_time = datetime.datetime.utcnow()
+        one_hour_ago = current_time - datetime.timedelta(hours=1)
+
+        stmt = (
+            sql.select(Issue)
+            .join(Issue.organization)
+            .join(Issue.repository)
+            .where(
+                or_(
+                    Issue.github_timeline_fetched_at.is_(None),
+                    Issue.github_timeline_fetched_at < one_hour_ago,
+                ),
+                Issue.deleted_at.is_(None),
+                Organization.deleted_at.is_(None),
+                Repository.deleted_at.is_(None),
+                Organization.installation_id.is_not(None),
+            )
+            .order_by(asc(Issue.github_timeline_fetched_at))
             .limit(1000)
         )
 

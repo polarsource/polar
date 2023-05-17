@@ -26,7 +26,7 @@ const Page: NextLayoutComponentType = () => {
   return (
     <>
       <Head>
-        <title>Polar {org.name}</title>
+        <title>Polar{org ? ` ${org.name}` : ''}</title>
       </Head>
       <Dashboard key={key} org={org} repo={undefined} isPersonal={false} />
     </>

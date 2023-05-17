@@ -21,14 +21,10 @@ import IconCounter from './IconCounter'
 import IssueLabel, { LabelSchema } from './IssueLabel'
 import IssueProgress, { Progress } from './IssueProgress'
 
-interface Issue extends IssueDashboardRead {
-  organization?: OrganizationPublicRead
-}
-
 const IssueListItem = (props: {
   org: OrganizationPublicRead
   repo: RepositoryRead
-  issue: Issue
+  issue: IssueDashboardRead
   references: IssueReferenceRead[]
   dependents?: IssueReadWithRelations[]
   pledges: PledgeRead[]
@@ -89,10 +85,6 @@ const IssueListItem = (props: {
     setShowDisputeModalForPledge(undefined)
   }
 
-  if (!props.issue.organization) {
-    return <></>
-  }
-
   return (
     <>
       <div>
@@ -101,7 +93,7 @@ const IssueListItem = (props: {
             {isDependency && (
               <div className="mr-3 flex-shrink-0 justify-center rounded-full bg-white p-[1px] shadow">
                 <img
-                  src={props.issue.organization.avatar_url}
+                  src={props.org.avatar_url}
                   className="h-8 w-8 rounded-full"
                 />
               </div>

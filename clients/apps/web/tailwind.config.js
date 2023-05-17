@@ -19,6 +19,9 @@ module.exports = {
       display: '350'
     },
     extend: {
+      backgroundImage: {
+        'grid-pattern': 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAmCAYAAACoPemuAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABSSURBVHgB7dihEYBAEATBf/JPEksEOCgEAYw70W3OTp3cvYY5r/v57rGGElYJq4RVwiphlbBKWCWsElYJq4RVwiphlbBKWCWsElbtf/OcZuzHXh9bB88+HN8BAAAAAElFTkSuQmCC")',
+      },
       borderColor: {
         DEFAULT: "rgb(0 0 0 / 0.07)",
       },
@@ -91,19 +94,23 @@ module.exports = {
     require('@tailwindcss/forms'),
     require("tailwindcss-radix")(),
     plugin(function({ addUtilities }) {
-      const displayStyle = {
+      const utilityStyles = {
         '.text-4xl': {
           fontWeight: '350',
           fontFamily: ['Lexend', defaultTheme.fontFamily.sans].toString(),
         },
       }
-      displayStyle['.text-5xl'] = displayStyle['.text-4xl']
-      displayStyle['.text-6xl'] = displayStyle['.text-4xl']
-      displayStyle['.text-7xl'] = displayStyle['.text-4xl']
-      displayStyle['.text-8xl'] = displayStyle['.text-4xl']
-      displayStyle['.text-9xl'] = displayStyle['.text-4xl']
+      utilityStyles['.text-5xl'] = utilityStyles['.text-4xl']
+      utilityStyles['.text-6xl'] = utilityStyles['.text-4xl']
+      utilityStyles['.text-7xl'] = utilityStyles['.text-4xl']
+      utilityStyles['.text-8xl'] = utilityStyles['.text-4xl']
+      utilityStyles['.text-9xl'] = utilityStyles['.text-4xl']
 
-      addUtilities(displayStyle)
+      utilityStyles['.bg-grid-pattern'] = {
+        backgroundSize: '19px 19px',
+      }
+
+      addUtilities(utilityStyles)
     })
   ],
 }

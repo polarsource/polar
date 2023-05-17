@@ -44,7 +44,7 @@ type ButtonProps = {
 const defaultProps = {
   disabled: false,
   loading: false,
-  color: 'blue',
+  color: 'blue' as Color,
   fullWidth: true,
   classNames: '',
 }

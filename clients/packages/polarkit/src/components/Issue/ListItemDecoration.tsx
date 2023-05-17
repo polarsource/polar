@@ -118,25 +118,23 @@ const IssueListItemDecoration = ({
             </div>
           )}
 
-          {disputedPledges.map((p) => {
-            return (
-              <div>
-                {p.authed_user_can_admin && (
-                  <span className="text-sm text-gray-500">
-                    You've disputed your pledge ($
-                    {getCentsInDollarString(p.amount)})
-                  </span>
-                )}
+          {disputedPledges.map((p) => (
+            <div key={p.id}>
+              {p.authed_user_can_admin && (
+                <span className="text-sm text-gray-500">
+                  You've disputed your pledge ($
+                  {getCentsInDollarString(p.amount)})
+                </span>
+              )}
 
-                {!p.authed_user_can_admin && (
-                  <span className="text-sm text-gray-500">
-                    {p.pledger_name} disputed their pledge ($
-                    {getCentsInDollarString(p.amount)})
-                  </span>
-                )}
-              </div>
-            )
-          })}
+              {!p.authed_user_can_admin && (
+                <span className="text-sm text-gray-500">
+                  {p.pledger_name} disputed their pledge ($
+                  {getCentsInDollarString(p.amount)})
+                </span>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>

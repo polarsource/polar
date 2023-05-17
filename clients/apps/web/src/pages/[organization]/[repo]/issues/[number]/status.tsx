@@ -1,7 +1,7 @@
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import IssueListItem from 'components/Dashboard/IssueListItem'
 import GithubLoginButton from 'components/Shared/GithubLoginButton'
-import type { NextLayoutComponentType } from 'next'
+import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import { api } from 'polarkit'
 import { Platforms, type PledgeResources } from 'polarkit/api/client'
 import { PolarTimeAgo } from 'polarkit/components/ui'
@@ -26,6 +26,10 @@ const PledgeStatusPage: NextLayoutComponentType = ({
       reloadUser()
     }
   }, [currentUser, reloadUser])
+
+  if (!pledge || !organization || !repository || !issue) {
+    return <></>
+  }
 
   return (
     <>
@@ -150,12 +154,21 @@ PledgeStatusPage.getLayout = (page: ReactElement) => {
   return <div>{page}</div>
 }
 
-export const getServerSideProps = async (context) => {
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  if (
+    typeof context?.params?.organization !== 'string' ||
+    typeof context?.params?.repo !== 'string' ||
+    typeof context?.params?.number !== 'string' ||
+    typeof context?.query?.pledge_id !== 'string'
+  ) {
+    return { props: {} }
+  }
+
   const res = await api.pledges.getPledgeWithResources({
     platform: Platforms.GITHUB,
     orgName: context.params.organization,
     repoName: context.params.repo,
-    number: context.params.number,
+    number: parseInt(context.params.number),
     pledgeId: context.query.pledge_id,
     include: 'issue,organization,repository',
   })

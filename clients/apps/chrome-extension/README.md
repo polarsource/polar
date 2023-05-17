@@ -48,7 +48,8 @@ Click "Load unpacked" and point to the clients/apps/chrome-extension/extension f
 
 Edit some code, then rebuild the project, and press the little reload button on the extension on chrome://extensions.
 
-## TODO
+## Publish a release
 
-- Uses webpack instead of `react-scripts build` to output `extension/*.js` bundles. Should this be a create-react-app at all?
-- Exludes `*.test.ts*` in `tsconfig.json` because `jest-dom` isn't imported at build time, breaking the DOM additions it makes (`.toBeInTheDocument()` etc) in tests
+1. Bump the version number in `package.json`
+2. Run the [release_chrome_extension](https://github.com/polarsource/polar/actions/workflows/release_chrome_extension.yaml) GitHub Action
+3. Publish the release from the [Chrome Web Store Dashboard](https://chrome.google.com/webstore/devconsole/fa9049bd-04e7-478d-aae0-bbbd752026bf/flgggfbldmglpjmagkhlhiohnkcmgbhi/edit)

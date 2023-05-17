@@ -183,7 +183,7 @@ envVarGroups:
   - key: POLAR_SENTRY_DSN
     sync: false
   - key: POLAR_EMAIL_SENDER
-    value: "sendgrid"
+    value: "logger" # TODO: set to "sendgrid" once we've improved the emails
   - key: POLAR_SENDGRID_API_KEY
     sync: false
   - key: POLAR_BASE_URL

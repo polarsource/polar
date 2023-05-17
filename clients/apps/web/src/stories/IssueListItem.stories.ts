@@ -97,6 +97,18 @@ const referencesMerged: IssueReferenceRead[] = [
   },
 ]
 
+const referencesClosed: IssueReferenceRead[] = [
+  {
+    id: 'wha',
+    type: IssueReferenceType.PULL_REQUEST,
+    payload: {
+      ...payload,
+      state: 'closed',
+      closed_at: '2024-05-01',
+    },
+  },
+]
+
 const doubleReference: IssueReferenceRead[] = [
   {
     id: 'wha',
@@ -193,12 +205,13 @@ const meta: Meta<typeof IssueListItem> = {
       defaultValue: pledges,
     },
     references: {
-      options: ['None', 'Draft', 'OpenPR', 'MergedPR'],
+      options: ['None', 'Draft', 'OpenPR', 'MergedPR', 'ClosedPR'],
       mapping: {
         None: [],
         Draft: referencesDraft,
         OpenPR: references,
         MergedPR: referencesMerged,
+        ClosedPR: referencesClosed,
       },
       defaultValue: pledges,
     },

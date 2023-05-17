@@ -1,3 +1,4 @@
+import Overlay from 'components/Pledge/Overlay'
 import Modal, { ModalBox } from 'components/Shared/Modal'
 import { api } from 'polarkit/api'
 import {
@@ -49,6 +50,8 @@ const IssueListItem = (props: {
 
   const showCommentsCount = !!(comments && comments > 0)
   const showReactionsThumbs = !!(reactions.plus_one > 0)
+
+  const [pledgeOpen, setPledgeOpen] = useState(false)
 
   const getissueProgress = (): Progress => {
     switch (props.issue.progress) {
@@ -169,13 +172,19 @@ const IssueListItem = (props: {
             <IssueProgress progress={issueProgress} />
 
             {showPledgeAction && (
-              <div className="group-hover:delay-0 -ml-6 w-0 overflow-hidden opacity-0 delay-150 duration-100 group-hover:ml-0 group-hover:w-20 group-hover:opacity-100 group-hover:transition-all group-hover:duration-200 group-hover:ease-in-out">
-                <PledgeNow
-                  issue={props.issue}
-                  org={props.org}
-                  repo={props.repo}
-                />
-              </div>
+              <>
+                <div className="group-hover:delay-0 -ml-6 w-0 overflow-hidden opacity-0 delay-150 duration-100 group-hover:ml-0 group-hover:w-20 group-hover:opacity-100 group-hover:transition-all group-hover:duration-200 group-hover:ease-in-out">
+                  <PledgeNow onClick={() => setPledgeOpen(true)} />
+                </div>
+                {pledgeOpen && (
+                  <Overlay
+                    onClose={() => setPledgeOpen(false)}
+                    issue={props.issue}
+                    issueOrg={props.org}
+                    issueRepo={props.repo}
+                  />
+                )}
+              </>
             )}
           </div>
         </div>

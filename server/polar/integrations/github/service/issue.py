@@ -242,9 +242,13 @@ class GithubIssueService(IssueService):
             )
         except RequestFailed as e:
             if e.response.status_code == 404:
+                log.info("github.sync_issue.404.marking_as_crawled")
                 issue.github_issue_fetched_at = datetime.datetime.utcnow()
                 await issue.save(session)
-                log.info("github.sync_issue.404.marking_as_crawled")
+                return
+            elif e.response.status_code == 410:  # 410 Gone, i.e. deleted
+                log.info("github.sync_issue.410.soft_deleting")
+                await self.soft_delete(session, issue.id)
                 return
             else:
                 raise e

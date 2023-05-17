@@ -1,6 +1,7 @@
 import { countries } from 'countries-list'
+import { CONFIG } from 'polarkit'
 
-const countryWhiteList = ['US', 'SE']
+const countryWhiteList = CONFIG.STRIPE_COUNTRIES_WHITELIST_CSV.split(',')
 
 const availableCountries = Object.entries(countries)
   .sort((a, b) => {

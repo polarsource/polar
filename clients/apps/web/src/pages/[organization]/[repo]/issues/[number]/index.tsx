@@ -1,11 +1,6 @@
-<<<<<<< HEAD
-import { CurrencyDollarIcon } from '@heroicons/react/24/outline'
-import PageNotFound from 'components/Shared/PageNotFound'
-import Pledge from 'components/Website/Pledge'
-=======
 import PageNotFound from '@/components/Shared/PageNotFound'
 import Pledge from '@/components/Website/Pledge'
->>>>>>> ddf5413 (WIP: tsconfigs)
+import { CurrencyDollarIcon } from '@heroicons/react/24/outline'
 import type {
   GetServerSideProps,
   NextLayoutComponentType,

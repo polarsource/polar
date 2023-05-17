@@ -13,10 +13,10 @@ type AppPropsWithLayout = AppProps & {
 }
 
 const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
-  let getLayout = Component.getLayout
-  if (!Component.getLayout) {
-    getLayout = (page: ReactElement) => <TopbarLayout>{page}</TopbarLayout>
-  }
+  const defaultLayout = (page: ReactElement) => (
+    <TopbarLayout>{page}</TopbarLayout>
+  )
+  const getLayout = Component.getLayout || defaultLayout
 
   if (CONFIG.SENTRY_ENABLED) {
     Sentry.init({

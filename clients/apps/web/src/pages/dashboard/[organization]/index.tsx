@@ -1,4 +1,4 @@
-import Dashboard from 'components/Dashboard/Dashboard'
+import Dashboard from 'components/Dashboard'
 import Gatekeeper from 'components/Dashboard/Gatekeeper/Gatekeeper'
 import type { NextLayoutComponentType } from 'next'
 import Head from 'next/head'

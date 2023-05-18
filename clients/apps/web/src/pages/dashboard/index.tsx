@@ -1,4 +1,4 @@
-import Dashboard, { DefaultFilters } from 'components/Dashboard/Dashboard'
+import Dashboard, { DefaultFilters } from 'components/Dashboard'
 import Gatekeeper from 'components/Dashboard/Gatekeeper/Gatekeeper'
 import DashboardLayout from 'components/Layout/DashboardLayout'
 import OnboardingConnectReposToGetStarted from 'components/Onboarding/OnboardingConnectReposToGetStarted'

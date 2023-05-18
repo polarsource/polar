@@ -35,14 +35,26 @@ const OnboardingConnectPersonalDashboard = () => {
       >
         <div className="flex-1">
           <div className="flex h-full flex-col space-y-4 p-6">
-            <h2 className="text-xl text-black">
-              Track and pledge issues in your dependencies
+            <h2 className="text-xl text-gray-900">
+              Seamless & impactful funding
             </h2>
-            <p className="flex-1 text-sm text-gray-500">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec vel
-              congue nisi. Curabitur venenatis maximus ex, eu rutrum lacus
-              ornare et.
-            </p>
+            <div className="flex-1 text-sm text-gray-500">
+              <p>Connect a repository to unlock the full potential of Polar.</p>
+              <p className="mt-4">
+                <strong className="block font-medium text-gray-900">
+                  Funded & improved backlog
+                </strong>
+                Public repositories can embed the Polar badge on their Github
+                Issues.
+              </p>
+              <p className="mt-4">
+                <strong className="block font-medium text-gray-900">
+                  Track & back dependencies
+                </strong>
+                Helicopter view of all your internally referenced open source
+                issues, their status and progress.
+              </p>
+            </div>
             <div className="flex items-center justify-between gap-4 lg:justify-start">
               <PrimaryButton
                 color="blue"

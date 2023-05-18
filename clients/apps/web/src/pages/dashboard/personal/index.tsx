@@ -11,7 +11,7 @@ const Page: NextLayoutComponentType = () => {
         <title>Polar</title>
       </Head>
       <Dashboard
-        key="dashboard-parsonal"
+        key="dashboard-personal"
         org={undefined}
         repo={undefined}
         isPersonal={true}

@@ -227,23 +227,6 @@ class GithubRepositoryService(RepositoryService):
             crawl_with_installation_id=crawl_with_installation_id,
         )
 
-    async def upsert_many(
-        self,
-        session: AsyncSession,
-        create_schemas: list[RepositoryCreate],
-        constraints: list[InstrumentedAttribute[int]] | None = None,
-        mutable_keys: set[str] | None = None,
-    ) -> Sequence[Repository]:
-        instances = await super().upsert_many(
-            session, create_schemas, constraints, mutable_keys
-        )
-
-        # Create tasks to sync repositories (issues, pull requests, etc.)
-        for instance in instances:
-            await self.enqueue_sync(instance)
-
-        return instances
-
     async def install_for_organization(
         self,
         session: AsyncSession,
@@ -259,6 +242,9 @@ class GithubRepositoryService(RepositoryService):
             for repo in response.parsed_data.repositories
         ]
         instances = await self.upsert_many(session, repos)
+        # Create tasks to sync repositories (issues, pull requests, etc.)
+        for instance in instances:
+            await self.enqueue_sync(instance)
         return instances
 
 

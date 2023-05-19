@@ -82,13 +82,39 @@ const InviteOnly = () => {
   }, [code, approvedTos])
 
   return (
-    <TakeoverBox fadeOut={boxFadeOut && !showErrorBanner}>
+    <InviteOnlyBox
+      fadeOutTakeover={boxFadeOut}
+      showErrorBanner={showErrorBanner}
+      acceptedTerms={approvedTos}
+      onChangeAcceptedTerms={onChangeAcceptTos}
+      onInviteCodeUpdated={onInputUpdated}
+      joinDisabled={joinDisabled}
+      joinLoading={joinLoading}
+      onContinueClick={onJoinClick}
+    />
+  )
+}
+
+export default InviteOnly
+
+export const InviteOnlyBox = (props: {
+  fadeOutTakeover: boolean
+  showErrorBanner: boolean
+  acceptedTerms: boolean
+  onChangeAcceptedTerms: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onInviteCodeUpdated: (v: string) => void
+  joinDisabled: boolean
+  joinLoading: boolean
+  onContinueClick: (e: React.MouseEvent<HTMLButtonElement>) => void
+}) => {
+  return (
+    <TakeoverBox fadeOut={props.fadeOutTakeover && !props.showErrorBanner}>
       <>
         <TakeoverHeader>
           <>Welcome to Polar</>
         </TakeoverHeader>
 
-        {showErrorBanner && (
+        {props.showErrorBanner && (
           <RedBanner>
             <>
               The code that you entered was not valid. Please double check your
@@ -105,13 +131,13 @@ const InviteOnly = () => {
               name="polar-code"
               id="polar-code"
               placeholder="Your invite code"
-              onUpdated={onInputUpdated}
+              onUpdated={props.onInviteCodeUpdated}
             />
 
             <Checkbox
               id="accept_tos"
-              value={approvedTos}
-              onChange={onChangeAcceptTos}
+              value={props.acceptedTerms}
+              onChange={props.onChangeAcceptedTerms}
             >
               I accept the{' '}
               <Link href="https://polar.sh/legal/terms" className="underline">
@@ -124,9 +150,9 @@ const InviteOnly = () => {
             </Checkbox>
 
             <PrimaryButton
-              disabled={joinDisabled}
-              loading={joinLoading}
-              onClick={onJoinClick}
+              disabled={props.joinDisabled}
+              loading={props.joinLoading}
+              onClick={props.onContinueClick}
             >
               Join
             </PrimaryButton>
@@ -136,5 +162,3 @@ const InviteOnly = () => {
     </TakeoverBox>
   )
 }
-
-export default InviteOnly

@@ -9,7 +9,7 @@ from polar.pledge.service import pledge as pledge_service
 async def payment_intent_succeeded(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
 ) -> None:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         async with AsyncSessionLocal() as session:
             payment_intent = event["data"]["object"]
             await pledge_service.mark_created_by_payment_id(
@@ -24,7 +24,7 @@ async def payment_intent_succeeded(
 async def charge_refunded(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
 ) -> None:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         async with AsyncSessionLocal() as session:
             charge = event["data"]["object"]
             await pledge_service.refund_by_payment_id(
@@ -39,7 +39,7 @@ async def charge_refunded(
 async def charge_dispute_created(
     ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
 ) -> None:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         async with AsyncSessionLocal() as session:
             dispute = event["data"]["object"]
             await pledge_service.mark_charge_disputed_by_payment_id(

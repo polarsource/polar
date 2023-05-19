@@ -1,23 +1,10 @@
-from datetime import datetime
 
 import pytest
-from sqlalchemy import text
 
-from polar.integrations.github import client as github
 from polar.integrations.github.badge import GithubBadge
-from polar.integrations.github.service import (
-    github_organization,
-    github_pull_request,
-    github_repository,
-)
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.repository import Repository
-from polar.organization.schemas import OrganizationCreate
-from polar.enums import Platforms
-from polar.postgres import AsyncSession
-from polar.repository.schemas import RepositoryCreate
-from tests.fixtures.vcr import read_cassette
 
 
 BADGED_BODY = """Hello my issue

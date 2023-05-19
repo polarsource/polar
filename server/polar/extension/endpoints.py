@@ -1,19 +1,16 @@
-from typing import List, Sequence
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 
 from polar.auth.dependencies import Auth
 from polar.kit import utils
 from polar.extension.schemas import IssueExtensionRead
 from polar.issue.schemas import IssueReferenceRead
-from polar.models import Issue
 from polar.enums import Platforms
 from polar.models.issue_reference import IssueReference
 from polar.models.pledge import Pledge
-from polar.pledge.schemas import PledgeRead, PledgeState
+from polar.pledge.schemas import PledgeRead
 from polar.postgres import AsyncSession, get_db_session
-from polar.exceptions import ResourceNotFound
 
 from polar.issue.service import issue as issue_service
 from polar.pledge.service import pledge as pledge_service

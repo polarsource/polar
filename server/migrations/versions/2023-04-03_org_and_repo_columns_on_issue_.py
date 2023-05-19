@@ -10,7 +10,6 @@ import sqlalchemy as sa
 
 
 # Polar Custom Imports
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 # revision identifiers, used by Alembic.
 revision = "81a8b7f69d1f"

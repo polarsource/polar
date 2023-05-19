@@ -8,7 +8,6 @@ from sqlalchemy.orm import (
 )
 from polar.models.account import Account
 from polar.models.issue import Issue
-from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession

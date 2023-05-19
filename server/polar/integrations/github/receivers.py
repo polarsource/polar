@@ -1,4 +1,3 @@
-from typing import Any
 import structlog
 from polar.context import PolarContext
 

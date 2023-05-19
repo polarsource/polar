@@ -1,6 +1,5 @@
 import pytest
 
-from polar.kit.utils import generate_uuid
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge

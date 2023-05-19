@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import cache
-from typing import Any, ClassVar, Generic, List, Sequence, TypeVar
+from typing import Any, ClassVar, Generic, Sequence, TypeVar
 
 from blinker import Signal
 from sqlalchemy import Column, ColumnClause, column

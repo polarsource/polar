@@ -11,7 +11,6 @@ from polar.integrations.github import service
 from polar.integrations.github import client as github
 from polar.kit import utils
 from polar.models.organization import Organization
-from polar.models.repository import Repository
 from polar.organization.schemas import OrganizationCreate
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, AsyncSessionLocal

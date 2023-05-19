@@ -11,7 +11,6 @@ from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.integrations.github import service
 from polar.integrations.github.service import github_organization
-from polar.integrations.github.service import github_repository
 from polar.models import Issue, Organization, Repository
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import OrganizationCreate

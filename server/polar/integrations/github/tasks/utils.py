@@ -3,13 +3,10 @@ from uuid import UUID
 import structlog
 
 from polar.integrations.github import service
-from polar.issue.schemas import IssueCreate
 from polar.models import Organization, Repository, Issue, PullRequest
 from polar.postgres import AsyncSession
 from polar.integrations.github import client as github
-from polar.enums import Platforms
 from polar.pull_request.schemas import FullPullRequestCreate
-from polar.repository.schemas import RepositoryCreate
 
 log = structlog.get_logger()
 

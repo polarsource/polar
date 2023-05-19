@@ -1,18 +1,11 @@
 from __future__ import annotations
-import asyncio
-from typing import Any, List, Set, Union
-from uuid import UUID
-from githubkit import Response
-from pydantic import parse_obj_as
 
 import structlog
 import re
 from polar.exceptions import IntegrityError
 from polar.integrations.github.client import get_app_installation_client
-import polar.integrations.github.client as github
 from polar.integrations.github import service
 from polar.integrations.github.schemas import GithubIssueDependency
-from polar.kit import utils
 from polar.issue.schemas import IssueCreate
 from polar.models.issue_dependency import IssueDependency
 from polar.organization.schemas import OrganizationCreate
@@ -20,16 +13,8 @@ from polar.enums import Platforms
 
 from polar.models import Organization, Repository
 from polar.models.issue import Issue
-from polar.models.issue_reference import (
-    ExternalGitHubCommitReference,
-    ExternalGitHubPullRequestReference,
-    IssueReference,
-    ReferenceType,
-)
 from polar.postgres import AsyncSession, sql
 from polar.repository.schemas import RepositoryCreate
-from polar.worker import enqueue_job
-from fastapi.encoders import jsonable_encoder
 
 
 log = structlog.get_logger()
@@ -161,7 +146,7 @@ class GitHubIssueDependenciesService:
                 ref=ref,
             )
             return
-        except IntegrityError as e:
+        except IntegrityError:
             log.info(
                 "issue.create_dependency.already_exists",
                 ref=ref,

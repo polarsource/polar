@@ -1,15 +1,13 @@
 from __future__ import annotations
-from typing import Any, List, Optional, Set, Type, TypeVar, Union
+from typing import List, Set, Union
 from uuid import UUID
 from githubkit import GitHub, Response
-from githubkit.typing import QueryParamTypes
 from githubkit.exception import RequestFailed
 from pydantic import parse_obj_as
 
 import structlog
 from polar.context import PolarContext
 from polar.exceptions import IntegrityError
-from polar.integrations.github.client import get_app_installation_client
 import polar.integrations.github.client as github
 from polar.integrations.github.service.pull_request import github_pull_request
 from polar.integrations.github.service.issue import github_issue
@@ -30,7 +28,7 @@ from fastapi.encoders import jsonable_encoder
 
 from datetime import datetime
 
-from githubkit.utils import UNSET, exclude_unset
+from githubkit.utils import exclude_unset
 
 from githubkit.rest.models import (
     LockedIssueEvent,
@@ -55,7 +53,6 @@ from githubkit.rest.models import (
     ConvertedNoteToIssueIssueEvent,
     MovedColumnInProjectIssueEvent,
     ReviewRequestRemovedIssueEvent,
-    Issue as GitHubIssue,
 )
 
 log = structlog.get_logger()
@@ -633,7 +630,7 @@ class GitHubIssueReferencesService:
                 )
 
             return
-        except IntegrityError as e:
+        except IntegrityError:
             log.info(
                 "issue.create_reference.already_exists",
                 ref=ref,

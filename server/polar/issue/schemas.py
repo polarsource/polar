@@ -3,7 +3,7 @@ from enum import Enum
 
 from uuid import UUID
 from datetime import datetime
-from typing import Optional, Self, Type, Union
+from typing import Self, Type, Union
 from pydantic import parse_obj_as
 
 import structlog

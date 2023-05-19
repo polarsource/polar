@@ -168,7 +168,7 @@ async def install(
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.current_user),
 ) -> Organization | None:
-    with ExecutionContext(is_during_installation=True) as context:
+    with ExecutionContext(is_during_installation=True):
         organization = await github_organization.install(
             session, auth.user, installation_id=installation.external_id
         )

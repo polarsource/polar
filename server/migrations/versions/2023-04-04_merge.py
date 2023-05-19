@@ -5,12 +5,9 @@ Revises: e833ad7e1285, 23d7954e9cbe
 Create Date: 2023-04-04 11:18:17.718314
 
 """
-from alembic import op
-import sqlalchemy as sa
 
 
 # Polar Custom Imports
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 # revision identifiers, used by Alembic.
 revision = "6919bbcc4abd"

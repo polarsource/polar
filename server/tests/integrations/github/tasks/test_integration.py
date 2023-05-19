@@ -3,36 +3,16 @@ import json
 import os
 import time
 from typing import Any
-from unittest.mock import ANY, call
 from arq import ArqRedis
 import pytest
-from polar.enums import Platforms
-from polar.models import notification
-from polar.models.issue import Issue
-from polar.models.issue_reference import (
-    ExternalGitHubCommitReference,
-    IssueReference,
-    ReferenceType,
-)
 from polar.models.organization import Organization
-from polar.models.pledge import Pledge
-from polar.models.pull_request import PullRequest
-from polar.models.repository import Repository
 from polar.models.user import OAuthAccount, User
 from polar.models.user_organization import UserOrganization
-from polar.notifications.schemas import (
-    IssuePledgedBranchCreated,
-    MaintainerIssueBranchCreated,
-    NotificationType,
-)
 from polar.notifications.service import (
-    NotificationsService,
-    PartialNotification,
     notifications,
 )
 from polar.postgres import AsyncSession, AsyncSessionLocal
 from pytest_mock import MockerFixture
-from fastapi.encoders import jsonable_encoder
 from polar.integrations.github.tasks import webhook as webhook_tasks
 from polar.integrations.github import tasks
 from polar.worker import JobContext, PolarWorkerContext

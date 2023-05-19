@@ -6,7 +6,7 @@ import pytest
 from polar.enums import Platforms
 from polar.kit import utils
 from polar.models.issue import Issue
-from polar.models.issue_reference import IssueReference, ReferenceType
+from polar.models.issue_reference import ReferenceType
 from polar.models.organization import Organization
 from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository

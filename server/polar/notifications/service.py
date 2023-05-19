@@ -10,7 +10,6 @@ from polar.models.pull_request import PullRequest
 from polar.models.user_notification import UserNotification
 from polar.pledge.service import pledge
 from polar.models.notification import Notification
-from polar.models.user_organization import UserOrganization
 from polar.models.issue import Issue
 from polar.notifications.schemas import (
     IssuePledgeCreated,
@@ -112,7 +111,7 @@ class NotificationsService:
             await session.commit()
             await enqueue_job("notifications.send", notification_id=notification.id)
             return True
-        except IntegrityError as e:
+        except IntegrityError:
             await nested.rollback()
             await session.commit()
             return False
@@ -359,7 +358,7 @@ class NotificationsService:
                 set_={"last_read_notification_id": notification_id},
             )
         )
-        res = await session.execute(stmt)
+        await session.execute(stmt)
         await session.commit()
 
 

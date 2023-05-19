@@ -18,7 +18,6 @@ from polar.models.pull_request import PullRequest
 from polar.postgres import AsyncSession, sql
 from polar.issue.service import issue as issue_service
 from polar.repository.service import repository as repository_service
-from polar.worker import enqueue_job
 
 from .schemas import (
     OrganizationCreate,

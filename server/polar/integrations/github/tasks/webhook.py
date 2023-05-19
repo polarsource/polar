@@ -39,7 +39,7 @@ async def repositories_changed(
         github.webhooks.InstallationRepositoriesRemoved,
     ],
 ) -> dict[str, Any]:
-    with ExecutionContext(is_during_installation=True) as ctx:
+    with ExecutionContext(is_during_installation=True):
         if not event.installation:
             return dict(success=False)
 
@@ -73,7 +73,7 @@ async def repositories_added(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.InstallationRepositoriesAdded):
             log.error("github.webhook.unexpected_type")
@@ -90,7 +90,7 @@ async def repositories_removed(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> None:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.InstallationRepositoriesRemoved):
             log.error("github.webhook.unexpected_type")
@@ -136,7 +136,7 @@ async def issue_opened(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.IssuesOpened):
             log.error("github.webhook.unexpected_type")
@@ -154,7 +154,7 @@ async def issue_edited(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.IssuesEdited):
             log.error("github.webhook.unexpected_type")
@@ -172,7 +172,7 @@ async def issue_closed(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.IssuesClosed):
             log.error("github.webhook.unexpected_type")
@@ -190,7 +190,7 @@ async def issue_labeled(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.IssuesLabeled):
             log.error("github.webhook.unexpected_type")
@@ -208,7 +208,7 @@ async def issue_unlabeled(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.IssuesUnlabeled):
             log.error("github.webhook.unexpected_type")
@@ -259,7 +259,7 @@ async def issue_assigned(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.IssuesAssigned):
             log.error("github.webhook.unexpected_type")
@@ -277,7 +277,7 @@ async def issue_unassigned(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.IssuesUnassigned):
             log.error("github.webhook.unexpected_type")
@@ -356,7 +356,7 @@ async def pull_request_opened(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.PullRequestOpened):
             log.error("github.webhook.unexpected_type")
@@ -374,7 +374,7 @@ async def pull_request_edited(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.PullRequestEdited):
             log.error("github.webhook.unexpected_type")
@@ -392,7 +392,7 @@ async def pull_request_closed(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.PullRequestClosed):
             log.error("github.webhook.unexpected_type")
@@ -410,7 +410,7 @@ async def pull_request_reopened(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.PullRequestReopened):
             log.error("github.webhook.unexpected_type")
@@ -428,7 +428,7 @@ async def pull_request_synchronize(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.PullRequestSynchronize):
             log.error("github.webhook.unexpected_type")
@@ -451,7 +451,7 @@ async def installation_created(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with ExecutionContext(is_during_installation=True) as context:
+    with ExecutionContext(is_during_installation=True):
         event = github.webhooks.parse_obj(scope, payload)
         if not isinstance(event, github.webhooks.InstallationCreated):
             log.error("github.webhook.unexpected_type")
@@ -522,7 +522,7 @@ async def installation_delete(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         event = github.webhooks.parse_obj(scope, payload)
         if not isinstance(event, github.webhooks.InstallationDeleted):
             log.error("github.webhook.unexpected_type")
@@ -546,7 +546,7 @@ async def installation_suspend(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         event = github.webhooks.parse_obj(scope, payload)
         if not isinstance(event, github.webhooks.InstallationSuspend):
             log.error("github.webhook.unexpected_type")
@@ -571,7 +571,7 @@ async def installation_unsuspend(
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
 ) -> dict[str, Any]:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         event = github.webhooks.parse_obj(scope, payload)
         if not isinstance(event, github.webhooks.InstallationUnsuspend):
             log.error("github.webhook.unexpected_type")

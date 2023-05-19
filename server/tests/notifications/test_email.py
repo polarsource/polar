@@ -1,9 +1,5 @@
-import unittest
-from unittest.mock import ANY
-import uuid
 import pytest
 from polar.models.issue import Issue
-from polar.models.notification import Notification
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.pull_request import PullRequest

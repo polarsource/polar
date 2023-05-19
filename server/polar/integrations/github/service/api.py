@@ -7,6 +7,7 @@ from githubkit.rest.models import BasicError
 
 T = TypeVar("T")
 
+
 class GitHubApi:
     # Support for custom headers
     # TODO: https://github.com/yanyongyu/githubkit/issues/29
@@ -16,7 +17,7 @@ class GitHubApi:
         url: str,
         response_model: Type[T],
         params: Optional[QueryParamTypes] = None,
-        etag: str | None = None
+        etag: str | None = None,
     ) -> Response[T]:
         headers = {
             "If-None-Match": etag if etag else UNSET,
@@ -34,5 +35,6 @@ class GitHubApi:
                 "410": BasicError,
             },
         )
+
 
 github_api = GitHubApi()

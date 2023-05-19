@@ -61,10 +61,7 @@ async def do_delete_issues(session: AsyncSession, org: Organization) -> None:
 
 
 async def trigger_issue_sync(
-    session: AsyncSession,
-    org: Organization,
-    repo: Repository,
-    issue: Issue
+    session: AsyncSession, org: Organization, repo: Repository, issue: Issue
 ) -> None:
     await enqueue_job("github.issue.sync", issue.id)
     typer.echo(f"Triggered issue sync for {org.name}/{repo.name}/{issue.number}")

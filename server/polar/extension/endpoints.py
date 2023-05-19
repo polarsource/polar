@@ -36,8 +36,8 @@ async def list_issues_for_extension(
 ) -> list[IssueExtensionRead]:
     # Update when we last saw this user and on which extension version
     auth.user.last_seen_at_extension = utils.utc_now()
-    if request.headers.get('x-polar-agent'):
-        parts = request.headers['x-polar-agent'].split('/')
+    if request.headers.get("x-polar-agent"):
+        parts = request.headers["x-polar-agent"].split("/")
         if len(parts) == 2:
             auth.user.last_version_extension = parts[1]
     await auth.user.save(session=session)

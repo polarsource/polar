@@ -255,15 +255,11 @@ class GithubIssueService(IssueService):
 
         # Cache hit, nothing new
         if res.status_code == 304:
-            log.info(
-                "github.sync_issue.etag_cache_hit", issue_id=issue.id
-            )
+            log.info("github.sync_issue.etag_cache_hit", issue_id=issue.id)
             return
 
         if res.status_code == 200:
-            log.info(
-                "github.sync_issue.etag_cache_miss", issue_id=issue.id
-            )
+            log.info("github.sync_issue.etag_cache_miss", issue_id=issue.id)
 
             # Upsert issue
             await self.store(

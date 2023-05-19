@@ -124,8 +124,6 @@ async def handle_issue(
         "github.repo.sync.issue_references", issue.organization_id, issue.repository_id
     )
 
-    # TODO: Comment instead? Via event trigger too?
-    # service.github_issue.add_actions(installation["id"], issue)
     schema = IssueRead.from_orm(issue)
     return dict(success=True, issue=schema.dict())
 

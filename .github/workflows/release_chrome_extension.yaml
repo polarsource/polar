@@ -6,7 +6,7 @@ on:
 jobs:
   build-chrome-extension:
     name: Build Chrome extension artifact
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -44,7 +44,7 @@ jobs:
   # * <https://github.com/fregante/chrome-webstore-upload/blob/main/How%20to%20generate%20Google%20API%20keys.md>
   upload-extension:
     name: Upload extension
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: build-chrome-extension
     env:
       EXTENSION_ID: flgggfbldmglpjmagkhlhiohnkcmgbhi

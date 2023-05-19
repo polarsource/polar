@@ -10,7 +10,7 @@ jobs:
   build:
       name: "Client: Tests 🎨"
       timeout-minutes: 15
-      runs-on: ubuntu-latest
+      runs-on: ubuntu-22.04
  
       steps:
         - name: Check out code
@@ -40,7 +40,7 @@ jobs:
   build_storybook:
     name: "Client: Storybook 🎨"
     timeout-minutes: 15
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Check out code

@@ -64,6 +64,10 @@ async def github_authorize(
         state["pledge_id"] = str(pledge_id)
 
     if goto_url:
+        # Ensure we have a full URL and within Polar only
+        if not goto_url.startswith(settings.FRONTEND_BASE_URL):
+            goto_url = f"{settings.FRONTEND_BASE_URL}{goto_url}"
+
         state["goto_url"] = goto_url
 
     encoded_state = jwt.encode(

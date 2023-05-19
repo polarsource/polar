@@ -188,6 +188,8 @@ envVarGroups:
     sync: false
   - key: POLAR_BASE_URL
     value: "https://api.polar.sh/api/v1"
+  - key: POLAR_DISCORD_WEBHOOK_URL
+    sync: false
 
 - name: server-stripe
   envVars:

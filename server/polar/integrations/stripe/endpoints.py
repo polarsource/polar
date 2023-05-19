@@ -110,6 +110,5 @@ async def webhook(request: Request) -> WebhookResponse:
     if event["type"] in IMPLEMENTED_WEBHOOKS:
         return await enqueue(event)
     else:
-        # Should be 403 Forbidden, but...
-        # Throwing unsophisticated hackers/scrapers/bots off the scent
-        raise HTTPException(status_code=404)
+        # Respond with a healthy response so that Stripe doesn't block this event
+        raise HTTPException(status_code=200)

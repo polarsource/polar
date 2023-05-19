@@ -1,12 +1,11 @@
 import { DashboardFilters } from '@/components/Dashboard/filters'
 import { IssueListType } from 'polarkit/api/client'
-import { Dispatch, SetStateAction } from 'react'
 import Search from './Search'
 
 const Sidebar = (props: {
   filters: DashboardFilters
   showTabs: IssueListType[]
-  onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
+  onSetFilters: (f: DashboardFilters) => void
 }) => {
   const { filters, onSetFilters } = props
   return (

@@ -2,7 +2,7 @@ import { MagnifyingGlassIcon } from '@heroicons/react/20/solid'
 import { useRouter } from 'next/router'
 import { IssueListType, IssueSortBy } from 'polarkit/api/client'
 import { Checkbox } from 'polarkit/components/ui'
-import { ChangeEvent, Dispatch, FormEvent, SetStateAction } from 'react'
+import { ChangeEvent, FormEvent } from 'react'
 import Tab from './Tab'
 import Tabs from './Tabs'
 import { DashboardFilters, navigate } from './filters'
@@ -10,7 +10,7 @@ import { DashboardFilters, navigate } from './filters'
 const Search = (props: {
   filters: DashboardFilters
   showTabs: IssueListType[]
-  onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
+  onSetFilters: (f: DashboardFilters) => void
 }) => {
   const { filters, onSetFilters, showTabs } = props
   const router = useRouter()

@@ -22,3 +22,10 @@ export default meta
 type Story = StoryObj<typeof Sidebar>
 
 export const Default: Story = {}
+
+export const Dependencies: Story = {
+  args: {
+    ...Default.args,
+    showTabs: [IssueListType.DEPENDENCIES],
+  },
+}

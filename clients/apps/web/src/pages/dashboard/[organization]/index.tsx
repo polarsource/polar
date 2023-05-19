@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 import Dashboard from 'components/Dashboard'
 import Gatekeeper from 'components/Dashboard/Gatekeeper/Gatekeeper'
+=======
+import Dashboard from '@/components/Dashboard/Dashboard'
+import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
+>>>>>>> ddf5413 (WIP: tsconfigs)
 import type { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'

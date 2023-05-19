@@ -1,5 +1,5 @@
+import Modal, { ModalBox } from '@/components/Shared/Modal'
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import Modal, { ModalBox } from 'components/Shared/Modal'
 import { api } from 'polarkit'
 import { AccountType, ApiError, Platforms } from 'polarkit/api/client'
 import { CountryPicker } from 'polarkit/components'

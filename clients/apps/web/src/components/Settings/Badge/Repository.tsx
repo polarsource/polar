@@ -1,5 +1,5 @@
+import { Switch } from '@/components/UI/Switch'
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
-import { Switch } from 'components/UI/Switch'
 import { motion } from 'framer-motion'
 import { type RepositoryBadgeSettingsRead } from 'polarkit/api/client'
 import { classNames } from 'polarkit/utils'

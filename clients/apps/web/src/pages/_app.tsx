@@ -1,11 +1,11 @@
+import TopbarLayout from '@/components/Layout/TopbarLayout'
+import type { NextPageWithLayout } from '@/utils/next'
 import * as Sentry from '@sentry/nextjs'
-import TopbarLayout from 'components/Layout/TopbarLayout'
 import type { AppProps } from 'next/app'
 import Head from 'next/head'
 import { CONFIG } from 'polarkit'
 import { queryClient, QueryClientProvider } from 'polarkit/api'
 import type { ReactElement } from 'react'
-import type { NextPageWithLayout } from 'utils/next'
 import '../styles/globals.scss'
 
 type AppPropsWithLayout = AppProps & {

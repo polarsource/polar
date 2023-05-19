@@ -1,4 +1,4 @@
-import NonCustomerPledges from 'components/Backoffice/NonCustomerPledges'
+import NonCustomerPledges from '@/components/Backoffice/NonCustomerPledges'
 import type { NextLayoutComponentType } from 'next'
 import Link from 'next/link'
 import { ReactElement } from 'react'

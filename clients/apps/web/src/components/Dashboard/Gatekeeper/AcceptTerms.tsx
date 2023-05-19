@@ -1,4 +1,4 @@
-import { useAuth } from 'hooks'
+import { useAuth } from '@/hooks'
 import Link from 'next/link'
 import {
   Checkbox,

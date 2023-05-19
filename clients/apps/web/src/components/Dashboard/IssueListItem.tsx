@@ -1,5 +1,5 @@
-import Overlay from 'components/Pledge/Overlay'
-import Modal, { ModalBox } from 'components/Shared/Modal'
+import Overlay from '@/components/Pledge/Overlay'
+import Modal, { ModalBox } from '@/components/Shared/Modal'
 import { api } from 'polarkit/api'
 import {
   IssueDashboardRead,
@@ -215,7 +215,11 @@ const IssueListItem = (props: {
 const generateMarkdownTitle = (
   title: string,
 ): React.ReactElement | React.ReactElement[] => {
-  const matches: RegExpMatchArray[] = [...title.matchAll(/`([^`]*)`/g)]
+  const matches: RegExpMatchArray[] = []
+  for (const m of title.matchAll(/`([^`]*)`/g)) {
+    matches.push(m)
+  }
+
   if (matches.length === 0) {
     return <>{title}</>
   }

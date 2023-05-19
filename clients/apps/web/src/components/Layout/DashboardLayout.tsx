@@ -1,4 +1,4 @@
-import { DashboardFilters } from 'components/Dashboard/filters'
+import { DashboardFilters } from '@/components/Dashboard/filters'
 import { IssueListType } from 'polarkit/api/client'
 import { classNames } from 'polarkit/utils'
 import { Dispatch, SetStateAction } from 'react'

@@ -1,5 +1,5 @@
-import DashboardLayout from 'components/Layout/DashboardLayout'
-import OnboardingInstallChromeExtension from 'components/Onboarding/OnboardingInstallChromeExtension'
+import DashboardLayout from '@/components/Layout/DashboardLayout'
+import OnboardingInstallChromeExtension from '@/components/Onboarding/OnboardingInstallChromeExtension'
 import { IssueStatus } from 'polarkit/api/client'
 import { useDashboard } from 'polarkit/hooks'
 import { Dispatch, SetStateAction } from 'react'

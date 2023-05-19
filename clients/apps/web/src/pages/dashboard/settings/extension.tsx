@@ -1,5 +1,5 @@
-import LoadingScreen from 'components/Dashboard/LoadingScreen'
-import Layout from 'components/Layout/EmptyLayout'
+import LoadingScreen from '@/components/Dashboard/LoadingScreen'
+import Layout from '@/components/Layout/EmptyLayout'
 import { api } from 'polarkit'
 import { ReactElement, useEffect, useState } from 'react'
 import type { NextPageWithLayout } from 'utils/next'

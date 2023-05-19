@@ -23,7 +23,7 @@ const DashboardLayout = (props: {
 
   const showTabs = props.isPersonalDashboard
     ? [IssueListType.DEPENDENCIES]
-    : [IssueListType.DEPENDENCIES, IssueListType.ISSUES]
+    : [IssueListType.ISSUES, IssueListType.DEPENDENCIES]
 
   return (
     <div className="">

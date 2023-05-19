@@ -83,29 +83,39 @@ const Search = (props: {
     navigate(router, f)
   }
 
+  const tabName = (tab: IssueListType): string => {
+    switch (tab) {
+      case IssueListType.ISSUES:
+        return 'Issues'
+      case IssueListType.DEPENDENCIES:
+        return 'Dependencies'
+    }
+  }
+
   return (
     <div className="flex w-full flex-col space-y-3">
-      <Tabs>
-        <>
-          {showTabs.includes(IssueListType.ISSUES) && (
-            <Tab
-              active={filters.tab === IssueListType.ISSUES}
-              onClick={() => onTabChange(IssueListType.ISSUES)}
-            >
-              Issues
-            </Tab>
-          )}
+      {showTabs.length === 1 && (
+        <h2 className="text-center text-gray-500">{tabName(showTabs[0])}</h2>
+      )}
 
-          {showTabs.includes(IssueListType.DEPENDENCIES) && (
-            <Tab
-              active={filters.tab === IssueListType.DEPENDENCIES}
-              onClick={() => onTabChange(IssueListType.DEPENDENCIES)}
-            >
-              Dependencies
-            </Tab>
-          )}
-        </>
-      </Tabs>
+      {showTabs.length > 1 && (
+        <Tabs>
+          <>
+            {showTabs.map((t) => {
+              return (
+                <Tab
+                  key={t}
+                  active={filters.tab === t}
+                  onClick={() => onTabChange(t)}
+                >
+                  <>{tabName(t)}</>
+                </Tab>
+              )
+            })}
+          </>
+        </Tabs>
+      )}
+
       <form className="space-y-4" onSubmit={onSubmit}>
         <div>
           <div className="relative mt-2 rounded-md shadow-sm">

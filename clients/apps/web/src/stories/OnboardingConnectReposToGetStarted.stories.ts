@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import OnboardingConnectReposToGetStarted from '../components/Onboarding/OnboardingConnectReposToGetStarted'
 
 const meta: Meta<typeof OnboardingConnectReposToGetStarted> = {
-  title: 'Onboarding/OnboardingConnectReposToGetStarted',
+  title: 'Organisms/OnboardingConnectReposToGetStarted',
   component: OnboardingConnectReposToGetStarted,
   tags: ['autodocs'],
 }

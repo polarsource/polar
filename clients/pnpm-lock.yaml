@@ -234,6 +234,12 @@ importers:
       storybook:
         specifier: ^7.0.12
         version: 7.0.12
+      storybook-addon-next:
+        specifier: ^1.8.0
+        version: 1.8.0(@storybook/addon-actions@7.0.12)(@storybook/addons@7.0.12)(next@13.4.2)(postcss@8.4.21)(react-dom@18.2.0)(react@18.2.0)(sass@1.59.3)(webpack@5.79.0)
+      storybook-addon-state:
+        specifier: ^1.0.3
+        version: 1.0.3
       tailwindcss:
         specifier: ^3.1.8
         version: 3.2.7(postcss@8.4.21)(ts-node@10.9.1)
@@ -4111,7 +4117,7 @@ packages:
     resolution: {integrity: sha512-d9ULIT+a4EXLX3UU8FBjauG9NnsZHkHztXoIcTsOKoOw030fyjheN9svkTULjJxtYag9DZz5Jz5qkWZDPxTFwA==}
     engines: {node: '>=12'}
     dependencies:
-      '@babel/code-frame': 7.12.11
+      '@babel/code-frame': 7.21.4
       '@babel/runtime': 7.21.0
       '@types/aria-query': 5.0.1
       aria-query: 5.1.3
@@ -10480,6 +10486,41 @@ packages:
     resolution: {integrity: sha512-siT1RiqlfQnGqgT/YzXVUNsom9S0H1OX+dpdGN1xkyYATo4I6sep5NmsRD/40s3IIOvlCq6akxkqG82urIZW1w==}
     dev: true
 
+  /storybook-addon-next@1.8.0(@storybook/addon-actions@7.0.12)(@storybook/addons@7.0.12)(next@13.4.2)(postcss@8.4.21)(react-dom@18.2.0)(react@18.2.0)(sass@1.59.3)(webpack@5.79.0):
+    resolution: {integrity: sha512-hCDRkgTllb9Qz14u+oafnhUbKMWZ/YKgcVBHDc9ilbsd9I3bHqBwpldfTelL/ahfo2jDqPnCQVnQkXV8U+fr2Q==}
+    peerDependencies:
+      '@storybook/addon-actions': ^6.0.0 || ^7.0.0
+      '@storybook/addons': ^6.0.0 || ^7.0.0
+      next: ^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0 || ^13.0.0
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      '@storybook/addon-actions': 7.0.12(react-dom@18.2.0)(react@18.2.0)
+      '@storybook/addons': 7.0.12(react-dom@18.2.0)(react@18.2.0)
+      image-size: 1.0.2
+      loader-utils: 3.2.1
+      next: 13.4.2(@babel/core@7.21.4)(react-dom@18.2.0)(react@18.2.0)(sass@1.59.3)
+      postcss-loader: 7.3.0(postcss@8.4.21)(webpack@5.79.0)
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+      resolve-url-loader: 5.0.0
+      sass-loader: 13.2.2(sass@1.59.3)(webpack@5.79.0)
+      semver: 7.3.8
+      tsconfig-paths: 4.2.0
+      tsconfig-paths-webpack-plugin: 4.0.1
+    transitivePeerDependencies:
+      - fibers
+      - node-sass
+      - postcss
+      - sass
+      - sass-embedded
+      - webpack
+    dev: true
+
+  /storybook-addon-state@1.0.3:
+    resolution: {integrity: sha512-0lpedSYu2xIlq4QK/8YH4Cuj6vt2p8iRCcJBb4JFxyLZ6RAMHFFkf072BKl4WrU1LfLq3/7SD4snvxRoTjvsvw==}
+    dev: true
+
   /storybook@7.0.12:
     resolution: {integrity: sha512-HKi7NQQTZhBGEU3KUFxTNGtIZcG8+hokiO5TwcIr7s7smAVKdvj9vY5YGsVkiWF39o+5UtafW1B/i9D8lBFsYg==}
     hasBin: true
@@ -10930,6 +10971,15 @@ packages:
       chalk: 4.1.2
       enhanced-resolve: 5.12.0
       tsconfig-paths: 3.14.1
+    dev: true
+
+  /tsconfig-paths-webpack-plugin@4.0.1:
+    resolution: {integrity: sha512-m5//KzLoKmqu2MVix+dgLKq70MnFi8YL8sdzQZ6DblmCdfuq/y3OqvJd5vMndg2KEVCOeNz8Es4WVZhYInteLw==}
+    engines: {node: '>=10.13.0'}
+    dependencies:
+      chalk: 4.1.2
+      enhanced-resolve: 5.12.0
+      tsconfig-paths: 4.2.0
     dev: true
 
   /tsconfig-paths@3.14.1:

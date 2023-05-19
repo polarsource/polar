@@ -7,6 +7,7 @@ from uuid import UUID
 from typing import List, Sequence
 
 import structlog
+from polar.config import settings
 from polar.enums import Platforms
 
 from polar.kit.services import ResourceService
@@ -18,6 +19,7 @@ from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.pledge import Pledge
+from polar.issue.service import issue as issue_service
 from polar.postgres import AsyncSession, sql
 from sqlalchemy.orm import (
     joinedload,
@@ -425,6 +427,11 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         await session.execute(statement)
         await session.commit()
 
+        # get and fire events
+        pledges = await self.get_by_issue_ids(session, [issue_id])
+        for p in pledges:
+            await p.on_updated(session)
+
     async def mark_pending_by_pledge_id(
         self, session: AsyncSession, pledge_id: UUID
     ) -> None:
@@ -442,6 +449,11 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
         await session.execute(statement)
         await session.commit()
 
+        # get pledge, call on_updated
+        pledge = await self.get(session, pledge_id)
+        if pledge:
+            await pledge.on_updated(session)
+
     async def mark_created_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
     ) -> None:
@@ -458,6 +470,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
                 )
             )
             await session.commit()
+            await pledge.on_updated(session)
 
     async def mark_paid_by_pledge_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
@@ -476,6 +489,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
                 )
             )
             await session.commit()
+            await pledge.on_updated(session)
 
     async def refund_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
@@ -502,6 +516,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
                 )
             )
             await session.commit()
+            await pledge.on_updated(session)
 
     async def mark_charge_disputed_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
@@ -519,6 +534,7 @@ class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
                 )
             )
             await session.commit()
+            await pledge.on_updated(session)
 
     async def transfer(self, session: AsyncSession, pledge_id: UUID) -> None:
         pledge = await self.get(session, id=pledge_id)

@@ -47,19 +47,41 @@ const AcceptTerms = () => {
       })
   }
 
-  const [approvedTos, setApprovedTos] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const onChangeAcceptTos = (e: ChangeEvent<HTMLInputElement>) => {
-    setApprovedTos(e.target.checked)
+    setAcceptedTerms(e.target.checked)
   }
 
   return (
-    <TakeoverBox fadeOut={boxFadeOut}>
+    <AcceptTermsBox
+      fadeOutTakeover={boxFadeOut}
+      showErrorBanner={showErrorBanner}
+      acceptedTerms={acceptedTerms}
+      onChangeAcceptedTerms={() => {}}
+      loading={loading}
+      onContinueClick={onContinueClick}
+    />
+  )
+}
+
+export default AcceptTerms
+
+export const AcceptTermsBox = (props: {
+  fadeOutTakeover: boolean
+  showErrorBanner: boolean
+  acceptedTerms: boolean
+  onChangeAcceptedTerms: (e: React.ChangeEvent<HTMLInputElement>) => void
+  loading: boolean
+  onContinueClick: (e: React.MouseEvent<HTMLButtonElement>) => void
+}) => {
+  return (
+    <TakeoverBox fadeOut={props.fadeOutTakeover}>
       <>
         <TakeoverHeader>
           <>Terms of Service and Privacy Policy</>
         </TakeoverHeader>
 
-        {showErrorBanner && (
+        {props.showErrorBanner && (
           <RedBanner>
             <>Something went wrong, please try again.</>
           </RedBanner>
@@ -73,8 +95,8 @@ const AcceptTerms = () => {
             </p>
             <Checkbox
               id="accept_tos"
-              value={approvedTos}
-              onChange={onChangeAcceptTos}
+              value={props.acceptedTerms}
+              onChange={props.onChangeAcceptedTerms}
             >
               I accept the{' '}
               <Link href="https://polar.sh/legal/terms" className="underline">
@@ -87,9 +109,9 @@ const AcceptTerms = () => {
             </Checkbox>
 
             <PrimaryButton
-              disabled={!approvedTos}
-              loading={loading}
-              onClick={onContinueClick}
+              disabled={!props.acceptedTerms}
+              loading={props.loading}
+              onClick={props.onContinueClick}
             >
               Continue
             </PrimaryButton>
@@ -99,5 +121,3 @@ const AcceptTerms = () => {
     </TakeoverBox>
   )
 }
-
-export default AcceptTerms

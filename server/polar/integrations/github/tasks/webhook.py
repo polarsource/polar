@@ -7,6 +7,7 @@ from polar.context import ExecutionContext
 from polar.integrations.github import client as github
 from polar.issue.schemas import IssueRead
 from polar.kit.extensions.sqlalchemy import sql
+from polar.kit.utils import utc_now
 from polar.models.issue import Issue
 from polar.organization.schemas import OrganizationCreate
 from polar.enums import Platforms
@@ -97,6 +98,141 @@ async def repositories_removed(
             raise Exception("unexpected webhook payload")
         async with AsyncSessionLocal() as session:
             await repositories_changed(session, scope, action, parsed)
+
+
+@task(name="github.webhook.public")
+async def repositories_public(
+    ctx: JobContext,
+    scope: str,
+    action: str,
+    payload: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        parsed = github.webhooks.parse_obj(scope, payload)
+        if not isinstance(parsed, github.webhooks.PublicEvent):
+            log.error("github.webhook.unexpected_type")
+            raise Exception("unexpected webhook payload")
+        async with AsyncSessionLocal() as session:
+            await repository_updated(session, parsed)
+
+
+@task(name="github.webhook.repository.renamed")
+async def repositories_renamed(
+    ctx: JobContext,
+    scope: str,
+    action: str,
+    payload: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        parsed = github.webhooks.parse_obj(scope, payload)
+        if not isinstance(parsed, github.webhooks.RepositoryRenamed):
+            log.error("github.webhook.unexpected_type")
+            raise Exception("unexpected webhook payload")
+        async with AsyncSessionLocal() as session:
+            await repository_updated(session, parsed)
+
+
+@task(name="github.webhook.repository.edited")
+async def repositories_redited(
+    ctx: JobContext,
+    scope: str,
+    action: str,
+    payload: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        parsed = github.webhooks.parse_obj(scope, payload)
+        if not isinstance(parsed, github.webhooks.RepositoryEdited):
+            log.error("github.webhook.unexpected_type")
+            raise Exception("unexpected webhook payload")
+        async with AsyncSessionLocal() as session:
+            await repository_updated(session, parsed)
+
+
+@task(name="github.webhook.repository.deleted")
+async def repositories_deleted(
+    ctx: JobContext,
+    scope: str,
+    action: str,
+    payload: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        parsed = github.webhooks.parse_obj(scope, payload)
+        if not isinstance(parsed, github.webhooks.RepositoryDeleted):
+            log.error("github.webhook.unexpected_type")
+            raise Exception("unexpected webhook payload")
+        async with AsyncSessionLocal() as session:
+            await repository_deleted(session, parsed)
+
+
+@task(name="github.webhook.repository.archived")
+async def repositories_archived(
+    ctx: JobContext,
+    scope: str,
+    action: str,
+    payload: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        parsed = github.webhooks.parse_obj(scope, payload)
+        if not isinstance(parsed, github.webhooks.RepositoryArchived):
+            log.error("github.webhook.unexpected_type")
+            raise Exception("unexpected webhook payload")
+        async with AsyncSessionLocal() as session:
+            await repository_updated(session, parsed)
+
+
+async def repository_updated(
+    session: AsyncSession,
+    event: Union[
+        github.webhooks.PublicEvent,
+        github.webhooks.RepositoryRenamed,
+        github.webhooks.RepositoryEdited,
+        github.webhooks.RepositoryArchived,
+    ],
+) -> dict[str, Any]:
+    with ExecutionContext(is_during_installation=True):
+        if not event.installation:
+            return dict(success=False)
+
+        repository = await service.github_repository.get_by_external_id(
+            session, event.repository.id
+        )
+        if not repository:
+            return dict(success=False)
+
+        repository.is_private = event.repository.visibility == "private"
+        repository.name = event.repository.name
+        repository.is_archived = event.repository.archived
+
+        await repository.save(session)
+
+        return dict(success=True)
+
+
+async def repository_deleted(
+    session: AsyncSession,
+    event: github.webhooks.RepositoryDeleted,
+) -> dict[str, Any]:
+    with ExecutionContext(is_during_installation=True):
+        if not event.installation:
+            return dict(success=False)
+
+        repository = await service.github_repository.get_by_external_id(
+            session, event.repository.id
+        )
+        if not repository:
+            return dict(success=False)
+
+        if not repository.deleted_at:
+            repository.deleted_at = utc_now()
+
+        await repository.save(session)
+
+        return dict(success=True)
 
 
 # ------------------------------------------------------------------------------

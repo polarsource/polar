@@ -1,6 +1,6 @@
+import { DashboardFilters, navigate } from '@/components/Dashboard/filters'
+import Spinner from '@/components/Shared/Spinner'
 import { InfiniteData } from '@tanstack/react-query'
-import { DashboardFilters, navigate } from 'components/Dashboard/filters'
-import Spinner from 'components/Shared/Spinner'
 import { useRouter } from 'next/router'
 import {
   IssueListResponse,

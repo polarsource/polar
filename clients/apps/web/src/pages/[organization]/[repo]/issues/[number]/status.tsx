@@ -1,6 +1,6 @@
+import IssueListItem from '@/components/Dashboard/IssueListItem'
+import GithubLoginButton from '@/components/Shared/GithubLoginButton'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
-import IssueListItem from 'components/Dashboard/IssueListItem'
-import GithubLoginButton from 'components/Shared/GithubLoginButton'
 import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import { api } from 'polarkit'
 import { Platforms, type PledgeResources } from 'polarkit/api/client'

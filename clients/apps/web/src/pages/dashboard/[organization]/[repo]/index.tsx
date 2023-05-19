@@ -1,5 +1,5 @@
-import Dashboard from 'components/Dashboard'
-import Gatekeeper from 'components/Dashboard/Gatekeeper/Gatekeeper'
+import Dashboard from '@/components/Dashboard'
+import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import type { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'

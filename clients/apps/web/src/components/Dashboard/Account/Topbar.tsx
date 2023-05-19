@@ -1,5 +1,5 @@
-import BalanceBadge from 'components/Dashboard/Account/BalanceBadge'
-import StripeOnboardingButton from 'components/Dashboard/Account/StripeOnboardingButton'
+import BalanceBadge from '@/components/Dashboard/Account/BalanceBadge'
+import StripeOnboardingButton from '@/components/Dashboard/Account/StripeOnboardingButton'
 import { useOrganizationAccounts } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import BalanceBadgeBox from './BalanceBadgeBox'

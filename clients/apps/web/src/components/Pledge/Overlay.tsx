@@ -1,5 +1,5 @@
+import RepoSelection from '@/components/Dashboard/RepoSelection'
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import RepoSelection from 'components/Dashboard/RepoSelection'
 import { api, CONFIG } from 'polarkit'
 import {
   IssueDashboardRead,

@@ -1,5 +1,5 @@
-import DashboardLayout from 'components/Layout/DashboardLayout'
-import OnboardingConnectPersonalDashboard from 'components/Onboarding/OnboardingConnectDashboard'
+import DashboardLayout from '@/components/Layout/DashboardLayout'
+import OnboardingConnectPersonalDashboard from '@/components/Onboarding/OnboardingConnectDashboard'
 import { IssueStatus } from 'polarkit/api/client'
 import { usePersonalDashboard } from 'polarkit/hooks'
 import { Dispatch, SetStateAction } from 'react'

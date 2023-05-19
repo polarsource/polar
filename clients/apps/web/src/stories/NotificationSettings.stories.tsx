@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import Box from 'components/Settings/Box'
+import Box from '@/components/Settings/Box'
 import NotificationSettings from '../components/Settings/NotificationSettings'
 
 const meta: Meta<typeof NotificationSettings> = {

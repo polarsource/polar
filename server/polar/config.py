@@ -68,6 +68,9 @@ class Settings(BaseSettings):
     # Sentry
     SENTRY_DSN: str | None = None
 
+    # Discord
+    DISCORD_WEBHOOK_URL: str | None = None
+
     # Application behaviours
 
     GITHUB_BADGE_EMBED: bool = False

@@ -37,3 +37,30 @@ jobs:
           working-directory: ./clients
           run: pnpm build
  
+  build_storybook:
+    name: "Client: Storybook 🎨"
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - uses: pnpm/action-setup@v2.2.4
+        with:
+          version: 8.2.0
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v3
+        with:
+          node-version: v19.8.1
+          cache: 'pnpm'
+          cache-dependency-path: 'clients/pnpm-lock.yaml'
+
+      - name: Install dependencies
+        working-directory: ./clients
+        run: pnpm install
+
+      - name: Build
+        working-directory: ./clients/apps/web
+        run: pnpm build-storybook

@@ -1,8 +1,9 @@
 import LoadingScreen from '@/components/Dashboard/LoadingScreen'
 import Layout from '@/components/Layout/EmptyLayout'
+import type { NextPageWithLayout } from '@/utils/next'
+import { GetServerSideProps } from 'next'
 import { api } from 'polarkit'
 import { ReactElement, useEffect, useState } from 'react'
-import type { NextPageWithLayout } from 'utils/next'
 
 const ExtensionSettingsPage: NextPageWithLayout = () => {
   const [token, setToken] = useState<string>()
@@ -32,7 +33,7 @@ ExtensionSettingsPage.getLayout = (page: ReactElement) => {
   return <Layout>{page}</Layout>
 }
 
-export const getServerSideProps = async (context) => {
+export const getServerSideProps: GetServerSideProps = async (context) => {
   const query = context.query
 
   return { props: { query } }

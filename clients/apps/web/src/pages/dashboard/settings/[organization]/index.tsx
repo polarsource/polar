@@ -142,6 +142,10 @@ const SettingsPage: NextLayoutComponentType = () => {
     )
   }
 
+  if (!org) {
+    return <></>
+  }
+
   return (
     <>
       <Head>
@@ -156,47 +160,61 @@ const SettingsPage: NextLayoutComponentType = () => {
 
         <div className="divide-y divide-gray-200">
           <Section>
-            <SectionDescription
-              title="Payment details"
-              description={`Default payment methods for the ${org.name} organization to use when pledning new issues.`}
-            />
+            <>
+              <SectionDescription
+                title="Payment details"
+                description={`Default payment methods for the ${org.name} organization to use when pledning new issues.`}
+              />
 
-            <Box>
-              <PaymentSettings
+              <Box>
+                <>
+                  {paymentSettings && (
+                    <PaymentSettings
+                      org={org}
+                      onUpdated={onPaymentSettingsUpdated}
+                      settings={paymentSettings}
+                    />
+                  )}
+                </>
+              </Box>
+            </>
+          </Section>
+
+          <Section>
+            <>
+              <SectionDescription
+                title="Polar badge"
+                description="Polar will inject this badge into new issues on Github."
+              />
+
+              <BadgeSetup
                 org={org}
-                onUpdated={onPaymentSettingsUpdated}
-                settings={paymentSettings}
+                showControls={true}
+                setShowControls={() => true}
+                setSyncIssuesCount={(value: number) => true}
+                isSettingPage={true}
               />
-            </Box>
-          </Section>
-
-          <Section>
-            <SectionDescription
-              title="Polar badge"
-              description="Polar will inject this badge into new issues on Github."
-            />
-
-            <BadgeSetup
-              org={org}
-              showControls={true}
-              setShowControls={() => true}
-              setSyncIssuesCount={(value: number) => true}
-              isSettingPage={true}
-            />
+            </>
           </Section>
           <Section>
-            <SectionDescription
-              title="Email notifications"
-              description="Polar will send emails for the notifications enabled below."
-            />
-
-            <Box>
-              <NotificationSettings
-                settings={notificationSettings}
-                orgName={org.name}
-                onUpdated={onNotificationSettingsUpdated}
+            <>
+              <SectionDescription
+                title="Email notifications"
+                description="Polar will send emails for the notifications enabled below."
               />
-            </Box>
+
+              <Box>
+                <>
+                  {notificationSettings && (
+                    <NotificationSettings
+                      settings={notificationSettings}
+                      orgName={org.name}
+                      onUpdated={onNotificationSettingsUpdated}
+                    />
+                  )}
+                </>
+              </Box>
+            </>
           </Section>
         </div>
       </div>
@@ -244,7 +262,7 @@ SettingsPage.getLayout = (page: ReactElement) => {
   )
 }
 
-const Section = ({ children }) => {
+const Section = ({ children }: { children: ReactElement }) => {
   return (
     <div className="flex flex-col space-y-4 p-4 py-10 md:flex-row md:space-x-20 md:space-y-0">
       {children}
@@ -252,7 +270,13 @@ const Section = ({ children }) => {
   )
 }
 
-const SectionDescription = ({ title, description }) => {
+const SectionDescription = ({
+  title,
+  description,
+}: {
+  title: string
+  description: string
+}) => {
   return (
     <div className="flex-shrink-0 md:w-60">
       <h2 className="mb-2 font-medium text-gray-900">{title}</h2>

@@ -206,6 +206,11 @@ IMPLEMENTED_WEBHOOKS = {
     "pull_request.closed",
     "pull_request.reopened",
     "pull_request.synchronize",
+    "public",
+    "repository.renamed",
+    "repository.deleted",
+    "repository.edited",
+    "repository.archived",
 }
 
 
@@ -218,8 +223,8 @@ def not_implemented(
 async def enqueue(request: Request) -> WebhookResponse:
     json_body = await request.json()
     event_scope = request.headers["X-GitHub-Event"]
-    event_action = json_body["action"]
-    event_name = f"{event_scope}.{event_action}"
+    event_action = json_body["action"] if "action" in json_body else None
+    event_name = f"{event_scope}.{event_action}" if event_action else event_scope
 
     if event_name not in IMPLEMENTED_WEBHOOKS:
         return not_implemented(event_scope, event_action, json_body)

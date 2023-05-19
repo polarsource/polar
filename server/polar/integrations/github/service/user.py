@@ -1,13 +1,11 @@
-from typing import Callable, List, Any
+from typing import List, Any
 import structlog
-from pydantic import EmailStr
 
 from polar.enums import Platforms
 from polar.kit.extensions.sqlalchemy import sql
 from polar.models import User, OAuthAccount
 from polar.postgres import AsyncSession
-from polar.user.service import UserService, user as user_service
-from polar.user.schemas import UserCreate
+from polar.user.service import UserService
 from polar.organization.service import organization
 from polar.integrations.github.client import GitHub, TokenAuthStrategy
 

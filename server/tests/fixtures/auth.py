@@ -2,7 +2,6 @@ import pytest_asyncio
 from polar.kit import jwt
 
 from polar.models.user import User
-from polar.app import app
 from polar.config import settings
 
 

@@ -1,7 +1,6 @@
 from uuid import UUID
 import structlog
 from polar.integrations.github import service
-from polar.kit.extensions.sqlalchemy import sql
 
 from polar.worker import JobContext, PolarWorkerContext, enqueue_job, interval, task
 from polar.postgres import AsyncSessionLocal
@@ -20,7 +19,7 @@ async def issue_sync(
     crawl_with_installation_id: int
     | None = None,  # Override which installation to use when crawling
 ) -> None:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         async with AsyncSessionLocal() as session:
             issue = await github_issue.get(session, issue_id)
             if not issue or not issue.organization_id or not issue.repository_id:
@@ -52,7 +51,7 @@ async def issue_sync_issue_references(
     crawl_with_installation_id: int
     | None = None,  # Override which installation to use when crawling
 ) -> None:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         async with AsyncSessionLocal() as session:
             issue = await github_issue.get(session, issue_id)
             if not issue or not issue.organization_id or not issue.repository_id:
@@ -82,7 +81,7 @@ async def issue_sync_issue_dependencies(
     issue_id: UUID,
     polar_context: PolarWorkerContext,
 ) -> None:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         async with AsyncSessionLocal() as session:
             issue = await github_issue.get(session, issue_id)
             if not issue or not issue.organization_id or not issue.repository_id:

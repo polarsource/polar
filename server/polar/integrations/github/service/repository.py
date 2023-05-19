@@ -1,7 +1,6 @@
 from typing import Literal, Callable, Any, Coroutine, Sequence
 
 import structlog
-from sqlalchemy.orm import InstrumentedAttribute
 from blinker import Signal
 from githubkit import Paginator
 from polar.context import PolarContext

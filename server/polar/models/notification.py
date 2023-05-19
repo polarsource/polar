@@ -1,12 +1,11 @@
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.issue import Issue
-from polar.models.issue_reference import IssueReference
 from polar.models.pledge import Pledge
 from polar.models.pull_request import PullRequest
 from polar.types import JSONDict

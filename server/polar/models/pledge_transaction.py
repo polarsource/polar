@@ -5,10 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
-from polar.models.issue import Issue
-from polar.models.organization import Organization
 from polar.models.pledge import Pledge
-from polar.models.user import User
 
 
 class PledgeTransaction(RecordModel):

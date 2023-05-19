@@ -1,6 +1,5 @@
 from datetime import datetime
 import random
-import string
 import uuid
 
 import pytest_asyncio
@@ -12,7 +11,6 @@ from polar.models.pledge import Pledge
 from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
 from polar.models.user import User
-from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import OrganizationCreate
 from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession

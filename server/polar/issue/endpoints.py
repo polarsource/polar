@@ -1,13 +1,10 @@
 from typing import List, Sequence
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
 from polar.models import Issue
 from polar.enums import Platforms
-from polar.models.pledge import Pledge
-from polar.pledge.schemas import PledgeRead, PledgeState
 from polar.postgres import AsyncSession, get_db_session
 from polar.exceptions import ResourceNotFound
 

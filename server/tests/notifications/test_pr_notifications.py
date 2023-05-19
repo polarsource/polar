@@ -2,7 +2,6 @@ from datetime import datetime
 from unittest.mock import ANY, call
 import pytest
 from polar.enums import Platforms
-from polar.models import notification
 from polar.models.issue import Issue
 from polar.models.issue_reference import (
     ExternalGitHubCommitReference,
@@ -42,7 +41,7 @@ async def test_pledged_issue_pull_request_created(
         "send_to_org",
     )
 
-    pledge = await Pledge.create(
+    await Pledge.create(
         session=session,
         issue_id=issue.id,
         repository_id=repository.id,
@@ -119,7 +118,7 @@ async def test_pledged_issue_pull_request_merged(
 ) -> None:
     m = mocker.patch("polar.notifications.service.NotificationsService.send_to_org")
 
-    pledge = await Pledge.create(
+    await Pledge.create(
         session=session,
         issue_id=issue.id,
         repository_id=repository.id,
@@ -197,7 +196,7 @@ async def test_pledged_issue_branch_created(
 ) -> None:
     m = mocker.spy(NotificationsService, "send_to_org")
 
-    pledge = await Pledge.create(
+    await Pledge.create(
         session=session,
         issue_id=predictable_issue.id,
         repository_id=predictable_repository.id,

@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import EmailStr, Field
 
 from polar.kit.schemas import Schema
 

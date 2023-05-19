@@ -1,6 +1,5 @@
 from polar.context import PolarContext
 from polar.enums import Platforms
-from polar.models.issue import Platform
 from polar.models.pull_request import PullRequest
 from polar.postgres import AsyncSession
 from polar.pull_request.signals import pull_request_created, pull_request_updated

@@ -2,7 +2,6 @@ from uuid import UUID
 from jinja2 import StrictUndefined
 import structlog
 from polar.models.user import User
-from polar.models.user_organization import UserOrganization
 
 from polar.notifications.schemas import (
     IssuePledgeCreated,
@@ -38,7 +37,7 @@ async def notifications_send(
     notification_id: UUID,
     polar_context: PolarWorkerContext,
 ) -> None:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         async with AsyncSessionLocal() as session:
             notif: Notification | None = await Notification.find(
                 session, notification_id

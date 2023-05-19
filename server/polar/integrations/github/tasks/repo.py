@@ -1,6 +1,5 @@
 from uuid import UUID
 import structlog
-from polar.context import ExecutionContext
 
 from polar.integrations.github import service
 from polar.worker import JobContext, PolarWorkerContext, enqueue_job, task
@@ -17,7 +16,7 @@ async def sync_repositories(
     organization_id: UUID,
     polar_context: PolarWorkerContext,
 ) -> None:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         async with AsyncSessionLocal() as session:
             organization = await service.github_organization.get(
                 session, organization_id
@@ -39,7 +38,7 @@ async def sync_repository_issues(
     crawl_with_installation_id: int
     | None = None,  # Override which installation to use when crawling
 ) -> None:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         async with AsyncSessionLocal() as session:
             organization, repository = await get_organization_and_repo(
                 session, organization_id, repository_id
@@ -60,7 +59,7 @@ async def sync_repository_pull_requests(
     polar_context: PolarWorkerContext,
     crawl_with_installation_id: int | None = None,
 ) -> None:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         async with AsyncSessionLocal() as session:
             organization, repository = await get_organization_and_repo(
                 session, organization_id, repository_id
@@ -87,7 +86,7 @@ async def repo_sync_issue_references(
     polar_context: PolarWorkerContext,
     crawl_with_installation_id: int | None = None,
 ) -> None:
-    with polar_context.to_execution_context() as context:
+    with polar_context.to_execution_context():
         async with AsyncSessionLocal() as session:
             organization, repository = await get_organization_and_repo(
                 session, organization_id, repository_id

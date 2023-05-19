@@ -1,6 +1,5 @@
 import structlog
 from fastapi import Response, Request
-from fastapi.responses import RedirectResponse
 from datetime import datetime
 
 from polar.kit import jwt

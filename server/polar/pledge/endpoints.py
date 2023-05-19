@@ -22,7 +22,6 @@ from .schemas import (
     PledgeMutationResponse,
     PledgeUpdate,
     PledgeRead,
-    PledgeState,
     PledgeResources,
 )
 from .service import pledge as pledge_service

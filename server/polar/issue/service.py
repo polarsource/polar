@@ -4,9 +4,7 @@ from uuid import UUID
 from typing import List, Sequence, Tuple
 from sqlalchemy import (
     Integer,
-    String,
     desc,
-    distinct,
     func,
     not_,
     nullslast,
@@ -22,7 +20,6 @@ from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
 from polar.kit.services import ResourceService
 from polar.models.issue import Issue
 from polar.models.pledge import Pledge
-from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
 from polar.enums import Platforms
 from polar.models.issue_dependency import IssueDependency

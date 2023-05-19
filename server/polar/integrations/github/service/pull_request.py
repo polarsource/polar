@@ -2,7 +2,6 @@ from typing import Sequence
 from githubkit import GitHub
 
 import structlog
-import polar.integrations.github.client as github
 
 from polar.models import PullRequest, Organization, Repository
 from polar.enums import Platforms

@@ -3,7 +3,7 @@ from typing import Sequence
 from fastapi import APIRouter, Depends
 
 from polar.auth.dependencies import Auth
-from polar.models import Organization, User
+from polar.models import Organization
 from polar.organization.schemas import OrganizationPrivateRead
 from polar.organization.service import organization
 from polar.postgres import AsyncSession, get_db_session

@@ -22,7 +22,7 @@ const TakeoverBox = (props: {
         show ? 'scale-100 opacity-100' : 'scale-90 opacity-0',
       )}
     >
-      <div className="min-w-[700px] ">
+      <div className="mx-4 w-full md:mx-0 md:w-auto md:min-w-[700px]">
         <div className="flex flex-col space-y-8">{props.children}</div>
       </div>
     </div>

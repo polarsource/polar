@@ -77,9 +77,7 @@ class User(RecordModel):
     last_seen_at_extension: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
-    last_version_extension: Mapped[str] = mapped_column(
-        String(50), nullable=True
-    )
+    last_version_extension: Mapped[str] = mapped_column(String(50), nullable=True)
 
     __mutables__ = {
         "email",

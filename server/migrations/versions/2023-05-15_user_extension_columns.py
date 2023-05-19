@@ -13,17 +13,23 @@ import sqlalchemy as sa
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 # revision identifiers, used by Alembic.
-revision = 'f39358a2df88'
-down_revision = 'c228c42e2443'
+revision = "f39358a2df88"
+down_revision = "c228c42e2443"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
-    op.add_column('users', sa.Column('last_seen_at_extension', sa.TIMESTAMP(timezone=True), nullable=True))
-    op.add_column('users', sa.Column('last_version_extension', sa.String(length=50), nullable=True))
+    op.add_column(
+        "users",
+        sa.Column("last_seen_at_extension", sa.TIMESTAMP(timezone=True), nullable=True),
+    )
+    op.add_column(
+        "users",
+        sa.Column("last_version_extension", sa.String(length=50), nullable=True),
+    )
 
 
 def downgrade() -> None:
-    op.drop_column('users', 'last_version_extension')
-    op.drop_column('users', 'last_seen_at_extension')
+    op.drop_column("users", "last_version_extension")
+    op.drop_column("users", "last_seen_at_extension")

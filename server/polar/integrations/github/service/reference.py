@@ -86,6 +86,7 @@ TimelineEventType = Union[
     github.rest.StateChangeIssueEvent,
 ]
 
+
 class GitHubIssueReferencesService:
     async def sync_repo_references(
         self,

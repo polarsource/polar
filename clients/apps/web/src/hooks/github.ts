@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 import { useAuth } from './auth'
 
 export const useGithubOAuthCallback = (
-  code: string,
-  state: string,
+  code?: string,
+  state?: string,
 ): {
   success: boolean
   error: string | null

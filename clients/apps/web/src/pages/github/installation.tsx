@@ -3,15 +3,17 @@ import LoadingScreen, {
 } from '@/components/Dashboard/LoadingScreen'
 import Layout from '@/components/Layout/EmptyLayout'
 import GithubLoginButton from '@/components/Shared/GithubLoginButton'
+import { NextPageWithLayout } from '@/utils/next'
+import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit'
 import {
   InstallationCreate,
   OrganizationPrivateRead,
 } from 'polarkit/api/client'
+import { ParsedUrlQuery } from 'querystring'
 import type { ReactElement } from 'react'
 import { useEffect, useState } from 'react'
-import { NextPageWithLayout } from 'utils/next'
 
 const GithubInstallationPage: NextPageWithLayout = () => {
   const router = useRouter()
@@ -22,7 +24,12 @@ const GithubInstallationPage: NextPageWithLayout = () => {
   const query = router.query
   const [showLogin, setShowLogin] = useState(false)
 
-  const install = (query) => {
+  const install = (query: ParsedUrlQuery) => {
+    if (typeof query?.installation_id !== 'string') {
+      setError('Unexpected installation_id')
+      return
+    }
+
     const request = api.integrations.install({
       requestBody: {
         platform: InstallationCreate.platform.GITHUB,
@@ -31,6 +38,7 @@ const GithubInstallationPage: NextPageWithLayout = () => {
     })
 
     setShowLogin(false)
+    setError(null)
 
     request
       .then((organization) => {
@@ -68,7 +76,7 @@ const GithubInstallationPage: NextPageWithLayout = () => {
 
   if (installed) {
     router.replace(`/dashboard/initialize/${installed.name}`)
-    return
+    return <></>
   }
 
   if (showLogin) {
@@ -101,7 +109,7 @@ GithubInstallationPage.getLayout = (page: ReactElement) => {
   return <Layout>{page}</Layout>
 }
 
-export const getServerSideProps = async (context) => {
+export const getServerSideProp: GetServerSideProps = async (context) => {
   const query = context.query
 
   return { props: { query } }

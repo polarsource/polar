@@ -27,14 +27,15 @@ const IssueList = (props: {
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
   fetchNextPage: () => void
   hasNextPage: boolean
-  isFetching: boolean
+  isInitialLoading: boolean
   isFetchingNextPage: boolean
 }) => {
   if (!props.dashboard) {
     return <></>
   }
 
-  const { fetchNextPage, hasNextPage, isFetchingNextPage, isFetching } = props
+  const { fetchNextPage, hasNextPage, isFetchingNextPage, isInitialLoading } =
+    props
 
   return (
     <div className="divide-y">
@@ -42,7 +43,7 @@ const IssueList = (props: {
         totalCount={props.totalCount}
         filters={props.filters}
         onSetFilters={props.onSetFilters}
-        spinner={isFetching && !isFetchingNextPage}
+        spinner={isInitialLoading}
       />
 
       {!props.loading && (

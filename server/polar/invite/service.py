@@ -79,7 +79,7 @@ Welcome!
     async def verify_and_claim_code(
         self, session: AsyncSession, user: User, code: str
     ) -> bool:
-        if not self.claim_code(session, user, code):
+        if not await self.claim_code(session, user, code):
             return False
 
         user.invite_only_approved = True

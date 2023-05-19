@@ -2,8 +2,9 @@
   "extends": "tsconfig/react-library.json",
   "compilerOptions": {
     "baseUrl": "src/",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node16"
   },
-  "include": ["."],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["dist", "build", "node_modules", "openapi", "scripts"]
 }

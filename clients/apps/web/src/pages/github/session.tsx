@@ -2,21 +2,23 @@ import LoadingScreen, {
   LoadingScreenError,
 } from '@/components/Dashboard/LoadingScreen'
 import Layout from '@/components/Layout/EmptyLayout'
+import { useGithubOAuthCallback } from '@/hooks'
+import type { NextPageWithLayout } from '@/utils/next'
+import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
+import { ParsedUrlQuery } from 'querystring'
 import type { ReactElement } from 'react'
-import type { NextPageWithLayout } from 'utils/next'
-import { useGithubOAuthCallback } from '../../hooks'
 
-const GithubAuthPage: NextPageWithLayout = ({
-  query,
-}: {
-  query: {
-    provider: string
-    code: string
-    state: string
-  }
-}) => {
+export interface PageQuery extends ParsedUrlQuery {
+  provider?: string
+  code?: string
+  state?: string
+}
+
+const GithubAuthPage: NextPageWithLayout = () => {
   const router = useRouter()
+  const query = router.query as PageQuery
+
   const { success, error, gotoUrl } = useGithubOAuthCallback(
     query.code,
     query.state,
@@ -24,12 +26,12 @@ const GithubAuthPage: NextPageWithLayout = ({
 
   if (success && gotoUrl) {
     router.push(gotoUrl)
-    return
+    return <></>
   }
 
   if (success) {
     router.push('/dashboard')
-    return
+    return <></>
   }
 
   if (error) {
@@ -49,7 +51,7 @@ GithubAuthPage.getLayout = (page: ReactElement) => {
   return <Layout>{page}</Layout>
 }
 
-export const getServerSideProps = async (context) => {
+export const getServerSideProps: GetServerSideProps = async (context) => {
   const query = context.query
 
   return { props: { query } }

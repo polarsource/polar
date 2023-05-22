@@ -1,7 +1,11 @@
 import { api } from 'polarkit'
 import { MouseEvent } from 'react'
 
-const GithubLoginButton = (props: { pledgeId?: string; gotoUrl?: string }) => {
+const GithubLoginButton = (props: {
+  pledgeId?: string
+  gotoUrl?: string
+  size?: 'large' | 'small'
+}) => {
   const signin = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     e.stopPropagation()
@@ -18,16 +22,23 @@ const GithubLoginButton = (props: { pledgeId?: string; gotoUrl?: string }) => {
     return false
   }
 
+  const largeStyle =
+    'bg-gray-900 text-white p-2.5 px-5 hover:bg-gray-700 rounded-xl text-md'
+  const smallStyle =
+    'bg-white text-gray-900 p-1 px-3 hover:bg-gray-100 rounded-lg border text-sm'
+
   return (
     <>
       <button
         onClick={signin}
         type="button"
-        className="flex items-center space-x-2 rounded-lg border border-gray-200 px-3 py-1 text-gray-900 transition-colors duration-100 hover:bg-gray-100"
+        className={`flex content-center items-center justify-center space-x-2 transition-colors duration-200 ${
+          props.size === 'large' ? largeStyle : smallStyle
+        }`}
       >
         <span>Sign in with GitHub</span>
         <svg
-          className="mr-3 h-5 w-5"
+          className={`mr-3 ${props.size === 'large' ? 'h-5 w-5' : 'h-4 w-4'}`}
           aria-hidden="true"
           fill="currentColor"
           viewBox="0 0 20 20"

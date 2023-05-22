@@ -1,11 +1,15 @@
 import {
   IssueRead,
+  OrganizationPrivateRead,
   OrganizationPublicRead,
+  OrganizationStripeCustomerRead,
   Platforms,
   PledgeRead,
   PledgeState,
   RepositoryRead,
   State,
+  Status,
+  UserRead,
   Visibility,
 } from 'polarkit/api/client'
 
@@ -54,4 +58,40 @@ export const pledge: PledgeRead = {
   // pledger_avatar?: string;
   // authed_user_can_admin?: boolean;
   //scheduled_payout_at?: string;
+}
+
+export const privateOrganization: OrganizationPrivateRead = {
+  id: 'polarsource',
+  platform: Platforms.GITHUB,
+  name: 'polarsource',
+  avatar_url: 'https://avatars.githubusercontent.com/u/105373340?s=400&v=4',
+  external_id: 123,
+  is_personal: false,
+  status: Status.ACTIVE,
+  created_at: '2023-01-01',
+}
+
+export const user: UserRead = {
+  username: 'zegl',
+  email: 'test@example.com',
+  avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+  invite_only_approved: true,
+  accepted_terms_of_service: true,
+  id: '1234444',
+  profile: {},
+}
+
+export const orgStripeCustomer: OrganizationStripeCustomerRead = {
+  // email?: string;
+  // addressCity?: string;
+  // addressCountry?: string;
+  // addressLine1?: string;
+  // addressLine2?: string;
+  // postalCode?: string;
+  // state?: string;
+  default_payment_method: {
+    type: 'card',
+    card_last4: '4242',
+    card_brand: 'visa',
+  },
 }

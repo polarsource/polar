@@ -11,7 +11,7 @@ import structlog
 from polar.config import settings
 from polar.enums import Platforms
 
-from polar.kit.services import ResourceService
+from polar.kit.services import ResourceServiceReader
 from polar.integrations.stripe.service import stripe
 from polar.kit.utils import utc_now
 from polar.models.issue import Issue
@@ -40,7 +40,7 @@ from .schemas import (
 log = structlog.get_logger()
 
 
-class PledgeService(ResourceService[Pledge, PledgeCreate, PledgeUpdate]):
+class PledgeService(ResourceServiceReader[Pledge]):
     async def get_with_loaded(
         self,
         session: AsyncSession,

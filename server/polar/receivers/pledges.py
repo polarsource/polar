@@ -8,13 +8,17 @@ from polar.models.pledge import Pledge
 from polar.notifications.schemas import NotificationType
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
-from polar.pledge.signals import pledge_created, pledge_updated
+from polar.pledge.signals import pledge_updated
 from polar.notifications.service import (
     PartialNotification,
     notifications as notification_service,
 )
 from polar.issue.service import issue as issue_service
-from polar.pledge.hooks import PledgeHook, pledge_created as pledge_created_hook
+from polar.pledge.hooks import (
+    PledgeHook,
+    pledge_created as pledge_created_hook,
+    pledge_updated as pledge_updated_hook,
+)
 from polar.config import settings
 
 
@@ -24,32 +28,6 @@ async def mark_pledges_pending_on_issue_close(
 ):
     if item.state == "closed":
         await pledge_service.mark_pending_by_issue_id(session, item.id)
-
-
-@pledge_created.connect
-@pledge_updated.connect
-async def issue_pledged_amount_sum(
-    ctx: PolarContext, *, item: Pledge, session: AsyncSession, **values: Any
-):
-    await pledge_service.set_issue_pledged_amount_sum(session, item.issue_id)
-
-
-@pledge_created.connect
-async def pledge_created_state_notifications(
-    ctx: PolarContext, *, item: Pledge, session: AsyncSession, **values: Any
-):
-    if item.state == "created":
-        await pledge_created_notification(item, session)
-
-
-@pledge_updated.connect
-async def pledge_updated_state_notifications(
-    ctx: PolarContext, *, item: Pledge, session: AsyncSession, **values: Any
-):
-    if item.state == "created":
-        # TODO: find a way to do this only when the state transitions from
-        # "initiated" -> "created".
-        await pledge_created_notification(item, session)
 
 
 async def pledge_created_notification(pledge: Pledge, session: AsyncSession):
@@ -99,3 +77,22 @@ async def pledge_created_discord_alert(hook: PledgeHook):
 
 
 pledge_created_hook.add(pledge_created_discord_alert)
+
+
+async def pledge_created_issue_pledge_sum(hook: PledgeHook):
+    session = hook.session
+    pledge = hook.pledge
+    await pledge_service.set_issue_pledged_amount_sum(session, pledge.issue_id)
+
+
+pledge_created_hook.add(pledge_created_issue_pledge_sum)
+pledge_updated_hook.add(pledge_created_issue_pledge_sum)
+
+
+async def hook_pledge_created_notifications(hook: PledgeHook):
+    session = hook.session
+    pledge = hook.pledge
+    await pledge_created_notification(pledge, session)
+
+
+pledge_created_hook.add(hook_pledge_created_notifications)

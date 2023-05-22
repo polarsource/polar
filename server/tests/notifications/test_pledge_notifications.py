@@ -9,8 +9,10 @@ from polar.models.repository import Repository
 from polar.models.user_organization import UserOrganization
 from polar.notifications.schemas import NotificationType
 from polar.notifications.service import NotificationsService, PartialNotification
+from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession
 from pytest_mock import MockerFixture
+from polar.pledge.service import pledge as pledge_service
 
 
 @pytest.mark.asyncio
@@ -31,49 +33,15 @@ async def test_create_pledge_from_created(
         amount=12300,
         fee=123,
         by_organization_id=organization.id,
-        state="created",
+        state=PledgeState.initiated,
+        payment_id="xxx-1",
     )
-
-    # Check notifictions
-    assert m.call_count == 1
-    m.assert_called_once_with(
-        session=ANY,
-        org_id=organization.id,
-        typ=NotificationType.issue_pledge_created,
-        notif=PartialNotification(
-            issue_id=issue.id,
-            pledge_id=pledge.id,
-            payload=ANY,
-        ),
+    await pledge_service.mark_created_by_payment_id(
+        session,
+        pledge.payment_id,
+        pledge.amount,
+        "trx-id",
     )
-
-
-@pytest.mark.asyncio
-async def test_create_pledge_initiated_then_created(
-    session: AsyncSession,
-    organization: Organization,
-    repository: Repository,
-    issue: Issue,
-    mocker: MockerFixture,
-) -> None:
-    m = mocker.patch("polar.notifications.service.NotificationsService.send_to_org")
-
-    pledge = await Pledge.create(
-        session=session,
-        issue_id=issue.id,
-        repository_id=repository.id,
-        organization_id=organization.id,
-        amount=12300,
-        fee=123,
-        by_organization_id=organization.id,
-        state="initiated",
-    )
-
-    # Check notifictions
-    assert m.call_count == 0
-
-    # Update to created
-    await pledge.update(session=session, state="created")
 
     # Check notifictions
     assert m.call_count == 1
@@ -109,19 +77,37 @@ async def test_deduplicate(
         amount=12300,
         fee=123,
         by_organization_id=organization.id,
-        state="initiated",
+        state=PledgeState.initiated,
+        payment_id="xxx-2",
     )
 
     # Check notifictions
     assert spy.call_count == 0
 
     # Update to created
-    await pledge.update(session=session, state="created")
-    await pledge.update(session=session, state="created")
-    await pledge.update(session=session, state="created")
+    await pledge_service.mark_created_by_payment_id(
+        session,
+        pledge.payment_id,
+        pledge.amount,
+        "trx-id-2",
+    )
+
+    errored = False
+    try:
+        await pledge_service.mark_created_by_payment_id(
+            session,
+            pledge.payment_id,
+            pledge.amount,
+            "trx-id-2",
+        )
+    except Exception as e:
+        assert e is not None
+        errored = True
+
+    assert errored is True
 
     # Check notifictions
-    assert spy.call_count == 3
+    assert spy.call_count == 1
 
     # Check persisted notifications
     all_first_user = (

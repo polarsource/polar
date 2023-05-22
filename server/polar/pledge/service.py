@@ -5,10 +5,8 @@ import math
 
 from uuid import UUID
 from typing import List, Sequence
-from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 
 import structlog
-from polar.config import settings
 from polar.enums import Platforms
 
 from polar.kit.services import ResourceServiceReader
@@ -37,7 +35,7 @@ from .schemas import (
     PledgeState,
 )
 
-from .hooks import pledge_created, pledge_disputed
+from .hooks import PledgeHook, pledge_created, pledge_disputed
 
 log = structlog.get_logger()
 
@@ -481,10 +479,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         await session.commit()
         await pledge.on_updated(session)
 
-        pledge_created.call(pledge)
-
-        # TODO: move to use the pledge_created hook
-        await self.pledge_created_discord_alert(session, pledge)
+        await pledge_created.call(PledgeHook(session, pledge))
 
     async def mark_paid_by_pledge_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
@@ -649,35 +644,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         await session.execute(stmt)
         await session.commit()
 
-        pledge_disputed.call(pledge)
-
-    async def pledge_created_discord_alert(self, session: AsyncSession, pledge: Pledge):
-        if not settings.DISCORD_WEBHOOK_URL:
-            return
-
-        webhook = AsyncDiscordWebhook(
-            url=settings.DISCORD_WEBHOOK_URL, content="New pledge"
-        )
-
-        issue = await issue_service.get_by_id(session, pledge.issue_id)
-        if not issue:
-            print("zegl no discord issue")
-            return
-
-        embed = DiscordEmbed(
-            title="New pledge",
-            description=f'A ${pledge.amount/100} pledge has been made towards "{issue.title}"',  # noqa: E501
-            color="65280",
-        )
-
-        embed.add_embed_field(
-            name="Backoffice",
-            value="[Open](https://dashboard.polar.sh/backoffice/pledges)",
-        )
-
-        webhook.add_embed(embed)
-        await webhook.execute()
-        return
+        await pledge_disputed.call(PledgeHook(session, pledge))
 
 
 pledge = PledgeService(Pledge)

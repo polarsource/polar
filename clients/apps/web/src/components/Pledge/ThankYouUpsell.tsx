@@ -31,10 +31,10 @@ const ThankYouUpsell = (props: { pledge: PledgeRead }) => {
 
               <div>
                 <strong className="text-sm font-medium text-gray-900">
-                  Track dependencies
+                  Track issue dependencies
                 </strong>
                 <p className="text-sm font-normal text-gray-500">
-                  Lorem ipsum dolar sit amet
+                  Helicopter view vs. flooded inbox.
                 </p>
               </div>
             </li>
@@ -48,10 +48,10 @@ const ThankYouUpsell = (props: { pledge: PledgeRead }) => {
 
               <div>
                 <strong className="text-sm font-medium text-gray-900">
-                  Seamless backing
+                  Pledge for progress
                 </strong>
                 <p className="text-sm font-normal text-gray-500">
-                  Lorem ipsum dolar sit amet
+                  Upvote & back impactful efforts.
                 </p>
               </div>
             </li>
@@ -60,10 +60,10 @@ const ThankYouUpsell = (props: { pledge: PledgeRead }) => {
               <ClockIcon height={24} width={24} className="text-blue-500" />
               <div>
                 <strong className="text-sm font-medium text-gray-900">
-                  Team budget
+                  Get unblocked
                 </strong>
                 <p className="text-sm font-normal text-gray-500">
-                  Lorem ipsum dolar sit amet
+                  Don&apos;t fork around.
                 </p>
               </div>
             </li>

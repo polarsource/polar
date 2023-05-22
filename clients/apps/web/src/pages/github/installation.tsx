@@ -109,7 +109,7 @@ GithubInstallationPage.getLayout = (page: ReactElement) => {
   return <Layout>{page}</Layout>
 }
 
-export const getServerSideProp: GetServerSideProps = async (context) => {
+export const getServerSideProps: GetServerSideProps = async (context) => {
   const query = context.query
 
   return { props: { query } }

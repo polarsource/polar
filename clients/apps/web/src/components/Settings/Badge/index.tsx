@@ -246,6 +246,7 @@ const BadgeSetup = ({
                   show_amount: e.target.checked,
                 }
               })
+              setAnyBadgeSettingChanged(true)
             }}
           />
         </Box>

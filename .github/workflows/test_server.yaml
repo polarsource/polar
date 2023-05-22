@@ -25,6 +25,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: "poetry"
+
       - name: 🔧 poetry install
         working-directory: ./server
         run: poetry install --no-root
@@ -33,8 +34,12 @@ jobs:
         with:
           path: |
             server/.mypy_cache
-            server/.pytest_cache
-          key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.poetry-version }}
+          key: mypy-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.poetry-version }}-${{ github.sha }}
+          restore-keys: |
+            mypy-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.poetry-version }}-
+            mypy-${{ runner.os }}-${{ matrix.python-version }}-
+            mypy-${{ runner.os }}-
+            mypy-
 
       - name: 🛟 Type Check Server (mypy)
         working-directory: ./server
@@ -97,9 +102,13 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: |
-            server/.mypy_cache
             server/.pytest_cache
-          key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.poetry-version }}
+          key: pytest-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.poetry-version }}-${{ github.sha }}
+          restore-keys: |
+            pytest-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.poetry-version }}-
+            pytest-${{ runner.os }}-${{ matrix.python-version }}-
+            pytest-${{ runner.os }}-
+            pytest-
 
       - name: ⚗️ alembic migrate
         working-directory: ./server

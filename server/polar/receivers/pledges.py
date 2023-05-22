@@ -1,4 +1,6 @@
-from typing import Any
+from typing import Any, Tuple
+
+from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 from polar.context import PolarContext
 from polar.issue.signals import issue_updated
 from polar.models import Issue
@@ -12,6 +14,8 @@ from polar.notifications.service import (
     notifications as notification_service,
 )
 from polar.issue.service import issue as issue_service
+from polar.pledge.hooks import PledgeHook, pledge_created as pledge_created_hook
+from polar.config import settings
 
 
 @issue_updated.connect
@@ -62,3 +66,36 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession):
             pledge_id=pledge.id,
         ),
     )
+
+
+async def pledge_created_discord_alert(hook: PledgeHook):
+    session = hook.session
+    pledge = hook.pledge
+
+    if not settings.DISCORD_WEBHOOK_URL:
+        return
+
+    webhook = AsyncDiscordWebhook(
+        url=settings.DISCORD_WEBHOOK_URL, content="New pledge"
+    )
+
+    issue = await issue_service.get_by_id(session, pledge.issue_id)
+    if not issue:
+        return
+
+    embed = DiscordEmbed(
+        title="New pledge",
+        description=f'A ${pledge.amount/100} pledge has been made towards "{issue.title}"',  # noqa: E501
+        color="65280",
+    )
+
+    embed.add_embed_field(
+        name="Backoffice",
+        value="[Open](https://dashboard.polar.sh/backoffice/pledges)",
+    )
+
+    webhook.add_embed(embed)
+    await webhook.execute()
+
+
+pledge_created_hook.add(pledge_created_discord_alert)

@@ -1,15 +1,15 @@
-from typing import Callable, Generic, TypeVar
+from typing import Any, Callable, Coroutine, Generic, TypeVar
 
 T = TypeVar("T")
-HookFunc = Callable[[T], None]
+HookFunc = Callable[[T], Coroutine[Any, Any, Any]]
 
 
 class Hook(Generic[T]):
     hooks: list[HookFunc] = []
 
-    def reg(self, fun: HookFunc):
+    def add(self, fun: HookFunc):
         self.hooks.append(fun)
 
-    def call(self, payload: T):
+    async def call(self, payload: T):
         for fn in self.hooks:
-            fn(payload)
+            await fn(payload)

@@ -22,9 +22,11 @@ from polar.notifications.service import (
     PartialNotification,
     notifications,
 )
+from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession
 from pytest_mock import MockerFixture
 from fastapi.encoders import jsonable_encoder
+from polar.pledge.service import pledge as pledge_service
 
 
 @pytest.mark.asyncio
@@ -41,7 +43,7 @@ async def test_pledged_issue_pull_request_created(
         "send_to_org",
     )
 
-    await Pledge.create(
+    pledge = await Pledge.create(
         session=session,
         issue_id=issue.id,
         repository_id=repository.id,
@@ -49,7 +51,16 @@ async def test_pledged_issue_pull_request_created(
         amount=12300,
         fee=123,
         by_organization_id=pledging_organization.id,
-        state="created",
+        state=PledgeState.initiated,
+        payment_id="xxx-3",
+    )
+
+    # Update to created
+    await pledge_service.mark_created_by_payment_id(
+        session,
+        pledge.payment_id,
+        pledge.amount,
+        "trx-id",
     )
 
     # Create pull request
@@ -118,7 +129,7 @@ async def test_pledged_issue_pull_request_merged(
 ) -> None:
     m = mocker.patch("polar.notifications.service.NotificationsService.send_to_org")
 
-    await Pledge.create(
+    pledge = await Pledge.create(
         session=session,
         issue_id=issue.id,
         repository_id=repository.id,
@@ -126,7 +137,16 @@ async def test_pledged_issue_pull_request_merged(
         amount=12300,
         fee=123,
         by_organization_id=pledging_organization.id,
-        state="created",
+        state=PledgeState.initiated,
+        payment_id="xxx-4",
+    )
+
+    # Update to created
+    await pledge_service.mark_created_by_payment_id(
+        session,
+        pledge.payment_id,
+        pledge.amount,
+        "trx-id",
     )
 
     # Create pull request
@@ -196,7 +216,7 @@ async def test_pledged_issue_branch_created(
 ) -> None:
     m = mocker.spy(NotificationsService, "send_to_org")
 
-    await Pledge.create(
+    pledge = await Pledge.create(
         session=session,
         issue_id=predictable_issue.id,
         repository_id=predictable_repository.id,
@@ -204,7 +224,16 @@ async def test_pledged_issue_branch_created(
         amount=12300,
         fee=123,
         by_organization_id=predictable_pledging_organization.id,
-        state="created",
+        state=PledgeState.initiated,
+        payment_id="xxx-5",
+    )
+
+    # Update to created
+    await pledge_service.mark_created_by_payment_id(
+        session,
+        pledge.payment_id,
+        pledge.amount,
+        "trx-id",
     )
 
     # Create issue reference

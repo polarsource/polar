@@ -35,7 +35,7 @@ from .schemas import (
     PledgeState,
 )
 
-from .hooks import PledgeHook, pledge_created, pledge_disputed
+from .hooks import PledgeHook, pledge_created, pledge_disputed, pledge_updated
 
 log = structlog.get_logger()
 
@@ -433,6 +433,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         pledges = await self.get_by_issue_ids(session, [issue_id])
         for p in pledges:
             await p.on_updated(session)
+            await pledge_updated.call(PledgeHook(session, p))
 
     async def mark_pending_by_pledge_id(
         self, session: AsyncSession, pledge_id: UUID
@@ -455,6 +456,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         pledge = await self.get(session, pledge_id)
         if pledge:
             await pledge.on_updated(session)
+            await pledge_updated.call(PledgeHook(session, pledge))
 
     async def mark_created_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
@@ -505,6 +507,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         )
         await session.commit()
         await pledge.on_updated(session)
+        await pledge_updated.call(PledgeHook(session, pledge))
 
     async def refund_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
@@ -534,6 +537,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         )
         await session.commit()
         await pledge.on_updated(session)
+        await pledge_updated.call(PledgeHook(session, pledge))
 
     async def mark_charge_disputed_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
@@ -557,6 +561,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         )
         await session.commit()
         await pledge.on_updated(session)
+        await pledge_updated.call(PledgeHook(session, pledge))
 
     async def transfer(self, session: AsyncSession, pledge_id: UUID) -> None:
         pledge = await self.get(session, id=pledge_id)
@@ -645,6 +650,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         await session.commit()
 
         await pledge_disputed.call(PledgeHook(session, pledge))
+        await pledge_updated.call(PledgeHook(session, pledge))
 
 
 pledge = PledgeService(Pledge)

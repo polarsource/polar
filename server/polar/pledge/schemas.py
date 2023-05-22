@@ -30,6 +30,13 @@ class PledgeState(str, Enum):
     # initiated -> created -> pending -> paid
 
     @classmethod
+    def to_created_states(cls) -> list[PledgeState]:
+        """
+        Allowed states to move into initiated from
+        """
+        return [cls.initiated]
+
+    @classmethod
     def to_pending_states(cls) -> list[PledgeState]:
         """
         Allowed states to move into pending from

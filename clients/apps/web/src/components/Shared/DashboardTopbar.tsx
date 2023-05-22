@@ -1,9 +1,11 @@
 import AccountTopbar from '@/components/Dashboard/Account/Topbar'
 import RepoSelection from '@/components/Dashboard/RepoSelection'
 import SetupAccount from '@/components/Dashboard/SetupAccount'
+import { useRequireAuth } from '@/hooks'
 import { Cog8ToothIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { useState } from 'react'
 import Topbar from './Topbar'
@@ -35,7 +37,10 @@ const DashboardNav = ({
   const currentOrg = useStore((state) => state.currentOrg)
   const currentRepo = useStore((state) => state.currentRepo)
 
-  if (!currentOrg) {
+  const { currentUser } = useRequireAuth()
+  const userOrgQuery = useUserOrganizations(currentUser)
+
+  if (!currentOrg || !currentUser || !userOrgQuery.data) {
     return <></>
   }
 
@@ -51,6 +56,8 @@ const DashboardNav = ({
         currentRepo={currentRepo}
         showUserInDropdown={true}
         showOrganizationRepositoryCount={true}
+        currentUser={currentUser}
+        organizations={userOrgQuery.data}
       />
       <AccountTopbar showSetupAccount={showSetupAccount} />
       <SettingsLink orgSlug={currentOrg.name} />
@@ -60,6 +67,14 @@ const DashboardNav = ({
 
 const PersonalDashboardNav = () => {
   const router = useRouter()
+
+  const { currentUser } = useRequireAuth()
+  const userOrgQuery = useUserOrganizations(currentUser)
+
+  if (!currentUser || !userOrgQuery.data) {
+    return <></>
+  }
+
   return (
     <>
       <RepoSelection
@@ -73,6 +88,8 @@ const PersonalDashboardNav = () => {
         showUserInDropdown={true}
         defaultToUser={true}
         showOrganizationRepositoryCount={true}
+        currentUser={currentUser}
+        organizations={userOrgQuery.data}
       />
     </>
   )

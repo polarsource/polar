@@ -348,6 +348,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not pledge or pledge.repository_id != repo.id:
             raise ResourceNotFound("Pledge not found")
 
+        if pledge.state not in PledgeState.to_created_states():
+            raise Exception(f"pledge is in unexpected state: {pledge.state}")
+
         payment_intent = await stripe.create_confirmed_payment_intent_for_organization(
             session=session,
             organization=pledge.organization,
@@ -360,9 +363,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         pledge.payment_id = payment_intent.id
         await pledge.save(session=session)
 
-        ret = PledgeMutationResponse.from_orm(pledge)
-
-        return ret
+        return PledgeMutationResponse.from_orm(pledge)
 
     async def create_db_pledge(
         self,
@@ -459,84 +460,103 @@ class PledgeService(ResourceServiceReader[Pledge]):
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
     ) -> None:
         pledge = await self.get_by_payment_id(session, payment_id)
-        if pledge:
-            pledge.state = PledgeState.created
-            session.add(pledge)
-            session.add(
-                PledgeTransaction(
-                    pledge_id=pledge.id,
-                    type=PledgeTransactionType.pledge,
-                    amount=amount,
-                    transaction_id=transaction_id,
-                )
+        if not pledge:
+            raise ResourceNotFound(f"Pledge not found with payment_id: {payment_id}")
+
+        if pledge.state not in PledgeState.to_created_states():
+            raise Exception(f"pledge is in unexpected state: {pledge.state}")
+
+        pledge.state = PledgeState.created
+        session.add(pledge)
+        session.add(
+            PledgeTransaction(
+                pledge_id=pledge.id,
+                type=PledgeTransactionType.pledge,
+                amount=amount,
+                transaction_id=transaction_id,
             )
-            await session.commit()
-            await pledge.on_updated(session)
-            await self.pledge_created_discord_alert(session, pledge)
+        )
+        await session.commit()
+        await pledge.on_updated(session)
+
+        await self.pledge_created_discord_alert(session, pledge)
 
     async def mark_paid_by_pledge_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
     ) -> None:
         pledge = await self.get_by_payment_id(session, payment_id)
-        if pledge:
-            pledge.state = PledgeState.paid
-            pledge.transfer_id = transaction_id
-            session.add(pledge)
-            session.add(
-                PledgeTransaction(
-                    pledge_id=pledge.id,
-                    type=PledgeTransactionType.transfer,
-                    amount=amount,
-                    transaction_id=transaction_id,
-                )
+
+        if not pledge:
+            raise ResourceNotFound(f"Pledge not found with payment_id: {payment_id}")
+
+        if pledge.state not in PledgeState.to_created_states():
+            raise Exception(f"pledge is in unexpected state: {pledge.state}")
+
+        pledge.state = PledgeState.paid
+        pledge.transfer_id = transaction_id
+        session.add(pledge)
+        session.add(
+            PledgeTransaction(
+                pledge_id=pledge.id,
+                type=PledgeTransactionType.transfer,
+                amount=amount,
+                transaction_id=transaction_id,
             )
-            await session.commit()
-            await pledge.on_updated(session)
+        )
+        await session.commit()
+        await pledge.on_updated(session)
 
     async def refund_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
     ) -> None:
         pledge = await self.get_by_payment_id(session, payment_id)
-        if pledge:
-            if pledge.state in PledgeState.to_refunded_states():
-                if amount == pledge.amount:
-                    pledge.state = PledgeState.refunded
-                elif amount < pledge.amount:
-                    pledge.amount -= amount
-                else:
-                    raise NotPermitted("Refunding error, unexpected amount!")
-            else:
-                raise NotPermitted("Refunding error, unexpected pledge status")
+        if not pledge:
+            raise ResourceNotFound(f"Pledge not found with payment_id: {payment_id}")
 
-            session.add(pledge)
-            session.add(
-                PledgeTransaction(
-                    pledge_id=pledge.id,
-                    type=PledgeTransactionType.refund,
-                    amount=amount,
-                    transaction_id=transaction_id,
-                )
+        if pledge.state in PledgeState.to_refunded_states():
+            if amount == pledge.amount:
+                pledge.state = PledgeState.refunded
+            elif amount < pledge.amount:
+                pledge.amount -= amount
+            else:
+                raise NotPermitted("Refunding error, unexpected amount!")
+        else:
+            raise NotPermitted("Refunding error, unexpected pledge status")
+
+        session.add(pledge)
+        session.add(
+            PledgeTransaction(
+                pledge_id=pledge.id,
+                type=PledgeTransactionType.refund,
+                amount=amount,
+                transaction_id=transaction_id,
             )
-            await session.commit()
-            await pledge.on_updated(session)
+        )
+        await session.commit()
+        await pledge.on_updated(session)
 
     async def mark_charge_disputed_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
     ) -> None:
         pledge = await self.get_by_payment_id(session, payment_id)
-        if pledge:
-            pledge.state = PledgeState.charge_disputed
-            session.add(pledge)
-            session.add(
-                PledgeTransaction(
-                    pledge_id=pledge.id,
-                    type=PledgeTransactionType.disputed,
-                    amount=amount,
-                    transaction_id=transaction_id,
-                )
+        if not pledge:
+            raise ResourceNotFound(f"Pledge not found with payment_id: {payment_id}")
+
+        # charge_disputed (aka chargebacks) can be triggered from _any_ pledge state
+        # not checking existing state here
+
+        pledge.state = PledgeState.charge_disputed
+        session.add(pledge)
+        session.add(
+            PledgeTransaction(
+                pledge_id=pledge.id,
+                type=PledgeTransactionType.disputed,
+                amount=amount,
+                transaction_id=transaction_id,
             )
-            await session.commit()
-            await pledge.on_updated(session)
+        )
+        await session.commit()
+        await pledge.on_updated(session)
 
     async def transfer(self, session: AsyncSession, pledge_id: UUID) -> None:
         pledge = await self.get(session, id=pledge_id)
@@ -605,6 +625,12 @@ class PledgeService(ResourceServiceReader[Pledge]):
         by_user_id: UUID,
         reason: str,
     ) -> None:
+        pledge = await self.get(session, id=pledge_id)
+        if not pledge:
+            raise ResourceNotFound(f"Pledge not found with id: {pledge_id}")
+        if pledge.state not in PledgeState.to_disputed_states():
+            raise NotPermitted(f"Pledge is unexpected state: {pledge.state}")
+
         stmt = (
             sql.update(Pledge)
             .where(Pledge.id == pledge_id)

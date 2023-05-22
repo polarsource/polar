@@ -10,7 +10,7 @@ const Login = () => {
         <ShadowBox>
           <div className="flex flex-col items-center space-y-12 px-12 py-4">
             <LogoType70 />
-            <GithubLoginButton />
+            <GithubLoginButton size="large" />
           </div>
         </ShadowBox>
       </div>

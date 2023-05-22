@@ -31,3 +31,17 @@ pnpm build
 ```bash
 pnpm dev
 ```
+
+### Designing with Storybook
+
+Polar uses [Storybook](https://storybook.js.org) to easier work with web components and their design.
+
+To run the Storybook locally:
+
+```bash
+# from the "clients" directory
+pnpm install
+pnpm storybook
+```
+
+The storybook should start and run on [http://localhost:6006/](http://localhost:6006/).

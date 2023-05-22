@@ -9,7 +9,6 @@ from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.user import User
-from polar.pledge.signals import pledge_created, pledge_updated
 
 
 class Pledge(RecordModel):
@@ -72,6 +71,3 @@ class Pledge(RecordModel):
     )
 
     issue: Mapped[Issue] = relationship("Issue", foreign_keys=[issue_id], lazy="raise")
-
-    on_created_signal = pledge_created
-    on_updated_signal = pledge_updated

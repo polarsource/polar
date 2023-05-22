@@ -15,17 +15,11 @@ CreateSchemaType = TypeVar("CreateSchemaType", bound=Schema)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=Schema)
 
 
-class ResourceService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
-    # Ideally, actions would only contain class methods since there is
-    # no state to retain. Unable to achieve this with mapping the model
-    # and schema as class attributes though without breaking typing.
-
+class ResourceServiceReader(
+    Generic[ModelType],
+):
     def __init__(self, model: type[ModelType]) -> None:
         self.model = model
-
-    @property
-    def upsert_constraints(self) -> list[InstrumentedAttribute[Any]]:
-        return [self.model.id]
 
     async def get(
         self, session: AsyncSession, id: UUID, allow_deleted=False
@@ -46,6 +40,28 @@ class ResourceService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     ) -> ModelType | None:
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
+
+    async def soft_delete(self, session: AsyncSession, id: UUID) -> bool:
+        obj = await self.get(session, id)
+        if not obj:
+            return False
+
+        obj.deleted_at = datetime.utcnow()
+        await obj.save(session)
+        return True
+
+
+class ResourceService(
+    ResourceServiceReader,
+    Generic[ModelType, CreateSchemaType, UpdateSchemaType],
+):
+    # Ideally, actions would only contain class methods since there is
+    # no state to retain. Unable to achieve this with mapping the model
+    # and schema as class attributes though without breaking typing.
+
+    @property
+    def upsert_constraints(self) -> list[InstrumentedAttribute[Any]]:
+        return [self.model.id]
 
     async def create(
         self,
@@ -108,12 +124,3 @@ class ResourceService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             autocommit=autocommit,
             **update_schema.dict(),
         )
-
-    async def soft_delete(self, session: AsyncSession, id: UUID) -> bool:
-        obj = await self.get(session, id)
-        if not obj:
-            return False
-
-        obj.deleted_at = datetime.utcnow()
-        await obj.save(session)
-        return True

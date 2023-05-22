@@ -9,6 +9,7 @@ import PaymentSettings, {
 } from '@/components/Settings/PaymentSettings'
 import Spinner from '@/components/Shared/Spinner'
 import Topbar from '@/components/Shared/Topbar'
+import { useRequireAuth } from '@/hooks/auth'
 import { ArrowLeftIcon } from '@heroicons/react/24/solid'
 import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
@@ -18,6 +19,7 @@ import { OrganizationSettingsUpdate } from 'polarkit/api/client'
 import {
   useOrganization,
   useOrganizationSettingsMutation,
+  useUserOrganizations,
 } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { ReactElement, useEffect, useRef, useState } from 'react'
@@ -229,6 +231,13 @@ const SettingsTopbar = () => {
 
   const currentOrg = useStore((state) => state.currentOrg)
 
+  const { currentUser } = useRequireAuth()
+  const userOrgQuery = useUserOrganizations(currentUser)
+
+  if (!currentUser || !userOrgQuery.data) {
+    return <></>
+  }
+
   return (
     <Topbar>
       {{
@@ -245,6 +254,8 @@ const SettingsTopbar = () => {
               showConnectMore={false}
               currentOrg={currentOrg}
               onSelectOrg={(org) => router.push(`/dashboard/settings/${org}`)}
+              currentUser={currentUser}
+              organizations={userOrgQuery.data}
             />
           </div>
         ),

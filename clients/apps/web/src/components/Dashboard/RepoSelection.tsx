@@ -1,4 +1,3 @@
-import { useRequireAuth } from '@/hooks'
 import {
   CodeBracketIcon as CodeBracketIconSmall,
   PlusIcon,
@@ -12,7 +11,6 @@ import {
   UserRead,
 } from 'polarkit/api/client'
 import { CONFIG } from 'polarkit/config'
-import { useUserOrganizations } from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
 import React, { KeyboardEvent, useEffect, useRef, useState } from 'react'
 
@@ -35,6 +33,8 @@ export function RepoSelection(props: {
   showUserInDropdown?: boolean
   defaultToUser?: boolean
   showOrganizationRepositoryCount?: boolean
+  organizations: OrganizationPrivateRead[]
+  currentUser: UserRead
 }) {
   const [value, setValue] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement | null>(null)
@@ -42,14 +42,11 @@ export function RepoSelection(props: {
 
   const [open, setOpen] = React.useState(false)
 
-  const { currentUser } = useRequireAuth()
-  const userOrgQuery = useUserOrganizations(currentUser)
-
   useEffect(() => {
     inputRef?.current?.focus()
   }, [])
 
-  const organizations = userOrgQuery.data
+  const { organizations, currentUser } = props
 
   const [dropdownSelectedOrg, setDropdowndropdownSelectedOrg] = useState<
     OrganizationPublicRead | undefined
@@ -217,8 +214,9 @@ export function RepoSelection(props: {
   if (!currentUser) {
     return <Loading />
   }
-  if (userOrgQuery.isLoading) return <Loading />
-  if (!userOrgQuery.isSuccess) return <Loading />
+  if (!organizations) {
+    return <Loading />
+  }
 
   return (
     <div

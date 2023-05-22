@@ -37,6 +37,8 @@ from .schemas import (
     PledgeState,
 )
 
+from .hooks import pledge_created, pledge_disputed
+
 log = structlog.get_logger()
 
 
@@ -479,6 +481,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
         await session.commit()
         await pledge.on_updated(session)
 
+        pledge_created.call(pledge)
+
+        # TODO: move to use the pledge_created hook
         await self.pledge_created_discord_alert(session, pledge)
 
     async def mark_paid_by_pledge_id(
@@ -643,6 +648,8 @@ class PledgeService(ResourceServiceReader[Pledge]):
         )
         await session.execute(stmt)
         await session.commit()
+
+        pledge_disputed.call(pledge)
 
     async def pledge_created_discord_alert(self, session: AsyncSession, pledge: Pledge):
         if not settings.DISCORD_WEBHOOK_URL:

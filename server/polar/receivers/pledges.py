@@ -1,4 +1,4 @@
-from typing import Any, Tuple
+from typing import Any
 
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 from polar.context import PolarContext
@@ -8,7 +8,6 @@ from polar.models.pledge import Pledge
 from polar.notifications.schemas import NotificationType
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
-from polar.pledge.signals import pledge_updated
 from polar.notifications.service import (
     PartialNotification,
     notifications as notification_service,

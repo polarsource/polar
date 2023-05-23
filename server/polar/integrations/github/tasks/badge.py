@@ -50,6 +50,12 @@ async def embed_badge_retroactively_on_repository(
                 session, organization_id, repository_id
             )
 
+            if repository.is_private:
+                log.warn(
+                    "github.embed_badge_retroactively_on_repository.skip_repo_is_private"
+                )
+                return
+
             (issues, _) = await issue.list_by_repository_type_and_status(
                 session=session,
                 repository_ids=[repository.id],
@@ -81,6 +87,10 @@ async def remove_badges_on_repository(
             organization, repository = await get_organization_and_repo(
                 session, organization_id, repository_id
             )
+
+            if repository.is_private:
+                log.warn("github.remove_badges_on_repository.skip_repo_is_private")
+                return
 
             (issues, _) = await issue.list_by_repository_type_and_status(
                 session=session,

@@ -80,6 +80,10 @@ class RepositoryService(
             settings=settings.dict(),
         )
 
+        # Skip badge jobs for private repositories
+        if repository.is_private:
+            return settings
+
         if enabled_pledge_badge and settings.retroactive:
             await enqueue_job(
                 "github.badge.embed_retroactively_on_repository",

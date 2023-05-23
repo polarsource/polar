@@ -21,8 +21,8 @@ class Notification(RecordModel):
         ),
     )
 
-    user_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)
-    email_addr: Mapped[str] = mapped_column(String, nullable=False)
+    user_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=True)
+    email_addr: Mapped[str] = mapped_column(String, nullable=True)
 
     organization_id: Mapped[UUID] = mapped_column(
         PostgresUUID, nullable=True, default=None

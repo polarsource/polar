@@ -1,3 +1,4 @@
+import { Visibility } from '@/../../../packages/polarkit/src/api/client/models/Visibility'
 import BalanceBadge from '@/components/Dashboard/Account/BalanceBadge'
 import StripeOnboardingButton from '@/components/Dashboard/Account/StripeOnboardingButton'
 import { useOrganizationAccounts } from 'polarkit/hooks'
@@ -13,15 +14,18 @@ const AccountTopbar = ({
   const accountQuery = useOrganizationAccounts(currentOrg?.name)
   const accounts = accountQuery.data
 
-  if (accountQuery.isLoading) {
+  const hasPublicRepos =
+    currentOrg &&
+    currentOrg.repositories &&
+    currentOrg.repositories.some((r) => r.visibility === Visibility.PUBLIC)
+
+  if (hasPublicRepos && accountQuery.isLoading) {
     return (
       <BalanceBadgeBox>
         <div className="h-6 w-14"></div>
       </BalanceBadgeBox>
     )
-  }
-
-  if (accounts?.length === 1) {
+  } else if (accounts?.length === 1) {
     return (
       <>
         {!accounts[0].is_details_submitted && accounts[0].is_admin ? (
@@ -34,8 +38,10 @@ const AccountTopbar = ({
         )}
       </>
     )
+  } else if (hasPublicRepos) {
+    return <StripeOnboardingButton showSetupAccount={showSetupAccount} />
+  } else {
+    return null
   }
-
-  return <StripeOnboardingButton showSetupAccount={showSetupAccount} />
 }
 export default AccountTopbar

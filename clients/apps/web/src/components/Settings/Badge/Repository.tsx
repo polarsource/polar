@@ -9,11 +9,13 @@ const ProgressText = ({
   target,
   completed,
   isSettingPage = false,
+  isPrivateRepo = false,
 }: {
   progress: number
   target: number
   completed: boolean
   isSettingPage?: boolean
+  isPrivateRepo?: boolean
 }) => {
   const shouldSync = target > 0
 
@@ -36,7 +38,10 @@ const ProgressText = ({
     <p className="mr-4 w-56 text-xs">
       {completed && (
         <motion.span
-          className="flex flex-row items-center text-gray-500"
+          className={classNames(
+            'flex flex-row items-center text-gray-500',
+            isPrivateRepo ? 'grayscale' : '',
+          )}
           initial={isSettingPage ? false : 'hidden'}
           animate={{
             opacity: [0, 1],
@@ -127,7 +132,7 @@ export const BadgeRepository = ({
   return (
     <div
       className={classNames(
-        showControls && repo.is_private ? 'bg-gray-50' : 'bg-white',
+        showControls && repo.is_private ? 'bg-gray-100/50' : 'bg-white',
         'flex flex-row px-5 py-4',
         isSettingPage ? '' : 'rounded-xl shadow',
       )}
@@ -148,6 +153,7 @@ export const BadgeRepository = ({
           progress={repo.synced_issues}
           target={repo.open_issues}
           completed={repo.is_sync_completed}
+          isPrivateRepo={repo.is_private}
         />
         <div className="w-full text-right">
           {!showControls && (
@@ -159,13 +165,13 @@ export const BadgeRepository = ({
             />
           )}
           {showControls && (
-            <div className="flex flex-row justify-end align-middle">
+            <div className="flex flex-row justify-end space-x-2 align-middle">
               {repo.is_private && (
-                <p className="inline rounded-xl bg-gray-100 py-1 px-2 text-sm text-gray-600">
+                <p className="flex items-center rounded-full border bg-gray-100 px-3 text-xs text-gray-600">
                   Private
                 </p>
               )}
-              {!repo.is_private && (
+              {repo.is_private === false ? (
                 <EmbedSwitch
                   repo={repo}
                   checked={repo.badge_enabled}
@@ -173,6 +179,8 @@ export const BadgeRepository = ({
                     onEnableBadgeChange(badge)
                   }}
                 />
+              ) : (
+                <Switch checked={false} disabled={true} />
               )}
             </div>
           )}

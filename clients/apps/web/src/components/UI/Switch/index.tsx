@@ -2,20 +2,25 @@ import * as SwitchPrimitive from '@radix-ui/react-switch'
 import { clsx } from 'polarkit/utils'
 
 interface SwitchProps {
-  id: string
+  id?: string | undefined
   checked: boolean
-  onChange: (state: boolean) => void
+  disabled?: boolean | undefined
+  onChange?: (state: boolean) => void
 }
 
 const Switch = (props: SwitchProps) => {
   return (
     <SwitchPrimitive.Root
       id={props.id}
+      disabled={props.disabled}
       checked={props.checked}
       onCheckedChange={(checked: boolean) => {
-        props.onChange(checked)
+        if (props.onChange) {
+          props.onChange(checked)
+        }
       }}
       className={clsx(
+        props.disabled ? 'opacity-60' : '',
         'group',
         'radix-state-checked:bg-blue-600',
         'radix-state-unchecked:bg-gray-200 dark:radix-state-unchecked:bg-gray-800',

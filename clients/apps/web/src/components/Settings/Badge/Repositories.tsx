@@ -18,16 +18,26 @@ export const BadgeRepositories = ({
   ) => void
   isSettingPage?: boolean
 }) => {
+  if (isSettingPage) {
+    repos = repos.filter((repo) => repo.is_private === false)
+  }
+
   return (
     <>
-      <h2 className="text-center text-base text-gray-500">
-        Badge repositories
+      <h2
+        className={classNames(
+          isSettingPage ? 'text-left' : 'text-center',
+          'text-base text-gray-500',
+        )}
+      >
+        Repositories to badge
       </h2>
       <ul
         className={classNames(
           isSettingPage
-            ? 'divide-y divide-gray-300 overflow-hidden rounded-xl shadow'
+            ? 'divide-y divide-gray-200 overflow-hidden rounded-xl shadow'
             : '',
+          '!mt-5',
         )}
       >
         {repos.map((repo, index) => {

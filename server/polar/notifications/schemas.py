@@ -6,7 +6,14 @@ from pydantic import BaseModel
 from polar.kit.schemas import Schema
 from enum import Enum
 
+from polar.notifications.notification import (
+    MaintainerPledgePaidNotification,
+    MaintainerPledgePendingNotification,
+    PledgerPledgePendingNotification,
+)
 
+
+# TODO: keep or use?
 class NotificationType(str, Enum):
     issue_pledge_created = "issue_pledge_created"
 
@@ -25,74 +32,15 @@ class NotificationType(str, Enum):
         return cls.__members__[s]
 
 
-class NotificationPayload(Schema):
-    pass
-
-
-class IssuePledgeCreated(BaseModel):
-    pledger_name: str
-    issue_url: str
-    issue_title: str
-    issue_number: int
-    pledge_amount: str
-
-
-class IssuePledgedBranchCreated(NotificationPayload):
-    issue_url: str
-    issue_title: str
-    issue_number: int
-    branch_creator_username: str
-    commit_link: str
-
-
-class MaintainerIssueBranchCreated(IssuePledgedBranchCreated):
-    pass
-
-
-class IssuePledgedPullRequestCreated(NotificationPayload):
-    issue_url: str
-    issue_title: str
-    issue_number: int
-    pull_request_url: str
-    pull_request_title: str
-    pull_request_creator_username: str
-    pull_request_number: int
-    repo_owner: str
-    repo_name: str
-
-
-class MaintainerIssuePullRequestCreated(IssuePledgedPullRequestCreated):
-    pass
-
-
-class IssuePledgedPullRequestMerged(NotificationPayload):
-    issue_url: str
-    issue_title: str
-    issue_number: int
-    pull_request_url: str
-    pull_request_title: str
-    pull_request_creator_username: str
-    pull_request_number: int
-    repo_owner: str
-    repo_name: str
-
-
-class MaintainerIssuePullRequestMerged(IssuePledgedPullRequestMerged):
-    pass
-
-
 class NotificationRead(Schema):
     id: UUID
     type: NotificationType
     created_at: datetime
     payload: Union[
-        IssuePledgeCreated,
-        IssuePledgedBranchCreated,
-        IssuePledgedPullRequestCreated,
-        IssuePledgedPullRequestMerged,
-        MaintainerIssueBranchCreated,
-        MaintainerIssuePullRequestCreated,
-        MaintainerIssuePullRequestMerged,
+        MaintainerPledgePaidNotification,
+        MaintainerPledgePendingNotification,
+        MaintainerPledgePaidNotification,
+        PledgerPledgePendingNotification,
     ]
 
 

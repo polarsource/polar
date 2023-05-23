@@ -63,10 +63,12 @@ const getRetroactiveChanges = (
         additions: 0,
         removals: 0,
       }
-      if (repo.badge_enabled) {
-        changes.additions = repo.synced_issues - repo.embedded_issues
-      } else {
-        changes.removals = repo.embedded_issues
+      if (!repo.is_private) {
+        if (repo.badge_enabled) {
+          changes.additions = repo.synced_issues - repo.embedded_issues
+        } else {
+          changes.removals = repo.embedded_issues
+        }
       }
 
       ret[repo.id] = changes
@@ -446,7 +448,7 @@ const Controls = ({
                     <span>Will add badge to {additions} issues</span>
                   )}
                   {deletions > 0 && (
-                    <span>Will remove badge from {deletions} issue.</span>
+                    <span>Will remove badge from {deletions} issues</span>
                   )}
                   {deletions === 0 && additions === 0 && (
                     <span>No changes</span>

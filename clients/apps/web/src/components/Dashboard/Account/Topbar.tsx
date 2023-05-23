@@ -1,6 +1,6 @@
-import { Visibility } from '@/../../../packages/polarkit/src/api/client/models/Visibility'
 import BalanceBadge from '@/components/Dashboard/Account/BalanceBadge'
 import StripeOnboardingButton from '@/components/Dashboard/Account/StripeOnboardingButton'
+import { Visibility } from 'polarkit/api/client'
 import { useOrganizationAccounts } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import BalanceBadgeBox from './BalanceBadgeBox'

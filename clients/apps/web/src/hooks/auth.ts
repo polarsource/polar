@@ -78,7 +78,6 @@ export const useRequireAuth = (
   hasChecked: boolean
   isChecking: boolean
 } => {
-  // TODO: Change this to be given by the app. Currently forcing next router
   const router = useRouter()
   const session = useAuth()
 

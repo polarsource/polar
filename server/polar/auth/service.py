@@ -1,5 +1,7 @@
 import structlog
 from fastapi import Response, Request
+from fastapi.responses import RedirectResponse
+from pydantic import validator
 from datetime import datetime
 
 from polar.kit import jwt
@@ -17,6 +19,13 @@ class LoginResponse(Schema):
     expires_at: datetime
     token: str | None = None
     goto_url: str | None = None
+
+    @validator("goto_url")
+    def goto_polar_url(cls, v) -> str | None:
+        if v is None or v.startswith(settings.FRONTEND_BASE_URL):
+            return v
+
+        raise ValueError("goto_url has to belong to polar")
 
 
 class LogoutResponse(Schema):

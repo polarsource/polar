@@ -1,20 +1,28 @@
 import LoadingScreen from '@/components/Dashboard/LoadingScreen'
 import Layout from '@/components/Layout/EmptyLayout'
 import type { NextPageWithLayout } from '@/utils/next'
-import { GetServerSideProps } from 'next'
+import { useRouter } from 'next/router'
 import { api } from 'polarkit'
 import { ReactElement, useEffect, useState } from 'react'
 
 const ExtensionSettingsPage: NextPageWithLayout = () => {
   const [token, setToken] = useState<string>()
+  const router = useRouter()
 
   useEffect(() => {
-    api.users.createToken().then((response) => {
-      if (response.token) {
-        setToken(response.token)
-      }
-    })
-  }, [])
+    api.users
+      .createToken()
+      .then((response) => {
+        if (response.token) {
+          setToken(response.token)
+        }
+      })
+      .catch((error) => {
+        if (error.status === 401) {
+          router.push('/?goto_url=/dashboard/settings/extension')
+        }
+      })
+  }, [router])
 
   return (
     <>
@@ -31,12 +39,6 @@ const ExtensionSettingsPage: NextPageWithLayout = () => {
 
 ExtensionSettingsPage.getLayout = (page: ReactElement) => {
   return <Layout>{page}</Layout>
-}
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const query = context.query
-
-  return { props: { query } }
 }
 
 export default ExtensionSettingsPage

@@ -5,7 +5,7 @@ import { api } from 'polarkit/api'
 import { GithubBadgeRead } from 'polarkit/api/client'
 import { Badge } from 'polarkit/components'
 import { getCentsInDollarString } from 'polarkit/utils'
-const satori = require('satori')
+const { default: satori } = require('satori')
 
 const readPublicFileBuffer = async (filename: string) => {
   const publicDirectory = path.join(process.cwd(), '/public')

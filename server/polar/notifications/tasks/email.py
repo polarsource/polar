@@ -53,8 +53,8 @@ async def notifications_send(
 
             notification_type = notifications.parse_payload(notif)
 
-            html = notification_type.render(user)
-            if not html:
+            (subject, body) = notification_type.render(user)
+            if not subject or not body:
                 log.error(
                     "notifications.send.could_not_render",
                     user=user,
@@ -64,8 +64,8 @@ async def notifications_send(
 
             sender.send_to_user(
                 to_email_addr=user.email,
-                subject="[Polar] " + notification_type.issue_title,
-                html_content=html,
+                subject="[Polar] " + subject,
+                html_content=body,
             )
 
 

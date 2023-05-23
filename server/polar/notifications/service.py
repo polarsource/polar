@@ -11,7 +11,7 @@ from polar.notifications.notification import (
     MaintainerPledgeCreatedNotification,
     MaintainerPledgePaidNotification,
     MaintainerPledgePendingNotification,
-    NotificationType,
+    NotificationBase,
     PledgerPledgePendingNotification,
 )
 from polar.pledge.service import pledge
@@ -32,7 +32,7 @@ class PartialNotification(BaseModel):
     pledge_id: UUID | None = None
     pull_request_id: UUID | None = None
     issue_reference_id: UUID | None = None
-    payload: NotificationType
+    payload: NotificationBase
 
 
 class NotificationsService:

@@ -68,6 +68,10 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession):
         pledge_amount=get_cents_in_dollar_string(pledge.amount),
         issue_url=issue_url,
         issue_title=issue.title,
+        issue_org_name=org.name,
+        issue_repo_name=repo.name,
+        issue_number=issue.number,
+        maintainer_has_stripe_account=False,  # TODO(zegl)!
     )
 
     await notification_service.create_for_issue(

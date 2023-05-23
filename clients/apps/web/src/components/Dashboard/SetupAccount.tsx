@@ -42,12 +42,11 @@ const SetupAccount = ({ onClose }: { onClose: () => void }) => {
 
       window.location.href = link.url
     } catch (e) {
+      setLoadingStripe(false)
       if (e instanceof ApiError) {
         setErrorMessage(e.body.detail)
       }
     }
-
-    setLoadingStripe(false)
   }
 
   return (

@@ -159,7 +159,7 @@ export const ThinButton = (props: ButtonProps) => {
   let classes = classNames(
     bg(props.color, props.loading, disabled),
     text(props.color, props.loading, disabled),
-    'rounded px-2 py-1 text-xs font-semibold transition-colors duration-100 h-6 flex',
+    'rounded-md px-2 py-1 text-xs font-semibold transition-colors duration-100 h-6 flex',
   )
 
   if (props.href) {

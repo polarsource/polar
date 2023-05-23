@@ -121,7 +121,7 @@ const SettingsPage: NextLayoutComponentType = () => {
   if (orgData.isError) {
     return (
       <>
-        <div className="mx-auto mt-24 flex max-w-[1100px] flex-col items-center">
+        <div className="mx-auto mt-16 flex max-w-[1100px] flex-col items-center">
           <span>Organization not found</span>
           <span>404 Not Found</span>
         </div>
@@ -132,7 +132,7 @@ const SettingsPage: NextLayoutComponentType = () => {
   if (orgData.isLoading) {
     return (
       <>
-        <div className="mx-auto mt-24 flex max-w-[1100px] flex-col items-center text-black">
+        <div className="mx-auto mt-16 flex max-w-[1100px] flex-col items-center text-black">
           {allowShowLoadingSpinner && (
             <div className="flex items-center space-x-4">
               <span>Loading</span>
@@ -154,7 +154,7 @@ const SettingsPage: NextLayoutComponentType = () => {
         <title>Polar | Settings for {handle}</title>
       </Head>
 
-      <div className="mx-auto max-w-[1100px] md:mt-24">
+      <div className="mx-auto max-w-[1100px] md:mt-16">
         <div className="pl-80">
           {showDidSave && <div className="h-4 text-black/50">Saved!</div>}
           {!showDidSave && <div className="h-4"></div>}
@@ -247,7 +247,7 @@ const SettingsTopbar = () => {
           </Link>
         ),
         center: (
-          <div className="flex items-center space-x-2 text-sm  font-medium">
+          <div className="flex items-center space-x-2 text-sm">
             <div>Settings for</div>
             <RepoSelection
               showRepositories={false}

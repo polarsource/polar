@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from starlette import status
 from polar.account.schemas import AccountCreate, AccountLink, AccountRead
 
 from polar.auth.dependencies import Auth
@@ -6,15 +7,21 @@ from polar.enums import Platforms
 from polar.postgres import AsyncSession, get_db_session
 
 from .service import account as account_service
-
+from polar.kit.api.responses import get_api_errors
 
 router = APIRouter(tags=["accounts"])
 
 
-@router.post("/{platform}/{org_name}/accounts", response_model=AccountRead)
+@router.post(
+    "/{platform}/{org_name}/accounts",
+    response_model=AccountRead,
+    responses=get_api_errors(
+        status.HTTP_401_UNAUTHORIZED,
+        (status.HTTP_400_BAD_REQUEST, "Account creation error"),
+        (status.HTTP_404_NOT_FOUND, "Organization not found"),
+    ),
+)
 async def create_account(
-    platform: Platforms,
-    org_name: str,
     account: AccountCreate,
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
@@ -23,17 +30,24 @@ async def create_account(
         session, auth.organization.id, auth.user.id, account
     )
     if not created:
-        raise HTTPException(status_code=400, detail="Error while creating account")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Error while creating account",
+        )
     return AccountRead.from_orm(created)
 
 
 @router.get(
     "/{platform}/{org_name}/accounts/{stripe_id}/onboarding_link",
     response_model=AccountLink,
+    responses=get_api_errors(
+        status.HTTP_401_UNAUTHORIZED,
+        (status.HTTP_400_BAD_REQUEST, "Link creation error"),
+        (status.HTTP_404_NOT_FOUND, "Organization not found"),
+    ),
 )
 async def onboarding_link(
     platform: Platforms,
-    org_name: str,
     stripe_id: str,
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
@@ -46,17 +60,22 @@ async def onboarding_link(
         f"?platform={platform.value}&org_name={auth.organization.name}",
     )
     if not link:
-        raise HTTPException(status_code=400, detail="Error while creating link")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Error while creating link"
+        )
     return link
 
 
 @router.get(
     "/{platform}/{org_name}/accounts/{stripe_id}/dashboard_link",
     response_model=AccountLink,
+    responses=get_api_errors(
+        status.HTTP_401_UNAUTHORIZED,
+        (status.HTTP_400_BAD_REQUEST, "Link creation error"),
+        (status.HTTP_404_NOT_FOUND, "Organization not found"),
+    ),
 )
 async def dashboard_link(
-    platform: Platforms,
-    org_name: str,
     stripe_id: str,
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
@@ -67,14 +86,21 @@ async def dashboard_link(
         stripe_id,
     )
     if not link:
-        raise HTTPException(status_code=400, detail="Error while creating link")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Error while creating link"
+        )
     return link
 
 
-@router.get("/{platform}/{org_name}/accounts", response_model=list[AccountRead | None])
+@router.get(
+    "/{platform}/{org_name}/accounts",
+    response_model=list[AccountRead | None],
+    responses=get_api_errors(
+        status.HTTP_401_UNAUTHORIZED,
+        (status.HTTP_404_NOT_FOUND, "Organization not found"),
+    ),
+)
 async def get_account(
-    platform: Platforms,
-    org_name: str,
     auth: Auth = Depends(Auth.user_with_org_access),
 ) -> list[AccountRead | None]:
     if auth.organization.account is not None:

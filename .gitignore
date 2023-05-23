@@ -104,6 +104,7 @@ env.bak/
 venv.bak/
 !.env.template
 !.env.testing
+.tool-versions
 
 # Spyder project settings
 .spyderproject
@@ -125,3 +126,6 @@ dmypy.json
 
 # Playground file
 playground.py
+
+# IDE
+.idea/

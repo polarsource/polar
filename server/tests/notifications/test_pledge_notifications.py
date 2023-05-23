@@ -7,6 +7,7 @@ from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.models.user_organization import UserOrganization
+from polar.notifications.notification import MaintainerPledgeCreatedNotification
 from polar.notifications.schemas import NotificationType
 from polar.notifications.service import NotificationsService, PartialNotification
 from polar.pledge.schemas import PledgeState
@@ -48,11 +49,19 @@ async def test_create_pledge_from_created(
     m.assert_called_once_with(
         session=ANY,
         org_id=organization.id,
-        typ=NotificationType.issue_pledge_created,
         notif=PartialNotification(
             issue_id=issue.id,
             pledge_id=pledge.id,
-            payload=ANY,
+            payload=MaintainerPledgeCreatedNotification(
+                pledger_name=organization.name,
+                pledge_amount="123",
+                issue_url=f"https://github.com/{organization.name}/{repository.name}/issues/{issue.number}",
+                issue_title=issue.title,
+                issue_org_name=organization.name,
+                issue_repo_name=repository.name,
+                issue_number=issue.number,
+                maintainer_has_stripe_account=False,
+            ),
         ),
     )
 

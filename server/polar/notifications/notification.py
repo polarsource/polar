@@ -1,93 +1,119 @@
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from abc import abstractmethod
+from typing import Tuple
 from jinja2.nativetypes import NativeEnvironment
 from jinja2 import StrictUndefined
 
 from polar.models.user import User
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel
 
 
-# @dataclass
-class NotificationType(BaseModel):
+class NotificationBase(BaseModel):
     @abstractmethod
-    def template(self) -> str:
+    def subject(self) -> str:
+        pass
+
+    @abstractmethod
+    def body(self) -> str:
         pass
 
     def render(
         self,
         user: User,
-    ) -> str:
+    ) -> Tuple[str, str]:
         m: dict[str, str] = vars(self)
         m["username"] = user.username
 
-        template = self.template()
-
         env = NativeEnvironment(undefined=StrictUndefined)
-        t = env.from_string(template)
-        res = t.render(m)
-        return res
+
+        subject = env.from_string(self.subject()).render(m).strip()
+        body = env.from_string(self.body()).render(m).strip()
+
+        return (subject, body)
 
 
-# @dataclass
-class MaintainerPledgeCreatedNotification(NotificationType):
+class MaintainerPledgeCreatedNotification(NotificationBase):
     pledger_name: str
     pledge_amount: str
     issue_url: str
     issue_title: str
+    issue_org_name: str
+    issue_repo_name: str
+    issue_number: int
+    maintainer_has_stripe_account: bool
 
-    def template(self) -> str:
-        return """Hi {{username}},<br><br>
+    def subject(self) -> str:
+        return "New ${{pledge_amount}} pledge for {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}"  # noqa: E501
 
-{{pledger_name}} has pledged ${{pledge_amount}} to <a href="{{issue_url}}">{{issue_title}}</a>.
+    def body(self) -> str:
+        return """Hi,<br><br>
+
+Great news! You received a <strong>${{pledge_amount}}</strong> pledge for: <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}} - {{issue_title}}</a>.<br><br>
+
+You&apos;ll receive the funds once {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}} is completed and after a 14 day review period.
+
+{% if not maintainer_has_stripe_account -%}
+<br><br>Create a Stripe account with Polar today to avoid any delay with future transfers.<br>
+<a href="https://dashboard.polar.sh/dashboard/{{issue_org_name}}">dashboard.polar.sh/dashboard/{{issue_org_name}}</a>
+{% endif -%}
 """  # noqa: E501
 
 
-# @dataclass
-class MaintainerPledgePendingNotification(NotificationType):
+class MaintainerPledgePendingNotification(NotificationBase):
+    pledger_name: str
     pledge_amount: str
     issue_url: str
     issue_title: str
+    issue_org_name: str
+    issue_repo_name: str
+    issue_number: int
+    maintainer_has_stripe_account: bool
 
-    def template(self) -> str:
-        return """Hi {{username}},<br><br>
+    def subject(self) -> str:
+        return "You have ${{pledge_amount}} in pending pledges for {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}!"  # noqa: E501
 
-<a href="{{issue_url}}">{{issue_title}}</a> is now closed, and had a total of ${{pledge_amount}} in pledges!<br><br>
+    def body(self) -> str:
+        return """Hi,<br><br>
 
-The pledges are now in a 14 day review window, after which they will be paid out to your Stripe account.<br><br>
+Your backers had pledged ${{pledge_amount}} behind <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}</a> which has now been completed - awesome work!<br><br>
 
-If you don't have a Stripe account setup, now is a good time to set one up.<br><br>
+We&apos;ve notified the backers and unless we receive any disputes within the next 14 days it will be transferred to your Stripe account.<br><br>
+
+{% if not maintainer_has_stripe_account %}
+Create a Stripe account with Polar today to ensure we can transfer the funds directly once the review period is completed.<br>
+<a href="https://dashboard.polar.sh/dashboard/{{issue_org_name}}">dashboard.polar.sh/dashboard/{{issue_org_name}}</a>
+{% endif %}
 """  # noqa: E501
 
 
-# @dataclass
-class MaintainerPledgePaidNotification(NotificationType):
+class MaintainerPledgePaidNotification(NotificationBase):
     pledge_amount: str
     paid_out_amount: str
     issue_url: str
     issue_title: str
 
-    def template(self) -> str:
+    def subject(self) -> str:
+        return "$X transferred for orgname/reponame#123"
+
+    def body(self) -> str:
         return """Hi {{username}},<br><br>
 
 ${{paid_out_amount}} from the pledges to <a href="{{issue_url}}">{{issue_title}}</a> has now been paid to connected Stripe account.
 """  # noqa: E501
 
 
-# @dataclass
-class PledgerPledgePendingNotification(NotificationType):
+class PledgerPledgePendingNotification(NotificationBase):
     pledge_amount: str
     paid_out_amount: str
     issue_url: str
     issue_title: str
     repo_owner: str
+    pledge_date: str
 
-    def template(self) -> str:
-        return """Hi {{username}},<br><br>
+    def subject(self) -> str:
+        return "{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}} is completed"
 
-The issue <a href="{{issue_url}}">{{issue_title}}</a> that you've backed is now solved, and your pledge (${{pledge_amount}}) will soon be paid out to {{repo_owner}}.<br><br>
+    def body(self) -> str:
+        return """Hi,<br><br>
 
-If the issue is not solved, dispute the pledge within 14 days from the <a href="https://dashboard.polar/sh">Polar</a> dashboard, or by replying to this email.
-
-Thanks,
-Polar and {{repo_owner}}!
+Good news: <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}</a> has been completed! You pledged ${{pledge_amount}} behind it on {{pledge_date}}. It will be rewarded to the creators in 14 days unless you file a dispute via email or the Polar dashboard within the next 7 days.
 """  # noqa: E501

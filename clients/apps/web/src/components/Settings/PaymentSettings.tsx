@@ -4,8 +4,8 @@ import { useState, type MouseEvent } from 'react'
 import { Elements } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
 
-import { InformationCircleIcon } from '@heroicons/react/24/outline'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { InformationCircleIcon } from '@heroicons/react/20/solid'
+import { PrimaryButton, ThinButton } from 'polarkit/components/ui'
 import {
   useOrganizationCreateIntent,
   useOrganizationCustomer,
@@ -21,6 +21,14 @@ function capitalizeFirstLetter(string: string) {
 
 export type Settings = {
   billing_email?: string
+}
+
+const Highlight = (props: { children: React.ReactNode }) => {
+  return (
+    <span className="rounded-md bg-blue-100 py-0.5 px-1.5 font-mono text-gray-700">
+      {props.children}
+    </span>
+  )
 }
 
 const PaymentSettings = ({
@@ -74,48 +82,51 @@ const PaymentSettings = ({
   }
 
   return (
-    <div className="space-y-4 text-black/80">
+    <div className="space-y-5 divide-y text-black/80">
       <div className="space-y-2 text-sm">
-        <div className="inline-flex items-center space-x-4 text-sm leading-6 ">
+        <div className="inline-flex items-center space-x-3 text-sm leading-6 ">
           <span className="font-medium text-gray-900">Payment method</span>{' '}
           <span className="inline-flex items-center space-x-1 text-gray-500">
-            <InformationCircleIcon className="h-6 w-6" />
+            <InformationCircleIcon className="h-5 w-5 text-gray-400" />
             <span>Can be used by all members of this organization.</span>
           </span>
         </div>
 
         {customer && customer.default_payment_method && (
-          <>
+          <div className="flex flex-row justify-between">
             {customer.default_payment_method.type === 'card' &&
               customer.default_payment_method.card_brand && (
                 <div>
                   Using your saved{' '}
-                  {capitalizeFirstLetter(
-                    customer.default_payment_method.card_brand,
-                  )}{' '}
+                  <Highlight>
+                    {capitalizeFirstLetter(
+                      customer.default_payment_method.card_brand,
+                    )}
+                  </Highlight>{' '}
                   card ending with{' '}
-                  <span className="font-mono">
+                  <Highlight>
                     {customer.default_payment_method.card_last4}
-                  </span>{' '}
+                  </Highlight>{' '}
                   for future pledges.
                 </div>
               )}
             {customer.default_payment_method.type !== 'card' && (
               <div>
-                Using your saved {customer.default_payment_method.type} for
-                future pledges.
+                Using your saved{' '}
+                <Highlight>{customer.default_payment_method.type}</Highlight>{' '}
+                for future pledges.
               </div>
             )}
 
             {!showStripeElements && (
-              <PrimaryButton
+              <ThinButton
                 onClick={createSetupIntent}
                 loading={createIntent.isLoading}
               >
-                Change default payment method
-              </PrimaryButton>
+                Change
+              </ThinButton>
             )}
-          </>
+          </div>
         )}
 
         {customer && !customer.default_payment_method && (
@@ -136,12 +147,40 @@ const PaymentSettings = ({
         {isDone && <div>Payment method saved!</div>}
 
         {showStripeElements && createIntent && createIntent.data && (
-          <>
+          <div className="!mt-5 border-t pt-5 pb-2">
             <h2 className="text-md font-medium">Add a new payment method</h2>
             <Elements
               stripe={stripePromise}
               options={{
                 clientSecret: createIntent.data.client_secret,
+                appearance: {
+                  rules: {
+                    '.Label': {
+                      color: '#727374',
+                      fontWeight: '500',
+                      fontSize: '14px',
+                      marginBottom: '8px',
+                    },
+                    '.Input': {
+                      padding: '12px',
+                    },
+                    '.TermsText': {
+                      fontSize: '14px',
+                    },
+                  },
+                  variables: {
+                    borderRadius: '8px',
+                    fontFamily: '"Inter var", Inter, sans-serif',
+                    fontSizeBase: '14px',
+                    spacingGridRow: '18px',
+                  },
+                },
+                fonts: [
+                  {
+                    cssSrc:
+                      'https://fonts.googleapis.com/css2?family=Inter:wght@400;500',
+                  },
+                ],
               }}
             >
               <PaymentMethodForm
@@ -152,21 +191,22 @@ const PaymentSettings = ({
                 onSuccess={onSuccess}
               />
             </Elements>
-          </>
+          </div>
         )}
 
         {errorMessage && <div>{errorMessage}</div>}
       </div>
-
-      <SettingsInput
-        id="billing_email"
-        title="Billing email"
-        description="Receipts will be sent to this address"
-        onChange={onBillingEmailChanged}
-        type="email"
-        placeholder="billing@example.com"
-        value={settings.billing_email || ''}
-      />
+      <div className="pt-5">
+        <SettingsInput
+          id="billing_email"
+          title="Billing email"
+          description="Receipts will be sent to this address"
+          onChange={onBillingEmailChanged}
+          type="email"
+          placeholder="billing@example.com"
+          value={settings.billing_email || ''}
+        />
+      </div>
     </div>
   )
 }

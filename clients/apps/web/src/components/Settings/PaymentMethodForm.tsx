@@ -109,10 +109,10 @@ const PaymentMethodForm = ({
   }
 
   return (
-    <div className="mt-5">
+    <div className="mt-4">
       <PaymentElement onChange={onStripeFormChange} />
 
-      <div className="mt-6">
+      <div className="mt-4">
         <PrimaryButton
           disabled={!canSubmit}
           loading={isSyncing}

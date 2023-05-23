@@ -414,51 +414,47 @@ const Controls = ({
 
   return (
     <>
-      <div className="flex flex-col justify-center">
-        {showRetroactiveChanges && (
-          <motion.div
-            variants={{
-              hidden: {
-                opacity: 0,
-                scale: 1,
-              },
-              show: {
-                opacity: 1,
-                scale: [1, 1.1, 1],
-              },
+      {showRetroactiveChanges && (
+        <motion.div
+          variants={{
+            hidden: {
+              opacity: 0,
+              scale: 1,
+            },
+            show: {
+              opacity: 1,
+              scale: [1, 1.03, 1],
+            },
+          }}
+          initial={showRetroactiveChanges}
+          animate="show"
+          hidden={!showRetroactiveChanges}
+          className="flex flex-row space-x-8 rounded-xl border bg-white p-4"
+        >
+          <SettingsCheckbox
+            id="retroactive_embed"
+            title="Update badge on open issues"
+            isChecked={isRetroactiveEnabled}
+            onChange={(e) => {
+              setRetroactiveEnabled(e.target.checked)
             }}
-            initial={showRetroactiveChanges}
-            animate="show"
-            hidden={!showRetroactiveChanges}
-            className="flex flex-row space-x-8 rounded-xl border bg-white p-4"
-          >
-            <SettingsCheckbox
-              id="retroactive_embed"
-              title="Update badge on open issues"
-              isChecked={isRetroactiveEnabled}
-              onChange={(e) => {
-                setRetroactiveEnabled(e.target.checked)
-              }}
-            />
+          />
 
-            <div className="flex flex-col text-sm leading-6 text-gray-500">
-              {isRetroactiveEnabled && (
-                <>
-                  {additions > 0 && (
-                    <span>Will add badge to {additions} issues</span>
-                  )}
-                  {deletions > 0 && (
-                    <span>Will remove badge from {deletions} issues</span>
-                  )}
-                  {deletions === 0 && additions === 0 && (
-                    <span>No changes</span>
-                  )}
-                </>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </div>
+          <div className="flex flex-col text-sm leading-6 text-gray-500">
+            {isRetroactiveEnabled && (
+              <>
+                {additions > 0 && (
+                  <span>Will add badge to {additions} issues</span>
+                )}
+                {deletions > 0 && (
+                  <span>Will remove badge from {deletions} issues</span>
+                )}
+                {deletions === 0 && additions === 0 && <span>No changes</span>}
+              </>
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {isSettingPage && (
         <div className="flex items-center space-x-8">

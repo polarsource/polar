@@ -428,11 +428,9 @@ const Controls = ({
           }}
           initial={showRetroactiveChanges}
           animate="show"
-          initial={showRetroactiveChanges}
-          animate="show"
           hidden={!showRetroactiveChanges}
           className="flex flex-row space-x-8 rounded-xl border bg-white p-4"
-         >
+        >
           <SettingsCheckbox
             id="retroactive_embed"
             title="Update badge on open issues"
@@ -451,15 +449,13 @@ const Controls = ({
                 {deletions > 0 && (
                   <span>Will remove badge from {deletions} issues</span>
                 )}
-                {deletions === 0 && additions === 0 && (
-                  <span>No changes</span>
-                )}
+                {deletions === 0 && additions === 0 && <span>No changes</span>}
               </>
             )}
           </div>
         </motion.div>
       )}
-      
+
       {isSettingPage && (
         <div className="flex items-center space-x-8">
           <PrimaryButton

@@ -125,3 +125,5 @@ dmypy.json
 
 # Playground file
 playground.py
+
+.DS_Store

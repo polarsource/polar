@@ -5,6 +5,7 @@ from polar.models.user import User
 from polar.notifications.notification import (
     MaintainerPledgeCreatedNotification,
     MaintainerPledgePendingNotification,
+    PledgerPledgePendingNotification,
 )
 import inspect
 
@@ -95,6 +96,23 @@ async def test_MaintainerPledgePendingdNotification_with_stripe(
         issue_org_name="testorg",
         issue_repo_name="testrepo",
         maintainer_has_stripe_account=True,
+    )
+
+    await check_diff(n.render(predictable_user))
+
+
+@pytest.mark.asyncio
+async def test_PledgerPledgePendingNotification(
+    predictable_user: User,
+) -> None:
+    n = PledgerPledgePendingNotification(
+        issue_url="https://github.com/testorg/testrepo/issues/123",
+        issue_title="issue title",
+        issue_number=123,
+        pledge_amount="123.45",
+        issue_org_name="testorg",
+        issue_repo_name="testrepo",
+        pledge_date="2023-02-02",
     )
 
     await check_diff(n.render(predictable_user))

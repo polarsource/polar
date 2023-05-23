@@ -85,6 +85,7 @@ Create a Stripe account with Polar today to ensure we can transfer the funds dir
 """  # noqa: E501
 
 
+# TODO: needs new copy!
 class MaintainerPledgePaidNotification(NotificationBase):
     pledge_amount: str
     paid_out_amount: str
@@ -103,10 +104,11 @@ ${{paid_out_amount}} from the pledges to <a href="{{issue_url}}">{{issue_title}}
 
 class PledgerPledgePendingNotification(NotificationBase):
     pledge_amount: str
-    paid_out_amount: str
     issue_url: str
     issue_title: str
-    repo_owner: str
+    issue_number: int
+    issue_org_name: str
+    issue_repo_name: str
     pledge_date: str
 
     def subject(self) -> str:

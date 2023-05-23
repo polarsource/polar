@@ -47,16 +47,16 @@ const OnboardingInstallChromeExtension = () => {
       >
         <div className="flex-1">
           <div className="flex h-full flex-col space-y-4 p-6">
-            <h2 className="text-xl text-black">Install Chrome extension</h2>
+            <h2 className="text-xl text-black">Enhance Github Issues</h2>
             <p className="flex-1 text-sm text-gray-500">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec vel
-              congue nisi. Curabitur venenatis maximus ex, eu rutrum lacus
-              ornare et.
+              You don&apos;t have to leave Github to use Polar. Our extension
+              can enhance the Github Issues table with our additional insights,
+              pledges and more in the future.
             </p>
             <div className="flex items-center justify-between gap-4 lg:justify-start">
               <PrimaryButton color="blue" fullWidth={false} onClick={onPrimary}>
                 <PlusIcon className="h-6 w-6" />
-                <span>Go to Chrome Web Store</span>
+                <span>Install Chrome Extension</span>
               </PrimaryButton>
               <button
                 type="button"

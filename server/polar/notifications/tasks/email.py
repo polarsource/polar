@@ -81,25 +81,15 @@ async def should_send(session: AsyncSession, user: User, notif: Notification) ->
     )
 
     match notif.type:
-        case NotificationType.issue_pledge_created:
+        # TODO(zegl): add new email preferences to match new types of notifications
+        case NotificationType.MaintainerPledgeCreatedNotification:
+            return settings.email_notification_maintainer_issue_receives_backing
+        case NotificationType.MaintainerPledgePendingNotification:
+            return settings.email_notification_maintainer_issue_receives_backing
+        case NotificationType.MaintainerPledgePaidNotification:
             return settings.email_notification_maintainer_issue_receives_backing
 
-        case NotificationType.issue_pledged_branch_created:
+        case NotificationType.PledgerPledgePendingNotification:
             return settings.email_notification_backed_issue_branch_created
-
-        case NotificationType.issue_pledged_pull_request_created:
-            return settings.email_notification_backed_issue_pull_request_created
-
-        case NotificationType.issue_pledged_pull_request_merged:
-            return settings.email_notification_backed_issue_pull_request_merged
-
-        case NotificationType.maintainer_issue_branch_created:
-            return settings.email_notification_maintainer_issue_branch_created
-
-        case NotificationType.maintainer_issue_pull_request_created:
-            return settings.email_notification_maintainer_pull_request_created
-
-        case NotificationType.maintainer_issue_pull_request_merged:
-            return settings.email_notification_maintainer_pull_request_merged
 
     return False

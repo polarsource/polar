@@ -93,6 +93,7 @@ module.exports = {
   plugins: [
     require('@tailwindcss/forms'),
     require("tailwindcss-radix")(),
+    require("tailwindcss-animate"),
     plugin(function({ addUtilities }) {
       const utilityStyles = {
         '.text-4xl': {

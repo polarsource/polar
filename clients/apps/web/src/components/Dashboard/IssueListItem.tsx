@@ -212,7 +212,7 @@ const IssueListItem = (props: {
   )
 }
 
-const generateMarkdownTitle = (
+export const generateMarkdownTitle = (
   title: string,
 ): React.ReactElement | React.ReactElement[] => {
   const matches: RegExpMatchArray[] = []
@@ -230,7 +230,7 @@ const generateMarkdownTitle = (
   const matchCount = matches.length
 
   for (const match of matches) {
-    if (!match.index) {
+    if (match.index === undefined) {
       continue
     }
 

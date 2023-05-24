@@ -1,13 +1,10 @@
 import { BellIcon } from '@heroicons/react/24/outline'
 import {
-  IssuePledgeCreated,
-  IssuePledgedBranchCreated,
-  IssuePledgedPullRequestCreated,
-  IssuePledgedPullRequestMerged,
-  MaintainerIssueBranchCreated,
-  MaintainerIssuePullRequestCreated,
-  MaintainerIssuePullRequestMerged,
+  MaintainerPledgeCreatedNotification,
+  MaintainerPledgePaidNotification,
+  MaintainerPledgePendingNotification,
   NotificationRead,
+  NotificationType,
 } from 'polarkit/api/client'
 import { PolarTimeAgo } from 'polarkit/components/ui'
 import { useNotifications, useNotificationsMarkRead } from 'polarkit/hooks'
@@ -85,25 +82,7 @@ const Popover = () => {
             e.stopPropagation()
           }}
         >
-          <div className="flex w-full flex-col items-center space-y-4   sm:items-end">
-            <>
-              <div className="z-10 mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white"></div>
-              <div className="z-20 h-full w-full max-w-md ">
-                <div className="pointer-events-auto w-full rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
-                  <div className="h-full max-h-[800px] overflow-x-scroll">
-                    {notifs.data.notifications.length === 0 && (
-                      <div className="p-4 text-black/60">
-                        You don&apos;t have any notifications... yet!
-                      </div>
-                    )}
-                    {notifs.data.notifications.map((n) => {
-                      return <Notification n={n} key={n.id} />
-                    })}
-                  </div>
-                </div>
-              </div>
-            </>
-          </div>
+          <List notifications={notifs.data.notifications} />
         </div>
       )}
     </>
@@ -111,6 +90,34 @@ const Popover = () => {
 }
 
 export default Popover
+
+export const List = ({
+  notifications,
+}: {
+  notifications: NotificationRead[]
+}) => {
+  return (
+    <div className="flex w-full flex-col items-center space-y-4   sm:items-end">
+      <>
+        <div className="z-10 mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white"></div>
+        <div className="z-20 h-full w-full max-w-md ">
+          <div className="pointer-events-auto w-full rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+            <div className="h-full max-h-[800px] overflow-x-scroll">
+              {notifications.length === 0 && (
+                <div className="p-4 text-black/60">
+                  You don&apos;t have any notifications... yet!
+                </div>
+              )}
+              {notifications.map((n) => {
+                return <Notification n={n} key={n.id} />
+              })}
+            </div>
+          </div>
+        </div>
+      </>
+    </div>
+  )
+}
 
 const Item = ({
   children,
@@ -138,24 +145,25 @@ const Item = ({
   )
 }
 
-const IssuePledgeCreatedNotification = ({
+const MaintainerPledgeCreated = ({
   n,
   payload,
 }: {
   n: NotificationRead
-  payload: IssuePledgeCreated
+  payload: MaintainerPledgeCreatedNotification
 }) => {
-  const title = `Issue #${payload.issue_number} received \$${payload.pledge_amount} in backing`
   return (
     <Item n={n} iconBg="bg-[#F9E18F]">
       {{
         text: (
           <>
-            Issue{' '}
+            New ${payload.pledge_amount} pledge behind{' '}
             <Link href={payload.issue_url}>
-              <>#{payload.issue_number}</>
-            </Link>{' '}
-            received <strong>${payload.pledge_amount}</strong> in backing
+              <>
+                {payload.issue_org_name}/{payload.issue_repo_name}#
+                {payload.issue_number}
+              </>
+            </Link>
           </>
         ),
         icon: <DollarSignIcon />,
@@ -164,97 +172,94 @@ const IssuePledgeCreatedNotification = ({
   )
 }
 
-const PullRequestCreatedNotification = ({
+const MaintainerPledgePending = ({
   n,
   payload,
 }: {
   n: NotificationRead
-  payload: IssuePledgedPullRequestCreated | MaintainerIssuePullRequestCreated
+  payload: MaintainerPledgePendingNotification
 }) => {
   return (
-    <Item n={n} iconBg="bg-[#DFEFE4]">
+    <Item n={n} iconBg="bg-[#F9E18F]">
       {{
         text: (
           <>
-            {payload.pull_request_creator_username} created a{' '}
-            <Link href={payload.pull_request_url}>
-              <>PR</>
+            ${payload.pledge_amount} pending for completing{' '}
+            <Link href={payload.issue_url}>
+              <>
+                {payload.issue_org_name}/{payload.issue_repo_name}#
+                {payload.issue_number}
+              </>
+            </Link>
+          </>
+        ),
+        icon: <DollarSignIcon />,
+      }}
+    </Item>
+  )
+}
+const MaintainerPledgePaid = ({
+  n,
+  payload,
+}: {
+  n: NotificationRead
+  payload: MaintainerPledgePaidNotification
+}) => {
+  return (
+    <Item n={n} iconBg="bg-[#F9E18F]">
+      {{
+        text: (
+          <>
+            ${payload.paid_out_amount} for{' '}
+            <Link href={payload.issue_url}>
+              <>
+                {payload.issue_org_name}/{payload.issue_repo_name}#
+                {payload.issue_number}
+              </>
             </Link>{' '}
-            for issue{' '}
-            <Link href={payload.issue_url}>
-              <>#{payload.issue_number}</>
-            </Link>
+            has been transferred
           </>
         ),
-        icon: <PullRequestCreatedIcon />,
+        icon: <DollarSignIcon />,
       }}
     </Item>
   )
 }
 
-const PullRequestMergedNotification = ({
-  n,
-  payload,
-}: {
-  n: NotificationRead
-  payload: IssuePledgedPullRequestMerged | MaintainerIssuePullRequestMerged
-}) => {
-  return (
-    <Item n={n} iconBg="bg-[#E8DEFC]">
-      {{
-        text: (
-          <>
-            {payload.pull_request_creator_username} merged a{' '}
-            <Link href={payload.pull_request_url}>
-              <>PR</>
-            </Link>{' '}
-            for issue{' '}
-            <Link href={payload.issue_url}>
-              <>#{payload.issue_number}</>
-            </Link>
-          </>
-        ),
-        icon: <PullRequestMergedIcon />,
-      }}
-    </Item>
-  )
-}
+export const Notification = ({ n }: { n: NotificationRead }) => {
+  switch (n.type) {
+    case NotificationType.MAINTAINER_PLEDGE_CREATED_NOTIFICATION:
+      return (
+        <MaintainerPledgeCreated
+          n={n}
+          payload={n.payload as MaintainerPledgeCreatedNotification}
+        />
+      )
 
-const BranchCreatedNotification = ({
-  n,
-  payload,
-}: {
-  n: NotificationRead
-  payload: IssuePledgedBranchCreated | MaintainerIssueBranchCreated
-}) => {
-  return (
-    <Item n={n} iconBg="bg-[#ECECEC]">
-      {{
-        text: (
-          <>
-            {payload.branch_creator_username} started working on issue
-            <Link href={payload.issue_url}>
-              <>#{payload.issue_number}</>
-            </Link>
-          </>
-        ),
-        icon: <BranchCreatedIcon />,
-      }}
-    </Item>
-  )
-}
-
-const Notification = ({ n }: { n: NotificationRead }) => {
-  if (n.type === 'issue_pledge_created') {
-    return (
-      <IssuePledgeCreatedNotification
-        n={n}
-        payload={n.payload as IssuePledgeCreated}
-      />
-    )
+    case NotificationType.MAINTAINER_PLEDGE_PENDING_NOTIFICATION:
+      return (
+        <MaintainerPledgePending
+          n={n}
+          payload={n.payload as MaintainerPledgePendingNotification}
+        />
+      )
+    case NotificationType.MAINTAINER_PLEDGE_PAID_NOTIFICATION:
+      return (
+        <MaintainerPledgePaid
+          n={n}
+          payload={n.payload as MaintainerPledgePaidNotification}
+        />
+      )
+    case NotificationType.PLEDGER_PLEDGE_PENDING_NOTIFICATION:
+      return (
+        <MaintainerPledgeCreated
+          n={n}
+          payload={n.payload as MaintainerPledgeCreatedNotification}
+        />
+      )
   }
 
-  if (n.type === 'issue_pledged_branch_created') {
+  /*if (n.type === 'issue_pledged_branch_created') {
     return (
       <BranchCreatedNotification
         n={n}
@@ -303,7 +308,7 @@ const Notification = ({ n }: { n: NotificationRead }) => {
         payload={n.payload as MaintainerIssuePullRequestMerged}
       />
     )
-  }
+  }*/
 
   return <></>
 }

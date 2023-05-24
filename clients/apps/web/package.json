@@ -53,6 +53,7 @@
     "@types/react-timeago": "^4.1.3",
     "@types/yayson": "^2.0.2",
     "autoprefixer": "^10.4.13",
+    "chromatic": "^6.17.4",
     "eslint": "8.40.0",
     "eslint-config-custom": "workspace:*",
     "eslint-config-next": "13.4.2",

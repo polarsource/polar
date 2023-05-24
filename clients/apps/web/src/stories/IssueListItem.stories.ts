@@ -337,3 +337,19 @@ export const Dependency: Story = {
     dependents: [dependents],
   },
 }
+
+export const StatusPullRequestNameHighlights: Story = {
+  args: {
+    ...Default.args,
+    issue: { ...issuePullRequest, title: ' `IsInstance` type annotation' },
+    references: [
+      {
+        ...references[0],
+        payload: {
+          ...references[0].payload,
+          title: 'Wow! `Highlight!`',
+        },
+      },
+    ],
+  },
+}

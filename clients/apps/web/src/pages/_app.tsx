@@ -1,4 +1,5 @@
 import TopbarLayout from '@/components/Layout/TopbarLayout'
+import { Toaster } from '@/components/UI/Toast/Toaster'
 import type { NextPageWithLayout } from '@/utils/next'
 import * as Sentry from '@sentry/nextjs'
 import type { AppProps } from 'next/app'
@@ -36,6 +37,7 @@ const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
       </Head>
       <QueryClientProvider client={queryClient}>
         {getLayout(<Component {...pageProps} />)}
+        <Toaster />
       </QueryClientProvider>
     </>
   )

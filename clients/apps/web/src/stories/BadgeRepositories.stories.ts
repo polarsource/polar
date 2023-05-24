@@ -64,3 +64,19 @@ export const SettingsPage: Story = {
     isSettingPage: true,
   },
 }
+
+export const SettingsPageNoPublic: Story = {
+  args: {
+    ...Default.args,
+    repos: [
+      {
+        ...repo,
+        is_private: true,
+        name: 'polar-clients-ios-toolkit-framework-long-name',
+      },
+      { ...repo, is_private: true, name: 'polar_private' },
+    ],
+    showControls: true,
+    isSettingPage: true,
+  },
+}

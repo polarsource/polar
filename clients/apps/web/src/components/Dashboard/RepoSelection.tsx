@@ -35,12 +35,13 @@ export function RepoSelection(props: {
   showOrganizationRepositoryCount?: boolean
   organizations: OrganizationPrivateRead[]
   currentUser: UserRead
+  initOpen?: boolean
 }) {
   const [value, setValue] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement | null>(null)
   const listRef = React.useRef(null)
 
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(!!props.initOpen)
 
   useEffect(() => {
     inputRef?.current?.focus()

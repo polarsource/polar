@@ -14,10 +14,20 @@ import {
 } from 'polarkit/api/client'
 
 export const org: OrganizationPublicRead = {
-  id: 'pydantic',
+  id: 'xxxabc',
   platform: Platforms.GITHUB,
   name: 'pydantic',
   avatar_url: 'https://avatars.githubusercontent.com/u/110818415?s=48&v=4',
+}
+
+export const user: UserRead = {
+  username: 'zegl',
+  email: 'test@example.com',
+  avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+  invite_only_approved: true,
+  accepted_terms_of_service: true,
+  id: 'xxxabc-123',
+  profile: {},
 }
 
 export const issue: IssueRead = {
@@ -61,7 +71,7 @@ export const pledge: PledgeRead = {
 }
 
 export const privateOrganization: OrganizationPrivateRead = {
-  id: 'polarsource',
+  id: 'xxxxx-abc',
   platform: Platforms.GITHUB,
   name: 'polarsource',
   avatar_url: 'https://avatars.githubusercontent.com/u/105373340?s=400&v=4',
@@ -69,16 +79,17 @@ export const privateOrganization: OrganizationPrivateRead = {
   is_personal: false,
   status: Status.ACTIVE,
   created_at: '2023-01-01',
-}
-
-export const user: UserRead = {
-  username: 'zegl',
-  email: 'test@example.com',
-  avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
-  invite_only_approved: true,
-  accepted_terms_of_service: true,
-  id: '1234444',
-  profile: {},
+  repositories: [
+    {
+      platform: Platforms.GITHUB,
+      external_id: 1245,
+      organization_id: 'xxxxx-abc',
+      name: 'polar',
+      is_private: false,
+      id: 'xxxxrepo',
+      visibility: Visibility.PUBLIC,
+    },
+  ],
 }
 
 export const orgStripeCustomer: OrganizationStripeCustomerRead = {

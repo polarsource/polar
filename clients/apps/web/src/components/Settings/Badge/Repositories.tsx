@@ -18,10 +18,6 @@ export const BadgeRepositories = ({
   ) => void
   isSettingPage?: boolean
 }) => {
-  if (isSettingPage) {
-    repos = repos.filter((repo) => repo.is_private === false)
-  }
-
   return (
     <>
       <h2

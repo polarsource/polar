@@ -25,7 +25,7 @@ export const Badge = ({
       <div
         style={{
           display: 'flex',
-          padding: 2,
+          paddingBottom: 2,
         }}
       >
         <div
@@ -36,9 +36,10 @@ export const Badge = ({
             alignItems: 'center',
             backgroundColor: darkmode ? '#3E3F42' /*gray-700*/ : 'white',
             borderRadius: 11,
-            margin: 5,
-            boxShadow:
-              '0px 1px 8px rgba(0, 0, 0, 0.07), 0px 0.5px 2.5px rgba(0, 0, 0, 0.2)',
+            boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.06)',
+            border: darkmode
+              ? '1px solid rgba(255, 255, 255, 0.08)'
+              : '1px solid rgba(0, 0, 0, 0.11)',
             fontFamily: 'Inter',
             overflow: 'hidden',
           }}

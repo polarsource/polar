@@ -40,6 +40,13 @@ const generateBadge = async (
   isDarkmode: boolean,
 ) => {
   const badge = await getBadgeData(org, repo, number)
+  return await renderBadge(badge, isDarkmode)
+}
+
+export const renderBadge = async (
+  badge: GithubBadgeRead,
+  isDarkmode: boolean,
+) => {
   let hasAmount = badge.amount !== null
 
   const interRegular = await getFontBuffer('Inter-Regular.ttf')

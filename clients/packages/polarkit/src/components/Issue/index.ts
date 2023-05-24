@@ -4,6 +4,7 @@ import IssueListItemDecoration, {
   getExpectedHeight,
 } from './ListItemDecoration'
 import IssueReference from './Reference'
+import { generateMarkdownTitle } from './markdown'
 
 export {
   IssueActivityBox,
@@ -11,4 +12,5 @@ export {
   IssuePledge,
   IssueReference,
   getExpectedHeight,
+  generateMarkdownTitle,
 }

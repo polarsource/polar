@@ -13,6 +13,7 @@ import {
 } from 'polarkit/components/icons'
 import { PolarTimeAgo } from 'polarkit/components/ui'
 import { classNames, githubPullReqeustUrl } from 'polarkit/utils'
+import { generateMarkdownTitle } from './markdown'
 
 const IssueReference = (props: {
   orgName: string
@@ -149,6 +150,7 @@ const IssueReferenceExternalGitHubPullRequest = (props: {
     pr.repository_name,
     pr.number,
   )
+  const markdownTitle = generateMarkdownTitle(pr.title)
 
   return (
     <>
@@ -156,7 +158,7 @@ const IssueReferenceExternalGitHubPullRequest = (props: {
         {isMerged && <GitMergeIcon />}
         {!isMerged && <GitPullRequestIcon />}
         <a href={href} className="font-medium">
-          {pr.title}
+          {markdownTitle}
         </a>
         <a href={href}>
           {pr.organization_name}/{pr.repository_name}#{pr.number}
@@ -238,6 +240,7 @@ const IssueReferencePullRequest = (props: {
   }
 
   const href = githubPullReqeustUrl(props.orgName, props.repoName, pr.number)
+  const markdownTitle = generateMarkdownTitle(pr.title)
 
   return (
     <>
@@ -256,7 +259,7 @@ const IssueReferencePullRequest = (props: {
           href={href}
           className={classNames(formatting.titleClasses, 'font-medium')}
         >
-          {pr.title}
+          {markdownTitle}
         </a>
         <span className="overflow-hidden whitespace-pre text-sm text-gray-500">
           #{pr.number} {formatting.label}{' '}

@@ -1,5 +1,10 @@
 import {
   IssueRead,
+  MaintainerPledgeCreatedNotification,
+  MaintainerPledgePaidNotification,
+  MaintainerPledgePendingNotification,
+  NotificationRead,
+  NotificationType,
   OrganizationPrivateRead,
   OrganizationPublicRead,
   OrganizationStripeCustomerRead,
@@ -105,4 +110,57 @@ export const orgStripeCustomer: OrganizationStripeCustomerRead = {
     card_last4: '4242',
     card_brand: 'visa',
   },
+}
+
+const maintainerPledgeCreatedNotification: MaintainerPledgeCreatedNotification =
+  {
+    pledger_name: 'xx',
+    pledge_amount: '123.50',
+    issue_url: '#',
+    issue_title: 'Hello World',
+    issue_org_name: 'polarsource',
+    issue_repo_name: 'polar',
+    issue_number: 123,
+    maintainer_has_stripe_account: false,
+  }
+
+const maintainerPledgePendingNotification: MaintainerPledgePendingNotification =
+  {
+    pledger_name: 'xx',
+    pledge_amount: '123.50',
+    issue_url: '#',
+    issue_title: 'Hello World',
+    issue_org_name: 'polarsource',
+    issue_repo_name: 'polar',
+    issue_number: 123,
+    maintainer_has_stripe_account: false,
+  }
+
+const maintainerPledgePaidNotification: MaintainerPledgePaidNotification = {
+  paid_out_amount: '123.50',
+  issue_url: '#',
+  issue_title: 'Hello World',
+  issue_org_name: 'polarsource',
+  issue_repo_name: 'polar',
+  issue_number: 123,
+}
+
+export const notification_maintainerPledgeCreatedNotification: NotificationRead =
+  {
+    id: 'x',
+    created_at: '2023-05-02',
+    type: NotificationType.MAINTAINER_PLEDGE_CREATED_NOTIFICATION,
+    payload: maintainerPledgeCreatedNotification,
+  }
+
+export const notification_maintainerPledgePendingNotification = {
+  ...notification_maintainerPledgeCreatedNotification,
+  type: NotificationType.MAINTAINER_PLEDGE_PENDING_NOTIFICATION,
+  payload: maintainerPledgePendingNotification,
+}
+
+export const notification_maintainerPledgePaidNotification = {
+  ...notification_maintainerPledgeCreatedNotification,
+  type: NotificationType.MAINTAINER_PLEDGE_PAID_NOTIFICATION,
+  payload: maintainerPledgePaidNotification,
 }

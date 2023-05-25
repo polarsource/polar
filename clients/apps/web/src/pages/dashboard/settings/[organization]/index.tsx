@@ -22,7 +22,7 @@ import {
   useUserOrganizations,
 } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
-import { ReactElement, useEffect, useRef, useState } from 'react'
+import { ReactElement, useEffect, useMemo, useRef, useState } from 'react'
 
 const SettingsPage: NextLayoutComponentType = () => {
   const router = useRouter()
@@ -118,7 +118,24 @@ const SettingsPage: NextLayoutComponentType = () => {
     setPaymentSettings(val)
   }
 
-  if (orgData.isError) {
+  const showOrgSettings = useMemo(() => {
+    return orgData.data && handle !== 'personal'
+  }, [orgData, handle])
+
+  const showPersonalSettings = useMemo(() => {
+    // TODO: OR SELF USER ORG!
+    return handle === 'personal'
+  }, [handle])
+
+  const showPaymentSettings = true
+  const showBadgeSettings = useMemo(() => {
+    return showOrgSettings
+  }, [showOrgSettings])
+  const showEmailPreferences = useMemo(() => {
+    return showPersonalSettings || true
+  }, [showPersonalSettings])
+
+  if (orgData.isError && !showPersonalSettings) {
     return (
       <>
         <div className="mx-auto mt-16 flex max-w-[1100px] flex-col items-center">
@@ -144,10 +161,6 @@ const SettingsPage: NextLayoutComponentType = () => {
     )
   }
 
-  if (!org) {
-    return <></>
-  }
-
   return (
     <>
       <Head>
@@ -161,63 +174,60 @@ const SettingsPage: NextLayoutComponentType = () => {
         </div>
 
         <div className="divide-y divide-gray-200">
-          <Section>
-            <>
-              <SectionDescription
-                title="Payment details"
-                description={`Default payment methods for the ${org.name} organization to use when pledning new issues.`}
-              />
+          {showPaymentSettings && org && (
+            <Section>
+              <>
+                <SectionDescription
+                  title="Payment details"
+                  description={`Default payment methods for the ${org.name} organization to use when pledning new issues.`}
+                />
 
-              <Box>
-                <>
-                  {paymentSettings && (
-                    <PaymentSettings
-                      org={org}
-                      onUpdated={onPaymentSettingsUpdated}
-                      settings={paymentSettings}
-                    />
-                  )}
-                </>
-              </Box>
-            </>
-          </Section>
+                <Box>
+                  <>
+                    {paymentSettings && (
+                      <PaymentSettings
+                        org={org}
+                        onUpdated={onPaymentSettingsUpdated}
+                        settings={paymentSettings}
+                      />
+                    )}
+                  </>
+                </Box>
+              </>
+            </Section>
+          )}
 
-          <Section>
-            <>
-              <SectionDescription
-                title="Polar badge"
-                description="Polar will inject this badge into new issues on Github."
-              />
+          {showBadgeSettings && org && (
+            <Section>
+              <>
+                <SectionDescription
+                  title="Polar badge"
+                  description="Polar will inject this badge into new issues on Github."
+                />
 
-              <BadgeSetup
-                org={org}
-                showControls={true}
-                setShowControls={() => true}
-                setSyncIssuesCount={(value: number) => true}
-                isSettingPage={true}
-              />
-            </>
-          </Section>
-          <Section>
-            <>
-              <SectionDescription
-                title="Email notifications"
-                description="Polar will send emails for the notifications enabled below."
-              />
+                <BadgeSetup
+                  org={org}
+                  showControls={true}
+                  setShowControls={() => true}
+                  setSyncIssuesCount={(value: number) => true}
+                  isSettingPage={true}
+                />
+              </>
+            </Section>
+          )}
 
-              <Box>
-                <>
-                  {notificationSettings && (
-                    <NotificationSettings
-                      settings={notificationSettings}
-                      orgName={org.name}
-                      onUpdated={onNotificationSettingsUpdated}
-                    />
-                  )}
-                </>
-              </Box>
-            </>
-          </Section>
+          {showEmailPreferences && (
+            <Section>
+              <>
+                <SectionDescription
+                  title="Email notifications"
+                  description="Polar will send emails for the notifications enabled below."
+                />
+
+                <NotificationSettings />
+              </>
+            </Section>
+          )}
         </div>
       </div>
     </>
@@ -254,8 +264,10 @@ const SettingsTopbar = () => {
               showConnectMore={false}
               currentOrg={currentOrg}
               onSelectOrg={(org) => router.push(`/dashboard/settings/${org}`)}
+              onSelectUser={() => router.push(`/dashboard/settings/personal`)}
               currentUser={currentUser}
               organizations={userOrgQuery.data}
+              showUserInDropdown={true}
             />
           </div>
         ),

@@ -7,8 +7,10 @@ export type UserRead = {
   email: string;
   avatar_url?: string;
   profile: any;
+  id: string;
   invite_only_approved: boolean;
   accepted_terms_of_service: boolean;
-  id: string;
+  email_newsletters_and_changelogs: boolean;
+  email_promotions_and_events: boolean;
 };
 

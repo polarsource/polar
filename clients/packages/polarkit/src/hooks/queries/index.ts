@@ -18,6 +18,7 @@ export * from './dashboard'
 export * from './invite'
 export * from './pledges'
 export * from './settings'
+export * from './user'
 
 export const useUserOrganizations = (currentUser: UserRead | undefined) => {
   const userId = currentUser?.id

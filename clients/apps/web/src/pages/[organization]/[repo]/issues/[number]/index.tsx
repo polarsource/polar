@@ -1,5 +1,5 @@
+import Pledge from '@/components/Pledge'
 import PageNotFound from '@/components/Shared/PageNotFound'
-import Pledge from '@/components/Website/Pledge'
 import { CurrencyDollarIcon } from '@heroicons/react/24/outline'
 import type {
   GetServerSideProps,

@@ -1,15 +1,13 @@
 import RepoSelection from '@/components/Dashboard/RepoSelection'
+import EmptyLayout from '@/components/Layout/EmptyLayout'
 import BadgeSetup from '@/components/Settings/Badge'
 import Box from '@/components/Settings/Box'
-import NotificationSettings, {
-  type Settings as NotificationSettingsValues,
-} from '@/components/Settings/NotificationSettings'
+import NotificationSettings from '@/components/Settings/NotificationSettings'
 import PaymentSettings, {
   type Settings as PaymentSettingsValues,
 } from '@/components/Settings/PaymentSettings'
-import Spinner from '@/components/Shared/Spinner'
 import Topbar from '@/components/Shared/Topbar'
-import { useRequireAuth } from '@/hooks/auth'
+import { useAuth, useRequireAuth } from '@/hooks/auth'
 import { ArrowLeftIcon } from '@heroicons/react/24/solid'
 import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
@@ -28,11 +26,8 @@ const SettingsPage: NextLayoutComponentType = () => {
   const router = useRouter()
   const { organization } = router.query
   const handle: string = typeof organization === 'string' ? organization : ''
-  const orgData = useOrganization(handle)
+  const orgData = useOrganization(handle !== 'personal' ? handle : '')
   const org = orgData.data
-
-  const [notificationSettings, setNotificationSettings] =
-    useState<NotificationSettingsValues>()
 
   const [paymentSettings, setPaymentSettings] =
     useState<PaymentSettingsValues>()
@@ -51,23 +46,6 @@ const SettingsPage: NextLayoutComponentType = () => {
     if (didFirstSetForOrg.current === org.id) {
       return
     }
-
-    setNotificationSettings({
-      email_notification_maintainer_issue_receives_backing:
-        org.email_notification_maintainer_issue_receives_backing,
-      email_notification_maintainer_issue_branch_created:
-        org.email_notification_maintainer_issue_branch_created,
-      email_notification_maintainer_pull_request_created:
-        org.email_notification_maintainer_pull_request_created,
-      email_notification_maintainer_pull_request_merged:
-        org.email_notification_maintainer_pull_request_merged,
-      email_notification_backed_issue_branch_created:
-        org.email_notification_backed_issue_branch_created,
-      email_notification_backed_issue_pull_request_created:
-        org.email_notification_backed_issue_pull_request_created,
-      email_notification_backed_issue_pull_request_merged:
-        org.email_notification_backed_issue_pull_request_merged,
-    })
 
     setPaymentSettings({
       billing_email: org.billing_email,
@@ -108,11 +86,6 @@ const SettingsPage: NextLayoutComponentType = () => {
     setAllowShowLoadingSpinner(true)
   }, 1000)
 
-  const onNotificationSettingsUpdated = (val: NotificationSettingsValues) => {
-    save(val)
-    setNotificationSettings(val)
-  }
-
   const onPaymentSettingsUpdated = (val: PaymentSettingsValues) => {
     save(val)
     setPaymentSettings(val)
@@ -122,40 +95,30 @@ const SettingsPage: NextLayoutComponentType = () => {
     return orgData.data && handle !== 'personal'
   }, [orgData, handle])
 
+  const { currentUser } = useAuth()
+
   const showPersonalSettings = useMemo(() => {
-    // TODO: OR SELF USER ORG!
-    return handle === 'personal'
+    return handle === 'personal' || handle === currentUser?.username
   }, [handle])
 
-  const showPaymentSettings = true
+  const showPaymentSettings = useMemo(() => {
+    return showOrgSettings
+  }, [showOrgSettings])
+
   const showBadgeSettings = useMemo(() => {
     return showOrgSettings
   }, [showOrgSettings])
+
   const showEmailPreferences = useMemo(() => {
-    return showPersonalSettings || true
+    return showPersonalSettings
   }, [showPersonalSettings])
 
   if (orgData.isError && !showPersonalSettings) {
     return (
       <>
-        <div className="mx-auto mt-16 flex max-w-[1100px] flex-col items-center">
+        <div className="mx-auto mt-32 flex max-w-[1100px] flex-col items-center">
           <span>Organization not found</span>
           <span>404 Not Found</span>
-        </div>
-      </>
-    )
-  }
-
-  if (orgData.isLoading) {
-    return (
-      <>
-        <div className="mx-auto mt-16 flex max-w-[1100px] flex-col items-center text-black">
-          {allowShowLoadingSpinner && (
-            <div className="flex items-center space-x-4">
-              <span>Loading</span>
-              <Spinner />
-            </div>
-          )}
         </div>
       </>
     )
@@ -164,10 +127,11 @@ const SettingsPage: NextLayoutComponentType = () => {
   return (
     <>
       <Head>
-        <title>Polar | Settings for {handle}</title>
+        {showPersonalSettings && <title>Polar | Settings</title>}
+        {!showPersonalSettings && <title>Polar | Settings for {handle}</title>}
       </Head>
 
-      <div className="mx-auto max-w-[1100px] md:mt-16">
+      <div className="relative z-0 mx-auto max-w-[1100px] md:mt-16">
         <div className="pl-80">
           {showDidSave && <div className="h-4 text-black/50">Saved!</div>}
           {!showDidSave && <div className="h-4"></div>}
@@ -249,7 +213,7 @@ const SettingsTopbar = () => {
   }
 
   return (
-    <Topbar>
+    <Topbar isFixed={true}>
       {{
         left: (
           <Link href={`/dashboard/${handle}`}>
@@ -267,6 +231,7 @@ const SettingsTopbar = () => {
               onSelectUser={() => router.push(`/dashboard/settings/personal`)}
               currentUser={currentUser}
               organizations={userOrgQuery.data}
+              defaultToUser={true}
               showUserInDropdown={true}
             />
           </div>
@@ -278,10 +243,12 @@ const SettingsTopbar = () => {
 
 SettingsPage.getLayout = (page: ReactElement) => {
   return (
-    <>
-      <SettingsTopbar />
-      <div>{page}</div>
-    </>
+    <EmptyLayout>
+      <>
+        <SettingsTopbar />
+        {page}
+      </>
+    </EmptyLayout>
   )
 }
 

@@ -79,6 +79,14 @@ class User(RecordModel):
     )
     last_version_extension: Mapped[str] = mapped_column(String(50), nullable=True)
 
+    email_newsletters_and_changelogs: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
+
+    email_promotions_and_events: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
+
     __mutables__ = {
         "email",
         "profile",

@@ -11,8 +11,6 @@ class UserBase(Schema):
     email: EmailStr
     avatar_url: str | None
     profile: dict[str, Any]
-    invite_only_approved: bool
-    accepted_terms_of_service: bool
 
     class Config:
         orm_mode = True
@@ -20,11 +18,22 @@ class UserBase(Schema):
 
 class UserRead(UserBase):
     id: uuid.UUID
+    invite_only_approved: bool
+    accepted_terms_of_service: bool
+    email_newsletters_and_changelogs: bool
+    email_promotions_and_events: bool
 
 
+# TODO: remove
 class UserCreate(UserBase):
     ...
 
 
+# TODO: remove
 class UserUpdate(UserBase):
     ...
+
+
+class UserUpdateSettings(Schema):
+    email_newsletters_and_changelogs: bool | None = None
+    email_promotions_and_events: bool | None = None

@@ -3,9 +3,10 @@ from fastapi import APIRouter, Depends, Response
 from polar.models import User
 from polar.auth.dependencies import Auth
 from polar.auth.service import AuthService, LoginResponse, LogoutResponse
+from polar.user.service import user as user_service
 from polar.postgres import AsyncSession, get_db_session
 
-from ..schemas import UserRead
+from ..schemas import UserRead, UserUpdateSettings
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -28,6 +29,16 @@ async def accept_terms(
     auth.user.accepted_terms_of_service = True
     await auth.user.save(session)
     return auth.user
+
+
+@router.put("/me", response_model=UserRead)
+async def update_preferences(
+    settings: UserUpdateSettings,
+    auth: Auth = Depends(Auth.current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> User:
+    user = await user_service.update_preferences(session, auth.user, settings)
+    return user
 
 
 @router.get("/logout")

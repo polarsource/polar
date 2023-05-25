@@ -1,5 +1,5 @@
-import Overlay from '@/components/Pledge/Overlay'
 import Modal, { ModalBox } from '@/components/Shared/Modal'
+import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
 import {
   IssueDashboardRead,
@@ -40,6 +40,7 @@ const IssueListItem = (props: {
     comments,
     issue_closed_at,
   } = props.issue
+  const router = useRouter()
 
   const isDependency = props.dependents && props.dependents.length > 0
   const createdAt = new Date(issue_created_at)
@@ -51,8 +52,6 @@ const IssueListItem = (props: {
 
   const showCommentsCount = !!(comments && comments > 0)
   const showReactionsThumbs = !!(reactions.plus_one > 0)
-
-  const [pledgeOpen, setPledgeOpen] = useState(false)
 
   const getissueProgress = (): Progress => {
     switch (props.issue.progress) {
@@ -87,6 +86,11 @@ const IssueListItem = (props: {
 
   const onDisputeModalClose = () => {
     setShowDisputeModalForPledge(undefined)
+  }
+
+  const redirectToPledge = () => {
+    const path = `/${props.org.name}/${props.repo.name}/issues/${props.issue.number}`
+    router.push(path)
   }
 
   return (
@@ -174,15 +178,7 @@ const IssueListItem = (props: {
 
             {showPledgeAction && (
               <>
-                <PledgeNow onClick={() => setPledgeOpen(true)} />
-                {pledgeOpen && (
-                  <Overlay
-                    onClose={() => setPledgeOpen(false)}
-                    issue={props.issue}
-                    issueOrg={props.org}
-                    issueRepo={props.repo}
-                  />
-                )}
+                <PledgeNow onClick={redirectToPledge} />
               </>
             )}
           </div>

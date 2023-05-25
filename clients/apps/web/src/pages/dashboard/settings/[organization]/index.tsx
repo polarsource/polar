@@ -131,7 +131,7 @@ const SettingsPage: NextLayoutComponentType = () => {
         {!showPersonalSettings && <title>Polar | Settings for {handle}</title>}
       </Head>
 
-      <div className="relative z-0 mx-auto max-w-[1100px] md:mt-16">
+      <div className="relative z-0 mx-auto w-full max-w-[1100px] md:mt-16">
         <div className="pl-80">
           {showDidSave && <div className="h-4 text-black/50">Saved!</div>}
           {!showDidSave && <div className="h-4"></div>}

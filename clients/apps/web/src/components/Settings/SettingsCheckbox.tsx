@@ -9,6 +9,7 @@ const SettingsCheckbox = ({
   type = 'checkbox',
   description = undefined,
   name = undefined,
+  disabled,
 }: {
   id: string
   title: string
@@ -17,6 +18,7 @@ const SettingsCheckbox = ({
   type?: 'checkbox' | 'radio'
   isChecked: boolean
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  disabled?: boolean
 }) => {
   name = name || id
 
@@ -30,6 +32,7 @@ const SettingsCheckbox = ({
           type={type}
           onChange={onChange}
           checked={isChecked}
+          disabled={!!disabled}
           className={classNames(
             type === 'radio' ? 'rounded-full' : 'rounded',
             'h-4 w-4 border-gray-300 p-2 text-blue-500 focus:ring-blue-500',

@@ -70,6 +70,7 @@ export type { RepositoryRead } from './models/RepositoryRead';
 export { State } from './models/State';
 export { Status } from './models/Status';
 export type { UserRead } from './models/UserRead';
+export type { UserUpdateSettings } from './models/UserUpdateSettings';
 export type { ValidationError } from './models/ValidationError';
 export { Visibility } from './models/Visibility';
 

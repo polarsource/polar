@@ -91,6 +91,7 @@ const PersonalDashboardNav = () => {
         currentUser={currentUser}
         organizations={userOrgQuery.data}
       />
+      <SettingsLink orgSlug={'personal'} />
     </>
   )
 }

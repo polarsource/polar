@@ -1,127 +1,110 @@
+import { InformationCircleIcon } from '@heroicons/react/20/solid'
+import { PrimaryButton } from 'polarkit/components/ui'
+import { useUser, useUserPreferencesMutation } from 'polarkit/hooks'
+import { useEffect, useState } from 'react'
+import Box from './Box'
 import SettingsCheckbox from './SettingsCheckbox'
 
 export type Settings = {
-  email_notification_maintainer_issue_receives_backing?: boolean
-  email_notification_maintainer_issue_branch_created?: boolean
-  email_notification_maintainer_pull_request_created?: boolean
-  email_notification_maintainer_pull_request_merged?: boolean
-  email_notification_backed_issue_branch_created?: boolean
-  email_notification_backed_issue_pull_request_created?: boolean
-  email_notification_backed_issue_pull_request_merged?: boolean
+  email_newsletters_and_changelogs?: boolean
+  email_promotions_and_events?: boolean
 }
 
-const NotificationSettings = ({
-  settings,
-  orgName,
-  onUpdated,
-}: {
-  settings: Settings
-  orgName: string
-  onUpdated: (value: Settings) => void
-}) => {
-  const save = (next: Settings) => {
-    const a: Settings = {
+const NotificationSettings = () => {
+  const user = useUser()
+  const mutation = useUserPreferencesMutation()
+  const [settings, setSettings] = useState<Settings>({})
+
+  useEffect(() => {
+    if (!user.data) {
+      return
+    }
+
+    setSettings({
+      email_newsletters_and_changelogs:
+        user.data?.email_newsletters_and_changelogs,
+      email_promotions_and_events: user.data?.email_promotions_and_events,
+    })
+  }, [user.data])
+
+  const [canSave, setCanSave] = useState(false)
+
+  const onUpdated = (next: Settings) => {
+    setSettings({
       ...settings,
       ...next,
-    }
-    onUpdated(a)
+    })
+    setCanSave(true)
   }
 
-  if (!settings) {
+  const save = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    await mutation.mutateAsync({ userUpdateSettings: settings })
+  }
+
+  if (!user.data) {
     return <></>
   }
 
   return (
-    <>
-      <SettingsCheckbox
-        id="email-backing"
-        title={`Issue in ${orgName} receives backing`}
-        isChecked={
-          !!settings.email_notification_maintainer_issue_receives_backing
-        }
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-          save({
-            email_notification_maintainer_issue_receives_backing:
-              e.target.checked,
-          })
-        }}
-      />
-
-      <SettingsCheckbox
-        id="email_notification_maintainer_issue_branch_created"
-        title={`Branch created for issue with backing in ${orgName}`}
-        isChecked={
-          !!settings.email_notification_maintainer_issue_branch_created
-        }
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-          save({
-            email_notification_maintainer_issue_branch_created:
-              e.target.checked,
-          })
-        }}
-      />
-      <SettingsCheckbox
-        id="email_notification_maintainer_pull_request_created"
-        title={`Pull request created for issue with backing in ${orgName}`}
-        isChecked={
-          !!settings.email_notification_maintainer_pull_request_created
-        }
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-          save({
-            email_notification_maintainer_pull_request_created:
-              e.target.checked,
-          })
-        }}
-      />
-      <SettingsCheckbox
-        id="email_notification_maintainer_pull_request_merged"
-        title={`Pull request merged for issue with backing in ${orgName}`}
-        isChecked={!!settings.email_notification_maintainer_pull_request_merged}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-          save({
-            email_notification_maintainer_pull_request_merged: e.target.checked,
-          })
-        }}
-      />
-
-      <SettingsCheckbox
-        id="email_notification_backed_issue_branch_created"
-        title="Branch created for issue that you've backed"
-        isChecked={!!settings.email_notification_backed_issue_branch_created}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-          save({
-            email_notification_backed_issue_branch_created: e.target.checked,
-          })
-        }}
-      />
-      <SettingsCheckbox
-        id="email_notification_backed_issue_pull_request_created"
-        title="Pull request created for issue that you've backed"
-        isChecked={
-          !!settings.email_notification_backed_issue_pull_request_created
-        }
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-          save({
-            email_notification_backed_issue_pull_request_created:
-              e.target.checked,
-          })
-        }}
-      />
-      <SettingsCheckbox
-        id="email_notification_backed_issue_pull_request_merged"
-        title="Pull request merged for issue that you've backed"
-        isChecked={
-          !!settings.email_notification_backed_issue_pull_request_merged
-        }
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-          save({
-            email_notification_backed_issue_pull_request_merged:
-              e.target.checked,
-          })
-        }}
-      />
-    </>
+    <NotificationSettingsBox
+      settings={settings}
+      canSave={canSave}
+      onUpdated={onUpdated}
+      isSaving={mutation.isLoading}
+      save={save}
+    />
   )
 }
 
 export default NotificationSettings
+
+export const NotificationSettingsBox = (props: {
+  settings: Settings
+  onUpdated: (value: Settings) => void
+  save: (event: React.MouseEvent<HTMLButtonElement>) => void
+  canSave: boolean
+  isSaving: boolean
+}) => {
+  return (
+    <div className="w-full space-y-8">
+      <Box>
+        <SettingsCheckbox
+          id="email-newsletters-and-changelogs"
+          title={`Newsletters and changelogs`}
+          isChecked={!!props.settings.email_newsletters_and_changelogs}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+            props.onUpdated({
+              email_newsletters_and_changelogs: e.target.checked,
+            })
+          }}
+        />
+        <SettingsCheckbox
+          id="email-promotions-and-events"
+          title={`Promotions and events`}
+          isChecked={!!props.settings.email_promotions_and_events}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+            props.onUpdated({
+              email_promotions_and_events: e.target.checked,
+            })
+          }}
+        />
+        <span className="inline-flex items-center space-x-1 text-gray-500">
+          <InformationCircleIcon className="h-5 w-5 text-gray-400" />
+          <span>
+            You&apos;ll always receive emails about pledges and transactions
+          </span>
+        </span>
+      </Box>
+
+      <PrimaryButton
+        fullWidth={false}
+        classNames="min-w-[100px]"
+        loading={props.isSaving}
+        onClick={props.save}
+        disabled={!props.canSave}
+      >
+        <span>Save</span>
+      </PrimaryButton>
+    </div>
+  )
+}

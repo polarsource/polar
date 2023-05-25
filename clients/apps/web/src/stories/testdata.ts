@@ -33,6 +33,8 @@ export const user: UserRead = {
   accepted_terms_of_service: true,
   id: 'xxxabc-123',
   profile: {},
+  email_newsletters_and_changelogs: false,
+  email_promotions_and_events: false,
 }
 
 export const issue: IssueRead = {

@@ -174,9 +174,7 @@ const IssueListItem = (props: {
 
             {showPledgeAction && (
               <>
-                <div className="group-hover:delay-0 -ml-6 w-0 overflow-hidden opacity-0 delay-150 duration-100 group-hover:ml-0 group-hover:w-20 group-hover:opacity-100 group-hover:transition-all group-hover:duration-200 group-hover:ease-in-out">
-                  <PledgeNow onClick={() => setPledgeOpen(true)} />
-                </div>
+                <PledgeNow onClick={() => setPledgeOpen(true)} />
                 {pledgeOpen && (
                   <Overlay
                     onClose={() => setPledgeOpen(false)}

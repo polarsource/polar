@@ -2,11 +2,7 @@ import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import RepoSelection from '@/components/Dashboard/RepoSelection'
 import EmptyLayout from '@/components/Layout/EmptyLayout'
 import BadgeSetup from '@/components/Settings/Badge'
-import Box from '@/components/Settings/Box'
 import NotificationSettings from '@/components/Settings/NotificationSettings'
-import PaymentSettings, {
-  type Settings as PaymentSettingsValues,
-} from '@/components/Settings/PaymentSettings'
 import Topbar from '@/components/Shared/Topbar'
 import { useAuth, useRequireAuth } from '@/hooks/auth'
 import { ArrowLeftIcon } from '@heroicons/react/24/solid'
@@ -30,9 +26,6 @@ const SettingsPage: NextLayoutComponentType = () => {
   const orgData = useOrganization(handle !== 'personal' ? handle : '')
   const org = orgData.data
 
-  const [paymentSettings, setPaymentSettings] =
-    useState<PaymentSettingsValues>()
-
   const didFirstSetForOrg = useRef<string>('')
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
 
@@ -47,10 +40,6 @@ const SettingsPage: NextLayoutComponentType = () => {
     if (didFirstSetForOrg.current === org.id) {
       return
     }
-
-    setPaymentSettings({
-      billing_email: org.billing_email,
-    })
 
     didFirstSetForOrg.current = org.id
   }, [org, setCurrentOrgRepo])
@@ -87,11 +76,6 @@ const SettingsPage: NextLayoutComponentType = () => {
     setAllowShowLoadingSpinner(true)
   }, 1000)
 
-  const onPaymentSettingsUpdated = (val: PaymentSettingsValues) => {
-    save(val)
-    setPaymentSettings(val)
-  }
-
   const showOrgSettings = useMemo(() => {
     return orgData.data && handle !== 'personal'
   }, [orgData, handle])
@@ -101,10 +85,6 @@ const SettingsPage: NextLayoutComponentType = () => {
   const showPersonalSettings = useMemo(() => {
     return handle === 'personal' || handle === currentUser?.username
   }, [handle])
-
-  const showPaymentSettings = useMemo(() => {
-    return showOrgSettings
-  }, [showOrgSettings])
 
   const showBadgeSettings = useMemo(() => {
     return showOrgSettings
@@ -139,29 +119,6 @@ const SettingsPage: NextLayoutComponentType = () => {
         </div>
 
         <div className="divide-y divide-gray-200">
-          {showPaymentSettings && org && (
-            <Section>
-              <>
-                <SectionDescription
-                  title="Payment details"
-                  description={`Default payment methods for the ${org.name} organization to use when pledning new issues.`}
-                />
-
-                <Box>
-                  <>
-                    {paymentSettings && (
-                      <PaymentSettings
-                        org={org}
-                        onUpdated={onPaymentSettingsUpdated}
-                        settings={paymentSettings}
-                      />
-                    )}
-                  </>
-                </Box>
-              </>
-            </Section>
-          )}
-
           {showBadgeSettings && org && (
             <Section>
               <>

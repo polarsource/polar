@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import Pledge from '../components/Website/Pledge'
+import Pledge from '../components/Pledge'
 import { issue, org, repo } from './testdata'
 
 const meta: Meta<typeof Pledge> = {

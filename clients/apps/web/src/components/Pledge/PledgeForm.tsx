@@ -1,3 +1,4 @@
+import { useAuth } from '@/hooks/auth'
 import { Elements } from '@stripe/react-stripe-js'
 import { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
@@ -14,7 +15,6 @@ import {
 import { Checkbox, PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/utils'
 import { ChangeEvent, useEffect, useRef, useState } from 'react'
-import { useAuth } from '../../../hooks/auth'
 import PaymentForm, { generateRedirectURL } from './PaymentForm'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')

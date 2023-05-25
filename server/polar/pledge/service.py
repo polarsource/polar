@@ -35,7 +35,14 @@ from .schemas import (
     PledgeState,
 )
 
-from .hooks import PledgeHook, pledge_created, pledge_disputed, pledge_updated
+from .hooks import (
+    PledgeHook,
+    pledge_created,
+    pledge_disputed,
+    pledge_updated,
+    pledge_pending,
+    pledge_paid,
+)
 
 log = structlog.get_logger()
 
@@ -415,29 +422,47 @@ class PledgeService(ResourceServiceReader[Pledge]):
     async def mark_pending_by_issue_id(
         self, session: AsyncSession, issue_id: UUID
     ) -> None:
-        statement = (
-            sql.update(Pledge)
-            .where(
-                Pledge.issue_id == issue_id,
-                Pledge.state.in_(PledgeState.to_pending_states()),
-            )
-            .values(
-                state=PledgeState.pending,
-                scheduled_payout_at=date.today() + timedelta(days=14),
-            )
+        get = sql.select(Pledge).where(
+            Pledge.issue_id == issue_id,
+            Pledge.state.in_(PledgeState.to_pending_states()),
         )
-        await session.execute(statement)
-        await session.commit()
 
-        # get and fire events
-        pledges = await self.get_by_issue_ids(session, [issue_id])
-        for p in pledges:
-            await p.on_updated(session)
-            await pledge_updated.call(PledgeHook(session, p))
+        res = await session.execute(get)
+        pledges = res.scalars().unique().all()
+
+        for pledge in pledges:
+            # Update pledge
+            statement = (
+                sql.update(Pledge)
+                .where(
+                    Pledge.id == pledge.id,
+                    Pledge.state.in_(PledgeState.to_pending_states()),
+                )
+                .values(
+                    state=PledgeState.pending,
+                    scheduled_payout_at=date.today() + timedelta(days=14),
+                )
+                .returning(Pledge)
+            )
+            await session.execute(statement)
+            await session.commit()
+
+            # FIXME: it would be cool if we could only trigger these events if the
+            # update statement above modified the record
+            await pledge_updated.call(PledgeHook(session, pledge))
+            await pledge_pending.call(PledgeHook(session, pledge))
 
     async def mark_pending_by_pledge_id(
         self, session: AsyncSession, pledge_id: UUID
     ) -> None:
+        pledge = await self.get(session, pledge_id)
+
+        if not pledge:
+            raise ResourceNotFound(f"Pledge not found with id: {pledge_id}")
+
+        if pledge.state not in PledgeState.to_pending_states():
+            raise Exception(f"pledge is in unexpected state: {pledge.state}")
+
         statement = (
             sql.update(Pledge)
             .where(
@@ -452,11 +477,8 @@ class PledgeService(ResourceServiceReader[Pledge]):
         await session.execute(statement)
         await session.commit()
 
-        # get pledge, call on_updated
-        pledge = await self.get(session, pledge_id)
-        if pledge:
-            await pledge.on_updated(session)
-            await pledge_updated.call(PledgeHook(session, pledge))
+        await pledge_updated.call(PledgeHook(session, pledge))
+        await pledge_pending.call(PledgeHook(session, pledge))
 
     async def mark_created_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
@@ -483,7 +505,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         await pledge_created.call(PledgeHook(session, pledge))
 
-    async def mark_paid_by_pledge_id(
+    async def mark_paid_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
     ) -> None:
         pledge = await self.get_by_payment_id(session, payment_id)
@@ -491,7 +513,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not pledge:
             raise ResourceNotFound(f"Pledge not found with payment_id: {payment_id}")
 
-        if pledge.state not in PledgeState.to_created_states():
+        if pledge.state not in PledgeState.to_paid_states():
             raise Exception(f"pledge is in unexpected state: {pledge.state}")
 
         pledge.state = PledgeState.paid
@@ -506,8 +528,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
         )
         await session.commit()
-        await pledge.on_updated(session)
+
         await pledge_updated.call(PledgeHook(session, pledge))
+        await pledge_paid.call(PledgeHook(session, pledge))
 
     async def refund_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
@@ -536,7 +559,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
         )
         await session.commit()
-        await pledge.on_updated(session)
         await pledge_updated.call(PledgeHook(session, pledge))
 
     async def mark_charge_disputed_by_payment_id(
@@ -560,7 +582,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
         )
         await session.commit()
-        await pledge.on_updated(session)
         await pledge_updated.call(PledgeHook(session, pledge))
 
     async def transfer(self, session: AsyncSession, pledge_id: UUID) -> None:
@@ -591,7 +612,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if transfer_id is None:
             raise NotPermitted("Transfer failed")  # TODO: Better error
 
-        await self.mark_paid_by_pledge_id(
+        await self.mark_paid_by_payment_id(
             session, pledge.payment_id, organization_share, transfer_id
         )
 

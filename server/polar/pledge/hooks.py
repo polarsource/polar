@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Tuple
 from polar.kit.hook import Hook
 from polar.models.pledge import Pledge
 from polar.postgres import AsyncSession
@@ -15,4 +14,6 @@ class PledgeHook:
 # (not the same as created in the initiated state)
 pledge_created: Hook[PledgeHook] = Hook()
 pledge_disputed: Hook[PledgeHook] = Hook()
+pledge_pending: Hook[PledgeHook] = Hook()
+pledge_paid: Hook[PledgeHook] = Hook()
 pledge_updated: Hook[PledgeHook] = Hook()

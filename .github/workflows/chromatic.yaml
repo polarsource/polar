@@ -1,0 +1,39 @@
+name: Chromatic
+ 
+on:
+  push:
+    paths:
+      - clients/**
+ 
+jobs:
+  chromatic-deployment:
+    name: "Publish 🎨"
+    timeout-minutes: 15
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # chromatic requires the full history for it's smartness
+
+      - uses: pnpm/action-setup@v2.2.4
+        with:
+          version: 8.2.0
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v3
+        with:
+          node-version: v19.8.1
+          cache: 'pnpm'
+          cache-dependency-path: 'clients/pnpm-lock.yaml'
+
+      - name: Install dependencies
+        working-directory: ./clients
+        run: pnpm install
+
+      - name: Publish to Chromatic
+        uses: chromaui/action@v1
+        with:
+          projectToken: ${{ secrets.CI_CHROMATIC_PROJECT_TOKEN }}
+          workingDir: ./clients/apps/web

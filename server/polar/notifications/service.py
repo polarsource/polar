@@ -14,7 +14,6 @@ from polar.notifications.notification import (
     NotificationBase,
     PledgerPledgePendingNotification,
 )
-from polar.pledge.service import pledge
 from polar.models.notification import Notification
 from polar.models.issue import Issue
 from polar.postgres import AsyncSession
@@ -113,57 +112,35 @@ class NotificationsService:
         await session.commit()
         await enqueue_job("notifications.send", notification_id=notification.id)
 
-    async def create_for_issue(
+    async def send_to_pledger(
         self,
         session: AsyncSession,
-        issue: Issue,
+        pledge: Pledge,
         notif: PartialNotification,
     ):
-        # send to owning org
-        if issue.organization_id:
-            # send
+        if pledge.by_organization_id:
             await self.send_to_org(
                 session=session,
-                org_id=issue.organization_id,
+                org_id=pledge.by_organization_id,
                 notif=notif,
             )
+            return
 
-    async def create_for_issue_pledgers(
-        self,
-        session: AsyncSession,
-        issue: Issue,
-        notif: PartialNotification,
-    ):
-        sent_to_orgs: set[UUID] = set()
+        if pledge.by_user_id:
+            await self.send_to_user(
+                session=session,
+                user_id=pledge.by_user_id,
+                notif=notif,
+            )
+            return
 
-        # send to pledgers
-        pledges = await pledge.get_by_issue_ids(session, [issue.id])
-        if pledges:
-            for p in pledges:
-                if p.by_organization_id:
-                    await self.send_to_org(
-                        session=session,
-                        org_id=p.by_organization_id,
-                        notif=notif,
-                    )
-
-                    sent_to_orgs.add(p.by_organization_id)
-                    continue
-
-                if p.by_user_id:
-                    await self.send_to_user(
-                        session=session,
-                        user_id=p.by_user_id,
-                        notif=notif,
-                    )
-                    continue
-
-                if p.email:
-                    await self.send_to_anonymous_email(
-                        session=session,
-                        email_addr=p.email,
-                        notif=notif,
-                    )
+        if pledge.email:
+            await self.send_to_anonymous_email(
+                session=session,
+                email_addr=pledge.email,
+                notif=notif,
+            )
+            return
 
     def parse_payload(
         self, n: Notification

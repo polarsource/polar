@@ -133,9 +133,9 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession):
         maintainer_has_stripe_account=True if org.account else False,
     )
 
-    await notification_service.create_for_issue(
-        session,
-        issue,
+    await notification_service.send_to_org(
+        session=session,
+        org_id=org.id,
         notif=PartialNotification(
             issue_id=pledge.issue_id, pledge_id=pledge.id, payload=n
         ),
@@ -169,9 +169,9 @@ async def pledge_pending_notification(pledge: Pledge, session: AsyncSession):
         maintainer_has_stripe_account=True if org.account else False,
     )
 
-    await notification_service.create_for_issue(
-        session,
-        issue,
+    await notification_service.send_to_org(
+        session=session,
+        org_id=org.id,
         notif=PartialNotification(
             issue_id=pledge.issue_id, pledge_id=pledge.id, payload=n
         ),
@@ -188,9 +188,9 @@ async def pledge_pending_notification(pledge: Pledge, session: AsyncSession):
         issue_number=issue.number,
     )
 
-    await notification_service.create_for_issue_pledgers(
+    await notification_service.send_to_pledger(
         session,
-        issue,
+        pledge,
         notif=PartialNotification(
             issue_id=pledge.issue_id, pledge_id=pledge.id, payload=pledger_notif
         ),
@@ -224,9 +224,9 @@ async def pledge_paid_notification(
         paid_out_amount=get_cents_in_dollar_string(transaction.amount),
     )
 
-    await notification_service.create_for_issue(
-        session,
-        issue,
+    await notification_service.send_to_org(
+        session=session,
+        org_id=org.id,
         notif=PartialNotification(
             issue_id=pledge.issue_id, pledge_id=pledge.id, payload=n
         ),

@@ -96,7 +96,7 @@ async def predictable_issue(
         external_id=random.randrange(5000),
         state="open",
         issue_created_at=datetime.now(),
-        issue_updated_at=datetime.now(),
+        issue_modified_at=datetime.now(),
     )
 
     await session.commit()
@@ -161,7 +161,7 @@ async def predictable_pull_request(
         platform=Platforms.github,
         state="open",
         issue_created_at=datetime.now(),
-        issue_updated_at=datetime.now(),
+        issue_modified_at=datetime.now(),
     )
 
     await session.commit()

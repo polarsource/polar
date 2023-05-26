@@ -100,7 +100,7 @@ async def issue(
         external_id=secrets.randbelow(100000),
         state="open",
         issue_created_at=datetime.now(),
-        issue_updated_at=datetime.now(),
+        issue_modified_at=datetime.now(),
     )
 
     await session.commit()
@@ -183,7 +183,7 @@ async def pull_request(
         platform=Platforms.github,
         state="open",
         issue_created_at=datetime.now(),
-        issue_updated_at=datetime.now(),
+        issue_modified_at=datetime.now(),
     )
 
     await session.commit()
@@ -198,7 +198,6 @@ async def user_organization(
 ) -> UserOrganization:
     a = await UserOrganization.create(
         session=session,
-        id=uuid.uuid4(),
         user_id=user.id,
         organization_id=organization.id,
     )
@@ -215,7 +214,6 @@ async def user_organization_second(
 ) -> UserOrganization:
     a = await UserOrganization.create(
         session=session,
-        id=uuid.uuid4(),
         user_id=user_second.id,
         organization_id=organization.id,
     )

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import date, timedelta
+from datetime import timedelta
 import datetime
 import math
 
@@ -18,7 +18,6 @@ from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.pledge import Pledge
-from polar.issue.service import issue as issue_service
 from polar.postgres import AsyncSession, sql
 from sqlalchemy.orm import (
     joinedload,

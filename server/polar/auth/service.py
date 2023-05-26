@@ -1,6 +1,5 @@
 import structlog
 from fastapi import Response, Request
-from fastapi.responses import RedirectResponse
 from pydantic import validator
 from datetime import datetime
 

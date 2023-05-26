@@ -39,35 +39,65 @@ const IssueListItemDecoration = ({
   const showPledges = pledges && pledges.length > 0
 
   const ONE_DAY = 1000 * 60 * 60 * 24
+  const now = new Date()
+
+  const remainingDays = (pledge: PledgeRead) => {
+    if (!pledge.scheduled_payout_at) {
+      return -1
+    }
+
+    return Math.floor(
+      (new Date(pledge.scheduled_payout_at).getTime() - now.getTime()) /
+        ONE_DAY,
+    )
+  }
+
+  const disputablePledges = pledges
+    .filter(
+      (p) =>
+        p.authed_user_can_admin &&
+        p.scheduled_payout_at &&
+        p.state === PledgeState.PENDING &&
+        remainingDays(p) >= 0,
+    )
+    .map((p) => {
+      return {
+        ...p,
+        remaining_days: remainingDays(p),
+      }
+    })
+
+  const pendingPayoutPledges = pledges.filter(
+    (p) => p.scheduled_payout_at && remainingDays(p) < 0,
+  )
+
+  const disputedPledges = pledges.filter(
+    (p) => p.state === PledgeState.DISPUTED,
+  )
+
   const canDisputeAny =
     pledges &&
     pledges.find(
       (p) =>
         p.authed_user_can_admin &&
         p.scheduled_payout_at &&
-        p.state === PledgeState.PENDING,
+        p.state === PledgeState.PENDING &&
+        remainingDays(p) >= 0,
     )
-  const now = new Date()
-  const disputeDays =
-    canDisputeAny && canDisputeAny.scheduled_payout_at
-      ? Math.floor(
-          (new Date(canDisputeAny.scheduled_payout_at).getTime() -
-            now.getTime()) /
-            ONE_DAY,
-        )
-      : 0
 
-  const disputedPledges =
-    pledges?.filter((p) => p.state === PledgeState.DISPUTED) || []
+  const pledgeStatusShowCount =
+    disputablePledges.length +
+    pendingPayoutPledges.length +
+    disputedPledges.length
 
-  const showDisputeBox = disputedPledges.length > 0 || canDisputeAny
+  const showPledgeStatusBox = pledgeStatusShowCount > 0
+  const disputeBoxShowAmount = pledgeStatusShowCount > 1
 
-  const onClickDisputeButton = () => {
+  const onClickDisputeButton = (pledge: PledgeRead) => {
     if (!canDisputeAny || !onDispute) {
       return
     }
-    // TODO: Support disputing multiple pledges to the same issue?
-    onDispute(canDisputeAny)
+    onDispute(pledge)
   }
 
   const haveReferences = references && references.length > 0
@@ -101,40 +131,73 @@ const IssueListItemDecoration = ({
           )}
         </div>
       </div>
-      {showDisputeAction && showDisputeBox && (
+      {showDisputeAction && showPledgeStatusBox && (
         <div className="border-t-2 border-gray-100 bg-gray-50 px-4 py-1">
-          {canDisputeAny && (
-            <div>
-              <span className="text-sm text-gray-500">
-                <a
-                  href="#"
-                  onClick={onClickDisputeButton}
-                  className="text-blue-600"
-                >
-                  Dispute
-                </a>{' '}
-                within {disputeDays} {disputeDays === 1 ? 'day' : 'days'}
-              </span>
-            </div>
-          )}
-
-          {disputedPledges.map((p) => (
-            <div key={p.id}>
-              {p.authed_user_can_admin && (
+          {disputablePledges.map((p) => {
+            return (
+              <div key={p.id}>
                 <span className="text-sm text-gray-500">
-                  You've disputed your pledge ($
-                  {getCentsInDollarString(p.amount)})
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      onClickDisputeButton(p)
+                    }}
+                    className="text-blue-600"
+                  >
+                    Dispute
+                  </a>{' '}
+                  {p.remaining_days > 0 && (
+                    <>
+                      within {p.remaining_days}{' '}
+                      {p.remaining_days === 1 ? 'day' : 'days'}
+                    </>
+                  )}
+                  {p.remaining_days == 0 && <>today</>}{' '}
+                  {disputeBoxShowAmount && (
+                    <>(${getCentsInDollarString(p.amount)})</>
+                  )}
                 </span>
-              )}
+              </div>
+            )
+          })}
 
-              {!p.authed_user_can_admin && (
+          {disputedPledges.map((p) => {
+            return (
+              <div key={p.id}>
+                {p.authed_user_can_admin && (
+                  <span className="text-sm text-gray-500">
+                    You've disputed your pledge{' '}
+                    {disputeBoxShowAmount && (
+                      <>(${getCentsInDollarString(p.amount)})</>
+                    )}
+                  </span>
+                )}
+
+                {!p.authed_user_can_admin && (
+                  <span className="text-sm text-gray-500">
+                    {p.pledger_name} disputed their pledge{' '}
+                    {disputeBoxShowAmount && (
+                      <>(${getCentsInDollarString(p.amount)})</>
+                    )}
+                  </span>
+                )}
+              </div>
+            )
+          })}
+
+          {pendingPayoutPledges.map((p) => {
+            return (
+              <div key={p.id}>
                 <span className="text-sm text-gray-500">
-                  {p.pledger_name} disputed their pledge ($
-                  {getCentsInDollarString(p.amount)})
+                  Payout pending{' '}
+                  {disputeBoxShowAmount && (
+                    <>(${getCentsInDollarString(p.amount)})</>
+                  )}
                 </span>
-              )}
-            </div>
-          ))}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

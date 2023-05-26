@@ -23,6 +23,12 @@ function addDays(date: Date, days: number) {
   return result
 }
 
+function addHours(date: Date, hours: number) {
+  var result = new Date(date)
+  result.setHours(result.getHours() + hours)
+  return result
+}
+
 const pledges: PledgeRead[] = [
   {
     id: 'xx',
@@ -47,6 +53,64 @@ const pledgeDisputable: PledgeRead[] = [
     state: PledgeState.PENDING,
     scheduled_payout_at: addDays(new Date(), 7).toISOString(),
     authed_user_can_admin: true,
+    pledger_name: 'zz',
+  },
+]
+
+const pledgeDisputableToday: PledgeRead[] = [
+  {
+    id: 'xx',
+    created_at: 'what',
+    issue_id: 'nah',
+    amount: 1234,
+    repository_id: 'xx',
+    organization_id: 'yy',
+    state: PledgeState.PENDING,
+    scheduled_payout_at: addHours(new Date(), 2).toISOString(),
+    authed_user_can_admin: true,
+    pledger_name: 'zz',
+  },
+]
+
+const pledgeDisputableYesterday: PledgeRead[] = [
+  {
+    id: 'xx',
+    created_at: 'what',
+    issue_id: 'nah',
+    amount: 1234,
+    repository_id: 'xx',
+    organization_id: 'yy',
+    state: PledgeState.PENDING,
+    scheduled_payout_at: addDays(new Date(), -1).toISOString(),
+    authed_user_can_admin: true,
+    pledger_name: 'zz',
+  },
+]
+
+const pledgeDisputed: PledgeRead[] = [
+  {
+    id: 'xx',
+    created_at: 'what',
+    issue_id: 'nah',
+    amount: 1234,
+    repository_id: 'xx',
+    organization_id: 'yy',
+    state: PledgeState.DISPUTED,
+    authed_user_can_admin: true,
+    pledger_name: 'zz',
+  },
+]
+
+const pledgeDisputedByOther: PledgeRead[] = [
+  {
+    id: 'xx',
+    created_at: 'what',
+    issue_id: 'nah',
+    amount: 1234,
+    repository_id: 'xx',
+    organization_id: 'yy',
+    state: PledgeState.DISPUTED,
+    authed_user_can_admin: false,
     pledger_name: 'zz',
   },
 ]
@@ -209,11 +273,23 @@ const meta: Meta<typeof IssueListItem> = {
       defaultValue: issuePullRequest,
     },
     pledges: {
-      options: ['None', 'Yes', 'Disputable'],
+      options: [
+        'None',
+        'Yes',
+        'Disputable',
+        'DisputableToday',
+        'PendingPastDispute',
+        'DisputedSelf',
+        'DisputedOther',
+      ],
       mapping: {
         None: [],
         Yes: pledges,
         Disputable: pledgeDisputable,
+        DisputableToday: pledgeDisputableToday,
+        PendingPastDispute: pledgeDisputableYesterday,
+        DisputedSelf: pledgeDisputed,
+        DisputedOther: pledgeDisputedByOther,
       },
       defaultValue: pledges,
     },
@@ -328,6 +404,51 @@ export const PledgeCanDispute: Story = {
   args: {
     ...Default.args,
     pledges: pledgeDisputable,
+  },
+}
+
+export const PledgeCanDisputeToday: Story = {
+  args: {
+    ...Default.args,
+    pledges: pledgeDisputableToday,
+  },
+}
+
+export const PledgeCanDisputeYesterday: Story = {
+  args: {
+    ...Default.args,
+    pledges: pledgeDisputableYesterday,
+  },
+}
+
+export const PledgeDisputed: Story = {
+  args: {
+    ...Default.args,
+    pledges: pledgeDisputed,
+  },
+}
+
+export const PledgeDisputedByOther: Story = {
+  args: {
+    ...Default.args,
+    pledges: pledgeDisputedByOther,
+  },
+}
+
+export const PledgeDisputableMultiple: Story = {
+  args: {
+    ...Default.args,
+    pledges: [
+      { ...pledgeDisputedByOther[0], amount: 1000 },
+      { ...pledgeDisputedByOther[0], amount: 2000 },
+      { ...pledgeDisputable[0], amount: 3500 },
+      { ...pledgeDisputableYesterday[0], amount: 2200 },
+      { ...pledgeDisputableYesterday[0], amount: 10000 },
+      { ...pledgeDisputableToday[0], amount: 3800 },
+      { ...pledgeDisputableToday[0], amount: 3500 },
+      { ...pledgeDisputed[0], amount: 3500 },
+      { ...pledgeDisputable[0], amount: 8300 },
+    ],
   },
 }
 

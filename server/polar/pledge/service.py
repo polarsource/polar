@@ -37,6 +37,7 @@ from .schemas import (
 
 from .hooks import (
     PledgeHook,
+    PledgePaidHook,
     pledge_created,
     pledge_disputed,
     pledge_updated,
@@ -518,19 +519,20 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         pledge.state = PledgeState.paid
         pledge.transfer_id = transaction_id
-        session.add(pledge)
-        session.add(
-            PledgeTransaction(
-                pledge_id=pledge.id,
-                type=PledgeTransactionType.transfer,
-                amount=amount,
-                transaction_id=transaction_id,
-            )
+
+        transaction = PledgeTransaction(
+            pledge_id=pledge.id,
+            type=PledgeTransactionType.transfer,
+            amount=amount,
+            transaction_id=transaction_id,
         )
+
+        session.add(pledge)
+        session.add(transaction)
         await session.commit()
 
         await pledge_updated.call(PledgeHook(session, pledge))
-        await pledge_paid.call(PledgeHook(session, pledge))
+        await pledge_paid.call(PledgePaidHook(session, pledge, transaction))
 
     async def refund_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str

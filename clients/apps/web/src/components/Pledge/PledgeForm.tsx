@@ -203,7 +203,13 @@ const PledgeForm = ({
       throw new Error('got payment success but no pledge')
     }
 
-    const location = generateRedirectURL(pledge, gotoURL, paymentIntent)
+    // Redirect to personal dashboard if authenticated unless gotoURL is set
+    let redirectTo = gotoURL
+    if (!redirectTo && currentUser) {
+      redirectTo = '/dashboard/personal?tab=dependencies'
+    }
+
+    const location = generateRedirectURL(pledge, redirectTo, paymentIntent)
     await router.push(location)
   }
 

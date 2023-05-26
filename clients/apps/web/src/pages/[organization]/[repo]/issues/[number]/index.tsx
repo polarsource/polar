@@ -6,11 +6,19 @@ import Head from 'next/head'
 import { api } from 'polarkit'
 import { Platforms, PledgeResources } from 'polarkit/api/client'
 
+type Params = PledgeResources & {
+  query?: {
+    as_org?: string
+    goto_url?: string
+  }
+}
+
 const PledgePage: NextPage = ({
   organization,
   repository,
   issue,
-}: PledgeResources) => {
+  query,
+}: Params) => {
   if (!issue) {
     return <PageNotFound />
   }
@@ -32,6 +40,8 @@ const PledgePage: NextPage = ({
           organization={organization}
           repository={repository}
           issue={issue}
+          asOrg={query?.as_org}
+          gotoURL={query?.goto_url}
         />
 
         <HowItWorks />

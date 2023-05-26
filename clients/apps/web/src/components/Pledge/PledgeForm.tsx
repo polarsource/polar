@@ -29,10 +29,14 @@ const PledgeForm = ({
   organization,
   repository,
   issue,
+  asOrg,
+  gotoURL,
 }: {
   issue: IssueRead
   organization: OrganizationPublicRead
   repository: RepositoryRead
+  asOrg?: string
+  gotoURL?: string
 }) => {
   const [pledge, setPledge] = useState<PledgeMutationResponse | null>(null)
   const [amount, setAmount] = useState(0)
@@ -58,6 +62,16 @@ const PledgeForm = ({
     }
   }, [currentUser])
 
+  const getOrganizationForPledge = (): string | undefined => {
+    if (!asOrg) return undefined
+
+    // Filter out personal organizations - use user instead
+    if (currentUser && currentUser.id === asOrg) {
+      return undefined
+    }
+    return asOrg
+  }
+
   const createPledge = async (pledgeSync: PledgeSync) => {
     return await api.pledges.createPledge({
       platform: organization.platform,
@@ -68,6 +82,7 @@ const PledgeForm = ({
         issue_id: issue.id,
         amount: pledgeSync.amount,
         email: pledgeSync.email,
+        pledge_as_org: getOrganizationForPledge(),
       },
     })
   }
@@ -86,6 +101,7 @@ const PledgeForm = ({
       requestBody: {
         amount: pledgeSync.amount,
         email: pledgeSync.email,
+        pledge_as_org: getOrganizationForPledge(),
       },
     })
   }
@@ -187,7 +203,7 @@ const PledgeForm = ({
       throw new Error('got payment success but no pledge')
     }
 
-    const location = generateRedirectURL(pledge, paymentIntent)
+    const location = generateRedirectURL(pledge, gotoURL, paymentIntent)
     await router.push(location)
   }
 
@@ -301,6 +317,7 @@ const PledgeForm = ({
               setSyncing={setSyncing}
               setErrorMessage={setErrorMessage}
               onSuccess={onStripePaymentSuccess}
+              gotoURL={gotoURL}
             />
           </Elements>
         )}

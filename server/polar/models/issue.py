@@ -87,26 +87,26 @@ class IssueFields:
     comments: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     author: Mapped[JSONDict | None] = mapped_column(
-        JSONB(none_as_null=True), nullable=True, default=dict
+        JSONB(none_as_null=True), nullable=True
     )
     author_association: Mapped[str | None] = mapped_column(String, nullable=True)
     labels: Mapped[JSONList | None] = mapped_column(
-        JSONB(none_as_null=True), nullable=True, default=list
+        JSONB(none_as_null=True), nullable=True
     )
     assignee: Mapped[JSONDict | None] = mapped_column(
-        JSONB(none_as_null=True), nullable=True, default=dict
+        JSONB(none_as_null=True), nullable=True
     )
     assignees: Mapped[JSONList | None] = mapped_column(
-        JSONB(none_as_null=True), nullable=True, default=list
+        JSONB(none_as_null=True), nullable=True
     )
     milestone: Mapped[JSONDict | None] = mapped_column(
-        JSONB(none_as_null=True), nullable=True, default=dict
+        JSONB(none_as_null=True), nullable=True
     )
     closed_by: Mapped[JSONDict | None] = mapped_column(
-        JSONB(none_as_null=True), nullable=True, default=dict
+        JSONB(none_as_null=True), nullable=True
     )
     reactions: Mapped[JSONDict | None] = mapped_column(
-        JSONB(none_as_null=True), nullable=True, default=dict
+        JSONB(none_as_null=True), nullable=True
     )
 
     state: Mapped[str] = mapped_column(StringEnum(State), nullable=False)

@@ -91,7 +91,7 @@ const IssueListItemDecoration = ({
     disputedPledges.length
 
   const showPledgeStatusBox = pledgeStatusShowCount > 0
-  const disputeBoxShowAmount = pledgeStatusShowCount > 1
+  const disputeBoxShowAmount = pledgeStatusShowCount > 1 || true
 
   const onClickDisputeButton = (pledge: PledgeRead) => {
     if (!canDisputeAny || !onDispute) {

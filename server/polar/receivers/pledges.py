@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Any
 
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
@@ -16,7 +15,6 @@ from polar.notifications.notification import (
     MaintainerPledgePendingNotification,
     PledgerPledgePendingNotification,
 )
-from polar.notifications.schemas import NotificationType
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.notifications.service import (
@@ -34,7 +32,6 @@ from polar.pledge.hooks import (
     pledge_pending as pledge_pending_hook,
     pledge_paid as pledge_paid_hook,
     pledge_updated as pledge_updated_hook,
-    pledge_disputed as pledge_disputed_hook,
 )
 from polar.config import settings
 

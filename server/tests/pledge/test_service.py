@@ -1,6 +1,12 @@
+from dataclasses import dataclass
+from datetime import timedelta
+import re
 import uuid
 import pytest
 from pytest_mock import MockerFixture
+from polar.enums import AccountType
+from polar.kit.utils import utc_now
+from polar.models.account import Account
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
@@ -143,4 +149,75 @@ async def test_mark_paid_by_payment_id_fails_unexpected_state(
     m.assert_not_called()
 
 
-# TODO: it would be nice to have a test for transfer()
+@pytest.mark.asyncio
+async def test_transfer_unexpected_state(
+    session: AsyncSession,
+    pledge: Pledge,
+    mocker: MockerFixture,
+) -> None:
+    with pytest.raises(Exception, match="Pledge is not in pending state") as excinfo:
+        await pledge_service.transfer(session, pledge.id)
+
+
+@pytest.mark.asyncio
+async def test_transfer_early(
+    session: AsyncSession,
+    pledge: Pledge,
+    mocker: MockerFixture,
+) -> None:
+    await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
+
+    with pytest.raises(
+        Exception,
+        match=re.escape("Pledge is not ready for payput (still in dispute window)"),
+    ) as excinfo:
+        await pledge_service.transfer(session, pledge.id)
+
+
+@pytest.mark.asyncio
+async def test_transfer(
+    session: AsyncSession,
+    pledge: Pledge,
+    organization: Organization,
+    user: User,
+    mocker: MockerFixture,
+) -> None:
+    await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
+
+    got = await pledge_service.get(session, pledge.id)
+    assert got is not None
+    got.scheduled_payout_at = utc_now() - timedelta(days=2)
+    got.payment_id = "test_transfer_payment_id"
+    await got.save(session)
+
+    account = await Account.create(
+        session=session,
+        organization_id=organization.id,
+        account_type=AccountType.stripe,
+        admin_id=user.id,
+        stripe_id="testing_account_1",
+        is_details_submitted=True,
+        is_charges_enabled=True,
+        is_payouts_enabled=True,
+    )
+    # session.expire_all()
+    await session.flush()
+    organization.account = account
+    await organization.save(session)
+
+    @dataclass
+    class Trans:
+        @property
+        def stripe_id(self) -> str:
+            return "transfer_id"
+
+    transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")
+    transfer.return_value = Trans()
+
+    await pledge_service.transfer(session, pledge.id)
+
+    transfer.assert_called_once()
+
+    after_transfer = await pledge_service.get(session, pledge.id)
+    assert after_transfer is not None
+    assert after_transfer.state is PledgeState.paid

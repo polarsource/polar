@@ -94,10 +94,6 @@ const Search = (props: {
 
   return (
     <div className="flex w-full flex-col space-y-3">
-      {showTabs.length === 1 && (
-        <h2 className="text-center text-gray-500">{tabName(showTabs[0])}</h2>
-      )}
-
       {showTabs.length > 1 && (
         <Tabs>
           <>

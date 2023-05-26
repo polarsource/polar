@@ -441,7 +441,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 )
                 .values(
                     state=PledgeState.pending,
-                    scheduled_payout_at=date.today() + timedelta(days=14),
+                    scheduled_payout_at=utc_now() + timedelta(days=14),
                 )
                 .returning(Pledge)
             )
@@ -472,7 +472,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
             .values(
                 state=PledgeState.pending,
-                scheduled_payout_at=date.today() + timedelta(days=14),
+                scheduled_payout_at=utc_now() + timedelta(days=14),
             )
         )
         await session.execute(statement)

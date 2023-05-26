@@ -397,7 +397,7 @@ def issue_progress(issue: Issue) -> IssueStatus:
         return IssueStatus.in_progress
 
     # triaged
-    if issue.labels or issue.assignee or issue.assignees:
+    if issue.assignee or issue.assignees:
         return IssueStatus.triaged
 
     # backlog

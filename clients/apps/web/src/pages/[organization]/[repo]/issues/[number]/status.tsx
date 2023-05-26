@@ -51,6 +51,7 @@ const PledgeStatusPage: NextLayoutComponentType = ({
             repo={repository}
             pledges={[pledge]}
             references={[]}
+            checkJustPledged={false}
           />
         </GrayCard>
 

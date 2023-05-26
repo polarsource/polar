@@ -60,7 +60,7 @@ async def embed_badge_retroactively_on_repository(
                 session=session,
                 repository_ids=[repository.id],
                 issue_list_type=IssueListType.issues,
-                sort_by=IssueSortBy.recently_updated,
+                sort_by=IssueSortBy.least_recently_updated,
                 include_statuses=[
                     IssueStatus.backlog,
                     IssueStatus.triaged,

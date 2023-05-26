@@ -300,8 +300,6 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         if limit:
             statement = statement.limit(limit).offset(offset)
 
-        print(statement)
-
         res = await session.execute(statement)
         rows = res.unique().all()
 

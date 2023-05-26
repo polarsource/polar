@@ -106,6 +106,7 @@ class ActiveRecordMixin(Generic[ModelType]):
     ) -> ModelType:
         instance = cls()
         instance.fill(**values)
+
         created = await instance.save(session, autocommit=autocommit)
         await created.on_created(session)
         return created
@@ -190,6 +191,9 @@ class ActiveRecordMixin(Generic[ModelType]):
     ) -> ModelType:
         exclude = exclude if exclude else set()
         for col, value in values.items():
+            if not hasattr(self, col):
+                raise Exception(f"has no attr: {col}")
+
             if isinstance(include, set) and col not in include:
                 continue
 

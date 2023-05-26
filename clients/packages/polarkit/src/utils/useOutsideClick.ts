@@ -31,8 +31,6 @@ export function useOutsideClick(
 
       // Not contained to any given refs
       if (!containedToAnyRefs) {
-        event.stopPropagation()
-        event.preventDefault()
         handler()
       }
     }

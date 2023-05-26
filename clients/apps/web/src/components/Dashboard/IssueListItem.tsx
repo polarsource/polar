@@ -244,13 +244,11 @@ const DisputeModal = (props: { pledge: PledgeRead }) => {
       <>
         <h1 className="text-2xl font-normal">Dispute your pledge</h1>
         <p className="text-sm text-gray-500">
-          You can dispute your pledge if you believe that you&apos;ve been
-          scammed, or that the issue that you pledged towards has not been
-          resolved in a satisfacotry way.
+          Still an issue or not solved in a satisfactory way?
           <br />
           <br />
-          Once submitted, Polar will prevent the money from being paid out to
-          the maintainer until the dispute has been resolved.
+          Submit a dispute and the money will be on hold until Polar has
+          manually reviewed the issue and resolved the dispute.
         </p>
         <table className="min-w-full divide-y divide-gray-300">
           <tr>

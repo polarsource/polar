@@ -184,33 +184,6 @@ async def update_pledge(
     )
 
 
-@router.post(
-    "/{platform}/{org_name}/{repo_name}/issues/{number}/pledges/{pledge_id}/confirm",
-    response_model=PledgeMutationResponse,
-)
-async def confirm_pledge(
-    platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    number: int,
-    pledge_id: UUID,
-    session: AsyncSession = Depends(get_db_session),
-) -> PledgeMutationResponse:
-    org, repo, issue = await organization_service.get_with_repo_and_issue(
-        session=session,
-        platform=platform,
-        org_name=org_name,
-        repo_name=repo_name,
-        issue=number,
-    )
-
-    return await pledge_service.confirm_pledge(
-        session=session,
-        repo=repo,
-        pledge_id=pledge_id,
-    )
-
-
 @router.get(
     "/me/pledges",
     response_model=list[PledgeRead],

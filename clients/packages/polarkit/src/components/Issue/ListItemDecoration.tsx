@@ -52,28 +52,27 @@ const IssueListItemDecoration = ({
     )
   }
 
-  const disputablePledges = pledges
-    .filter(
-      (p) =>
-        p.authed_user_can_admin &&
-        p.scheduled_payout_at &&
-        p.state === PledgeState.PENDING &&
-        remainingDays(p) >= 0,
-    )
-    .map((p) => {
-      return {
-        ...p,
-        remaining_days: remainingDays(p),
-      }
-    })
+  const disputablePledges =
+    pledges
+      ?.filter(
+        (p) =>
+          p.authed_user_can_admin &&
+          p.scheduled_payout_at &&
+          p.state === PledgeState.PENDING &&
+          remainingDays(p) >= 0,
+      )
+      .map((p) => {
+        return {
+          ...p,
+          remaining_days: remainingDays(p),
+        }
+      }) || []
 
-  const pendingPayoutPledges = pledges.filter(
-    (p) => p.scheduled_payout_at && remainingDays(p) < 0,
-  )
+  const pendingPayoutPledges =
+    pledges?.filter((p) => p.scheduled_payout_at && remainingDays(p) < 0) || []
 
-  const disputedPledges = pledges.filter(
-    (p) => p.state === PledgeState.DISPUTED,
-  )
+  const disputedPledges =
+    pledges?.filter((p) => p.state === PledgeState.DISPUTED) || []
 
   const canDisputeAny =
     pledges &&

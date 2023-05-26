@@ -48,12 +48,20 @@ export const Default: Story = {
     showControls: false,
     isSettingPage: false,
   },
+  parameters: {
+    // Disable chromatic for this component as it's using animations
+    chromatic: { disableSnapshot: true },
+  },
 }
 
 export const ShowControls: Story = {
   args: {
     ...Default.args,
     showControls: true,
+  },
+  parameters: {
+    // Disable chromatic for this component as it's using animations
+    chromatic: { disableSnapshot: true },
   },
 }
 

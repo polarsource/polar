@@ -28,6 +28,7 @@ class IssueStatus(str, Enum):
 class IssueSortBy(str, Enum):
     newest = "newest"
     recently_updated = "recently_updated"
+    least_recently_updated = "least_recently_updated"
     pledged_amount_desc = "pledged_amount_desc"
     relevance = "relevance"  # best search match
     dependencies_default = (

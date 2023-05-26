@@ -4,6 +4,7 @@ from uuid import UUID
 from typing import List, Sequence, Tuple
 from sqlalchemy import (
     Integer,
+    asc,
     desc,
     func,
     not_,
@@ -164,25 +165,11 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
 
             is_completed = Issue.issue_closed_at.is_not(None)
 
-            is_pull_request = and_(
-                Issue.issue_has_pull_request_relationship.is_(True), not_(is_completed)
-            )
+            is_pull_request = Issue.issue_has_pull_request_relationship.is_(True)
 
-            is_in_progress = and_(
-                Issue.issue_has_in_progress_relationship.is_(True),
-                not_(is_pull_request),
-                not_(is_completed),
-            )
+            is_in_progress = Issue.issue_has_in_progress_relationship.is_(True)
 
-            is_triaged = and_(
-                or_(
-                    Issue.assignee.is_not(None),
-                    Issue.assignees.is_not(None),
-                ),
-                not_(is_in_progress),
-                not_(is_pull_request),
-                not_(is_completed),
-            )
+            is_triaged = or_(Issue.assignee.is_not(None), Issue.assignees.is_not(None))
 
             # backlog
             is_backlog: ColumnElement[bool] = and_(
@@ -195,14 +182,50 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             for status in include_statuses:
                 if status == IssueStatus.backlog:
                     conds.append(is_backlog)
+
                 if status == IssueStatus.triaged:
-                    conds.append(is_triaged)
+                    conds.append(
+                        and_(
+                            not_(is_backlog),
+                            is_triaged,
+                            not_(is_in_progress),
+                            not_(is_pull_request),
+                            not_(is_completed),
+                        )
+                    )
+
                 if status == IssueStatus.in_progress:
-                    conds.append(is_in_progress)
+                    conds.append(
+                        and_(
+                            not_(is_backlog),
+                            not_(is_triaged),
+                            is_in_progress,
+                            not_(is_pull_request),
+                            not_(is_completed),
+                        )
+                    )
+
                 if status == IssueStatus.pull_request:
-                    conds.append(is_pull_request)
+                    conds.append(
+                        and_(
+                            not_(is_backlog),
+                            not_(is_triaged),
+                            not_(is_in_progress),
+                            is_pull_request,
+                            not_(is_completed),
+                        )
+                    )
+
                 if status == IssueStatus.completed:
-                    conds.append(is_completed)
+                    conds.append(
+                        and_(
+                            not_(is_backlog),
+                            not_(is_triaged),
+                            not_(is_in_progress),
+                            not_(is_pull_request),
+                            is_completed,
+                        )
+                    )
 
             statement = statement.where(or_(*conds))
 
@@ -255,7 +278,9 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         elif sort_by == IssueSortBy.dependencies_default:
             statement = statement.order_by(nullslast(desc(sql.func.sum(Pledge.amount))))
         elif sort_by == IssueSortBy.recently_updated:
-            statement = statement.order_by(Issue.issue_modified_at)
+            statement = statement.order_by(desc(Issue.issue_modified_at))
+        elif sort_by == IssueSortBy.least_recently_updated:
+            statement = statement.order_by(asc(Issue.issue_modified_at))
         else:
             raise Exception("unknown sort_by")
 
@@ -274,6 +299,8 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
 
         if limit:
             statement = statement.limit(limit).offset(offset)
+
+        print(statement)
 
         res = await session.execute(statement)
         rows = res.unique().all()

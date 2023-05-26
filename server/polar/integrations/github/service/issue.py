@@ -45,10 +45,10 @@ class GithubIssueService(IssueService):
         session: AsyncSession,
         *,
         data: Union[
-            GithubIssue,  # TODO: remove nested union
             github.webhooks.IssuesOpenedPropIssue,
             github.webhooks.IssuesClosedPropIssue,
             github.webhooks.Issue,
+            github.rest.Issue,
         ],
         organization: Organization,
         repository: Repository,
@@ -67,10 +67,10 @@ class GithubIssueService(IssueService):
         *,
         data: list[
             Union[
-                GithubIssue,  # TODO: remove nested union
                 github.webhooks.IssuesOpenedPropIssue,
                 github.webhooks.IssuesClosedPropIssue,
                 github.webhooks.Issue,
+                github.rest.Issue,
             ],
         ],
         organization: Organization,
@@ -78,10 +78,10 @@ class GithubIssueService(IssueService):
     ) -> Sequence[Issue]:
         def parse(
             issue: Union[
-                GithubIssue,  # TODO: remove nested union
                 github.webhooks.IssuesOpenedPropIssue,
                 github.webhooks.IssuesClosedPropIssue,
                 github.webhooks.Issue,
+                github.rest.Issue,
             ],
         ) -> IssueCreate:
             return IssueCreate.from_github(
@@ -218,7 +218,6 @@ class GithubIssueService(IssueService):
         crawl_with_installation_id: int
         | None = None,  # Override which installation to use when crawling
     ) -> None:
-
         installation_id = (
             crawl_with_installation_id
             if crawl_with_installation_id

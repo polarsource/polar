@@ -252,8 +252,7 @@ async def handle_issue(
 ) -> dict[str, Any]:
     issue = await upsert_issue(session, event)
     if not issue:
-        # TODO: Handle better
-        return dict(success=False, reason="Could not save issue")
+        raise Exception(f"failed to save issue external_id={event.issue.id}")
 
     # Trigger references sync job for entire repository
     await enqueue_job(
@@ -372,10 +371,16 @@ async def issue_labeled_async(
     stmt = (
         sql.Update(Issue)
         .where(Issue.id == issue.id)
-        .values(labels=github.jsonify(event.issue.labels))
+        .values(
+            labels=github.jsonify(event.issue.labels),
+            issue_modified_at=event.issue.updated_at,
+        )
     )
     await session.execute(stmt)
     await session.commit()
+
+    # TODO: why are we returning the object in the webook workers?
+    # it's not used anywhere
 
     # get for return
     issue = await service.github_issue.get_by_external_id(session, event.issue.id)
@@ -444,6 +449,7 @@ async def issue_assigned_async(
         .values(
             assignee=github.jsonify(event.issue.assignee),
             assignees=github.jsonify(event.issue.assignees),
+            issue_modified_at=event.issue.updated_at,
         )
     )
     await session.execute(stmt)

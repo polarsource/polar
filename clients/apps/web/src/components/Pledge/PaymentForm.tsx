@@ -126,15 +126,17 @@ const PaymentForm = ({
           ${getCentsInDollarString(amount, true)}
         </div>
       </div>
-      <div className="w-ful mb-1 flex text-sm text-gray-500">
-        <div className="w-full">Service fee</div>
-        <div className="w-full text-right">
+      <div className="mb-1 flex w-full text-sm text-gray-500">
+        <div className="w-1/2">
+          Service fee <span className="text-xs">(Non-refundable)</span>
+        </div>
+        <div className="w-1/2 text-right">
           ${getCentsInDollarString(fee, true)}
         </div>
       </div>
       <div className="mb-6 flex w-full text-sm font-medium text-gray-900">
-        <div className="w-full">Total</div>
-        <div className="w-full text-right">
+        <div className="w-1/2">Total</div>
+        <div className="w-1/2 text-right">
           ${getCentsInDollarString(amountIncludingFee, true)}
         </div>
       </div>

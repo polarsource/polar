@@ -7,7 +7,6 @@ import {
   NotificationType,
   OrganizationPrivateRead,
   OrganizationPublicRead,
-  OrganizationStripeCustomerRead,
   Platforms,
   PledgeRead,
   PledgeState,
@@ -97,21 +96,6 @@ export const privateOrganization: OrganizationPrivateRead = {
       visibility: Visibility.PUBLIC,
     },
   ],
-}
-
-export const orgStripeCustomer: OrganizationStripeCustomerRead = {
-  // email?: string;
-  // addressCity?: string;
-  // addressCountry?: string;
-  // addressLine1?: string;
-  // addressLine2?: string;
-  // postalCode?: string;
-  // state?: string;
-  default_payment_method: {
-    type: 'card',
-    card_last4: '4242',
-    card_brand: 'visa',
-  },
 }
 
 const maintainerPledgeCreatedNotification: MaintainerPledgeCreatedNotification =

@@ -1,4 +1,5 @@
 import Modal, { ModalBox } from '@/components/Shared/Modal'
+import { useJustPledged } from '@/hooks/stripe'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
 import {
@@ -30,6 +31,7 @@ const IssueListItem = (props: {
   references: IssueReferenceRead[]
   dependents?: IssueReadWithRelations[]
   pledges: PledgeRead[]
+  checkJustPledged?: boolean
 }) => {
   const {
     title,
@@ -51,6 +53,13 @@ const IssueListItem = (props: {
 
   const showCommentsCount = !!(comments && comments > 0)
   const showReactionsThumbs = !!(reactions.plus_one > 0)
+
+  useJustPledged(
+    props.org.name,
+    props.repo.name,
+    props.issue.number,
+    props.checkJustPledged,
+  )
 
   const getissueProgress = (): Progress => {
     switch (props.issue.progress) {

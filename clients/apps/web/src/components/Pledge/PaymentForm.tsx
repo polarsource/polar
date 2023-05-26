@@ -10,53 +10,20 @@ import { PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/utils'
 import { useState } from 'react'
 
-export const generateRedirectURL = (
-  pledge: PledgeMutationResponse,
-  gotoURL?: string,
-  paymentIntent?: PaymentIntent,
-) => {
-  let path = window.location.pathname + '/status'
-  if (gotoURL && gotoURL.startsWith('/dashboard')) {
-    path = gotoURL
-  }
-
-  const redirectURL = new URL(window.location.origin + path)
-  if (pledge) {
-    redirectURL.searchParams.append('pledge_id', pledge.id)
-  }
-  if (!paymentIntent) {
-    return redirectURL.toString()
-  }
-
-  /*
-   * Same location & query params as the serverside redirect from Stripe if required
-   * by the payment method - easing the implementation.
-   */
-  redirectURL.searchParams.append('payment_intent_id', paymentIntent.id)
-  if (paymentIntent.client_secret) {
-    redirectURL.searchParams.append(
-      'payment_intent_client_secret',
-      paymentIntent.client_secret,
-    )
-  }
-  redirectURL.searchParams.append('redirect_status', paymentIntent.status)
-  return redirectURL.toString()
-}
-
 const PaymentForm = ({
   pledge,
   isSyncing,
   setSyncing,
   setErrorMessage,
   onSuccess,
-  gotoURL,
+  redirectTo,
 }: {
   pledge?: PledgeMutationResponse
   isSyncing: boolean
   setSyncing: (isLocked: boolean) => void
   setErrorMessage: (message: string) => void
   onSuccess: (paymentIntent: PaymentIntent) => void
-  gotoURL?: string
+  redirectTo: string
 }) => {
   const stripe = useStripe()
   const elements = useElements()
@@ -104,7 +71,7 @@ const PaymentForm = ({
         //`Elements` instance that was used to create the Payment Element
         elements,
         confirmParams: {
-          return_url: generateRedirectURL(pledge, gotoURL),
+          return_url: redirectTo,
         },
         redirect: 'if_required',
       })

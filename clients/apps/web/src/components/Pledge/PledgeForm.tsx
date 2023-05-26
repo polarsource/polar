@@ -15,7 +15,7 @@ import {
 import { Checkbox, PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/utils'
 import { ChangeEvent, useEffect, useRef, useState } from 'react'
-import PaymentForm, { generateRedirectURL } from './PaymentForm'
+import PaymentForm from './PaymentForm'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
@@ -23,6 +23,51 @@ type PledgeSync = {
   amount: number
   email: string
   approvedTos: boolean
+}
+
+const generateRedirectURL = (
+  organization: OrganizationPublicRead,
+  repository: RepositoryRead,
+  issue: IssueRead,
+  pledge: PledgeMutationResponse,
+  gotoURL?: string,
+  paymentIntent?: PaymentIntent,
+) => {
+  let path = window.location.pathname + '/status'
+  if (gotoURL && gotoURL.startsWith('/dashboard')) {
+    path = gotoURL
+  }
+
+  const redirectURL = new URL(window.location.origin + path)
+  if (pledge) {
+    redirectURL.searchParams.append('pledge_id', pledge.id)
+  }
+
+  redirectURL.searchParams.append('pledge_org_name', organization.name)
+  redirectURL.searchParams.append('pledge_repo_name', repository.name)
+  redirectURL.searchParams.append(
+    'pledge_issue_number',
+    issue.number.toString(),
+  )
+
+  // Only in case we pass our redirect to Stripe which in turn will add it
+  if (!paymentIntent) {
+    return redirectURL.toString()
+  }
+
+  /*
+   * Same location & query params as the serverside redirect from Stripe if required
+   * by the payment method - easing the implementation.
+   */
+  redirectURL.searchParams.append('payment_intent_id', paymentIntent.id)
+  if (paymentIntent.client_secret) {
+    redirectURL.searchParams.append(
+      'payment_intent_client_secret',
+      paymentIntent.client_secret,
+    )
+  }
+  redirectURL.searchParams.append('redirect_status', paymentIntent.status)
+  return redirectURL.toString()
 }
 
 const PledgeForm = ({
@@ -54,6 +99,11 @@ const PledgeForm = ({
 
   const validateEmail = (email: string) => {
     return email.match(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/)
+  }
+
+  // Redirect to personal dashboard if authenticated unless gotoURL is set
+  if (!gotoURL && currentUser) {
+    gotoURL = '/dashboard/personal?tab=dependencies'
   }
 
   useEffect(() => {
@@ -203,13 +253,14 @@ const PledgeForm = ({
       throw new Error('got payment success but no pledge')
     }
 
-    // Redirect to personal dashboard if authenticated unless gotoURL is set
-    let redirectTo = gotoURL
-    if (!redirectTo && currentUser) {
-      redirectTo = '/dashboard/personal?tab=dependencies'
-    }
-
-    const location = generateRedirectURL(pledge, redirectTo, paymentIntent)
+    const location = generateRedirectURL(
+      organization,
+      repository,
+      issue,
+      pledge,
+      gotoURL,
+      paymentIntent,
+    )
     await router.push(location)
   }
 
@@ -323,7 +374,13 @@ const PledgeForm = ({
               setSyncing={setSyncing}
               setErrorMessage={setErrorMessage}
               onSuccess={onStripePaymentSuccess}
-              gotoURL={gotoURL}
+              redirectTo={generateRedirectURL(
+                organization,
+                repository,
+                issue,
+                pledge,
+                gotoURL,
+              )}
             />
           </Elements>
         )}

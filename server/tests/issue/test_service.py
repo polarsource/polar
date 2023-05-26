@@ -4,6 +4,7 @@ import uuid
 import pytest
 from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
 from polar.enums import Platforms
+from polar.issue.schemas import IssueCreate
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.repository import Repository
@@ -150,8 +151,8 @@ async def test_list_by_repository_type_and_status_filter_triaged(
         state="open",
         issue_created_at=datetime(2023, 1, 11),
         issue_modified_at=datetime(2023, 1, 11),
-        assignee=github.jsonify(None),
-        assignees=github.jsonify(None),
+        assignee=None,
+        assignees=None,
     )
 
     issue_3 = await Issue.create(
@@ -166,8 +167,8 @@ async def test_list_by_repository_type_and_status_filter_triaged(
         state="open",
         issue_created_at=datetime(2023, 1, 5),
         issue_modified_at=datetime(2023, 1, 15),
-        assignee=github.jsonify(None),
-        assignees=github.jsonify(None),
+        assignee=None,
+        assignees=None,
     )
 
     issue_4 = await Issue.create(
@@ -183,8 +184,8 @@ async def test_list_by_repository_type_and_status_filter_triaged(
         issue_created_at=datetime(2023, 1, 16),
         issue_modified_at=datetime(2023, 1, 16),
         issue_closed_at=datetime(2023, 1, 16),
-        assignee=github.jsonify(None),
-        assignees=github.jsonify(None),
+        assignee=None,
+        assignees=None,
     )
 
     # backlog or triaged
@@ -203,23 +204,19 @@ async def test_list_by_repository_type_and_status_filter_triaged(
 
     # triaged
 
-    # TODO: something is wrong with none_as_null here. assignee is stored as "{}" in the
-    # database which causes backlogged issues to be treated as triaged.
-    # This does not seem to happen with real data, it only happens in tests.
+    (issues, count) = await issue_service.list_by_repository_type_and_status(
+        session,
+        repository_ids=[repository.id],
+        issue_list_type=IssueListType.issues,
+        sort_by=IssueSortBy.newest,
+        include_statuses=[IssueStatus.triaged],
+    )
 
-    # (issues, count) = await issue_service.list_by_repository_type_and_status(
-    #     session,
-    #     repository_ids=[repository.id],
-    #     issue_list_type=IssueListType.issues,
-    #     sort_by=IssueSortBy.newest,
-    #     include_statuses=[IssueStatus.triaged],
-    # )
-
-    # assert count == 3  # why
-    # names = [i.title for i in issues]
-    # assert names == [
-    #     "issue_1_triaged",
-    # ]
+    assert count == 1
+    names = [i.title for i in issues]
+    assert names == [
+        "issue_1_triaged",
+    ]
 
     # pull_request
 
@@ -231,36 +228,36 @@ async def test_list_by_repository_type_and_status_filter_triaged(
         include_statuses=[IssueStatus.pull_request],
     )
 
-    assert count == 0  # TODO: why does this return 0 and not 3?
+    assert count == 0
     names = [i.title for i in issues]
     assert names == []
 
     # completed
 
-    # (issues, count) = await issue_service.list_by_repository_type_and_status(
-    #     session,
-    #     repository_ids=[repository.id],
-    #     issue_list_type=IssueListType.issues,
-    #     sort_by=IssueSortBy.newest,
-    #     include_statuses=[IssueStatus.completed],
-    # )
+    (issues, count) = await issue_service.list_by_repository_type_and_status(
+        session,
+        repository_ids=[repository.id],
+        issue_list_type=IssueListType.issues,
+        sort_by=IssueSortBy.newest,
+        include_statuses=[IssueStatus.completed],
+    )
 
-    # assert count == 0  # TODO: why does this return 0 and not 3?
-    # names = [i.title for i in issues]
-    # assert names == [
-    #     "issue_4_completed",
-    # ]
+    assert count == 1
+    names = [i.title for i in issues]
+    assert names == [
+        "issue_4_completed",
+    ]
 
     # backlog
 
-    # (issues, count) = await issue_service.list_by_repository_type_and_status(
-    #     session,
-    #     repository_ids=[repository.id],
-    #     issue_list_type=IssueListType.issues,
-    #     sort_by=IssueSortBy.newest,
-    #     include_statuses=[IssueStatus.backlog],
-    # )
+    (issues, count) = await issue_service.list_by_repository_type_and_status(
+        session,
+        repository_ids=[repository.id],
+        issue_list_type=IssueListType.issues,
+        sort_by=IssueSortBy.newest,
+        include_statuses=[IssueStatus.backlog],
+    )
 
-    # assert count == 0
-    # names = [i.title for i in issues]
-    # assert names == ["issue_2_backlog", "issue_3_backlog"]
+    assert count == 2
+    names = [i.title for i in issues]
+    assert names == ["issue_2_backlog", "issue_3_backlog"]

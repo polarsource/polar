@@ -42,7 +42,6 @@ const IssueListItem = (props: {
   } = props.issue
   const router = useRouter()
 
-  const isDependency = props.dependents && props.dependents.length > 0
   const createdAt = new Date(issue_created_at)
   const closedAt = new Date(issue_created_at)
 
@@ -71,9 +70,6 @@ const IssueListItem = (props: {
   }
   const issueProgress = getissueProgress()
 
-  const showPledgeAction =
-    isDependency && props.issue.progress !== IssueStatus.COMPLETED
-
   const markdownTitle = generateMarkdownTitle(title)
 
   const [showDisputeModalForPledge, setShowDisputeModalForPledge] = useState<
@@ -88,9 +84,28 @@ const IssueListItem = (props: {
     setShowDisputeModalForPledge(undefined)
   }
 
+  const isDependency = props.dependents && props.dependents.length > 0
+  /**
+   * We can get the dependent org from the first dependent issue.
+   * Since dashboard is always filtered by an org, it will be the same across array instances.
+   *
+   * Not the most elegent solution, but circumventing the need to pass props down a long chain.
+   */
+  const dependentOrg = props.dependents && props.dependents[0].organization
+  const showPledgeAction =
+    isDependency && props.issue.progress !== IssueStatus.COMPLETED
+
   const redirectToPledge = () => {
+    if (!dependentOrg) return
+
     const path = `/${props.org.name}/${props.repo.name}/issues/${props.issue.number}`
-    router.push(path)
+    const url = new URL(window.location.origin + path)
+    url.searchParams.append('as_org', dependentOrg.id)
+
+    const gotoURL = `${window.location.pathname}${window.location.search}`
+    url.searchParams.append('goto_url', gotoURL)
+
+    router.push(url.toString())
   }
 
   return (
@@ -176,11 +191,7 @@ const IssueListItem = (props: {
 
             <IssueProgress progress={issueProgress} />
 
-            {showPledgeAction && (
-              <>
-                <PledgeNow onClick={redirectToPledge} />
-              </>
-            )}
+            {showPledgeAction && <PledgeNow onClick={redirectToPledge} />}
           </div>
         </div>
 

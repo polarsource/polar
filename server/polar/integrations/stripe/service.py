@@ -52,27 +52,14 @@ class StripeService:
             receipt_email=user.email,
         )
 
-    async def create_confirmed_payment_intent_for_organization(
+    def create_organization_intent(
         self,
-        session: AsyncSession,
         amount: int,
         transfer_group: str,
         issue: Issue,
         organization: Organization,
+        user: User,
     ) -> stripe_lib.PaymentIntent:
-        """
-        create_confirmed_payment_intent_for_organization attempts to create a
-        PaymentIntent without user interaction (1-click pledging).
-
-        It uses an existing Customer and it's PaymentMethod (created from a SetupIntent)
-        """
-        customer = await self.get_or_create_customer(session, organization)
-
-        if not customer:
-            raise Exception("could not find a stripe customer")
-        if not customer.invoice_settings.default_payment_method:
-            raise Exception("could not find a default payment method")
-
         return stripe_lib.PaymentIntent.create(
             amount=amount,
             currency="USD",
@@ -80,12 +67,13 @@ class StripeService:
             metadata={
                 "issue_id": issue.id,
                 "issue_title": issue.title,
+                "user_id": user.id,
+                "user_username": user.username,
+                "user_email": user.email,
+                "organization_id": organization.id,
+                "organization_name": organization.name,
             },
-            customer=customer.id,
-            payment_method=customer.invoice_settings.default_payment_method,
-            confirm="true",
-            off_session="true",
-            receipt_email=organization.billing_email,
+            receipt_email=user.email,
         )
 
     def modify_intent(self, id: str, amount: int) -> stripe_lib.PaymentIntent:
@@ -146,72 +134,6 @@ class StripeService:
             currency="usd",
             destination=destination_stripe_id,
             transfer_group=transfer_group,
-        )
-
-    def get_payment_method(self, id: str) -> stripe_lib.PaymentMethod:
-        return stripe_lib.PaymentMethod.retrieve(id)
-
-    async def get_or_create_customer(
-        self, session: AsyncSession, org: Organization
-    ) -> stripe_lib.Customer | None:
-        if org.stripe_customer_id:
-            return stripe_lib.Customer.retrieve(org.stripe_customer_id)
-
-        customer = stripe_lib.Customer.create(
-            name=org.platform + "/" + org.name,
-            metadata={
-                "organization_id": org.id,
-            },
-        )
-
-        if not customer:
-            return None
-
-        # Save customer ID
-        stmt = (
-            sql.Update(Organization)
-            .where(Organization.id == org.id)
-            .values(stripe_customer_id=customer.id)
-        )
-        await session.execute(stmt)
-        await session.commit()
-
-        return customer
-
-    async def create_setup_intent(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> stripe_lib.SetupIntent:
-        """
-        create_setup_intent creates a SetupIntent
-        A SetupIntent (once confirmed), will allow us to attach it as a PaymentMethod
-        for future usage to the Customer.
-        """
-        customer = await self.get_or_create_customer(session, organization)
-
-        if not customer:
-            raise Exception("could not find a stripe customer")
-
-        return stripe_lib.SetupIntent.create(
-            payment_method_types=["card"],
-            customer=customer.id,
-            description="Default payment method for " + organization.name,
-            usage="off_session",
-        )
-
-    async def set_default_payment_method(
-        self, session: AsyncSession, organization: Organization, payment_method_id: str
-    ):
-        cust = await self.get_or_create_customer(session, organization)
-        if not cust:
-            raise Exception("could ont get stripe customer")
-
-        stripe_lib.Customer.modify(
-            cust.id,
-            invoice_settings={
-                "default_payment_method": payment_method_id,
-            },
         )
 
 

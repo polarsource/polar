@@ -11,10 +11,14 @@ const Pledge = ({
   organization,
   repository,
   issue,
+  asOrg,
+  gotoURL,
 }: {
   issue: IssueRead
   organization: OrganizationPublicRead
   repository: RepositoryRead
+  asOrg?: string
+  gotoURL?: string
 }) => {
   return (
     <>
@@ -37,6 +41,8 @@ const Pledge = ({
                 organization={organization}
                 repository={repository}
                 issue={issue}
+                asOrg={asOrg}
+                gotoURL={gotoURL}
               />
             </div>
           </div>

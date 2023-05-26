@@ -12,29 +12,35 @@ import { useState } from 'react'
 
 export const generateRedirectURL = (
   pledge: PledgeMutationResponse,
+  gotoURL?: string,
   paymentIntent?: PaymentIntent,
 ) => {
-  const statusURL = new URL(window.location.href + '/status')
+  let path = window.location.pathname + '/status'
+  if (gotoURL && gotoURL.startsWith('/dashboard')) {
+    path = gotoURL
+  }
+
+  const redirectURL = new URL(window.location.origin + path)
   if (pledge) {
-    statusURL.searchParams.append('pledge_id', pledge.id)
+    redirectURL.searchParams.append('pledge_id', pledge.id)
   }
   if (!paymentIntent) {
-    return statusURL.toString()
+    return redirectURL.toString()
   }
 
   /*
    * Same location & query params as the serverside redirect from Stripe if required
    * by the payment method - easing the implementation.
    */
-  statusURL.searchParams.append('payment_intent_id', paymentIntent.id)
+  redirectURL.searchParams.append('payment_intent_id', paymentIntent.id)
   if (paymentIntent.client_secret) {
-    statusURL.searchParams.append(
+    redirectURL.searchParams.append(
       'payment_intent_client_secret',
       paymentIntent.client_secret,
     )
   }
-  statusURL.searchParams.append('redirect_status', paymentIntent.status)
-  return statusURL.toString()
+  redirectURL.searchParams.append('redirect_status', paymentIntent.status)
+  return redirectURL.toString()
 }
 
 const PaymentForm = ({
@@ -43,12 +49,14 @@ const PaymentForm = ({
   setSyncing,
   setErrorMessage,
   onSuccess,
+  gotoURL,
 }: {
   pledge?: PledgeMutationResponse
   isSyncing: boolean
   setSyncing: (isLocked: boolean) => void
   setErrorMessage: (message: string) => void
   onSuccess: (paymentIntent: PaymentIntent) => void
+  gotoURL?: string
 }) => {
   const stripe = useStripe()
   const elements = useElements()
@@ -96,7 +104,7 @@ const PaymentForm = ({
         //`Elements` instance that was used to create the Payment Element
         elements,
         confirmParams: {
-          return_url: generateRedirectURL(pledge),
+          return_url: generateRedirectURL(pledge, gotoURL),
         },
         redirect: 'if_required',
       })

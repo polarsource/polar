@@ -134,7 +134,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
         issue: Issue,
         session: AsyncSession,
     ) -> PledgeMutationResponse:
-        # Pre-authenticated pledge flow (with saved CC)
         if pledge.pledge_as_org and user:
             return await self.create_pledge_as_org(
                 platform,
@@ -281,11 +280,21 @@ class PledgeService(ResourceServiceReader[Pledge]):
             by_organization=pledge_as_org,
         )
 
-        # Note that we don't create a payment intent here, we create it off_session
-        # when the user calls the API to confirm the pledge
+        # Create a payment intent with Stripe
+        payment_intent = stripe.create_organization_intent(
+            amount=db_pledge.amount_including_fee,
+            transfer_group=f"{db_pledge.id}",
+            issue=issue,
+            organization=pledge_as_org,
+            user=user,
+        )
+
+        # Store the intent id
+        db_pledge.payment_id = payment_intent.id
+        await db_pledge.save(session)
 
         ret = PledgeMutationResponse.from_orm(db_pledge)
-
+        ret.client_secret = payment_intent.client_secret
         return ret
 
     async def modify_pledge(

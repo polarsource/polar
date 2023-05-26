@@ -46,10 +46,7 @@ export type { OrganizationBadgeSettingsUpdate } from './models/OrganizationBadge
 export type { OrganizationPrivateRead } from './models/OrganizationPrivateRead';
 export type { OrganizationPublicRead } from './models/OrganizationPublicRead';
 export type { OrganizationSettingsUpdate } from './models/OrganizationSettingsUpdate';
-export type { OrganizationSetupIntentRead } from './models/OrganizationSetupIntentRead';
-export type { OrganizationStripeCustomerRead } from './models/OrganizationStripeCustomerRead';
 export type { PaginationResponse } from './models/PaginationResponse';
-export type { PaymentMethod } from './models/PaymentMethod';
 export { Platforms } from './models/Platforms';
 export type { PledgeCreate } from './models/PledgeCreate';
 export type { PledgeMutationResponse } from './models/PledgeMutationResponse';

@@ -121,47 +121,6 @@ export const useOrganizationSettingsMutation = () =>
     },
   })
 
-export const useOrganizationCustomer = (orgName?: string) =>
-  useQuery(
-    ['organization', orgName, 'stripeCustomer'],
-    () =>
-      api.organizations.getStripeCustomer({
-        platform: Platforms.GITHUB,
-        orgName: orgName ?? '',
-      }),
-    {
-      enabled: !!orgName,
-      retry: defaultRetry,
-    },
-  )
-
-export const useOrganizationCreateIntent = () =>
-  useMutation({
-    mutationFn: (variables: { orgName: string }) => {
-      return api.organizations.createSetupIntent({
-        platform: Platforms.GITHUB,
-        orgName: variables.orgName,
-      })
-    },
-  })
-
-export const useOrganizationSetDefaultPaymentMethod = () =>
-  useMutation({
-    mutationFn: (variables: { orgName: string; paymentMethodId: string }) => {
-      return api.organizations.setDefaultPaymentMethod({
-        platform: Platforms.GITHUB,
-        orgName: variables.orgName,
-        paymentMethodId: variables.paymentMethodId,
-      })
-    },
-    onSuccess: (result, variables, ctx) => {
-      queryClient.setQueryData(
-        ['organization', variables.orgName, 'stripeCustomer'],
-        result,
-      )
-    },
-  })
-
 export const useNotifications = () =>
   useQuery(['notifications'], () => api.notifications.get(), {
     retry: defaultRetry,

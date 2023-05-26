@@ -176,7 +176,6 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
 
             is_triaged = and_(
                 or_(
-                    Issue.labels.is_not(None),
                     Issue.assignee.is_not(None),
                     Issue.assignees.is_not(None),
                 ),

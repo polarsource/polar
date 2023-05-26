@@ -12,12 +12,18 @@ from polar.issue.schemas import IssueRead
 
 
 class PledgeState(str, Enum):
-    initiated = "initiated"  # Initiated by customer. Polar has not received money yet.
-    created = "created"  # Polar has received the money.
-    pending = "pending"  # The issue has been closed, but the pledge has not been paid.
-    paid = "paid"  # The pledge has been paid out to the maintainer.
-    refunded = "refunded"  # The pledge was refunded in full before being paid out.
-    disputed = "disputed"  # The pledge was disputed by the customer (via Polar)
+    # Initiated by customer. Polar has not received money yet.
+    initiated = "initiated"
+    # Polar has received the money.
+    created = "created"
+    # The issue has been closed, but the pledge has not been paid.
+    pending = "pending"
+    # The pledge has been paid out to the maintainer.
+    paid = "paid"
+    # The pledge was refunded in full before being paid out.
+    refunded = "refunded"
+    # The pledge was disputed by the customer (via Polar)
+    disputed = "disputed"
     # The charge was disputed by the customer (via Stripe, aka "chargeback")
     charge_disputed = "charge_disputed"
 

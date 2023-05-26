@@ -1,3 +1,4 @@
+import { GitMergeIcon } from '@/../../../packages/polarkit/src/components/icons'
 import { BellIcon } from '@heroicons/react/24/outline'
 import {
   MaintainerPledgeCreatedNotification,
@@ -26,7 +27,12 @@ const Popover = () => {
     markRead.mutate({ notification_id: first.id })
   }
 
-  const clickBell = () => {
+  // Using onMouseDown to use the same event as "useOutsideClick"
+  // That way useOutsideClick can cancel the event before clickBell triggers
+  const clickBell = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+
     if (!show && notifs.data) {
       setShow(true)
       markLatest()
@@ -66,7 +72,7 @@ const Popover = () => {
         <BellIcon
           className="h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-100 hover:text-gray-900"
           aria-hidden="true"
-          onClick={clickBell}
+          onMouseDown={clickBell}
         />
         {showBadge && (
           <div className="-ml-3 h-3 w-3 rounded-full border-2 border-white bg-blue-500"></div>
@@ -76,9 +82,10 @@ const Popover = () => {
       {show && notifs.data && (
         <div
           aria-live="assertive"
-          className="pointer-events-none fixed inset-0 top-6 flex items-end px-4 py-6 sm:items-start sm:p-6"
+          className="pointer-events-none fixed top-12 right-6 flex items-end"
           ref={ref}
           onClick={(e) => {
+            e.preventDefault()
             e.stopPropagation()
           }}
         >
@@ -122,22 +129,22 @@ export const List = ({
 const Item = ({
   children,
   n,
-  iconBg,
+  iconClasses,
 }: {
-  iconBg: string
+  iconClasses: string
   n: NotificationRead
   children: { icon: React.ReactElement; text: React.ReactElement }
 }) => {
   return (
     <div className="flex space-x-4 p-4 transition-colors duration-100">
       <div
-        className={`inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md ${iconBg}`}
+        className={`inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md ${iconClasses}`}
       >
         {children.icon}
       </div>
       <div>
-        <div className="font-normal">{children.text}</div>
-        <div className="text-black/50">
+        <div className="text-gray-700">{children.text}</div>
+        <div className="text-gray-700">
           <PolarTimeAgo date={new Date(n.created_at)} />
         </div>
       </div>
@@ -153,7 +160,7 @@ const MaintainerPledgeCreated = ({
   payload: MaintainerPledgeCreatedNotification
 }) => {
   return (
-    <Item n={n} iconBg="bg-[#F9E18F]">
+    <Item n={n} iconClasses="bg-blue-200 text-blue-600">
       {{
         text: (
           <>
@@ -180,7 +187,7 @@ const MaintainerPledgePending = ({
   payload: MaintainerPledgePendingNotification
 }) => {
   return (
-    <Item n={n} iconBg="bg-[#F9E18F]">
+    <Item n={n} iconClasses="bg-purple-200 text-[#6D27C6]">
       {{
         text: (
           <>
@@ -193,7 +200,7 @@ const MaintainerPledgePending = ({
             </Link>
           </>
         ),
-        icon: <DollarSignIcon />,
+        icon: <GitMergeIcon />,
       }}
     </Item>
   )
@@ -206,7 +213,7 @@ const MaintainerPledgePaid = ({
   payload: MaintainerPledgePaidNotification
 }) => {
   return (
-    <Item n={n} iconBg="bg-[#F9E18F]">
+    <Item n={n} iconClasses="bg-blue-200 text-blue-600">
       {{
         text: (
           <>
@@ -325,14 +332,14 @@ const DollarSignIcon = () => {
       <g opacity="0.8">
         <path
           d="M9 0.75V17.25"
-          stroke="#8F6700"
+          stroke="currentColor"
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         <path
           d="M12.75 3.75H7.125C6.42881 3.75 5.76113 4.02656 5.26884 4.51884C4.77656 5.01113 4.5 5.67881 4.5 6.375C4.5 7.07119 4.77656 7.73887 5.26884 8.23116C5.76113 8.72344 6.42881 9 7.125 9H10.875C11.5712 9 12.2389 9.27656 12.7312 9.76885C13.2234 10.2611 13.5 10.9288 13.5 11.625C13.5 12.3212 13.2234 12.9889 12.7312 13.4812C12.2389 13.9734 11.5712 14.25 10.875 14.25H4.5"
-          stroke="#8F6700"
+          stroke="currentColor"
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"

@@ -353,34 +353,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         return ret
 
-    async def confirm_pledge(
-        self,
-        session: AsyncSession,
-        repo: Repository,
-        pledge_id: UUID,
-    ) -> PledgeMutationResponse:
-        pledge = await self.get_with_loaded(session=session, pledge_id=pledge_id)
-
-        if not pledge or pledge.repository_id != repo.id:
-            raise ResourceNotFound("Pledge not found")
-
-        if pledge.state not in PledgeState.to_created_states():
-            raise Exception(f"pledge is in unexpected state: {pledge.state}")
-
-        payment_intent = await stripe.create_confirmed_payment_intent_for_organization(
-            session=session,
-            organization=pledge.organization,
-            amount=pledge.amount_including_fee,
-            transfer_group=f"{pledge.id}",
-            issue=pledge.issue,
-        )
-
-        pledge.state = PledgeState.created
-        pledge.payment_id = payment_intent.id
-        await pledge.save(session=session)
-
-        return PledgeMutationResponse.from_orm(pledge)
-
     async def create_db_pledge(
         self,
         org: Organization,

@@ -1,5 +1,6 @@
 import { InformationCircleIcon } from '@heroicons/react/24/outline'
 import { classNames } from 'polarkit/utils'
+import { ReactNode } from 'react'
 
 const SettingsCheckbox = ({
   id,
@@ -12,7 +13,7 @@ const SettingsCheckbox = ({
   disabled,
 }: {
   id: string
-  title: string
+  title: string | ReactNode
   description?: string
   name?: string
   type?: 'checkbox' | 'radio'

@@ -1,5 +1,4 @@
 import { Switch } from '@/components/UI/Switch'
-import { CheckCircleIcon } from '@heroicons/react/24/solid'
 import { motion } from 'framer-motion'
 import { type RepositoryBadgeSettingsRead } from 'polarkit/api/client'
 import { classNames } from 'polarkit/utils'
@@ -8,51 +7,14 @@ const ProgressText = ({
   progress,
   target,
   completed,
-  isSettingPage = false,
-  isPrivateRepo = false,
 }: {
   progress: number
   target: number
   completed: boolean
-  isSettingPage?: boolean
-  isPrivateRepo?: boolean
 }) => {
-  const shouldSync = target > 0
-
-  if (!shouldSync && isSettingPage) {
-    return (
-      <span className=" whitespace-nowrap text-xs text-gray-500">
-        No open issues
-      </span>
-    )
-  }
-  if (!shouldSync && !isSettingPage) {
-    return (
-      <span className="whitespace-nowrap text-xs text-gray-500">
-        No issues to fetch
-      </span>
-    )
-  }
-
   return (
-    <p className="mr-4 w-56 text-xs">
-      {completed && (
-        <motion.span
-          className={classNames(
-            'flex flex-row items-center text-gray-500',
-            isPrivateRepo ? 'grayscale' : '',
-          )}
-          initial={isSettingPage ? false : 'hidden'}
-          animate={{
-            opacity: [0, 1],
-          }}
-        >
-          <CheckCircleIcon className="mr-1 h-4 w-4 text-blue-600" />{' '}
-          <strong className="mr-1 text-blue-600">{target}</strong>
-          {isSettingPage && <>open issues</>}
-          {!isSettingPage && <>issues fetched</>}
-        </motion.span>
-      )}
+    <p className="text-xs text-gray-500">
+      {completed && <span>{target} open issues</span>}
       {!completed && (
         <>
           <span className="text-gray-900">{progress}</span>
@@ -134,27 +96,24 @@ export const BadgeRepository = ({
       className={classNames(
         showControls && repo.is_private ? 'bg-gray-100/50' : 'bg-white',
         'flex flex-row px-5 py-4',
-        isSettingPage ? '' : 'rounded-xl shadow',
       )}
     >
-      <div className="my-auto basis-2/6">
-        <div className="flex flex-row">
+      <div className="my-auto basis-3/6">
+        <div className="flex flex-row items-center">
           {repo.avatar_url && (
             <img className="h-6 w-6 rounded-full" src={repo.avatar_url} />
           )}
-          <strong className="my-auto mx-2.5 font-normal text-gray-900">
+          <strong className="mx-2.5 mr-4 font-normal text-gray-900">
             {repo.name}
           </strong>
+          <ProgressText
+            progress={repo.synced_issues}
+            target={repo.open_issues}
+            completed={repo.is_sync_completed}
+          />
         </div>
       </div>
-      <div className="my-auto flex basis-4/6 flex-row items-center">
-        <ProgressText
-          isSettingPage={isSettingPage}
-          progress={repo.synced_issues}
-          target={repo.open_issues}
-          completed={repo.is_sync_completed}
-          isPrivateRepo={repo.is_private}
-        />
+      <div className="my-auto flex basis-3/6 flex-row items-center">
         <div className="w-full text-right">
           {!showControls && (
             <Progress
@@ -171,7 +130,7 @@ export const BadgeRepository = ({
                   Private
                 </p>
               )}
-              {repo.is_private === false ? (
+              {!repo.is_private && (
                 <EmbedSwitch
                   repo={repo}
                   checked={repo.badge_enabled}
@@ -179,8 +138,6 @@ export const BadgeRepository = ({
                     onEnableBadgeChange(badge)
                   }}
                 />
-              ) : (
-                <Switch checked={false} disabled={true} />
               )}
             </div>
           )}

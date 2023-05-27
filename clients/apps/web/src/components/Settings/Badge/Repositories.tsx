@@ -31,7 +31,7 @@ export const BadgeRepositories = ({
         <div className="w-1/2 border-r border-gray-200 py-3 px-6">
           <strong className="font-medium text-gray-800">Manually</strong>
           <p className="">
-            Badge issues by adding the &quot;polar&quot; label in Github.
+            Issues with the &quot;polar&quot; label will get the badge.
           </p>
         </div>
         <div className="w-1/2 py-3 px-6">

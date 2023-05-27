@@ -39,7 +39,7 @@ const Page: NextLayoutComponentType = () => {
                   {syncedIssuesCount} issues fetched
                 </span>
                 <h1 className="mt-8 text-xl font-normal text-gray-900">
-                  Embed the Polar badge to get backers
+                  Setup the Polar funding badge
                 </h1>
               </div>
             </>

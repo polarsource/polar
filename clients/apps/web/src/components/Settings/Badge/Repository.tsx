@@ -1,4 +1,3 @@
-import { Switch } from '@/components/UI/Switch'
 import { motion } from 'framer-motion'
 import { type RepositoryBadgeSettingsRead } from 'polarkit/api/client'
 import { classNames } from 'polarkit/utils'
@@ -56,19 +55,42 @@ const Progress = ({
   )
 }
 
-const EmbedSwitch = ({
+const EmbedSetting = ({
   repo,
-  checked,
+  isAutoEnabled,
   onChange,
 }: {
   repo: RepositoryBadgeSettingsRead
-  checked: boolean
+  isAutoEnabled: boolean
   onChange: (state: boolean) => void
 }) => {
-  const id = `toggle-badge-${repo.id}`
+  const getTabClasses = (active: boolean) => {
+    return classNames(
+      active ? 'bg-white rounded-lg text-black/90 shadow' : '',
+      'cursor-pointer py-1.5 px-2.5 rounded-lg',
+    )
+  }
+
   return (
     <>
-      <Switch id={id} checked={checked} onChange={onChange} />
+      <div className="flex flex-row rounded-lg bg-gray-100 text-sm text-gray-500">
+        <div
+          className={getTabClasses(!isAutoEnabled)}
+          onClick={() => {
+            onChange(false)
+          }}
+        >
+          <p>Manually</p>
+        </div>
+        <div
+          className={getTabClasses(isAutoEnabled)}
+          onClick={() => {
+            onChange(true)
+          }}
+        >
+          <p>Auto</p>
+        </div>
+      </div>
     </>
   )
 }
@@ -131,9 +153,9 @@ export const BadgeRepository = ({
                 </p>
               )}
               {!repo.is_private && (
-                <EmbedSwitch
+                <EmbedSetting
                   repo={repo}
-                  checked={repo.badge_enabled}
+                  isAutoEnabled={repo.badge_enabled}
                   onChange={(badge: boolean) => {
                     onEnableBadgeChange(badge)
                   }}

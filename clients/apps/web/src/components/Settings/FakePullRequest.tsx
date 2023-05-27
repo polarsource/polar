@@ -1,3 +1,4 @@
+import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline'
 import { CONFIG } from 'polarkit'
 import { Badge } from 'polarkit/components'
 
@@ -18,6 +19,20 @@ const FakePullRequest = ({ showAmount }: { showAmount: boolean }) => {
         <div className="h-4 w-full max-w-[500px] rounded-full bg-[#EAEBEC]"></div>
         <div className="h-4 w-full max-w-[400px] rounded-full bg-[#EAEBEC]"></div>
         <PolarBadge showAmount={showAmount} />
+        <div className="flex flex-row items-center pb-2 text-gray-500">
+          <QuestionMarkCircleIcon
+            width={24}
+            height={24}
+            className="text-gray-300"
+          />
+          <p className="ml-2 text-xs">
+            <strong className="block font-medium">
+              How is the badge added?
+            </strong>
+            Polar edits the issue body to add the badge (SVG) at the end. You
+            can remove it at any time.
+          </p>
+        </div>
       </div>
     </div>
   )

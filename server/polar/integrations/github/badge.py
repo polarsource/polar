@@ -55,10 +55,11 @@ class GithubBadge:
         if issue.body and GithubBadge.badge_is_embedded(issue.body):
             return (False, "badge_already_embedded")
 
-        if not repository.pledge_badge:
-            return (False, "repository_pledge_badge_disabled")
+        if repository.pledge_badge_auto_embed:
+            return (True, "repository_pledge_badge_auto_embed")
 
-        return (True, "repository_pledge_badge_enabled")
+        # TODO: Check if the issue has the "polar" label
+        return (False, "no_auto_embed_or_label")
 
     def generate_svg_url(self, darkmode=False) -> str:
         return "{base}/api/github/{org}/{repo}/issues/{number}/pledge.svg{maybeDarkmode}".format(  # noqa: E501

@@ -10,7 +10,7 @@ export type RepositoryBadgeSettingsRead = {
   open_issues: number;
   embedded_issues: number;
   pull_requests: number;
-  badge_enabled: boolean;
+  badge_auto_embed: boolean;
   is_private: boolean;
   is_sync_completed: boolean;
 };

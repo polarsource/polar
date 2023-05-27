@@ -311,7 +311,7 @@ class OrganizationService(
                 RepositoryBadgeSettingsRead(
                     id=repo.id,
                     avatar_url=organization.avatar_url,
-                    badge_enabled=repo.pledge_badge,
+                    badge_auto_embed=repo.pledge_badge_auto_embed,
                     name=repo.name,
                     synced_issues=synced_issues,
                     embedded_issues=synced_data["embedded_issues"],

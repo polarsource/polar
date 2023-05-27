@@ -64,7 +64,7 @@ const getRetroactiveChanges = (
         removals: 0,
       }
       if (!repo.is_private) {
-        if (repo.badge_enabled) {
+        if (repo.badge_auto_embed) {
           changes.additions = repo.synced_issues - repo.embedded_issues
         } else {
           changes.removals = repo.embedded_issues
@@ -210,7 +210,7 @@ const BadgeSetup = ({
           ...prev.repositories,
           [repo.id]: {
             ...prev.repositories[repo.id],
-            badge_enabled: enabled,
+            badge_auto_embed: enabled,
           },
         },
       }
@@ -374,7 +374,7 @@ const Controls = ({
       repositories: Object.values(settings.repositories).map((repo) => {
         return {
           id: repo.id,
-          badge_enabled: repo.badge_enabled,
+          badge_auto_embed: repo.badge_auto_embed,
           retroactive: isRetroactiveApplicable(repo),
         }
       }),

@@ -4,7 +4,7 @@
 
 export type RepositoryBadgeSettingsUpdate = {
   id: string;
-  badge_enabled: boolean;
+  badge_auto_embed: boolean;
   retroactive: boolean;
 };
 

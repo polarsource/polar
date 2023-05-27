@@ -66,8 +66,10 @@ class Repository(RecordModel):
         TIMESTAMP(timezone=True), nullable=True
     )
 
-    # Badge issues in this repository?
-    pledge_badge: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Automatically badge all new issues
+    pledge_badge_auto_embed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
 
     ###############################################################################
     # FEATURE & STATUS FLAGS

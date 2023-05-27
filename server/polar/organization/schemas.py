@@ -141,7 +141,7 @@ class OrganizationSetupIntentRead(Schema):
 
 class RepositoryBadgeSettingsUpdate(Schema):
     id: UUID
-    badge_enabled: bool
+    badge_auto_embed: bool
     retroactive: bool
 
 
@@ -153,7 +153,7 @@ class RepositoryBadgeSettingsRead(Schema):
     open_issues: int
     embedded_issues: int
     pull_requests: int
-    badge_enabled: bool
+    badge_auto_embed: bool
     is_private: bool
     is_sync_completed: bool
 

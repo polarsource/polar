@@ -63,15 +63,15 @@ class RepositoryService(
         repository: Repository,
         settings: RepositoryBadgeSettingsUpdate,
     ) -> RepositoryBadgeSettingsUpdate:
-        enabled_pledge_badge = False
-        disabled_pledge_badge = False
+        enabled_auto_badge = False
+        disabled_auto_badge = False
 
-        if settings.badge_enabled is not None:
-            if settings.badge_enabled and not repository.pledge_badge:
-                enabled_pledge_badge = True
-            elif not settings.badge_enabled and repository.pledge_badge:
-                disabled_pledge_badge = True
-            repository.pledge_badge = settings.badge_enabled
+        if settings.badge_auto_embed is not None:
+            if settings.badge_auto_embed and not repository.pledge_badge_auto_embed:
+                enabled_auto_badge = True
+            elif not settings.badge_auto_embed and repository.pledge_badge_auto_embed:
+                disabled_auto_badge = True
+            repository.pledge_badge_auto_embed = settings.badge_auto_embed
 
         await repository.save(session)
         log.info(
@@ -84,13 +84,13 @@ class RepositoryService(
         if repository.is_private:
             return settings
 
-        if enabled_pledge_badge and settings.retroactive:
+        if enabled_auto_badge and settings.retroactive:
             await enqueue_job(
                 "github.badge.embed_retroactively_on_repository",
                 organization.id,
                 repository.id,
             )
-        elif disabled_pledge_badge and settings.retroactive:
+        elif disabled_auto_badge and settings.retroactive:
             await enqueue_job(
                 "github.badge.remove_on_repository", organization.id, repository.id
             )

@@ -155,7 +155,7 @@ export const BadgeRepository = ({
               {!repo.is_private && (
                 <EmbedSetting
                   repo={repo}
-                  isAutoEnabled={repo.badge_enabled}
+                  isAutoEnabled={repo.badge_auto_embed}
                   onChange={(badge: boolean) => {
                     onEnableBadgeChange(badge)
                   }}

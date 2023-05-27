@@ -292,6 +292,42 @@ const BadgeSetup = ({
   )
 }
 
+const RetroactiveActivationLabel = ({
+  additions,
+  deletions,
+}: {
+  additions: number
+  deletions: number
+}) => {
+  const hasAdditionsAndDeletions = additions > 0 && deletions > 0
+
+  if (hasAdditionsAndDeletions) {
+    return (
+      <>
+        Add badge to <strong className="text-medium">{additions}</strong> open
+        issues and remove it from{' '}
+        <strong className="text-medium">{deletions}</strong> existing ones
+      </>
+    )
+  }
+
+  if (additions) {
+    return (
+      <>
+        Add badge to <strong className="text-medium">{additions}</strong> open
+        issues
+      </>
+    )
+  }
+
+  return (
+    <>
+      Remove badge from <strong className="text-medium">{additions}</strong>{' '}
+      existing issues
+    </>
+  )
+}
+
 const Controls = ({
   org,
   showControls,
@@ -379,7 +415,7 @@ const Controls = ({
   const [deletions, setDeletions] = useState(0)
 
   useEffect(() => {
-    if (!isRetroactiveEnabled || !retroactiveChanges) {
+    if (!retroactiveChanges) {
       setAdditions(0)
       setDeletions(0)
     } else {
@@ -415,45 +451,21 @@ const Controls = ({
   return (
     <>
       {showRetroactiveChanges && (
-        <motion.div
-          variants={{
-            hidden: {
-              opacity: 0,
-              scale: 1,
-            },
-            show: {
-              opacity: 1,
-              scale: [1, 1.03, 1],
-            },
-          }}
-          initial={showRetroactiveChanges}
-          animate="show"
-          hidden={!showRetroactiveChanges}
-          className="flex flex-row space-x-8 rounded-xl border bg-white p-4"
-        >
+        <div className="flex flex-row space-x-8 rounded-xl border bg-white p-4">
           <SettingsCheckbox
             id="retroactive_embed"
-            title="Update badge on open issues"
+            title={
+              <RetroactiveActivationLabel
+                additions={additions}
+                deletions={deletions}
+              />
+            }
             isChecked={isRetroactiveEnabled}
             onChange={(e) => {
               setRetroactiveEnabled(e.target.checked)
             }}
           />
-
-          <div className="flex flex-col text-sm leading-6 text-gray-500">
-            {isRetroactiveEnabled && (
-              <>
-                {additions > 0 && (
-                  <span>Will add badge to {additions} issues</span>
-                )}
-                {deletions > 0 && (
-                  <span>Will remove badge from {deletions} issues</span>
-                )}
-                {deletions === 0 && additions === 0 && <span>No changes</span>}
-              </>
-            )}
-          </div>
-        </motion.div>
+        </div>
       )}
 
       {isSettingPage && (

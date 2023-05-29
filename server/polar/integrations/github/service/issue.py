@@ -19,11 +19,9 @@ from polar.enums import Platforms
 from polar.postgres import AsyncSession
 from polar.integrations.github import client as github
 from polar.integrations.github.service.api import github_api
+from polar.issue.hooks import issue_upserted, IssueHook
 
-
-from ..types import GithubIssue
 from ..badge import GithubBadge
-from ..signals import github_issue_created, github_issue_updated
 from ..exceptions import (
     GithubBadgeNotEmbeddable,
     GithubBadgeAlreadyEmbedded,
@@ -104,18 +102,7 @@ class GithubIssueService(IssueService):
             session, schemas, constraints=[Issue.external_id]
         )
         for record in records:
-            signal = github_issue_updated
-            if record.was_created:
-                signal = github_issue_created
-
-            await signal.send_async(
-                PolarContext(),
-                session=session,
-                organization=organization,
-                repository=repository,
-                issue=record,
-            )
-
+            await issue_upserted.call(IssueHook(session, record))
         return records
 
     async def embed_badge(

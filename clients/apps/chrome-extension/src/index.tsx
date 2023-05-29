@@ -31,11 +31,21 @@ const requestDecoration = (issueNumbers: string[]) => {
 const mountDecoration = (issues: NodeListOf<Element>) => {
   issues.forEach((issue) => {
     const issueNumber = parseInt(issue.id.replace('issue_', ''))
-    const badge = document.createElement('div')
-    badge.classList.add('polar-extension-decoration-root')
-    badge.style.display = 'flex'
-    issue.insertAdjacentElement('afterend', badge)
-    const root = createRoot(badge)
+    const id = `polar-extension-issue-${issueNumber}`
+
+    // Delete previous (stale!) versions of this embed
+    // This happens when navigating back/forward github SPA
+    const existing = document.getElementById(id)
+    if (existing) {
+      existing.remove()
+    }
+
+    const embed = document.createElement('div')
+    embed.classList.add('polar-extension-decoration-root')
+    embed.id = id
+    embed.style.display = 'flex'
+    issue.insertAdjacentElement('afterend', embed)
+    const root = createRoot(embed)
     root.render(
       <React.StrictMode>
         <CachedIssueListItemDecoration

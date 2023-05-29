@@ -80,7 +80,7 @@ const EmbedSetting = ({
             onChange(false)
           }}
         >
-          <p>Manually</p>
+          <p>By label</p>
         </div>
         <div
           className={getTabClasses(isAutoEnabled)}
@@ -88,7 +88,7 @@ const EmbedSetting = ({
             onChange(true)
           }}
         >
-          <p>Auto</p>
+          <p>All</p>
         </div>
       </div>
     </>

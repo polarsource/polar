@@ -30,14 +30,14 @@ export const BadgeRepositories = ({
       </h2>
       <div className="flex w-full flex-row rounded-lg border border-gray-200 text-sm text-gray-500">
         <div className="w-1/2 border-r border-gray-200 py-3 px-6">
-          <strong className="font-medium text-gray-800">Manually</strong>
+          <strong className="font-medium text-gray-800">By label</strong>
           <p className="">
             Issues with the &quot;{CONFIG.GITHUB_EMBED_LABEL}&quot; label will
             get the badge.
           </p>
         </div>
         <div className="w-1/2 py-3 px-6">
-          <strong className="font-medium text-gray-800">Auto</strong>
+          <strong className="font-medium text-gray-800">All</strong>
           <p>All new issues will get the Polar badge automatically.</p>
         </div>
       </div>

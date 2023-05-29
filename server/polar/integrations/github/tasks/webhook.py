@@ -395,15 +395,17 @@ async def issue_labeled_async(
         # TODO: Handle better
         return dict(success=False, reason="issue not found")
 
-    embedded_before_update = issue.has_embed_label()
+    embedded_before_update = issue.has_pledge_badge_label
 
+    labels = github.jsonify(event.issue.labels)
     # TODO: Improve typing here
-    issue.labels = github.jsonify(event.issue.labels)  # type: ignore
+    issue.labels = labels  # type: ignore
     issue.issue_modified_at = event.issue.updated_at
+    issue.has_pledge_badge_label = Issue.contains_pledge_badge_label(labels)
     session.add(issue)
     await session.commit()
 
-    should_embed = issue.has_embed_label()
+    should_embed = issue.has_pledge_badge_label
     if embedded_before_update != should_embed:
         # Only remove or add badge in case of label change
         await update_issue_embed(session, issue=issue, embed=should_embed)

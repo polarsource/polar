@@ -12,6 +12,11 @@ import polar.integrations.github.client as github
 from polar.integrations.github.service.pull_request import github_pull_request
 from polar.integrations.github.service.issue import github_issue
 from polar.integrations.github.service.api import github_api
+from polar.issue.hooks import (
+    IssueReferenceHook,
+    issue_reference_created,
+    issue_reference_updated,
+)
 from polar.kit import utils
 
 from polar.models import Organization, Repository
@@ -624,11 +629,8 @@ class GitHubIssueReferencesService:
                 "issue.create_reference.created",
                 ref=ref,
             )
-            if ref.on_created_signal:
-                await ref.on_created_signal.send_async(
-                    PolarContext(), item=ref, session=session
-                )
 
+            await issue_reference_created.call(IssueReferenceHook(session, ref))
             return
         except IntegrityError:
             log.info(
@@ -651,10 +653,7 @@ class GitHubIssueReferencesService:
         await session.execute(stmt)
         await session.commit()
 
-        if ref.on_updated_signal:
-            await ref.on_updated_signal.send_async(
-                PolarContext(), item=ref, session=session
-            )
+        await issue_reference_updated.call(IssueReferenceHook(session, ref))
 
 
 github_reference = GitHubIssueReferencesService()

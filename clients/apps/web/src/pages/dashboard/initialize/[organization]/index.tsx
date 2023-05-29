@@ -60,10 +60,12 @@ const Page: NextLayoutComponentType = () => {
 
 Page.getLayout = (page: ReactElement) => {
   return (
-    <>
-      <Topbar hideProfile={true} />
-      <Gatekeeper>{page}</Gatekeeper>
-    </>
+    <Gatekeeper>
+      <>
+        <Topbar hideProfile={true} />
+        {page}
+      </>
+    </Gatekeeper>
   )
 }
 

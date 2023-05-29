@@ -1,3 +1,4 @@
+import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import LoadingScreen from '@/components/Dashboard/LoadingScreen'
 import Layout from '@/components/Layout/EmptyLayout'
 import type { NextPageWithLayout } from '@/utils/next'
@@ -20,7 +21,11 @@ const Page: NextPageWithLayout = () => {
 }
 
 Page.getLayout = (page: ReactElement) => {
-  return <Layout>{page}</Layout>
+  return (
+    <Gatekeeper>
+      <Layout>{page}</Layout>
+    </Gatekeeper>
+  )
 }
 
 export default Page

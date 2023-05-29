@@ -1,3 +1,4 @@
+import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import RepoSelection from '@/components/Dashboard/RepoSelection'
 import EmptyLayout from '@/components/Layout/EmptyLayout'
 import BadgeSetup from '@/components/Settings/Badge'
@@ -243,12 +244,14 @@ const SettingsTopbar = () => {
 
 SettingsPage.getLayout = (page: ReactElement) => {
   return (
-    <EmptyLayout>
-      <>
-        <SettingsTopbar />
-        {page}
-      </>
-    </EmptyLayout>
+    <Gatekeeper>
+      <EmptyLayout>
+        <>
+          <SettingsTopbar />
+          {page}
+        </>
+      </EmptyLayout>
+    </Gatekeeper>
   )
 }
 

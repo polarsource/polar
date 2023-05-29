@@ -31,7 +31,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter var', ...defaultTheme.fontFamily.sans],
-        display: ['Lexend', ...defaultTheme.fontFamily.sans],
+        display: ['Poppins', ...defaultTheme.fontFamily.sans],
       },
       colors: {
         blue: {
@@ -97,8 +97,8 @@ module.exports = {
     plugin(function({ addUtilities }) {
       const utilityStyles = {
         '.text-4xl': {
-          fontWeight: '350',
-          fontFamily: ['Lexend', defaultTheme.fontFamily.sans].toString(),
+          fontWeight: '400',
+          fontFamily: ['Poppins', defaultTheme.fontFamily.sans].toString(),
         },
       }
       utilityStyles['.text-5xl'] = utilityStyles['.text-4xl']

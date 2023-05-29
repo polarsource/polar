@@ -32,6 +32,10 @@ def rstr(prefix: str) -> str:
 
 @pytest_asyncio.fixture(scope="function")
 async def organization(session: AsyncSession) -> Organization:
+    return await create_organization(session)
+
+
+async def create_organization(session: AsyncSession) -> Organization:
     create_schema = OrganizationCreate(
         platform=Platforms.github,
         name=rstr("testorg"),
@@ -72,6 +76,12 @@ async def pledging_organization(session: AsyncSession) -> Organization:
 
 @pytest_asyncio.fixture(scope="function")
 async def repository(session: AsyncSession, organization: Organization) -> Repository:
+    return await create_repository(session, organization)
+
+
+async def create_repository(
+    session: AsyncSession, organization: Organization
+) -> Repository:
     create_schema = RepositoryCreate(
         platform=Platforms.github,
         name=rstr("testrepo"),
@@ -87,6 +97,12 @@ async def repository(session: AsyncSession, organization: Organization) -> Repos
 
 @pytest_asyncio.fixture(scope="function")
 async def issue(
+    session: AsyncSession, organization: Organization, repository: Repository
+) -> Issue:
+    return await create_issue(session, organization, repository)
+
+
+async def create_issue(
     session: AsyncSession, organization: Organization, repository: Repository
 ) -> Issue:
     issue = await Issue.create(

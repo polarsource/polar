@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass
 
 from uuid import UUID
 from typing import List, Sequence, Tuple
@@ -13,7 +14,7 @@ from sqlalchemy import (
     and_,
     ColumnElement,
 )
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, contains_eager
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
 from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
@@ -116,13 +117,8 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         statement = sql.select(
             Issue,
             sql.func.count(Issue.id).over().label("total_count"),
-            sql.func.sum(Pledge.amount).label("pledged_amount"),
         ).join(
-            Pledge,
-            and_(
-                Pledge.issue_id == Issue.id,
-                or_(Pledge.id.is_(None), Pledge.state.in_(pledge_statuses)),
-            ),
+            Issue.pledges,
             isouter=True,
         )
 
@@ -132,6 +128,12 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             if not pledged_by_org and not pledged_by_user:
                 raise ValueError("no pledge_by criteria specified")
 
+            statement = statement.join(
+                IssueDependency,
+                IssueDependency.dependency_issue_id == Issue.id,
+                isouter=True,
+            )
+
             pledge_criterias: list[ColumnElement[bool]] = []
             if pledged_by_org:
                 pledge_criterias.append(Pledge.by_organization_id == pledged_by_org)
@@ -139,15 +141,12 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             if pledged_by_user:
                 pledge_criterias.append(Pledge.by_user_id == pledged_by_user)
 
-            statement = statement.join(
-                IssueDependency,
-                IssueDependency.dependency_issue_id == Issue.id,
-                isouter=True,
-            ).where(
+            statement = statement.where(
                 or_(
                     IssueDependency.repository_id.in_(repository_ids),
+                    # Pledge.id.is_(None),
                     or_(*pledge_criterias),
-                )
+                ),
             )
 
         else:
@@ -290,12 +289,19 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             )
 
         if load_pledges:
-            statement = statement.options(
-                joinedload(Issue.pledges).joinedload(Pledge.user),
-                joinedload(Issue.pledges).joinedload(Pledge.organization),
-            )
+            statement = statement.options(contains_eager(Issue.pledges))
+            statement = statement.group_by(Issue.id, Pledge.id)
 
-        statement = statement.group_by(Issue.id)
+            # TODO: make sure that pledger information is eager loaded
+            # statement = statement.options(
+            #     joinedload(Issue.pledges).joinedload(Pledge.user),
+            #     joinedload(Issue.pledges).joinedload(Pledge.organization),
+            # )
+
+        else:
+            statement = statement.group_by(
+                Issue.id,
+            )
 
         if limit:
             statement = statement.limit(limit).offset(offset)

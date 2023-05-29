@@ -6,13 +6,20 @@ from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
 from polar.enums import Platforms
 from polar.issue.schemas import IssueCreate
 from polar.models.issue import Issue
+from polar.models.issue_dependency import IssueDependency
 from polar.models.organization import Organization
+from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.integrations.github import client as github
+from polar.models.user import User
+from polar.models.user_organization import UserOrganization
+from polar.pledge.schemas import PledgeState
 
 from polar.postgres import AsyncSession
 
 from polar.issue.service import issue as issue_service
+from tests import fixtures
+from tests.fixtures import predictable_objects, random_objects
 
 
 @pytest.mark.asyncio
@@ -261,3 +268,204 @@ async def test_list_by_repository_type_and_status_filter_triaged(
     assert count == 2
     names = [i.title for i in issues]
     assert names == ["issue_2_backlog", "issue_3_backlog"]
+
+
+@pytest.mark.asyncio
+async def test_list_by_repository_type_and_status_dependencies_pledge(
+    session: AsyncSession,
+    repository: Repository,
+    organization: Organization,
+    user: User,
+) -> None:
+    # Third party issue
+
+    third_party_org = await random_objects.create_organization(session)
+    third_party_repo = await random_objects.create_repository(session, third_party_org)
+    third_party_issue = await random_objects.create_issue(
+        session, third_party_org, third_party_repo
+    )
+    third_party_issue.title = "pledged_towards"
+    await third_party_issue.save(session)
+
+    # this issue should not be in the result
+    third_party_issue_2 = await random_objects.create_issue(
+        session, third_party_org, third_party_repo
+    )
+
+    # the org and the user both have made pledges towards this issue
+    third_party_issue_3 = await random_objects.create_issue(
+        session, third_party_org, third_party_repo
+    )
+    third_party_issue_3.title = "double_pledge_towards"
+    await third_party_issue_3.save(session)
+
+    # Create pledge
+    pledge = await Pledge.create(
+        session=session,
+        id=uuid.uuid4(),
+        by_organization_id=organization.id,
+        issue_id=third_party_issue.id,
+        repository_id=third_party_repo.id,
+        organization_id=third_party_org.id,
+        amount=2000,
+        fee=200,
+        state=PledgeState.created,
+    )
+
+    # Create other pledge to this issue (not by the org)
+    pledge_other = await Pledge.create(
+        session=session,
+        id=uuid.uuid4(),
+        issue_id=third_party_issue.id,
+        repository_id=third_party_repo.id,
+        organization_id=third_party_org.id,
+        amount=2100,
+        fee=200,
+        state=PledgeState.created,
+    )
+
+    # pledges to issue 3
+    pledge_issue_3_user = await Pledge.create(
+        session=session,
+        id=uuid.uuid4(),
+        issue_id=third_party_issue_3.id,
+        repository_id=third_party_repo.id,
+        organization_id=third_party_org.id,
+        amount=2100,
+        fee=200,
+        state=PledgeState.created,
+        by_user_id=user.id,
+    )
+    pledge_issue_3_org = await Pledge.create(
+        session=session,
+        id=uuid.uuid4(),
+        issue_id=third_party_issue_3.id,
+        repository_id=third_party_repo.id,
+        organization_id=third_party_org.id,
+        amount=2100,
+        fee=200,
+        state=PledgeState.created,
+        by_organization_id=organization.id,
+    )
+
+    # TODO: test pledge statuses filter
+
+    (issues, count) = await issue_service.list_by_repository_type_and_status(
+        session,
+        repository_ids=[repository.id],
+        issue_list_type=IssueListType.dependencies,
+        sort_by=IssueSortBy.newest,
+        pledged_by_org=organization.id,
+        pledged_by_user=user.id,
+        load_pledges=True,
+    )
+
+    # assert count == 1
+    names = [i.title for i in issues]
+    assert names == ["double_pledge_towards", "pledged_towards"]
+
+    # only the pledges by pledged_by_org/pledged_by_user should be included
+    assert len(issues[0].pledges) == 2
+    assert len(issues[1].pledges) == 1
+
+
+@pytest.mark.asyncio
+async def test_list_by_repository_type_and_status_dependencies_pledge_state(
+    session: AsyncSession,
+    repository: Repository,
+    organization: Organization,
+    user: User,
+) -> None:
+    # Third party issue
+
+    third_party_org = await random_objects.create_organization(session)
+    third_party_repo = await random_objects.create_repository(session, third_party_org)
+
+    for state in [
+        PledgeState.initiated,
+        PledgeState.created,
+        PledgeState.disputed,
+        PledgeState.paid,
+    ]:
+        third_party_issue = await random_objects.create_issue(
+            session, third_party_org, third_party_repo
+        )
+        third_party_issue.title = "pledged_towards_" + str(state)
+        await third_party_issue.save(session)
+
+        # Create pledge
+        pledge = await Pledge.create(
+            session=session,
+            id=uuid.uuid4(),
+            by_organization_id=organization.id,
+            issue_id=third_party_issue.id,
+            repository_id=third_party_repo.id,
+            organization_id=third_party_org.id,
+            amount=2000,
+            fee=200,
+            state=state,
+        )
+
+    (issues, count) = await issue_service.list_by_repository_type_and_status(
+        session,
+        repository_ids=[repository.id],
+        issue_list_type=IssueListType.dependencies,
+        sort_by=IssueSortBy.newest,
+        pledged_by_org=organization.id,
+        pledged_by_user=user.id,
+        load_pledges=True,
+    )
+
+    # assert count == 1
+    names = [i.title for i in issues]
+    assert names == [
+        "pledged_towards_PledgeState.paid",
+        "pledged_towards_PledgeState.disputed",
+        "pledged_towards_PledgeState.created",
+        "pledged_towards_PledgeState.initiated",  # TODO: can we find a way to support filtering out this value from the query?  # noqa: E501
+    ]
+
+
+@pytest.mark.asyncio
+async def test_list_by_repository_type_and_status_dependencies_dependency(
+    session: AsyncSession,
+    repository: Repository,
+    organization: Organization,
+    issue: Issue,
+    user: User,
+) -> None:
+    # Third party issue
+
+    third_party_org = await random_objects.create_organization(session)
+    third_party_repo = await random_objects.create_repository(session, third_party_org)
+    third_party_issue = await random_objects.create_issue(
+        session, third_party_org, third_party_repo
+    )
+    third_party_issue.title = "is_a_dependency"
+    await third_party_issue.save(session)
+
+    # Create dependency
+    dep = await IssueDependency.create(
+        session=session,
+        organization_id=organization.id,
+        repository_id=repository.id,
+        dependent_issue_id=issue.id,
+        dependency_issue_id=third_party_issue.id,
+    )
+
+    (issues, count) = await issue_service.list_by_repository_type_and_status(
+        session,
+        repository_ids=[repository.id],
+        issue_list_type=IssueListType.dependencies,
+        sort_by=IssueSortBy.newest,
+        pledged_by_org=organization.id,
+        pledged_by_user=user.id,
+        load_pledges=True,
+    )
+
+    # assert count == 1
+    names = [i.title for i in issues]
+    assert names == ["is_a_dependency"]
+
+    # only the pledges by pledged_by_org/pledged_by_user should be included
+    # assert len(issues[0].issue.pledges_zegl) == 1

@@ -194,8 +194,6 @@ class Issue(IssueFields, RecordModel):
             "Pledge",
             lazy="raise",
             viewonly=True,
-            primaryjoin="""and_(Issue.id == Pledge.issue_id, Pledge.state.in_(
-                ['created', 'pending', 'paid', 'disputed']))""",
         )
 
     # calculated sum of pledges, used for sorting

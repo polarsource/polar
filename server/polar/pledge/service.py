@@ -501,8 +501,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
         )
         await session.commit()
-        await pledge.on_updated(session)
-
         await pledge_created.call(PledgeHook(session, pledge))
 
     async def mark_paid_by_payment_id(

@@ -18,7 +18,6 @@ structlog = "^22.3.0"
 githubkit = {extras = ["auth-app"], git="https://github.com/polarsource/githubkit.git", branch="master"}
 redis = "^4.5.4"
 sse-starlette = "^1.4.0"
-blinker = {git = "https://github.com/pallets-eco/blinker.git"}
 arq = "^0.25.0"
 stripe = "^5.2.0"
 sqlalchemy-searchable = "^1.4.1"

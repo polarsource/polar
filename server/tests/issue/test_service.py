@@ -368,6 +368,13 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
     assert len(issues[0].pledges) == 2
     assert len(issues[1].pledges) == 1
 
+    # assert that peldger metadata is joined
+    assert issues[0].pledges[0].by_user_id is not None
+    assert issues[0].pledges[0].user.username is not None
+
+    assert issues[0].pledges[1].by_organization_id is not None
+    assert issues[0].pledges[1].organization.name is not None
+
 
 @pytest.mark.asyncio
 async def test_list_by_repository_type_and_status_dependencies_pledge_state(

@@ -21,11 +21,13 @@ from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
 
 from polar.kit.services import ResourceService
 from polar.models.issue import Issue
+from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.enums import Platforms
 from polar.models.issue_dependency import IssueDependency
 from polar.models.issue_reference import IssueReference
+from polar.models.user import User
 from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession, sql
 
@@ -110,12 +112,23 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         limit: int | None = None,
         include_statuses: list[IssueStatus] | None = None,
     ) -> Tuple[Sequence[Issue], int]:  # (issues, total_issue_count)
-        statement = sql.select(
-            Issue,
-            sql.func.count(Issue.id).over().label("total_count"),
-        ).join(
-            Issue.pledges,
-            isouter=True,
+        statement = (
+            sql.select(
+                Issue,
+                sql.func.count(Issue.id).over().label("total_count"),
+            )
+            .join(
+                Issue.pledges,
+                isouter=True,
+            )
+            .join(
+                Pledge.organization,
+                isouter=True,
+            )
+            .join(
+                Pledge.user,
+                isouter=True,
+            )
         )
 
         if issue_list_type == IssueListType.issues:
@@ -285,14 +298,17 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             )
 
         if load_pledges:
-            statement = statement.options(contains_eager(Issue.pledges))
-            statement = statement.group_by(Issue.id, Pledge.id)
-
-            # TODO: make sure that pledger information is eager loaded
-            # statement = statement.options(
-            #     joinedload(Issue.pledges).joinedload(Pledge.user),
-            #     joinedload(Issue.pledges).joinedload(Pledge.organization),
-            # )
+            statement = statement.options(
+                contains_eager(Issue.pledges),
+                contains_eager(Issue.pledges).contains_eager(Pledge.user),
+                contains_eager(Issue.pledges).contains_eager(Pledge.organization),
+            )
+            statement = statement.group_by(
+                Issue.id,
+                Pledge.id,
+                User.id,
+                Organization.id,
+            )
 
         else:
             statement = statement.group_by(

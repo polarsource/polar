@@ -367,26 +367,11 @@ async def issue_labeled_async(
         # TODO: Handle better
         return dict(success=False, reason="issue not found")
 
-    # modify labels
-    stmt = (
-        sql.Update(Issue)
-        .where(Issue.id == issue.id)
-        .values(
-            labels=github.jsonify(event.issue.labels),
-            issue_modified_at=event.issue.updated_at,
-        )
-    )
-    await session.execute(stmt)
+    # TODO: Improve typing here
+    issue.labels = github.jsonify(event.issue.labels)  # type: ignore
+    issue.issue_modified_at = event.issue.updated_at
+    session.add(issue)
     await session.commit()
-
-    # TODO: why are we returning the object in the webook workers?
-    # it's not used anywhere
-
-    # get for return
-    issue = await service.github_issue.get_by_external_id(session, event.issue.id)
-    if not issue:
-        # TODO: Handle better
-        return dict(success=False, reason="issue not found")
 
     schema = IssueRead.from_orm(issue)
     return dict(success=True, issue=schema.dict())

@@ -1,3 +1,4 @@
+import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
@@ -12,7 +13,6 @@ import { useBadgeSettings, useSSE } from 'polarkit/hooks'
 import { classNames } from 'polarkit/utils'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useTimeoutFn } from 'react-use'
-import Box from '../Box'
 import FakePullRequest from '../FakePullRequest'
 import SettingsCheckbox from '../SettingsCheckbox'
 import BadgeRepositories from './Repositories'
@@ -235,23 +235,39 @@ const BadgeSetup = ({
         initial={isSettingPage ? false : 'hidden'}
         animate="show"
       >
-        <Box>
-          <FakePullRequest showAmount={settings.show_amount} />
-          <SettingsCheckbox
-            id="show-raised"
-            title="Show amount pledged"
-            isChecked={settings.show_amount}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-              setSettings((prev) => {
-                return {
-                  ...prev,
-                  show_amount: e.target.checked,
-                }
-              })
-              setAnyBadgeSettingChanged(true)
-            }}
-          />
-        </Box>
+        <div className="w-full rounded-xl bg-white shadow">
+          <div className="flex flex-col space-y-4 p-5">
+            <FakePullRequest showAmount={settings.show_amount} />
+            <SettingsCheckbox
+              id="show-raised"
+              title="Show amount pledged"
+              isChecked={settings.show_amount}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setSettings((prev) => {
+                  return {
+                    ...prev,
+                    show_amount: e.target.checked,
+                  }
+                })
+                setAnyBadgeSettingChanged(true)
+              }}
+            />
+          </div>
+          <div className="flex flex-row items-center rounded-b-xl border-t border-gray-200 bg-gray-100/50 px-4 py-3 text-gray-500">
+            <QuestionMarkCircleIcon
+              width={24}
+              height={24}
+              className="text-gray-300"
+            />
+            <p className="ml-2 text-xs">
+              <strong className="block font-medium">
+                How is the badge added?
+              </strong>
+              Polar edits the issue description to add the badge (SVG) at the
+              end. You can remove it at any time.
+            </p>
+          </div>
+        </div>
       </motion.div>
       <BadgeRepositories
         repos={sortedRepos}

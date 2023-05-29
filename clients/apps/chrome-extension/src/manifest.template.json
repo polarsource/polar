@@ -1,6 +1,6 @@
 {
   "name": "Polar",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Enhance Github Issues with Polar Pledges & Insights",
   "manifest_version": 3,
   "icons": {
@@ -9,11 +9,7 @@
     "48": "Icon_48.png",
     "128": "Icon_128.png"
   },
-  "permissions": [
-    "storage",
-    "webNavigation",
-    "scripting"
-  ],
+  "permissions": ["storage", "webNavigation", "scripting"],
   "prod:host_permissions": [
     "https://github.com/",
     "https://polar.sh/",
@@ -27,9 +23,7 @@
   "content_scripts": [
     {
       "run_at": "document_end",
-      "js": [
-        "content.js"
-      ],
+      "js": ["content.js"],
       "matches": [
         "https://github.com/*/*/issues",
         "https://github.com/*/*/issues?*",
@@ -37,15 +31,11 @@
       ]
     },
     {
-      "js": [
-        "auth.js"
-      ],
+      "js": ["auth.js"],
       "prod:matches": [
         "https://dashboard.polar.sh/dashboard/settings/extension"
       ],
-      "dev:matches": [
-        "http://127.0.0.1:3000/dashboard/settings/extension"
-      ]
+      "dev:matches": ["http://127.0.0.1:3000/dashboard/settings/extension"]
     }
   ],
   "background": {
@@ -53,12 +43,8 @@
   },
   "web_accessible_resources": [
     {
-      "resources": [
-        "frame.css"
-      ],
-      "matches": [
-        "https://github.com/*"
-      ]
+      "resources": ["frame.css"],
+      "matches": ["https://github.com/*"]
     }
   ]
 }

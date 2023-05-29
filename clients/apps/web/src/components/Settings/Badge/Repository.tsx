@@ -12,7 +12,7 @@ const ProgressText = ({
   completed: boolean
 }) => {
   return (
-    <p className="text-xs text-gray-500">
+    <p className="mt-0.5 text-xs text-gray-500">
       {completed && <span>{target} open issues</span>}
       {!completed && (
         <>
@@ -116,24 +116,24 @@ export const BadgeRepository = ({
   return (
     <div
       className={classNames(
-        showControls && repo.is_private ? 'bg-gray-100/50' : 'bg-white',
-        'flex flex-row px-5 py-4',
+        showControls && repo.is_private
+          ? 'bg-gray-100/50 py-2 text-sm'
+          : 'bg-white py-4',
+        'flex flex-row px-5',
       )}
     >
-      <div className="my-auto basis-3/6">
-        <div className="flex flex-row items-center">
-          {repo.avatar_url && (
-            <img className="h-6 w-6 rounded-full" src={repo.avatar_url} />
-          )}
-          <strong className="mx-2.5 mr-4 font-normal text-gray-900">
-            {repo.name}
-          </strong>
-          <ProgressText
-            progress={repo.synced_issues}
-            target={repo.open_issues}
-            completed={repo.is_sync_completed}
-          />
-        </div>
+      <div className="my-auto flex basis-3/6 flex-row items-center">
+        {repo.avatar_url && (
+          <img className="h-6 w-6 rounded-full" src={repo.avatar_url} />
+        )}
+        <strong className="ml-2.5 mr-4 font-normal text-gray-900">
+          {repo.name}
+        </strong>
+        <ProgressText
+          progress={repo.synced_issues}
+          target={repo.open_issues}
+          completed={repo.is_sync_completed}
+        />
       </div>
       <div className="my-auto flex basis-3/6 flex-row items-center">
         <div className="w-full text-right">
@@ -148,7 +148,7 @@ export const BadgeRepository = ({
           {showControls && (
             <div className="flex flex-row justify-end space-x-2 align-middle">
               {repo.is_private && (
-                <p className="flex items-center rounded-full border bg-gray-100 px-3 text-xs text-gray-600">
+                <p className="flex items-center rounded-full border bg-gray-100 px-3 py-1 text-xs text-gray-600">
                   Private
                 </p>
               )}

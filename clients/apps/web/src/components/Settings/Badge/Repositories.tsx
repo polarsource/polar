@@ -32,8 +32,11 @@ export const BadgeRepositories = ({
         <div className="w-1/2 border-r border-gray-200 py-3 px-6">
           <strong className="font-medium text-gray-800">By label</strong>
           <p className="">
-            Issues with the &quot;{CONFIG.GITHUB_EMBED_LABEL}&quot; label will
-            get the badge.
+            Issues with a{' '}
+            <span className="rounded-xl border border-gray-200 bg-gray-100 py-0.5 px-2 text-xs">
+              {CONFIG.GITHUB_EMBED_LABEL}
+            </span>{' '}
+            label will get the badge.
           </p>
         </div>
         <div className="w-1/2 py-3 px-6">

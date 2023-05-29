@@ -167,7 +167,7 @@ const SettingsPage: NextLayoutComponentType = () => {
               <>
                 <SectionDescription
                   title="Polar badge"
-                  description="Polar will inject this badge into new issues on Github."
+                  description="Customize which issues Polar should embed a pledge badge for."
                 />
 
                 <BadgeSetup

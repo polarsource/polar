@@ -1,8 +1,5 @@
-from polar.context import PolarContext
 from polar.enums import Platforms
-from polar.models.pull_request import PullRequest
-from polar.postgres import AsyncSession
-from polar.pull_request.signals import pull_request_created, pull_request_updated
+from polar.pull_request.hooks import PullRequestHook, pull_request_upserted
 from polar.integrations.github.service.dependency import github_dependency
 from polar.repository.service import repository as repository_service
 from polar.organization.service import organization as organization_service
@@ -10,23 +7,8 @@ from polar.issue.service import issue as issue_service
 from polar.worker import enqueue_job
 
 
-@pull_request_created.connect
-async def pull_request_created_trigger_reverse_references(
-    context: PolarContext, *, item: PullRequest, session: AsyncSession
-):
-    await pull_request_find_reverse_references(session, item)
-
-
-@pull_request_updated.connect
-async def pull_request_updated_trigger_reverse_references(
-    context: PolarContext, *, item: PullRequest, session: AsyncSession
-):
-    await pull_request_find_reverse_references(session, item)
-
-
 async def pull_request_find_reverse_references(
-    session: AsyncSession,
-    item: PullRequest,
+    hook: PullRequestHook,
 ) -> None:
     """
     Find links to issues within the same repository, and re-crawl those issues for
@@ -35,6 +17,9 @@ async def pull_request_find_reverse_references(
     This is needed as there are no webooks on new issue timeline events, and we're
     using this as a proxy for when a new crawl is needed.
     """
+
+    session = hook.session
+    item = hook.pull_request
 
     if not item.body:
         return
@@ -69,3 +54,6 @@ async def pull_request_find_reverse_references(
 
         # Schedule sync for this issue
         await enqueue_job("github.issue.sync.issue_references", linked_issue.id)
+
+
+pull_request_upserted.add(pull_request_find_reverse_references)

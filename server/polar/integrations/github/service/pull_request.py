@@ -3,6 +3,7 @@ from githubkit import GitHub
 
 import structlog
 
+from polar.pull_request.hooks import PullRequestHook, pull_request_upserted
 from polar.models import PullRequest, Organization, Repository
 from polar.enums import Platforms
 from polar.postgres import AsyncSession
@@ -61,12 +62,17 @@ class GithubPullRequestService(PullRequestService):
             )
             return []
 
-        return await self.upsert_many(
+        res = await self.upsert_many(
             session,
             create_schemas,
             constraints=[PullRequest.external_id],
             mutable_keys=MinimalPullRequestCreate.__mutable_keys__,
         )
+
+        for r in res:
+            await pull_request_upserted.call(PullRequestHook(session, r))
+
+        return res
 
     async def store_full(
         self,
@@ -107,12 +113,17 @@ class GithubPullRequestService(PullRequestService):
             )
             return []
 
-        return await full_pull_request.upsert_many(
+        res = await full_pull_request.upsert_many(
             session,
             create_schemas,
             constraints=[PullRequest.external_id],
             mutable_keys=FullPullRequestCreate.__mutable_keys__,
         )
+
+        for r in res:
+            await pull_request_upserted.call(PullRequestHook(session, r))
+
+        return res
 
     async def sync_pull_request(
         self,

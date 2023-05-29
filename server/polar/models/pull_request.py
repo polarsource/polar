@@ -4,7 +4,6 @@ from sqlalchemy import TIMESTAMP, Boolean, Index, Integer, String, UniqueConstra
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-from polar.pull_request.signals import pull_request_created, pull_request_updated
 from polar.kit.db.models import RecordModel
 from polar.models.issue import IssueFields, issue_fields_mutables
 from polar.types import JSONDict, JSONList
@@ -19,9 +18,6 @@ class PullRequest(IssueFields, RecordModel):
             "idx_pull_requests_title_tsv", "title_tsv", postgresql_using="gin"
         ),  # Search index
     )
-
-    on_created_signal = pull_request_created
-    on_updated_signal = pull_request_updated
 
     # Pull Requests
     commits: Mapped[int | None] = mapped_column(Integer, nullable=True)

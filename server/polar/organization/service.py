@@ -408,10 +408,8 @@ class OrganizationService(
             )
             .where(
                 Repository.organization_id == organization.id,
-                or_(
-                    or_(PullRequest.state == "open", PullRequest.state == None),  # noqa
-                    or_(Issue.state == "open", Issue.state == None),  # noqa
-                ),
+                or_(PullRequest.state == "open", PullRequest.state == None),  # noqa
+                or_(Issue.state == "open", Issue.state == None),  # noqa
             )
             .group_by(Repository.id, "embedded")
         )

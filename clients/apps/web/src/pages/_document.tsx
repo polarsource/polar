@@ -13,7 +13,7 @@ export default function Document() {
           crossOrigin={''}
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Lexend:wght@350&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Poppins:wght@400&display=swap"
           rel="stylesheet"
         ></link>
         <link href="/favicon.png" rel="icon"></link>

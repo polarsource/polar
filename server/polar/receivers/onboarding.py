@@ -1,66 +1,58 @@
-from typing import Any
 import structlog
-from polar.context import PolarContext
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.pull_request.hooks import PullRequestHook, pull_request_upserted
-
-from polar.repository.signals import (
+from polar.repository.hooks import (
+    SyncCompletedHook,
+    SyncedHook,
     repository_issue_synced,
     repository_issues_sync_completed,
 )
-
 from polar.eventstream.service import publish
-from polar.models import Issue, Organization, Repository
-from polar.postgres import AsyncSession
 
 log = structlog.get_logger()
 
 
-@repository_issue_synced.connect
-async def on_issue_synced(
-    sender: PolarContext,
-    *,
-    record: Issue,
-    repository: Repository,
-    organization: Organization,
-    synced: int,
-    session: AsyncSession,
-) -> None:
-    log.info("issue.synced", issue=record.id, title=record.title, synced=synced)
+async def on_issue_synced(hook: SyncedHook) -> None:
+    log.info(
+        "issue.synced",
+        issue=hook.record.id,
+        title=hook.record.title,
+        synced=hook.synced,
+    )
     await publish(
         "issue.synced",
         {
             "issue": {
-                "id": record.id,
-                "title": record.title,
+                "id": hook.record.id,
+                "title": hook.record.title,
             },
-            "open_issues": repository.open_issues or 0,
-            "synced_issues": synced,
-            "repository_id": repository.id,
+            "open_issues": hook.repository.open_issues or 0,
+            "synced_issues": hook.synced,
+            "repository_id": hook.repository.id,
         },
-        organization_id=organization.id,
+        organization_id=hook.organization.id,
     )
 
 
-@repository_issues_sync_completed.connect
+repository_issue_synced.add(on_issue_synced)
+
+
 async def on_issue_sync_completed(
-    sender: PolarContext,
-    *,
-    repository: Repository,
-    organization: Organization,
-    synced: int,
-    session: AsyncSession,
+    hook: SyncCompletedHook,
 ) -> None:
-    log.info("issue.sync.completed", repository=repository.id, synced=synced)
+    log.info("issue.sync.completed", repository=hook.repository.id, synced=hook.synced)
     await publish(
         "issue.sync.completed",
         {
-            "open_issues": repository.open_issues or 0,
-            "synced_issues": synced,
-            "repository_id": repository.id,
+            "open_issues": hook.repository.open_issues or 0,
+            "synced_issues": hook.synced,
+            "repository_id": hook.repository.id,
         },
-        organization_id=organization.id,
+        organization_id=hook.organization.id,
     )
+
+
+repository_issues_sync_completed.add(on_issue_sync_completed)
 
 
 ###############################################################################

@@ -1,17 +1,17 @@
 from typing import Literal, Callable, Any, Coroutine, Sequence
 
 import structlog
-from blinker import Signal
 from githubkit import Paginator
-from polar.context import PolarContext
+from polar.kit.hook import Hook
 
 from polar.models import Organization, Repository, Issue, PullRequest
 from polar.enums import Platforms
 from polar.postgres import AsyncSession
+from polar.repository.hooks import SyncCompletedHook, SyncedHook
 from polar.worker import enqueue_job
 from polar.repository.schemas import RepositoryCreate
 from polar.repository.service import RepositoryService
-from polar.repository.signals import (
+from polar.repository.hooks import (
     repository_issue_synced,
     repository_issues_sync_completed,
 )
@@ -49,8 +49,8 @@ class GithubRepositoryService(RepositoryService):
         repository: Repository,
         resource_type: Literal["issue", "pull_request"],
         skip_condition: Callable[..., bool] | None = None,
-        on_sync_signal: Signal | None = None,
-        on_completed_signal: Signal | None = None,
+        on_sync_signal: Hook[SyncedHook] | None = None,
+        on_completed_signal: Hook[SyncCompletedHook] | None = None,
     ) -> tuple[SyncedCount, ErrorCount]:
         synced, errors = 0, 0
         async for data in paginator:
@@ -84,13 +84,13 @@ class GithubRepositoryService(RepositoryService):
             )
 
             if on_sync_signal:
-                await on_sync_signal.send_async(
-                    PolarContext(),
-                    session=session,
-                    repository=repository,
-                    organization=organization,
-                    record=record,
-                    synced=synced,
+                await on_sync_signal.call(
+                    SyncedHook(
+                        repository=repository,
+                        organization=organization,
+                        record=record,
+                        synced=synced,
+                    )
                 )
 
         log.info(
@@ -102,12 +102,12 @@ class GithubRepositoryService(RepositoryService):
         )
 
         if on_completed_signal:
-            await on_completed_signal.send_async(
-                PolarContext(),
-                session=session,
-                repository=repository,
-                organization=organization,
-                synced=synced,
+            await on_completed_signal.call(
+                SyncCompletedHook(
+                    repository=repository,
+                    organization=organization,
+                    synced=synced,
+                )
             )
 
         return (synced, errors)

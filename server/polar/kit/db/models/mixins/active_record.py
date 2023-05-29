@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from functools import cache
 from typing import Any, ClassVar, Generic, Sequence, TypeVar
-
-from blinker import Signal
 from sqlalchemy import Column, ColumnClause, column
 from sqlalchemy.orm import (
     InstrumentedAttribute,
@@ -27,10 +25,6 @@ SchemaType = TypeVar("SchemaType", bound=Schema)
 class ActiveRecordMixin(Generic[ModelType]):
     __mutables__: set[Column[Any]] | set[str] | None = None
     __table__: ClassVar[FromClause]
-
-    on_created_signal: Signal | None = None
-    on_updated_signal: Signal | None = None
-    on_deleted_signal: Signal | None = None
 
     # Support Postgres upserts and being able to easily identify SQLAlchemy objects as
     # new (inserted) or updated (on conflict).
@@ -108,7 +102,6 @@ class ActiveRecordMixin(Generic[ModelType]):
         instance.fill(**values)
 
         created = await instance.save(session, autocommit=autocommit)
-        await created.on_created(session)
         return created
 
     @classmethod
@@ -151,7 +144,6 @@ class ActiveRecordMixin(Generic[ModelType]):
         res = await session.execute(orm_stmt)
         instances = res.scalars().all()
         await session.commit()
-        await cls.on_upserted(session, [i for i in instances])
         return instances
 
     @classmethod
@@ -169,19 +161,6 @@ class ActiveRecordMixin(Generic[ModelType]):
             mutable_keys=mutable_keys,
         )
         return upserted[0]
-
-    @classmethod
-    async def on_upserted(
-        cls, session: AsyncSession, instances: list[ModelType]
-    ) -> None:
-        for instance in instances:
-            if not isinstance(instance.xmax, int):
-                continue
-
-            if instance.xmax == 0:
-                await instance.on_created(session)
-            elif instance.xmax != 0:
-                await instance.on_updated(session)
 
     def fill(
         self: ModelType,
@@ -221,27 +200,14 @@ class ActiveRecordMixin(Generic[ModelType]):
             include = self.get_mutable_keys()
         updated = self.fill(include=include, exclude=exclude, **values)
         res = await updated.save(session, autocommit=autocommit)
-        await self.on_updated(session)
         return res
 
     async def delete(self: Any, session: AsyncSession) -> None:
         # TODO: Can we get an affected rows or similar to verify delete?
         await session.delete(self)
         await session.commit()
-        await self.on_deleted(session)
 
     async def signal_state_change(self, session: AsyncSession, state: str) -> None:
         signal = getattr(self, f"on_{state}_signal", None)
         if signal:
             await signal.send_async(PolarContext(), item=self, session=session)
-
-    async def on_updated(self, session: AsyncSession) -> None:
-        self.was_updated = True
-        await self.signal_state_change(session, "updated")
-
-    async def on_created(self, session: AsyncSession) -> None:
-        self.was_created = True
-        await self.signal_state_change(session, "created")
-
-    async def on_deleted(self, session: AsyncSession) -> None:
-        await self.signal_state_change(session, "deleted")

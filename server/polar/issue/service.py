@@ -110,10 +110,6 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         limit: int | None = None,
         include_statuses: list[IssueStatus] | None = None,
     ) -> Tuple[Sequence[Issue], int]:  # (issues, total_issue_count)
-        pledge_statuses = list(
-            set(PledgeState.active_states()) | set([PledgeState.disputed])
-        )
-
         statement = sql.select(
             Issue,
             sql.func.count(Issue.id).over().label("total_count"),

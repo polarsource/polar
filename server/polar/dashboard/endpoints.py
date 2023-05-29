@@ -23,7 +23,7 @@ from polar.models.user import User
 from polar.organization.schemas import OrganizationPublicRead
 from polar.repository.schemas import RepositoryRead
 from polar.issue.service import issue
-from polar.pledge.schemas import PledgeRead
+from polar.pledge.schemas import PledgeRead, PledgeState
 from polar.repository.service import repository
 from polar.auth.dependencies import Auth
 from polar.postgres import AsyncSession, get_db_session, sql
@@ -251,9 +251,17 @@ async def dashboard(
                 RelationshipData(type="repository", id=i.repository_id),
             )
 
+    pledge_statuses = list(
+        set(PledgeState.active_states()) | set([PledgeState.disputed])
+    )
+
     # add pledges to included
     for i in issues:
         for pled in i.pledges:
+            # Filter out invalid pledges
+            if pled.state not in pledge_statuses:
+                continue
+
             pledge_read = PledgeRead.from_db(pled)
 
             # Add user-specific metadata

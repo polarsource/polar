@@ -21,6 +21,7 @@ from .utils import (
     remove_repositories,
     upsert_issue,
     upsert_pull_request,
+    get_organization_and_repo,
 )
 
 log = structlog.get_logger()
@@ -353,6 +354,33 @@ async def issue_unlabeled(
             return await issue_labeled_async(session, scope, action, parsed)
 
 
+async def update_issue_embed(
+    session: AsyncSession,
+    *,
+    issue: Issue,
+    embed: bool = False,
+) -> bool:
+    try:
+        org, repo = await get_organization_and_repo(
+            session, issue.organization_id, issue.repository_id
+        )
+    except ValueError:
+        return False
+
+    # Abort. Let automatic embedding handle it.
+    if repo.pledge_badge_auto_embed:
+        return False
+
+    if embed:
+        return await service.github_issue.embed_badge(
+            session, organization=org, repository=repo, issue=issue
+        )
+
+    return await service.github_issue.remove_badge(
+        session, organization=org, repository=repo, issue=issue
+    )
+
+
 async def issue_labeled_async(
     session: AsyncSession,
     scope: str,
@@ -367,11 +395,18 @@ async def issue_labeled_async(
         # TODO: Handle better
         return dict(success=False, reason="issue not found")
 
+    embedded_before_update = issue.has_embed_label()
+
     # TODO: Improve typing here
     issue.labels = github.jsonify(event.issue.labels)  # type: ignore
     issue.issue_modified_at = event.issue.updated_at
     session.add(issue)
     await session.commit()
+
+    should_embed = issue.has_embed_label()
+    if embedded_before_update != should_embed:
+        # Only remove or add badge in case of label change
+        await update_issue_embed(session, issue=issue, embed=should_embed)
 
     schema = IssueRead.from_orm(issue)
     return dict(success=True, issue=schema.dict())

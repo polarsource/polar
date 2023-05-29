@@ -1,11 +1,20 @@
-const LogoIcon = () => {
+import { classNames } from '../../utils'
+
+const LogoIcon = ({
+  className,
+  size = 29,
+}: {
+  className?: string
+  size?: number
+}) => {
   return (
     <svg
-      width="29"
-      height="29"
+      width={size}
+      height={size}
       viewBox="0 0 29 29"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      className={classNames(className ? className : '')}
     >
       <path
         fillRule="evenodd"

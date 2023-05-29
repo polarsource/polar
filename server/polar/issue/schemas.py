@@ -77,7 +77,7 @@ class Base(Schema):
     }
 
 
-class IssueCreate(Base):
+class IssueBase(Base):
     @classmethod
     def get_normalized_github_issue(
         cls: Type[Self],
@@ -127,7 +127,7 @@ class IssueCreate(Base):
             issue_created_at=data.created_at,
             issue_modified_at=data.updated_at,
         )
-
+        ret.on_github_normalized()
         return ret
 
     @classmethod
@@ -155,6 +155,17 @@ class IssueCreate(Base):
             organization_id=organization_id,
             repository_id=repository_id,
         )
+
+    def on_github_normalized(self) -> None:
+        ...
+
+
+class IssueCreate(IssueBase):
+    has_pledge_badge_label: bool = False
+
+    def on_github_normalized(self) -> None:
+        # TODO(PydanticV2): Change to property setter instead
+        self.has_pledge_badge_label = Issue.contains_pledge_badge_label(self.labels)
 
 
 class IssueUpdate(IssueCreate):

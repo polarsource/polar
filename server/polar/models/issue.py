@@ -174,6 +174,10 @@ class Issue(IssueFields, RecordModel):
         TIMESTAMP(timezone=True), nullable=True
     )
 
+    has_pledge_badge_label: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+
     github_issue_etag: Mapped[str | None] = mapped_column(String, nullable=True)
     github_issue_fetched_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
@@ -210,12 +214,15 @@ class Issue(IssueFields, RecordModel):
         Boolean, nullable=False, server_default="false"
     )
 
-    __mutables__ = issue_fields_mutables
+    __mutables__ = issue_fields_mutables | {
+        "has_pledge_badge_label",
+    }
 
-    def has_embed_label(self) -> bool:
-        if not self.labels:
+    @classmethod
+    def contains_pledge_badge_label(cls, labels) -> bool:
+        if not labels:
             return False
 
         return any(
-            label["name"] == settings.GITHUB_BADGE_EMBED_LABEL for label in self.labels
+            label["name"] == settings.GITHUB_BADGE_EMBED_LABEL for label in labels
         )

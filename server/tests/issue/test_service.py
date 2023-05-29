@@ -4,7 +4,6 @@ import uuid
 import pytest
 from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
 from polar.enums import Platforms
-from polar.issue.schemas import IssueCreate
 from polar.models.issue import Issue
 from polar.models.issue_dependency import IssueDependency
 from polar.models.organization import Organization

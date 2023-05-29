@@ -1,6 +1,4 @@
 from __future__ import annotations
-from dataclasses import dataclass
-
 from uuid import UUID
 from typing import List, Sequence, Tuple
 from sqlalchemy import (
@@ -28,7 +26,6 @@ from polar.enums import Platforms
 from polar.models.issue_dependency import IssueDependency
 from polar.models.issue_reference import IssueReference
 from polar.models.user import User
-from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession, sql
 
 

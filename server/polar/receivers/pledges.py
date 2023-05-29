@@ -1,9 +1,5 @@
-from typing import Any
-
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 import structlog
-from polar.context import PolarContext
-from polar.issue.signals import issue_updated
 from polar.models import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
@@ -34,16 +30,19 @@ from polar.pledge.hooks import (
     pledge_updated as pledge_updated_hook,
 )
 from polar.config import settings
+from polar.issue.hooks import IssueHook, issue_upserted
 
 log = structlog.get_logger()
 
 
-@issue_updated.connect
 async def mark_pledges_pending_on_issue_close(
-    ctx: PolarContext, *, item: Issue, session: AsyncSession, **values: Any
+    hook: IssueHook,
 ):
-    if item.state == "closed":
-        await pledge_service.mark_pending_by_issue_id(session, item.id)
+    if hook.issue.state == "closed":
+        await pledge_service.mark_pending_by_issue_id(hook.session, hook.issue.id)
+
+
+issue_upserted.add(mark_pledges_pending_on_issue_close)
 
 
 async def pledge_created_discord_alert(hook: PledgeHook):

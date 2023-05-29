@@ -24,8 +24,6 @@ from sqlalchemy.orm import (
     relationship,
 )
 
-
-from polar.issue.signals import issue_created, issue_updated
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 from polar.enums import Platforms
@@ -209,8 +207,5 @@ class Issue(IssueFields, RecordModel):
     issue_has_pull_request_relationship: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="false"
     )
-
-    on_created_signal = issue_created
-    on_updated_signal = issue_updated
 
     __mutables__ = issue_fields_mutables

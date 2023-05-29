@@ -24,6 +24,8 @@ from sqlalchemy.orm import (
     relationship,
 )
 
+
+from polar.config import settings
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 from polar.enums import Platforms
@@ -209,3 +211,11 @@ class Issue(IssueFields, RecordModel):
     )
 
     __mutables__ = issue_fields_mutables
+
+    def has_embed_label(self) -> bool:
+        if not self.labels:
+            return False
+
+        return any(
+            label["name"] == settings.GITHUB_BADGE_EMBED_LABEL for label in self.labels
+        )

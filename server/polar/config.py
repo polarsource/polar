@@ -74,6 +74,7 @@ class Settings(BaseSettings):
     # Application behaviours
 
     GITHUB_BADGE_EMBED: bool = False
+    GITHUB_BADGE_EMBED_LABEL: str = "polar.sh"
 
     EMAIL_SENDER: EmailSender = EmailSender.logger
     SENDGRID_API_KEY: str = ""

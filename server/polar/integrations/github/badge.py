@@ -58,7 +58,9 @@ class GithubBadge:
         if repository.pledge_badge_auto_embed:
             return (True, "repository_pledge_badge_auto_embed")
 
-        # TODO: Check if the issue has the "polar" label
+        if issue.has_embed_label():
+            return (True, "issue_has_embed_label")
+
         return (False, "no_auto_embed_or_label")
 
     def generate_svg_url(self, darkmode=False) -> str:

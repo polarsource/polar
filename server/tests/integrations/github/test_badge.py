@@ -1,10 +1,14 @@
-
+from unittest.mock import patch
 import pytest
+from pytest_mock import MockerFixture
+from polar.config import settings
 
 from polar.integrations.github.badge import GithubBadge
+from polar.kit.utils import utc_now
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.repository import Repository
+from polar.postgres import AsyncSession
 
 
 BADGED_BODY = """Hello my issue
@@ -68,3 +72,137 @@ async def test_remove_badge_pre_2023_05_08(
     )
 
     assert res == "This is what the badge used to look like pre 2023-05-08"
+
+
+@pytest.mark.asyncio
+@patch("polar.config.settings.GITHUB_BADGE_EMBED", False)
+async def test_should_add_badge_app_config_disabled(
+    session: AsyncSession,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+) -> None:
+    res = GithubBadge.should_add_badge(
+        organization=organization,
+        repository=repository,
+        issue=issue,
+        triggered_from_label=False,
+    )
+    assert res == (False, "app_badge_not_enabled")
+
+
+@pytest.mark.asyncio
+@patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
+async def test_should_add_badge_org_not_onboarded(
+    session: AsyncSession,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+) -> None:
+    repository.pledge_badge_auto_embed = True
+    await repository.save(session)
+
+    res = GithubBadge.should_add_badge(
+        organization=organization,
+        repository=repository,
+        issue=issue,
+        triggered_from_label=False,
+    )
+
+    assert res == (False, "org_not_onboarded")
+
+
+@pytest.mark.asyncio
+@patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
+async def test_should_add_badge_no_badge_with_auto(
+    session: AsyncSession,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+) -> None:
+    repository.pledge_badge_auto_embed = True
+    await repository.save(session)
+    organization.onboarded_at = utc_now()
+    await organization.save(session)
+
+    res = GithubBadge.should_add_badge(
+        organization=organization,
+        repository=repository,
+        issue=issue,
+        triggered_from_label=False,
+    )
+
+    assert res == (True, "repository_pledge_badge_auto_embed")
+
+
+@pytest.mark.asyncio
+@patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
+async def test_should_add_badge_no_badge_without_auto(
+    session: AsyncSession,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+) -> None:
+    repository.pledge_badge_auto_embed = False
+    await repository.save(session)
+    organization.onboarded_at = utc_now()
+    await organization.save(session)
+
+    res = GithubBadge.should_add_badge(
+        organization=organization,
+        repository=repository,
+        issue=issue,
+        triggered_from_label=False,
+    )
+
+    assert res == (False, "no_auto_embed_or_label")
+
+
+@pytest.mark.asyncio
+@patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
+async def test_should_add_badge_issue_previousy_embedded(
+    session: AsyncSession,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+) -> None:
+    repository.pledge_badge_auto_embed = False
+    await repository.save(session)
+    organization.onboarded_at = utc_now()
+    await organization.save(session)
+    issue.pledge_badge_ever_embedded = True
+    await issue.save(session)
+
+    res = GithubBadge.should_add_badge(
+        organization=organization,
+        repository=repository,
+        issue=issue,
+        triggered_from_label=False,
+    )
+
+    assert res == (False, "badge_previously_embedded")
+
+
+@pytest.mark.asyncio
+@patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
+async def test_should_add_badge_issue_previousy_embedded_label(
+    session: AsyncSession,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+) -> None:
+    repository.pledge_badge_auto_embed = False
+    await repository.save(session)
+    organization.onboarded_at = utc_now()
+    await organization.save(session)
+    issue.pledge_badge_ever_embedded = True
+    await issue.save(session)
+
+    res = GithubBadge.should_add_badge(
+        organization=organization,
+        repository=repository,
+        issue=issue,
+        triggered_from_label=True,
+    )
+
+    assert res == (True, "triggered_from_label")

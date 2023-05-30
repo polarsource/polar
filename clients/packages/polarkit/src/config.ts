@@ -32,8 +32,7 @@ let defaults = {
     process?.env?.NEXT_PUBLIC_LOCALSTORAGE_PERSIST_VERSION,
     3,
   ),
-  GITHUB_EMBED_LABEL:
-    process?.env?.NEXT_PUBLIC_GITHUB_EMBED_LABEL || 'polar.sh',
+  GITHUB_EMBED_LABEL: process?.env?.NEXT_PUBLIC_GITHUB_EMBED_LABEL || 'polar',
   // Minimum amount in cents
   MINIMUM_PLEDGE_AMOUNT:
     process?.env?.NEXT_PUBLIC_MINIMUM_PLEDGE_AMOUNT || 2000,

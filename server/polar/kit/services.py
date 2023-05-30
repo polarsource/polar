@@ -22,22 +22,18 @@ class ResourceServiceReader(
         self.model = model
 
     async def get(
-        self, session: AsyncSession, id: UUID, allow_deleted=False
+        self, session: AsyncSession, id: UUID, allow_deleted: bool = False
     ) -> ModelType | None:
         query = sql.select(self.model).where(self.model.id == id)
 
         if not allow_deleted:
             query = query.where(self.model.deleted_at.is_(None))
 
-        return await self.get_by_query(session, query)
+        res = await session.execute(query)
+        return res.scalars().unique().one_or_none()
 
     async def get_by(self, session: AsyncSession, **clauses: Any) -> ModelType | None:
         query = sql.select(self.model).filter_by(**clauses)
-        return await self.get_by_query(session, query)
-
-    async def get_by_query(
-        self, session: AsyncSession, query: sql.Select
-    ) -> ModelType | None:
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
 
@@ -52,7 +48,7 @@ class ResourceServiceReader(
 
 
 class ResourceService(
-    ResourceServiceReader,
+    ResourceServiceReader[ModelType],
     Generic[ModelType, CreateSchemaType, UpdateSchemaType],
 ):
     # Ideally, actions would only contain class methods since there is

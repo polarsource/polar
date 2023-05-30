@@ -31,7 +31,7 @@ let defaults = {
     process?.env?.NEXT_PUBLIC_LOCALSTORAGE_PERSIST_KEY || 'polar',
   LOCALSTORAGE_PERSIST_VERSION: stringToNumber(
     process?.env?.NEXT_PUBLIC_LOCALSTORAGE_PERSIST_VERSION,
-    4,
+    5,
   ),
   GITHUB_EMBED_LABEL: process?.env?.NEXT_PUBLIC_GITHUB_EMBED_LABEL || 'polar',
   // Minimum amount in cents

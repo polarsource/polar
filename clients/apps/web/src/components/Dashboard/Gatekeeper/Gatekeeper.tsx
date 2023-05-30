@@ -3,13 +3,21 @@ import { useRequireAuth } from '@/hooks/auth'
 import AcceptTerms from './AcceptTerms'
 
 const Gatekeeper = (props: { children: React.ReactElement }) => {
-  const currentURL = new URL(window.location.href)
-  const redirectURL = new URL(window.location.origin + '/')
-  if (currentURL.pathname !== redirectURL.pathname) {
-    redirectURL.searchParams.set('goto_url', currentURL.toString())
+  let redirectPath = '/'
+  if (typeof window !== 'undefined') {
+    const currentURL = new URL(window.location.href)
+    const redirectURL = new URL(window.location.origin + redirectPath)
+
+    if (currentURL.pathname !== redirectPath) {
+      redirectURL.searchParams.set(
+        'goto_url',
+        currentURL.toString().replace(window.location.origin, ''),
+      )
+      redirectPath = redirectURL.toString()
+    }
   }
 
-  const { currentUser } = useRequireAuth(redirectURL.toString())
+  const { currentUser } = useRequireAuth(redirectPath)
 
   if (!currentUser) {
     return <></>

@@ -47,14 +47,21 @@ const IssueListItem = (props: {
   const createdAt = new Date(issue_created_at)
   const closedAt = new Date(issue_created_at)
 
+  const mergedPledges = props.pledges || []
   const latestPledge = useToastLatestPledged(
     props.org.id,
     props.repo.id,
     props.issue.id,
     props.checkJustPledged,
   )
+  const containsLatestPledge =
+    mergedPledges.find((pledge) => pledge.id === latestPledge?.id) !== undefined
 
-  const havePledge = props.pledges && props.pledges.length > 0
+  if (!containsLatestPledge && latestPledge) {
+    mergedPledges.push(latestPledge)
+  }
+
+  const havePledge = mergedPledges.length > 0
   const haveReference = props.references && props.references?.length > 0
   const havePledgeOrReference = havePledge || haveReference
 
@@ -209,7 +216,7 @@ const IssueListItem = (props: {
             <IssueListItemDecoration
               orgName={props.org.name}
               repoName={props.repo.name}
-              pledges={props.pledges}
+              pledges={mergedPledges}
               references={props.references}
               showDisputeAction={true}
               onDispute={onDispute}

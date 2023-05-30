@@ -65,9 +65,13 @@ const getRetroactiveChanges = (
       }
       if (!repo.is_private) {
         if (repo.badge_auto_embed) {
-          changes.additions = repo.synced_issues - repo.embedded_issues
+          changes.additions =
+            repo.synced_issues -
+            (repo.auto_embedded_issues +
+              repo.label_embedded_issues +
+              repo.pull_requests)
         } else {
-          changes.removals = repo.embedded_issues
+          changes.removals = repo.auto_embedded_issues
         }
       }
 

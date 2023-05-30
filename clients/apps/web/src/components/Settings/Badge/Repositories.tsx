@@ -47,7 +47,7 @@ export const BadgeRepositories = ({
       <ul className="mt-7 divide-y divide-gray-200 overflow-hidden rounded-xl shadow">
         {repos.map((repo, index) => {
           return (
-            <li>
+            <li key={`badge-repo-${index}`}>
               <BadgeRepository
                 repo={repo}
                 isSettingPage={isSettingPage}

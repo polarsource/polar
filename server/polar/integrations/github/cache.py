@@ -12,7 +12,9 @@ class RedisCache(BaseCache):
 
     def get(self, key: str) -> Optional[str]:
         val = sync_redis.get("githubkit:" + key)
-        return val if val else None
+        if val:
+            return str(val)
+        return None
 
     async def aget(self, key: str) -> Optional[str]:
         return self.get(key)

@@ -29,7 +29,7 @@ const PledgeStatusPage: NextLayoutComponentType = ({
   const { currentUser, reloadUser } = useAuth()
   const didReloadUser = useRef(false)
   const router = useRouter()
-  const setLastPledge = useStore((store) => store.setLastPledge)
+  const setLatestPledge = useStore((store) => store.setLatestPledge)
 
   useEffect(() => {
     if (currentUser && !didReloadUser.current) {
@@ -50,7 +50,7 @@ const PledgeStatusPage: NextLayoutComponentType = ({
     }
 
     const redirectURL = new URL(window.location.origin + query.goto_url)
-    setLastPledge(
+    setLatestPledge(
       organization,
       repository,
       issue,

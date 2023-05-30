@@ -1,61 +1,78 @@
 import { useToast } from '@/components/UI/Toast/use-toast'
-import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
 import { Platforms, PledgeRead } from 'polarkit/api/client'
 import { useStore } from 'polarkit/store'
 import { getCentsInDollarString } from 'polarkit/utils'
 import { useEffect, useState } from 'react'
 
-export const useJustPledged = (
+export const useToastLatestPledged = (
   orgId: string,
   repoId: string,
   issueId: string,
   check: boolean | undefined = true,
 ): PledgeRead | null => {
-  const router = useRouter()
   const { toast } = useToast()
   const [pledge, setPledge] = useState<PledgeRead | null>(null)
-  const lastPledge = useStore((store) => store.lastPledge)
+  const latestPledge = useStore((store) => store.latestPledge)
+  const latestPledgeShown = useStore((store) => store.latestPledgeShown)
+  const setLatestPledgeShown = useStore((store) => store.setLatestPledgeShown)
 
   useEffect(() => {
-    if (!check || !lastPledge) return
+    if (!check || !latestPledge || latestPledgeShown) return
 
     const isMatch =
-      lastPledge &&
-      lastPledge.orgId === orgId &&
-      lastPledge.repoId === repoId &&
-      lastPledge.issueId === issueId
+      latestPledge &&
+      latestPledge.orgId === orgId &&
+      latestPledge.repoId === repoId &&
+      latestPledge.issueId === issueId
 
     if (!isMatch) return
 
-    const fetchPledge = () => {
+    const fetchLatestData = () => {
       const request = api.pledges.getPledgeWithResources({
         platform: Platforms.GITHUB,
-        orgName: lastPledge.orgName,
-        repoName: lastPledge.repoName,
-        number: lastPledge.issueNumber,
-        pledgeId: lastPledge.pledgeId,
+        orgName: latestPledge.orgName,
+        repoName: latestPledge.repoName,
+        number: latestPledge.issueNumber,
+        pledgeId: latestPledge.pledge.id,
         include: '',
       })
 
       request.then((response) => {
+        if (!response.pledge) return
+
         // TODO: Better error handling
-        if (!response.pledge || lastPledge.redirectStatus !== 'succeeded')
+        const successful =
+          latestPledge.redirectStatus === 'succeeded' ||
+          response.pledge.state === 'created'
+        if (!successful) {
           return
+        }
 
         const pledge: PledgeRead = response.pledge
-        const issueName = `${lastPledge.orgName}/${lastPledge.repoName}#${lastPledge.issueNumber}`
+        const issueName = `${latestPledge.orgName}/${latestPledge.repoName}#${latestPledge.issueNumber}`
         const amount = getCentsInDollarString(pledge.amount)
         toast({
           title: `You successfully pledged $${amount}`,
           description: `Thanks for backing ${issueName}`,
         })
         setPledge(pledge)
+        setLatestPledgeShown(true)
       })
       return request
     }
 
-    fetchPledge()
-  }, [orgId, repoId, issueId, check, lastPledge, toast])
+    fetchLatestData()
+  }, [
+    orgId,
+    repoId,
+    issueId,
+    check,
+    latestPledge,
+    toast,
+    latestPledgeShown,
+    setLatestPledgeShown,
+  ])
+
   return pledge
 }

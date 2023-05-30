@@ -224,5 +224,6 @@ class Issue(IssueFields, RecordModel):
             return False
 
         return any(
-            label["name"] == settings.GITHUB_BADGE_EMBED_LABEL for label in labels
+            label["name"].lower() == settings.GITHUB_BADGE_EMBED_LABEL
+            for label in labels
         )

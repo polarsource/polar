@@ -52,10 +52,13 @@ class GithubBadge:
         if organization.onboarded_at is None:
             return (False, "org_not_onboarded")
 
-        if repository.pledge_badge:
-            return (True, "repository_pledge_badge_enabled")
+        if issue.body and GithubBadge.badge_is_embedded(issue.body):
+            return (False, "badge_already_embedded")
 
-        return (False, "repository_pledge_badge_disabled")
+        if not repository.pledge_badge:
+            return (False, "repository_pledge_badge_disabled")
+
+        return (True, "repository_pledge_badge_enabled")
 
     def generate_svg_url(self, darkmode=False) -> str:
         return "{base}/api/github/{org}/{repo}/issues/{number}/pledge.svg{maybeDarkmode}".format(  # noqa: E501
@@ -117,7 +120,8 @@ class GithubBadge:
             # Otherwise, we just remove the (first) badge markdown
             return body.replace(legacy_badge_markdown, "", 1)
 
-    def badge_is_embedded(self, body: str) -> bool:
+    @classmethod
+    def badge_is_embedded(cls, body: str) -> bool:
         if PLEDGE_BADGE_COMMENT_START in body or PLEDGE_BADGE_COMMENT_LEGACY in body:
             return True
         return False

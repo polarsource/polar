@@ -47,19 +47,19 @@ const IssueListItem = (props: {
   const createdAt = new Date(issue_created_at)
   const closedAt = new Date(issue_created_at)
 
+  const pledge = useJustPledged(
+    props.org.id,
+    props.repo.id,
+    props.issue.id,
+    props.checkJustPledged,
+  )
+
   const havePledge = props.pledges && props.pledges.length > 0
   const haveReference = props.references && props.references?.length > 0
   const havePledgeOrReference = havePledge || haveReference
 
   const showCommentsCount = !!(comments && comments > 0)
   const showReactionsThumbs = !!(reactions.plus_one > 0)
-
-  useJustPledged(
-    props.org.name,
-    props.repo.name,
-    props.issue.number,
-    props.checkJustPledged,
-  )
 
   const getissueProgress = (): Progress => {
     switch (props.issue.progress) {

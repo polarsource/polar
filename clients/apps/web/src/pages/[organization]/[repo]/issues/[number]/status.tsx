@@ -2,10 +2,12 @@ import IssueListItem from '@/components/Dashboard/IssueListItem'
 import ThankYouUpsell from '@/components/Pledge/ThankYouUpsell'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import type { GetServerSideProps, NextLayoutComponentType } from 'next'
+import { useRouter } from 'next/router'
 import { api } from 'polarkit'
 import { Platforms, type PledgeResources } from 'polarkit/api/client'
 import { PolarTimeAgo } from 'polarkit/components/ui'
 import { GrayCard } from 'polarkit/components/ui/Cards'
+import { useStore } from 'polarkit/store'
 import { ReactElement, useEffect, useRef } from 'react'
 import { useAuth } from '../../../../../hooks/auth'
 
@@ -14,9 +16,20 @@ const PledgeStatusPage: NextLayoutComponentType = ({
   repository,
   issue,
   pledge,
-}: PledgeResources) => {
+  query,
+}: PledgeResources & {
+  query?: {
+    payment_intent_id: string
+    payment_intent_client_secret: string
+    redirect_status: string
+    pledge_id: string
+    goto_url?: string
+  }
+}) => {
   const { currentUser, reloadUser } = useAuth()
   const didReloadUser = useRef(false)
+  const router = useRouter()
+  const setLastPledge = useStore((store) => store.setLastPledge)
 
   useEffect(() => {
     if (currentUser && !didReloadUser.current) {
@@ -31,6 +44,32 @@ const PledgeStatusPage: NextLayoutComponentType = ({
     return <></>
   }
 
+  const redirectToDashboard = () => {
+    if (!query?.goto_url || !query.goto_url.startsWith('/dashboard')) {
+      throw new Error('Invalid goto_url')
+    }
+
+    const redirectURL = new URL(window.location.origin + query.goto_url)
+    setLastPledge(
+      organization,
+      repository,
+      issue,
+      pledge,
+      query.redirect_status,
+    )
+    router.replace(redirectURL.toString())
+  }
+
+  if (
+    currentUser &&
+    query?.goto_url &&
+    query.goto_url.startsWith('/dashboard')
+  ) {
+    redirectToDashboard()
+    return <></>
+  }
+
+  // TODO: Handle different statuses than success... #happy-path-alpha-programming
   return (
     <>
       <div className="mx-auto p-4 md:mt-24 md:w-[768px] md:p-0">
@@ -70,7 +109,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     typeof context?.params?.organization !== 'string' ||
     typeof context?.params?.repo !== 'string' ||
     typeof context?.params?.number !== 'string' ||
-    typeof context?.query?.pledge_id !== 'string'
+    typeof context?.query?.pledge_id !== 'string' ||
+    typeof context?.query?.payment_intent_id !== 'string' ||
+    typeof context?.query?.payment_intent_client_secret !== 'string' ||
+    typeof context?.query?.redirect_status !== 'string'
   ) {
     return { props: {} }
   }

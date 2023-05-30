@@ -33,22 +33,17 @@ const generateRedirectURL = (
   gotoURL?: string,
   paymentIntent?: PaymentIntent,
 ) => {
-  let path = window.location.pathname + '/status'
-  if (gotoURL && gotoURL.startsWith('/dashboard')) {
-    path = gotoURL
+  const redirectURL = new URL(
+    window.location.origin + window.location.pathname + '/status',
+  )
+
+  if (gotoURL) {
+    redirectURL.searchParams.append('goto_url', gotoURL)
   }
 
-  const redirectURL = new URL(window.location.origin + path)
   if (pledge) {
     redirectURL.searchParams.append('pledge_id', pledge.id)
   }
-
-  redirectURL.searchParams.append('pledge_org_name', organization.name)
-  redirectURL.searchParams.append('pledge_repo_name', repository.name)
-  redirectURL.searchParams.append(
-    'pledge_issue_number',
-    issue.number.toString(),
-  )
 
   // Only in case we pass our redirect to Stripe which in turn will add it
   if (!paymentIntent) {

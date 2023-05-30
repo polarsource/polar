@@ -2,7 +2,10 @@ import { StateCreator } from 'zustand'
 import { api } from '../api'
 import {
   CancelablePromise,
+  type IssueRead,
   type OrganizationPrivateRead,
+  type OrganizationPublicRead,
+  type PledgeRead,
   type RepositoryRead,
   type UserRead,
 } from '../api/client'
@@ -37,10 +40,35 @@ export interface ContextState {
   ) => void
 }
 
+export interface LastPledgeState {
+  lastPledge:
+    | {
+        orgId: string
+        orgName: string
+        repoId: string
+        repoName: string
+        issueId: string
+        issueNumber: number
+        pledgeId: string
+        pledgeAmount: number
+        pledgeState: string
+        redirectStatus: string
+      }
+    | undefined
+  setLastPledge: (
+    org: OrganizationPublicRead,
+    repo: RepositoryRead,
+    issue: IssueRead,
+    pledge: PledgeRead,
+    redirectStatus: string,
+  ) => void
+}
+
 export interface UserContextState
   extends UserState,
     ContextState,
-    OnboardingState {}
+    OnboardingState,
+    LastPledgeState {}
 
 const emptyState = {
   authenticated: false,
@@ -50,6 +78,7 @@ const emptyState = {
   userHaveOrgs: false,
   currentOrg: undefined,
   currentRepo: undefined,
+  lastPledge: undefined,
 }
 
 export const createUserContextSlice: StateCreator<UserContextState> = (
@@ -102,6 +131,28 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
   setOnboardingDashboardInstallChromeExtensionSkip: (skip: boolean) => {
     set({
       onboardingDashboardInstallChromeExtensionSkip: skip,
+    })
+  },
+  setLastPledge: (
+    org: OrganizationPublicRead,
+    repo: RepositoryRead,
+    issue: IssueRead,
+    pledge: PledgeRead,
+    redirectStatus: string,
+  ) => {
+    set({
+      lastPledge: {
+        orgId: org.id,
+        orgName: org.name,
+        repoId: repo.id,
+        repoName: repo.name,
+        issueId: issue.id,
+        issueNumber: issue.number,
+        pledgeId: pledge.id,
+        pledgeAmount: pledge.amount,
+        pledgeState: pledge.state,
+        redirectStatus: redirectStatus,
+      },
     })
   },
 })

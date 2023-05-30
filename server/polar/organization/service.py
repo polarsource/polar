@@ -297,7 +297,8 @@ class OrganizationService(
                 repo.id,
                 {
                     "synced_issues": 0,
-                    "embedded_issues": 0,
+                    "auto_embedded_issues": 0,
+                    "label_embedded_issues": 0,
                     "pull_requests": 0,
                 },
             )
@@ -314,7 +315,8 @@ class OrganizationService(
                     badge_auto_embed=repo.pledge_badge_auto_embed,
                     name=repo.name,
                     synced_issues=synced_issues,
-                    embedded_issues=synced_data["embedded_issues"],
+                    auto_embedded_issues=synced_data["auto_embedded_issues"],
+                    label_embedded_issues=synced_data["label_embedded_issues"],
                     pull_requests=synced_data["pull_requests"],
                     open_issues=open_issues,
                     is_private=repo.is_private,
@@ -392,6 +394,7 @@ class OrganizationService(
         stmt = (
             sql.select(
                 Repository.id,
+                Issue.has_pledge_badge_label.label("labelled"),
                 (Issue.pledge_badge_embedded_at != None).label("embedded"),  # noqa
                 sql.func.count(distinct(Issue.id)).label("issue_count"),
                 sql.func.count(distinct(PullRequest.id)).label("pull_request_count"),
@@ -408,10 +411,11 @@ class OrganizationService(
             )
             .where(
                 Repository.organization_id == organization.id,
+                Repository.deleted_at.is_(None),
                 or_(PullRequest.state == "open", PullRequest.state == None),  # noqa
                 or_(Issue.state == "open", Issue.state == None),  # noqa
             )
-            .group_by(Repository.id, "embedded")
+            .group_by(Repository.id, "labelled", "embedded")
         )
 
         res = await session.execute(stmt)
@@ -426,20 +430,26 @@ class OrganizationService(
                 repo_id,
                 {
                     "synced_issues": 0,
-                    "embedded_issues": 0,
-                    # We get duplicate PR counts due to grouping of
-                    # embedded on issues. So we only need to set it
-                    # once at initation here.
+                    "auto_embedded_issues": 0,
+                    "label_embedded_issues": 0,
+                    # We get duplicate PR counts due to SQL grouping.
+                    # So we only need to set it once at initation here.
                     "pull_requests": mapped["pull_request_count"],
                 },
             )
+            is_labelled = mapped["labelled"]
             repo["synced_issues"] += mapped["issue_count"]
-            if mapped["embedded"]:
-                repo["embedded_issues"] += mapped["issue_count"]
-
             if repo_id not in prs:
                 repo["synced_issues"] += mapped["pull_request_count"]
                 prs[repo_id] = True
+
+            if not mapped["embedded"]:
+                continue
+
+            if is_labelled:
+                repo["label_embedded_issues"] += mapped["issue_count"]
+            else:
+                repo["auto_embedded_issues"] += mapped["issue_count"]
 
         return ret
 

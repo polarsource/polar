@@ -9,6 +9,7 @@ from pydantic import parse_obj_as
 import structlog
 
 from polar.integrations.github import client as github
+from polar.integrations.github.badge import GithubBadge
 from polar.kit.schemas import Schema
 from polar.models.issue import Issue
 from polar.enums import Platforms
@@ -98,12 +99,16 @@ class IssueBase(Base):
         organization_id: UUID,
         repository_id: UUID,
     ) -> Self:
+        """
+        normalizes both issues and pull requests
+        """
+
         if not data.id:
             raise Exception("no external id set")
 
         body = data.body if data.body else ""
 
-        ret = cls(
+        return cls(
             platform=Platforms.github,
             external_id=data.id,
             organization_id=organization_id,
@@ -127,8 +132,6 @@ class IssueBase(Base):
             issue_created_at=data.created_at,
             issue_modified_at=data.updated_at,
         )
-        ret.on_github_normalized()
-        return ret
 
     @classmethod
     def from_github(
@@ -151,21 +154,48 @@ class IssueBase(Base):
         repository_id: UUID,
     ) -> Self:
         return cls.get_normalized_github_issue(
+            data, organization_id=organization_id, repository_id=repository_id
+        )
+
+
+class IssueCreate(IssueBase):
+    has_pledge_badge_label: bool = False
+    pledge_badge_currently_embedded: bool = False
+
+    @classmethod
+    def from_github(
+        cls,
+        data: Union[
+            GithubIssue,
+            GithubPullRequestFull,
+            GithubPullRequestSimple,
+            github.rest.PullRequestSimple,
+            github.rest.PullRequest,
+            github.webhooks.PullRequestOpenedPropPullRequest,
+            github.webhooks.PullRequest,
+            github.webhooks.PullRequestClosedPropPullRequest,
+            github.webhooks.PullRequestReopenedPropPullRequest,
+            github.webhooks.IssuesOpenedPropIssue,
+            github.webhooks.IssuesClosedPropIssue,
+            github.webhooks.Issue,
+        ],
+        organization_id: UUID,
+        repository_id: UUID,
+    ) -> Self:
+        ret = super().from_github(
             data,
             organization_id=organization_id,
             repository_id=repository_id,
         )
 
-    def on_github_normalized(self) -> None:
-        ...
+        ret.has_pledge_badge_label = Issue.contains_pledge_badge_label(ret.labels)
 
+        if ret.body:
+            ret.pledge_badge_currently_embedded = GithubBadge.badge_is_embedded(
+                ret.body
+            )
 
-class IssueCreate(IssueBase):
-    has_pledge_badge_label: bool = False
-
-    def on_github_normalized(self) -> None:
-        # TODO(PydanticV2): Change to property setter instead
-        self.has_pledge_badge_label = Issue.contains_pledge_badge_label(self.labels)
+        return ret
 
 
 class IssueUpdate(IssueCreate):

@@ -33,7 +33,11 @@ async def embed_badge(
                 session, issue.organization_id, issue.repository_id
             )
             await github_issue.embed_badge(
-                session, organization=organization, repository=repository, issue=issue
+                session,
+                organization=organization,
+                repository=repository,
+                issue=issue,
+                triggered_from_label=False,
             )
 
 
@@ -71,7 +75,11 @@ async def embed_badge_retroactively_on_repository(
 
             for i in reversed(issues):
                 await github_issue.embed_badge(
-                    session, organization=organization, repository=repository, issue=i
+                    session,
+                    organization=organization,
+                    repository=repository,
+                    issue=i,
+                    triggered_from_label=False,
                 )
 
 
@@ -101,5 +109,9 @@ async def remove_badges_on_repository(
 
             for i in reversed(issues):
                 await github_issue.remove_badge(
-                    session, organization=organization, repository=repository, issue=i
+                    session,
+                    organization=organization,
+                    repository=repository,
+                    issue=i,
+                    triggered_from_label=False,
                 )

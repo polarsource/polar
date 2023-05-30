@@ -1,17 +1,10 @@
+from dataclasses import dataclass
 import structlog
 
 from polar.config import settings
 from polar.models import Organization, Repository, Issue
 from githubkit import GitHub, AppInstallationAuthStrategy
-
 from . import client as github
-from .exceptions import (
-    GithubBadgeAlreadyEmbedded,
-    GithubBadgeNotEmbeddable,
-    GithubBadgeEmbeddingDisabled,
-    GithubBadgeNotEmbedded,
-)
-
 
 log = structlog.get_logger()
 
@@ -24,42 +17,58 @@ PLEDGE_BADGE_COMMENT_START = "<!-- POLAR PLEDGE BADGE START -->"
 PLEDGE_BADGE_COMMENT_END = "<!-- POLAR PLEDGE BADGE END -->"
 
 
+@dataclass
 class GithubBadge:
-    def __init__(
-        self, *, organization: Organization, repository: Repository, issue: Issue
-    ):
-        self.organization = organization
-        self.repository = repository
-        self.issue = issue
-
-        self.embedded = False
+    organization: Organization
+    repository: Repository
+    issue: Issue
 
     @classmethod
-    def _log_debug(cls, embed: bool, reason: str) -> None:
-        log.debug(
-            "github.badge.should_embed",
-            embed=embed,
-            reason=reason,
-        )
-
-    @classmethod
-    def should_embed(
+    def should_add_badge(
         cls,
         organization: Organization,
         repository: Repository,
         issue: Issue,
+        triggered_from_label: bool,
     ) -> tuple[ShouldEmbed, ShouldEmbedReason]:
+        if not settings.GITHUB_BADGE_EMBED:
+            return (False, "app_badge_not_enabled")
+
         if organization.onboarded_at is None:
             return (False, "org_not_onboarded")
 
-        if issue.body and GithubBadge.badge_is_embedded(issue.body):
-            return (False, "badge_already_embedded")
+        # Triggered by label
+        if triggered_from_label:
+            return (True, "triggered_from_label")
 
+        if issue.pledge_badge_ever_embedded:
+            return (False, "badge_previously_embedded")
+
+        # Auto mode is on
         if repository.pledge_badge_auto_embed:
             return (True, "repository_pledge_badge_auto_embed")
 
-        if issue.has_pledge_badge_label:
-            return (True, "issue_has_pledge_badge_label")
+        return (False, "no_auto_embed_or_label")
+
+    @classmethod
+    def should_remove_badge(
+        cls,
+        organization: Organization,
+        repository: Repository,
+        issue: Issue,
+        triggered_from_label: bool,
+    ) -> tuple[ShouldEmbed, ShouldEmbedReason]:
+        if not settings.GITHUB_BADGE_EMBED:
+            return (False, "app_badge_not_enabled")
+
+        if organization.onboarded_at is None:
+            return (False, "org_not_onboarded")
+
+        if triggered_from_label:
+            return (True, "triggered_from_label")
+
+        if repository.pledge_badge_auto_embed:
+            return (True, "repository_pledge_badge_auto_embed")
 
         return (False, "no_auto_embed_or_label")
 
@@ -156,35 +165,24 @@ class GithubBadge:
         github.ensure_expected_response(updated)
         return updated.parsed_data
 
-    async def embed(self) -> github.rest.Issue:
-        is_embeddable, reason = self.should_embed(
-            self.organization, self.repository, self.issue
-        )
-        if not is_embeddable:
-            raise GithubBadgeNotEmbeddable(reason)
-
-        if not settings.GITHUB_BADGE_EMBED:
-            raise GithubBadgeEmbeddingDisabled()
-
+    async def embed(self) -> None:
         client = github.get_app_installation_client(self.organization.installation_id)
 
         body = await self.get_current_body(client)
         if self.badge_is_embedded(body):
-            self.embedded = True
-            raise GithubBadgeAlreadyEmbedded()
+            return None
 
         body_with_badge = self.generate_body_with_badge(body)
-        updated = await self.update_body(client, body_with_badge)
-        return updated
+        await self.update_body(client, body_with_badge)
+        return None
 
-    async def remove(self) -> github.rest.Issue:
+    async def remove(self) -> None:
         client = github.get_app_installation_client(self.organization.installation_id)
 
         body = await self.get_current_body(client)
         if not self.badge_is_embedded(body):
-            self.embedded = False
-            raise GithubBadgeNotEmbedded()
+            return None
 
         body_without_badge = self.generate_body_without_badge(body)
-        updated = await self.update_body(client, body_without_badge)
-        return updated
+        await self.update_body(client, body_without_badge)
+        return None

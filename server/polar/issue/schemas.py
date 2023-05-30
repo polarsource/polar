@@ -78,7 +78,7 @@ class Base(Schema):
     }
 
 
-class IssueBase(Base):
+class IssueAndPullRequestBase(Base):
     @classmethod
     def get_normalized_github_issue(
         cls: Type[Self],
@@ -158,7 +158,7 @@ class IssueBase(Base):
         )
 
 
-class IssueCreate(IssueBase):
+class IssueCreate(IssueAndPullRequestBase):
     has_pledge_badge_label: bool = False
     pledge_badge_currently_embedded: bool = False
 

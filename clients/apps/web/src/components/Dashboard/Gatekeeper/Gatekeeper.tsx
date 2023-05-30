@@ -1,24 +1,9 @@
 import InviteOnly from '@/components/Dashboard/Gatekeeper/InviteOnly'
 import { useRequireAuth } from '@/hooks/auth'
-import { CONFIG } from 'polarkit/config'
 import AcceptTerms from './AcceptTerms'
 
 const Gatekeeper = (props: { children: React.ReactElement }) => {
-  let redirectPath = CONFIG.LOGIN_PATH
-  if (typeof window !== 'undefined') {
-    const currentURL = new URL(window.location.href)
-    const redirectURL = new URL(window.location.origin + redirectPath)
-
-    if (currentURL.pathname !== redirectPath) {
-      redirectURL.searchParams.set(
-        'goto_url',
-        currentURL.toString().replace(window.location.origin, ''),
-      )
-      redirectPath = redirectURL.toString()
-    }
-  }
-
-  const { currentUser } = useRequireAuth(redirectPath)
+  const { currentUser } = useRequireAuth()
 
   if (!currentUser) {
     return <></>

@@ -24,6 +24,7 @@ const STRIPE_COUNTRIES =
 
 let defaults = {
   BASE_URL: process?.env?.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',
+  LOGIN_PATH: process?.env?.NEXT_PUBLIC_LOGIN_PATH || '/',
   GITHUB_APP_NAMESPACE:
     process?.env?.NEXT_PUBLIC_GITHUB_APP_NAMESPACE || 'polar-sh',
   LOCALSTORAGE_PERSIST_KEY:

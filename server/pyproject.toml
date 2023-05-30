@@ -76,15 +76,19 @@ ignore = [
 [tool.mypy]
 ignore_missing_imports = true
 plugins = ["pydantic.mypy"]
-# follow_imports = "silent"
 warn_redundant_casts = true
-warn_unused_ignores = false # Enabling this gives us some false positives at the moment
+warn_unused_ignores = true
 disallow_any_generics = true
 check_untyped_defs = true
 no_implicit_reexport = true
-
-# for strict mypy: (this is the tricky one :-))
+strict_equality = true
 disallow_untyped_defs = true
+skip_cache_mtime_checks = true
+
+[[tool.mypy.overrides]]
+module = "polar.notifications.sender"
+# false positives with sendgrid
+warn_unused_ignores = false
 
 [tool.pydantic-mypy]
 init_forbid_extra = true

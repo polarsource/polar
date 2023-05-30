@@ -1,5 +1,5 @@
 import Modal, { ModalBox } from '@/components/Shared/Modal'
-import { useJustPledged } from '@/hooks/stripe'
+import { useToastLatestPledged } from '@/hooks/stripe'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
 import {
@@ -47,7 +47,7 @@ const IssueListItem = (props: {
   const createdAt = new Date(issue_created_at)
   const closedAt = new Date(issue_created_at)
 
-  const pledge = useJustPledged(
+  const latestPledge = useToastLatestPledged(
     props.org.id,
     props.repo.id,
     props.issue.id,

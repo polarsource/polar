@@ -41,7 +41,7 @@ export interface ContextState {
 }
 
 export interface LastPledgeState {
-  lastPledge:
+  latestPledge:
     | {
         orgId: string
         orgName: string
@@ -49,19 +49,19 @@ export interface LastPledgeState {
         repoName: string
         issueId: string
         issueNumber: number
-        pledgeId: string
-        pledgeAmount: number
-        pledgeState: string
+        pledge: PledgeRead
         redirectStatus: string
       }
     | undefined
-  setLastPledge: (
+  latestPledgeShown: boolean
+  setLatestPledge: (
     org: OrganizationPublicRead,
     repo: RepositoryRead,
     issue: IssueRead,
     pledge: PledgeRead,
     redirectStatus: string,
   ) => void
+  setLatestPledgeShown: (shown: boolean) => void
 }
 
 export interface UserContextState
@@ -78,7 +78,8 @@ const emptyState = {
   userHaveOrgs: false,
   currentOrg: undefined,
   currentRepo: undefined,
-  lastPledge: undefined,
+  latestPledge: undefined,
+  latestPledgeShown: false,
 }
 
 export const createUserContextSlice: StateCreator<UserContextState> = (
@@ -133,7 +134,7 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
       onboardingDashboardInstallChromeExtensionSkip: skip,
     })
   },
-  setLastPledge: (
+  setLatestPledge: (
     org: OrganizationPublicRead,
     repo: RepositoryRead,
     issue: IssueRead,
@@ -141,18 +142,22 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
     redirectStatus: string,
   ) => {
     set({
-      lastPledge: {
+      latestPledge: {
         orgId: org.id,
         orgName: org.name,
         repoId: repo.id,
         repoName: repo.name,
         issueId: issue.id,
         issueNumber: issue.number,
-        pledgeId: pledge.id,
-        pledgeAmount: pledge.amount,
-        pledgeState: pledge.state,
+        pledge: pledge,
         redirectStatus: redirectStatus,
       },
+      latestPledgeShown: false,
+    })
+  },
+  setLatestPledgeShown: (shown: boolean) => {
+    set({
+      latestPledgeShown: shown,
     })
   },
 })

@@ -132,7 +132,7 @@ const PrimaryButton = (props: ButtonProps) => {
     bg(props.color, props.loading, disabled),
     text(props.color, props.loading, disabled),
     props.fullWidth ? 'w-full' : '',
-    'rounded-lg px-8 py-2 min-h-6 text-center text-sm font-medium inline-flex items-center space-x-2 transition-colors duration-100 justify-center',
+    'rounded-lg px-5 py-2 min-h-6 text-center text-sm font-medium inline-flex items-center space-x-2 transition-colors duration-100 justify-center',
     props.classNames,
   )
   return (

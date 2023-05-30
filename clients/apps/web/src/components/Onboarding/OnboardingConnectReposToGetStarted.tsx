@@ -2,7 +2,7 @@ import { PlusIcon } from '@heroicons/react/24/solid'
 import Image from 'next/image'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { CONFIG } from 'polarkit/config'
-import screenshot from './Screenshot.png'
+import screenshot from './Screenshot.jpg'
 
 const OnboardingConnectReposToGetStarted = () => {
   return (
@@ -13,7 +13,7 @@ const OnboardingConnectReposToGetStarted = () => {
         company looking to track issues you’re dependent on, the first step is
         to connect repositories.
       </p>
-      <div>
+      <div className="py-2">
         <PrimaryButton
           color="lightblue"
           onClick={() => {

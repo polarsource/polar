@@ -1,10 +1,10 @@
-import { PlusIcon } from '@heroicons/react/24/solid'
+import { PlusIcon } from '@heroicons/react/20/solid'
 import Image from 'next/image'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { useStore } from 'polarkit/store'
 import { classNames } from 'polarkit/utils'
 import { MouseEvent, useEffect, useState } from 'react'
-import screenshot from './ScreenshotDashboard.png'
+import screenshot from './Extension.jpg'
 
 const OnboardingInstallChromeExtension = () => {
   const isSkipped = useStore(
@@ -42,25 +42,30 @@ const OnboardingInstallChromeExtension = () => {
     <>
       <div
         className={classNames(
-          'flex-start mb-4 flex flex-row overflow-hidden rounded-lg bg-white shadow',
+          'flex-start mt-2 mb-4 flex flex-row overflow-hidden rounded-xl bg-white shadow',
         )}
       >
         <div className="flex-1">
-          <div className="flex h-full flex-col space-y-4 p-6">
-            <h2 className="text-xl text-black">Enhance Github Issues</h2>
+          <div className="flex h-full flex-col space-y-2 p-6 pt-4">
+            <h2 className="text-xl text-gray-900">Enhance Github Issues</h2>
             <p className="flex-1 text-sm text-gray-500">
               You don&apos;t have to leave Github to use Polar. Our extension
               can enhance the Github Issues table with our additional insights,
               pledges and more in the future.
             </p>
-            <div className="flex items-center justify-between gap-4 lg:justify-start">
-              <PrimaryButton color="blue" fullWidth={false} onClick={onPrimary}>
+            <div className="flex items-center justify-between gap-4 pt-2 lg:justify-start">
+              <PrimaryButton
+                color="blue"
+                fullWidth={false}
+                onClick={onPrimary}
+                classNames="pl-3.5"
+              >
                 <PlusIcon className="h-6 w-6" />
                 <span>Install Chrome Extension</span>
               </PrimaryButton>
               <button
                 type="button"
-                className="text-md text-blue-600"
+                className="text-md text-blue-600 transition-colors duration-200 hover:text-blue-400"
                 onClick={hideDashboardBanner}
               >
                 Skip
@@ -68,12 +73,12 @@ const OnboardingInstallChromeExtension = () => {
             </div>
           </div>
         </div>
-        <div className="hidden flex-1 lg:block">
+        <div className="relative hidden flex-1 lg:block">
           <Image
             src={screenshot}
-            alt="Polar dashboard screenshot"
+            alt="Polar extension screenshot"
             priority={true}
-            className="w-full"
+            className="absolute h-full w-full object-cover object-left-top"
           />
         </div>
       </div>

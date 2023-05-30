@@ -1,7 +1,7 @@
 from __future__ import annotations
 import datetime
 
-from typing import Sequence, Union
+from typing import Any, Sequence, Union
 from githubkit import GitHub, Response
 from githubkit.rest.models import Issue as GitHubIssue
 from githubkit.exception import RequestFailed
@@ -184,7 +184,7 @@ class GithubIssueService(IssueService):
     # client.rest.issues_async_get
     async def async_issues_get_with_headers(
         self,
-        client: GitHub,
+        client: GitHub[Any],
         owner: str,
         repo: str,
         issue_number: int,

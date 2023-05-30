@@ -1,6 +1,6 @@
 import asyncio
 from functools import wraps
-from typing import Sequence
+from typing import Callable, Sequence
 
 import typer
 
@@ -26,10 +26,10 @@ cli = typer.Typer()
 ###############################################################################
 
 
-def typer_async(f):
+def typer_async(f):  # type: ignore
     # From https://github.com/tiangolo/typer/issues/85
     @wraps(f)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs):  # type: ignore
         return asyncio.run(f(*args, **kwargs))
 
     return wrapper

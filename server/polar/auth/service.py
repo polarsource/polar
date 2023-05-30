@@ -20,7 +20,7 @@ class LoginResponse(Schema):
     goto_url: str | None = None
 
     @validator("goto_url")
-    def goto_polar_url(cls, v) -> str | None:
+    def goto_polar_url(cls, v: str | None) -> str | None:
         if v is None or v.startswith(settings.FRONTEND_BASE_URL):
             return v
 

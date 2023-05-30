@@ -7,7 +7,7 @@ from polar.redis import sync_redis
 class RedisCache(BaseCache):
     """Redis Backed Cache"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def get(self, key: str) -> Optional[str]:

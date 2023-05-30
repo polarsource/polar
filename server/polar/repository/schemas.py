@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Self, Type
 
 from uuid import UUID
 from datetime import datetime
@@ -37,7 +38,9 @@ class RepositoryCreate(Schema):
     is_disabled: bool | None = None
 
     @classmethod
-    def from_github(cls, organization: Organization, repo: github.rest.Repository):
+    def from_github(
+        cls, organization: Organization, repo: github.rest.Repository
+    ) -> Self:
         topics = None
         if repo.topics:
             topics = repo.topics

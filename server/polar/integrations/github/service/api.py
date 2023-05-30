@@ -1,4 +1,4 @@
-from typing import Optional, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar
 from githubkit import GitHub, Response
 from githubkit.typing import QueryParamTypes
 
@@ -13,7 +13,7 @@ class GitHubApi:
     # TODO: https://github.com/yanyongyu/githubkit/issues/29
     async def async_request_with_headers(
         self,
-        client: GitHub,
+        client: GitHub[Any],
         url: str,
         response_model: Type[T],
         params: Optional[QueryParamTypes] = None,

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Set, Union
+from typing import Any, List, Set, Union
 from uuid import UUID
 from githubkit import GitHub, Response
 from githubkit.exception import RequestFailed
@@ -206,7 +206,7 @@ class GitHubIssueReferencesService:
     # client.rest.issues.async_list_events_for_timeline,
     async def async_list_events_for_timeline_with_headers(
         self,
-        client: GitHub,
+        client: GitHub[Any],
         owner: str,
         repo: str,
         issue_number: int,
@@ -371,7 +371,7 @@ class GitHubIssueReferencesService:
         repo: Repository,
         issue: Issue,
         event: TimelineEventType,
-        client: GitHub,
+        client: GitHub[Any],
     ) -> IssueReference | None:
         if isinstance(event, github.rest.TimelineCrossReferencedEvent):
             return await self.parse_issue_pull_request_reference(
@@ -398,7 +398,7 @@ class GitHubIssueReferencesService:
         repo: Repository,
         event: github.rest.TimelineCrossReferencedEvent,
         issue: Issue,
-        client: GitHub,
+        client: GitHub[Any],
     ) -> IssueReference | None:
         if not event.source.issue:
             return None
@@ -531,7 +531,7 @@ class GitHubIssueReferencesService:
         session: AsyncSession,
         org: Organization,
         ref: IssueReference,
-        client: GitHub,
+        client: GitHub[Any],
     ) -> IssueReference:
         if ref.reference_type == ReferenceType.EXTERNAL_GITHUB_COMMIT:
             r = parse_obj_as(ExternalGitHubCommitReference, ref.external_source)
@@ -557,7 +557,7 @@ class GitHubIssueReferencesService:
         org: Organization,
         ref: ExternalGitHubCommitReference,
         existingRef: ExternalGitHubCommitReference | None,
-        client: GitHub,
+        client: GitHub[Any],
     ) -> ExternalGitHubCommitReference:
         """
         annotate_issue_commit_reference attempts to fetch data from the GitHub API

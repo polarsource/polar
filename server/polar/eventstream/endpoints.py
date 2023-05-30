@@ -22,7 +22,7 @@ log = structlog.get_logger()
 
 
 async def subscribe(
-    redis: Redis,
+    redis: Redis[Any],
     channels: list[str],
     request: Request,
 ) -> AsyncGenerator[Any, Any]:
@@ -54,7 +54,7 @@ async def subscribe(
 async def user_stream(
     request: Request,
     auth: Auth = Depends(Auth.current_user),
-    redis: Redis = Depends(get_redis),
+    redis: Redis[Any] = Depends(get_redis),
 ) -> EventSourceResponse:
     receivers = Receivers(user_id=auth.user.id)
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))
@@ -66,7 +66,7 @@ async def user_org_stream(
     org_name: str,
     request: Request,
     auth: Auth = Depends(Auth.user_with_org_access),
-    redis: Redis = Depends(get_redis),
+    redis: Redis[Any] = Depends(get_redis),
 ) -> EventSourceResponse:
     receivers = Receivers(user_id=auth.user.id, organization_id=auth.organization.id)
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))
@@ -79,7 +79,7 @@ async def user_org_repo_stream(
     repo_name: str,
     request: Request,
     auth: Auth = Depends(Auth.user_with_org_and_repo_access),
-    redis: Redis = Depends(get_redis),
+    redis: Redis[Any] = Depends(get_redis),
 ) -> EventSourceResponse:
     receivers = Receivers(
         user_id=auth.user.id,

@@ -72,7 +72,7 @@ class GithubBadge:
 
         return (False, "no_auto_embed_or_label")
 
-    def generate_svg_url(self, darkmode=False) -> str:
+    def generate_svg_url(self, darkmode: bool = False) -> str:
         return "{base}/api/github/{org}/{repo}/issues/{number}/pledge.svg{maybeDarkmode}".format(  # noqa: E501
             base=settings.FRONTEND_BASE_URL,
             org=self.organization.name,

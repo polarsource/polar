@@ -117,7 +117,7 @@ class NotificationsService:
         session: AsyncSession,
         pledge: Pledge,
         notif: PartialNotification,
-    ):
+    ) -> None:
         if pledge.by_organization_id:
             await self.send_to_org(
                 session=session,

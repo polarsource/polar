@@ -342,7 +342,7 @@ const RetroactiveActivationLabel = ({
 
   return (
     <>
-      Remove badge from <strong className="text-medium">{additions}</strong>{' '}
+      Remove badge from <strong className="text-medium">{deletions}</strong>{' '}
       existing issues
     </>
   )

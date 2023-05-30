@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import cache
-from typing import Any, ClassVar, Generic, Sequence, TypeVar
+from typing import Any, ClassVar, Generic, Self, Sequence, TypeVar
 from sqlalchemy import Column, ColumnClause, column
 from sqlalchemy.orm import (
     InstrumentedAttribute,
@@ -17,12 +17,11 @@ from polar.context import PolarContext
 from polar.kit.schemas import Schema
 from polar.postgres import AsyncSession, sql
 
-ModelType = TypeVar("ModelType", bound="ActiveRecordMixin")
 SchemaType = TypeVar("SchemaType", bound=Schema)
 
 
 # Active Record-ish
-class ActiveRecordMixin(Generic[ModelType]):
+class ActiveRecordMixin:
     __mutables__: set[Column[Any]] | set[str] | None = None
     __table__: ClassVar[FromClause]
 
@@ -37,7 +36,7 @@ class ActiveRecordMixin(Generic[ModelType]):
     @classmethod
     def xmax(cls) -> Mapped[int]:
         # Unless we use `with_expression` to get `xmax` this will be None
-        return query_expression()  # type: ignore
+        return query_expression()
 
     @property
     def was_created(self) -> bool:
@@ -57,7 +56,7 @@ class ActiveRecordMixin(Generic[ModelType]):
 
     @classmethod
     @cache
-    def get_mutable_keys(cls: type[ModelType]) -> set[str]:
+    def get_mutable_keys(cls) -> set[str]:
         def name(c: str | MappedColumn[Any] | Column[Any]) -> str:
             if isinstance(c, str):
                 return c
@@ -74,30 +73,28 @@ class ActiveRecordMixin(Generic[ModelType]):
         return columnNames - pks
 
     @classmethod
-    async def find(
-        cls: type[ModelType], session: AsyncSession, id: Any, key: str = "id"
-    ) -> ModelType | None:
+    async def find(cls, session: AsyncSession, id: Any, key: str = "id") -> Self | None:
         params = {}
         params[key] = id
         return await cls.find_by(session, **params)
 
     @classmethod
     async def find_by(
-        cls: type[ModelType],
+        cls,
         session: AsyncSession,
         **params: Any,
-    ) -> ModelType | None:
+    ) -> Self | None:
         query = sql.select(cls).filter_by(**params)
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
 
     @classmethod
     async def create(
-        cls: type[ModelType],
+        cls,
         session: AsyncSession,
         autocommit: bool = True,
         **values: Any,
-    ) -> ModelType:
+    ) -> Self:
         instance = cls()
         instance.fill(**values)
 
@@ -106,13 +103,13 @@ class ActiveRecordMixin(Generic[ModelType]):
 
     @classmethod
     async def upsert_many(
-        cls: type[ModelType],
+        cls,
         session: AsyncSession,
         objects: list[SchemaType],
         constraints: list[InstrumentedAttribute[Any]],
         # Defaults to the mutable keys as defined by on the Model
         mutable_keys: set[str] | None = None,
-    ) -> Sequence[ModelType]:
+    ) -> Sequence[Self]:
         values = [obj.dict() for obj in objects]
         if not values:
             raise ValueError("Zero values provided")
@@ -148,13 +145,13 @@ class ActiveRecordMixin(Generic[ModelType]):
 
     @classmethod
     async def upsert(
-        cls: type[ModelType],
+        cls,
         session: AsyncSession,
         obj: SchemaType,
         constraints: list[InstrumentedAttribute[Any]],
         mutable_keys: set[str] | None = None,
-    ) -> ModelType:
-        upserted: Sequence[ModelType] = await cls.upsert_many(
+    ) -> Self:
+        upserted: Sequence[Self] = await cls.upsert_many(
             session,
             [obj],
             constraints=constraints,
@@ -163,11 +160,11 @@ class ActiveRecordMixin(Generic[ModelType]):
         return upserted[0]
 
     def fill(
-        self: ModelType,
+        self,
         include: set[str] | None = None,
         exclude: set[str] | None = None,
         **values: Any,
-    ) -> ModelType:
+    ) -> Self:
         exclude = exclude if exclude else set()
         for col, value in values.items():
             if not hasattr(self, col):
@@ -180,22 +177,20 @@ class ActiveRecordMixin(Generic[ModelType]):
                 setattr(self, col, value)
         return self
 
-    async def save(
-        self: ModelType, session: AsyncSession, autocommit: bool = True
-    ) -> ModelType:
+    async def save(self, session: AsyncSession, autocommit: bool = True) -> Self:
         session.add(self)
         if autocommit:
             await session.commit()
         return self
 
     async def update(
-        self: ModelType,
+        self,
         session: AsyncSession,
         autocommit: bool = True,
         include: set[str] | None = None,
         exclude: set[str] | None = None,
         **values: Any,
-    ) -> ModelType:
+    ) -> Self:
         if not include:
             include = self.get_mutable_keys()
         updated = self.fill(include=include, exclude=exclude, **values)

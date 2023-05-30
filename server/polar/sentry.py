@@ -12,6 +12,7 @@ def configure_sentry():
     sentry_sdk.init(
         dsn=settings.SENTRY_DSN,
         traces_sample_rate=0.1,
+        profiles_sample_rate=0.1,
         release=os.environ.get("RENDER_GIT_COMMIT", "development"),
         server_name=os.environ.get("RENDER_INSTANCE_ID", "localhost"),
         environment="production" if os.environ.get("RENDER", False) else "development",

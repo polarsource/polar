@@ -68,7 +68,9 @@ export interface UserContextState
   extends UserState,
     ContextState,
     OnboardingState,
-    LastPledgeState {}
+    LastPledgeState {
+  resetState: () => void
+}
 
 const emptyState = {
   authenticated: false,
@@ -108,7 +110,7 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
   logout: (): CancelablePromise<any> => {
     const request = api.users.logout()
     request.finally(() => {
-      set({ ...emptyState })
+      get().resetState()
     })
     return request
   },
@@ -159,5 +161,8 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
     set({
       latestPledgeShown: shown,
     })
+  },
+  resetState: () => {
+    set({ ...emptyState })
   },
 })

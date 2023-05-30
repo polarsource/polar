@@ -434,6 +434,8 @@ const Controls = ({
   const [additions, setAdditions] = useState(0)
   const [deletions, setDeletions] = useState(0)
 
+  const hasRetroactiveChanges = additions > 0 || deletions > 0
+
   useEffect(() => {
     if (!retroactiveChanges) {
       setAdditions(0)
@@ -451,12 +453,6 @@ const Controls = ({
     }
   }, [retroactiveChanges, isRetroactiveEnabled])
 
-  const [showRetroactiveChanges, setShowRetroactiveChanges] = useState(false)
-
-  useEffect(() => {
-    setShowRetroactiveChanges(!!(retroactiveChanges && anyBadgeSettingChanged))
-  }, [retroactiveChanges])
-
   const canSave = useMemo(() => {
     if (isSettingPage) {
       if (anyBadgeSettingChanged) {
@@ -470,7 +466,7 @@ const Controls = ({
 
   return (
     <>
-      {showRetroactiveChanges && (
+      {hasRetroactiveChanges && (
         <div className="flex flex-row space-x-8 rounded-xl border bg-white p-4">
           <SettingsCheckbox
             id="retroactive_embed"

@@ -1,5 +1,6 @@
 import IssueListItem from '@/components/Dashboard/IssueListItem'
 import ThankYouUpsell from '@/components/Pledge/ThankYouUpsell'
+import { useAuth } from '@/hooks'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import { useRouter } from 'next/router'
@@ -8,8 +9,7 @@ import { Platforms, type PledgeResources } from 'polarkit/api/client'
 import { PolarTimeAgo } from 'polarkit/components/ui'
 import { GrayCard } from 'polarkit/components/ui/Cards'
 import { useStore } from 'polarkit/store'
-import { ReactElement, useEffect, useRef } from 'react'
-import { useAuth } from '../../../../../hooks/auth'
+import { ReactElement, useEffect, useRef, useState } from 'react'
 
 const PledgeStatusPage: NextLayoutComponentType = ({
   organization,
@@ -30,6 +30,7 @@ const PledgeStatusPage: NextLayoutComponentType = ({
   const didReloadUser = useRef(false)
   const router = useRouter()
   const setLatestPledge = useStore((store) => store.setLatestPledge)
+  const [hasCheckedAuth, setCheckedAuth] = useState<boolean>(false)
 
   useEffect(() => {
     if (currentUser && !didReloadUser.current) {
@@ -38,9 +39,10 @@ const PledgeStatusPage: NextLayoutComponentType = ({
       // this us used to grant the user access to polar (alpha/beta) without an invite code
       reloadUser()
     }
+    setCheckedAuth(true)
   }, [currentUser, reloadUser])
 
-  if (!pledge || !organization || !repository || !issue) {
+  if (!pledge || !organization || !repository || !issue || !hasCheckedAuth) {
     return <></>
   }
 

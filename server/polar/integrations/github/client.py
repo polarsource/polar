@@ -85,7 +85,7 @@ def attr(obj: object, attr: str) -> Any:
 
 
 def ensure_expected_response(
-    response: Response, accepted: set[int] = {200, 304}
+    response: Response[Any], accepted: set[int] = {200, 304}
 ) -> bool:
     status_code = response.status_code
     if status_code in accepted:

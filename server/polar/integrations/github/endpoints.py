@@ -1,5 +1,5 @@
 from uuid import UUID
-from typing import Any, Literal
+from typing import Any, Literal, Optional, Tuple
 
 import structlog
 from fastapi import (
@@ -24,6 +24,7 @@ from polar.organization.schemas import OrganizationPrivateRead
 from polar.postgres import AsyncSession, get_db_session
 from polar.worker import enqueue_job
 from polar.auth.service import AuthService, LoginResponse
+from httpx_oauth.oauth2 import OAuth2Token
 from polar.pledge.service import pledge as pledge_service
 
 
@@ -87,12 +88,16 @@ async def github_callback(
     request: Request,
     response: Response,
     session: AsyncSession = Depends(get_db_session),
-    access_token_state=Depends(oauth2_authorize_callback),
+    access_token_state: Tuple[OAuth2Token, Optional[str]] = Depends(
+        oauth2_authorize_callback
+    ),
 ) -> LoginResponse:
     token_data, state = access_token_state
     error_description = token_data.get("error_description")
     if error_description:
         raise HTTPException(status_code=403, detail=error_description)
+    if not state:
+        raise HTTPException(status_code=400, detail="No state")
 
     try:
         state_data = jwt.decode(token=state, secret=settings.SECRET)

@@ -6,7 +6,7 @@ from polar.issue.hooks import (
 from polar.issue.service import issue as issue_service
 
 
-async def update_issue_state(hook: IssueReferenceHook):
+async def update_issue_state(hook: IssueReferenceHook) -> None:
     session = hook.session
     ref = hook.issue_reference
 

@@ -41,7 +41,7 @@ async def test_installation_no_notifications(
         pytest -k test_installation_no_notifications --record-mode=rewrite
     """
 
-    async def in_process_enqueue_job(pool, name, *args, **kwargs):
+    async def in_process_enqueue_job(pool, name, *args, **kwargs) -> None:  # type: ignore  # noqa: E501
         if name == "github.repo.sync.issues":
             return await tasks.repo.sync_repository_issues(
                 kwargs["polar_context"], *args, **kwargs

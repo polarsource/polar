@@ -82,7 +82,7 @@ async def create_org(
         return org
 
 
-async def create_repositories(github_webhook: TestWebhookFactory):
+async def create_repositories(github_webhook: TestWebhookFactory) -> None:
     org = await create_org(github_webhook, status=Organization.Status.ACTIVE)
     hook = github_webhook.create("installation_repositories.added")
 

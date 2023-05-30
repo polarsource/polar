@@ -38,7 +38,7 @@ class InviteService:
 
     async def send_invite(
         self, session: AsyncSession, invite: Invite, by_user: User, send_to_email: str
-    ):
+    ) -> None:
         invite.sent_to_email = send_to_email
         await invite.save(session, autocommit=True)
 

@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Any, Sequence
 from githubkit import GitHub
 
 import structlog
@@ -131,7 +131,7 @@ class GithubPullRequestService(PullRequestService):
         organization: Organization,
         repository: Repository,
         number: int,
-        client: GitHub,
+        client: GitHub[Any],
     ) -> PullRequest | None:
         gh_pull = await client.rest.pulls.async_get(
             owner=organization.name, repo=repository.name, pull_number=number

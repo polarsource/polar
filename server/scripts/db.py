@@ -46,7 +46,7 @@ def recreate() -> None:
     _recreate()
 
 
-def assert_dev_or_testing():
+def assert_dev_or_testing() -> None:
     if not (settings.is_development() or settings.is_testing()):
         raise RuntimeError(f"DANGER! You cannot run this script in {settings.ENV}!")
 

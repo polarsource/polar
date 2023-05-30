@@ -40,18 +40,9 @@ const OnboardingConnectPersonalDashboard = () => {
             </h2>
             <div className="flex-1 text-sm text-gray-500">
               <p>
-                <strong className="block font-medium text-gray-900">
-                  Funded & improved backlog
-                </strong>
-                Public repositories can embed the Polar badge on their Github
-                Issues.
-              </p>
-              <p className="mt-3">
-                <strong className="block font-medium text-gray-900">
-                  Track & back dependencies
-                </strong>
-                Helicopter view of all your internally referenced open source
-                issues, their status and progress.
+                Interested in getting backers behind your open source efforts?
+                Or looking to track issues you&apos;re dependent on and pledge
+                behind them? Connect your repositories to get started.
               </p>
             </div>
             <div className="flex items-center justify-between gap-4 pt-2 lg:justify-start">

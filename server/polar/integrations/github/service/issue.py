@@ -8,7 +8,6 @@ from githubkit.exception import RequestFailed
 from sqlalchemy import asc, or_
 
 import structlog
-from polar.context import PolarContext
 from polar.kit.extensions.sqlalchemy import sql
 
 from polar.kit.utils import utc_now
@@ -20,14 +19,7 @@ from polar.postgres import AsyncSession
 from polar.integrations.github import client as github
 from polar.integrations.github.service.api import github_api
 from polar.issue.hooks import issue_upserted, IssueHook
-
 from ..badge import GithubBadge
-from ..exceptions import (
-    GithubBadgeNotEmbeddable,
-    GithubBadgeAlreadyEmbedded,
-    GithubBadgeEmbeddingDisabled,
-    GithubBadgeNotEmbedded,
-)
 
 log = structlog.get_logger()
 
@@ -112,42 +104,40 @@ class GithubIssueService(IssueService):
         organization: Organization,
         repository: Repository,
         issue: Issue,
+        triggered_from_label: bool,
     ) -> bool:
-        try:
-            badge = GithubBadge(
-                organization=organization, repository=repository, issue=issue
-            )
-            await badge.embed()
-            # Why only save the timestamp vs. updated body/issue?
-            # There's a race condition here since we updated the issue and it will
-            # trigger a webhook upon which we'll update the entire issue except for this
-            # timestamp. So we leave the updating of the issue to our webhook handler.
-            issue.pledge_badge_embedded_at = utc_now()
-            await issue.save(session)
-            return True
-        except GithubBadgeNotEmbeddable as e:
+        (should, reason) = GithubBadge.should_add_badge(
+            organization=organization,
+            repository=repository,
+            issue=issue,
+            triggered_from_label=triggered_from_label,
+        )
+        if not should:
             log.info(
                 "github.issue.badge",
                 embedded=False,
-                reason=str(e),
+                reason=reason,
                 issue_id=issue.id,
             )
-        except GithubBadgeAlreadyEmbedded:
-            log.info(
-                "github.issue.badge",
-                embedded=False,
-                reason="already_embedded",
-                issue_id=issue.id,
-            )
-        except GithubBadgeEmbeddingDisabled:
-            log.info(
-                "github.issue.badge",
-                embedded=False,
-                reason="embed_disabled",
-                issue_id=issue.id,
-            )
+            return False
 
-        return False
+        badge = GithubBadge(
+            organization=organization, repository=repository, issue=issue
+        )
+        await badge.embed()
+
+        stmt = (
+            sql.update(Issue)
+            .values(
+                pledge_badge_embedded_at=utc_now(),
+                pledge_badge_ever_embedded=True,
+            )
+            .where(Issue.id == issue.id)
+        )
+        await session.execute(stmt)
+        await session.commit()
+
+        return True
 
     async def remove_badge(
         self,
@@ -156,26 +146,39 @@ class GithubIssueService(IssueService):
         organization: Organization,
         repository: Repository,
         issue: Issue,
+        triggered_from_label: bool,
     ) -> bool:
-        try:
-            badge = GithubBadge(
-                organization=organization, repository=repository, issue=issue
-            )
-            await badge.remove()
-            # Why only save the timestamp vs. updated body/issue?
-            # There's a race condition here since we updated the issue and it will
-            # trigger a webhook upon which we'll update the entire issue except for this
-            # timestamp. So we leave the updating of the issue to our webhook handler.
-            issue.pledge_badge_embedded_at = None
-            await issue.save(session)
-            return True
-        except GithubBadgeNotEmbedded:
+        (should, reason) = GithubBadge.should_remove_badge(
+            organization=organization,
+            repository=repository,
+            issue=issue,
+            triggered_from_label=triggered_from_label,
+        )
+        if not should:
             log.info(
-                "github.issue.remove_badge",
+                "github.issue.badge",
                 embedded=False,
-                reason="not_embedded",
+                reason=reason,
                 issue_id=issue.id,
             )
+            return False
+
+        badge = GithubBadge(
+            organization=organization, repository=repository, issue=issue
+        )
+        await badge.remove()
+
+        stmt = (
+            sql.update(Issue)
+            .values(
+                pledge_badge_embedded_at=None,
+                pledge_badge_ever_embedded=True,
+            )
+            .where(Issue.id == issue.id)
+        )
+        await session.execute(stmt)
+        await session.commit()
+
         return False
 
     # client.rest.issues_async_get

@@ -367,17 +367,25 @@ async def update_issue_embed(
     except ValueError:
         return False
 
-    # Abort. Let automatic embedding handle it.
+    if embed:
+        return await service.github_issue.embed_badge(
+            session,
+            organization=org,
+            repository=repo,
+            issue=issue,
+            triggered_from_label=True,
+        )
+
+    # Do not remove the badge if automatic badging is enabled
     if repo.pledge_badge_auto_embed:
         return False
 
-    if embed:
-        return await service.github_issue.embed_badge(
-            session, organization=org, repository=repo, issue=issue
-        )
-
     return await service.github_issue.remove_badge(
-        session, organization=org, repository=repo, issue=issue
+        session,
+        organization=org,
+        repository=repo,
+        issue=issue,
+        triggered_from_label=True,
     )
 
 

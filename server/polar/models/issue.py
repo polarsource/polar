@@ -173,6 +173,12 @@ class Issue(IssueFields, RecordModel):
     pledge_badge_embedded_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
+    pledge_badge_ever_embedded: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    pledge_badge_currently_embedded: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
 
     has_pledge_badge_label: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
@@ -216,6 +222,7 @@ class Issue(IssueFields, RecordModel):
 
     __mutables__ = issue_fields_mutables | {
         "has_pledge_badge_label",
+        "pledge_badge_currently_embedded",
     }
 
     @classmethod

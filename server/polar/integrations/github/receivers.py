@@ -23,7 +23,9 @@ async def schedule_embed_badge_task(
     if not repository:
         return
 
-    should_embed, _ = GithubBadge.should_embed(organization, repository, hook.issue)
+    should_embed, _ = GithubBadge.should_add_badge(
+        organization, repository, hook.issue, triggered_from_label=False
+    )
     if not should_embed:
         return
 

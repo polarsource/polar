@@ -114,7 +114,7 @@ class Settings(BaseSettings):
             port=str(self.POSTGRES_PORT),
             path=f"/{self.POSTGRES_DATABASE}",
         )
-        return PostgresDsn(uri, scheme=self.POSTGRES_SCHEME)  # type: ignore
+        return PostgresDsn(uri, scheme=self.POSTGRES_SCHEME)
 
     def is_environment(self, environment: Environment) -> bool:
         return self.ENV == environment

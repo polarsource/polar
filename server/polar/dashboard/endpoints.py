@@ -362,16 +362,20 @@ async def dashboard(
 
     next_page = page + 1 if total_issue_count > page * limit else None
 
+    data: List[Entry[IssueDashboardRead]] = [
+        Entry[IssueDashboardRead](
+            id=i.id,
+            type="issue",
+            attributes=issue_to_schema(i),
+            relationships=issue_relationships.get(i.id, None),
+        )
+        for i in issues
+    ]
+
     return IssueListResponse(
-        data=[
-            Entry(
-                id=i.id,
-                type="issue",
-                attributes=issue_to_schema(i),
-                relationships=issue_relationships.get(i.id, None),
-            )
-            for i in issues
-        ],
+        # FIXME: mypy complains that List[Entry[IssueDashboardRead]] is not a
+        # List[Entry[DataT]]. Why?
+        data=data,  # type: ignore
         included=list(included.values()),
         pagination=PaginationResponse(
             total_count=total_issue_count,

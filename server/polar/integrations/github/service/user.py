@@ -251,24 +251,25 @@ class GithubUserService(UserService):
         gh_user.email = emails[0].email
         return gh_user
 
+    def map_installations_func(
+            self,   
+            r: github.Response[github.rest.UserInstallationsGetResponse200],
+    ) -> list[github.rest.Installation]:
+            return r.parsed_data.installations
+
     async def fetch_user_accessible_installations(
         self, session: AsyncSession, user: User
     ) -> List[github.rest.Installation]:
         """
         Load user accessible installations from GitHub API
         Finds the union between app installations and the users user-to-server token.
-        """
-
-        def map_func(
-            r: github.Response[github.rest.UserInstallationsGetResponse200],
-        ):
-            return r.parsed_data.installations
+        """       
 
         client = await github.get_user_client(session, user)
         res = []
         async for install in client.paginate(
             client.rest.apps.async_list_installations_for_authenticated_user,
-            map_func=map_func,
+            map_func=self.map_installations_func,
         ):
             res.append(install)
         return res

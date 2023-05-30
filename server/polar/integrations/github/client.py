@@ -196,4 +196,8 @@ __all__ = [
     "get_user_client",
     "webhooks",
     "rest",
+    "GitHub",
+    "TokenAuthStrategy",
+    "utils",
+    "Response",
 ]

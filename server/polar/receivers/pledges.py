@@ -37,7 +37,7 @@ log = structlog.get_logger()
 
 async def mark_pledges_pending_on_issue_close(
     hook: IssueHook,
-):
+) -> None:
     if hook.issue.state == "closed":
         await pledge_service.mark_pending_by_issue_id(hook.session, hook.issue.id)
 
@@ -45,7 +45,7 @@ async def mark_pledges_pending_on_issue_close(
 issue_upserted.add(mark_pledges_pending_on_issue_close)
 
 
-async def pledge_created_discord_alert(hook: PledgeHook):
+async def pledge_created_discord_alert(hook: PledgeHook) -> None:
     session = hook.session
     pledge = hook.pledge
 
@@ -78,7 +78,7 @@ async def pledge_created_discord_alert(hook: PledgeHook):
 pledge_created_hook.add(pledge_created_discord_alert)
 
 
-async def pledge_created_issue_pledge_sum(hook: PledgeHook):
+async def pledge_created_issue_pledge_sum(hook: PledgeHook) -> None:
     session = hook.session
     pledge = hook.pledge
     await pledge_service.set_issue_pledged_amount_sum(session, pledge.issue_id)
@@ -100,7 +100,7 @@ def pledger_name(pledge: Pledge) -> str:
     return "anonymous"
 
 
-async def pledge_created_notification(pledge: Pledge, session: AsyncSession):
+async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> None:
     issue = await issue_service.get_by_id(session, pledge.issue_id)
     if not issue:
         log.error("pledge_created_notification.no_issue_found")
@@ -138,7 +138,7 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession):
     )
 
 
-async def pledge_pending_notification(pledge: Pledge, session: AsyncSession):
+async def pledge_pending_notification(pledge: Pledge, session: AsyncSession) -> None:
     issue = await issue_service.get_by_id(session, pledge.issue_id)
     if not issue:
         log.error("pledge_pending_notification.no_issue_found")
@@ -195,7 +195,7 @@ async def pledge_pending_notification(pledge: Pledge, session: AsyncSession):
 
 async def pledge_paid_notification(
     pledge: Pledge, transaction: PledgeTransaction, session: AsyncSession
-):
+) -> None:
     issue = await issue_service.get_by_id(session, pledge.issue_id)
     if not issue:
         log.error("pledge_paid_notification.no_issue_found")
@@ -229,7 +229,7 @@ async def pledge_paid_notification(
     )
 
 
-async def hook_pledge_created_notifications(hook: PledgeHook):
+async def hook_pledge_created_notifications(hook: PledgeHook) -> None:
     session = hook.session
     pledge = hook.pledge
     await pledge_created_notification(pledge, session)
@@ -238,7 +238,7 @@ async def hook_pledge_created_notifications(hook: PledgeHook):
 pledge_created_hook.add(hook_pledge_created_notifications)
 
 
-async def hook_pledge_pending_notifications(hook: PledgeHook):
+async def hook_pledge_pending_notifications(hook: PledgeHook) -> None:
     session = hook.session
     pledge = hook.pledge
     await pledge_pending_notification(pledge, session)
@@ -247,7 +247,7 @@ async def hook_pledge_pending_notifications(hook: PledgeHook):
 pledge_pending_hook.add(hook_pledge_pending_notifications)
 
 
-async def hook_pledge_paid_notifications(hook: PledgePaidHook):
+async def hook_pledge_paid_notifications(hook: PledgePaidHook) -> None:
     session = hook.session
     pledge = hook.pledge
     transaction = hook.transaction

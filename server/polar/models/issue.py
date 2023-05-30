@@ -1,5 +1,5 @@
 import enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 from datetime import datetime
 
@@ -33,7 +33,7 @@ from polar.enums import Platforms
 from polar.types import JSONDict, JSONList
 
 import sqlalchemy as sa
-from sqlalchemy_utils.types.ts_vector import TSVectorType  # type: ignore
+from sqlalchemy_utils.types.ts_vector import TSVectorType
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.issue_reference import IssueReference
@@ -226,7 +226,7 @@ class Issue(IssueFields, RecordModel):
     }
 
     @classmethod
-    def contains_pledge_badge_label(cls, labels) -> bool:
+    def contains_pledge_badge_label(cls, labels: Any) -> bool:
         if not labels:
             return False
 

@@ -5,7 +5,7 @@ from sentry_sdk.integrations.starlette import StarletteIntegration
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 
 
-def configure_sentry():
+def configure_sentry() -> None:
     if not settings.SENTRY_DSN:
         return
 

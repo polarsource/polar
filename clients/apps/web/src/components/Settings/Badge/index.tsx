@@ -1,4 +1,7 @@
-import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline'
+import {
+  ExclamationCircleIcon,
+  QuestionMarkCircleIcon,
+} from '@heroicons/react/24/outline'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
@@ -324,9 +327,8 @@ const RetroactiveActivationLabel = ({
   if (hasAdditionsAndDeletions) {
     return (
       <>
-        Add badge to <strong className="text-medium">{additions}</strong> open
-        issues and remove it from{' '}
-        <strong className="text-medium">{deletions}</strong> existing ones
+        Add badge to <strong className="text-medium">{additions}</strong> issues
+        & remove from <strong className="text-medium">{deletions}</strong>.
       </>
     )
   }
@@ -468,19 +470,25 @@ const Controls = ({
     <>
       {hasRetroactiveChanges && (
         <div className="flex flex-row space-x-8 rounded-xl border bg-white p-4">
-          <SettingsCheckbox
-            id="retroactive_embed"
-            title={
-              <RetroactiveActivationLabel
-                additions={additions}
-                deletions={deletions}
-              />
-            }
-            isChecked={isRetroactiveEnabled}
-            onChange={(e) => {
-              setRetroactiveEnabled(e.target.checked)
-            }}
-          />
+          <div className="w-1/2 items-center text-sm">
+            <SettingsCheckbox
+              id="retroactive_embed"
+              title={
+                <RetroactiveActivationLabel
+                  additions={additions}
+                  deletions={deletions}
+                />
+              }
+              isChecked={isRetroactiveEnabled}
+              onChange={(e) => {
+                setRetroactiveEnabled(e.target.checked)
+              }}
+            />
+          </div>
+          <div className="flex w-1/2 flex-row items-center space-x-2 text-xs text-gray-500">
+            <ExclamationCircleIcon width={16} height={16} />
+            <p>Updates the modified at of the issues in Github.</p>
+          </div>
         </div>
       )}
 
@@ -522,7 +530,7 @@ const Controls = ({
             className="rounded-xl bg-blue-600 px-8 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-500"
             onClick={clickedContinue}
           >
-            Continue
+            {showControls ? 'Confirm' : 'Continue'}
           </button>
         </div>
       )}

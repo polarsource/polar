@@ -271,7 +271,7 @@ const PledgeForm = ({
     <>
       <form className="flex flex-col">
         <label htmlFor="amount" className="text-sm font-medium text-gray-500">
-          Choose amount to pledge
+          Amount to pledge
         </label>
         <div className="mt-2 flex flex-row items-center space-x-4">
           <div className="relative w-3/5">
@@ -300,7 +300,7 @@ const PledgeForm = ({
           htmlFor="email"
           className="mt-4 mb-2 text-sm font-medium text-gray-500"
         >
-          Contact details
+          Email
         </label>
         <input
           type="email"

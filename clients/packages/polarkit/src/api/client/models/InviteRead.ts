@@ -4,9 +4,9 @@
 
 export type InviteRead = {
   code: string;
-  created_by_username: string;
-  sent_to_email?: string;
+  created_by_username?: string;
   claimed_by_username?: string;
+  note?: string;
   created_at: string;
 };
 

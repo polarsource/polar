@@ -34,7 +34,10 @@ class LogoutResponse(Schema):
 class AuthService:
     @staticmethod
     def set_auth_cookie(
-        *, response: Response, value: str, expires_at: datetime
+        *,
+        response: Response,
+        value: str,
+        secure: bool = True,
     ) -> None:
         response.set_cookie(
             settings.AUTH_COOKIE_KEY,
@@ -42,7 +45,7 @@ class AuthService:
             expires=settings.AUTH_COOKIE_TTL_SECONDS,
             path="/",
             domain=None,
-            secure=True,
+            secure=secure,
             httponly=True,
             samesite="lax",
         )
@@ -63,10 +66,19 @@ class AuthService:
 
     @classmethod
     def generate_login_cookie_response(
-        cls, *, response: Response, user: User, goto_url: str | None = None
+        cls,
+        *,
+        request: Request,
+        response: Response,
+        user: User,
+        goto_url: str | None = None,
     ) -> LoginResponse:
         (token, expires_at) = cls.generate_token(user=user)
-        cls.set_auth_cookie(response=response, value=token, expires_at=expires_at)
+
+        is_localhost = request.url.hostname in ["127.0.0.1", "localhost"]
+        secure = False if is_localhost else True
+
+        cls.set_auth_cookie(response=response, value=token, secure=secure)
         return LoginResponse(success=True, expires_at=expires_at, goto_url=goto_url)
 
     @classmethod
@@ -106,5 +118,5 @@ class AuthService:
 
     @classmethod
     def generate_logout_response(cls, *, response: Response) -> LogoutResponse:
-        cls.set_auth_cookie(response=response, value="", expires_at=datetime.utcnow())
+        cls.set_auth_cookie(response=response, value="")
         return LogoutResponse(success=True)

@@ -117,7 +117,7 @@ async def github_callback(
     goto_url = state_data.get("goto_url", None)
 
     return AuthService.generate_login_cookie_response(
-        response=response, user=user, goto_url=goto_url
+        request=request, response=response, user=user, goto_url=goto_url
     )
 
 

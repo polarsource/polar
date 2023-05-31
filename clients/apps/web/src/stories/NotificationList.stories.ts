@@ -5,6 +5,7 @@ import {
   notification_maintainerPledgeCreatedNotification,
   notification_maintainerPledgePaidNotification,
   notification_maintainerPledgePendingNotification,
+  notification_pledgerPledgePendingNotification,
 } from './testdata'
 
 const meta: Meta<typeof List> = {
@@ -23,6 +24,7 @@ export const Default: Story = {
       notification_maintainerPledgeCreatedNotification,
       notification_maintainerPledgePendingNotification,
       notification_maintainerPledgePaidNotification,
+      notification_pledgerPledgePendingNotification,
     ],
   },
 }

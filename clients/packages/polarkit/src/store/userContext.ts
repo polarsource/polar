@@ -96,13 +96,16 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
     request
       .then((user) => {
         set({ authenticated: true, currentUser: user })
+        if (callback) {
+          callback(true)
+        }
       })
       .catch((err) => {
-        set({ authenticated: false, currentUser: undefined })
-      })
-      .finally(() => {
-        if (callback) {
-          callback(get().authenticated)
+        if (err.status && err.status === 401) {
+          set({ authenticated: false, currentUser: undefined })
+          if (callback) {
+            callback(false)
+          }
         }
       })
     return request

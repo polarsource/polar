@@ -14,7 +14,7 @@ export const useAuth = (): UserState & {
   const login = useStore((state) => state.login)
   const logout = useStore((state) => state.logout)
 
-  const [hasChecked, setHasChecked] = useState(authenticated)
+  const [hasChecked, setHasChecked] = useState(false)
   const [isChecking, setIsChecking] = useState(false)
 
   const getAuthenticatedUser = useCallback((): CancelablePromise<UserRead> => {
@@ -56,21 +56,21 @@ export const useRequireAuth = (): UserState & {
   const router = useRouter()
   const session = useAuth()
 
-  let redirectPath = CONFIG.LOGIN_PATH
-  if (typeof window !== 'undefined') {
-    const currentURL = new URL(window.location.href)
-    const redirectURL = new URL(window.location.origin + redirectPath)
-
-    if (currentURL.pathname !== redirectPath) {
-      redirectURL.searchParams.set(
-        'goto_url',
-        currentURL.toString().replace(window.location.origin, ''),
-      )
-      redirectPath = redirectURL.toString()
-    }
-  }
-
   if (!session.authenticated && session.hasChecked) {
+    let redirectPath = CONFIG.LOGIN_PATH
+    if (typeof window !== 'undefined') {
+      const currentURL = new URL(window.location.href)
+      const redirectURL = new URL(window.location.origin + redirectPath)
+
+      if (currentURL.pathname !== redirectPath) {
+        redirectURL.searchParams.set(
+          'goto_url',
+          currentURL.toString().replace(window.location.origin, ''),
+        )
+        redirectPath = redirectURL.toString()
+      }
+    }
+
     router.push(redirectPath)
   }
 

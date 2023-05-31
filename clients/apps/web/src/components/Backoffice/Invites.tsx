@@ -1,5 +1,5 @@
 import { InviteRead } from 'polarkit/api/client'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
 import {
   useBackofficeCreateInviteCode,
   useBackofficeListInvites,
@@ -13,14 +13,23 @@ const Invites = () => {
   const createNewMutation = useBackofficeCreateInviteCode()
 
   const [createdCode, setCreatedCode] = useState('')
+  const [note, setNote] = useState<string>('')
 
   const createNewCode = async () => {
-    const res = await createNewMutation.mutateAsync()
+    const res = await createNewMutation.mutateAsync(note)
     setCreatedCode(res.code)
   }
 
   return (
     <div className="mt-4 flex flex-col space-y-4">
+      <label htmlFor="invite-note">Note</label>
+      <input
+        type="text"
+        id="invite-note"
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+          setNote(e.target.value)
+        }}
+      />
       <PrimaryButton fullWidth={false} onClick={createNewCode}>
         Create new code
       </PrimaryButton>
@@ -42,13 +51,25 @@ const Invites = () => {
               scope="col"
               className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
             >
-              Sent to
+              Created by
             </th>
             <th
               scope="col"
               className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
             >
               Claimed by
+            </th>
+            <th
+              scope="col"
+              className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
+            >
+              Created
+            </th>
+            <th
+              scope="col"
+              className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
+            >
+              Note
             </th>
           </tr>
         </thead>
@@ -71,10 +92,16 @@ const Item = (props: { invite: InviteRead }) => {
           <pre>{i.code}</pre>
         </td>
         <td>
-          <pre>{i.sent_to_email}</pre>
+          <pre>{i.created_by_username}</pre>
         </td>
         <td>
           <pre>{i.claimed_by_username}</pre>
+        </td>
+        <td>
+          <PolarTimeAgo date={new Date(i.created_at)} />
+        </td>
+        <td>
+          <p>{i.note}</p>
         </td>
       </tr>
     </>

@@ -9,6 +9,10 @@ const meta: Meta<typeof LoadingScreen> = {
   args: {
     children: 'Brewing a fresh access token',
   },
+  parameters: {
+    // Disable chromatic for this component as it's using animations
+    chromatic: { disableSnapshot: true },
+  },
 }
 
 export default meta

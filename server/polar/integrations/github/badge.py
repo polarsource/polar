@@ -48,7 +48,7 @@ class GithubBadge:
         if repository.pledge_badge_auto_embed:
             return (True, "repository_pledge_badge_auto_embed")
 
-        return (False, "no_auto_embed_or_label")
+        return (False, "fallthrough")
 
     @classmethod
     def should_remove_badge(
@@ -67,10 +67,10 @@ class GithubBadge:
         if triggered_from_label:
             return (True, "triggered_from_label")
 
-        if repository.pledge_badge_auto_embed:
-            return (True, "repository_pledge_badge_auto_embed")
+        if issue.has_pledge_badge_label:
+            return (False, "issue_has_label")
 
-        return (False, "no_auto_embed_or_label")
+        return (True, "fallthrough")
 
     def generate_svg_url(self, darkmode: bool = False) -> str:
         return "{base}/api/github/{org}/{repo}/issues/{number}/pledge.svg{maybeDarkmode}".format(  # noqa: E501

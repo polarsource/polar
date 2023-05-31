@@ -9,6 +9,8 @@ from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.postgres import AsyncSession
+from polar.integrations.github.service.issue import github_issue
+from tests.fixtures.random_objects import create_issue
 
 
 BADGED_BODY = """Hello my issue
@@ -155,7 +157,7 @@ async def test_should_add_badge_no_badge_without_auto(
         triggered_from_label=False,
     )
 
-    assert res == (False, "no_auto_embed_or_label")
+    assert res == (False, "fallthrough")
 
 
 @pytest.mark.asyncio
@@ -206,3 +208,67 @@ async def test_should_add_badge_issue_previousy_embedded_label(
     )
 
     assert res == (True, "triggered_from_label")
+
+
+@pytest.mark.asyncio
+@patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
+async def test_list_issues_to_add_badge_to_auto(
+    session: AsyncSession,
+    organization: Organization,
+    repository: Repository,
+) -> None:
+    i1 = await create_issue(session, organization, repository)
+    i2 = await create_issue(session, organization, repository)
+    i3 = await create_issue(session, organization, repository)
+    i4 = await create_issue(session, organization, repository)
+
+    repository.pledge_badge_auto_embed = True
+    organization.onboarded_at = utc_now()
+    await organization.save(session)
+
+    # Do not add, as badge has been manually removed
+    i2.pledge_badge_ever_embedded = True
+    await i2.save(session)
+
+    # Do not add
+    i3.pledge_badge_ever_embedded = True
+    i3.pledge_badge_currently_embedded = True
+    await i3.save(session)
+
+    issues = await github_issue.list_issues_to_add_badge_to_auto(
+        session, organization, repository
+    )
+
+    assert issues == [i1, i4]
+
+
+@pytest.mark.asyncio
+@patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
+async def test_list_issues_to_remove_badge_from_auto(
+    session: AsyncSession,
+    organization: Organization,
+    repository: Repository,
+) -> None:
+    i1 = await create_issue(session, organization, repository)
+    i2 = await create_issue(session, organization, repository)
+    i3 = await create_issue(session, organization, repository)
+    i4 = await create_issue(session, organization, repository)
+
+    repository.pledge_badge_auto_embed = False
+    organization.onboarded_at = utc_now()
+    await organization.save(session)
+
+    i2.pledge_badge_ever_embedded = True
+    await i2.save(session)
+
+    # Do not remove, as issue has label
+    i3.has_pledge_badge_label = True
+    i3.pledge_badge_currently_embedded = True
+    i3.pledge_badge_ever_embedded = True
+    await i3.save(session)
+
+    issues = await github_issue.list_issues_to_remove_badge_from_auto(
+        session, organization, repository
+    )
+
+    assert issues == [i1, i2, i4]

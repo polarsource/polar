@@ -10,6 +10,7 @@ import {
   Platforms,
   PledgeRead,
   PledgeState,
+  PledgerPledgePendingNotification,
   RepositoryRead,
   State,
   Status,
@@ -131,6 +132,16 @@ const maintainerPledgePaidNotification: MaintainerPledgePaidNotification = {
   issue_number: 123,
 }
 
+const pledgerPledgePendingNotification: PledgerPledgePendingNotification = {
+  pledge_amount: '50.50',
+  issue_url: '#',
+  issue_title: 'Hello World',
+  issue_org_name: 'polarsource',
+  issue_repo_name: 'polar',
+  issue_number: 123,
+  pledge_date: '2023-03-24',
+}
+
 export const notification_maintainerPledgeCreatedNotification: NotificationRead =
   {
     id: 'x',
@@ -149,4 +160,10 @@ export const notification_maintainerPledgePaidNotification = {
   ...notification_maintainerPledgeCreatedNotification,
   type: NotificationType.MAINTAINER_PLEDGE_PAID_NOTIFICATION,
   payload: maintainerPledgePaidNotification,
+}
+
+export const notification_pledgerPledgePendingNotification = {
+  ...notification_maintainerPledgeCreatedNotification,
+  type: NotificationType.PLEDGER_PLEDGE_PENDING_NOTIFICATION,
+  payload: pledgerPledgePendingNotification,
 }

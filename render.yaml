@@ -18,6 +18,11 @@ services:
         value: "https://github.com/apps/polar-sh/installations/new"
       - key: NEXT_PUBLIC_SENTRY_ENABLED
         value: "true"
+
+      # Workaround for https://community.render.com/t/how-to-debug-issues-with-deploy-time-health-check/12300
+      # and https://github.com/vercel/next.js/issues/49677
+      - key: PORT
+        value: "10000"
       - fromGroup: web-stripe
 
     domains:

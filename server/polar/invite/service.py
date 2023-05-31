@@ -8,14 +8,16 @@ from sqlalchemy.orm import joinedload
 
 from polar.models.invites import Invite
 from polar.models.user import User
-from polar.notifications.sender import get_email_sender
 from polar.postgres import AsyncSession
+
+from .schemas import InviteCreate
 
 
 class InviteService:
     async def list(self, session: AsyncSession) -> Sequence[Invite]:
         stmt = (
             sql.select(Invite)
+            .options(joinedload(Invite.created_by_user))
             .options(joinedload(Invite.claimed_by_user))
             .order_by(desc(Invite.created_at))
             .limit(100)
@@ -23,7 +25,9 @@ class InviteService:
         res = await session.execute(stmt)
         return res.scalars().unique().all()
 
-    async def create_code(self, session: AsyncSession, by_user: User) -> Invite:
+    async def create_code(
+        self, session: AsyncSession, invite: InviteCreate, by_user: User
+    ) -> Invite:
         code = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
         # TODO: try again if duplicate?
@@ -32,26 +36,10 @@ class InviteService:
             session=session,
             created_by=by_user.id,
             code=code,
+            note=invite.note,
         )
-
+        res.created_by_user = by_user
         return res
-
-    async def send_invite(
-        self, session: AsyncSession, invite: Invite, by_user: User, send_to_email: str
-    ) -> None:
-        invite.sent_to_email = send_to_email
-        await invite.save(session, autocommit=True)
-
-        sender = get_email_sender()
-        sender.send_to_user(
-            to_email_addr=send_to_email,
-            subject="You're invited to Polar!",
-            html_content=f"""Hi,<br><br>
-{by_user.username} has invited you to <a href="https://polar.sh">Polar</a>.<br><br>
-Your invite code is <strong>{invite.code}</strong>.<br><br>
-Welcome!
-            """,
-        )
 
     async def claim_code(self, session: AsyncSession, user: User, code: str) -> bool:
         if settings.is_development() and code == "POLAR":

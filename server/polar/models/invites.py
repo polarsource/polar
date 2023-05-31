@@ -13,8 +13,6 @@ class Invite(RecordModel):
         PostgresUUID, ForeignKey("users.id"), nullable=False
     )
 
-    sent_to_email: Mapped[str | None] = mapped_column(String, nullable=True)
-
     claimed_by: Mapped[UUID] = mapped_column(
         PostgresUUID, ForeignKey("users.id"), nullable=True
     )
@@ -24,3 +22,9 @@ class Invite(RecordModel):
     claimed_by_user: Mapped[User] = relationship(
         "User", lazy="raise", foreign_keys=[claimed_by]
     )
+
+    created_by_user: Mapped[User] = relationship(
+        "User", lazy="raise", foreign_keys=[created_by]
+    )
+
+    note: Mapped[str | None] = mapped_column(String, nullable=True)

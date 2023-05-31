@@ -78,8 +78,12 @@ export const useBackofficeListInvites = () =>
 
 export const useBackofficeCreateInviteCode = () =>
   useMutation({
-    mutationFn: () => {
-      return api.backoffice.invitesCreateCode()
+    mutationFn: (note?: string | undefined) => {
+      return api.backoffice.invitesCreateCode({
+        requestBody: {
+          note,
+        },
+      })
     },
     onSuccess: (result, variables, ctx) => {
       queryClient.invalidateQueries(['useBackofficeListInvites'])

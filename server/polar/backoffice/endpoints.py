@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
-from polar.invite.schemas import InviteRead
+from polar.invite.schemas import InviteRead, InviteCreate
 from .schemas import BackofficePledgeRead
 from polar.postgres import AsyncSession, get_db_session
 
@@ -76,10 +76,11 @@ async def pledge_mark_disputed(
 
 @router.post("/invites/create_code", response_model=InviteRead)
 async def invites_create_code(
+    invite: InviteCreate,
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> InviteRead:
-    res = await invite_service.create_code(session, auth.user)
+    res = await invite_service.create_code(session, invite, auth.user)
     if not res:
         raise HTTPException(
             status_code=404,

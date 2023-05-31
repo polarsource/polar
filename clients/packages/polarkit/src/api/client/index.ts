@@ -22,6 +22,7 @@ export type { ExternalGitHubPullRequestReference } from './models/ExternalGitHub
 export { GithubBadgeRead } from './models/GithubBadgeRead';
 export type { HTTPValidationError } from './models/HTTPValidationError';
 export { InstallationCreate } from './models/InstallationCreate';
+export type { InviteCreate } from './models/InviteCreate';
 export type { InviteRead } from './models/InviteRead';
 export type { IssueDashboardRead } from './models/IssueDashboardRead';
 export type { IssueExtensionRead } from './models/IssueExtensionRead';

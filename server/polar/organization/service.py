@@ -75,6 +75,7 @@ class OrganizationService(
         org_id: UUID | None = None,
         repo_name: str | None = None,
         user_id: UUID | None = None,
+        load_repos: bool = False,
     ) -> Organization | None:
         if not (user_id or repo_name):
             raise ValueError(
@@ -101,6 +102,9 @@ class OrganizationService(
             query = query.join(UserOrganization)
             filters.append(UserOrganization.user_id == user_id)
 
+        if repo_name or load_repos:
+            query = query.join(Organization.repos)
+
         if repo_name:
             query = query.join(Organization.repos)
             # Need to do contains_eager to load a custom filtered collection of repo
@@ -122,12 +126,14 @@ class OrganizationService(
         platform: Platforms,
         org_name: str,
         user_id: UUID | None = None,
+        load_repos: bool = False,
     ) -> Organization | None:
         org = await self._get_protected(
             session,
             platform=platform,
             org_name=org_name,
             user_id=user_id,
+            load_repos=load_repos,
         )
         if not org:
             return None

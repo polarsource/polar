@@ -16,6 +16,7 @@ from polar.repository.schemas import RepositoryRead
 class OrganizationSettingsRead(BaseModel):
     pledge_badge_show_amount: bool = False
 
+    # TODO: These email preferences are unused, remove them!
     email_notification_maintainer_issue_receives_backing: bool = False
     email_notification_maintainer_issue_branch_created: bool = False
     email_notification_maintainer_pull_request_created: bool = False

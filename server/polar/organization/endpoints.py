@@ -68,6 +68,26 @@ async def _get_org_for_user(
 
 
 @router.get(
+    "/{platform}/{org_name}/with_repositories", response_model=OrganizationPrivateRead
+)
+async def get_with_repositories(
+    platform: Platforms,
+    org_name: str,
+    auth: Auth = Depends(Auth.user_with_org_access),
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationPrivateRead:
+    org = await organization.get_for_user(
+        session,
+        platform=platform,
+        org_name=org_name,
+        user_id=auth.user.id,
+        load_repos=True,
+    )
+
+    return OrganizationPrivateRead.from_orm(org)
+
+
+@router.get(
     "/{platform}/{org_name}/badge_settings",
     response_model=OrganizationBadgeSettingsRead,
 )

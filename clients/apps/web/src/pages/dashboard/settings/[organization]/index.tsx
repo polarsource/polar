@@ -4,20 +4,15 @@ import EmptyLayout from '@/components/Layout/EmptyLayout'
 import BadgeSetup from '@/components/Settings/Badge'
 import NotificationSettings from '@/components/Settings/NotificationSettings'
 import Topbar from '@/components/Shared/Topbar'
-import { useAuth, useRequireAuth } from '@/hooks/auth'
+import { useRequireAuth } from '@/hooks/auth'
 import { ArrowLeftIcon } from '@heroicons/react/24/solid'
 import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { OrganizationSettingsUpdate } from 'polarkit/api/client'
-import {
-  useOrganization,
-  useOrganizationSettingsMutation,
-  useUserOrganizations,
-} from 'polarkit/hooks'
+import { useOrganization, useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
-import { ReactElement, useEffect, useMemo, useRef, useState } from 'react'
+import { ReactElement, useEffect, useMemo, useRef } from 'react'
 
 const SettingsPage: NextLayoutComponentType = () => {
   const router = useRouter()
@@ -28,6 +23,8 @@ const SettingsPage: NextLayoutComponentType = () => {
 
   const didFirstSetForOrg = useRef<string>('')
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
+
+  const { currentUser } = useRequireAuth()
 
   useEffect(() => {
     if (!org) {
@@ -44,43 +41,9 @@ const SettingsPage: NextLayoutComponentType = () => {
     didFirstSetForOrg.current = org.id
   }, [org, setCurrentOrgRepo])
 
-  const mutation = useOrganizationSettingsMutation()
-
-  const [showDidSave, setShowDidSave] = useState(false)
-
-  const didSaveTimeout = useRef<undefined | ReturnType<typeof setTimeout>>(
-    undefined,
-  )
-
-  const save = (set: OrganizationSettingsUpdate) => {
-    mutation.mutate({
-      orgName: handle,
-      body: { ...org, ...set },
-    })
-
-    setShowDidSave(true)
-
-    if (didSaveTimeout.current) {
-      clearTimeout(didSaveTimeout.current)
-      didSaveTimeout.current = undefined
-    }
-
-    didSaveTimeout.current = setTimeout(() => {
-      setShowDidSave(false)
-    }, 2000)
-  }
-
-  // show spinner if still loading after 1s
-  const [allowShowLoadingSpinner, setAllowShowLoadingSpinner] = useState(false)
-  setTimeout(() => {
-    setAllowShowLoadingSpinner(true)
-  }, 1000)
-
   const showOrgSettings = useMemo(() => {
     return orgData.data && handle !== 'personal'
   }, [orgData, handle])
-
-  const { currentUser } = useAuth()
 
   const showPersonalSettings = useMemo(() => {
     return handle === 'personal' || handle === currentUser?.username
@@ -113,11 +76,6 @@ const SettingsPage: NextLayoutComponentType = () => {
       </Head>
 
       <div className="relative z-0 mx-auto w-full max-w-[1100px] md:mt-16">
-        <div className="pl-80">
-          {showDidSave && <div className="h-4 text-black/50">Saved!</div>}
-          {!showDidSave && <div className="h-4"></div>}
-        </div>
-
         <div className="divide-y divide-gray-200">
           {showBadgeSettings && org && (
             <Section>

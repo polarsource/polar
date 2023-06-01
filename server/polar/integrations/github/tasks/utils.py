@@ -1,6 +1,5 @@
 from typing import Sequence, Union
 from uuid import UUID
-from sqlalchemy import Tuple
 import structlog
 
 from polar.integrations.github import service

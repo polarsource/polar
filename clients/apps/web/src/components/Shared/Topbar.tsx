@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { LogoIcon, LogoType } from 'polarkit/components/brand'
 import { classNames } from 'polarkit/utils'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../../hooks'
 import Popover from '../Notifications/Popover'
 import Profile from './Profile'
@@ -24,6 +25,13 @@ const Topbar = (props: {
   const hideProfile = props?.hideProfile
 
   const { authenticated } = useAuth()
+
+  // Support server side rendering and hydration.
+  // First render is always as if the user was logged out
+  const [showProfile, setShowProfile] = useState(false)
+  useEffect(() => {
+    setShowProfile(authenticated)
+  }, [authenticated])
 
   return (
     <>
@@ -52,7 +60,7 @@ const Topbar = (props: {
         )}
 
         <div className="flex flex-shrink-0 justify-end space-x-4 md:flex-1">
-          {!hideProfile && (
+          {showProfile && !hideProfile && (
             <>
               {authenticated && <Popover />}
               <Profile />

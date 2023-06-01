@@ -33,9 +33,19 @@ const Topbar = (props: {
     setShowProfile(authenticated)
   }, [authenticated])
 
+  // TODO: make use of serverside props instead, and we wouldn't need this workaround
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    setReady(true)
+  })
+
+  if (!ready) {
+    return <></>
+  }
+
   return (
     <>
-      <div className={className}>
+      <header className={className}>
         <div className="flex items-center space-x-4 md:flex-1">
           {hasLeft && props.children && props.children.left}
         </div>
@@ -67,7 +77,7 @@ const Topbar = (props: {
             </>
           )}
         </div>
-      </div>
+      </header>
     </>
   )
 }

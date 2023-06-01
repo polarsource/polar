@@ -85,6 +85,43 @@ const getRetroactiveChanges = (
   )
 }
 
+const orgToRepos = (
+  org: OrganizationPrivateRead,
+): {
+  repos: Record<string, RepositoryBadgeSettingsRead>
+  order: string[]
+} => {
+  let repos: Record<string, RepositoryBadgeSettingsRead> = {}
+
+  if (!org.repositories) {
+    return { repos: {}, order: [] }
+  }
+
+  const order = []
+
+  for (const r of org.repositories) {
+    order.push(r.id)
+    repos[r.id] = {
+      id: r.id,
+      name: r.name,
+      avatar_url: org.avatar_url,
+      synced_issues: 0,
+      open_issues: r.open_issues || 0,
+      auto_embedded_issues: 0,
+      label_embedded_issues: 0,
+      pull_requests: 0,
+      badge_auto_embed: false,
+      is_private: r.is_private,
+      is_sync_completed: false,
+    }
+  }
+
+  return {
+    repos,
+    order,
+  }
+}
+
 const BadgeSetup = ({
   org,
   showControls,
@@ -99,11 +136,18 @@ const BadgeSetup = ({
   isSettingPage?: boolean
 }) => {
   const remoteSettings = useBadgeSettings(org.platform, org.name)
+
+  const initRepos = orgToRepos(org)
+
   const [settings, setSettings] = useState<MappedRepoSettings>({
     show_amount: false,
-    repositories: {},
-    repositories_order: [],
+    repositories: initRepos.repos,
+    repositories_order: initRepos.order,
   })
+
+  console.log('init', initRepos.order)
+  console.log(settings)
+
   const [isRetroactiveEnabled, setRetroactiveEnabled] = useState<boolean>(false)
   const emitter = useSSE(org.platform, org.name)
 
@@ -196,10 +240,9 @@ const BadgeSetup = ({
     }
   }, [emitter])
 
-  const sortedRepos =
-    settings?.repositories_order.map((id) => {
-      return settings.repositories[id]
-    }) || []
+  const sortedRepos = settings.repositories_order.map((id) => {
+    return settings.repositories[id]
+  })
 
   const retroactiveChanges = getRetroactiveChanges(sortedRepos)
 
@@ -224,7 +267,7 @@ const BadgeSetup = ({
     })
   }
 
-  if (!settings) return <></>
+  //  if (!settings) return <></>
 
   return (
     <div className="w-full space-y-8">

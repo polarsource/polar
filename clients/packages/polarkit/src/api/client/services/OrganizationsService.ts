@@ -40,6 +40,31 @@ export class OrganizationsService {
   }
 
   /**
+   * Get With Repositories
+   * @returns OrganizationPrivateRead Successful Response
+   * @throws ApiError
+   */
+  public getWithRepositories({
+    platform,
+    orgName,
+  }: {
+    platform: Platforms,
+    orgName: string,
+  }): CancelablePromise<OrganizationPrivateRead> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/{platform}/{org_name}/with_repositories',
+      path: {
+        'platform': platform,
+        'org_name': orgName,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
    * Get Badge Settings
    * @returns OrganizationBadgeSettingsRead Successful Response
    * @throws ApiError

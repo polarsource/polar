@@ -1,3 +1,8 @@
+import {
+  OrganizationPrivateRead,
+  Platforms,
+} from '@/../../../packages/polarkit/src/api/client'
+import { serversideAPI } from '@/api'
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import RepoSelection from '@/components/Dashboard/RepoSelection'
 import EmptyLayout from '@/components/Layout/EmptyLayout'
@@ -6,25 +11,70 @@ import NotificationSettings from '@/components/Settings/NotificationSettings'
 import Topbar from '@/components/Shared/Topbar'
 import { useRequireAuth } from '@/hooks/auth'
 import { ArrowLeftIcon } from '@heroicons/react/24/solid'
-import { NextLayoutComponentType } from 'next'
+import { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useOrganization, useUserOrganizations } from 'polarkit/hooks'
+import { useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
-import { ReactElement, useEffect, useMemo, useRef } from 'react'
+import { ReactElement, useEffect, useRef, useState } from 'react'
 
-const SettingsPage: NextLayoutComponentType = () => {
+export const getServerSideProps: GetServerSideProps<{
+  showBadgeSettings: boolean
+  showEmailPreferences: boolean
+  isPersonal: boolean
+  org: OrganizationPrivateRead | null
+}> = async (context) => {
+  const api = serversideAPI(context)
+
+  const user = await api.users.getAuthenticated()
+
+  const handle: string =
+    typeof context?.params?.organization === 'string'
+      ? context?.params?.organization
+      : ''
+
+  const isPersonal = handle === 'personal'
+
+  const showEmailPreferences = isPersonal || handle === user.username
+
+  let org: OrganizationPrivateRead | null = null
+
+  if (!isPersonal) {
+    try {
+      org = await api.organizations.getWithRepositories({
+        platform: Platforms.GITHUB,
+        orgName: handle,
+      })
+    } catch (Exception) {}
+  }
+
+  return {
+    props: {
+      showBadgeSettings: !isPersonal,
+      showEmailPreferences,
+      isPersonal,
+      org,
+    },
+  }
+}
+
+const SettingsPage = ({
+  showBadgeSettings,
+  showEmailPreferences,
+  isPersonal,
+  org,
+}: {
+  showBadgeSettings: boolean
+  showEmailPreferences: boolean
+  isPersonal: boolean
+  org: OrganizationPrivateRead | null
+}) => {
   const router = useRouter()
   const { organization } = router.query
-  const handle: string = typeof organization === 'string' ? organization : ''
-  const orgData = useOrganization(handle !== 'personal' ? handle : '')
-  const org = orgData.data
 
   const didFirstSetForOrg = useRef<string>('')
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
-
-  const { currentUser } = useRequireAuth()
 
   useEffect(() => {
     if (!org) {
@@ -41,23 +91,7 @@ const SettingsPage: NextLayoutComponentType = () => {
     didFirstSetForOrg.current = org.id
   }, [org, setCurrentOrgRepo])
 
-  const showOrgSettings = useMemo(() => {
-    return orgData.data && handle !== 'personal'
-  }, [orgData, handle])
-
-  const showPersonalSettings = useMemo(() => {
-    return handle === 'personal' || handle === currentUser?.username
-  }, [handle])
-
-  const showBadgeSettings = useMemo(() => {
-    return showOrgSettings
-  }, [showOrgSettings])
-
-  const showEmailPreferences = useMemo(() => {
-    return showPersonalSettings
-  }, [showPersonalSettings])
-
-  if (orgData.isError && !showPersonalSettings) {
+  if (!org && !isPersonal) {
     return (
       <>
         <div className="mx-auto mt-32 flex max-w-[1100px] flex-col items-center">
@@ -68,11 +102,13 @@ const SettingsPage: NextLayoutComponentType = () => {
     )
   }
 
+  console.log('org', org)
+
   return (
     <>
       <Head>
-        {showPersonalSettings && <title>Polar | Settings</title>}
-        {!showPersonalSettings && <title>Polar | Settings for {handle}</title>}
+        {isPersonal && <title>Polar | Settings</title>}
+        {!isPersonal && org && <title>Polar | Settings for {org.name}</title>}
       </Head>
 
       <div className="relative z-0 mx-auto w-full max-w-[1100px] md:mt-16">
@@ -123,6 +159,16 @@ const SettingsTopbar = () => {
 
   const { currentUser } = useRequireAuth()
   const userOrgQuery = useUserOrganizations(currentUser)
+
+  // TODO: make use of serverside props instead, and we wouldn't need this workaround
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    setReady(true)
+  })
+
+  if (!ready) {
+    return <></>
+  }
 
   if (!currentUser || !userOrgQuery.data) {
     return <></>

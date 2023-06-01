@@ -18,6 +18,7 @@ from polar.worker import JobContext, PolarWorkerContext, enqueue_job, task
 from .. import service
 from .utils import (
     add_repositories,
+    get_event_issue,
     remove_repositories,
     upsert_issue,
     upsert_pull_request,
@@ -249,6 +250,7 @@ async def handle_issue(
         github.webhooks.IssuesOpened,
         github.webhooks.IssuesEdited,
         github.webhooks.IssuesClosed,
+        github.webhooks.IssuesDeleted,
     ],
 ) -> dict[str, Any]:
     issue = await upsert_issue(session, event)
@@ -316,6 +318,32 @@ async def issue_closed(
 
         async with AsyncSessionLocal() as session:
             return await handle_issue(session, scope, action, parsed)
+
+
+@task("github.webhook.issues.deleted")
+async def issue_deleted(
+    ctx: JobContext,
+    scope: str,
+    action: str,
+    payload: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        parsed = github.webhooks.parse_obj(scope, payload)
+        if not isinstance(parsed, github.webhooks.IssuesDeleted):
+            log.error("github.webhook.unexpected_type")
+            raise Exception("unexpected webhook payload")
+
+        async with AsyncSessionLocal() as session:
+            # Save last known version
+            await handle_issue(session, scope, action, parsed)
+
+            # Mark as deleted
+            issue = await get_event_issue(session, parsed)
+            if not issue:
+                return None
+
+            await service.github_issue.soft_delete(session, issue.id)
 
 
 @task("github.webhook.issues.labeled")

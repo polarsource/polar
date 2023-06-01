@@ -1,5 +1,6 @@
 from typing import Sequence, Union
 from uuid import UUID
+from sqlalchemy import Tuple
 import structlog
 
 from polar.integrations.github import service
@@ -68,17 +69,59 @@ async def remove_repositories(
             github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems,
         ]
     ],
-) -> int:
-    count = 0
+) -> None:
     for repo in repositories:
         if not repo.id:
             continue
         r = await service.github_repository.get_by_external_id(session, repo.id)
         if not r:
             continue
-        if await service.github_repository.soft_delete(session, r.id):
-            count += 1
-    return count
+
+        await service.github_repository.soft_delete(session, r.id)
+
+
+async def get_event_org_repo(
+    session: AsyncSession,
+    event: Union[
+        github.webhooks.IssuesOpened,
+        github.webhooks.IssuesEdited,
+        github.webhooks.IssuesClosed,
+        github.webhooks.IssuesDeleted,
+        github.webhooks.PullRequestOpened,
+        github.webhooks.PullRequestEdited,
+        github.webhooks.PullRequestClosed,
+        github.webhooks.PullRequestReopened,
+        github.webhooks.PullRequestSynchronize,
+    ],
+) -> Union[tuple[Organization, Repository], None]:
+    repository_id = event.repository.id
+    owner_id = event.repository.owner.id
+
+    organization = await service.github_organization.get_by_external_id(
+        session, owner_id
+    )
+    if not organization:
+        return None
+
+    repository = await service.github_repository.get_by_external_id(
+        session, repository_id
+    )
+    if not repository:
+        return None
+
+    return (organization, repository)
+
+
+async def get_event_issue(
+    session: AsyncSession,
+    event: Union[
+        github.webhooks.IssuesOpened,
+        github.webhooks.IssuesEdited,
+        github.webhooks.IssuesClosed,
+        github.webhooks.IssuesDeleted,
+    ],
+) -> Issue | None:
+    return await service.github_issue.get_by_external_id(session, event.issue.id)
 
 
 async def upsert_issue(
@@ -87,37 +130,21 @@ async def upsert_issue(
         github.webhooks.IssuesOpened,
         github.webhooks.IssuesEdited,
         github.webhooks.IssuesClosed,
+        github.webhooks.IssuesDeleted,
     ],
 ) -> Issue | None:
-    repository_id = event.repository.id
-    owner_id = event.repository.owner.id
-
-    organization = await service.github_organization.get_by_external_id(
-        session, owner_id
-    )
-    if not organization:
-        # TODO: Raise here
+    org_repo = await get_event_org_repo(session, event)
+    if not org_repo:
         log.warning(
-            "github.webhook.issue.opened",
-            error="no organization found",
-            organization_id=owner_id,
+            "github.webhook.upsert_issue",
+            error="organization or repository not found",
         )
         return None
 
-    repository = await service.github_repository.get_by_external_id(
-        session, repository_id
-    )
-    if not repository:
-        # TODO: Raise here
-        log.warning(
-            "github.webhook.issue.opened",
-            error="no repository found",
-            repository_id=repository_id,
-        )
-        return None
+    (org, repo) = org_repo
 
     record = await service.github_issue.store(
-        session, data=event.issue, organization=organization, repository=repository
+        session, data=event.issue, organization=org, repository=repo
     )
     return record
 
@@ -132,37 +159,20 @@ async def upsert_pull_request(
         github.webhooks.PullRequestSynchronize,
     ],
 ) -> PullRequest | None:
-    repository_id = event.repository.id
-    owner_id = event.repository.owner.id
-
-    organization = await service.github_organization.get_by_external_id(
-        session, owner_id
-    )
-    if not organization:
-        # TODO: Raise here
+    org_repo = await get_event_org_repo(session, event)
+    if not org_repo:
         log.warning(
-            "github.webhook.pull_request",
-            error="no organization found",
-            organization_id=owner_id,
+            "github.webhook.upsert_issue",
+            error="organization or repository not found",
         )
         return None
 
-    repository = await service.github_repository.get_by_external_id(
-        session, repository_id
-    )
-    if not repository:
-        # TODO: Raise here
-        log.warning(
-            "github.webhook.pull_request",
-            error="no repository found",
-            repository_id=repository_id,
-        )
-        return None
+    (org, repo) = org_repo
 
     create_schema = FullPullRequestCreate.full_pull_request_from_github(
         event.pull_request,
-        organization_id=organization.id,
-        repository_id=repository.id,
+        organization_id=org.id,
+        repository_id=repo.id,
     )
 
     record = await service.github_pull_request.upsert(session, create_schema)

@@ -132,7 +132,9 @@ async def create_pr(github_webhook: TestWebhookFactory) -> TestWebhook:
 
 @pytest.mark.asyncio
 async def test_webhook_installation_suspend(
-    mocker: MockerFixture, github_webhook: TestWebhookFactory
+    mocker: MockerFixture,
+    github_webhook: TestWebhookFactory,
+    initialize_test_database_function: None,  # reset db before running test
 ) -> None:
     # Capture and prevent any calls to enqueue_job
     mocker.patch("arq.connections.ArqRedis.enqueue_job")
@@ -158,6 +160,7 @@ async def test_webhook_installation_suspend(
 async def test_webhook_installation_unsuspend(
     mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
+    initialize_test_database_function: None,  # reset db before running test
 ) -> None:
     # Capture and prevent any calls to enqueue_job
     mocker.patch("arq.connections.ArqRedis.enqueue_job")
@@ -181,7 +184,9 @@ async def test_webhook_installation_unsuspend(
 
 @pytest.mark.asyncio
 async def test_webhook_installation_delete(
-    mocker: MockerFixture, github_webhook: TestWebhookFactory
+    mocker: MockerFixture,
+    github_webhook: TestWebhookFactory,
+    initialize_test_database_function: None,  # reset db before running test
 ) -> None:
     # Capture and prevent any calls to enqueue_job
     mocker.patch("arq.connections.ArqRedis.enqueue_job")
@@ -217,7 +222,10 @@ async def test_webhook_installation_delete(
 
 @pytest.mark.asyncio
 async def test_webhook_repositories_added(
-    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
+    mocker: MockerFixture,
+    session: AsyncSession,
+    github_webhook: TestWebhookFactory,
+    initialize_test_database_function: None,  # reset db before running test
 ) -> None:
     # Capture and prevent any calls to enqueue_job
     mocker.patch("arq.connections.ArqRedis.enqueue_job")
@@ -234,7 +242,10 @@ async def test_webhook_repositories_added(
 
 @pytest.mark.asyncio
 async def test_webhook_repositories_removed(
-    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
+    mocker: MockerFixture,
+    session: AsyncSession,
+    github_webhook: TestWebhookFactory,
+    initialize_test_database_function: None,  # reset db before running test
 ) -> None:
     # Capture and prevent any calls to enqueue_job
     mocker.patch("arq.connections.ArqRedis.enqueue_job")
@@ -265,7 +276,10 @@ async def test_webhook_repositories_removed(
 
 @pytest.mark.asyncio
 async def test_webhook_issues_opened(
-    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
+    mocker: MockerFixture,
+    session: AsyncSession,
+    github_webhook: TestWebhookFactory,
+    initialize_test_database_function: None,  # reset db before running test
 ) -> None:
     # Capture and prevent any calls to enqueue_job
     mocker.patch("arq.connections.ArqRedis.enqueue_job")
@@ -291,10 +305,34 @@ async def test_webhook_issues_opened(
 
 @pytest.mark.asyncio
 async def test_webhook_issues_closed(
-    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
+    mocker: MockerFixture,
+    session: AsyncSession,
+    github_webhook: TestWebhookFactory,
+    initialize_test_database_function: None,  # reset db before running test
 ) -> None:
     # Capture and prevent any calls to enqueue_job
     mocker.patch("arq.connections.ArqRedis.enqueue_job")
+
+    # create issue
+    await create_repositories(github_webhook)
+    hook = github_webhook.create("issues.opened")
+    issue_id = hook["issue"]["id"]
+
+    issue = await service.github_issue.get_by_external_id(session, issue_id)
+    assert issue is None
+
+    await webhook_tasks.issue_opened(
+        FAKE_CTX,
+        "issues",
+        "opened",
+        hook.json,
+        polar_context=PolarWorkerContext(),
+    )
+
+    issue = await service.github_issue.get_by_external_id(session, issue_id)
+    assert issue is not None
+
+    # close it
 
     hook = github_webhook.create("issues.closed")
     await webhook_tasks.issue_closed(
@@ -309,7 +347,9 @@ async def test_webhook_issues_closed(
 
 @pytest.mark.asyncio
 async def test_webhook_issues_labeled(
-    mocker: MockerFixture, github_webhook: TestWebhookFactory
+    mocker: MockerFixture,
+    github_webhook: TestWebhookFactory,
+    initialize_test_database_function: None,  # reset db before running test
 ) -> None:
     # Capture and prevent any calls to enqueue_job
     mocker.patch("arq.connections.ArqRedis.enqueue_job")
@@ -341,7 +381,10 @@ async def test_webhook_issues_labeled(
 
 @pytest.mark.asyncio
 async def test_webhook_pull_request_opened(
-    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
+    mocker: MockerFixture,
+    session: AsyncSession,
+    github_webhook: TestWebhookFactory,
+    initialize_test_database_function: None,  # reset db before running test
 ) -> None:
     # Capture and prevent any calls to enqueue_job
     mocker.patch("arq.connections.ArqRedis.enqueue_job")
@@ -363,7 +406,10 @@ async def test_webhook_pull_request_opened(
 
 @pytest.mark.asyncio
 async def test_webhook_pull_request_edited(
-    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
+    mocker: MockerFixture,
+    session: AsyncSession,
+    github_webhook: TestWebhookFactory,
+    initialize_test_database_function: None,  # reset db before running test
 ) -> None:
     # Capture and prevent any calls to enqueue_job
     mocker.patch("arq.connections.ArqRedis.enqueue_job")
@@ -389,6 +435,7 @@ async def test_webhook_pull_request_edited(
 async def test_webhook_pull_request_synchronize(
     mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
+    initialize_test_database_function: None,  # reset db before running test
 ) -> None:
     # Capture and prevent any calls to enqueue_job
     mocker.patch("arq.connections.ArqRedis.enqueue_job")
@@ -418,7 +465,10 @@ async def test_webhook_pull_request_synchronize(
 
 @pytest.mark.asyncio
 async def test_webhook_issues_deleted(
-    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
+    mocker: MockerFixture,
+    session: AsyncSession,
+    github_webhook: TestWebhookFactory,
+    initialize_test_database_function: None,  # reset db before running test
 ) -> None:
     # Capture and prevent any calls to enqueue_job
     mocker.patch("arq.connections.ArqRedis.enqueue_job")

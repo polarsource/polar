@@ -252,7 +252,7 @@ async def handle_issue(
         github.webhooks.IssuesClosed,
         github.webhooks.IssuesDeleted,
     ],
-) -> dict[str, Any]:
+) -> None:
     issue = await upsert_issue(session, event)
     if not issue:
         raise Exception(f"failed to save issue external_id={event.issue.id}")
@@ -262,9 +262,6 @@ async def handle_issue(
         "github.repo.sync.issue_references", issue.organization_id, issue.repository_id
     )
 
-    schema = IssueRead.from_orm(issue)
-    return dict(success=True, issue=schema.dict())
-
 
 @task("github.webhook.issues.opened")
 async def issue_opened(
@@ -273,7 +270,7 @@ async def issue_opened(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.IssuesOpened):
@@ -281,7 +278,7 @@ async def issue_opened(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionLocal() as session:
-            return await handle_issue(session, scope, action, parsed)
+            await handle_issue(session, scope, action, parsed)
 
 
 @task("github.webhook.issues.edited")
@@ -291,7 +288,7 @@ async def issue_edited(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.IssuesEdited):
@@ -299,7 +296,7 @@ async def issue_edited(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionLocal() as session:
-            return await handle_issue(session, scope, action, parsed)
+            await handle_issue(session, scope, action, parsed)
 
 
 @task("github.webhook.issues.closed")
@@ -309,7 +306,7 @@ async def issue_closed(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.IssuesClosed):
@@ -317,7 +314,7 @@ async def issue_closed(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionLocal() as session:
-            return await handle_issue(session, scope, action, parsed)
+            await handle_issue(session, scope, action, parsed)
 
 
 @task("github.webhook.issues.deleted")
@@ -353,7 +350,7 @@ async def issue_labeled(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.IssuesLabeled):
@@ -361,7 +358,7 @@ async def issue_labeled(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionLocal() as session:
-            return await issue_labeled_async(session, scope, action, parsed)
+            await issue_labeled_async(session, scope, action, parsed)
 
 
 @task("github.webhook.issues.unlabeled")
@@ -371,7 +368,7 @@ async def issue_unlabeled(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.IssuesUnlabeled):
@@ -379,7 +376,7 @@ async def issue_unlabeled(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionLocal() as session:
-            return await issue_labeled_async(session, scope, action, parsed)
+            await issue_labeled_async(session, scope, action, parsed)
 
 
 async def update_issue_embed(
@@ -425,11 +422,13 @@ async def issue_labeled_async(
         github.webhooks.IssuesLabeled,
         github.webhooks.IssuesUnlabeled,
     ],
-) -> dict[str, Any]:
+) -> None:
     issue = await service.github_issue.get_by_external_id(session, event.issue.id)
     if not issue:
-        # TODO: Handle better
-        return dict(success=False, reason="issue not found")
+        log.warn(
+            "github.webhook.issue_labeled_async.not_found", external_id=event.issue.id
+        )
+        return
 
     embedded_before_update = issue.has_pledge_badge_label
 
@@ -446,9 +445,6 @@ async def issue_labeled_async(
         # Only remove or add badge in case of label change
         await update_issue_embed(session, issue=issue, embed=should_embed)
 
-    schema = IssueRead.from_orm(issue)
-    return dict(success=True, issue=schema.dict())
-
 
 @task("github.webhook.issues.assigned")
 async def issue_assigned(
@@ -457,7 +453,7 @@ async def issue_assigned(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.IssuesAssigned):
@@ -465,7 +461,7 @@ async def issue_assigned(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionLocal() as session:
-            return await issue_assigned_async(session, scope, action, parsed)
+            await issue_assigned_async(session, scope, action, parsed)
 
 
 @task("github.webhook.issues.unassigned")
@@ -475,7 +471,7 @@ async def issue_unassigned(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.IssuesUnassigned):
@@ -483,7 +479,7 @@ async def issue_unassigned(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionLocal() as session:
-            return await issue_assigned_async(session, scope, action, parsed)
+            await issue_assigned_async(session, scope, action, parsed)
 
 
 async def issue_assigned_async(
@@ -494,11 +490,13 @@ async def issue_assigned_async(
         github.webhooks.IssuesAssigned,
         github.webhooks.IssuesUnassigned,
     ],
-) -> dict[str, Any]:
+) -> None:
     issue = await service.github_issue.get_by_external_id(session, event.issue.id)
     if not issue:
-        # TODO: Handle better
-        return dict(success=False, reason="issue not found")
+        log.warn(
+            "github.webhook.issue_assigned_async.not_found", external_id=event.issue.id
+        )
+        return
 
     # modify assignee
     stmt = (
@@ -512,15 +510,6 @@ async def issue_assigned_async(
     )
     await session.execute(stmt)
     await session.commit()
-
-    # get for return
-    issue = await service.github_issue.get_by_external_id(session, event.issue.id)
-    if not issue:
-        # TODO: Handle better
-        return dict(success=False, reason="issue not found")
-
-    schema = IssueRead.from_orm(issue)
-    return dict(success=True, issue=schema.dict())
 
 
 # ------------------------------------------------------------------------------
@@ -539,13 +528,11 @@ async def handle_pull_request(
         github.webhooks.PullRequestReopened,
         github.webhooks.PullRequestSynchronize,
     ],
-) -> dict[str, Any]:
+) -> None:
     pr = await upsert_pull_request(session, event)
     if not pr:
-        return dict(success=False, reason="Could not save PR")
-
-    schema = PullRequestRead.from_orm(pr)
-    return dict(success=True, pull_request=schema.dict())
+        log.error("github.webhook.handle_pull_request.failed")
+        return
 
 
 @task("github.webhook.pull_request.opened")
@@ -555,7 +542,7 @@ async def pull_request_opened(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.PullRequestOpened):
@@ -563,7 +550,7 @@ async def pull_request_opened(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionLocal() as session:
-            return await handle_pull_request(session, scope, action, parsed)
+            await handle_pull_request(session, scope, action, parsed)
 
 
 @task("github.webhook.pull_request.edited")
@@ -573,7 +560,7 @@ async def pull_request_edited(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.PullRequestEdited):
@@ -581,7 +568,7 @@ async def pull_request_edited(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionLocal() as session:
-            return await handle_pull_request(session, scope, action, parsed)
+            await handle_pull_request(session, scope, action, parsed)
 
 
 @task("github.webhook.pull_request.closed")
@@ -591,7 +578,7 @@ async def pull_request_closed(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.PullRequestClosed):
@@ -599,7 +586,7 @@ async def pull_request_closed(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionLocal() as session:
-            return await handle_pull_request(session, scope, action, parsed)
+            await handle_pull_request(session, scope, action, parsed)
 
 
 @task("github.webhook.pull_request.reopened")
@@ -609,7 +596,7 @@ async def pull_request_reopened(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.PullRequestReopened):
@@ -617,7 +604,7 @@ async def pull_request_reopened(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionLocal() as session:
-            return await handle_pull_request(session, scope, action, parsed)
+            await handle_pull_request(session, scope, action, parsed)
 
 
 @task("github.webhook.pull_request.synchronize")
@@ -627,7 +614,7 @@ async def pull_request_synchronize(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.PullRequestSynchronize):
@@ -635,7 +622,7 @@ async def pull_request_synchronize(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionLocal() as session:
-            return await handle_pull_request(session, scope, action, parsed)
+            await handle_pull_request(session, scope, action, parsed)
 
 
 # ------------------------------------------------------------------------------
@@ -650,7 +637,7 @@ async def installation_created(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with ExecutionContext(is_during_installation=True):
         event = github.webhooks.parse_obj(scope, payload)
         if not isinstance(event, github.webhooks.InstallationCreated):
@@ -711,8 +698,6 @@ async def installation_created(
                     session, organization, event.installation.id, event.repositories
                 )
 
-            return dict(success=True)
-
 
 @task("github.webhook.installation.deleted")
 async def installation_delete(
@@ -721,7 +706,7 @@ async def installation_delete(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context():
         event = github.webhooks.parse_obj(scope, payload)
         if not isinstance(event, github.webhooks.InstallationDeleted):
@@ -732,10 +717,9 @@ async def installation_delete(
             org = await service.github_organization.get_by_external_id(
                 session, event.installation.account.id
             )
-            if org:
-                await service.github_organization.remove(session, org.id)
-
-            return dict(success=True)
+            if not org:
+                return
+            await service.github_organization.remove(session, org.id)
 
 
 @task("github.webhook.installation.suspend")
@@ -745,7 +729,7 @@ async def installation_suspend(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context():
         event = github.webhooks.parse_obj(scope, payload)
         if not isinstance(event, github.webhooks.InstallationSuspend):
@@ -760,7 +744,6 @@ async def installation_suspend(
                 event.installation.suspended_at,
                 event.sender.id,
             )
-            return dict(success=True)
 
 
 @task("github.webhook.installation.unsuspend")
@@ -770,7 +753,7 @@ async def installation_unsuspend(
     action: str,
     payload: dict[str, Any],
     polar_context: PolarWorkerContext,
-) -> dict[str, Any]:
+) -> None:
     with polar_context.to_execution_context():
         event = github.webhooks.parse_obj(scope, payload)
         if not isinstance(event, github.webhooks.InstallationUnsuspend):
@@ -779,4 +762,3 @@ async def installation_unsuspend(
 
         async with AsyncSessionLocal() as session:
             await service.github_organization.unsuspend(session, event.installation.id)
-            return dict(success=True)

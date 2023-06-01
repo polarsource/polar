@@ -414,3 +414,57 @@ async def test_webhook_pull_request_synchronize(
         pr = await service.github_pull_request.get_by_external_id(session, pr_id)
         assert pr is not None
         assert pr.merge_commit_sha is not None
+
+
+@pytest.mark.asyncio
+async def test_webhook_issues_deleted(
+    mocker: MockerFixture, session: AsyncSession, github_webhook: TestWebhookFactory
+) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("arq.connections.ArqRedis.enqueue_job")
+
+    await create_repositories(github_webhook)
+
+    # first create an issue
+    hook = github_webhook.create("issues.opened")
+    issue_id = hook["issue"]["id"]
+
+    issue = await service.github_issue.get_by_external_id(session, issue_id)
+    assert issue is None
+
+    await webhook_tasks.issue_opened(
+        FAKE_CTX,
+        "issues",
+        "opened",
+        hook.json,
+        polar_context=PolarWorkerContext(),
+    )
+
+    issue = await service.github_issue.get_by_external_id(session, issue_id)
+    assert issue is not None
+
+    # then delete it
+
+    deleted_hook = github_webhook.create("issues.deleted")
+    issue_id = hook["issue"]["id"]
+
+    await webhook_tasks.issue_deleted(
+        FAKE_CTX,
+        "issues",
+        "deleted",
+        deleted_hook.json,
+        polar_context=PolarWorkerContext(),
+    )
+
+    # TODO: maybe it makes more sense for this API to not return the issue?
+    issue_ext = await service.github_issue.get_by_external_id(session, issue_id)
+    assert issue_ext is not None
+    assert issue_ext.id == issue.id
+
+    id = issue.id
+
+    issue_get = await service.github_issue.get(session, id)
+    assert issue_get is None
+
+    issue_get_deleted = await service.github_issue.get(session, id, allow_deleted=True)
+    assert issue_get_deleted is not None

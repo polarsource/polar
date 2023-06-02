@@ -104,6 +104,7 @@ services:
     region: ohio
     plan: standard
     numInstances: 1
+    autoDeploy: false # deploys are triggered by github actions
     envVars:
       # PostgreSQL
       - key: POLAR_POSTGRES_USER

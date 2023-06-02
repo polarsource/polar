@@ -3,6 +3,7 @@ from __future__ import annotations
 import structlog
 import re
 from polar.exceptions import IntegrityError
+from githubkit.exception import RequestFailed
 from polar.integrations.github.client import get_app_installation_client
 from polar.integrations.github import service
 from polar.integrations.github.schemas import GithubIssueDependency
@@ -81,9 +82,17 @@ class GitHubIssueDependenciesService:
                     # sync it
                     continue
 
-                repo_response = await client.rest.repos.async_get(
-                    dependency.owner, dependency.repo
-                )
+                try:
+                    repo_response = await client.rest.repos.async_get(
+                        dependency.owner, dependency.repo
+                    )
+                except RequestFailed as e:
+                    # 404s are nothing to worry about, this could be a broken link
+                    if e.response.status_code == 404:
+                        continue
+                    # re-raise other status codes
+                    raise e
+
                 github_repo = repo_response.parsed_data
 
                 owner = github_repo.owner

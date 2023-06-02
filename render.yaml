@@ -156,8 +156,6 @@ services:
     dockerCommand: "poetry run arq run_worker.WorkerSettings"
     region: ohio
     plan: standard
-    branch: main
-    rootDir: server
     numInstances: 1
     envVars:
       # PostgreSQL

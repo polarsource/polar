@@ -5,7 +5,7 @@ on:
     branches: ["main"]
 
 jobs:
-  linters:
+  build:
     name: "Server: Build 🐳"
     timeout-minutes: 15
     runs-on: ubuntu-22.04
@@ -29,6 +29,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: docker/build-push-action@v4.0.0
+        id: push
         with:
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -36,4 +37,8 @@ jobs:
           tags: ghcr.io/polarsource/polar:latest
           context: ./server
           platforms: linux/amd64,linux/arm64/v8
-
+      
+      - name: Deploy
+        run: "./github/workflows/deploy_server.sh ${{ steps.push.outputs.digest }}"
+        env:
+          RENDER_KEY: ${{ secrets.RENDER_DEPLOY_KEY_WORKER }}

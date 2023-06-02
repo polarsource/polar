@@ -27,6 +27,9 @@ def verify_app_configuration() -> None:
         "pull_request_review",
         "pull_request_review_comment",
         "pull_request_review_thread",
+        "public",
+        "repository",
+        "milestone",
     ]
 
     for perm in expected_permissions:

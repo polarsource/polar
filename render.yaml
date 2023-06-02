@@ -24,6 +24,7 @@ services:
       - key: PORT
         value: "10000"
       - fromGroup: web-stripe
+      - fromGroup: web-posthog
 
     domains:
       - dashboard.polar.sh

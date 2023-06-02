@@ -4,13 +4,21 @@ import type { NextPageWithLayout } from '@/utils/next'
 import * as Sentry from '@sentry/nextjs'
 import type { AppProps } from 'next/app'
 import Head from 'next/head'
+import { useRouter } from 'next/router'
 import { CONFIG } from 'polarkit'
 import { queryClient, QueryClientProvider } from 'polarkit/api'
-import type { ReactElement } from 'react'
+import posthog from 'posthog-js'
+import { ReactElement, useEffect } from 'react'
 import '../styles/globals.scss'
 
 type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout
+}
+
+if (CONFIG.POSTHOG_TOKEN && typeof window !== 'undefined') {
+  posthog.init(CONFIG.POSTHOG_TOKEN, {
+    api_host: 'https://app.posthog.com',
+  })
 }
 
 const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
@@ -29,6 +37,18 @@ const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
       tracesSampleRate: 0.1,
     })
   }
+
+  // PostHog <> Next Router integration
+  const router = useRouter()
+  useEffect(() => {
+    // Track page views
+    const handleRouteChange = () => posthog?.capture('$pageview')
+    router.events.on('routeChangeComplete', handleRouteChange)
+
+    return () => {
+      router.events.off('routeChangeComplete', handleRouteChange)
+    }
+  }, [])
 
   return (
     <>

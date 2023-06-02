@@ -29,6 +29,7 @@ sentry-sdk = {extras = ["fastapi"], version = "^1.20.0"}
 sendgrid = "^6.10.0"
 pytest-recording = "^0.12.2"
 discord-webhook = {extras = ["async"], version = "^1.1.0"}
+posthog = "^3.0.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.12.0"

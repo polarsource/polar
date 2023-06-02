@@ -195,6 +195,8 @@ envVarGroups:
     value: "https://api.polar.sh/api/v1"
   - key: POLAR_DISCORD_WEBHOOK_URL
     sync: false
+  - key: POLAR_POSTHOG_PROJECT_API_KEY
+    sync: false
 
 - name: server-stripe
   envVars:
@@ -206,4 +208,9 @@ envVarGroups:
 - name: web-stripe
   envVars:
   - key: NEXT_PUBLIC_STRIPE_KEY
+    sync: false
+
+- name: web-posthog
+  envVars:
+  - key: NEXT_PUBLIC_POSTHOG_TOKEN
     sync: false

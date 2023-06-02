@@ -54,7 +54,7 @@ jobs:
           platforms: linux/amd64,linux/arm64/v8
       
       - name: Deploy
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/main'
         run: "./.github/workflows/deploy_server.sh ${{ steps.push.outputs.digest }}"
         env:
           RENDER_DEPLOY_KEY_WORKER: ${{ secrets.RENDER_DEPLOY_KEY_WORKER }}

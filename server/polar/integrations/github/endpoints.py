@@ -26,7 +26,7 @@ from polar.worker import enqueue_job
 from polar.auth.service import AuthService, LoginResponse
 from httpx_oauth.oauth2 import OAuth2Token
 from polar.pledge.service import pledge as pledge_service
-
+from polar.posthog.service import posthog_service
 
 from .service.organization import github_organization
 from .service.repository import github_repository
@@ -113,6 +113,8 @@ async def github_callback(
     pledge_id = state_data.get("pledge_id")
     if pledge_id:
         await pledge_service.connect_backer(session, pledge_id=pledge_id, backer=user)
+
+    posthog_service.identify(user)
 
     goto_url = state_data.get("goto_url", None)
 

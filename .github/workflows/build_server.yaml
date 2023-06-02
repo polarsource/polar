@@ -28,17 +28,33 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ghcr.io/polarsource/polar
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
       - uses: docker/build-push-action@v4.0.0
         id: push
         with:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           push: true
-          tags: ghcr.io/polarsource/polar:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           context: ./server
           platforms: linux/amd64,linux/arm64/v8
       
       - name: Deploy
+        if: github.ref == 'refs/heads/master'
         run: "./.github/workflows/deploy_server.sh ${{ steps.push.outputs.digest }}"
         env:
           RENDER_DEPLOY_KEY_WORKER: ${{ secrets.RENDER_DEPLOY_KEY_WORKER }}

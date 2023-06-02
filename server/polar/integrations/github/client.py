@@ -174,6 +174,9 @@ def get_app_client() -> GitHub[AppAuthStrategy]:
 def get_app_installation_client(
     installation_id: int,
 ) -> GitHub[AppInstallationAuthStrategy]:
+    if not installation_id:
+        raise Exception("unable to create github client: no installation_id provided")
+
     # Using the RedisCache() below to cache generated JWTs
     # This improves ETag/If-None-Match cache hits over the default in-memory cache, as
     # they can be reused across restarts of the python process and by multiple workers.

@@ -170,10 +170,12 @@ class GithubBadge:
 
         body = await self.get_current_body(client)
         if self.badge_is_embedded(body):
+            log.info("github.badge.embed.is_already_embedded", issue_id=self.issue.id)
             return None
 
         body_with_badge = self.generate_body_with_badge(body)
         await self.update_body(client, body_with_badge)
+        log.info("github.badge.embed.embedded", issue_id=self.issue.id)
         return None
 
     async def remove(self) -> None:
@@ -181,8 +183,10 @@ class GithubBadge:
 
         body = await self.get_current_body(client)
         if not self.badge_is_embedded(body):
+            log.info("github.badge.remove.is_not_embedded", issue_id=self.issue.id)
             return None
 
         body_without_badge = self.generate_body_without_badge(body)
         await self.update_body(client, body_without_badge)
+        log.info("github.badge.remove.removed", issue_id=self.issue.id)
         return None

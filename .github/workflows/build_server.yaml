@@ -39,6 +39,6 @@ jobs:
           platforms: linux/amd64,linux/arm64/v8
       
       - name: Deploy
-        run: "./github/workflows/deploy_server.sh ${{ steps.push.outputs.digest }}"
+        run: "./.github/workflows/deploy_server.sh ${{ steps.push.outputs.digest }}"
         env:
           RENDER_KEY: ${{ secrets.RENDER_DEPLOY_KEY_WORKER }}

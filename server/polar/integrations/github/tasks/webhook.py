@@ -252,7 +252,7 @@ async def handle_issue(
         github.webhooks.IssuesClosed,
         github.webhooks.IssuesDeleted,
     ],
-) -> None:
+) -> Issue:
     issue = await upsert_issue(session, event)
     if not issue:
         raise Exception(f"failed to save issue external_id={event.issue.id}")
@@ -261,6 +261,8 @@ async def handle_issue(
     await enqueue_job(
         "github.repo.sync.issue_references", issue.organization_id, issue.repository_id
     )
+
+    return issue
 
 
 @task("github.webhook.issues.opened")
@@ -278,7 +280,11 @@ async def issue_opened(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionLocal() as session:
-            await handle_issue(session, scope, action, parsed)
+            issue = await handle_issue(session, scope, action, parsed)
+
+            # Add badge if has label
+            if issue.has_pledge_badge_label:
+                await update_issue_embed(session, issue=issue, embed=True)
 
 
 @task("github.webhook.issues.edited")
@@ -296,7 +302,11 @@ async def issue_edited(
             raise Exception("unexpected webhook payload")
 
         async with AsyncSessionLocal() as session:
-            await handle_issue(session, scope, action, parsed)
+            issue = await handle_issue(session, scope, action, parsed)
+
+            # Add badge if has label
+            if issue.has_pledge_badge_label:
+                await update_issue_embed(session, issue=issue, embed=True)
 
 
 @task("github.webhook.issues.closed")

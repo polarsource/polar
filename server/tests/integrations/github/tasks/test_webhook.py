@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 from datetime import datetime
+from unittest.mock import ANY, patch
 
 import pytest
 from pytest_mock import MockerFixture
@@ -9,6 +10,7 @@ from arq.connections import ArqRedis
 
 from polar.integrations.github import service
 from polar.integrations.github import client as github
+from polar.integrations.github import tasks
 from polar.kit import utils
 from polar.models.organization import Organization
 from polar.organization.schemas import OrganizationCreate
@@ -82,7 +84,7 @@ async def create_org(
         return org
 
 
-async def create_repositories(github_webhook: TestWebhookFactory) -> None:
+async def create_repositories(github_webhook: TestWebhookFactory) -> Organization:
     org = await create_org(github_webhook, status=Organization.Status.ACTIVE)
     hook = github_webhook.create("installation_repositories.added")
 
@@ -102,6 +104,8 @@ async def create_repositories(github_webhook: TestWebhookFactory) -> None:
                     is_private=repo.private,
                 ),
             )
+
+    return org
 
 
 async def create_issue(github_webhook: TestWebhookFactory) -> TestWebhook:
@@ -518,3 +522,147 @@ async def test_webhook_issues_deleted(
 
     issue_get_deleted = await service.github_issue.get(session, id, allow_deleted=True)
     assert issue_get_deleted is not None
+
+
+@pytest.mark.asyncio
+@patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
+async def test_webhook_opened_with_label(
+    mocker: MockerFixture,
+    session: AsyncSession,
+    github_webhook: TestWebhookFactory,
+    initialize_test_database_function: None,  # reset db before running test
+) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("arq.connections.ArqRedis.enqueue_job")
+
+    embed_mock = mocker.patch(
+        "polar.integrations.github.service.github_issue.embed_badge"
+    )
+
+    org = await create_repositories(github_webhook)
+    org.onboarded_at = utils.utc_now()
+    await org.save(session)
+
+    # first create an issue
+    hook = github_webhook.create("issues.opened_with_polar_label")
+    issue_id = hook["issue"]["id"]
+
+    issue = await service.github_issue.get_by_external_id(session, issue_id)
+    assert issue is None
+
+    await webhook_tasks.issue_opened(
+        FAKE_CTX,
+        "issues",
+        "opened",
+        hook.json,
+        polar_context=PolarWorkerContext(),
+    )
+
+    issue = await service.github_issue.get_by_external_id(session, issue_id)
+    assert issue is not None
+
+    assert issue.labels is not None
+    assert issue.labels[0]["name"] == "polar"
+
+    assert issue.contains_pledge_badge_label(issue.labels) is True
+    assert issue.has_pledge_badge_label is True
+
+    embed_mock.assert_called_once_with(
+        ANY,  # session
+        organization=ANY,
+        repository=ANY,
+        issue=ANY,
+        triggered_from_label=True,
+    )
+
+
+@pytest.mark.asyncio
+@patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
+async def test_webhook_labeled_remove_badge_body(
+    mocker: MockerFixture,
+    session: AsyncSession,
+    github_webhook: TestWebhookFactory,
+    initialize_test_database_function: None,  # reset db before running test
+) -> None:
+    async def in_process_enqueue_job(pool, name, *args, **kwargs) -> None:  # type: ignore  # noqa: E501
+        if name == "github.issue.sync.issue_references":
+            return None  # skip
+        if name == "github.issue.sync.issue_dependencies":
+            return None  # skip
+        if name == "github.repo.sync.issue_references":
+            return None  # skip
+        else:
+            raise Exception(f"unexpected job: {name}")
+
+    mocker.patch("arq.connections.ArqRedis.enqueue_job", new=in_process_enqueue_job)
+
+    embed_mock = mocker.patch(
+        "polar.integrations.github.service.github_issue.embed_badge"
+    )
+
+    org = await create_repositories(github_webhook)
+    org.onboarded_at = utils.utc_now()
+    await org.save(session)
+
+    # first create an issue labeled with "polar" label
+    hook = github_webhook.create("issues.opened_with_polar_label")
+    issue_id = hook["issue"]["id"]
+
+    issue = await service.github_issue.get_by_external_id(session, issue_id)
+    assert issue is None
+
+    await webhook_tasks.issue_opened(
+        FAKE_CTX,
+        "issues",
+        "opened",
+        hook.json,
+        polar_context=PolarWorkerContext(),
+    )
+
+    issue = await service.github_issue.get_by_external_id(session, issue_id)
+    assert issue is not None
+
+    assert issue.labels is not None
+    assert issue.labels[0]["name"] == "polar"
+
+    assert issue.contains_pledge_badge_label(issue.labels) is True
+    assert issue.has_pledge_badge_label is True
+
+    # add badge
+    embed_mock.assert_called_once_with(
+        ANY,  # session
+        organization=ANY,
+        repository=ANY,
+        issue=ANY,
+        triggered_from_label=True,
+    )
+
+    embed_mock.reset_mock()
+
+    # receive edit without badge in body, still with label
+
+    hook = github_webhook.create("issues.edited_with_polar_label_no_badge_body")
+
+    await webhook_tasks.issue_edited(
+        FAKE_CTX,
+        "issues",
+        "edited",
+        hook.json,
+        polar_context=PolarWorkerContext(),
+    )
+
+    issue = await service.github_issue.get_by_external_id(session, issue_id)
+    assert issue is not None
+    assert issue.labels is not None
+    assert issue.labels[0]["name"] == "polar"
+    assert issue.contains_pledge_badge_label(issue.labels) is True
+
+    # assert badge is added again
+
+    embed_mock.assert_called_once_with(
+        ANY,  # session
+        organization=ANY,
+        repository=ANY,
+        issue=ANY,
+        triggered_from_label=True,
+    )

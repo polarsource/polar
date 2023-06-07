@@ -189,7 +189,8 @@ class Issue(IssueFields, RecordModel):
         TIMESTAMP(timezone=True), nullable=True
     )
 
-    github_timeline_etag: Mapped[str | None] = mapped_column(String, nullable=True)
+    github_timeline_last_event_id: Mapped[str | None] = mapped_column(
+        String, nullable=True)
     github_timeline_fetched_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )

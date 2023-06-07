@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 from typing import Any, List, Set, Union
 from uuid import UUID
 from githubkit import GitHub, Response
@@ -310,9 +311,9 @@ class GitHubIssueReferencesService:
 
         # TODO: if the first page is a cache miss, we're currently re-crawling all pages
         # A nice improvement would be to figure out if we can stop crawling early.
-        for page in range(1, 100):
-            first_page = page == 1
-
+        page = 1
+        is_last_page = False  # The first page may be the last, but we don't know yet
+        while True:
             try:
                 res = await self.async_list_events_for_timeline_with_headers(
                     client,
@@ -321,7 +322,6 @@ class GitHubIssueReferencesService:
                     issue_number=issue.number,
                     page=page,
                     per_page=100,
-                    etag=issue.github_timeline_etag if first_page else None,
                 )
             except RequestFailed as e:
                 if e.response.status_code == 404:
@@ -332,24 +332,50 @@ class GitHubIssueReferencesService:
                 else:
                     raise e
 
-            # Cache hit, nothing new
-            if first_page and res.status_code == 304:
-                log.info(
-                    "github.sync_issue_references.etag_cache_hit", issue_id=issue.id
-                )
-                return
+            if page == 1:
+                # Find last page and take that next
+                link_header = res.headers.get("link", None)
+                if link_header is None:
+                    last_page = 1
+                else:
+                    last_pattern = re.compile(r'(?<=<)([\S]*)(?=>; rel="last")', re.I)
+                    match = last_pattern.search(link_header)
+                    last_page = int(match.group(1).split("=")[-1]) if match else 1
+                is_last_page = page == last_page
+                page = last_page
+            else:
+                page = page - 1
 
-            # Save ETag of the first page
-            if first_page and res.status_code == 200:
-                log.info(
-                    "github.sync_issue_references.etag_cache_miss", issue_id=issue.id
-                )
+            # Parse the events in reverse order, since the last event is the most recent
+            first_seen_id = None
+            for event in reversed(res.parsed_data):
+                def event_id(e: LabeledIssueEvent | UnlabeledIssueEvent | MilestonedIssueEvent | DemilestonedIssueEvent | RenamedIssueEvent | ReviewRequestedIssueEvent | ReviewRequestRemovedIssueEvent | ReviewDismissedIssueEvent | LockedIssueEvent | AddedToProjectIssueEvent | MovedColumnInProjectIssueEvent | RemovedFromProjectIssueEvent | ConvertedNoteToIssueIssueEvent | TimelineCommentEvent | TimelineCrossReferencedEvent | TimelineCommittedEvent | TimelineReviewedEvent | TimelineLineCommentedEvent | TimelineCommitCommentedEvent | TimelineAssignedIssueEvent | TimelineUnassignedIssueEvent | StateChangeIssueEvent) -> str | None:
+                    if isinstance(e, (LabeledIssueEvent, UnlabeledIssueEvent, MilestonedIssueEvent, DemilestonedIssueEvent, RenamedIssueEvent, ReviewRequestedIssueEvent, ReviewRequestRemovedIssueEvent, ReviewDismissedIssueEvent, LockedIssueEvent, AddedToProjectIssueEvent, MovedColumnInProjectIssueEvent, RemovedFromProjectIssueEvent, ConvertedNoteToIssueIssueEvent, TimelineCommentEvent, TimelineReviewedEvent, TimelineAssignedIssueEvent, TimelineUnassignedIssueEvent, StateChangeIssueEvent)):
+                        return str(e.id)
+                    elif isinstance(e, (TimelineCommittedEvent)):
+                        if e.node_id:
+                            return e.node_id
+                        return isinstance(e.url, str) and e.url or None
+                    elif isinstance(e, (TimelineLineCommentedEvent, TimelineCommitCommentedEvent)):
+                        if e.node_id:
+                            return e.node_id
+                        else:
+                            return None
+                    else:
+                        return str(e.created_at)
 
-                issue.github_timeline_fetched_at = datetime.utcnow()
-                issue.github_timeline_etag = res.headers.get("etag", None)
-                await issue.save(session)
+                the_event_id = event_id(event)
+                if the_event_id and the_event_id == issue.github_timeline_last_event_id:
+                    # We've already processed this event, stop
+                    return
 
-            for event in res.parsed_data:
+                if is_last_page and first_seen_id is None and the_event_id:
+                    # Save the id of the most recent event
+                    issue.github_timeline_fetched_at = datetime.utcnow()
+                    issue.github_timeline_last_event_id = the_event_id
+                    first_seen_id = the_event_id
+                    await issue.save(session)
+
                 ref = await self.parse_issue_timeline_event(
                     session, org, repo, issue, event, client=client
                 )
@@ -361,7 +387,7 @@ class GitHubIssueReferencesService:
                     await self.create_reference(session, ref)
 
             # No more pages
-            if len(res.parsed_data) < 100:
+            if page == 1:
                 return
 
     async def parse_issue_timeline_event(

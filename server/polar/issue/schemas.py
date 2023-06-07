@@ -133,48 +133,18 @@ class IssueAndPullRequestBase(Base):
             issue_modified_at=data.updated_at,
         )
 
-    @classmethod
-    def from_github(
-        cls,
-        data: Union[
-            GithubIssue,
-            GithubPullRequestFull,
-            GithubPullRequestSimple,
-            github.rest.PullRequestSimple,
-            github.rest.PullRequest,
-            github.webhooks.PullRequestOpenedPropPullRequest,
-            github.webhooks.PullRequest,
-            github.webhooks.PullRequestClosedPropPullRequest,
-            github.webhooks.PullRequestReopenedPropPullRequest,
-            github.webhooks.IssuesOpenedPropIssue,
-            github.webhooks.IssuesClosedPropIssue,
-            github.webhooks.Issue,
-        ],
-        organization_id: UUID,
-        repository_id: UUID,
-    ) -> Self:
-        return cls.get_normalized_github_issue(
-            data, organization_id=organization_id, repository_id=repository_id
-        )
-
 
 class IssueCreate(IssueAndPullRequestBase):
     has_pledge_badge_label: bool = False
     pledge_badge_currently_embedded: bool = False
+    positive_reactions_count: int = 0
+    total_engagement_count: int = 0
 
     @classmethod
     def from_github(
         cls,
         data: Union[
             GithubIssue,
-            GithubPullRequestFull,
-            GithubPullRequestSimple,
-            github.rest.PullRequestSimple,
-            github.rest.PullRequest,
-            github.webhooks.PullRequestOpenedPropPullRequest,
-            github.webhooks.PullRequest,
-            github.webhooks.PullRequestClosedPropPullRequest,
-            github.webhooks.PullRequestReopenedPropPullRequest,
             github.webhooks.IssuesOpenedPropIssue,
             github.webhooks.IssuesClosedPropIssue,
             github.webhooks.Issue,
@@ -182,7 +152,7 @@ class IssueCreate(IssueAndPullRequestBase):
         organization_id: UUID,
         repository_id: UUID,
     ) -> Self:
-        ret = super().from_github(
+        ret = super().get_normalized_github_issue(
             data,
             organization_id=organization_id,
             repository_id=repository_id,
@@ -194,6 +164,18 @@ class IssueCreate(IssueAndPullRequestBase):
             ret.pledge_badge_currently_embedded = GithubBadge.badge_is_embedded(
                 ret.body
             )
+
+        # excluding: confused, minus_one
+        ret.positive_reactions_count = (
+            data.reactions.plus_one
+            + data.reactions.laugh
+            + data.reactions.heart
+            + data.reactions.hooray
+            + data.reactions.eyes
+            + data.reactions.rocket
+        )
+
+        ret.total_engagement_count = data.reactions.total_count + data.comments
 
         return ret
 

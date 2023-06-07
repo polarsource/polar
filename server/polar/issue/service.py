@@ -267,7 +267,11 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         if sort_by == IssueSortBy.issues_default:
             statement = statement.order_by(
                 desc(Issue.pledged_amount_sum),
-                desc(Issue.reactions.op("->")("plus_one").cast(Integer)),
+                desc(
+                    func.sum(
+                        Issue.reactions.op("->")("plus_one").cast(Integer),
+                    )
+                ),
                 desc(Issue.issue_modified_at),
             )
         elif sort_by == IssueSortBy.newest:

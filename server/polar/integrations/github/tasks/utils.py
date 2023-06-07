@@ -132,11 +132,15 @@ async def upsert_issue(
         github.webhooks.IssuesDeleted,
     ],
 ) -> Issue | None:
+    owner_id = event.repository.owner.id
+    repository_id = event.repository.id
     org_repo = await get_event_org_repo(session, event)
     if not org_repo:
         log.warning(
             "github.webhook.upsert_issue",
             error="organization or repository not found",
+            owner_id=owner_id,
+            repository_id=repository_id,
         )
         return None
 
@@ -158,11 +162,15 @@ async def upsert_pull_request(
         github.webhooks.PullRequestSynchronize,
     ],
 ) -> PullRequest | None:
+    owner_id = event.repository.owner.id
+    repository_id = event.repository.id
     org_repo = await get_event_org_repo(session, event)
     if not org_repo:
         log.warning(
             "github.webhook.upsert_issue",
             error="organization or repository not found",
+            owner_id=owner_id,
+            repository_id=repository_id,
         )
         return None
 

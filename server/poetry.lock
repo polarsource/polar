@@ -597,14 +597,14 @@ test = ["anyio[trio] (>=3.2.1,<4.0.0)", "black (==23.1.0)", "coverage[toml] (>=6
 
 [[package]]
 name = "githubkit"
-version = "0.10.4"
+version = "0.10.5"
 description = "GitHub SDK for Python"
 category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "githubkit-0.10.4-py3-none-any.whl", hash = "sha256:83e3b7c6ef5e32871204af232c743f5be95c9d1f9f7f670033d8271415793aba"},
-    {file = "githubkit-0.10.4.tar.gz", hash = "sha256:24942dccb6ea18933e6100b659d5c295a27f1b4b87f0734cbdd294a53a98b9fc"},
+    {file = "githubkit-0.10.5-py3-none-any.whl", hash = "sha256:4c1d09691d520d4c467873eb4372b7f513ec3fbf453c302ba0ddda1472cf8d2c"},
+    {file = "githubkit-0.10.5.tar.gz", hash = "sha256:c59c73b557db8e1e849e6c3a8b056c4c1a8e1d6475c05c18ce96dedbf61489d1"},
 ]
 
 [package.dependencies]
@@ -2596,4 +2596,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "e52641f6dafe0792f4cbc77de960724a8cd578967f56c2c3a9271b214dd22e0d"
+content-hash = "458802fb94f7d4dcb1e96286995b00b28335deebca46a20d8e85f97e52f4a8e9"

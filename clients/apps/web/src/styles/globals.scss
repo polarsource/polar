@@ -4,6 +4,16 @@
 
 @import './commandk.scss';
 
+@layer base {
+  html {
+    @apply text-gray-900
+  }
+
+  html.dark {
+    @apply text-gray-200
+  }
+}
+
 #polar-bg-gradient {
   font-size: 12px;
   font-family: sans-serif;

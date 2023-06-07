@@ -10,17 +10,20 @@ module.exports = {
     './src/**/*.{ts,tsx}',
     'node_modules/polarkit/src/**/*.{ts,tsx}',
   ],
+  darkMode: 'class',
   theme: {
     fontWeight: {
       light: '300',
       normal: '400',
       medium: '500',
+      semibold: '600',
       bold: '700',
       display: '350'
     },
     extend: {
       backgroundImage: {
         'grid-pattern': 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAmCAYAAACoPemuAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABSSURBVHgB7dihEYBAEATBf/JPEksEOCgEAYw70W3OTp3cvYY5r/v57rGGElYJq4RVwiphlbBKWCWsElYJq4RVwiphlbBKWCWsElbtf/OcZuzHXh9bB88+HN8BAAAAAElFTkSuQmCC")',
+        'grid-pattern-dark': 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAmCAYAAACoPemuAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABTSURBVHgB7dihEYBAEATBf9LCEQj5ZwGFIIBxJ7rN2amTu9cw53U/3z3WUMIqYZWwSlglrBJWCauEVcIqYZWwSlglrBJWCauEVcKq/W+e04z92AukgAP/IH2i4wAAAABJRU5ErkJggg==")'
       },
       borderColor: {
         DEFAULT: "rgb(0 0 0 / 0.07)",
@@ -59,7 +62,7 @@ module.exports = {
           700: '#3e3f42',
           800: '#26282b',
           900: '#181a1f',
-          950: '#0b0b10',
+          950: '#111217',
         },
         green: {
           50: '#f0faf0',

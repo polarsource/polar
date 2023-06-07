@@ -35,10 +35,10 @@ const Page: NextLayoutComponentType = () => {
           {showControls && (
             <>
               <div className="text-center">
-                <span className="rounded-2xl border border-gray-200 py-1 px-3 text-sm font-medium text-gray-500">
+                <span className="rounded-2xl border border-gray-200 py-1 px-3 text-sm font-medium text-gray-500 dark:border-gray-700">
                   {syncedIssuesCount} issues fetched
                 </span>
-                <h1 className="mt-8 text-xl font-normal text-gray-900">
+                <h1 className="mt-8 text-xl font-normal">
                   Setup the Polar funding badge
                 </h1>
               </div>

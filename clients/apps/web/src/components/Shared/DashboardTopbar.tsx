@@ -20,7 +20,7 @@ const SettingsLink = ({ orgSlug }: { orgSlug?: string }) => {
     <>
       <Link href={path}>
         <Cog8ToothIcon
-          className="h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-100 hover:text-gray-900"
+          className="h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-100 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
           aria-hidden="true"
         />
       </Link>

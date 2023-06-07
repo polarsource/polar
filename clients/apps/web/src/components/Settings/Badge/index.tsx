@@ -242,7 +242,7 @@ const BadgeSetup = ({
         initial={isSettingPage ? false : 'hidden'}
         animate="show"
       >
-        <div className="w-full rounded-xl bg-white shadow">
+        <div className="w-full rounded-xl bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-inset dark:ring-gray-700">
           <div className="flex flex-col space-y-4 p-5">
             <FakePullRequest showAmount={settings.show_amount} />
             <SettingsCheckbox
@@ -260,14 +260,14 @@ const BadgeSetup = ({
               }}
             />
           </div>
-          <div className="flex flex-row items-center rounded-b-xl border-t border-gray-200 bg-gray-100/50 px-4 py-3 text-gray-500">
+          <div className="flex flex-row items-center rounded-b-xl border-t border-gray-200 bg-gray-100/50 px-4 py-3 text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
             <QuestionMarkCircleIcon
               width={24}
               height={24}
-              className="text-gray-300"
+              className="text-gray-300 dark:text-gray-400"
             />
             <p className="ml-2 text-xs">
-              <strong className="block font-medium">
+              <strong className="block font-semibold">
                 How is the badge added?
               </strong>
               Polar edits the issue description to add the badge (SVG) at the

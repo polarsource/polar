@@ -40,7 +40,7 @@ const Background = ({
 
 export const ModalBox = ({ children }: { children: React.ReactElement }) => {
   return (
-    <div className="z-0 block flex h-full w-full flex-col space-y-2 overflow-hidden rounded-2xl bg-white p-5 text-black/80 shadow-2xl">
+    <div className="z-0 block flex h-full w-full flex-col space-y-2 overflow-hidden rounded-2xl bg-white p-5 shadow-2xl dark:bg-gray-700">
       {children}
     </div>
   )

@@ -111,7 +111,10 @@ const IssueListItemDecoration = ({
         )}
 
         <div
-          className={classNames(showPledges ? 'border-l pl-4' : '', 'flex-1')}
+          className={classNames(
+            showPledges ? 'border-l pl-4 dark:border-gray-700' : '',
+            'flex-1',
+          )}
         >
           {haveReferences &&
             references.map((r: IssueReferenceRead) => {
@@ -131,7 +134,7 @@ const IssueListItemDecoration = ({
         </div>
       </div>
       {showDisputeAction && showPledgeStatusBox && (
-        <div className="border-t-2 border-gray-100 bg-gray-50 px-4 py-1">
+        <div className="border-t border-gray-100 bg-gray-50 px-4 pt-1 pb-1.5 dark:border-gray-700 dark:bg-gray-900">
           {disputablePledges.map((p) => {
             return (
               <div key={p.id}>
@@ -142,7 +145,7 @@ const IssueListItemDecoration = ({
                       e.preventDefault()
                       onClickDisputeButton(p)
                     }}
-                    className="text-blue-600"
+                    className="text-blue-600 dark:text-blue-500"
                   >
                     Dispute
                   </a>{' '}

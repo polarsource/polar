@@ -12,12 +12,12 @@ const ProgressText = ({
   completed: boolean
 }) => {
   return (
-    <p className="mt-0.5 text-xs text-gray-500">
+    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
       {completed && <span>{target} open issues</span>}
       {!completed && (
         <>
-          <span className="text-gray-900">{progress}</span>
-          <span className="text-gray-500"> / {target} issues fetched</span>
+          <span className="text-gray-900 dark:text-gray-200">{progress}</span>
+          <span> / {target} issues fetched</span>
         </>
       )}
     </p>
@@ -43,9 +43,9 @@ const Progress = ({
   }
 
   return (
-    <div className="h-2.5 w-full rounded-full bg-gray-200">
+    <div className="h-2.5 w-full rounded-full bg-gray-200 dark:bg-gray-600">
       <motion.div
-        className="h-2.5 w-[0%] rounded-full bg-blue-600"
+        className="h-2.5 w-[0%] rounded-full bg-blue-600 dark:bg-blue-500"
         initial={isSettingPage ? false : 'hidden'}
         animate={{
           width: `${percent}%`,
@@ -66,14 +66,16 @@ const EmbedSetting = ({
 }) => {
   const getTabClasses = (active: boolean) => {
     return classNames(
-      active ? 'bg-white rounded-lg text-black/90 shadow' : '',
+      active
+        ? 'bg-white rounded-lg text-gray-900 shadow dark:bg-gray-500 dark:text-gray-50'
+        : '',
       'cursor-pointer py-1.5 px-2.5 rounded-lg',
     )
   }
 
   return (
     <>
-      <div className="flex flex-row rounded-lg bg-gray-100 text-sm text-gray-500">
+      <div className="flex flex-row rounded-lg bg-gray-100 text-sm text-gray-500 dark:bg-gray-700 dark:text-gray-400">
         <div
           className={getTabClasses(!isAutoEnabled)}
           onClick={() => {
@@ -117,18 +119,19 @@ export const BadgeRepository = ({
     <div
       className={classNames(
         showControls && repo.is_private
-          ? 'bg-gray-100/50 py-2 text-sm'
-          : 'bg-white py-4',
+          ? 'bg-gray-100/50 py-2 text-sm dark:bg-gray-900'
+          : 'bg-white py-4 dark:bg-gray-800',
         'flex flex-row px-5',
       )}
     >
       <div className="my-auto flex basis-3/6 flex-row items-center">
         {repo.avatar_url && (
-          <img className="h-6 w-6 rounded-full" src={repo.avatar_url} />
+          <img
+            className="h-6 w-6 rounded-full bg-white"
+            src={repo.avatar_url}
+          />
         )}
-        <strong className="ml-2.5 mr-4 font-normal text-gray-900">
-          {repo.name}
-        </strong>
+        <strong className="ml-2.5 mr-3 font-normal">{repo.name}</strong>
         <ProgressText
           progress={repo.synced_issues}
           target={repo.open_issues}
@@ -148,7 +151,7 @@ export const BadgeRepository = ({
           {showControls && (
             <div className="flex flex-row justify-end space-x-2 align-middle">
               {repo.is_private && (
-                <p className="flex items-center rounded-full border bg-gray-100 px-3 py-1 text-xs text-gray-600">
+                <p className="flex items-center rounded-full border bg-gray-100 px-3 py-1 text-xs text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
                   Private
                 </p>
               )}

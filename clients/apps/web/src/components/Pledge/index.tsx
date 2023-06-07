@@ -30,7 +30,7 @@ const Pledge = ({
           <div className="md:w-1/2">
             <IssueCard
               issue={issue}
-              className="bg-grid-pattern border-blue-100 bg-blue-50 bg-[12px_12px]"
+              className="bg-grid-pattern dark:bg-grid-pattern-dark border-blue-100 bg-blue-50 bg-[12px_12px] dark:border-blue-500/20 dark:bg-blue-500/20"
               organization={organization}
               repository={repository}
             />

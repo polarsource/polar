@@ -18,7 +18,7 @@ const ThankYouUpsell = (props: { pledge: PledgeRead }) => {
         padding={false}
       >
         <div className="flex w-full flex-col space-y-4 p-5 md:w-2/5 md:p-6">
-          <h2 className="text-xl text-gray-900">Sign up to Polar</h2>
+          <h2 className="text-xl">Sign up to Polar</h2>
           <GithubLoginButton pledgeId={pledge.id} size="large" />
 
           <ul>
@@ -30,10 +30,10 @@ const ThankYouUpsell = (props: { pledge: PledgeRead }) => {
               />
 
               <div>
-                <strong className="text-sm font-medium text-gray-900">
+                <strong className="text-sm font-medium">
                   Track issue dependencies
                 </strong>
-                <p className="text-sm font-normal text-gray-500">
+                <p className="text-sm font-normal text-gray-500 dark:text-gray-400">
                   Helicopter view vs. flooded inbox.
                 </p>
               </div>
@@ -47,10 +47,10 @@ const ThankYouUpsell = (props: { pledge: PledgeRead }) => {
               />
 
               <div>
-                <strong className="text-sm font-medium text-gray-900">
+                <strong className="text-sm font-medium">
                   Pledge for progress
                 </strong>
-                <p className="text-sm font-normal text-gray-500">
+                <p className="text-sm font-normal text-gray-500 dark:text-gray-400">
                   Upvote & back impactful efforts.
                 </p>
               </div>
@@ -59,17 +59,15 @@ const ThankYouUpsell = (props: { pledge: PledgeRead }) => {
             <li className="mt-3 mb-2 flex flex-row items-center space-x-2">
               <ClockIcon height={24} width={24} className="text-blue-500" />
               <div>
-                <strong className="text-sm font-medium text-gray-900">
-                  Get unblocked
-                </strong>
-                <p className="text-sm font-normal text-gray-500">
+                <strong className="text-sm font-medium">Get unblocked</strong>
+                <p className="text-sm font-normal text-gray-500 dark:text-gray-400">
                   Don&apos;t fork around.
                 </p>
               </div>
             </li>
           </ul>
         </div>
-        <div className="bg-grid-pattern relative hidden w-3/5 overflow-hidden border-l border-blue-100 bg-blue-50 md:block">
+        <div className="bg-grid-pattern dark:bg-grid-pattern-dark relative hidden w-3/5 overflow-hidden border-l border-blue-100 bg-blue-50 dark:border-blue-500/20 dark:bg-blue-500/20 md:block">
           <Image
             src={screenshot}
             alt="Polar dashboard screenshot"

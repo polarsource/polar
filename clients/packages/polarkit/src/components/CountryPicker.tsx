@@ -21,7 +21,7 @@ const CountryPicker = ({
   return (
     <select
       onChange={onChange}
-      className="font-display block w-full rounded-lg border-gray-200 py-2 px-4 pl-8 pr-12 shadow-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500"
+      className="font-display block w-full rounded-lg border-gray-200 bg-transparent py-2 px-4 pr-12 shadow-sm transition-colors focus:z-10 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-500"
     >
       {availableCountries.map(([countryCode, country]) => {
         return (

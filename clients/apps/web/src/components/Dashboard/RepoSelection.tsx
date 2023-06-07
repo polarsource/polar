@@ -251,13 +251,13 @@ export function RepoSelection(props: {
             <Command
               value={value}
               onValueChange={onValueChange}
-              className={`${width} !absolute -top-10 z-10 w-max rounded-lg bg-white shadow-lg`}
+              className={`${width} !absolute -top-10 z-10 w-max rounded-lg bg-white shadow-lg dark:border dark:border-gray-600 dark:bg-gray-700`}
             >
               <div className="flex items-center px-2">
                 {dropdownSelectedOrg && (
                   <>
                     <div
-                      className={`flex-shrink-0 cursor-pointer rounded-md px-2 py-1 text-sm font-medium text-black	transition-colors duration-100 hover:bg-neutral-100   ${
+                      className={`flex-shrink-0 cursor-pointer rounded-md px-2 py-1 text-sm font-medium	transition-colors duration-100 hover:bg-gray-100 dark:hover:bg-gray-600    ${
                         orgIsBackspaceHighlighted ? ' bg-neutral-100' : ''
                       }`}
                       onClick={() => {
@@ -273,13 +273,13 @@ export function RepoSelection(props: {
                   ref={inputRef}
                   autoFocus
                   placeholder={placeholder}
-                  className="m-0 px-2 py-3 !text-sm focus:border-0 focus:ring-0"
+                  className="m-0 px-2 py-3 !text-sm !text-gray-900 focus:border-0 focus:ring-0 dark:!text-gray-200"
                   onKeyDown={onInputKeyDown}
                   value={inputValue}
                   onValueChange={onInputValueChange}
                 />
               </div>
-              <hr />
+              <hr className="dark:border-gray-600" />
               <Command.List
                 ref={listRef}
                 className="max-h-[500px] overflow-auto overscroll-contain px-2 pb-2"
@@ -358,7 +358,7 @@ export function RepoSelection(props: {
                       window.open(CONFIG.GITHUB_INSTALLATION_URL, '_blank')
                     }}
                   >
-                    <div className="flex items-center space-x-2 text-blue-600">
+                    <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-500">
                       <Icon>
                         <PlusIcon className="block h-6 w-6" />
                       </Icon>
@@ -390,7 +390,7 @@ const Item = ({
     <Command.Item
       value={value}
       onSelect={onSelect}
-      className="py-4rounded-md flex h-10 cursor-pointer select-none items-center rounded-md p-2 transition-colors duration-100 first:mt-2 aria-selected:bg-neutral-100"
+      className="py-4rounded-md flex h-10 cursor-pointer select-none items-center rounded-md p-2 transition-colors duration-100 first:mt-2 aria-selected:bg-gray-100 dark:aria-selected:bg-gray-600"
     >
       <div className="flex w-full max-w-full items-center justify-between space-x-2">
         {children}
@@ -401,12 +401,12 @@ const Item = ({
 
 const Avatar = (props: { url: string }) => {
   const { url } = props
-  return <img src={url} className="h-5 w-5 rounded-full" />
+  return <img src={url} className="h-5 w-5 rounded-full bg-white" />
 }
 
 const Text = ({ children }: { children: React.ReactNode }) => {
   return (
-    <span className="overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-900">
+    <span className="overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
       {children}
     </span>
   )
@@ -422,8 +422,8 @@ const Left = ({ children }: { children: React.ReactNode }) => {
 
 const Badge = ({ children }: { children: React.ReactNode }) => {
   return (
-    <p className="inline-flex space-x-2 overflow-hidden text-xs text-gray-500">
-      <span className="rounded-full border border-gray-200 bg-gray-100 px-2">
+    <p className="inline-flex space-x-2 overflow-hidden text-xs text-gray-500 dark:text-gray-50">
+      <span className="rounded-full border border-gray-200 bg-gray-100 px-2 dark:border-gray-400/50 dark:bg-gray-500">
         {children}
       </span>
     </p>
@@ -453,17 +453,17 @@ const SelectedOrgRepo = ({
         <img
           src={org.avatar_url}
           alt=""
-          className="h-6 w-6 flex-shrink-0 rounded-full"
+          className="h-6 w-6 flex-shrink-0 rounded-full bg-white"
         />
         <div className="flex items-center space-x-1 overflow-hidden ">
-          <span className="flex-shrink-0 font-medium text-gray-900">
+          <span className="flex-shrink-0 font-medium text-gray-900 dark:text-gray-200">
             {org.name}
           </span>
 
           {repo && (
             <>
               <span className="text-gray-400">/</span>
-              <span className="overflow-hidden text-ellipsis whitespace-nowrap text-gray-900">
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap text-gray-900 dark:text-gray-200">
                 {repo.name}
               </span>
             </>
@@ -498,7 +498,7 @@ const SelectedEmptySelfUserPlaceholder = ({
           className="h-6 w-6 flex-shrink-0 rounded-full"
         />
         <div className="flex items-center space-x-1 overflow-hidden ">
-          <span className="flex-shrink-0 font-medium text-gray-900">
+          <span className="flex-shrink-0 font-medium text-gray-900 dark:text-gray-200">
             {user.username}
           </span>
         </div>
@@ -518,11 +518,11 @@ const SelectedBox = ({
     <div
       className="flex max-w-[360px] cursor-pointer items-center justify-between space-x-2 
       rounded-lg p-2
-      text-sm hover:bg-neutral-100"
+      text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
       onClick={onClick}
     >
       {children}
-      <ChevronUpDownIcon className="h-6 w-6 flex-shrink-0 text-gray-500" />
+      <ChevronUpDownIcon className="h-6 w-6 flex-shrink-0 text-gray-500 dark:text-gray-400" />
     </div>
   )
 }

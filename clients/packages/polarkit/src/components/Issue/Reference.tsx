@@ -82,7 +82,7 @@ const Box = (props: { children: React.ReactNode }) => {
 const Avatar = (props: { src: string }) => {
   return (
     <img
-      className="h-8 w-8 rounded-full border-2 border-white bg-gray-200"
+      className="h-7 w-7 rounded-full border-2 border-white bg-gray-200"
       src={props.src}
     />
   )
@@ -211,7 +211,8 @@ const IssueReferencePullRequest = (props: {
       label: 'merged',
       timestamp: pr.merged_at,
       titleClasses: '',
-      iconClasses: 'bg-purple-100 border-purple-200',
+      iconClasses:
+        'bg-purple-100 border-purple-200 text-purple-600 dark:bg-purple-500/40 dark:border-purple-500/40 dark:text-purple-200',
     }
   } else if (!isMerged && pr.state === 'closed') {
     isClosed = true
@@ -219,7 +220,8 @@ const IssueReferencePullRequest = (props: {
       label: 'closed',
       timestamp: pr.closed_at || '',
       titleClasses: '',
-      iconClasses: 'bg-red-100 border-red-200',
+      iconClasses:
+        'bg-red-100 border-red-200 text-red-500 dark:text-red-300 dark:bg-red-500/30 dark:border-red-500/30',
     }
   } else if (pr.is_draft) {
     isOpen = true
@@ -227,7 +229,8 @@ const IssueReferencePullRequest = (props: {
       label: 'opened',
       timestamp: pr.created_at,
       titleClasses: '',
-      iconClasses: 'bg-gray-100 border-gray-200 text-gray-500',
+      iconClasses:
+        'bg-gray-100 border-gray-200 text-gray-500 dark:text-gray-300 dark:bg-gray-500/30 dark:border-gray-500/30',
     }
   } else {
     isOpen = true
@@ -235,7 +238,8 @@ const IssueReferencePullRequest = (props: {
       label: 'opened',
       timestamp: pr.created_at,
       titleClasses: '',
-      iconClasses: 'bg-green-100 border-green-200 text-[#26A869]',
+      iconClasses:
+        'bg-green-100 border-green-200 text-[#26A869] dark:bg-green-500/30 dark:border-green-500/30 dark:text-green-300',
     }
   }
 
@@ -317,7 +321,7 @@ const DiffStat = (props: {
           key={i}
           className={classNames(
             className,
-            'ml-0.5 inline-block h-2.5 w-2.5 border',
+            'ml-0.5 inline-block h-2.5 w-2.5 border dark:border-white/10',
           )}
         >
           {' '}
@@ -328,12 +332,14 @@ const DiffStat = (props: {
 
   return (
     <div className="hidden flex-shrink-0 flex-nowrap items-center gap-2 lg:flex">
-      <span className="text-green-400">+{props.additions}</span>
-      <span className="text-red-400">-{props.deletions}</span>
+      <span className="text-green-400 dark:text-green-500">
+        +{props.additions}
+      </span>
+      <span className="text-red-400 dark:text-red-500">-{props.deletions}</span>
       <span>
-        {generateDiffBox('divide-green-300 bg-green-200', additionBoxes)}
-        {generateDiffBox('divide-red-300 bg-red-200', deletionBoxes)}
-        {generateDiffBox('divide-gray-300 bg-gray-200', emptyBoxes)}
+        {generateDiffBox('bg-green-200 dark:bg-green-400/50', additionBoxes)}
+        {generateDiffBox('bg-red-200 dark:bg-red-400/50', deletionBoxes)}
+        {generateDiffBox('bg-gray-200 dark:bg-gray-400/50', emptyBoxes)}
       </span>
     </div>
   )

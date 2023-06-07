@@ -1,3 +1,5 @@
+import { useTheme } from 'next-themes'
+
 export type LabelSchema = {
   id: string
   name: string
@@ -88,10 +90,20 @@ function RGBtoHSV(
 const IssueLabel = (props: { label: LabelSchema }) => {
   const { name, color } = props.label
 
+  const { resolvedTheme } = useTheme()
+
   const rgb = hexToRgb(color)
   const hsv = rgb ? RGBtoHSV(rgb.r, rgb.g, rgb.b) : null
-  const bgColor = HSVtoRGB(hsv ? hsv.h : 0, 0.17, 0.94)
-  const textColor = HSVtoRGB(hsv ? hsv.h : 0, 0.25, 0.35)
+  const bgColor = HSVtoRGB(
+    hsv ? hsv.h : 0,
+    resolvedTheme === 'dark' ? 0.3 : 0.17,
+    resolvedTheme === 'dark' ? 0.35 : 0.94,
+  )
+  const textColor = HSVtoRGB(
+    hsv ? hsv.h : 0,
+    resolvedTheme === 'dark' ? 0.2 : 0.25,
+    resolvedTheme === 'dark' ? 0.8 : 0.35,
+  )
 
   const style = {
     backgroundColor: bgColor

@@ -1,14 +1,18 @@
 import { PlusIcon } from '@heroicons/react/24/solid'
+import { useTheme } from 'next-themes'
 import Image from 'next/image'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { CONFIG } from 'polarkit/config'
 import screenshot from './Screenshot.jpg'
+import screenshotDark from './ScreenshotDark.jpg'
 
 const OnboardingConnectReposToGetStarted = () => {
+  const { resolvedTheme } = useTheme()
+
   return (
     <div className="flex flex-col items-center space-y-4 pt-24">
-      <h2 className="text-2xl text-black">Connect repos to get started</h2>
-      <p className="max-w-3xl text-center text-gray-500">
+      <h2 className="text-2xl">Connect repos to get started</h2>
+      <p className="max-w-3xl text-center text-gray-500 dark:text-gray-400">
         Regardless of if you’re an open source maintainer seeking funding or a
         company looking to track issues you’re dependent on, the first step is
         to connect repositories.
@@ -25,9 +29,9 @@ const OnboardingConnectReposToGetStarted = () => {
         </PrimaryButton>
       </div>
       <Image
-        src={screenshot}
+        src={resolvedTheme === 'dark' ? screenshotDark : screenshot}
         priority={true}
-        alt="Sreenshot of the Polar dashboard with connected repositories"
+        alt="Screenshot of the Polar dashboard with connected repositories"
       />
     </div>
   )

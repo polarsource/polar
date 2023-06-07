@@ -17,7 +17,7 @@ const DashboardLayout = (props: {
   const { filters, onSetFilters, children, showSidebar } = props
 
   const bodyClasses = classNames(
-    'flex min-h-screen flex-1 flex-col bg-gray-50 pt-16 ',
+    'flex min-h-screen flex-1 flex-col bg-gray-50 dark:bg-gray-950 pt-16 ',
     showSidebar ? 'md:pl-80' : '',
   )
 

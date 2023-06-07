@@ -309,8 +309,6 @@ class GitHubIssueReferencesService:
 
         log.info("github.sync_issue_references", issue_id=issue.id)
 
-        # TODO: if the first page is a cache miss, we're currently re-crawling all pages
-        # A nice improvement would be to figure out if we can stop crawling early.
         page = 1
         is_last_page = False  # The first page may be the last, but we don't know yet
         while True:

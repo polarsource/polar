@@ -8,6 +8,7 @@ class Service:
 
     def __init__(self) -> None:
         if not settings.POSTHOG_PROJECT_API_KEY:
+            self.client = None
             return
 
         self.client = Posthog(settings.POSTHOG_PROJECT_API_KEY)

@@ -265,7 +265,7 @@ const IssueReferencePullRequest = (props: {
         >
           {markdownTitle}
         </a>
-        <span className="overflow-hidden whitespace-pre text-sm text-gray-500">
+        <span className="overflow-hidden whitespace-pre text-sm text-gray-500 dark:text-white/50">
           #{pr.number} {formatting.label}{' '}
           {formatting.timestamp && (
             <PolarTimeAgo date={new Date(formatting.timestamp)} />

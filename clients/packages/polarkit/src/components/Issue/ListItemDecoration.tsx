@@ -15,8 +15,8 @@ export const getExpectedHeight = ({
   pledges: PledgeRead[]
   references: IssueReferenceRead[]
 }): number => {
-  const pledgeHeight = pledges.length > 0 ? 32 : 0
-  const referenceHeight = 32 * references.length
+  const pledgeHeight = pledges.length > 0 ? 28 : 0
+  const referenceHeight = 28 * references.length
   const inner = Math.max(pledgeHeight, referenceHeight)
   return inner + 24
 }

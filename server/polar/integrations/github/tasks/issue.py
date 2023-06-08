@@ -7,6 +7,7 @@ from polar.postgres import AsyncSessionLocal
 
 from .utils import get_organization_and_repo
 from ..service.issue import github_issue
+from ..service.api import github_api
 
 log = structlog.get_logger()
 

@@ -5,10 +5,26 @@ from githubkit.typing import QueryParamTypes
 from githubkit.utils import UNSET, exclude_unset
 from githubkit.rest.models import BasicError
 
+from polar.kit.schemas import Schema
+
 T = TypeVar("T")
 
+class RateLimit(Schema):
+    limit: int
+    remaining: int
+    used: int
+    reset: int
 
 class GitHubApi:
+    async def get_rate_limit(self, client: GitHub[Any]) -> RateLimit:
+        r = await client.rest.meta.async_get_octocat()
+        return RateLimit(
+            limit=int(r.headers["X-RateLimit-Limit"]),
+            remaining=int(r.headers["X-RateLimit-Remaining"]),
+            used=int(r.headers["X-RateLimit-Used"]),
+            reset=int(r.headers["X-RateLimit-Reset"]),
+        )
+
     # Support for custom headers
     # TODO: https://github.com/yanyongyu/githubkit/issues/29
     async def async_request_with_headers(

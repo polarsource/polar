@@ -144,7 +144,7 @@ async def test_list_by_repository_type_and_status_sorting(
     )
 
     names = [i.title for i in issues]
-    assert names == ["issue_4", "issue_2", "issue_3", "issue_1"]
+    assert names == ["issue_4", "issue_3", "issue_2", "issue_1"]
 
     (issues, _) = await issue_service.list_by_repository_type_and_status(
         session,

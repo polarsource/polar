@@ -79,7 +79,11 @@ async def get_account(
 ) -> list[AccountRead | None]:
     if auth.organization.account is not None:
         ret = AccountRead.from_orm(auth.organization.account)
-        ret.balance = account_service.get_balance(auth.organization.account)
+        balance = account_service.get_balance(auth.organization.account)
+        if balance is not None:
+            currency, amount = balance
+            ret.balance_currency = currency
+            ret.balance = amount
         ret.is_admin = auth.organization.account.admin_id == auth.user.id
         return [ret]
     else:

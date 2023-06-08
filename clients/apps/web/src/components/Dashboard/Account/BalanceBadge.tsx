@@ -2,7 +2,7 @@ import { ArrowRightCircleIcon as SolidArrowRightCircleIcon } from '@heroicons/re
 import { api } from 'polarkit'
 import { AccountRead, Platforms } from 'polarkit/api/client'
 import { useStore } from 'polarkit/store'
-import { getCentsInDollarString } from 'polarkit/utils'
+import { formatCurrencyAndAmount } from 'polarkit/utils'
 import BalanceBadgeBox from './BalanceBadgeBox'
 
 const BalanceBadge = ({ account }: { account: AccountRead }) => {
@@ -36,7 +36,12 @@ const BalanceBadge = ({ account }: { account: AccountRead }) => {
     >
       <BalanceBadgeBox withIcon={true}>
         <>
-          <span>${getCentsInDollarString(account.balance)}</span>
+          <span>
+            {formatCurrencyAndAmount(
+              account.balance_currency ?? 'usd',
+              account.balance,
+            )}
+          </span>
           <SolidArrowRightCircleIcon
             className="-mr-10 h-6 w-6 text-blue-600 dark:text-blue-300"
             aria-hidden="true"

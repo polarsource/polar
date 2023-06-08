@@ -1,3 +1,4 @@
+from typing import Tuple
 import stripe as stripe_lib
 from polar.account.schemas import AccountCreate
 
@@ -99,13 +100,15 @@ class StripeService:
     def retrieve_account(self, id: str) -> stripe_lib.Account:
         return stripe_lib.Account.retrieve(id)
 
-    def retrieve_balance(self, id: str) -> int:
-        # Return available USD on the specified account
+    def retrieve_balance(self, id: str) -> Tuple[str, int]:
+        # Return available balance in the account's default currency (we assume that
+        # there is no balance in other currencies for now)
+        account = stripe_lib.Account.retrieve(id)
         balance = stripe_lib.Balance.retrieve(stripe_account=id)
         for b in balance["available"]:
-            if b["currency"] == "usd":
-                return b["amount"]
-        return 0
+            if b["currency"] == account.default_currency:
+                return (b["currency"], b["amount"])
+        return (account.default_currency, 0)
 
     def create_account_link(
         self, stripe_id: str, appendix: str | None = None

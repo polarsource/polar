@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Tuple
 from uuid import UUID
 
 
@@ -91,7 +92,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
     def get_balance(
         self,
         account: Account,
-    ) -> int | None:
+    ) -> Tuple[str, int] | None:
         if account.account_type != AccountType.stripe:
             return None
         return stripe.retrieve_balance(account.stripe_id)

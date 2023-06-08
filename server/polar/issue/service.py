@@ -267,11 +267,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         if sort_by == IssueSortBy.issues_default:
             statement = statement.order_by(
                 desc(Issue.pledged_amount_sum),
-                desc(
-                    func.sum(
-                        Issue.reactions.op("->")("plus_one").cast(Integer),
-                    )
-                ),
+                desc(Issue.positive_reactions_count),
                 desc(Issue.issue_modified_at),
             )
         elif sort_by == IssueSortBy.newest:
@@ -283,13 +279,27 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         elif sort_by == IssueSortBy.pledged_amount_desc:
             statement = statement.order_by(
                 desc(Issue.pledged_amount_sum),
+                desc(Issue.issue_modified_at),
             )
         elif sort_by == IssueSortBy.dependencies_default:
-            statement = statement.order_by(nullslast(desc(sql.func.sum(Pledge.amount))))
+            statement = statement.order_by(
+                nullslast(desc(sql.func.sum(Pledge.amount))),
+                desc(Issue.issue_modified_at),
+            )
         elif sort_by == IssueSortBy.recently_updated:
             statement = statement.order_by(desc(Issue.issue_modified_at))
         elif sort_by == IssueSortBy.least_recently_updated:
             statement = statement.order_by(asc(Issue.issue_modified_at))
+        elif sort_by == IssueSortBy.most_engagement:
+            statement = statement.order_by(
+                desc(Issue.total_engagement_count),
+                desc(Issue.issue_modified_at),
+            )
+        elif sort_by == IssueSortBy.most_positive_reactions:
+            statement = statement.order_by(
+                desc(Issue.positive_reactions_count),
+                desc(Issue.issue_modified_at),
+            )
         else:
             raise Exception("unknown sort_by")
 

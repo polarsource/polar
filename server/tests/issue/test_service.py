@@ -54,6 +54,8 @@ async def test_list_by_repository_type_and_status_sorting(
         state="open",
         issue_created_at=datetime(2023, 1, 11),
         issue_modified_at=datetime(2023, 1, 11),
+        positive_reactions_count=3,
+        total_engagement_count=3,
     )
 
     issue_3 = await Issue.create(
@@ -68,6 +70,24 @@ async def test_list_by_repository_type_and_status_sorting(
         state="open",
         issue_created_at=datetime(2023, 1, 5),
         issue_modified_at=datetime(2023, 1, 15),
+        positive_reactions_count=2,
+        total_engagement_count=10,
+    )
+
+    issue_4 = await Issue.create(
+        session=session,
+        id=uuid.uuid4(),
+        organization_id=organization.id,
+        repository_id=repository.id,
+        title="issue_4",
+        number=secrets.randbelow(100000),
+        platform=Platforms.github,
+        external_id=secrets.randbelow(100000),
+        state="open",
+        issue_created_at=datetime(2023, 2, 1),
+        issue_modified_at=datetime(2023, 2, 1),
+        positive_reactions_count=1,
+        pledged_amount_sum=5000,
     )
 
     (issues, count) = await issue_service.list_by_repository_type_and_status(
@@ -77,18 +97,19 @@ async def test_list_by_repository_type_and_status_sorting(
         sort_by=IssueSortBy.newest,
     )
 
-    assert count == 3
+    assert count == 4
     names = [i.title for i in issues]
-    assert names == ["issue_2", "issue_1", "issue_3"]
+    assert names == ["issue_4", "issue_2", "issue_1", "issue_3"]
 
-    (issues_r, _) = await issue_service.list_by_repository_type_and_status(
+    (issues, _) = await issue_service.list_by_repository_type_and_status(
         session,
         repository_ids=[repository.id],
         issue_list_type=IssueListType.issues,
         sort_by=IssueSortBy.recently_updated,
     )
 
-    assert [i.title for i in issues_r] == ["issue_3", "issue_2", "issue_1"]
+    names = [i.title for i in issues]
+    assert names == ["issue_4", "issue_3", "issue_2", "issue_1"]
 
     (issues, _) = await issue_service.list_by_repository_type_and_status(
         session,
@@ -98,7 +119,42 @@ async def test_list_by_repository_type_and_status_sorting(
     )
 
     names = [i.title for i in issues]
-    assert names == ["issue_1", "issue_2", "issue_3"]
+    assert names == ["issue_1", "issue_2", "issue_3", "issue_4"]
+
+    (issues, _) = await issue_service.list_by_repository_type_and_status(
+        session,
+        repository_ids=[repository.id],
+        issue_list_type=IssueListType.issues,
+        sort_by=IssueSortBy.most_positive_reactions,
+    )
+
+    names = [i.title for i in issues]
+    assert names == [
+        "issue_2",
+        "issue_3",
+        "issue_4",
+        "issue_1",
+    ]
+
+    (issues, _) = await issue_service.list_by_repository_type_and_status(
+        session,
+        repository_ids=[repository.id],
+        issue_list_type=IssueListType.issues,
+        sort_by=IssueSortBy.issues_default,
+    )
+
+    names = [i.title for i in issues]
+    assert names == ["issue_4", "issue_2", "issue_3", "issue_1"]
+
+    (issues, _) = await issue_service.list_by_repository_type_and_status(
+        session,
+        repository_ids=[repository.id],
+        issue_list_type=IssueListType.issues,
+        sort_by=IssueSortBy.most_engagement,
+    )
+
+    names = [i.title for i in issues]
+    assert names == ["issue_3", "issue_2", "issue_4", "issue_1"]
 
 
 @pytest.mark.asyncio

@@ -29,6 +29,20 @@ const CachedIssueListItemDecoration = ({
       references: value.references,
     })
 
+    // System dark mode
+    const isSystemDark =
+      window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+
+    const gitHubMode = document
+      ?.querySelector(':root')
+      ?.getAttribute('data-color-mode')
+
+    const isDark =
+      gitHubMode === 'dark' || (gitHubMode === 'auto' && isSystemDark)
+
+    const darkAttr = isDark ? 'class="dark" style="color-scheme: dark;"' : ''
+
     return (
       <Frame
         head={[
@@ -43,13 +57,13 @@ const CachedIssueListItemDecoration = ({
           overflow: 'hidden',
           width: '100%',
           border: 'none',
-          backgroundColor: '#F2F6FC', // bg-blue-50
         }}
+        initialContent={`<!DOCTYPE html><html ${darkAttr}><head></head><body><div></div></body></html>`}
       >
         <FrameContextConsumer>
           {({ document, window }) => {
             return (
-              <div className="bg-blue-50">
+              <div className="bg-blue-50 dark:bg-gray-900">
                 {/* open all links in the parent frame */}
                 <base target="_parent"></base>
                 <IssueListItemDecoration

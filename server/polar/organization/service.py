@@ -38,6 +38,17 @@ class OrganizationService(
     def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
         return [self.model.external_id]
 
+    async def list_installed(self, session: AsyncSession) -> Sequence[Organization]:
+        stmt = (
+            sql.select(Organization)
+            .where(
+                Organization.deleted_at.is_(None),
+                Organization.installation_id.is_not(None),
+            )
+        )
+        res = await session.execute(stmt)
+        return res.scalars().all()
+
     async def get_by_platform(
         self, session: AsyncSession, platform: Platforms, external_id: int
     ) -> Organization | None:

@@ -1,12 +1,15 @@
 from uuid import UUID
 import structlog
 from polar.integrations.github import service
+from polar.integrations.github.client import get_app_installation_client
 
 from polar.worker import JobContext, PolarWorkerContext, enqueue_job, interval, task
 from polar.postgres import AsyncSessionLocal
 
 from .utils import get_organization_and_repo
 from ..service.issue import github_issue
+from ..service.api import github_api
+from polar.organization.service import organization as organization_service
 
 log = structlog.get_logger()
 
@@ -110,15 +113,30 @@ async def issue_sync_issue_dependencies(
 )
 async def cron_refresh_issues(ctx: JobContext) -> None:
     async with AsyncSessionLocal() as session:
-        issues = await github_issue.list_issues_to_crawl_issue(session)
+        orgs = await organization_service.list_installed(session)
+        for org in orgs:
+            client = get_app_installation_client(org.installation_id)
+            rate_limit = await github_api.get_rate_limit(client)
 
-        log.info(
-            "github.issue.sync.cron_refresh_issues",
-            found_count=len(issues),
-        )
+            if rate_limit.remaining < 1000:
+                log.info(
+                    "github.issue.sync.cron_refresh_issues.rate_limit_almost_exhausted",
+                    org_name=org.name,
+                    rate_limit_remaining=rate_limit.remaining,
+                )
+                return
 
-        for issue in issues:
-            await enqueue_job("github.issue.sync", issue.id)
+            issues = await github_issue.list_issues_to_crawl_issue(session, org)
+
+            log.info(
+                "github.issue.sync.cron_refresh_issues",
+                org_name=org.name,
+                found_count=len(issues),
+                rate_limit_remaining=rate_limit.remaining,
+            )
+
+            for issue in issues:
+                await enqueue_job("github.issue.sync", issue.id)
 
 
 @interval(
@@ -127,12 +145,27 @@ async def cron_refresh_issues(ctx: JobContext) -> None:
 )
 async def cron_refresh_issue_timelines(ctx: JobContext) -> None:
     async with AsyncSessionLocal() as session:
-        issues = await github_issue.list_issues_to_crawl_timeline(session)
+        orgs = await organization_service.list_installed(session)
+        for org in orgs:
+            client = get_app_installation_client(org.installation_id)
+            rate_limit = await github_api.get_rate_limit(client)
 
-        log.info(
-            "github.issue.sync.cron_refresh_issue_timelines",
-            found_count=len(issues),
-        )
+            if rate_limit.remaining < 1000:
+                log.info(
+                    "github.issue.sync.cron_refresh_issue_timelines.rate_limit_almost_exhausted",
+                    org_name=org.name,
+                    rate_limit_remaining=rate_limit.remaining,
+                )
+                return
 
-        for issue in issues:
-            await enqueue_job("github.issue.sync.issue_references", issue.id)
+            issues = await github_issue.list_issues_to_crawl_timeline(session, org)
+
+            log.info(
+                "github.issue.sync.cron_refresh_issue_timelines",
+                org_name=org.name,
+                found_count=len(issues),
+                rate_limit_remaining=rate_limit.remaining,
+            )
+
+            for issue in issues:
+                await enqueue_job("github.issue.sync.issue_references", issue.id)

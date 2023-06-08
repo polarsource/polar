@@ -26,7 +26,7 @@ from polar.worker import enqueue_job
 from polar.auth.service import AuthService, LoginResponse
 from httpx_oauth.oauth2 import OAuth2Token
 from polar.pledge.service import pledge as pledge_service
-
+from polar.posthog.service import posthog_service
 
 from .service.organization import github_organization
 from .service.repository import github_repository
@@ -113,6 +113,8 @@ async def github_callback(
     pledge_id = state_data.get("pledge_id")
     if pledge_id:
         await pledge_service.connect_backer(session, pledge_id=pledge_id, backer=user)
+
+    posthog_service.identify(user)
 
     goto_url = state_data.get("goto_url", None)
 
@@ -206,6 +208,7 @@ IMPLEMENTED_WEBHOOKS = {
     "issues.opened",
     "issues.edited",
     "issues.closed",
+    "issues.deleted",
     "issues.labeled",
     "issues.unlabeled",
     "issues.assigned",
@@ -223,9 +226,7 @@ IMPLEMENTED_WEBHOOKS = {
 }
 
 
-def not_implemented(
-    scope: str, action: str, payload: dict[str, Any]
-) -> WebhookResponse:
+def not_implemented() -> WebhookResponse:
     return WebhookResponse(success=False, message="Not implemented")
 
 
@@ -236,7 +237,7 @@ async def enqueue(request: Request) -> WebhookResponse:
     event_name = f"{event_scope}.{event_action}" if event_action else event_scope
 
     if event_name not in IMPLEMENTED_WEBHOOKS:
-        return not_implemented(event_scope, event_action, json_body)
+        return not_implemented()
 
     task_name = f"github.webhook.{event_name}"
     enqueued = await enqueue_job(task_name, event_scope, event_action, json_body)

@@ -163,10 +163,20 @@ class Issue(IssueFields, RecordModel):
             "idx_issues_pledged_amount_sum",
             "pledged_amount_sum",
         ),
+        # TODO: deprecated, remove when we've migrated to positive_reactions_count and
+        # total_engagement_count
         Index(
             "idx_issues_reactions_plus_one",
             sqlalchemy.text("((reactions::jsonb ->> 'plus_one')::int)"),
             postgresql_using="btree",
+        ),
+        Index(
+            "idx_issues_positive_reactions_count",
+            "positive_reactions_count",
+        ),
+        Index(
+            "idx_issues_positive_total_engagement_count",
+            "total_engagement_count",
         ),
     )
 
@@ -220,9 +230,19 @@ class Issue(IssueFields, RecordModel):
         Boolean, nullable=False, server_default="false"
     )
 
+    positive_reactions_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
+    )
+
+    total_engagement_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
+    )
+
     __mutables__ = issue_fields_mutables | {
         "has_pledge_badge_label",
         "pledge_badge_currently_embedded",
+        "positive_reactions_count",
+        "total_engagement_count",
     }
 
     @classmethod

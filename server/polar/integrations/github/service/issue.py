@@ -2,12 +2,14 @@ from __future__ import annotations
 import datetime
 
 from typing import Any, Sequence, Union
+from uuid import UUID
 from githubkit import GitHub, Response
 from githubkit.rest.models import Issue as GitHubIssue
 from githubkit.exception import RequestFailed
 from sqlalchemy import asc, or_
 
 import structlog
+from polar.dashboard.schemas import IssueListType, IssueSortBy
 from polar.kit.extensions.sqlalchemy import sql
 
 from polar.kit.utils import utc_now
@@ -317,6 +319,58 @@ class GithubIssueService(IssueService):
         res = await session.execute(stmt)
 
         return res.scalars().unique().all()
+
+    async def list_issues_to_add_badge_to_auto(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        repository: Repository,
+    ) -> Sequence[Issue]:
+        (issues, _) = await self.list_by_repository_type_and_status(
+            session=session,
+            repository_ids=[repository.id],
+            issue_list_type=IssueListType.issues,
+            sort_by=IssueSortBy.recently_updated,
+        )
+
+        def filter(issue: Issue) -> bool:
+            (should, _) = GithubBadge.should_add_badge(
+                organization=organization,
+                repository=repository,
+                issue=issue,
+                triggered_from_label=False,
+            )
+            return should
+
+        add_issues = [issue for issue in reversed(issues) if filter(issue)]
+
+        return add_issues
+
+    async def list_issues_to_remove_badge_from_auto(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        repository: Repository,
+    ) -> Sequence[Issue]:
+        (issues, _) = await self.list_by_repository_type_and_status(
+            session=session,
+            repository_ids=[repository.id],
+            issue_list_type=IssueListType.issues,
+            sort_by=IssueSortBy.recently_updated,
+        )
+
+        def filter(issue: Issue) -> bool:
+            (should, _) = GithubBadge.should_remove_badge(
+                organization=organization,
+                repository=repository,
+                issue=issue,
+                triggered_from_label=False,
+            )
+            return should
+
+        remove_issues = [issue for issue in reversed(issues) if filter(issue)]
+
+        return remove_issues
 
 
 github_issue = GithubIssueService(Issue)

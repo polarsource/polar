@@ -6,6 +6,8 @@ from typing import Any, Generic, Sequence, TypeVar
 
 from sqlalchemy.orm import InstrumentedAttribute
 
+from polar.kit.utils import utc_now
+
 from .db.models import RecordModel
 from .db.postgres import AsyncSession, sql
 from .schemas import Schema
@@ -25,10 +27,8 @@ class ResourceServiceReader(
         self, session: AsyncSession, id: UUID, allow_deleted: bool = False
     ) -> ModelType | None:
         query = sql.select(self.model).where(self.model.id == id)
-
         if not allow_deleted:
             query = query.where(self.model.deleted_at.is_(None))
-
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
 
@@ -37,14 +37,16 @@ class ResourceServiceReader(
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
 
-    async def soft_delete(self, session: AsyncSession, id: UUID) -> bool:
-        obj = await self.get(session, id)
-        if not obj:
-            return False
-
-        obj.deleted_at = datetime.utcnow()
-        await obj.save(session)
-        return True
+    async def soft_delete(self, session: AsyncSession, id: UUID) -> None:
+        stmt = (
+            sql.update(self.model)
+            .where(self.model.id == id, self.model.deleted_at.is_(None))
+            .values(
+                deleted_at=utc_now(),
+            )
+        )
+        await session.execute(stmt)
+        await session.commit()
 
 
 class ResourceService(

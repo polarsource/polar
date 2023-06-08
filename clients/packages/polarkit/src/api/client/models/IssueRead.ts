@@ -29,6 +29,8 @@ export type IssueRead = {
   issue_created_at: string;
   has_pledge_badge_label?: boolean;
   pledge_badge_currently_embedded?: boolean;
+  positive_reactions_count?: number;
+  total_engagement_count?: number;
   id: string;
   created_at: string;
   modified_at?: string;

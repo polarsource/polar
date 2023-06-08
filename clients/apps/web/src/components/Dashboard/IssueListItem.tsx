@@ -159,18 +159,20 @@ const IssueListItem = (props: {
               </div>
               {!isDependency && (
                 <div className="text-xs text-gray-500">
-                  {state == 'open' && (
-                    <p>
-                      #{number} opened{' '}
-                      <PolarTimeAgo date={new Date(createdAt)} />
-                    </p>
-                  )}
-                  {state == 'closed' && (
-                    <p>
-                      #{number} closed{' '}
-                      <PolarTimeAgo date={new Date(closedAt)} />
-                    </p>
-                  )}
+                  <p>
+                    #{number}{' '}
+                    {state == 'open' && (
+                      <>
+                        opened <PolarTimeAgo date={new Date(createdAt)} />
+                      </>
+                    )}
+                    {state == 'closed' && (
+                      <>
+                        closed <PolarTimeAgo date={new Date(closedAt)} />
+                      </>
+                    )}{' '}
+                    in {props.org.name}/{props.repo.name}
+                  </p>
                 </div>
               )}
               {isDependency && (

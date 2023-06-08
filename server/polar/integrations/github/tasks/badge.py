@@ -1,13 +1,10 @@
 from uuid import UUID
 import structlog
-from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
-
 from polar.worker import JobContext, PolarWorkerContext, task
 from polar.postgres import AsyncSessionLocal
 
 from .utils import get_organization_and_repo
 from ..service.issue import github_issue
-from polar.issue.service import issue
 
 log = structlog.get_logger()
 
@@ -60,20 +57,11 @@ async def embed_badge_retroactively_on_repository(
                 )
                 return
 
-            (issues, _) = await issue.list_by_repository_type_and_status(
+            for i in await github_issue.list_issues_to_add_badge_to_auto(
                 session=session,
-                repository_ids=[repository.id],
-                issue_list_type=IssueListType.issues,
-                sort_by=IssueSortBy.least_recently_updated,
-                include_statuses=[
-                    IssueStatus.backlog,
-                    IssueStatus.triaged,
-                    IssueStatus.in_progress,
-                    IssueStatus.pull_request,
-                ],
-            )
-
-            for i in reversed(issues):
+                repository=repository,
+                organization=organization,
+            ):
                 await github_issue.embed_badge(
                     session,
                     organization=organization,
@@ -100,14 +88,11 @@ async def remove_badges_on_repository(
                 log.warn("github.remove_badges_on_repository.skip_repo_is_private")
                 return
 
-            (issues, _) = await issue.list_by_repository_type_and_status(
+            for i in await github_issue.list_issues_to_remove_badge_from_auto(
                 session=session,
-                repository_ids=[repository.id],
-                issue_list_type=IssueListType.issues,
-                sort_by=IssueSortBy.recently_updated,
-            )
-
-            for i in reversed(issues):
+                repository=repository,
+                organization=organization,
+            ):
                 await github_issue.remove_badge(
                     session,
                     organization=organization,

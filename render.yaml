@@ -24,6 +24,7 @@ services:
       - key: PORT
         value: "10000"
       - fromGroup: web-stripe
+      - fromGroup: web-posthog
 
     domains:
       - dashboard.polar.sh
@@ -90,20 +91,20 @@ services:
       - fromGroup: server-common
       - fromGroup: server-stripe
 
-
-
   # Worker
   - type: worker
-    name: worker
-    env: docker
-    dockerfilePath: ./Dockerfile
-    dockerContext: ./
+    name: worker-image
+    env: image
+    image:
+      url: ghcr.io/polarsource/polar:latest
+      creds:
+        fromRegistryCreds:
+          name: polarsource
     dockerCommand: "poetry run arq run_worker.WorkerSettings"
     region: ohio
     plan: standard
-    branch: main
-    rootDir: server
     numInstances: 1
+    autoDeploy: false # deploys are triggered by github actions
     envVars:
       # PostgreSQL
       - key: POLAR_POSTGRES_USER
@@ -195,6 +196,8 @@ envVarGroups:
     value: "https://api.polar.sh/api/v1"
   - key: POLAR_DISCORD_WEBHOOK_URL
     sync: false
+  - key: POLAR_POSTHOG_PROJECT_API_KEY
+    sync: false
 
 - name: server-stripe
   envVars:
@@ -206,4 +209,9 @@ envVarGroups:
 - name: web-stripe
   envVars:
   - key: NEXT_PUBLIC_STRIPE_KEY
+    sync: false
+
+- name: web-posthog
+  envVars:
+  - key: NEXT_PUBLIC_POSTHOG_TOKEN
     sync: false

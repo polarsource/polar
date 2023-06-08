@@ -57,7 +57,7 @@ const AcceptTerms = () => {
       fadeOutTakeover={boxFadeOut}
       showErrorBanner={showErrorBanner}
       acceptedTerms={acceptedTerms}
-      onChangeAcceptedTerms={() => {}}
+      onChangeAcceptedTerms={onChangeAcceptTos}
       loading={loading}
       onContinueClick={onContinueClick}
     />

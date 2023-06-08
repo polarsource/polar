@@ -63,7 +63,7 @@ class MinimalPullRequestCreate(IssueAndPullRequestBase):
         organization_id: UUID,
         repository_id: UUID,
     ) -> Self:
-        create = cls.from_github(
+        create = cls.get_normalized_github_issue(
             pr,
             organization_id,
             repository_id,

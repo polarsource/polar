@@ -1,4 +1,9 @@
 FROM docker.io/python:3.11.3-bullseye as installer
+
+LABEL org.opencontainers.image.source=https://github.com/polarsource/polar
+LABEL org.opencontainers.image.description="Polar"
+LABEL org.opencontainers.image.licenses=Apache-2.0
+
 RUN pip install "poetry==1.4.2"
 
 WORKDIR /app/server

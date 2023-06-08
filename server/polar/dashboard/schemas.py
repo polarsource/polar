@@ -35,6 +35,8 @@ class IssueSortBy(str, Enum):
         "dependencies_default"  # (state, self pledged amount, updated at)
     )
     issues_default = "issues_default"  # (total pledged amount, thumbs up, updated at)
+    most_engagement = "most_engagement"
+    most_positive_reactions = "most_positive_reactions"
 
 
 # JSON:API types below

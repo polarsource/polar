@@ -15,7 +15,7 @@ alembic = "^1.9.2"
 sqlalchemy = {extras = ["asyncio"], version = "^2.0.9"}
 greenlet = "^2.0.2"  # Need to be explicit, M1 Mac issue (https://github.com/python-poetry/poetry/issues/5429)
 structlog = "^22.3.0"
-githubkit = {extras = ["auth-app"], git="https://github.com/polarsource/githubkit.git", branch="master"}
+githubkit = {extras = ["auth-app"], version = "^0.10.5"}
 redis = "^4.5.4"
 sse-starlette = "^1.4.0"
 arq = "^0.25.0"
@@ -29,6 +29,7 @@ sentry-sdk = {extras = ["fastapi"], version = "^1.20.0"}
 sendgrid = "^6.10.0"
 pytest-recording = "^0.12.2"
 discord-webhook = {extras = ["async"], version = "^1.1.0"}
+posthog = "^3.0.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.12.0"

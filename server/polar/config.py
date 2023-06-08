@@ -79,6 +79,8 @@ class Settings(BaseSettings):
     EMAIL_SENDER: EmailSender = EmailSender.logger
     SENDGRID_API_KEY: str = ""
 
+    POSTHOG_PROJECT_API_KEY: str = ""
+
     class Config:
         env_prefix = "polar_"
         env_file_encoding = "utf-8"

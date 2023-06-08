@@ -3,7 +3,7 @@ from typing import Any, List, Set, Union
 from uuid import UUID
 from githubkit import GitHub, Response
 from githubkit.exception import RequestFailed
-from pydantic import parse_obj_as
+from pydantic import ValidationError, parse_obj_as
 
 import structlog
 from polar.context import PolarContext
@@ -597,8 +597,12 @@ class GitHubIssueReferencesService:
                 repo=ref.repository_name,
                 ref=ref.commit_id,
             )
-            if commit and commit.parsed_data.commit.message:
-                ref.message = commit.parsed_data.commit.message
+            try:
+                if commit and commit.parsed_data.commit.message:
+                    ref.message = commit.parsed_data.commit.message
+            except ValidationError:
+                # githubkit can crash with a validation error inside commit.parsed_data
+                pass
 
         return ref
 

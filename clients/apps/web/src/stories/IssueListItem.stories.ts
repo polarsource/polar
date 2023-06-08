@@ -458,6 +458,12 @@ export const Dependency: Story = {
     dependents: [dependents],
   },
 }
+export const DependencyMultiple: Story = {
+  args: {
+    ...Default.args,
+    dependents: [dependents, dependents, dependents],
+  },
+}
 
 export const StatusPullRequestNameHighlights: Story = {
   args: {

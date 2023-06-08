@@ -1,4 +1,5 @@
 import { api } from 'polarkit/api'
+import posthog from 'posthog-js'
 import { useEffect, useState } from 'react'
 import { useAuth } from './auth'
 
@@ -16,13 +17,17 @@ export const useGithubOAuthCallback = (
   const [gotoUrl, setGotoUrl] = useState<string | null>(null)
 
   const login = async () => {
-    session.login((authenticated: boolean) => {
-      if (authenticated) {
-        setSuccess(true)
-      } else {
-        setError('Something went wrong logging in')
-      }
-    })
+    session
+      .login((authenticated: boolean) => {
+        if (authenticated) {
+          setSuccess(true)
+        } else {
+          setError('Something went wrong logging in')
+        }
+      })
+      .then((user) => {
+        posthog.identify(`user:${user.id}`)
+      })
   }
 
   useEffect(() => {

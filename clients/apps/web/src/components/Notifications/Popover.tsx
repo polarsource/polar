@@ -1,4 +1,3 @@
-import { GitMergeIcon } from '@/../../../packages/polarkit/src/components/icons'
 import { BellIcon } from '@heroicons/react/24/outline'
 import {
   MaintainerPledgeCreatedNotification,
@@ -6,7 +5,9 @@ import {
   MaintainerPledgePendingNotification,
   NotificationRead,
   NotificationType,
+  PledgerPledgePendingNotification,
 } from 'polarkit/api/client'
+import { GitMergeIcon } from 'polarkit/components/icons'
 import { PolarTimeAgo } from 'polarkit/components/ui'
 import { useNotifications, useNotificationsMarkRead } from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
@@ -211,6 +212,7 @@ const MaintainerPledgePending = ({
     </Item>
   )
 }
+
 const MaintainerPledgePaid = ({
   n,
   payload,
@@ -234,6 +236,33 @@ const MaintainerPledgePaid = ({
               </>
             </Link>{' '}
             has been transferred
+          </>
+        ),
+        icon: <DollarSignIcon />,
+      }}
+    </Item>
+  )
+}
+
+const PledgerPledgePending = ({
+  n,
+  payload,
+}: {
+  n: NotificationRead
+  payload: PledgerPledgePendingNotification
+}) => {
+  return (
+    <Item n={n} iconClasses="bg-blue-200 text-blue-600">
+      {{
+        text: (
+          <>
+            <Link href={payload.issue_url}>
+              <>
+                {payload.issue_org_name}/{payload.issue_repo_name}#
+                {payload.issue_number}
+              </>
+            </Link>{' '}
+            has been completed. Review it.
           </>
         ),
         icon: <DollarSignIcon />,
@@ -268,9 +297,9 @@ export const Notification = ({ n }: { n: NotificationRead }) => {
       )
     case NotificationType.PLEDGER_PLEDGE_PENDING_NOTIFICATION:
       return (
-        <MaintainerPledgeCreated
+        <PledgerPledgePending
           n={n}
-          payload={n.payload as MaintainerPledgeCreatedNotification}
+          payload={n.payload as PledgerPledgePendingNotification}
         />
       )
   }

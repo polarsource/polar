@@ -1,7 +1,11 @@
-from typing import Literal, Callable, Any, Coroutine, Sequence
+from typing import List, Literal, Callable, Any, Coroutine, Sequence
 
 import structlog
-from githubkit import Paginator
+from githubkit import Paginator, Response
+from githubkit.rest import (
+    InstallationRepositoriesGetResponse200,
+    Repository as GitHubKitRepository,
+)
 from polar.kit.hook import Hook
 
 from polar.models import Organization, Repository, Issue, PullRequest
@@ -233,17 +237,25 @@ class GithubRepositoryService(RepositoryService):
         installation_id: int,
     ) -> Sequence[Repository] | None:
         client = github.get_app_installation_client(installation_id)
-        response = await client.rest.apps.async_list_repos_accessible_to_installation()
-        github.ensure_expected_response(response)
 
-        repos = [
-            RepositoryCreate.from_github(organization, repo)
-            for repo in response.parsed_data.repositories
-        ]
-        instances = await self.upsert_many(session, repos)
-        # Create tasks to sync repositories (issues, pull requests, etc.)
-        for instance in instances:
-            await self.enqueue_sync(instance)
+        instances = []
+
+        def mapper(
+            res: Response[InstallationRepositoriesGetResponse200],
+        ) -> list[GitHubKitRepository]:
+            return res.parsed_data.repositories
+
+        async for repo in client.paginate(
+            client.rest.apps.async_list_repos_accessible_to_installation,
+            map_func=mapper,
+        ):
+            create = RepositoryCreate.from_github(organization, repo)
+            inst = await self.upsert(session, create)
+
+            instances.append(inst)
+
+            await self.enqueue_sync(inst)
+
         return instances
 
 

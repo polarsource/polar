@@ -134,6 +134,8 @@ const Header = (props: {
         relevance: IssueSortBy.RELEVANCE,
         dependencies_default: IssueSortBy.DEPENDENCIES_DEFAULT,
         issues_default: IssueSortBy.ISSUES_DEFAULT,
+        most_positive_reactions: IssueSortBy.MOST_POSITIVE_REACTIONS,
+        most_engagement: IssueSortBy.MOST_ENGAGEMENT,
       }[value] || IssueSortBy.NEWEST
 
     const filters: DashboardFilters = {
@@ -161,6 +163,12 @@ const Header = (props: {
     if (sortBy == IssueSortBy.ISSUES_DEFAULT) {
       return 'Most wanted'
     }
+    if (sortBy == IssueSortBy.MOST_POSITIVE_REACTIONS) {
+      return 'Most reactions'
+    }
+    if (sortBy == IssueSortBy.MOST_ENGAGEMENT) {
+      return 'Most engagement'
+    }
     return 'Most wanted'
   }
 
@@ -177,6 +185,8 @@ const Header = (props: {
     return [
       ...tabFilters,
       ...[
+        IssueSortBy.MOST_POSITIVE_REACTIONS,
+        IssueSortBy.MOST_ENGAGEMENT,
         IssueSortBy.NEWEST,
         IssueSortBy.PLEDGED_AMOUNT_DESC,
         IssueSortBy.RELEVANCE,

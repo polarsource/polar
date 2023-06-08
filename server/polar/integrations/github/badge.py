@@ -48,7 +48,7 @@ class GithubBadge:
         if repository.pledge_badge_auto_embed:
             return (True, "repository_pledge_badge_auto_embed")
 
-        return (False, "no_auto_embed_or_label")
+        return (False, "fallthrough")
 
     @classmethod
     def should_remove_badge(
@@ -67,10 +67,10 @@ class GithubBadge:
         if triggered_from_label:
             return (True, "triggered_from_label")
 
-        if repository.pledge_badge_auto_embed:
-            return (True, "repository_pledge_badge_auto_embed")
+        if issue.has_pledge_badge_label:
+            return (False, "issue_has_label")
 
-        return (False, "no_auto_embed_or_label")
+        return (True, "fallthrough")
 
     def generate_svg_url(self, darkmode: bool = False) -> str:
         return "{base}/api/github/{org}/{repo}/issues/{number}/pledge.svg{maybeDarkmode}".format(  # noqa: E501
@@ -170,10 +170,12 @@ class GithubBadge:
 
         body = await self.get_current_body(client)
         if self.badge_is_embedded(body):
+            log.info("github.badge.embed.is_already_embedded", issue_id=self.issue.id)
             return None
 
         body_with_badge = self.generate_body_with_badge(body)
         await self.update_body(client, body_with_badge)
+        log.info("github.badge.embed.embedded", issue_id=self.issue.id)
         return None
 
     async def remove(self) -> None:
@@ -181,8 +183,10 @@ class GithubBadge:
 
         body = await self.get_current_body(client)
         if not self.badge_is_embedded(body):
+            log.info("github.badge.remove.is_not_embedded", issue_id=self.issue.id)
             return None
 
         body_without_badge = self.generate_body_without_badge(body)
         await self.update_body(client, body_without_badge)
+        log.info("github.badge.remove.removed", issue_id=self.issue.id)
         return None

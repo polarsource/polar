@@ -30,6 +30,15 @@ async def initialize_test_database(session: AsyncSession) -> None:
         await conn.run_sync(Model.metadata.create_all)
 
 
+@pytest_asyncio.fixture(scope="function")
+async def initialize_test_database_function(session: AsyncSession) -> None:
+    await session.commit()
+
+    async with AsyncEngineLocal.begin() as conn:
+        await conn.run_sync(Model.metadata.drop_all)
+        await conn.run_sync(Model.metadata.create_all)
+
+
 @pytest_asyncio.fixture(scope="session")
 async def session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:

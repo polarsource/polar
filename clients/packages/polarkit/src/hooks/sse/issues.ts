@@ -1,6 +1,6 @@
 import { queryClient } from '../../api'
 
-export const onIssueUpdated = (params: {
+export const onIssueUpdated = async (params: {
   organization_id: string
   organization_name: string
   repository_id: string
@@ -12,5 +12,5 @@ export const onIssueUpdated = (params: {
     params.organization_name,
     params.repository_name,
   ]
-  queryClient.invalidateQueries(cacheKey)
+  await queryClient.invalidateQueries(cacheKey)
 }

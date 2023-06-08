@@ -6,14 +6,35 @@ import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { ReactElement, useState } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
+import { useSSE } from 'polarkit/hooks'
 
 const Page: NextLayoutComponentType = () => {
   const [showControls, setShowControls] = useState<boolean>(false)
   const [syncedIssuesCount, setSyncIssuesCount] = useState<number>(0)
   const { org } = useCurrentOrgAndRepoFromURL()
 
+  useSSE()
+
   if (!org) {
-    return <></>
+    return (
+      <>
+        <Head>
+          <title>Polar | Setup</title>
+        </Head>
+        <div className="flex min-h-screen py-8 px-2 md:px-0">
+          <div className="mx-auto space-y-8 md:my-auto md:w-[700px]">
+            {!showControls && (
+              <h1 className="flex-column mb-11 flex items-center justify-center text-center text-xl font-normal text-gray-500">
+                Connecting repositories
+                <span className="ml-4">
+                  <Spinner />
+                </span>
+              </h1>
+            )}
+          </div>
+        </div>
+      </>
+    )
   }
 
   return (

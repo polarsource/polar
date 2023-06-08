@@ -13,4 +13,6 @@ export enum IssueSortBy {
   RELEVANCE = 'relevance',
   DEPENDENCIES_DEFAULT = 'dependencies_default',
   ISSUES_DEFAULT = 'issues_default',
+  MOST_ENGAGEMENT = 'most_engagement',
+  MOST_POSITIVE_REACTIONS = 'most_positive_reactions',
 }

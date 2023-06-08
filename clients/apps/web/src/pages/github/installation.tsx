@@ -11,6 +11,7 @@ import {
   InstallationCreate,
   OrganizationPrivateRead,
 } from 'polarkit/api/client'
+import { PrimaryButton } from 'polarkit/components/ui'
 import { ParsedUrlQuery } from 'querystring'
 import type { ReactElement } from 'react'
 import { useEffect, useState } from 'react'
@@ -23,6 +24,11 @@ const GithubInstallationPage: NextPageWithLayout = () => {
   )
   const query = router.query
   const [showLogin, setShowLogin] = useState(false)
+
+  const redirectToDashboard = () => {
+    router.push('/dashboard')
+    return
+  }
 
   const install = (query: ParsedUrlQuery) => {
     if (typeof query?.installation_id !== 'string') {
@@ -94,6 +100,27 @@ const GithubInstallationPage: NextPageWithLayout = () => {
     return (
       <LoadingScreen animate={false}>
         <LoadingScreenError error={error} />
+      </LoadingScreen>
+    )
+  }
+
+  /**
+   * In case installation is made by member of an organization vs. admin.
+   *
+   * Fixed in: https://github.com/polarsource/polar/issues/690
+   */
+  if (query.setup_action === 'request') {
+    return (
+      <LoadingScreen animate={false}>
+        <div className="text-center">
+          <p className="mb-4">
+            Thank you! Installation request sent to your organization
+            administrators.
+          </p>
+          <PrimaryButton fullWidth={false} onClick={redirectToDashboard}>
+            Go to dashboard
+          </PrimaryButton>
+        </div>
       </LoadingScreen>
     )
   }

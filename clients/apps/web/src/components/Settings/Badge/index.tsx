@@ -350,7 +350,7 @@ const RetroactiveActivationLabel = ({
   )
 }
 
-const Controls = ({
+export const Controls = ({
   org,
   showControls,
   setShowControls,

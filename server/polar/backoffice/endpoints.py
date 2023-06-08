@@ -3,12 +3,21 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
+from polar.enums import Platforms
 from polar.invite.schemas import InviteRead, InviteCreate
+from polar.models.organization import Organization
+from polar.organization.schemas import OrganizationPrivateRead
 from .schemas import BackofficePledgeRead
 from polar.postgres import AsyncSession, get_db_session
 
 from polar.pledge.service import pledge as pledge_service
 from polar.invite.service import invite as invite_service
+from polar.integrations.github.service.organization import (
+    github_organization as github_organization_service,
+)
+from polar.integrations.github.service.repository import (
+    github_repository as github_repository_service,
+)
 
 from .pledge_service import bo_pledges_service
 
@@ -96,3 +105,23 @@ async def invites_list(
 ) -> list[InviteRead]:
     res = await invite_service.list(session)
     return [InviteRead.from_db(i) for i in res]
+
+
+@router.post("/organization/sync/{name}", response_model=OrganizationPrivateRead)
+async def organization_sync(
+    name: str,
+    auth: Auth = Depends(Auth.backoffice_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> Organization:
+    org = await github_organization_service.get_by_name(session, Platforms.github, name)
+    if not org:
+        raise HTTPException(
+            status_code=404,
+            detail="Org not found",
+        )
+
+    await github_repository_service.install_for_organization(
+        session, org, org.installation_id
+    )
+
+    return org

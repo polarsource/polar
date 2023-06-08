@@ -469,7 +469,7 @@ const Controls = ({
   return (
     <>
       {hasRetroactiveChanges && (
-        <div className="flex flex-row space-x-8 rounded-xl border bg-white p-4">
+        <div className="flex flex-row space-x-8 rounded-xl border bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
           <div className="w-1/2 items-center text-sm">
             <SettingsCheckbox
               id="retroactive_embed"
@@ -506,7 +506,7 @@ const Controls = ({
 
           <span
             className={classNames(
-              'text-sm leading-6 text-gray-500 transition-all duration-500',
+              'text-sm leading-6 text-gray-500 transition-all duration-500 dark:text-gray-400',
               isSaved ? 'opacity-1' : 'opacity-0',
             )}
           >

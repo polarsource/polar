@@ -54,6 +54,12 @@ const getSort = (sort: string | null): IssueSortBy => {
   if (sort === 'dependencies_default') {
     return IssueSortBy.DEPENDENCIES_DEFAULT
   }
+  if (sort === 'most_positive_reactions') {
+    return IssueSortBy.MOST_POSITIVE_REACTIONS
+  }
+  if (sort === 'most_engagement') {
+    return IssueSortBy.MOST_ENGAGEMENT
+  }
   return IssueSortBy.NEWEST
 }
 

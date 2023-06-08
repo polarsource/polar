@@ -96,29 +96,40 @@ class GitHubIssueDependenciesService:
                 github_repo = repo_response.parsed_data
 
                 owner = github_repo.owner
+                organization = await service.github_organization.get_by_name(
+                    session, Platforms.github, owner.login)
 
-                is_personal = owner.type.lower() == "user"
-                org_schema = OrganizationCreate(
+                if not organization:
+                    is_personal = owner.type.lower() == "user"
+                    org_schema = OrganizationCreate(
+                        platform=Platforms.github,
+                        name=owner.login,
+                        external_id=owner.id,
+                        avatar_url=owner.avatar_url,
+                        is_personal=is_personal,
+                    )
+                    organization = await service.github_organization.upsert(
+                        session, org_schema
+                    )
+
+                _, repository = await service.github_organization.get_with_repo(
+                    session=session,
                     platform=Platforms.github,
-                    name=owner.login,
-                    external_id=owner.id,
-                    avatar_url=owner.avatar_url,
-                    is_personal=is_personal,
-                )
-                organization = await service.github_organization.upsert(
-                    session, org_schema
+                    org_name=organization.name,
+                    repo_name=github_repo.name,
                 )
 
-                repo_schema = RepositoryCreate(
-                    platform=Platforms.github,
-                    external_id=github_repo.id,
-                    organization_id=organization.id,
-                    name=github_repo.name,
-                    is_private=github_repo.private,
-                )
-                repository = await service.github_repository.upsert(
-                    session, repo_schema
-                )
+                if not repository:
+                    repo_schema = RepositoryCreate(
+                        platform=Platforms.github,
+                        external_id=github_repo.id,
+                        organization_id=organization.id,
+                        name=github_repo.name,
+                        is_private=github_repo.private,
+                    )
+                    repository = await service.github_repository.upsert(
+                        session, repo_schema
+                    )
 
                 issue_response = await client.rest.issues.async_get(
                     dependency.owner, dependency.repo, dependency.number

@@ -32,7 +32,7 @@ const PledgePage: NextPage = ({
         <title>Polar | {issue.title}</title>
       </Head>
       <div className="mx-auto mt-12 w-full md:mt-24 md:w-[826px]">
-        <h1 className="text-center text-3xl font-normal text-gray-800 md:text-4xl">
+        <h1 className="text-center text-3xl font-normal text-gray-800 dark:text-gray-300 md:text-4xl">
           Complete your backing
         </h1>
 

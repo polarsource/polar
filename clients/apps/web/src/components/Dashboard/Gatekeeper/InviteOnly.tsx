@@ -123,8 +123,8 @@ export const InviteOnlyBox = (props: {
           </RedBanner>
         )}
         <ShadowBox>
-          <div className="flex flex-col space-y-2">
-            <p className="text-gray-500">
+          <div className="flex flex-col space-y-4">
+            <p className="text-gray-500 dark:text-gray-400">
               To join Polar, enter your invite code
             </p>
             <Input

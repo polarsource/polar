@@ -127,7 +127,7 @@ const IssueListItem = (props: {
   return (
     <>
       <div>
-        <div className="hover:bg-gray-75 group flex items-center justify-between gap-4 py-4 px-2 pb-5">
+        <div className="hover:bg-gray-75 group flex items-center justify-between gap-4 py-4 px-2 pb-5 dark:hover:bg-gray-900">
           <div className="flex flex-row items-center">
             {isDependency && (
               <div className="mr-3 flex-shrink-0 justify-center rounded-full bg-white p-[1px] shadow">
@@ -176,7 +176,7 @@ const IssueListItem = (props: {
                 </div>
               )}
               {isDependency && (
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   {props.dependents?.map((dep: IssueReadWithRelations) => (
                     <p key={dep.id}>
                       Mentioned in{' '}
@@ -186,7 +186,7 @@ const IssueListItem = (props: {
                           dep.repository.name,
                           dep.number,
                         )}
-                        className="font-medium text-blue-600"
+                        className="font-medium text-blue-600 dark:text-blue-500"
                       >
                         {dep.organization.name}/{dep.repository.name}#
                         {dep.number} - {dep.title}

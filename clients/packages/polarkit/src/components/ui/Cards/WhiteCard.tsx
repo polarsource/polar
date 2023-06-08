@@ -3,7 +3,10 @@ import BaseCard from './BaseCard'
 import { type CardProperties } from './types'
 
 const WhiteCard = (props: CardProperties) => {
-  const className = classNames('bg-white shadow', props.className || '')
+  const className = classNames(
+    'bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-gray-700',
+    props.className || '',
+  )
 
   const updatedProps = {
     ...props,

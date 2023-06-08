@@ -76,7 +76,7 @@ const SettingsPage: NextLayoutComponentType = () => {
       </Head>
 
       <div className="relative z-0 mx-auto w-full max-w-[1100px] md:mt-16">
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-200 dark:divide-gray-800">
           {showBadgeSettings && org && (
             <Section>
               <>
@@ -133,7 +133,7 @@ const SettingsTopbar = () => {
       {{
         left: (
           <Link href={`/dashboard/${handle}`}>
-            <ArrowLeftIcon className="h-6 w-6 text-black" />
+            <ArrowLeftIcon className="h-6 w-6" />
           </Link>
         ),
         center: (
@@ -187,8 +187,8 @@ const SectionDescription = ({
 }) => {
   return (
     <div className="flex-shrink-0 md:w-60">
-      <h2 className="mb-2 font-medium text-gray-900">{title}</h2>
-      <p className="text-sm text-gray-500">{description}</p>
+      <h2 className="mb-2 font-medium">{title}</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>
     </div>
   )
 }

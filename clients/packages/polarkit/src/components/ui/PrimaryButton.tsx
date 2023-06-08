@@ -3,7 +3,9 @@ import { classNames } from '../../utils/dom'
 
 const LargeLoadingSpinner = (props: { disabled: boolean }) => {
   const classes = classNames(
-    props.disabled ? 'fill-gray-300 text-gray-200' : 'fill-white text-blue-300',
+    props.disabled
+      ? 'fill-gray-300 text-gray-200 dark:fill-gray-600 dark:text-gray-400'
+      : 'fill-white text-blue-300',
     'h-6 w-6 animate-spin',
   )
 
@@ -33,7 +35,9 @@ const LargeLoadingSpinner = (props: { disabled: boolean }) => {
 
 const TinyLoadingSpinner = (props: { disabled: boolean }) => {
   const classes = classNames(
-    props.disabled ? 'fill-gray-300 text-gray-200' : 'fill-white text-blue-300',
+    props.disabled
+      ? 'fill-gray-300 text-gray-200 dark:fill-gray-600 dark:text-gray-400'
+      : 'fill-white text-blue-300',
     'h-4 w-4 animate-spin',
   )
 
@@ -81,7 +85,7 @@ const defaultProps = {
 
 const bg = (color: Color, loading: boolean, disabled: boolean) => {
   if (disabled) {
-    return 'bg-gray-200/75'
+    return 'bg-gray-200/75 dark:bg-gray-700/75'
   }
 
   if (loading) {
@@ -115,7 +119,7 @@ const bg = (color: Color, loading: boolean, disabled: boolean) => {
 
 const text = (color: Color, loading: boolean, disabled: boolean) => {
   if (disabled) {
-    return 'text-gray-400'
+    return 'text-gray-400 dark:text-gray-500'
   }
   if (loading) {
     return 'text-gray-400'

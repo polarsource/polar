@@ -56,16 +56,16 @@ const SetupAccount = ({ onClose }: { onClose: () => void }) => {
           <div className="flex w-full items-start justify-between">
             <h1 className="text-2xl font-normal">Receive payments</h1>
             <XMarkIcon
-              className="h-6 w-6 cursor-pointer text-black/50 hover:text-black"
+              className="h-6 w-6 cursor-pointer hover:text-gray-500 dark:hover:text-gray-400"
               onClick={onClose}
             />
           </div>
 
           <form className="z-0 flex flex-col space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-4">
               <label
                 htmlFor="country"
-                className="text-sm font-medium text-gray-600"
+                className="text-sm font-medium text-gray-500 dark:text-gray-400"
               >
                 If this is a personal account, please select your country of
                 residence. If this is an organization or business, select the

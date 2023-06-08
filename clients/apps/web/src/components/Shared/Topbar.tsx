@@ -17,7 +17,7 @@ const Topbar = (props: {
 }) => {
   const className = classNames(
     props.isFixed ? 'fixed z-10' : '',
-    'flex h-16 w-full items-center justify-between space-x-4 bg-white px-4 drop-shadow',
+    'flex h-16 w-full items-center justify-between space-x-4 bg-white dark:bg-gray-800 px-4 drop-shadow dark:border-b dark:border-gray-700',
   )
 
   const hasLeft = !!props?.children?.left

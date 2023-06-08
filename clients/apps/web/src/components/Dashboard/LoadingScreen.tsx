@@ -34,13 +34,18 @@ const LogoIcon = ({ animate }: { animate: boolean }) => {
       viewBox="0 0 40 40"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={'m-auto text-gray-50'}
+      className={'dark:text-gray-950 m-auto text-gray-50'}
       animate={{
         rotate: [0, 90, 180],
       }}
       transition={transition}
     >
-      <motion.circle cx="20" cy="20" r="20" fill="#364797" />
+      <motion.circle
+        cx="20"
+        cy="20"
+        r="20"
+        className="fill-blue-700 dark:fill-blue-600"
+      />
       <motion.circle
         animate={{
           scaleX: [0.85, 1, 0.85],
@@ -61,7 +66,7 @@ const LogoIcon = ({ animate }: { animate: boolean }) => {
         cx="20"
         cy="20"
         r="19.5"
-        fill="#364797"
+        className="fill-blue-700 dark:fill-blue-600"
       />
       <motion.circle
         animate={{
@@ -83,7 +88,7 @@ const LogoIcon = ({ animate }: { animate: boolean }) => {
         cx="20"
         cy="20"
         r="19.5"
-        fill="#364797"
+        className="fill-blue-700 dark:fill-blue-600"
       />
       <motion.circle
         animate={{
@@ -107,7 +112,9 @@ const LoadingScreen = ({ animate, children }: Props) => {
       <div className="flex grow items-center justify-center">
         <div className="flex-row">
           <LogoIcon animate={animate} />
-          <div className="mt-4">{children}</div>
+          <div className="mt-4 text-gray-500 dark:text-gray-400">
+            {children}
+          </div>
         </div>
       </div>
     </>

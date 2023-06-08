@@ -71,12 +71,12 @@ const Popover = () => {
     <>
       <div className="flex">
         <BellIcon
-          className="h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-100 hover:text-gray-900"
+          className="h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-100 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
           aria-hidden="true"
           onMouseDown={clickBell}
         />
         {showBadge && (
-          <div className="-ml-3 h-3 w-3 rounded-full border-2 border-white bg-blue-500"></div>
+          <div className="-ml-3 h-3 w-3 rounded-full border-2 border-white bg-blue-500 dark:border-gray-800"></div>
         )}
       </div>
 
@@ -105,14 +105,14 @@ export const List = ({
   notifications: NotificationRead[]
 }) => {
   return (
-    <div className="flex w-full flex-col items-center space-y-4   sm:items-end">
+    <div className="flex w-full flex-col items-center space-y-4 sm:items-end">
       <>
-        <div className="z-10 mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white"></div>
+        <div className="z-10 mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white dark:bg-gray-700"></div>
         <div className="z-20 h-full w-full max-w-md ">
-          <div className="pointer-events-auto w-full rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5">
-            <div className="h-full max-h-[800px] overflow-x-scroll">
+          <div className="pointer-events-auto w-full rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-700 dark:ring-gray-600">
+            <div className="h-full max-h-[800px] space-y-5 overflow-x-scroll p-5">
               {notifications.length === 0 && (
-                <div className="p-4 text-black/60">
+                <div className="p-4 text-black/60 dark:text-white/60">
                   You don&apos;t have any notifications... yet!
                 </div>
               )}
@@ -137,15 +137,15 @@ const Item = ({
   children: { icon: React.ReactElement; text: React.ReactElement }
 }) => {
   return (
-    <div className="flex space-x-4 p-4 transition-colors duration-100">
+    <div className="flex space-x-2.5 text-sm transition-colors duration-100">
       <div
-        className={`inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md ${iconClasses}`}
+        className={`mt-1 inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg ${iconClasses}`}
       >
         {children.icon}
       </div>
       <div>
-        <div className="text-gray-700">{children.text}</div>
-        <div className="text-gray-700">
+        <div>{children.text}</div>
+        <div className="text-gray-500 dark:text-gray-400/75">
           <PolarTimeAgo date={new Date(n.created_at)} />
         </div>
       </div>
@@ -161,7 +161,10 @@ const MaintainerPledgeCreated = ({
   payload: MaintainerPledgeCreatedNotification
 }) => {
   return (
-    <Item n={n} iconClasses="bg-blue-200 text-blue-600">
+    <Item
+      n={n}
+      iconClasses="bg-blue-200 text-blue-600 dark:bg-blue-600/80 dark:text-blue-200"
+    >
       {{
         text: (
           <>
@@ -188,7 +191,10 @@ const MaintainerPledgePending = ({
   payload: MaintainerPledgePendingNotification
 }) => {
   return (
-    <Item n={n} iconClasses="bg-purple-200 text-[#6D27C6]">
+    <Item
+      n={n}
+      iconClasses="bg-purple-200 text-[#6D27C6] dark:bg-purple-500/60 dark:text-purple-200"
+    >
       {{
         text: (
           <>
@@ -215,7 +221,10 @@ const MaintainerPledgePaid = ({
   payload: MaintainerPledgePaidNotification
 }) => {
   return (
-    <Item n={n} iconClasses="bg-blue-200 text-blue-600">
+    <Item
+      n={n}
+      iconClasses="bg-blue-200 text-blue-600 dark:bg-blue-600/80 dark:text-blue-200"
+    >
       {{
         text: (
           <>

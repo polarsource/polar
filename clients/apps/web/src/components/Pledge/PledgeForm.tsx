@@ -2,6 +2,7 @@ import { useAuth } from '@/hooks/auth'
 import { Elements } from '@stripe/react-stripe-js'
 import { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
+import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { CONFIG } from 'polarkit'
@@ -106,6 +107,8 @@ const PledgeForm = ({
       setEmail(currentUser.email)
     }
   }, [currentUser])
+
+  const { resolvedTheme } = useTheme()
 
   const getOrganizationForPledge = (): string | undefined => {
     if (!asOrg) return undefined
@@ -270,7 +273,10 @@ const PledgeForm = ({
   return (
     <>
       <form className="flex flex-col">
-        <label htmlFor="amount" className="text-sm font-medium text-gray-500">
+        <label
+          htmlFor="amount"
+          className="text-sm font-medium text-gray-500 dark:text-gray-400"
+        >
           Amount to pledge
         </label>
         <div className="mt-2 flex flex-row items-center space-x-4">
@@ -279,7 +285,7 @@ const PledgeForm = ({
               type="text"
               id="amount"
               name="amount"
-              className="block w-full rounded-lg border-gray-200 py-2 px-4 pl-7 pr-16 text-lg placeholder-gray-400 shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100"
+              className="block w-full rounded-lg border-gray-200 bg-transparent py-2 px-4 pl-7 pr-16 text-lg placeholder-gray-400 shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
               onChange={onAmountChange}
               onBlur={onAmountChange}
               placeholder={getCentsInDollarString(MINIMUM_PLEDGE)}
@@ -291,14 +297,14 @@ const PledgeForm = ({
               <span className="text-gray-500">USD</span>
             </div>
           </div>
-          <p className="w-2/5 text-xs text-gray-500">
+          <p className="w-2/5 text-xs text-gray-500 dark:text-gray-400">
             Minimum is ${getCentsInDollarString(MINIMUM_PLEDGE)}
           </p>
         </div>
 
         <label
           htmlFor="email"
-          className="mt-4 mb-2 text-sm font-medium text-gray-500"
+          className="mt-4 mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
         >
           Email
         </label>
@@ -308,7 +314,7 @@ const PledgeForm = ({
           onChange={onEmailChange}
           onBlur={onEmailChange}
           value={email}
-          className="block w-full rounded-lg border-gray-200 py-2.5 px-3 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100"
+          className="block w-full rounded-lg border-gray-200 bg-transparent py-2.5 px-3 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
         />
 
         <div className="mt-5 mb-2">
@@ -336,16 +342,21 @@ const PledgeForm = ({
               appearance: {
                 rules: {
                   '.Label': {
-                    color: '#727374',
+                    color: resolvedTheme === 'dark' ? '#A3A3A3' : '#727374',
                     fontWeight: '500',
                     fontSize: '14px',
                     marginBottom: '8px',
                   },
                   '.Input': {
                     padding: '12px',
+                    backgroundColor: 'transparent',
+                    borderColor:
+                      resolvedTheme === 'dark' ? '#505153' : '#E5E5E1',
+                    color: resolvedTheme === 'dark' ? '#E5E5E1' : '#181A1F',
                   },
                   '.Input:focus': {
-                    //borderColor: 'green',
+                    borderColor:
+                      resolvedTheme === 'dark' ? '#4667CA' : '#A5C2EB',
                   },
                 },
                 variables: {
@@ -353,6 +364,7 @@ const PledgeForm = ({
                   fontFamily: '"Inter var", Inter, sans-serif',
                   fontSizeBase: '14px',
                   spacingGridRow: '18px',
+                  colorDanger: resolvedTheme === 'dark' ? '#F17878' : '#E64D4D',
                 },
               },
               fonts: [
@@ -397,7 +409,11 @@ const PledgeForm = ({
           </div>
         )}
 
-        {errorMessage && <div>{errorMessage}</div>}
+        {errorMessage && (
+          <div className="mt-3.5 text-red-500 dark:text-red-400">
+            {errorMessage}
+          </div>
+        )}
       </form>
     </>
   )

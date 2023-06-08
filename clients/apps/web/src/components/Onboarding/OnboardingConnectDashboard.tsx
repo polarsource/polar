@@ -30,15 +30,15 @@ const OnboardingConnectPersonalDashboard = () => {
     <>
       <div
         className={classNames(
-          'flex-start mb-4 flex flex-row overflow-hidden rounded-lg bg-white shadow',
+          'flex-start rounded-xld mb-4 flex flex-row overflow-hidden bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-gray-700',
         )}
       >
         <div className="flex-1">
           <div className="flex h-full flex-col space-y-2 p-6 pt-4">
-            <h2 className="text-xl text-gray-900">
+            <h2 className="text-xl">
               Connect a repo to unlock Polar’s full potential
             </h2>
-            <div className="flex-1 text-sm text-gray-500">
+            <div className="flex-1 text-sm text-gray-500 dark:text-gray-400">
               <p>
                 Interested in getting backers behind your open source efforts?
                 Or looking to track issues you&apos;re dependent on and pledge

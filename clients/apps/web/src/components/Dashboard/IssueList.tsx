@@ -38,7 +38,7 @@ const IssueList = (props: {
     props
 
   return (
-    <div className="divide-y">
+    <div className="divide-y dark:divide-gray-800">
       <Header
         totalCount={props.totalCount}
         filters={props.filters}
@@ -213,9 +213,11 @@ const Header = (props: {
       {props.spinner && <Spinner />}
 
       <div>
-        <span className="mr-2 text-sm text-gray-500">Sort:</span>
+        <span className="mr-2 text-sm text-gray-500 dark:text-gray-400">
+          Sort:
+        </span>
         <select
-          className="m-0 w-48 border-0 bg-right p-0 text-sm font-medium ring-0 focus:border-0 focus:ring-0"
+          className="m-0 w-48 border-0 bg-transparent bg-right p-0 text-sm font-medium ring-0 focus:border-0 focus:ring-0"
           onChange={onSelect}
           style={{ width: `${width}px` }}
           value={props.filters?.sort}

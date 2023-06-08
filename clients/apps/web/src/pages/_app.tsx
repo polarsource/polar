@@ -2,6 +2,7 @@ import TopbarLayout from '@/components/Layout/TopbarLayout'
 import { Toaster } from '@/components/UI/Toast/Toaster'
 import type { NextPageWithLayout } from '@/utils/next'
 import * as Sentry from '@sentry/nextjs'
+import { ThemeProvider } from 'next-themes'
 import type { AppProps } from 'next/app'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
@@ -12,7 +13,7 @@ import { ReactElement, useEffect } from 'react'
 import '../styles/globals.scss'
 
 type AppPropsWithLayout = AppProps & {
-  Component: NextPageWithLayout
+  Component: NextPageWithLayout & { theme?: string }
 }
 
 if (CONFIG.POSTHOG_TOKEN && typeof window !== 'undefined') {
@@ -56,8 +57,10 @@ const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
         <title>Polar</title>
       </Head>
       <QueryClientProvider client={queryClient}>
-        {getLayout(<Component {...pageProps} />)}
-        <Toaster />
+        <ThemeProvider attribute="class" forcedTheme={Component.theme}>
+          {getLayout(<Component {...pageProps} />)}
+          <Toaster />
+        </ThemeProvider>
       </QueryClientProvider>
     </>
   )

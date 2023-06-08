@@ -2,11 +2,13 @@ import EventEmitter from 'eventemitter3'
 import { useEffect } from 'react'
 import { getServerURL } from '../../utils'
 import { onIssueUpdated } from './issues'
+import { onOrganizationUpdated } from './organizations'
 
 const ACTIONS: {
-  [key: string]: (payload: any) => void
+  [key: string]: (payload: any) => Promise<void>
 } = {
   'issue.updated': onIssueUpdated,
+  'organization.updated': onOrganizationUpdated,
 }
 
 const emitter = new EventEmitter()
@@ -41,11 +43,11 @@ export const useSSE = (
     }
     // TODO: Add types for event. Just want to get the structure
     // up and running first before getting stuck in protocol land.
-    connection.onmessage = (event) => {
+    connection.onmessage = async (event) => {
       const data = JSON.parse(event.data)
       const handler = ACTIONS[data.key]
       if (handler) {
-        handler(data.payload)
+        await handler(data.payload)
       }
       emitter.emit(data.key, data.payload)
     }

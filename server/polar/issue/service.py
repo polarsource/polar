@@ -267,7 +267,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         if sort_by == IssueSortBy.issues_default:
             statement = statement.order_by(
                 desc(Issue.pledged_amount_sum),
-                desc(Issue.positive_reactions_count),
+                desc(Issue.total_engagement_count),
                 desc(Issue.issue_modified_at),
             )
         elif sort_by == IssueSortBy.newest:

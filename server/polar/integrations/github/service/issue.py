@@ -265,6 +265,7 @@ class GithubIssueService(IssueService):
     async def list_issues_to_crawl_issue(
         self,
         session: AsyncSession,
+        organization: Organization,
     ) -> Sequence[Issue]:
         current_time = datetime.datetime.utcnow()
         one_hour_ago = current_time - datetime.timedelta(hours=1)
@@ -282,9 +283,10 @@ class GithubIssueService(IssueService):
                 Organization.deleted_at.is_(None),
                 Repository.deleted_at.is_(None),
                 Organization.installation_id.is_not(None),
+                Organization.id == organization.id,
             )
             .order_by(asc(Issue.github_issue_fetched_at))
-            .limit(1000)
+            .limit(100)
         )
 
         res = await session.execute(stmt)
@@ -294,6 +296,7 @@ class GithubIssueService(IssueService):
     async def list_issues_to_crawl_timeline(
         self,
         session: AsyncSession,
+        organization: Organization,
     ) -> Sequence[Issue]:
         current_time = datetime.datetime.utcnow()
         one_hour_ago = current_time - datetime.timedelta(hours=1)
@@ -311,9 +314,10 @@ class GithubIssueService(IssueService):
                 Organization.deleted_at.is_(None),
                 Repository.deleted_at.is_(None),
                 Organization.installation_id.is_not(None),
+                Organization.id == organization.id,
             )
             .order_by(asc(Issue.github_timeline_fetched_at))
-            .limit(1000)
+            .limit(100)
         )
 
         res = await session.execute(stmt)

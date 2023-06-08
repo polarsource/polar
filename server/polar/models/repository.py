@@ -58,8 +58,8 @@ class Repository(RecordModel):
     main_branch: Mapped[str | None] = mapped_column(String, nullable=True)
     topics: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=list)
 
-    license: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    homepage: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    license: Mapped[str | None] = mapped_column(String, nullable=True)
+    homepage: Mapped[str | None] = mapped_column(String, nullable=True)
 
     repository_pushed_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True

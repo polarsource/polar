@@ -1,7 +1,9 @@
 from datetime import datetime
+from typing import Union
 from uuid import UUID
 
 import structlog
+from polar.kit.utils import utc_now
 
 from polar.models import Organization, User
 from polar.organization.schemas import OrganizationCreate
@@ -125,6 +127,53 @@ class GithubOrganizationService(OrganizationService):
             await github_repository.soft_delete(session, repo.id)
 
         await self.soft_delete(session, id=org_id)
+
+    async def update_or_create_from_webhook(
+        self,
+        session: AsyncSession,
+        event: Union[
+            github.webhooks.InstallationRepositoriesAdded,
+            github.webhooks.InstallationRepositoriesRemoved,
+            github.webhooks.InstallationCreated,
+        ],
+    ) -> Organization:
+        inst = event.installation
+        account = event.installation.account
+        is_personal = account.type.lower() == "user"
+
+        if isinstance(event.installation.created_at, int):
+            event.installation.created_at = datetime.fromtimestamp(
+                event.installation.created_at
+            )
+
+        if isinstance(event.installation.updated_at, int):
+            event.installation.updated_at = datetime.fromtimestamp(
+                event.installation.updated_at
+            )
+
+        org = await self.get_by_external_id(session, inst.id)
+        if not org:
+            create_schema = OrganizationCreate(
+                platform=Platforms.github,
+                name=account.login,
+                external_id=account.id,
+                avatar_url=account.avatar_url,
+                is_personal=is_personal,
+                installation_id=event.installation.id,
+                installation_created_at=utc_now(),
+                installation_updated_at=utc_now(),
+                installation_suspended_at=event.installation.suspended_at,
+            )
+            organization = await self.upsert(session, create_schema)
+            return organization
+
+        # update
+        org.deleted_at = None
+        org.name = account.name
+        org.avatar_url = account.avatar_url
+        await org.save(session)
+
+        return org
 
 
 github_organization = GithubOrganizationService(Organization)

@@ -395,25 +395,26 @@ class OrganizationService(
             sql.select(
                 Repository.id,
                 Issue.has_pledge_badge_label.label("labelled"),
-                (Issue.pledge_badge_embedded_at != None).label("embedded"),  # noqa
+                Issue.pledge_badge_embedded_at.is_not(None).label("embedded"),
                 sql.func.count(distinct(Issue.id)).label("issue_count"),
                 sql.func.count(distinct(PullRequest.id)).label("pull_request_count"),
             )
             .join(
                 Issue,
-                Issue.repository_id == Repository.id,
+                and_(Issue.repository_id == Repository.id, Issue.state == "open"),
                 isouter=True,
             )
             .join(
                 PullRequest,
-                PullRequest.repository_id == Repository.id,
+                and_(
+                    PullRequest.repository_id == Repository.id,
+                    PullRequest.state == "open",
+                ),
                 isouter=True,
             )
             .where(
                 Repository.organization_id == organization.id,
                 Repository.deleted_at.is_(None),
-                or_(PullRequest.state == "open", PullRequest.state == None),  # noqa
-                or_(Issue.state == "open", Issue.state == None),  # noqa
             )
             .group_by(Repository.id, "labelled", "embedded")
         )

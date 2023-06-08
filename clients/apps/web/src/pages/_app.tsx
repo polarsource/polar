@@ -11,7 +11,7 @@ import type { ReactElement } from 'react'
 import '../styles/globals.scss'
 
 type AppPropsWithLayout = AppProps & {
-  Component: NextPageWithLayout
+  Component: NextPageWithLayout & { theme?: string }
 }
 
 const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
@@ -37,7 +37,7 @@ const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
         <title>Polar</title>
       </Head>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider attribute="class">
+        <ThemeProvider attribute="class" forcedTheme={Component.theme}>
           {getLayout(<Component {...pageProps} />)}
           <Toaster />
         </ThemeProvider>

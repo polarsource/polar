@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { ReactElement } from 'react'
 import Topbar from '../../components/Shared/Topbar'
 
-const Page: NextLayoutComponentType = () => {
+const Page: NextLayoutComponentType & { theme?: string } = () => {
   return (
     <div className="flex flex-col">
       <h1 className="text-2xl font-bold">Pick-a-feature</h1>
@@ -24,5 +24,7 @@ Page.getLayout = (page: ReactElement) => {
     </>
   )
 }
+
+Page.theme = 'light'
 
 export default Page

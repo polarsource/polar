@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { ReactElement } from 'react'
 import Topbar from '../../../components/Shared/Topbar'
 
-const Page: NextLayoutComponentType = () => {
+const Page: NextLayoutComponentType & { theme?: string } = () => {
   return (
     <div>
       <h2 className="text-2xl">Pledges</h2>
@@ -26,5 +26,7 @@ Page.getLayout = (page: ReactElement) => {
     </>
   )
 }
+
+Page.theme = 'light'
 
 export default Page

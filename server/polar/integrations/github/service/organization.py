@@ -141,15 +141,11 @@ class GithubOrganizationService(OrganizationService):
         account = event.installation.account
         is_personal = account.type.lower() == "user"
 
-        if isinstance(event.installation.created_at, int):
-            event.installation.created_at = datetime.fromtimestamp(
-                event.installation.created_at
-            )
+        if isinstance(inst.created_at, int):
+            inst.created_at = datetime.fromtimestamp(inst.created_at)
 
-        if isinstance(event.installation.updated_at, int):
-            event.installation.updated_at = datetime.fromtimestamp(
-                event.installation.updated_at
-            )
+        if isinstance(inst.updated_at, int):
+            inst.updated_at = datetime.fromtimestamp(inst.updated_at)
 
         org = await self.get_by_external_id(session, inst.id)
         if not org:
@@ -159,10 +155,10 @@ class GithubOrganizationService(OrganizationService):
                 external_id=account.id,
                 avatar_url=account.avatar_url,
                 is_personal=is_personal,
-                installation_id=event.installation.id,
-                installation_created_at=utc_now(),
-                installation_updated_at=utc_now(),
-                installation_suspended_at=event.installation.suspended_at,
+                installation_id=inst.id,
+                installation_created_at=inst.created_at,
+                installation_updated_at=inst.updated_at,
+                installation_suspended_at=inst.suspended_at,
             )
             organization = await self.upsert(session, create_schema)
             return organization
@@ -171,6 +167,9 @@ class GithubOrganizationService(OrganizationService):
         org.deleted_at = None
         org.name = account.login
         org.avatar_url = account.avatar_url
+        org.installation_created_at = inst.created_at
+        org.installation_updated_at = inst.updated_at
+        org.installation_suspended_at = inst.suspended_at
         await org.save(session)
 
         return org

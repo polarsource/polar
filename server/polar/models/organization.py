@@ -100,4 +100,5 @@ class Organization(RecordModel):
         "installation_suspended_at",
         "status",
         "pledge_badge_show_amount",
+        "deleted_at",
     }

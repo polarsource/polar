@@ -16,9 +16,7 @@ export interface UserState {
   login: (
     callback?: (authenticated: boolean) => void,
   ) => CancelablePromise<UserRead>
-  logout: (
-    callback?: (authenticated: boolean) => void,
-  ) => CancelablePromise<any>
+  logout: () => CancelablePromise<any>
 }
 
 export interface OnboardingState {

@@ -61,9 +61,16 @@ class GitHubIssueDependenciesService:
         references to issues in other repos. It will then create IssueDependency
         records for each of those issues.
         """
+        if not issue.body:
+            log.info(
+                "github.sync_issue_dependencies.skip_no_body",
+                id=repo.id,
+                name=repo.name,
+                issue=issue.number,
+            )
+            return
 
         client = get_app_installation_client(org.installation_id)
-
         log.info(
             "github.sync_issue_dependencies",
             id=repo.id,
@@ -71,87 +78,85 @@ class GitHubIssueDependenciesService:
             issue=issue.number,
         )
 
-        if issue.body:
-            for dependency in self.parse_dependencies(issue.body):
-                if (
-                    dependency.owner is None
-                    or dependency.owner == org.name
-                    or dependency.repo is None
-                ):
-                    # this is a reference to an issue in the same org, we don't need to
-                    # sync it
+        for dependency in self.parse_dependencies(issue.body):
+            if (
+                dependency.owner is None
+                or dependency.owner == org.name
+                or dependency.repo is None
+            ):
+                # this is a reference to an issue in the same org, we don't need to
+                # sync it
+                continue
+
+            try:
+                repo_response = await client.rest.repos.async_get(
+                    dependency.owner, dependency.repo
+                )
+            except RequestFailed as e:
+                # 404s are nothing to worry about, this could be a broken link
+                if e.response.status_code == 404:
                     continue
+                # re-raise other status codes
+                raise e
 
-                try:
-                    repo_response = await client.rest.repos.async_get(
-                        dependency.owner, dependency.repo
-                    )
-                except RequestFailed as e:
-                    # 404s are nothing to worry about, this could be a broken link
-                    if e.response.status_code == 404:
-                        continue
-                    # re-raise other status codes
-                    raise e
+            github_repo = repo_response.parsed_data
 
-                github_repo = repo_response.parsed_data
+            owner = github_repo.owner
+            organization = await service.github_organization.get_by_name(
+                session, Platforms.github, owner.login
+            )
 
-                owner = github_repo.owner
-                organization = await service.github_organization.get_by_name(
-                    session, Platforms.github, owner.login)
-
-                if not organization:
-                    is_personal = owner.type.lower() == "user"
-                    org_schema = OrganizationCreate(
-                        platform=Platforms.github,
-                        name=owner.login,
-                        external_id=owner.id,
-                        avatar_url=owner.avatar_url,
-                        is_personal=is_personal,
-                    )
-                    organization = await service.github_organization.upsert(
-                        session, org_schema
-                    )
-
-                _, repository = await service.github_organization.get_with_repo(
-                    session=session,
+            if not organization:
+                is_personal = owner.type.lower() == "user"
+                org_schema = OrganizationCreate(
                     platform=Platforms.github,
-                    org_name=organization.name,
-                    repo_name=github_repo.name,
+                    name=owner.login,
+                    external_id=owner.id,
+                    avatar_url=owner.avatar_url,
+                    is_personal=is_personal,
+                )
+                organization = await service.github_organization.upsert(
+                    session, org_schema
                 )
 
-                if not repository:
-                    repo_schema = RepositoryCreate(
-                        platform=Platforms.github,
-                        external_id=github_repo.id,
-                        organization_id=organization.id,
-                        name=github_repo.name,
-                        is_private=github_repo.private,
-                    )
-                    repository = await service.github_repository.upsert(
-                        session, repo_schema
-                    )
+            _, repository = await service.github_organization.get_with_repo(
+                session=session,
+                platform=Platforms.github,
+                org_name=organization.name,
+                repo_name=github_repo.name,
+            )
 
-                issue_response = await client.rest.issues.async_get(
-                    dependency.owner, dependency.repo, dependency.number
-                )
-                github_issue = issue_response.parsed_data
-
-                issue_schema = IssueCreate.from_github(
-                    github_issue,
+            if not repository:
+                repo_schema = RepositoryCreate(
+                    platform=Platforms.github,
+                    external_id=github_repo.id,
                     organization_id=organization.id,
-                    repository_id=repository.id,
+                    name=github_repo.name,
+                    is_private=github_repo.private,
                 )
-                dependency_issue = await service.github_issue.upsert(
-                    session, issue_schema
+                repository = await service.github_repository.upsert(
+                    session, repo_schema
                 )
 
-                issue_dependency = IssueDependency(
-                    organization_id=org.id,
-                    repository_id=repo.id,
-                    dependent_issue_id=issue.id,
-                    dependency_issue_id=dependency_issue.id,
-                )
-                await self.create_dependency(session, issue_dependency)
+            issue_response = await client.rest.issues.async_get(
+                dependency.owner, dependency.repo, dependency.number
+            )
+            github_issue = issue_response.parsed_data
+
+            issue_schema = IssueCreate.from_github(
+                github_issue,
+                organization_id=organization.id,
+                repository_id=repository.id,
+            )
+            dependency_issue = await service.github_issue.upsert(session, issue_schema)
+
+            issue_dependency = IssueDependency(
+                organization_id=org.id,
+                repository_id=repo.id,
+                dependent_issue_id=issue.id,
+                dependency_issue_id=dependency_issue.id,
+            )
+            await self.create_dependency(session, issue_dependency)
 
     async def create_dependency(
         self, session: AsyncSession, ref: IssueDependency

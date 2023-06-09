@@ -7,6 +7,7 @@ import {
   IssueReferenceRead,
   IssueStatus,
   OrganizationPublicRead,
+  Platforms,
   RepositoryRead,
   type PledgeRead,
 } from 'polarkit/api/client'
@@ -17,6 +18,7 @@ import {
   generateMarkdownTitle,
 } from 'polarkit/components/Issue'
 import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
+import { useIssueAddPolarBadge, useIssueRemovePolarBadge } from 'polarkit/hooks'
 import { getCentsInDollarString, githubIssueUrl } from 'polarkit/utils'
 import { ChangeEvent, useState } from 'react'
 import PledgeNow from '../Pledge/PledgeNow'
@@ -210,6 +212,11 @@ const IssueListItem = (props: {
             <IssueProgress progress={issueProgress} />
 
             {showPledgeAction && <PledgeNow onClick={redirectToPledge} />}
+            <AddRemoveBadge
+              orgName={props.org.name}
+              repoName={props.repo.name}
+              issue={props.issue}
+            />
           </div>
         </div>
 
@@ -342,5 +349,45 @@ const DisputeModal = (props: { pledge: PledgeRead }) => {
         {message && <p>{message}</p>}
       </>
     </ModalBox>
+  )
+}
+
+const AddRemoveBadge = (props: {
+  orgName: string
+  repoName: string
+  issue: IssueDashboardRead
+}) => {
+  const hasPolarLabel =
+    props.issue.labels &&
+    (props.issue.labels as Array<LabelSchema>).find(
+      (l) => l.name.toLowerCase() === 'polar',
+    )
+
+  const add = useIssueAddPolarBadge()
+  const remove = useIssueRemovePolarBadge()
+
+  const click = async () => {
+    if (hasPolarLabel) {
+      await remove.mutateAsync({
+        platform: Platforms.GITHUB,
+        orgName: props.orgName,
+        repoName: props.repoName,
+        issueNumber: props.issue.number,
+      })
+    } else {
+      await add.mutateAsync({
+        platform: Platforms.GITHUB,
+        orgName: props.orgName,
+        repoName: props.repoName,
+        issueNumber: props.issue.number,
+      })
+    }
+  }
+
+  return (
+    <div onClick={click}>
+      {hasPolarLabel && 'remove'}
+      {!hasPolarLabel && 'add'}
+    </div>
   )
 }

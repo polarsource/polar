@@ -16,6 +16,7 @@ export type RepoListItem = RepositoryRead & {
 export * from './backoffice'
 export * from './dashboard'
 export * from './invite'
+export * from './issue'
 export * from './pledges'
 export * from './settings'
 export * from './user'

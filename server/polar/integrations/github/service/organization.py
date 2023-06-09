@@ -169,7 +169,7 @@ class GithubOrganizationService(OrganizationService):
 
         # update
         org.deleted_at = None
-        org.name = account.name
+        org.name = account.login
         org.avatar_url = account.avatar_url
         await org.save(session)
 

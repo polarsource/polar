@@ -101,11 +101,11 @@ class GitHubIssueDependenciesService:
 
             github_repo = repo_response.parsed_data
 
+            # Get or create organization for dependency
             owner = github_repo.owner
             organization = await service.github_organization.get_by_name(
                 session, Platforms.github, owner.login
             )
-
             if not organization:
                 is_personal = owner.type.lower() == "user"
                 org_schema = OrganizationCreate(
@@ -119,6 +119,7 @@ class GitHubIssueDependenciesService:
                     session, org_schema
                 )
 
+            # Get or create repository for dependency
             repository = await service.github_repository.get_by_external_id(
                 session, external_id=github_repo.id
             )
@@ -134,17 +135,27 @@ class GitHubIssueDependenciesService:
                     session, repo_schema
                 )
 
-            issue_response = await client.rest.issues.async_get(
-                dependency.owner, dependency.repo, dependency.number
-            )
-            github_issue = issue_response.parsed_data
-
-            issue_schema = IssueCreate.from_github(
-                github_issue,
+            # Get or create issue for dependency
+            dependency_issue = await service.github_issue.get_by_number(
+                session,
+                platform=Platforms.github,
                 organization_id=organization.id,
                 repository_id=repository.id,
+                number=dependency.number,
             )
-            dependency_issue = await service.github_issue.upsert(session, issue_schema)
+            if not dependency_issue:
+                issue_response = await client.rest.issues.async_get(
+                    dependency.owner, dependency.repo, dependency.number
+                )
+                github_issue = issue_response.parsed_data
+                issue_schema = IssueCreate.from_github(
+                    github_issue,
+                    organization_id=organization.id,
+                    repository_id=repository.id,
+                )
+                dependency_issue = await service.github_issue.upsert(
+                    session, issue_schema
+                )
 
             issue_dependency = IssueDependency(
                 organization_id=org.id,

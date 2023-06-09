@@ -200,6 +200,7 @@ __all__ = [
     "webhooks",
     "rest",
     "GitHub",
+    "AppInstallationAuthStrategy",
     "TokenAuthStrategy",
     "utils",
     "Response",

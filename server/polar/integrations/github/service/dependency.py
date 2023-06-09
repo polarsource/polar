@@ -4,7 +4,11 @@ import structlog
 import re
 from polar.exceptions import IntegrityError
 from githubkit.exception import RequestFailed
-from polar.integrations.github.client import get_app_installation_client
+from polar.integrations.github.client import (
+    get_app_installation_client,
+    GitHub,
+    AppInstallationAuthStrategy,
+)
 from polar.integrations.github import service
 from polar.integrations.github.schemas import GithubIssueDependency
 from polar.issue.schemas import IssueCreate
@@ -12,8 +16,7 @@ from polar.models.issue_dependency import IssueDependency
 from polar.organization.schemas import OrganizationCreate
 from polar.enums import Platforms
 
-from polar.models import Organization, Repository
-from polar.models.issue import Issue
+from polar.models import Organization, Repository, Issue
 from polar.postgres import AsyncSession, sql
 from polar.repository.schemas import RepositoryCreate
 
@@ -100,63 +103,31 @@ class GitHubIssueDependenciesService:
                 raise e
 
             github_repo = repo_response.parsed_data
-
-            # Get or create organization for dependency
             owner = github_repo.owner
-            organization = await service.github_organization.get_by_name(
-                session, Platforms.github, owner.login
-            )
-            if not organization:
-                is_personal = owner.type.lower() == "user"
-                org_schema = OrganizationCreate(
-                    platform=Platforms.github,
-                    name=owner.login,
-                    external_id=owner.id,
-                    avatar_url=owner.avatar_url,
-                    is_personal=is_personal,
-                )
-                organization = await service.github_organization.upsert(
-                    session, org_schema
-                )
-
-            # Get or create repository for dependency
-            repository = await service.github_repository.get_by_external_id(
-                session, external_id=github_repo.id
-            )
-            if not repository:
-                repo_schema = RepositoryCreate(
-                    platform=Platforms.github,
-                    external_id=github_repo.id,
-                    organization_id=organization.id,
-                    name=github_repo.name,
-                    is_private=github_repo.private,
-                )
-                repository = await service.github_repository.upsert(
-                    session, repo_schema
-                )
-
-            # Get or create issue for dependency
-            dependency_issue = await service.github_issue.get_by_number(
+            is_personal = owner.type.lower() == "user"
+            organization = await self.get_or_create_dependent_organization(
                 session,
-                platform=Platforms.github,
-                organization_id=organization.id,
-                repository_id=repository.id,
-                number=dependency.number,
+                external_id=owner.id,
+                name=owner.login,
+                avatar_url=owner.avatar_url,
+                is_personal=is_personal,
             )
-            if not dependency_issue:
-                issue_response = await client.rest.issues.async_get(
-                    dependency.owner, dependency.repo, dependency.number
-                )
-                github_issue = issue_response.parsed_data
-                issue_schema = IssueCreate.from_github(
-                    github_issue,
-                    organization_id=organization.id,
-                    repository_id=repository.id,
-                )
-                dependency_issue = await service.github_issue.upsert(
-                    session, issue_schema
-                )
 
+            repository = await self.get_or_create_dependent_repository(
+                session,
+                organization=organization,
+                external_id=github_repo.id,
+                name=github_repo.name,
+                is_private=github_repo.private,
+            )
+
+            dependency_issue = await self.get_or_create_dependent_issue(
+                session,
+                client=client,
+                organization=organization,
+                repository=repository,
+                issue_number=dependency.number,
+            )
             issue_dependency = IssueDependency(
                 organization_id=org.id,
                 repository_id=repo.id,
@@ -164,6 +135,88 @@ class GitHubIssueDependenciesService:
                 dependency_issue_id=dependency_issue.id,
             )
             await self.create_dependency(session, issue_dependency)
+
+    async def get_or_create_dependent_organization(
+        self,
+        session: AsyncSession,
+        *,
+        external_id: int,
+        name: str,
+        avatar_url: str,
+        is_personal: bool,
+    ) -> Organization:
+        organization = await service.github_organization.get_by_name(
+            session, Platforms.github, name
+        )
+        if organization:
+            return organization
+
+        org_schema = OrganizationCreate(
+            platform=Platforms.github,
+            name=name,
+            external_id=external_id,
+            avatar_url=avatar_url,
+            is_personal=is_personal,
+        )
+        organization = await service.github_organization.upsert(session, org_schema)
+        return organization
+
+    async def get_or_create_dependent_repository(
+        self,
+        session: AsyncSession,
+        *,
+        organization: Organization,
+        external_id: int,
+        name: str,
+        is_private: bool,
+    ) -> Repository:
+        repository = await service.github_repository.get_by_external_id(
+            session,
+            external_id=external_id,
+        )
+        if repository:
+            return repository
+
+        repo_schema = RepositoryCreate(
+            platform=Platforms.github,
+            external_id=external_id,
+            organization_id=organization.id,
+            name=name,
+            is_private=is_private,
+        )
+        repository = await service.github_repository.upsert(session, repo_schema)
+        return repository
+
+    async def get_or_create_dependent_issue(
+        self,
+        session: AsyncSession,
+        *,
+        client: GitHub[AppInstallationAuthStrategy],
+        organization: Organization,
+        repository: Repository,
+        issue_number: int,
+    ) -> Issue:
+        issue = await service.github_issue.get_by_number(
+            session,
+            platform=Platforms.github,
+            organization_id=organization.id,
+            repository_id=repository.id,
+            number=issue_number,
+        )
+        if issue:
+            return issue
+
+        issue_response = await client.rest.issues.async_get(
+            organization.name, repository.name, issue_number
+        )
+        github_issue = issue_response.parsed_data
+        issue_schema = IssueCreate.from_github(
+            github_issue,
+            organization_id=organization.id,
+            repository_id=repository.id,
+        )
+        dependency_issue = await service.github_issue.upsert(session, issue_schema)
+        return dependency_issue
 
     async def create_dependency(
         self, session: AsyncSession, ref: IssueDependency

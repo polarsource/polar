@@ -250,12 +250,12 @@ class GithubRepositoryService(RepositoryService):
             map_func=mapper,
         ):
             create = RepositoryCreate.from_github(organization, repo)
-            inst = await self.upsert(session, create)
-
+            inst = await self.upsert(session, create, autocommit=False)
             instances.append(inst)
 
-            await self.enqueue_sync(inst)
-
+        await session.commit()
+        for installation in instances:
+            await self.enqueue_sync(installation)
         return instances
 
 

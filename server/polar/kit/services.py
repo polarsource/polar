@@ -78,6 +78,7 @@ class ResourceService(
         create_schemas: list[CreateSchemaType],
         constraints: list[InstrumentedAttribute[Any]] | None = None,
         mutable_keys: set[str] | None = None,
+        autocommit: bool = True,
     ) -> Sequence[ModelType]:
         if constraints is None:
             constraints = self.upsert_constraints
@@ -87,6 +88,7 @@ class ResourceService(
             create_schemas,
             constraints=constraints,
             mutable_keys=mutable_keys,
+            autocommit=autocommit,
         )
 
     async def upsert(
@@ -95,6 +97,7 @@ class ResourceService(
         create_schema: CreateSchemaType,
         constraints: list[InstrumentedAttribute[Any]] | None = None,
         mutable_keys: set[str] | None = None,
+        autocommit: bool = True,
     ) -> ModelType:
         if constraints is None:
             constraints = self.upsert_constraints
@@ -104,6 +107,7 @@ class ResourceService(
             create_schema,
             constraints=constraints,
             mutable_keys=mutable_keys,
+            autocommit=autocommit,
         )
 
     async def update(

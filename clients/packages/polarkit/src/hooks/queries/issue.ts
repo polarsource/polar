@@ -1,6 +1,6 @@
 import { InfiniteData, useMutation } from '@tanstack/react-query'
-import { IssueListResponse, Platforms } from 'api/client'
 import { api, queryClient } from '../../api'
+import { IssueListResponse, Platforms } from '../../api/client'
 
 export const useIssueAddPolarBadge = () =>
   useMutation({

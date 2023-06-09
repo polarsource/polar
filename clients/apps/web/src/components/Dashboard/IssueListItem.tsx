@@ -126,8 +126,8 @@ const IssueListItem = (props: {
 
   return (
     <>
-      <div>
-        <div className="hover:bg-gray-75 group flex items-center justify-between gap-4 py-4 px-2 pb-5 dark:hover:bg-gray-900">
+      <div className="group/issue">
+        <div className="hover:bg-gray-75 group flex items-center justify-between gap-4 overflow-hidden py-4 px-2 pb-5 dark:hover:bg-gray-900">
           <div className="flex flex-row items-center">
             {isDependency && (
               <div className="mr-3 flex-shrink-0 justify-center rounded-full bg-white p-[1px] shadow">
@@ -210,6 +210,7 @@ const IssueListItem = (props: {
             <IssueProgress progress={issueProgress} />
 
             {showPledgeAction && <PledgeNow onClick={redirectToPledge} />}
+
             {props.canAddRemovePolarLabel && (
               <AddRemoveBadge
                 orgName={props.org.name}
@@ -388,14 +389,47 @@ const AddRemoveBadge = (props: {
     <div
       onClick={click}
       className={classNames(
+        hasPolarLabel ? 'border bg-white dark:bg-gray-800' : '',
         hasPolarLabel
-          ? 'border border-red-200 bg-white text-red-600 dark:border-red-800 dark:bg-gray-800'
-          : 'bg-blue-600 text-white',
-        'rounded-md px-2 py-1 text-sm',
+          ? ' hover-border-red-200 border-green-200  text-green-600 hover:text-red-600 dark:border-green-500 dark:hover:border-red-500 '
+          : '',
+        !hasPolarLabel ? 'bg-blue-600 text-white' : '',
+        'group/button flex w-0 translate-x-5 cursor-pointer items-center space-x-1 rounded-md px-2 py-1 text-sm opacity-0',
+        'transition-transform transition-opacity transition-colors',
+        'group-hover/issue:mr-0 group-hover/issue:w-auto group-hover/issue:translate-x-0 group-hover/issue:opacity-100',
       )}
     >
-      {hasPolarLabel && 'Remove badge'}
-      {!hasPolarLabel && 'Add badge'}
+      {hasPolarLabel && <BadgedCheckmarkIcon />}
+      {hasPolarLabel && (
+        <>
+          <span className="group-hover/button:hidden">Badged</span>
+          <span className="hidden group-hover/button:inline-block">
+            Remove badge
+          </span>
+        </>
+      )}
+      {!hasPolarLabel && <span>Add badge</span>}
     </div>
+  )
+}
+
+const BadgedCheckmarkIcon = () => {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="group-hover/button:hidden"
+    >
+      <path
+        d="M5.75 8.5625L7.4375 10.25L10.25 6.3125M14.75 8C14.75 8.951 14.2775 9.7925 13.5553 10.301C13.6331 10.7456 13.6026 11.2024 13.4664 11.6327C13.3303 12.063 13.0924 12.4541 12.773 12.773C12.4541 13.0924 12.063 13.3303 11.6327 13.4664C11.2024 13.6026 10.7456 13.6331 10.301 13.5552C10.0417 13.9246 9.69714 14.226 9.2966 14.434C8.89607 14.642 8.45131 14.7504 8 14.75C7.049 14.75 6.2075 14.2775 5.699 13.5552C5.25443 13.633 4.79766 13.6025 4.36737 13.4663C3.93707 13.3302 3.54591 13.0924 3.227 12.773C2.90759 12.4541 2.66973 12.063 2.53357 11.6327C2.3974 11.2024 2.36693 10.7456 2.44475 10.301C2.07539 10.0417 1.77397 9.69714 1.566 9.2966C1.35802 8.89607 1.24963 8.45131 1.25 8C1.25 7.049 1.7225 6.2075 2.44475 5.699C2.36693 5.25442 2.3974 4.79764 2.53357 4.36734C2.66973 3.93703 2.90759 3.54588 3.227 3.227C3.54591 2.90765 3.93707 2.66982 4.36737 2.53366C4.79766 2.39749 5.25443 2.367 5.699 2.44475C5.95838 2.07544 6.30292 1.77405 6.70344 1.56608C7.10397 1.35811 7.5487 1.2497 8 1.25C8.951 1.25 9.7925 1.7225 10.301 2.44475C10.7456 2.367 11.2023 2.39749 11.6326 2.53366C12.0629 2.66982 12.4541 2.90765 12.773 3.227C13.0924 3.54591 13.3302 3.93707 13.4663 4.36737C13.6025 4.79766 13.633 5.25442 13.5553 5.699C13.9246 5.95834 14.226 6.30286 14.434 6.7034C14.642 7.10394 14.7504 7.54869 14.75 8Z"
+        stroke="#2D8C31"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }

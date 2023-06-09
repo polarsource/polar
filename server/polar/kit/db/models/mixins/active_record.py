@@ -109,6 +109,7 @@ class ActiveRecordMixin:
         constraints: list[InstrumentedAttribute[Any]],
         # Defaults to the mutable keys as defined by on the Model
         mutable_keys: set[str] | None = None,
+        autocommit: bool = True,
     ) -> Sequence[Self]:
         values = [obj.dict() for obj in objects]
         if not values:
@@ -140,7 +141,8 @@ class ActiveRecordMixin:
         )
         res = await session.execute(orm_stmt)
         instances = res.scalars().all()
-        await session.commit()
+        if autocommit:
+            await session.commit()
         return instances
 
     @classmethod
@@ -150,12 +152,14 @@ class ActiveRecordMixin:
         obj: SchemaType,
         constraints: list[InstrumentedAttribute[Any]],
         mutable_keys: set[str] | None = None,
+        autocommit: bool = True,
     ) -> Self:
         upserted: Sequence[Self] = await cls.upsert_many(
             session,
             [obj],
             constraints=constraints,
             mutable_keys=mutable_keys,
+            autocommit=autocommit,
         )
         return upserted[0]
 

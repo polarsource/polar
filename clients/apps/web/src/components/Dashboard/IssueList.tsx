@@ -37,6 +37,8 @@ const IssueList = (props: {
   const { fetchNextPage, hasNextPage, isFetchingNextPage, isInitialLoading } =
     props
 
+  const canAddRemovePolarLabel = props.filters.tab === IssueListType.ISSUES
+
   return (
     <div className="divide-y dark:divide-gray-800">
       <Header
@@ -49,7 +51,11 @@ const IssueList = (props: {
       {!props.loading && (
         <>
           {props.dashboard.pages.map((group, i) => (
-            <IssueListPage page={group} key={i} />
+            <IssueListPage
+              page={group}
+              key={i}
+              canAddRemovePolarLabel={canAddRemovePolarLabel}
+            />
           ))}
         </>
       )}
@@ -78,7 +84,10 @@ const IssueList = (props: {
 
 export default IssueList
 
-const IssueListPage = (props: { page: IssueListResponse }) => {
+const IssueListPage = (props: {
+  page: IssueListResponse
+  canAddRemovePolarLabel: boolean
+}) => {
   const [issues, setIssues] = useState<IssueReadWithRelations[]>()
 
   const y = yayson({ adapter: 'default' })
@@ -110,6 +119,7 @@ const IssueListPage = (props: { page: IssueListResponse }) => {
           org={issue.organization}
           repo={issue.repository}
           key={issue.id}
+          canAddRemovePolarLabel={props.canAddRemovePolarLabel}
         />
       ))}
     </>

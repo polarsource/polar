@@ -19,7 +19,11 @@ import {
 } from 'polarkit/components/Issue'
 import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
 import { useIssueAddPolarBadge, useIssueRemovePolarBadge } from 'polarkit/hooks'
-import { getCentsInDollarString, githubIssueUrl } from 'polarkit/utils'
+import {
+  classNames,
+  getCentsInDollarString,
+  githubIssueUrl,
+} from 'polarkit/utils'
 import { ChangeEvent, useState } from 'react'
 import PledgeNow from '../Pledge/PledgeNow'
 import IconCounter from './IconCounter'
@@ -34,16 +38,10 @@ const IssueListItem = (props: {
   dependents?: IssueReadWithRelations[]
   pledges: PledgeRead[]
   checkJustPledged?: boolean
+  canAddRemovePolarLabel: boolean
 }) => {
-  const {
-    title,
-    number,
-    state,
-    issue_created_at,
-    reactions,
-    comments,
-    issue_closed_at,
-  } = props.issue
+  const { title, number, state, issue_created_at, reactions, comments } =
+    props.issue
   const router = useRouter()
 
   const createdAt = new Date(issue_created_at)
@@ -212,11 +210,13 @@ const IssueListItem = (props: {
             <IssueProgress progress={issueProgress} />
 
             {showPledgeAction && <PledgeNow onClick={redirectToPledge} />}
-            <AddRemoveBadge
-              orgName={props.org.name}
-              repoName={props.repo.name}
-              issue={props.issue}
-            />
+            {props.canAddRemovePolarLabel && (
+              <AddRemoveBadge
+                orgName={props.org.name}
+                repoName={props.repo.name}
+                issue={props.issue}
+              />
+            )}
           </div>
         </div>
 
@@ -385,9 +385,17 @@ const AddRemoveBadge = (props: {
   }
 
   return (
-    <div onClick={click}>
-      {hasPolarLabel && 'remove'}
-      {!hasPolarLabel && 'add'}
+    <div
+      onClick={click}
+      className={classNames(
+        hasPolarLabel
+          ? 'border border-red-200 bg-white text-red-600 dark:border-red-800 dark:bg-gray-800'
+          : 'bg-blue-600 text-white',
+        'rounded-md px-2 py-1 text-sm',
+      )}
+    >
+      {hasPolarLabel && 'Remove badge'}
+      {!hasPolarLabel && 'Add badge'}
     </div>
   )
 }

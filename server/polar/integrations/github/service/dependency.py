@@ -119,13 +119,9 @@ class GitHubIssueDependenciesService:
                     session, org_schema
                 )
 
-            _, repository = await service.github_organization.get_with_repo(
-                session=session,
-                platform=Platforms.github,
-                org_name=organization.name,
-                repo_name=github_repo.name,
+            repository = await service.github_repository.get_by_external_id(
+                session, external_id=github_repo.id
             )
-
             if not repository:
                 repo_schema = RepositoryCreate(
                     platform=Platforms.github,

@@ -72,17 +72,15 @@ export const useRequireAuth = (): UserState & {
 
   if (!session.authenticated && session.hasChecked) {
     let redirectPath = CONFIG.LOGIN_PATH
-    if (typeof window !== 'undefined') {
-      const currentURL = new URL(window.location.href)
-      const redirectURL = new URL(window.location.origin + redirectPath)
+    const currentURL = new URL(window.location.href)
+    const redirectURL = new URL(window.location.origin + redirectPath)
 
-      if (currentURL.pathname !== redirectPath) {
-        redirectURL.searchParams.set(
-          'goto_url',
-          currentURL.toString().replace(window.location.origin, ''),
-        )
-        redirectPath = redirectURL.toString()
-      }
+    if (currentURL.pathname !== redirectPath) {
+      redirectURL.searchParams.set(
+        'goto_url',
+        currentURL.toString().replace(window.location.origin, ''),
+      )
+      redirectPath = redirectURL.toString()
     }
 
     router.push(redirectPath)

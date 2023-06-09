@@ -1,5 +1,5 @@
-import { useMutation } from '@tanstack/react-query'
-import { Platforms } from 'api/client'
+import { InfiniteData, useMutation } from '@tanstack/react-query'
+import { IssueListResponse, Platforms } from 'api/client'
 import { api, queryClient } from '../../api'
 
 export const useIssueAddPolarBadge = () =>
@@ -13,8 +13,32 @@ export const useIssueAddPolarBadge = () =>
       return api.issues.addPolarBadge(variables)
     },
     onSuccess: (result, variables, ctx) => {
-      // TODO: override specific entry instead
-      queryClient.invalidateQueries(['dashboard', 'repo', variables.orgName])
+      // TODO: it would be cool to have an optimistic update here! :-)
+
+      // update issue in dashboard results
+      queryClient.setQueriesData<InfiniteData<IssueListResponse>>(
+        ['dashboard', 'repo'],
+        (data) => {
+          if (!data) {
+            return data
+          }
+
+          return {
+            ...data,
+            pages: data.pages.map((p) => {
+              return {
+                ...p,
+                data: p.data.map((issue) => {
+                  if (issue.id === result.id) {
+                    return { ...issue, attributes: result }
+                  }
+                  return { ...issue }
+                }),
+              }
+            }),
+          }
+        },
+      )
     },
   })
 
@@ -29,7 +53,29 @@ export const useIssueRemovePolarBadge = () =>
       return api.issues.removePolarBadge(variables)
     },
     onSuccess: (result, variables, ctx) => {
-      // TODO: override specific entry instead
-      queryClient.invalidateQueries(['dashboard', 'repo', variables.orgName])
+      // update issue in dashboard results
+      queryClient.setQueriesData<InfiniteData<IssueListResponse>>(
+        ['dashboard', 'repo'],
+        (data) => {
+          if (!data) {
+            return data
+          }
+
+          return {
+            ...data,
+            pages: data.pages.map((p) => {
+              return {
+                ...p,
+                data: p.data.map((issue) => {
+                  if (issue.id === result.id) {
+                    return { ...issue, attributes: result }
+                  }
+                  return { ...issue }
+                }),
+              }
+            }),
+          }
+        },
+      )
     },
   })

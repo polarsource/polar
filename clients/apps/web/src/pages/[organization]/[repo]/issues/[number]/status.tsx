@@ -93,6 +93,7 @@ const PledgeStatusPage: NextLayoutComponentType = ({
             pledges={[pledge]}
             references={[]}
             checkJustPledged={false}
+            canAddRemovePolarLabel={false}
           />
         </GrayCard>
 

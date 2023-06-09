@@ -12,7 +12,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useOrganization, useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
-import { ReactElement, useEffect, useMemo, useRef } from 'react'
+import { ReactElement, useCallback, useEffect, useMemo, useRef } from 'react'
 
 const SettingsPage: NextLayoutComponentType = () => {
   const router = useRouter()
@@ -45,7 +45,7 @@ const SettingsPage: NextLayoutComponentType = () => {
     return orgData.data && handle !== 'personal'
   }, [orgData, handle])
 
-  const showPersonalSettings = useMemo(() => {
+  const showPersonalSettings = useCallback(() => {
     return handle === 'personal' || handle === currentUser?.username
   }, [handle])
 

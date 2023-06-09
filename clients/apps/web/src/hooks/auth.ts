@@ -14,6 +14,7 @@ export const useAuth = (): UserState & {
   const login = useStore((state) => state.login)
   const logout = useStore((state) => state.logout)
 
+  const [hydrated, setHydrated] = useState(false)
   const [hasChecked, setHasChecked] = useState(false)
   const [isChecking, setIsChecking] = useState(false)
 
@@ -26,6 +27,7 @@ export const useAuth = (): UserState & {
   }, [setIsChecking, setHasChecked, login])
 
   useEffect(() => {
+    setHydrated(true)
     if (hasChecked || authenticated) {
       return
     }
@@ -36,7 +38,19 @@ export const useAuth = (): UserState & {
         request.cancel()
       }
     }
-  }, [authenticated, hasChecked, getAuthenticatedUser])
+  }, [authenticated, hasChecked, getAuthenticatedUser, hydrated])
+
+  if (!hydrated) {
+    return {
+      authenticated: false,
+      currentUser: undefined,
+      hasChecked: false,
+      isChecking: false,
+      login,
+      logout,
+      reloadUser: getAuthenticatedUser,
+    }
+  }
 
   return {
     authenticated,

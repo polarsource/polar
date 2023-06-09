@@ -1,6 +1,7 @@
 import asyncio
 from functools import wraps
 from typing import Callable, Sequence
+import githubkit
 
 import typer
 
@@ -204,7 +205,8 @@ async def sync_all_installations() -> None:
 
         # install again!
         for i in installations.parsed_data:
-            print(i)
+            if not i.account or not isinstance(i.account, githubkit.rest.SimpleUser):
+                continue
             typer.echo(f"Installing {i.account.login if i.account else '???'}")
             await create_from_installation(session, i, removed=[])
 

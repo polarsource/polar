@@ -27,7 +27,6 @@ pydantic = {extras = ["email"], version = "^1.10.7"}
 jinja2 = "^3.1.2"
 sentry-sdk = {extras = ["fastapi"], version = "^1.20.0"}
 sendgrid = "^6.10.0"
-pytest-recording = "^0.12.2"
 discord-webhook = {extras = ["async"], version = "^1.1.0"}
 posthog = "^3.0.1"
 
@@ -49,6 +48,8 @@ taskipy = "^1.10.3"
 types-redis = "^4.5.2.0"
 pytest-subtests = "^0.10.0"
 types-stripe = "^3.5.2.8"
+pytest-recording = "^0.12.2"
+respx = "^0.20.1"
 
 [tool.taskipy.tasks]
 api = { cmd = "task verify_github_app && uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }

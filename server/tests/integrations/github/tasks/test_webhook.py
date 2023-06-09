@@ -1,11 +1,8 @@
 from __future__ import annotations
-import asyncio
-import json
 
-from typing import Any, Coroutine
+from typing import Any
 from datetime import datetime
-from unittest.mock import ANY, AsyncMock, MagicMock, patch
-import githubkit
+from unittest.mock import ANY, patch
 
 import pytest
 from pytest_mock import MockerFixture
@@ -13,7 +10,6 @@ from arq.connections import ArqRedis
 
 from polar.integrations.github import service
 from polar.integrations.github import client as github
-from polar.integrations.github import tasks
 from polar.kit import utils
 from polar.models.organization import Organization
 from polar.organization.schemas import OrganizationCreate

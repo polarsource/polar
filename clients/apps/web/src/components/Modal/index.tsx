@@ -60,7 +60,7 @@ export const ModalHeader = (props: {
   hide: () => void
 }) => {
   return (
-    <div className="flex w-full items-center justify-between border-b px-4 py-2">
+    <div className="flex w-full items-center justify-between border-b px-4 py-3">
       <div>{props.children}</div>
       <button
         className="text-black hover:text-gray-800"

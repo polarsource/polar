@@ -58,6 +58,7 @@ export { PledgeState } from './models/PledgeState';
 export type { PledgeUpdate } from './models/PledgeUpdate';
 export type { polar__integrations__github__endpoints__WebhookResponse } from './models/polar__integrations__github__endpoints__WebhookResponse';
 export type { polar__integrations__stripe__endpoints__WebhookResponse } from './models/polar__integrations__stripe__endpoints__WebhookResponse';
+export type { PostIssueComment } from './models/PostIssueComment';
 export type { PullRequestRead } from './models/PullRequestRead';
 export type { PullRequestReference } from './models/PullRequestReference';
 export type { Relationship } from './models/Relationship';

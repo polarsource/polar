@@ -337,3 +337,8 @@ class IssueDependencyRead(Schema):
 
     class Config:
         orm_mode = True
+
+
+class PostIssueComment(Schema):
+    message: str
+    append_badge: bool = False

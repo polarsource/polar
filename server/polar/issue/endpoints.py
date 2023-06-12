@@ -4,21 +4,25 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
 from polar.integrations.github.schemas import GitHubIssue
+from polar.integrations.github.badge import GithubBadge
 from polar.models import Issue
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, get_db_session
 from polar.exceptions import ResourceNotFound
-
 from polar.organization.service import organization as organization_service
-
-from .schemas import ExternalGitHubIssueCreate, IssueRead, IssueReferenceRead
+from .schemas import (
+    ExternalGitHubIssueCreate,
+    IssueRead,
+    IssueReferenceRead,
+    PostIssueComment,
+)
 from .service import issue as issue_service
 
 from polar.integrations.github.client import get_polar_client, get_user_client
 from polar.integrations.github.service.issue import github_issue as github_issue_service
 from polar.integrations.github.service.url import github_url
 from polar.integrations.github.service.organization import (
-    github_organization as github_organization_service
+    github_organization as github_organization_service,
 )
 
 router = APIRouter(tags=["issues"])
@@ -38,7 +42,7 @@ async def get_repository_issues(
     return issues
 
 
-@router.get(
+@router.post(
     "/{platform}/{org_name}/{repo_name}/issue/{issue_number}/add_badge",
     response_model=IssueRead,
 )
@@ -66,7 +70,7 @@ async def add_polar_badge(
     return issue
 
 
-@router.get(
+@router.post(
     "/{platform}/{org_name}/{repo_name}/issue/{issue_number}/remove_badge",
     response_model=IssueRead,
 )
@@ -148,7 +152,6 @@ async def get_issue_references(
         )
 
     if not issue:
-
         raise HTTPException(
             status_code=404,
             detail="Issue not found",
@@ -156,3 +159,47 @@ async def get_issue_references(
 
     refs = await issue_service.list_issue_references(session, issue)
     return [IssueReferenceRead.from_model(r) for r in refs]
+
+
+@router.post(
+    "/{platform}/{org_name}/{repo_name}/issue/{issue_number}/comment",
+    response_model=IssueRead,
+)
+async def add_issue_comment(
+    platform: Platforms,
+    org_name: str,
+    repo_name: str,
+    issue_number: int,
+    comment: PostIssueComment,
+    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
+    session: AsyncSession = Depends(get_db_session),
+) -> Issue:
+    issue = await issue_service.get_by_number(
+        session, platform, auth.organization.id, auth.repository.id, issue_number
+    )
+    if not issue:
+        raise HTTPException(
+            status_code=404,
+            detail="Issue not found",
+        )
+
+    message = comment.message
+
+    if comment.append_badge:
+        badge = GithubBadge(
+            organization=auth.organization,
+            repository=auth.repository,
+            issue=issue,
+        )
+        message = badge.generate_body_with_badge(message)
+
+    await github_issue_service.add_comment_as_user(
+        session,
+        auth.organization,
+        auth.repository,
+        issue,
+        auth.user,
+        message,
+    )
+
+    return issue

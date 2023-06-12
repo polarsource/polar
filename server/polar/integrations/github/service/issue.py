@@ -18,6 +18,7 @@ from polar.issue.schemas import IssueCreate
 from polar.issue.service import IssueService
 from polar.models import Issue, Organization, Repository
 from polar.enums import Platforms
+from polar.models.user import User
 from polar.postgres import AsyncSession
 from polar.integrations.github import client as github
 from polar.integrations.github.service.api import github_api
@@ -429,6 +430,24 @@ class GithubIssueService(IssueService):
         issue = await self.set_labels(session, issue, labels.parsed_data)
 
         return issue
+
+    async def add_comment_as_user(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        repository: Repository,
+        issue: Issue,
+        user: User,
+        comment: str,
+    ) -> None:
+        client = await github.get_user_client(session, user)
+
+        await client.rest.issues.async_create_comment(
+            organization.name,
+            repository.name,
+            issue.number,
+            body=comment,
+        )
 
 
 github_issue = GithubIssueService(Issue)

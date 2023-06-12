@@ -15,6 +15,7 @@ import {
 } from 'polarkit/api/client'
 import { Checkbox, PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/utils'
+import posthog from 'posthog-js'
 import { ChangeEvent, useEffect, useRef, useState } from 'react'
 import PaymentForm from './PaymentForm'
 
@@ -205,18 +206,30 @@ const PledgeForm = ({
   }
 
   const onAmountChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const amount = parseInt(event.target.value)
-    if (isNaN(amount)) {
+    const newAmount = parseInt(event.target.value)
+    if (isNaN(newAmount)) {
       setErrorMessage('Please enter a valid amount')
       return
     }
-    const amountInCents = amount * 100
+    const amountInCents = newAmount * 100
 
     if (amountInCents < MINIMUM_PLEDGE) {
       setErrorMessage(
         `Minimum amount is ${getCentsInDollarString(MINIMUM_PLEDGE)}`,
       )
       return
+    }
+
+    if (amount === 0) {
+      posthog.capture('Pledge amount entered', {
+        Amount: newAmount,
+        'Organization ID': organization.id,
+        'Organization Name': organization.name,
+        'Repository ID': repository.id,
+        'Repository Name': repository.name,
+        'Issue ID': issue.id,
+        'Issue Number': issue.number,
+      })
     }
 
     setErrorMessage('')
@@ -233,9 +246,21 @@ const PledgeForm = ({
   }
 
   const onEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const email = event.target.value
-    setEmail(email)
-    debouncedSync({ amount, email, approvedTos })
+    const newEmail = event.target.value
+
+    if (email === '') {
+      posthog.capture('Pledge email entered', {
+        'Organization ID': organization.id,
+        'Organization Name': organization.name,
+        'Repository ID': repository.id,
+        'Repository Name': repository.name,
+        'Issue ID': issue.id,
+        'Issue Number': issue.number,
+      })
+    }
+
+    setEmail(newEmail)
+    debouncedSync({ amount, email: newEmail, approvedTos })
   }
 
   const router = useRouter()
@@ -377,6 +402,9 @@ const PledgeForm = ({
           >
             <PaymentForm
               pledge={pledge}
+              issue={issue}
+              organization={organization}
+              repository={repository}
               isSyncing={isSyncing}
               setSyncing={setSyncing}
               setErrorMessage={setErrorMessage}

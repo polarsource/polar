@@ -11,6 +11,11 @@ from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.integrations.github import service
 from polar.integrations.github.service import github_organization
+from polar.integrations.github.tasks.webhook import (
+    create_from_installation,
+    repositories_changed,
+)
+from polar.kit.utils import utc_now
 from polar.models import Issue, Organization, Repository
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import OrganizationCreate
@@ -179,6 +184,29 @@ async def sync_repos(org_name: str) -> None:
             raise RuntimeError(f"Organization {org_name} not found")
 
         await trigger_repositories_sync(session, org)
+
+
+@cli.command()
+@typer_async
+async def sync_all_installations() -> None:
+    async with AsyncSessionLocal() as session:
+        # mark all orgs and repositories as uninstalled
+        await session.execute(sql.update(Organization).values(deleted_at=utc_now()))
+        await session.execute(sql.update(Repository).values(deleted_at=utc_now()))
+        await session.commit()
+        await session.flush()
+
+        # get installations from github
+        client = github.get_app_client()
+
+        # TODO: paginate
+        installations = await client.rest.apps.async_list_installations()
+
+        # install again!
+        for i in installations.parsed_data:
+            print(i)
+            typer.echo(f"Installing {i.account.login if i.account else '???'}")
+            await create_from_installation(session, i, removed=[])
 
 
 @cli.command()

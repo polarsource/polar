@@ -251,6 +251,12 @@ class GithubRepositoryService(RepositoryService):
         ):
             create = RepositoryCreate.from_github(organization, repo)
             inst = await self.upsert(session, create, autocommit=False)
+
+            # un-delete if previously deleted
+            if inst.deleted_at is not None:
+                inst.deleted_at = None
+                await inst.save(session, autocommit=False)
+
             instances.append(inst)
 
         await session.commit()

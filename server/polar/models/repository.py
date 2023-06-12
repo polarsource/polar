@@ -122,4 +122,5 @@ class Repository(RecordModel):
         "is_downloads_enabled",
         "is_archived",
         "is_disabled",
+        "deleted_at",
     }

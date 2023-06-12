@@ -5,13 +5,22 @@ import {
   PaymentIntent,
   StripePaymentElementChangeEvent,
 } from '@stripe/stripe-js'
-import { PledgeMutationResponse } from 'polarkit/api/client'
+import {
+  IssueRead,
+  OrganizationPublicRead,
+  PledgeMutationResponse,
+  RepositoryRead,
+} from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/utils'
-import { useState } from 'react'
+import posthog from 'posthog-js'
+import { useEffect, useState } from 'react'
 
 const PaymentForm = ({
   pledge,
+  issue,
+  organization,
+  repository,
   isSyncing,
   setSyncing,
   setErrorMessage,
@@ -19,6 +28,9 @@ const PaymentForm = ({
   redirectTo,
 }: {
   pledge?: PledgeMutationResponse
+  issue: IssueRead
+  organization: OrganizationPublicRead
+  repository: RepositoryRead
   isSyncing: boolean
   setSyncing: (isLocked: boolean) => void
   setErrorMessage: (message: string) => void
@@ -34,18 +46,66 @@ const PaymentForm = ({
   const fee = pledge?.fee || 0
   const amountIncludingFee = pledge?.amount_including_fee || 0
 
+  useEffect(() => {
+    if (isStripeCompleted) {
+      posthog.capture('Pledge Form Completed', {
+        'Organization ID': organization.id,
+        'Organization Name': organization.name,
+        'Repository ID': repository.id,
+        'Repository Name': repository.name,
+        'Issue ID': issue.id,
+        'Issue Number': issue.number,
+      })
+    }
+  }, [
+    isStripeCompleted,
+    issue.id,
+    issue.number,
+    organization.id,
+    organization.name,
+    repository.id,
+    repository.name,
+  ])
+
   const handlePayment = (paymentIntent: PaymentIntent) => {
     switch (paymentIntent.status) {
       case 'succeeded':
       case 'processing':
+        posthog.capture('Pledge Payment Success', {
+          Status: paymentIntent.status,
+          'Organization ID': organization.id,
+          'Organization Name': organization.name,
+          'Repository ID': repository.id,
+          'Repository Name': repository.name,
+          'Issue ID': issue.id,
+          'Issue Number': issue.number,
+        })
         onSuccess(paymentIntent)
         break
 
       case 'requires_payment_method':
+        posthog.capture('Pledge Payment Failed', {
+          Status: paymentIntent.status,
+          'Organization ID': organization.id,
+          'Organization Name': organization.name,
+          'Repository ID': repository.id,
+          'Repository Name': repository.name,
+          'Issue ID': issue.id,
+          'Issue Number': issue.number,
+        })
         setErrorMessage('Payment failed. Please try another payment method.')
         break
 
       default:
+        posthog.capture('Pledge Payment Failed', {
+          Status: paymentIntent.status,
+          'Organization ID': organization.id,
+          'Organization Name': organization.name,
+          'Repository ID': repository.id,
+          'Repository Name': repository.name,
+          'Issue ID': issue.id,
+          'Issue Number': issue.number,
+        })
         setErrorMessage('Something went wrong.')
         break
     }
@@ -63,6 +123,15 @@ const PaymentForm = ({
     if (!pledge) {
       return
     }
+
+    posthog.capture('Pledge Form Submitted', {
+      'Organization ID': organization.id,
+      'Organization Name': organization.name,
+      'Repository ID': repository.id,
+      'Repository Name': repository.name,
+      'Issue ID': issue.id,
+      'Issue Number': issue.number,
+    })
 
     setSyncing(true)
     setErrorMessage('')

@@ -5,6 +5,8 @@ import type { GetServerSideProps, NextPage } from 'next'
 import Head from 'next/head'
 import { api } from 'polarkit'
 import { Platforms, PledgeResources } from 'polarkit/api/client'
+import { posthog } from 'posthog-js'
+import { useEffect } from 'react'
 
 type Params = PledgeResources & {
   query?: {
@@ -19,6 +21,19 @@ const PledgePage: NextPage = ({
   issue,
   query,
 }: Params) => {
+  useEffect(() => {
+    if (organization && repository && issue) {
+      posthog.capture('Pledge page shown', {
+        'Organization ID': organization.id,
+        'Organization Name': organization.name,
+        'Repository ID': repository.id,
+        'Repository Name': repository.name,
+        'Issue ID': issue.id,
+        'Issue Number': issue.number,
+      })
+    }
+  }, [organization, repository, issue])
+
   if (!issue) {
     return <PageNotFound />
   }

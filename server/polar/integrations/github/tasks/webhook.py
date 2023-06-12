@@ -1,5 +1,4 @@
-from datetime import datetime
-from typing import Any, Union
+from typing import Any, Sequence, Union
 
 import structlog
 from polar.context import ExecutionContext
@@ -8,15 +7,13 @@ from polar.integrations.github import client as github
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
 from polar.models.issue import Issue
+from polar.models.organization import Organization
 from polar.organization.hooks import OrganizationHook, organization_upserted
-from polar.organization.schemas import OrganizationCreate
-from polar.enums import Platforms
 from polar.postgres import AsyncSessionLocal, AsyncSession
 from polar.worker import JobContext, PolarWorkerContext, enqueue_job, task
 
 from .. import service
 from .utils import (
-    add_repositories,
     get_event_issue,
     remove_repositories,
     upsert_issue,
@@ -39,14 +36,24 @@ async def repositories_changed(
         github.webhooks.InstallationRepositoriesRemoved,
         github.webhooks.InstallationCreated,
     ],
-) -> dict[str, Any]:
+) -> None:
     with ExecutionContext(is_during_installation=True):
-        if not event.installation:
-            return dict(success=False)
+        removed: Sequence[
+            Union[
+                github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems,
+                github.webhooks.InstallationRepositoriesAddedPropRepositoriesRemovedItems,
+                github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems,
+            ]
+        ] = (
+            []
+            if isinstance(event, github.webhooks.InstallationCreated)
+            else event.repositories_removed
+        )
 
-        organization = await service.github_organization.update_or_create_from_webhook(
+        org = await create_from_installation(
             session,
-            event,
+            event.installation,
+            removed,
         )
 
         # Sync permission for the installing user
@@ -57,25 +64,36 @@ async def repositories_changed(
             await service.github_user.sync_github_admin_orgs(session, user=sender)
 
         # send after members have been added
-        await organization_upserted.call(OrganizationHook(session, organization))
+        await organization_upserted.call(OrganizationHook(session, org))
 
-        if isinstance(event, github.webhooks.InstallationCreated):
-            await add_repositories(
-                session, organization, event.installation.id, event.repositories
-            )
-        else:
-            if event.repositories_added:
-                await add_repositories(
-                    session,
-                    organization,
-                    event.installation.id,
-                    event.repositories_added,
-                )
 
-            if event.repositories_removed:
-                await remove_repositories(session, event.repositories_removed)
+async def create_from_installation(
+    session: AsyncSession,
+    installation: Union[
+        github.rest.Installation,
+        github.webhooks.Installation,
+    ],
+    removed: Sequence[
+        Union[
+            github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems,
+            github.webhooks.InstallationRepositoriesAddedPropRepositoriesRemovedItems,
+            github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems,
+        ]
+    ],
+) -> Organization:
+    organization = await service.github_organization.update_or_create_from_github(
+        session,
+        installation,
+    )
 
-        return dict(success=True)
+    if removed:
+        await remove_repositories(session, removed)
+
+    await service.github_repository.install_for_organization(
+        session, organization, installation.id
+    )
+
+    return organization
 
 
 @task("github.webhook.installation_repositories.added")
@@ -452,13 +470,7 @@ async def issue_labeled_async(
 
     embedded_before_update = issue.has_pledge_badge_label
 
-    labels = github.jsonify(event.issue.labels)
-    # TODO: Improve typing here
-    issue.labels = labels  # type: ignore
-    issue.issue_modified_at = event.issue.updated_at
-    issue.has_pledge_badge_label = Issue.contains_pledge_badge_label(labels)
-    session.add(issue)
-    await session.commit()
+    issue = await service.github_issue.set_labels(session, issue, event.issue.labels)
 
     should_embed = issue.has_pledge_badge_label
     if embedded_before_update != should_embed:

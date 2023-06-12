@@ -128,26 +128,29 @@ class GithubOrganizationService(OrganizationService):
 
         await self.soft_delete(session, id=org_id)
 
-    async def update_or_create_from_webhook(
+    async def update_or_create_from_github(
         self,
         session: AsyncSession,
-        event: Union[
-            github.webhooks.InstallationRepositoriesAdded,
-            github.webhooks.InstallationRepositoriesRemoved,
-            github.webhooks.InstallationCreated,
+        installation: Union[
+            github.rest.Installation,
+            github.webhooks.Installation,
         ],
     ) -> Organization:
-        inst = event.installation
-        account = event.installation.account
+        account = installation.account
+        if not account:
+            raise Exception("installation has no account")
+        if isinstance(account, github.rest.Enterprise):
+            raise Exception("enterprise accounts is not supported")
+
         is_personal = account.type.lower() == "user"
 
-        if isinstance(inst.created_at, int):
-            inst.created_at = datetime.fromtimestamp(inst.created_at)
+        if isinstance(installation.created_at, int):
+            installation.created_at = datetime.fromtimestamp(installation.created_at)
 
-        if isinstance(inst.updated_at, int):
-            inst.updated_at = datetime.fromtimestamp(inst.updated_at)
+        if isinstance(installation.updated_at, int):
+            installation.updated_at = datetime.fromtimestamp(installation.updated_at)
 
-        org = await self.get_by_external_id(session, inst.id)
+        org = await self.get_by_external_id(session, installation.id)
         if not org:
             create_schema = OrganizationCreate(
                 platform=Platforms.github,
@@ -155,10 +158,10 @@ class GithubOrganizationService(OrganizationService):
                 external_id=account.id,
                 avatar_url=account.avatar_url,
                 is_personal=is_personal,
-                installation_id=inst.id,
-                installation_created_at=inst.created_at,
-                installation_updated_at=inst.updated_at,
-                installation_suspended_at=inst.suspended_at,
+                installation_id=installation.id,
+                installation_created_at=installation.created_at,
+                installation_updated_at=installation.updated_at,
+                installation_suspended_at=installation.suspended_at,
             )
             organization = await self.upsert(session, create_schema)
             return organization
@@ -167,9 +170,9 @@ class GithubOrganizationService(OrganizationService):
         org.deleted_at = None
         org.name = account.login
         org.avatar_url = account.avatar_url
-        org.installation_created_at = inst.created_at
-        org.installation_updated_at = inst.updated_at
-        org.installation_suspended_at = inst.suspended_at
+        org.installation_created_at = installation.created_at
+        org.installation_updated_at = installation.updated_at
+        org.installation_suspended_at = installation.suspended_at
         await org.save(session)
 
         return org

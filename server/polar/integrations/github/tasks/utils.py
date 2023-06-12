@@ -33,32 +33,6 @@ async def get_organization_and_repo(
     return (organization, repository)
 
 
-async def add_repositories(
-    session: AsyncSession,
-    organization: Organization,
-    installation_id: int,
-    repositories: Sequence[
-        Union[
-            github.webhooks.InstallationCreatedPropRepositoriesItems,
-            github.webhooks.InstallationRepositoriesAddedPropRepositoriesAddedItems,
-            github.webhooks.InstallationRepositoriesRemovedPropRepositoriesAddedItems,
-        ]
-    ],
-) -> None:
-    for repo in repositories:
-        # un-delete if previously deleted
-        prev = await service.github_repository.get_by_external_id(
-            session, external_id=repo.id
-        )
-        if prev and prev.deleted_at is not None:
-            prev.deleted_at = None
-            await prev.save(session)
-
-    await service.github_repository.install_for_organization(
-        session, organization, installation_id
-    )
-
-
 async def remove_repositories(
     session: AsyncSession,
     repositories: Sequence[

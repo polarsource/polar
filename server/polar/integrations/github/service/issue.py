@@ -4,7 +4,8 @@ import datetime
 from typing import Any, Sequence, Union
 from uuid import UUID
 from githubkit import GitHub, Response
-from githubkit.rest.models import Issue as GitHubIssue
+from githubkit.rest.models import Issue as GitHubIssue, Label
+from githubkit.webhooks.models import Label as WebhookLabel
 from githubkit.exception import RequestFailed
 from sqlalchemy import asc, or_
 
@@ -375,6 +376,59 @@ class GithubIssueService(IssueService):
         remove_issues = [issue for issue in reversed(issues) if filter(issue)]
 
         return remove_issues
+
+    async def set_labels(
+        self,
+        session: AsyncSession,
+        issue: Issue,
+        github_labels: Union[
+            list[Label],
+            list[WebhookLabel],
+        ],
+    ) -> Issue:
+        labels = github.jsonify(github_labels)
+        # TODO: Improve typing here
+        issue.labels = labels  # type: ignore
+        # issue.issue_modified_at = event.issue.updated_at
+        issue.has_pledge_badge_label = Issue.contains_pledge_badge_label(labels)
+        session.add(issue)
+        await session.commit()
+
+        return issue
+
+    async def add_polar_label(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        repository: Repository,
+        issue: Issue,
+    ) -> Issue:
+        client = github.get_app_installation_client(organization.installation_id)
+
+        labels = await client.rest.issues.async_add_labels(
+            organization.name, repository.name, issue.number, data=["polar"]
+        )
+
+        issue = await self.set_labels(session, issue, labels.parsed_data)
+
+        return issue
+
+    async def remove_polar_label(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        repository: Repository,
+        issue: Issue,
+    ) -> Issue:
+        client = github.get_app_installation_client(organization.installation_id)
+
+        labels = await client.rest.issues.async_remove_label(
+            organization.name, repository.name, issue.number, "polar"
+        )
+
+        issue = await self.set_labels(session, issue, labels.parsed_data)
+
+        return issue
 
 
 github_issue = GithubIssueService(Issue)

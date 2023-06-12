@@ -13,6 +13,8 @@ from polar.organization.service import organization as organization_service
 from .schemas import IssueRead, IssueReferenceRead
 from .service import issue as issue_service
 
+from polar.integrations.github.service.issue import github_issue as github_issue_service
+
 router = APIRouter(tags=["issues"])
 
 
@@ -28,6 +30,62 @@ async def get_repository_issues(
         session=session, repository_id=auth.repository.id
     )
     return issues
+
+
+@router.get(
+    "/{platform}/{org_name}/{repo_name}/issue/{issue_number}/add_badge",
+    response_model=IssueRead,
+)
+async def add_polar_badge(
+    platform: Platforms,
+    org_name: str,
+    repo_name: str,
+    issue_number: int,
+    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
+    session: AsyncSession = Depends(get_db_session),
+) -> Issue:
+    issue = await issue_service.get_by_number(
+        session, platform, auth.organization.id, auth.repository.id, issue_number
+    )
+    if not issue:
+        raise HTTPException(
+            status_code=404,
+            detail="Issue not found",
+        )
+
+    issue = await github_issue_service.add_polar_label(
+        session, auth.organization, auth.repository, issue
+    )
+
+    return issue
+
+
+@router.get(
+    "/{platform}/{org_name}/{repo_name}/issue/{issue_number}/remove_badge",
+    response_model=IssueRead,
+)
+async def remove_polar_badge(
+    platform: Platforms,
+    org_name: str,
+    repo_name: str,
+    issue_number: int,
+    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
+    session: AsyncSession = Depends(get_db_session),
+) -> Issue:
+    issue = await issue_service.get_by_number(
+        session, platform, auth.organization.id, auth.repository.id, issue_number
+    )
+    if not issue:
+        raise HTTPException(
+            status_code=404,
+            detail="Issue not found",
+        )
+
+    issue = await github_issue_service.remove_polar_label(
+        session, auth.organization, auth.repository, issue
+    )
+
+    return issue
 
 
 @router.get(

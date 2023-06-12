@@ -19,7 +19,11 @@ import {
   generateMarkdownTitle,
 } from 'polarkit/components/Issue'
 import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
-import { useIssueAddPolarBadge, useIssueRemovePolarBadge } from 'polarkit/hooks'
+import {
+  useIssueAddComment,
+  useIssueAddPolarBadge,
+  useIssueRemovePolarBadge,
+} from 'polarkit/hooks'
 import {
   classNames,
   getCentsInDollarString,
@@ -428,7 +432,7 @@ const AddRemoveBadge = (props: {
             <ModalHeader hide={toggle}>
               <div className="flex items-center space-x-2">
                 <BadgedCheckmarkLargeIcon />
-                <div className="text-gray text-xl font-medium">
+                <div className="text-gray pr-2 text-xl font-medium">
                   Badge added to #{props.issue.number}
                 </div>
                 <button
@@ -453,7 +457,11 @@ const AddRemoveBadge = (props: {
                   <div>Embed on website</div>
                   <div>Share on social media</div>
                 </div>
-                <PostCommentForm />
+                <PostCommentForm
+                  orgName={props.orgName}
+                  repoName={props.repoName}
+                  issue={props.issue}
+                />
               </div>
             </ModalBody>
           </>
@@ -463,12 +471,37 @@ const AddRemoveBadge = (props: {
   )
 }
 
-const PostCommentForm = () => {
+const PostCommentForm = (props: {
+  orgName: string
+  repoName: string
+  issue: IssueDashboardRead
+}) => {
   const [message, setMessage] = useState(
     "I'm looking for funding to get this issue done. Back it by using the badge below.",
   )
 
   const { currentUser } = useRequireAuth()
+
+  const addComment = useIssueAddComment()
+
+  const [loading, setIsLoading] = useState(false)
+  const [posted, setPosted] = useState(false)
+
+  const submitComment = async () => {
+    setIsLoading(true)
+    await addComment.mutateAsync({
+      platform: Platforms.GITHUB,
+      orgName: props.orgName,
+      repoName: props.repoName,
+      issueNumber: props.issue.number,
+      body: {
+        message: message,
+        append_badge: true,
+      },
+    })
+    setIsLoading(false)
+    setPosted(true)
+  }
 
   return (
     <div className="flex w-full space-x-2">
@@ -490,8 +523,14 @@ const PostCommentForm = () => {
           </div>
         </div>
         <div className="flex justify-end">
-          <PrimaryButton fullWidth={false} loading={false}>
-            Post
+          <PrimaryButton
+            fullWidth={false}
+            loading={loading}
+            onClick={submitComment}
+            disabled={posted}
+          >
+            {posted && <>Posted!</>}
+            {!posted && <>Post!</>}
           </PrimaryButton>
         </div>
       </div>

@@ -4,6 +4,7 @@
 import type { IssueRead } from '../models/IssueRead';
 import type { IssueReferenceRead } from '../models/IssueReferenceRead';
 import type { Platforms } from '../models/Platforms';
+import type { PostIssueComment } from '../models/PostIssueComment';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -57,7 +58,7 @@ export class IssuesService {
     issueNumber: number,
   }): CancelablePromise<IssueRead> {
     return this.httpRequest.request({
-      method: 'GET',
+      method: 'POST',
       url: '/api/v1/{platform}/{org_name}/{repo_name}/issue/{issue_number}/add_badge',
       path: {
         'platform': platform,
@@ -88,7 +89,7 @@ export class IssuesService {
     issueNumber: number,
   }): CancelablePromise<IssueRead> {
     return this.httpRequest.request({
-      method: 'GET',
+      method: 'POST',
       url: '/api/v1/{platform}/{org_name}/{repo_name}/issue/{issue_number}/remove_badge',
       path: {
         'platform': platform,
@@ -158,6 +159,41 @@ export class IssuesService {
         'repo_name': repoName,
         'number': number,
       },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Add Issue Comment
+   * @returns IssueRead Successful Response
+   * @throws ApiError
+   */
+  public addIssueComment({
+    platform,
+    orgName,
+    repoName,
+    issueNumber,
+    requestBody,
+  }: {
+    platform: Platforms,
+    orgName: string,
+    repoName: string,
+    issueNumber: number,
+    requestBody: PostIssueComment,
+  }): CancelablePromise<IssueRead> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/issue/{issue_number}/comment',
+      path: {
+        'platform': platform,
+        'org_name': orgName,
+        'repo_name': repoName,
+        'issue_number': issueNumber,
+      },
+      body: requestBody,
+      mediaType: 'application/json',
       errors: {
         422: `Validation Error`,
       },

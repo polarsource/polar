@@ -1,6 +1,10 @@
 import { InfiniteData, useMutation } from '@tanstack/react-query'
 import { api, queryClient } from '../../api'
-import { IssueListResponse, Platforms } from '../../api/client'
+import {
+  IssueListResponse,
+  Platforms,
+  PostIssueComment,
+} from '../../api/client'
 
 export const useIssueAddPolarBadge = () =>
   useMutation({
@@ -77,5 +81,24 @@ export const useIssueRemovePolarBadge = () =>
           }
         },
       )
+    },
+  })
+
+export const useIssueAddComment = () =>
+  useMutation({
+    mutationFn: (variables: {
+      platform: Platforms
+      orgName: string
+      repoName: string
+      issueNumber: number
+      body: PostIssueComment
+    }) => {
+      return api.issues.addIssueComment({
+        platform: variables.platform,
+        orgName: variables.orgName,
+        repoName: variables.repoName,
+        issueNumber: variables.issueNumber,
+        requestBody: variables.body,
+      })
     },
   })

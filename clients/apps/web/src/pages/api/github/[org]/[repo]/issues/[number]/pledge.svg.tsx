@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { promises as fs } from 'fs'
 import { NextApiRequest, NextApiResponse } from 'next'
 import path from 'path'
@@ -5,6 +6,7 @@ import { api } from 'polarkit/api'
 import { GithubBadgeRead } from 'polarkit/api/client'
 import { Badge } from 'polarkit/components'
 import { getCentsInDollarString } from 'polarkit/utils'
+import posthog from '../../../../../../../utils/posthog'
 const { default: satori } = require('satori')
 
 const readPublicFileBuffer = async (filename: string) => {
@@ -93,6 +95,19 @@ export default async function handler(
     res.setHeader('Content-Type', 'image/svg+xml')
     res.setHeader('Cache-Control', 'no-cache')
     res.end(svg)
+
+    if (posthog) {
+      posthog.capture({
+        distinctId: randomUUID(),
+        event: 'Pledge Badge Shown',
+        properties: {
+          'Organization Name': org,
+          'Repository Name': repo,
+          'Issue Number': intNumber,
+          'Dark Mode': isDarkmode,
+        },
+      })
+    }
   } catch (error) {
     console.log({ error })
     // Return 1x1 pixel SVG to prevent image-not-found issues in browsers

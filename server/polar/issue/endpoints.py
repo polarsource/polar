@@ -17,7 +17,9 @@ from .service import issue as issue_service
 from polar.integrations.github.client import get_anonymous_client, get_user_client
 from polar.integrations.github.service.issue import github_issue as github_issue_service
 from polar.integrations.github.service.url import github_url
-from polar.integrations.github.service.organization import github_organization as github_organization_service
+from polar.integrations.github.service.organization import (
+    github_organization as github_organization_service
+)
 
 router = APIRouter(tags=["issues"])
 

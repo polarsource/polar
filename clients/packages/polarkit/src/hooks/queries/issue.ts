@@ -2,6 +2,7 @@ import { InfiniteData, useMutation } from '@tanstack/react-query'
 import { api, queryClient } from '../../api'
 import {
   IssueListResponse,
+  IssueUpdateBadgeMessage,
   Platforms,
   PostIssueComment,
 } from '../../api/client'
@@ -94,6 +95,25 @@ export const useIssueAddComment = () =>
       body: PostIssueComment
     }) => {
       return api.issues.addIssueComment({
+        platform: variables.platform,
+        orgName: variables.orgName,
+        repoName: variables.repoName,
+        issueNumber: variables.issueNumber,
+        requestBody: variables.body,
+      })
+    },
+  })
+
+export const useBadgeWithComment = () =>
+  useMutation({
+    mutationFn: (variables: {
+      platform: Platforms
+      orgName: string
+      repoName: string
+      issueNumber: number
+      body: IssueUpdateBadgeMessage
+    }) => {
+      return api.issues.badgeWithMessage({
         platform: variables.platform,
         orgName: variables.orgName,
         repoName: variables.repoName,

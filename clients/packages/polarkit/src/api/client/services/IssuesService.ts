@@ -3,6 +3,7 @@
 /* eslint-disable */
 import type { IssueRead } from '../models/IssueRead';
 import type { IssueReferenceRead } from '../models/IssueReferenceRead';
+import type { IssueUpdateBadgeMessage } from '../models/IssueUpdateBadgeMessage';
 import type { Platforms } from '../models/Platforms';
 import type { PostIssueComment } from '../models/PostIssueComment';
 
@@ -186,6 +187,41 @@ export class IssuesService {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/{platform}/{org_name}/{repo_name}/issue/{issue_number}/comment',
+      path: {
+        'platform': platform,
+        'org_name': orgName,
+        'repo_name': repoName,
+        'issue_number': issueNumber,
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Badge With Message
+   * @returns IssueRead Successful Response
+   * @throws ApiError
+   */
+  public badgeWithMessage({
+    platform,
+    orgName,
+    repoName,
+    issueNumber,
+    requestBody,
+  }: {
+    platform: Platforms,
+    orgName: string,
+    repoName: string,
+    issueNumber: number,
+    requestBody: IssueUpdateBadgeMessage,
+  }): CancelablePromise<IssueRead> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/issue/{issue_number}/badge_message',
       path: {
         'platform': platform,
         'org_name': orgName,

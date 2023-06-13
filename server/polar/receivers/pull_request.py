@@ -1,6 +1,6 @@
 from polar.enums import Platforms
 from polar.pull_request.hooks import PullRequestHook, pull_request_upserted
-from polar.integrations.github.service.dependency import github_dependency
+from polar.integrations.github.service.url import github_url
 from polar.repository.service import repository as repository_service
 from polar.organization.service import organization as organization_service
 from polar.issue.service import issue as issue_service
@@ -32,12 +32,12 @@ async def pull_request_find_reverse_references(
     if not org:
         return
 
-    deps = github_dependency.parse_dependencies(item.body)
+    urls = github_url.parse_urls(item.body)
 
-    for dep in deps:
+    for url in urls:
         # Find deps in same repository, and trigger syncs for the issue
-        is_same_owner = dep.owner is None or dep.owner == org.name
-        is_same_repo = dep.repo is None or dep.repo == repo.name
+        is_same_owner = url.owner is None or url.owner == org.name
+        is_same_repo = url.repo is None or url.repo == repo.name
 
         if not is_same_owner or not is_same_repo:
             continue
@@ -47,7 +47,7 @@ async def pull_request_find_reverse_references(
             Platforms.github,
             organization_id=org.id,
             repository_id=repo.id,
-            number=dep.number,
+            number=url.number,
         )
         if not linked_issue:
             continue

@@ -3,6 +3,7 @@ from typing import List, Sequence
 from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
+from polar.integrations.github.schemas import GitHubIssue
 from polar.models import Issue
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, get_db_session
@@ -10,10 +11,15 @@ from polar.exceptions import ResourceNotFound
 
 from polar.organization.service import organization as organization_service
 
-from .schemas import IssueRead, IssueReferenceRead
+from .schemas import ExternalGitHubIssueCreate, IssueRead, IssueReferenceRead
 from .service import issue as issue_service
 
+from polar.integrations.github.client import get_anonymous_client, get_user_client
 from polar.integrations.github.service.issue import github_issue as github_issue_service
+from polar.integrations.github.service.url import github_url
+from polar.integrations.github.service.organization import (
+    github_organization as github_organization_service
+)
 
 router = APIRouter(tags=["issues"])
 
@@ -107,6 +113,45 @@ async def get_public_issue(
             issue=number,
         )
         return issue
+    except ResourceNotFound:
+        raise HTTPException(
+            status_code=404,
+            detail="Organization, repo and issue combination not found",
+        )
+
+
+@router.post(
+    "/{platform}/external_issues", response_model=GitHubIssue
+)
+async def sync_external_issue(
+    platform: Platforms,
+    external_issue: ExternalGitHubIssueCreate,
+    auth: Auth = Depends(Auth.optional_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> GitHubIssue:
+    if auth.user is None:
+        client = get_anonymous_client()
+    else:
+        # If we have a user, make sure to use their GitHub auth, to use as little
+        # anonymous rate limiting as possible
+        client = await get_user_client(session, auth.user)
+    urls = github_url.parse_urls(external_issue.url)
+
+    if len(urls) != 1 or urls[0].owner is None or urls[0].repo is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No issue reference found",
+        )
+
+    try:
+        await github_organization_service.sync_external_org_with_repo_and_issue(
+            session,
+            client=client,
+            org_name=urls[0].owner,
+            repo_name=urls[0].repo,
+            issue_number=urls[0].number,
+        )
+        return urls[0]
     except ResourceNotFound:
         raise HTTPException(
             status_code=404,

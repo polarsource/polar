@@ -10,6 +10,7 @@ from githubkit import (
     GitHub,
     Response,
     TokenAuthStrategy,
+    UnauthAuthStrategy,
     rest,
     utils,
     webhooks,
@@ -154,6 +155,9 @@ async def get_user_client(
 
     return get_client(oauth.access_token)
 
+
+def get_anonymous_client() -> GitHub[UnauthAuthStrategy]:
+    return GitHub()
 
 def get_client(access_token: str) -> GitHub[TokenAuthStrategy]:
     return GitHub(access_token)

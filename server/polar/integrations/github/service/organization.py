@@ -1,18 +1,26 @@
 from datetime import datetime
-from typing import Union
+from typing import Any, Tuple, Union
 from uuid import UUID
+from githubkit import GitHub
+from githubkit.exception import RequestFailed
 
 import structlog
+from polar.exceptions import ResourceNotFound
+from polar.issue.schemas import IssueCreate
 from polar.kit.utils import utc_now
 
 from polar.models import Organization, User
+from polar.models.issue import Issue
+from polar.models.repository import Repository
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import OrganizationService
 from polar.enums import Platforms
 from polar.postgres import AsyncSession
+from polar.repository.schemas import RepositoryCreate
 
 from .. import client as github
 from .repository import github_repository
+from .issue import github_issue
 
 log = structlog.get_logger()
 
@@ -176,6 +184,77 @@ class GithubOrganizationService(OrganizationService):
         await org.save(session)
 
         return org
+
+
+    async def sync_external_org_with_repo_and_issue(
+        self,
+        session: AsyncSession,
+        *,
+        client: GitHub[Any],
+        org_name: str,
+        repo_name: str,
+        issue_number: int,
+    ) -> Tuple[Organization, Repository, Issue]:
+        organization = await self.get_by_name(
+            session, Platforms.github, org_name
+        )
+
+        try:
+            repo_response = await client.rest.repos.async_get(org_name, repo_name)
+            github_repo = repo_response.parsed_data
+            owner = github_repo.owner
+            is_personal = owner.type.lower() == "user"
+
+            if not organization:
+                org_schema = OrganizationCreate(
+                    platform=Platforms.github,
+                    name=owner.login,
+                    external_id=owner.id,
+                    avatar_url=owner.avatar_url,
+                    is_personal=is_personal,
+                )
+                organization = await self.create(session, org_schema)
+
+            repository = await github_repository.get_by_external_id(
+                session,
+                external_id=github_repo.id,
+            )
+            if not repository:
+                repo_schema = RepositoryCreate(
+                    platform=Platforms.github,
+                    external_id=github_repo.id,
+                    organization_id=organization.id,
+                    name=github_repo.name,
+                    is_private=github_repo.private,
+                )
+                repository = await github_repository.create(session, repo_schema)
+
+            issue = await github_issue.get_by_number(
+                session,
+                platform=Platforms.github,
+                organization_id=organization.id,
+                repository_id=repository.id,
+                number=issue_number,
+            )
+            if not issue:
+                issue_response = await client.rest.issues.async_get(
+                    organization.name, repository.name, issue_number
+                )
+                github_issue_data = issue_response.parsed_data
+                issue_schema = IssueCreate.from_github(
+                    github_issue_data,
+                    organization_id=organization.id,
+                    repository_id=repository.id,
+                )
+                issue = await github_issue.create(session, issue_schema)
+
+            return (organization, repository, issue)
+        except RequestFailed as e:
+                if e.response.status_code == 404:
+                    raise ResourceNotFound()
+                # re-raise other status codes
+                raise e
+
 
 
 github_organization = GithubOrganizationService(Organization)

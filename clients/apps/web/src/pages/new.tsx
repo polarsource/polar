@@ -1,8 +1,8 @@
-import { Platforms } from '@/../../../packages/polarkit/src/api/client'
 import HowItWorks from '@/components/Pledge/HowItWorks'
 import type { NextPage } from 'next'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
+import { ApiError, Platforms } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
 import { ChangeEvent, MouseEvent, useState } from 'react'
@@ -29,22 +29,30 @@ const parseIssueURL = (url: string): IssueInfo | undefined => {
 const NewPledgePage: NextPage = () => {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
   const [url, setUrl] = useState('')
 
   const onUrlChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    setErrorMessage('')
     setUrl(event.target.value)
   }
 
   const syncExternalIssue = async (event: MouseEvent) => {
     event.preventDefault()
     setIsLoading(true)
-    const issue = await api.issues.syncExternalIssue({
-      platform: Platforms.GITHUB,
-      requestBody: { url },
-    })
-    console.log(issue)
-    setIsLoading(false)
-    router.push(`/${issue.owner}/${issue.repo}/issues/${issue.number}`)
+    try {
+      const issue = await api.issues.syncExternalIssue({
+        platform: Platforms.GITHUB,
+        requestBody: { url },
+      })
+      setIsLoading(false)
+      router.push(`/${issue.owner}/${issue.repo}/issues/${issue.number}`)
+    } catch (e) {
+      setIsLoading(false)
+      if (e instanceof ApiError) {
+        setErrorMessage(e.body.detail)
+      }
+    }
   }
 
   return (
@@ -87,6 +95,10 @@ const NewPledgePage: NextPage = () => {
                     Pledge
                   </PrimaryButton>
                 </div>
+
+                {errorMessage && (
+                  <p className="mt-2 text-sm text-red-500">{errorMessage}</p>
+                )}
               </form>
             </div>
           </WhiteCard>

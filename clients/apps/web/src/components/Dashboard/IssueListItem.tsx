@@ -523,13 +523,13 @@ export const BadgePromotionModal = (props: {
           </div>
           <button
             onClick={clickRemoveBadge}
-            className="flex cursor-pointer items-center rounded-full border border-gray-200 px-2 py-0.5 pr-3 text-gray-500 hover:bg-gray-100"
+            className="text-gray flex cursor-pointer items-center rounded-full border border-gray-200 px-2 py-0.5 pr-3 hover:bg-gray-100"
           >
             <XIcon /> Remove
           </button>
         </div>
       </ModalHeader>
-      <div className="bg-gray-75 w-full px-4 py-2">
+      <div className="bg-gray-75 w-full px-4 py-2 dark:bg-gray-700">
         <BadgeMessageForm
           orgName={props.orgName}
           repoName={props.repoName}
@@ -537,7 +537,7 @@ export const BadgePromotionModal = (props: {
           onBadgeWithComment={props.onBadgeWithComment}
         />
       </div>
-      <div className="grid w-full grid-cols-2 space-x-6 bg-white px-4 py-2">
+      <div className="grid w-full grid-cols-2 space-x-6 bg-white px-4 py-2 dark:bg-gray-800">
         <div className="flex flex-col">
           <div className="font-medium">Post a comment</div>
 
@@ -624,11 +624,11 @@ const PostCommentForm = (props: {
   }
 
   return (
-    <div className="mt-3 flex  flex-1 space-x-2 ">
+    <div className="mt-3 flex flex-1 space-x-2">
       <img src={props.user.avatar_url} className="h-6 w-6 rounded-full" />
       <div className="flex h-full flex-1 flex-col overflow-hidden rounded-md border ">
         <textarea
-          className="overflow-hiddens max-h-[10rem] w-full flex-1 border-0 px-2 py-1 outline-0"
+          className="overflow-hiddens max-h-[10rem] w-full flex-1 border-0 px-2 py-1 text-gray-800 outline-0"
           value={message}
           onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
             setMessage(e.target.value)
@@ -708,7 +708,7 @@ const XIcon = () => {
     >
       <path
         d="M6.28015 5.21985C6.13798 5.08737 5.94993 5.01524 5.75563 5.01867C5.56133 5.0221 5.37594 5.10081 5.23853 5.23822C5.10112 5.37564 5.02241 5.56102 5.01898 5.75532C5.01555 5.94963 5.08767 6.13767 5.22015 6.27985L8.94015 9.99985L5.22015 13.7198C5.14647 13.7885 5.08736 13.8713 5.04637 13.9633C5.00538 14.0553 4.98334 14.1546 4.98156 14.2553C4.97979 14.356 4.99831 14.4561 5.03603 14.5494C5.07375 14.6428 5.1299 14.7277 5.20112 14.7989C5.27233 14.8701 5.35717 14.9262 5.45056 14.964C5.54394 15.0017 5.64397 15.0202 5.74468 15.0184C5.84538 15.0167 5.94469 14.9946 6.03669 14.9536C6.12869 14.9126 6.21149 14.8535 6.28015 14.7798L10.0002 11.0598L13.7202 14.7798C13.7888 14.8535 13.8716 14.9126 13.9636 14.9536C14.0556 14.9946 14.1549 15.0167 14.2556 15.0184C14.3563 15.0202 14.4564 15.0017 14.5498 14.964C14.6431 14.9262 14.728 14.8701 14.7992 14.7989C14.8704 14.7277 14.9266 14.6428 14.9643 14.5494C15.002 14.4561 15.0205 14.356 15.0187 14.2553C15.017 14.1546 14.9949 14.0553 14.9539 13.9633C14.9129 13.8713 14.8538 13.7885 14.7802 13.7198L11.0602 9.99985L14.7802 6.27985C14.9126 6.13767 14.9848 5.94963 14.9813 5.75532C14.9779 5.56102 14.8992 5.37564 14.7618 5.23822C14.6244 5.10081 14.439 5.0221 14.2447 5.01867C14.0504 5.01524 13.8623 5.08737 13.7202 5.21985L10.0002 8.93985L6.28015 5.21985Z"
-        fill="#727374"
+        fill="currentColor"
       />
     </svg>
   )

@@ -45,7 +45,7 @@ const BadgeMessageForm = (props: {
 
   return (
     <div className="flex flex-col space-y-2">
-      <div className="flex justify-between">
+      <div className="text-gray flex justify-between">
         <div className="font-medium">Markdown added to issue description</div>
         <LabeledRadioButton
           values={['View', 'Edit']}
@@ -58,7 +58,7 @@ const BadgeMessageForm = (props: {
         {descriptionMode === 'Edit' && (
           <>
             <textarea
-              className="w-full rounded-md border-0"
+              className="w-full rounded-md border-0 text-gray-800"
               rows={6}
               value={message}
               onChange={onChange}

@@ -43,7 +43,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
           role="dialog"
         >
           <div className="flex h-full w-full items-center justify-center">
-            <div className="fixed min-w-[800px] overflow-hidden rounded-xl bg-white shadow">
+            <div className="fixed min-w-[800px] overflow-hidden rounded-xl bg-white shadow dark:bg-gray-800">
               {modalContent}
             </div>
           </div>
@@ -60,7 +60,7 @@ export const ModalHeader = (props: {
   hide: () => void
 }) => {
   return (
-    <div className="flex w-full items-center justify-between border-b px-4 py-3">
+    <div className="flex w-full items-center justify-between border-b px-4 py-3 dark:bg-gray-800">
       <div>{props.children}</div>
       <button
         className="text-black hover:text-gray-800"
@@ -70,10 +70,6 @@ export const ModalHeader = (props: {
       </button>
     </div>
   )
-}
-
-export const ModalBody = (props: { children: React.ReactElement }) => {
-  return <div className="bg-gray-75 w-full px-4 py-2">{props.children}</div>
 }
 
 const XIcon = () => {

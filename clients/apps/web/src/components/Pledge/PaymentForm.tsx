@@ -144,9 +144,22 @@ const PaymentForm = ({
         },
         redirect: 'if_required',
       })
-      .then(({ paymentIntent }) => {
+      .then(({ paymentIntent, error }) => {
         if (!paymentIntent) {
-          throw new Error('No Payment Intent Created')
+          posthog.capture('Pledge Payment Failed', {
+            'Organization ID': organization.id,
+            'Organization Name': organization.name,
+            'Repository ID': repository.id,
+            'Repository Name': repository.name,
+            'Issue ID': issue.id,
+            'Issue Number': issue.number,
+          })
+
+          if (error && error.message) {
+            throw new Error(error.message)
+          } else {
+            throw new Error('No Payment Intent Created')
+          }
         }
         handlePayment(paymentIntent)
       })

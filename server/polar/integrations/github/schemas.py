@@ -24,7 +24,7 @@ class GithubBadgeRead(Schema):
     amount: int
 
 
-class GithubIssueDependency(Schema):
+class GitHubIssue(Schema):
     raw: str
     owner: str | None = None
     repo: str | None = None

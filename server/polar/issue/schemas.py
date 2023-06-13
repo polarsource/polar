@@ -220,6 +220,10 @@ class PullRequestReference(Schema):
     is_draft: bool
 
 
+class ExternalGitHubIssueCreate(Schema):
+    url: str
+
+
 class ExternalGitHubPullRequestReference(Schema):
     title: str
     author_login: str

@@ -3,6 +3,7 @@ from typing import List, Sequence
 from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
+from polar.integrations.github.schemas import GitHubIssue
 from polar.models import Issue
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, get_db_session
@@ -10,11 +11,12 @@ from polar.exceptions import ResourceNotFound
 
 from polar.organization.service import organization as organization_service
 
-from .schemas import IssueRead, IssueReferenceRead
+from .schemas import ExternalGitHubIssueCreate, IssueRead, IssueReferenceRead
 from .service import issue as issue_service
 
 from polar.integrations.github.client import get_anonymous_client
 from polar.integrations.github.service.issue import github_issue as github_issue_service
+from polar.integrations.github.service.url import github_url
 from polar.integrations.github.service.organization import github_organization as github_organization_service
 
 router = APIRouter(tags=["issues"])
@@ -117,26 +119,31 @@ async def get_public_issue(
 
 
 @router.post(
-    "/{platform}/{org_name}/{repo_name}/issues/{number}", response_model=IssueRead
+    "/{platform}/external_issues", response_model=GitHubIssue
 )
 async def sync_external_issue(
     platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    number: int,
+    external_issue: ExternalGitHubIssueCreate,
     session: AsyncSession = Depends(get_db_session),
-) -> Issue:
+) -> GitHubIssue:
     client = get_anonymous_client()
+    urls = github_url.parse_urls(external_issue.url)
+
+    if len(urls) != 1 or urls[0].owner is None or urls[0].repo is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No issue reference found",
+        )
 
     try:
-        _, __, issue = await github_organization_service.sync_external_org_with_repo_and_issue(
+        await github_organization_service.sync_external_org_with_repo_and_issue(
             session,
             client=client,
-            org_name=org_name,
-            repo_name=repo_name,
-            issue_number=number,
+            org_name=urls[0].owner,
+            repo_name=urls[0].repo,
+            issue_number=urls[0].number,
         )
-        return issue
+        return urls[0]
     except ResourceNotFound:
         raise HTTPException(
             status_code=404,

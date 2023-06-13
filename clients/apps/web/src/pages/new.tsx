@@ -1,5 +1,8 @@
+import { Platforms } from '@/../../../packages/polarkit/src/api/client'
 import HowItWorks from '@/components/Pledge/HowItWorks'
 import type { NextPage } from 'next'
+import { useRouter } from 'next/router'
+import { api } from 'polarkit/api'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
 import { ChangeEvent, useState } from 'react'
@@ -24,17 +27,22 @@ const parseIssueURL = (url: string): IssueInfo | undefined => {
 }
 
 const NewPledgePage: NextPage = () => {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
   const [url, setUrl] = useState('')
 
   const onUrlChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const newUrl = event.target.value
+    setUrl(event.target.value)
+  }
 
-    const issueInfo = parseIssueURL(newUrl)
-    if (issueInfo) {
-      console.log(issueInfo)
-    }
-
-    setUrl(newUrl)
+  const syncExternalIssue = async () => {
+    setIsLoading(true)
+    const issue = await api.issues.syncExternalIssue({
+      platform: Platforms.GITHUB,
+      requestBody: { url },
+    })
+    setIsLoading(false)
+    router.push(`/${issue.owner}/${issue.repo}/issues/${issue.number}`)
   }
 
   return (
@@ -71,7 +79,7 @@ const NewPledgePage: NextPage = () => {
               <PrimaryButton
                 disabled={false}
                 loading={false}
-                onClick={() => false}
+                onClick={syncExternalIssue}
               >
                 Pledge
               </PrimaryButton>

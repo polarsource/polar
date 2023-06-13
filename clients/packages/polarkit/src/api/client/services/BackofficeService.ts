@@ -4,6 +4,7 @@
 import type { BackofficePledgeRead } from '../models/BackofficePledgeRead';
 import type { InviteCreate } from '../models/InviteCreate';
 import type { InviteRead } from '../models/InviteRead';
+import type { OrganizationPrivateRead } from '../models/OrganizationPrivateRead';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -132,6 +133,28 @@ export class BackofficeService {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/backoffice/invites/list',
+    });
+  }
+
+  /**
+   * Organization Sync
+   * @returns OrganizationPrivateRead Successful Response
+   * @throws ApiError
+   */
+  public organizationSync({
+    name,
+  }: {
+    name: string,
+  }): CancelablePromise<OrganizationPrivateRead> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/backoffice/organization/sync/{name}',
+      path: {
+        'name': name,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
     });
   }
 

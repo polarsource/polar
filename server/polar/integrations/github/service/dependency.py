@@ -10,7 +10,6 @@ from polar.integrations.github.client import (
     AppInstallationAuthStrategy,
 )
 from polar.integrations.github import service
-from polar.integrations.github.schemas import GithubIssueDependency
 from polar.integrations.github.service.organization import github_organization
 from polar.issue.schemas import IssueCreate
 from polar.models.issue_dependency import IssueDependency
@@ -21,42 +20,13 @@ from polar.models import Organization, Repository, Issue
 from polar.postgres import AsyncSession, sql
 from polar.repository.schemas import RepositoryCreate
 
+from .url import github_url
+
 
 log = structlog.get_logger()
 
 
 class GitHubIssueDependenciesService:
-    issue_re = re.compile(
-        r"(?P<owner>[a-z0-9][a-z0-9-]*)?(?:/(?P<repo>[a-z0-9_\.-]+))?#(?P<number>\d+)|(?:https?://(?:www\.)?github\.com/)?(?P<owner2>[a-z0-9][a-z0-9-]*)?(?:/(?P<repo2>[a-z0-9_\.-]+))?(?:#|/issues/)(?P<number2>\d+)",
-        re.IGNORECASE,
-    )
-
-    def parse_dependencies(self, body: str) -> list[GithubIssueDependency]:
-        """
-        given a body of text, parse out the dependencies (i.e. issues in other repos
-        that this body references)
-        """
-        dependencies = [
-            GithubIssueDependency(
-                raw=m.group(0),
-                owner=m.group("owner") or m.group("owner2"),
-                repo=m.group("repo") or m.group("repo2"),
-                number=int(m.group("number") or m.group("number2")),
-            )
-            for m in self.issue_re.finditer(body)
-        ]
-
-        # Deduplicate the dependencies
-        seen_dependencies = set()
-        ret = []
-        for dependency in dependencies:
-            if dependency.canonical in seen_dependencies:
-                continue
-            seen_dependencies.add(dependency.canonical)
-            ret.append(dependency)
-
-        return ret
-
     async def sync_issue_dependencies(
         self, session: AsyncSession, org: Organization, repo: Repository, issue: Issue
     ) -> None:
@@ -82,7 +52,7 @@ class GitHubIssueDependenciesService:
             issue=issue.number,
         )
 
-        for dependency in self.parse_dependencies(issue.body):
+        for dependency in github_url.parse_urls(issue.body):
             if (
                 dependency.owner is None
                 or dependency.owner == org.name

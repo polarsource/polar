@@ -1,6 +1,7 @@
 import Modal, { ModalBox } from '@/components/Shared/Modal'
 import { useRequireAuth } from '@/hooks'
 import { useToastLatestPledged } from '@/hooks/stripe'
+import { motion } from 'framer-motion'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
 import {
@@ -134,9 +135,43 @@ const IssueListItem = (props: {
     router.push(url.toString())
   }
 
+  const rowMotion = {
+    rest: {
+      ease: 'easeOut',
+      duration: 0.2,
+      type: 'tween',
+    },
+    hover: {
+      transition: {
+        duration: 0.4,
+        type: 'tween',
+        ease: 'easeIn',
+      },
+    },
+  }
+
+  const rightSideMotion = {
+    rest: {
+      x: props.canAddRemovePolarLabel ? 100 : 0,
+    },
+    hover: {
+      x: 0,
+    },
+  }
+
+  const [isHovered, setIsHovered] = useState(false)
+
   return (
     <>
-      <div className="group/issue">
+      <motion.div
+        className="group/issue"
+        initial="rest"
+        whileHover="hover"
+        animate="rest"
+        variants={rowMotion}
+        onMouseOver={() => setIsHovered(true)}
+        onMouseOut={() => setIsHovered(false)}
+      >
         <div className="hover:bg-gray-75 group flex items-center justify-between gap-4 overflow-hidden py-4 px-2 pb-5 dark:hover:bg-gray-900">
           <div className="flex flex-row items-center">
             {isDependency && (
@@ -207,28 +242,34 @@ const IssueListItem = (props: {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-6">
-              {showCommentsCount && (
-                <IconCounter icon="comments" count={comments} />
+          <motion.div
+            className="flex items-center gap-6"
+            layout
+            variants={rightSideMotion}
+          >
+            <>
+              <div className="flex items-center gap-6">
+                {showCommentsCount && (
+                  <IconCounter icon="comments" count={comments} />
+                )}
+                {showReactionsThumbs && (
+                  <IconCounter icon="thumbs_up" count={reactions.plus_one} />
+                )}
+              </div>
+
+              <IssueProgress progress={issueProgress} />
+
+              {showPledgeAction && <PledgeNow onClick={redirectToPledge} />}
+
+              {props.canAddRemovePolarLabel && (
+                <AddRemoveBadge
+                  orgName={props.org.name}
+                  repoName={props.repo.name}
+                  issue={props.issue}
+                />
               )}
-              {showReactionsThumbs && (
-                <IconCounter icon="thumbs_up" count={reactions.plus_one} />
-              )}
-            </div>
-
-            <IssueProgress progress={issueProgress} />
-
-            {showPledgeAction && <PledgeNow onClick={redirectToPledge} />}
-
-            {props.canAddRemovePolarLabel && (
-              <AddRemoveBadge
-                orgName={props.org.name}
-                repoName={props.repo.name}
-                issue={props.issue}
-              />
-            )}
-          </div>
+            </>
+          </motion.div>
         </div>
 
         {havePledgeOrReference && (
@@ -243,7 +284,7 @@ const IssueListItem = (props: {
             />
           </IssueActivityBox>
         )}
-      </div>
+      </motion.div>
 
       {showDisputeModalForPledge && (
         <Modal onClose={onDisputeModalClose}>
@@ -438,17 +479,16 @@ const AddRemoveBadge = (props: {
 
   return (
     <>
-      <div
+      <button
         onClick={click}
         className={classNames(
           hasPolarLabel ? 'border bg-white dark:bg-gray-800' : '',
           hasPolarLabel
-            ? ' border-green-200 text-green-600 hover:border-green-300'
+            ? ' border-green-200 text-green-600 hover:border-green-300 dark:border-green-600'
             : '',
           !hasPolarLabel ? 'bg-blue-600 text-white' : '',
-          'group/button flex w-0 translate-x-5 cursor-pointer items-center space-x-1 rounded-md px-2 py-1 text-sm opacity-0',
-          'transition-transform transition-opacity transition-colors',
-          'group-hover/issue:mr-0 group-hover/issue:w-auto group-hover/issue:translate-x-0 group-hover/issue:opacity-100',
+          'cursor-pointer items-center justify-center space-x-1 rounded-md px-2 py-1 text-sm',
+          'flex overflow-hidden whitespace-nowrap',
         )}
       >
         {hasPolarLabel && (
@@ -458,25 +498,25 @@ const AddRemoveBadge = (props: {
           </>
         )}
         {!hasPolarLabel && <span>Add badge</span>}
+      </button>
 
-        <ModernModal
-          isShown={isShown}
-          hide={toggle}
-          modalContent={
-            <BadgePromotionModal
-              orgName={props.orgName}
-              repoName={props.repoName}
-              issue={props.issue}
-              isShown={isShown}
-              toggle={toggle}
-              onRemoveBadge={onRemoveBadge}
-              user={currentUser}
-              onAddComment={onAddComment}
-              onBadgeWithComment={onBadgeWithComment}
-            />
-          }
-        />
-      </div>
+      <ModernModal
+        isShown={isShown}
+        hide={toggle}
+        modalContent={
+          <BadgePromotionModal
+            orgName={props.orgName}
+            repoName={props.repoName}
+            issue={props.issue}
+            isShown={isShown}
+            toggle={toggle}
+            onRemoveBadge={onRemoveBadge}
+            user={currentUser}
+            onAddComment={onAddComment}
+            onBadgeWithComment={onBadgeWithComment}
+          />
+        }
+      />
     </>
   )
 }

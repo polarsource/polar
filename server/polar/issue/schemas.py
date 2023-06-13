@@ -342,3 +342,7 @@ class IssueDependencyRead(Schema):
 class PostIssueComment(Schema):
     message: str
     append_badge: bool = False
+
+
+class IssueUpdateBadgeMessage(Schema):
+    message: str

@@ -89,13 +89,14 @@ class GithubBadge:
             number=self.issue.number,
         )
 
-    def _badge_markdown(self) -> str:
+    def _badge_markdown(self, message: str) -> str:
         funding_url = self.generate_funding_url()
 
         darkmode_url = self.generate_svg_url(darkmode=True)
         lightmode_url = self.generate_svg_url(darkmode=False)
 
         return f"""{PLEDGE_BADGE_COMMENT_START}
+{message}\n\n
 <a href="{funding_url}">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="{darkmode_url}">
@@ -111,8 +112,21 @@ class GithubBadge:
         svg_markdown = f"![Fund with Polar]({svg_url})"
         return f"{PLEDGE_BADGE_COMMENT_LEGACY}\n[{svg_markdown}]({funding_url})"
 
+    def default_promotion_message(self) -> str:
+        return """## Funding
+
+* Lorem ipsum dolor sit amet
+* Lorem ipsum dolor sit amet"""
+
     def generate_body_with_badge(self, body: str) -> str:
-        return f"{body}\n\n{self._badge_markdown()}"
+        promotion = (
+            self.issue.badge_custom_content
+            if self.issue.badge_custom_content
+            else self.default_promotion_message()
+        )
+        promotion = promotion.rstrip()
+
+        return f"{body}\n\n{self._badge_markdown(promotion)}"
 
     def generate_body_without_badge(self, body: str) -> str:
         # Remove content between tags
@@ -169,9 +183,11 @@ class GithubBadge:
         client = github.get_app_installation_client(self.organization.installation_id)
 
         body = await self.get_current_body(client)
-        if self.badge_is_embedded(body):
-            log.info("github.badge.embed.is_already_embedded", issue_id=self.issue.id)
-            return None
+
+        # TODO: check if promotion message is the same
+        # if self.badge_is_embedded(body):
+        #     log.info("github.badge.embed.is_already_embedded", issue_id=self.issue.id)
+        #     return None
 
         body_with_badge = self.generate_body_with_badge(body)
         await self.update_body(client, body_with_badge)

@@ -7,25 +7,6 @@ import { PrimaryButton } from 'polarkit/components/ui'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
 import { ChangeEvent, MouseEvent, useState } from 'react'
 
-type IssueInfo = {
-  organization: string
-  repository: string
-  issue: number
-}
-
-const parseIssueURL = (url: string): IssueInfo | undefined => {
-  const match = url.match(
-    // TODO: other formats as well
-    /^https?:\/\/github.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/,
-  )
-  if (!match) return undefined
-  return {
-    organization: match[1],
-    repository: match[2],
-    issue: Number.parseInt(match[3]),
-  }
-}
-
 const NewPledgePage: NextPage = () => {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)

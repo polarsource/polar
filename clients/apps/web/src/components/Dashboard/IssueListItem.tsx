@@ -30,9 +30,10 @@ import {
   githubIssueUrl,
 } from 'polarkit/utils'
 import { ChangeEvent, useState } from 'react'
-import { ModalBody, ModalHeader, Modal as ModernModal } from '../Modal'
+import { ModalHeader, Modal as ModernModal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import PledgeNow from '../Pledge/PledgeNow'
+import BadgeMessageForm from './BadgeMessageForm'
 import IconCounter from './IconCounter'
 import IssueLabel, { LabelSchema } from './IssueLabel'
 import IssueProgress, { Progress } from './IssueProgress'
@@ -401,6 +402,20 @@ const AddRemoveBadge = (props: {
     toggle()
   }
 
+  const copyToClipboard = (id: string) => {
+    const copyText = document.getElementById(id) as HTMLInputElement
+    if (!copyText) {
+      return
+    }
+    copyText.select()
+    copyText.setSelectionRange(0, 99999)
+    navigator.clipboard.writeText(copyText.value)
+  }
+
+  const pledgePageLink = `https://dashboard.polar.sh/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
+  const pledgeBadgeSVG = `https://apo.polar.sh/api/github/${props.orgName}/${props.repoName}/issues/${props.issue.number}/pledge.svg`
+  const pledgeEmbed = `<a href="${pledgePageLink}"><picture><source media="(prefers-color-scheme: dark)" srcset="${pledgeBadgeSVG}?darkmode=1"><img alt="Fund with Polar" src="${pledgeBadgeSVG}"></picture></a>`
+
   return (
     <>
       <div
@@ -443,27 +458,72 @@ const AddRemoveBadge = (props: {
                 </button>
               </div>
             </ModalHeader>
-            <ModalBody>
-              <div className="flex flex-col space-y-4">
-                <div>Injected in the issue description</div>
-                <div>
-                  <h1>Funding</h1>
-                </div>
-                <div className="text-sm font-medium">Notify your community</div>
-                <div className="space-between flex items-center space-x-4 text-sm">
-                  <div className="rounded-full bg-gray-400 px-2 py-1 text-black">
-                    Post comment
-                  </div>
-                  <div>Embed on website</div>
-                  <div>Share on social media</div>
-                </div>
+            <div className="bg-gray-75 w-full px-4 py-2">
+              <BadgeMessageForm
+                orgName={props.orgName}
+                repoName={props.repoName}
+                issue={props.issue}
+              />
+            </div>
+            <div className="grid w-full grid-cols-2 space-x-6 bg-white px-4 py-2">
+              <div className="flex flex-col">
+                <div className="font-medium">Post a comment</div>
+
                 <PostCommentForm
                   orgName={props.orgName}
                   repoName={props.repoName}
                   issue={props.issue}
                 />
               </div>
-            </ModalBody>
+
+              <div className="flex flex-col">
+                <div className="font-medium">Spread the word</div>
+
+                <div className="mt-2 text-sm text-gray-500">
+                  Share link to the pledge page
+                </div>
+                <div className="flex w-full overflow-hidden rounded-lg border">
+                  <input
+                    id="badge-page-link"
+                    className="flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600"
+                    onClick={() => {
+                      copyToClipboard('badge-page-link')
+                    }}
+                    value={pledgePageLink}
+                  />
+                  <div
+                    className="cursor-pointer bg-blue-50 px-3 py-2 text-blue-600"
+                    onClick={() => {
+                      copyToClipboard('badge-page-link')
+                    }}
+                  >
+                    Copy
+                  </div>
+                </div>
+
+                <div className="mt-2 text-sm text-gray-500">
+                  Embed badge on website
+                </div>
+                <div className="flex w-full overflow-hidden rounded-lg border">
+                  <input
+                    id="badge-embed-content"
+                    className="flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600"
+                    value={pledgeEmbed}
+                    onClick={() => {
+                      copyToClipboard('badge-embed-content')
+                    }}
+                  />
+                  <div
+                    className="cursor-pointer bg-blue-50 px-3 py-2 text-blue-600"
+                    onClick={() => {
+                      copyToClipboard('badge-embed-content')
+                    }}
+                  >
+                    Copy
+                  </div>
+                </div>
+              </div>
+            </div>
           </>
         }
       />
@@ -477,7 +537,7 @@ const PostCommentForm = (props: {
   issue: IssueDashboardRead
 }) => {
   const [message, setMessage] = useState(
-    "I'm looking for funding to get this issue done. Back it by using the badge below.",
+    '👋 I’m looking for funding to get this issue solved.',
   )
 
   const { currentUser } = useRequireAuth()
@@ -504,34 +564,32 @@ const PostCommentForm = (props: {
   }
 
   return (
-    <div className="flex w-full space-x-2">
-      <img src={currentUser?.avatar_url} className="h-8 w-8 rounded-full" />
-      <div className="flex flex-1 flex-col rounded-md border px-2 py-1">
+    <div className="mt-3 flex  flex-1 space-x-2 ">
+      <img src={currentUser?.avatar_url} className="h-6 w-6 rounded-full" />
+      <div className="flex h-full flex-1 flex-col overflow-hidden rounded-md border ">
         <textarea
-          className="overflow-hiddens max-h-[10rem] w-full border-0 p-0 outline-0"
+          className="overflow-hiddens max-h-[10rem] w-full flex-1 border-0 px-2 py-1 outline-0"
           value={message}
           onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
             setMessage(e.target.value)
           }}
         ></textarea>
-        <div>
-          <div className="border-black/12 inline-flex overflow-hidden rounded-md border text-sm">
-            <div className="bg-gray-100 px-3 py-1 text-gray-400">
-              Back issue
-            </div>
-            <div className="px-3 py-1 text-gray-400">Polar</div>
+        <div className="flex justify-between border-t bg-blue-50 px-2 py-1">
+          <div className="text-sm text-gray-900">
+            🔔 This will notify watchers
           </div>
-        </div>
-        <div className="flex justify-end">
-          <PrimaryButton
-            fullWidth={false}
-            loading={loading}
+          <button
             onClick={submitComment}
-            disabled={posted}
+            disabled={posted || loading}
+            className={classNames(
+              !posted ? 'text-blue-600' : 'text-gray-600',
+              'font-medium',
+            )}
           >
-            {posted && <>Posted!</>}
-            {!posted && <>Post!</>}
-          </PrimaryButton>
+            {!posted && !loading && <>Post</>}
+            {!posted && loading && <>Posting...</>}
+            {posted && <>Posted</>}
+          </button>
         </div>
       </div>
     </div>

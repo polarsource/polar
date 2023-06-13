@@ -24,5 +24,6 @@ export type IssueDashboardRead = {
   issue_created_at: string;
   comments?: number;
   progress?: IssueStatus;
+  badge_custom_content?: string;
 };
 

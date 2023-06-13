@@ -6,10 +6,7 @@ const plugin = require('tailwindcss/plugin')
 
 module.exports = {
   mode: 'jit',
-  content: [
-    './src/**/*.{ts,tsx}',
-    'node_modules/polarkit/src/**/*.{ts,tsx}',
-  ],
+  content: ['./src/**/*.{ts,tsx}', 'node_modules/polarkit/src/**/*.{ts,tsx}'],
   darkMode: 'class',
   theme: {
     fontWeight: {
@@ -18,15 +15,17 @@ module.exports = {
       medium: '500',
       semibold: '600',
       bold: '700',
-      display: '350'
+      display: '350',
     },
     extend: {
       backgroundImage: {
-        'grid-pattern': 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAmCAYAAACoPemuAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABSSURBVHgB7dihEYBAEATBf/JPEksEOCgEAYw70W3OTp3cvYY5r/v57rGGElYJq4RVwiphlbBKWCWsElYJq4RVwiphlbBKWCWsElbtf/OcZuzHXh9bB88+HN8BAAAAAElFTkSuQmCC")',
-        'grid-pattern-dark': 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAmCAYAAACoPemuAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABTSURBVHgB7dihEYBAEATBf9LCEQj5ZwGFIIBxJ7rN2amTu9cw53U/3z3WUMIqYZWwSlglrBJWCauEVcIqYZWwSlglrBJWCauEVcKq/W+e04z92AukgAP/IH2i4wAAAABJRU5ErkJggg==")'
+        'grid-pattern':
+          'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAmCAYAAACoPemuAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABSSURBVHgB7dihEYBAEATBf/JPEksEOCgEAYw70W3OTp3cvYY5r/v57rGGElYJq4RVwiphlbBKWCWsElYJq4RVwiphlbBKWCWsElbtf/OcZuzHXh9bB88+HN8BAAAAAElFTkSuQmCC")',
+        'grid-pattern-dark':
+          'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAmCAYAAACoPemuAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABTSURBVHgB7dihEYBAEATBf9LCEQj5ZwGFIIBxJ7rN2amTu9cw53U/3z3WUMIqYZWwSlglrBJWCauEVcIqYZWwSlglrBJWCauEVcKq/W+e04z92AukgAP/IH2i4wAAAABJRU5ErkJggg==")',
       },
       borderColor: {
-        DEFAULT: "rgb(0 0 0 / 0.07)",
+        DEFAULT: 'rgb(0 0 0 / 0.07)',
       },
       boxShadow: {
         DEFAULT: '0 1px 8px rgb(0 0 0 / 0.07), 0 0.5px 2.5px rgb(0 0 0 / 0.16)',
@@ -41,7 +40,7 @@ module.exports = {
           50: '#f2f6fc',
           100: '#e1ebf8',
           200: '#caddf3',
-          300: '#a6c7ea', 
+          300: '#a6c7ea',
           400: '#7ba9df',
           500: '#5c8cd5',
           600: '#4872c8',
@@ -89,15 +88,16 @@ module.exports = {
           800: '#922222',
           900: '#6f1f1f',
           950: '#420d0d',
-        }
-      }
+        },
+      },
     },
   },
   plugins: [
     require('@tailwindcss/forms'),
-    require("tailwindcss-radix")(),
-    require("tailwindcss-animate"),
-    plugin(function({ addUtilities }) {
+    require('tailwindcss-radix')(),
+    require('tailwindcss-animate'),
+    require('@tailwindcss/typography'),
+    plugin(function ({ addUtilities }) {
       const utilityStyles = {
         '.text-4xl': {
           fontWeight: '400',
@@ -115,6 +115,6 @@ module.exports = {
       }
 
       addUtilities(utilityStyles)
-    })
+    }),
   ],
 }

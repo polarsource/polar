@@ -10,6 +10,7 @@ import {
   OrganizationPublicRead,
   Platforms,
   RepositoryRead,
+  UserRead,
   type PledgeRead,
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
@@ -20,6 +21,7 @@ import {
 } from 'polarkit/components/Issue'
 import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
 import {
+  useBadgeWithComment,
   useIssueAddComment,
   useIssueAddPolarBadge,
   useIssueRemovePolarBadge,
@@ -372,8 +374,8 @@ const AddRemoveBadge = (props: {
       (l) => l.name.toLowerCase() === 'polar',
     )
 
-  const add = useIssueAddPolarBadge()
   const remove = useIssueRemovePolarBadge()
+  const add = useIssueAddPolarBadge()
 
   const { isShown, toggle } = useModal()
 
@@ -387,34 +389,52 @@ const AddRemoveBadge = (props: {
       })
     }
 
-    //
     toggle()
   }
 
-  const clickRemoveBadge = async () => {
+  const onRemoveBadge = async () => {
     await remove.mutateAsync({
       platform: Platforms.GITHUB,
       orgName: props.orgName,
       repoName: props.repoName,
       issueNumber: props.issue.number,
     })
-
-    toggle()
   }
 
-  const copyToClipboard = (id: string) => {
-    const copyText = document.getElementById(id) as HTMLInputElement
-    if (!copyText) {
-      return
-    }
-    copyText.select()
-    copyText.setSelectionRange(0, 99999)
-    navigator.clipboard.writeText(copyText.value)
+  const addComment = useIssueAddComment()
+
+  const onAddComment = async (message: string) => {
+    await addComment.mutateAsync({
+      platform: Platforms.GITHUB,
+      orgName: props.orgName,
+      repoName: props.repoName,
+      issueNumber: props.issue.number,
+      body: {
+        message: message,
+        append_badge: true,
+      },
+    })
   }
 
-  const pledgePageLink = `https://dashboard.polar.sh/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
-  const pledgeBadgeSVG = `https://apo.polar.sh/api/github/${props.orgName}/${props.repoName}/issues/${props.issue.number}/pledge.svg`
-  const pledgeEmbed = `<a href="${pledgePageLink}"><picture><source media="(prefers-color-scheme: dark)" srcset="${pledgeBadgeSVG}?darkmode=1"><img alt="Fund with Polar" src="${pledgeBadgeSVG}"></picture></a>`
+  const badgeWithComment = useBadgeWithComment()
+
+  const onBadgeWithComment = async (message: string) => {
+    await badgeWithComment.mutateAsync({
+      platform: Platforms.GITHUB,
+      orgName: props.orgName,
+      repoName: props.repoName,
+      issueNumber: props.issue.number,
+      body: {
+        message: message,
+      },
+    })
+  }
+
+  const { currentUser } = useRequireAuth()
+
+  if (!currentUser) {
+    return <></>
+  }
 
   return (
     <>
@@ -438,95 +458,146 @@ const AddRemoveBadge = (props: {
           </>
         )}
         {!hasPolarLabel && <span>Add badge</span>}
+
+        <ModernModal
+          isShown={isShown}
+          hide={toggle}
+          modalContent={
+            <BadgePromotionModal
+              orgName={props.orgName}
+              repoName={props.repoName}
+              issue={props.issue}
+              isShown={isShown}
+              toggle={toggle}
+              onRemoveBadge={onRemoveBadge}
+              user={currentUser}
+              onAddComment={onAddComment}
+              onBadgeWithComment={onBadgeWithComment}
+            />
+          }
+        />
       </div>
-      <ModernModal
-        isShown={isShown}
-        hide={toggle}
-        modalContent={
-          <>
-            <ModalHeader hide={toggle}>
-              <div className="flex items-center space-x-2">
-                <BadgedCheckmarkLargeIcon />
-                <div className="text-gray pr-2 text-xl font-medium">
-                  Badge added to #{props.issue.number}
-                </div>
-                <button
-                  onClick={clickRemoveBadge}
-                  className="flex cursor-pointer items-center rounded-full border border-gray-200 px-2 py-0.5 pr-3 text-gray-500 hover:bg-gray-100"
-                >
-                  <XIcon /> Remove
-                </button>
-              </div>
-            </ModalHeader>
-            <div className="bg-gray-75 w-full px-4 py-2">
-              <BadgeMessageForm
-                orgName={props.orgName}
-                repoName={props.repoName}
-                issue={props.issue}
-              />
+    </>
+  )
+}
+
+export const BadgePromotionModal = (props: {
+  orgName: string
+  repoName: string
+  issue: IssueDashboardRead
+  isShown: boolean
+  toggle: () => void
+  onRemoveBadge: () => Promise<void>
+  user: UserRead
+  onAddComment: (message: string) => Promise<void>
+  onBadgeWithComment: (comment: string) => Promise<void>
+}) => {
+  const { isShown, toggle } = props
+
+  const clickRemoveBadge = async () => {
+    await props.onRemoveBadge()
+    toggle()
+  }
+
+  const copyToClipboard = (id: string) => {
+    const copyText = document.getElementById(id) as HTMLInputElement
+    if (!copyText) {
+      return
+    }
+    copyText.select()
+    copyText.setSelectionRange(0, 99999)
+    navigator.clipboard.writeText(copyText.value)
+  }
+
+  const pledgePageLink = `https://dashboard.polar.sh/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
+  const pledgeBadgeSVG = `https://apo.polar.sh/api/github/${props.orgName}/${props.repoName}/issues/${props.issue.number}/pledge.svg`
+  const pledgeEmbed = `<a href="${pledgePageLink}"><picture><source media="(prefers-color-scheme: dark)" srcset="${pledgeBadgeSVG}?darkmode=1"><img alt="Fund with Polar" src="${pledgeBadgeSVG}"></picture></a>`
+
+  return (
+    <>
+      <ModalHeader hide={toggle}>
+        <div className="flex items-center space-x-2">
+          <BadgedCheckmarkLargeIcon />
+          <div className="text-gray pr-2 text-xl font-medium">
+            Badge added to #{props.issue.number}
+          </div>
+          <button
+            onClick={clickRemoveBadge}
+            className="flex cursor-pointer items-center rounded-full border border-gray-200 px-2 py-0.5 pr-3 text-gray-500 hover:bg-gray-100"
+          >
+            <XIcon /> Remove
+          </button>
+        </div>
+      </ModalHeader>
+      <div className="bg-gray-75 w-full px-4 py-2">
+        <BadgeMessageForm
+          orgName={props.orgName}
+          repoName={props.repoName}
+          issue={props.issue}
+          onBadgeWithComment={props.onBadgeWithComment}
+        />
+      </div>
+      <div className="grid w-full grid-cols-2 space-x-6 bg-white px-4 py-2">
+        <div className="flex flex-col">
+          <div className="font-medium">Post a comment</div>
+
+          <PostCommentForm
+            orgName={props.orgName}
+            repoName={props.repoName}
+            issue={props.issue}
+            user={props.user}
+            onAddComment={props.onAddComment}
+          />
+        </div>
+
+        <div className="flex flex-col">
+          <div className="font-medium">Spread the word</div>
+
+          <div className="mt-2 text-sm text-gray-500">
+            Share link to the pledge page
+          </div>
+          <div className="flex w-full overflow-hidden rounded-lg border">
+            <input
+              id="badge-page-link"
+              className="flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600"
+              onClick={() => {
+                copyToClipboard('badge-page-link')
+              }}
+              value={pledgePageLink}
+            />
+            <div
+              className="cursor-pointer bg-blue-50 px-3 py-2 text-blue-600"
+              onClick={() => {
+                copyToClipboard('badge-page-link')
+              }}
+            >
+              Copy
             </div>
-            <div className="grid w-full grid-cols-2 space-x-6 bg-white px-4 py-2">
-              <div className="flex flex-col">
-                <div className="font-medium">Post a comment</div>
+          </div>
 
-                <PostCommentForm
-                  orgName={props.orgName}
-                  repoName={props.repoName}
-                  issue={props.issue}
-                />
-              </div>
-
-              <div className="flex flex-col">
-                <div className="font-medium">Spread the word</div>
-
-                <div className="mt-2 text-sm text-gray-500">
-                  Share link to the pledge page
-                </div>
-                <div className="flex w-full overflow-hidden rounded-lg border">
-                  <input
-                    id="badge-page-link"
-                    className="flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600"
-                    onClick={() => {
-                      copyToClipboard('badge-page-link')
-                    }}
-                    value={pledgePageLink}
-                  />
-                  <div
-                    className="cursor-pointer bg-blue-50 px-3 py-2 text-blue-600"
-                    onClick={() => {
-                      copyToClipboard('badge-page-link')
-                    }}
-                  >
-                    Copy
-                  </div>
-                </div>
-
-                <div className="mt-2 text-sm text-gray-500">
-                  Embed badge on website
-                </div>
-                <div className="flex w-full overflow-hidden rounded-lg border">
-                  <input
-                    id="badge-embed-content"
-                    className="flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600"
-                    value={pledgeEmbed}
-                    onClick={() => {
-                      copyToClipboard('badge-embed-content')
-                    }}
-                  />
-                  <div
-                    className="cursor-pointer bg-blue-50 px-3 py-2 text-blue-600"
-                    onClick={() => {
-                      copyToClipboard('badge-embed-content')
-                    }}
-                  >
-                    Copy
-                  </div>
-                </div>
-              </div>
+          <div className="mt-2 text-sm text-gray-500">
+            Embed badge on website
+          </div>
+          <div className="flex w-full overflow-hidden rounded-lg border">
+            <input
+              id="badge-embed-content"
+              className="flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600"
+              value={pledgeEmbed}
+              onClick={() => {
+                copyToClipboard('badge-embed-content')
+              }}
+            />
+            <div
+              className="cursor-pointer bg-blue-50 px-3 py-2 text-blue-600"
+              onClick={() => {
+                copyToClipboard('badge-embed-content')
+              }}
+            >
+              Copy
             </div>
-          </>
-        }
-      />
+          </div>
+        </div>
+      </div>
     </>
   )
 }
@@ -535,37 +606,26 @@ const PostCommentForm = (props: {
   orgName: string
   repoName: string
   issue: IssueDashboardRead
+  user: UserRead
+  onAddComment: (message: string) => Promise<void>
 }) => {
   const [message, setMessage] = useState(
     '👋 I’m looking for funding to get this issue solved.',
   )
-
-  const { currentUser } = useRequireAuth()
-
-  const addComment = useIssueAddComment()
 
   const [loading, setIsLoading] = useState(false)
   const [posted, setPosted] = useState(false)
 
   const submitComment = async () => {
     setIsLoading(true)
-    await addComment.mutateAsync({
-      platform: Platforms.GITHUB,
-      orgName: props.orgName,
-      repoName: props.repoName,
-      issueNumber: props.issue.number,
-      body: {
-        message: message,
-        append_badge: true,
-      },
-    })
+    await props.onAddComment(message)
     setIsLoading(false)
     setPosted(true)
   }
 
   return (
     <div className="mt-3 flex  flex-1 space-x-2 ">
-      <img src={currentUser?.avatar_url} className="h-6 w-6 rounded-full" />
+      <img src={props.user.avatar_url} className="h-6 w-6 rounded-full" />
       <div className="flex h-full flex-1 flex-col overflow-hidden rounded-md border ">
         <textarea
           className="overflow-hiddens max-h-[10rem] w-full flex-1 border-0 px-2 py-1 outline-0"

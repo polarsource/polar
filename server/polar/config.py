@@ -81,6 +81,8 @@ class Settings(BaseSettings):
 
     POSTHOG_PROJECT_API_KEY: str = ""
 
+    SSE_SLEEP_INTERVAL: float = 0.001
+
     class Config:
         env_prefix = "polar_"
         env_file_encoding = "utf-8"

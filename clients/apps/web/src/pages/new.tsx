@@ -35,9 +35,7 @@ const NewPledgePage: NextPage = () => {
     setUrl(event.target.value)
   }
 
-  const syncExternalIssue = async (
-    event: MouseEvent<HTMLButtonElement, MouseEvent>,
-  ) => {
+  const syncExternalIssue = async (event: MouseEvent) => {
     event.preventDefault()
     setIsLoading(true)
     const issue = await api.issues.syncExternalIssue({

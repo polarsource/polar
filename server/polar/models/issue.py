@@ -194,6 +194,12 @@ class Issue(IssueFields, RecordModel):
         Boolean, nullable=False, default=False
     )
 
+    badge_custom_content: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+        default=None,
+    )
+
     github_issue_etag: Mapped[str | None] = mapped_column(String, nullable=True)
     github_issue_fetched_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
@@ -241,6 +247,7 @@ class Issue(IssueFields, RecordModel):
     __mutables__ = issue_fields_mutables | {
         "has_pledge_badge_label",
         "pledge_badge_currently_embedded",
+        "badge_custom_content",
         "positive_reactions_count",
         "total_engagement_count",
     }

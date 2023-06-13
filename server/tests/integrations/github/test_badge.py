@@ -16,6 +16,12 @@ from tests.fixtures.random_objects import create_issue
 BADGED_BODY = """Hello my issue
 
 <!-- POLAR PLEDGE BADGE START -->
+## Funding
+
+* Lorem ipsum dolor sit amet
+* Lorem ipsum dolor sit amet
+
+
 <a href="http://127.0.0.1:3000/testorg/testrepo/issues/123">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="http://127.0.0.1:3000/api/github/testorg/testrepo/issues/123/pledge.svg?darkmode=1">
@@ -42,6 +48,41 @@ async def test_add_badge(
 
 
 @pytest.mark.asyncio
+async def test_add_badge_custom_content(
+    predictable_organization: Organization,
+    predictable_repository: Repository,
+    predictable_issue: Issue,
+    session: AsyncSession,
+) -> None:
+    predictable_issue.badge_custom_content = "Hello, please sponsor me."
+    await predictable_issue.save(session)
+
+    res = GithubBadge(
+        organization=predictable_organization,
+        repository=predictable_repository,
+        issue=predictable_issue,
+    ).generate_body_with_badge("""Hello my issue""")
+
+    assert (
+        res
+        == """Hello my issue
+
+<!-- POLAR PLEDGE BADGE START -->
+Hello, please sponsor me.
+
+
+<a href="http://127.0.0.1:3000/testorg/testrepo/issues/123">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="http://127.0.0.1:3000/api/github/testorg/testrepo/issues/123/pledge.svg?darkmode=1">
+  <img alt="Fund with Polar" src="http://127.0.0.1:3000/api/github/testorg/testrepo/issues/123/pledge.svg">
+</picture>
+</a>
+<!-- POLAR PLEDGE BADGE END -->
+"""
+    )
+
+
+@pytest.mark.asyncio
 async def test_remove_badge(
     predictable_organization: Organization,
     predictable_repository: Repository,
@@ -52,6 +93,36 @@ async def test_remove_badge(
         repository=predictable_repository,
         issue=predictable_issue,
     ).generate_body_without_badge(BADGED_BODY)
+
+    assert res == "Hello my issue"
+
+
+@pytest.mark.asyncio
+async def test_remove_badge_custom_content(
+    predictable_organization: Organization,
+    predictable_repository: Repository,
+    predictable_issue: Issue,
+) -> None:
+    res = GithubBadge(
+        organization=predictable_organization,
+        repository=predictable_repository,
+        issue=predictable_issue,
+    ).generate_body_without_badge(
+        """Hello my issue
+
+<!-- POLAR PLEDGE BADGE START -->
+Hello, please sponsor me.
+Anything can go here!
+
+<a href="http://127.0.0.1:3000/testorg/testrepo/issues/123">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="http://127.0.0.1:3000/api/github/testorg/testrepo/issues/123/pledge.svg?darkmode=1">
+  <img alt="Fund with Polar" src="http://127.0.0.1:3000/api/github/testorg/testrepo/issues/123/pledge.svg">
+</picture>
+</a>
+<!-- POLAR PLEDGE BADGE END -->
+"""
+    )
 
     assert res == "Hello my issue"
 

@@ -14,6 +14,7 @@ from .schemas import (
     ExternalGitHubIssueCreate,
     IssueRead,
     IssueReferenceRead,
+    IssueUpdateBadgeMessage,
     PostIssueComment,
 )
 from .service import issue as issue_service
@@ -200,6 +201,42 @@ async def add_issue_comment(
         issue,
         auth.user,
         message,
+    )
+
+    return issue
+
+
+@router.post(
+    "/{platform}/{org_name}/{repo_name}/issue/{issue_number}/badge_message",
+    response_model=IssueRead,
+)
+async def badge_with_message(
+    platform: Platforms,
+    org_name: str,
+    repo_name: str,
+    issue_number: int,
+    badge_message: IssueUpdateBadgeMessage,
+    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
+    session: AsyncSession = Depends(get_db_session),
+) -> Issue:
+    issue = await issue_service.get_by_number(
+        session, platform, auth.organization.id, auth.repository.id, issue_number
+    )
+    if not issue:
+        raise HTTPException(
+            status_code=404,
+            detail="Issue not found",
+        )
+
+    issue.badge_custom_content = badge_message.message
+    await issue.save(session)
+
+    await github_issue_service.embed_badge(
+        session,
+        organization=auth.organization,
+        repository=auth.repository,
+        issue=issue,
+        triggered_from_label=False,
     )
 
     return issue

@@ -228,15 +228,16 @@ async def badge_with_message(
             detail="Issue not found",
         )
 
-    issue.badge_custom_content = badge_message.message
-    await issue.save(session)
+    issue = await github_issue_service.set_issue_badge_custom_message(
+        session, issue, badge_message.message
+    )
 
     await github_issue_service.embed_badge(
         session,
         organization=auth.organization,
         repository=auth.repository,
         issue=issue,
-        triggered_from_label=False,
+        triggered_from_label=True,
     )
 
     return issue

@@ -93,6 +93,7 @@ class IssueDashboardRead(Schema):
     issue_created_at: datetime
     comments: int | None
     progress: IssueStatus | None = None
+    badge_custom_content: str | None = None
 
     class Config:
         orm_mode = True

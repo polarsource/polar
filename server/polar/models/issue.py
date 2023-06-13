@@ -247,7 +247,6 @@ class Issue(IssueFields, RecordModel):
     __mutables__ = issue_fields_mutables | {
         "has_pledge_badge_label",
         "pledge_badge_currently_embedded",
-        "badge_custom_content",
         "positive_reactions_count",
         "total_engagement_count",
     }

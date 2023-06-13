@@ -101,6 +101,21 @@ class GithubIssueService(IssueService):
             await issue_upserted.call(IssueHook(session, record))
         return records
 
+    async def set_issue_badge_custom_message(
+        self, session: AsyncSession, issue: Issue, message: str
+    ) -> Issue:
+        stmt = (
+            sql.update(Issue)
+            .where(Issue.id == issue.id)
+            .values(badge_custom_content=message)
+        )
+        await session.execute(stmt)
+        await session.commit()
+
+        # update the in memory version as well
+        issue.badge_custom_content = message
+        return issue
+
     async def embed_badge(
         self,
         session: AsyncSession,

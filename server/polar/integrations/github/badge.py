@@ -126,6 +126,10 @@ class GithubBadge:
         )
         promotion = promotion.rstrip()
 
+        # Remove badge from message if already embedded
+        if self.badge_is_embedded(body):
+            body = self.generate_body_without_badge(body)
+
         return f"{body}\n\n{self._badge_markdown(promotion)}"
 
     def generate_body_without_badge(self, body: str) -> str:
@@ -184,12 +188,12 @@ class GithubBadge:
 
         body = await self.get_current_body(client)
 
-        # TODO: check if promotion message is the same
-        # if self.badge_is_embedded(body):
-        #     log.info("github.badge.embed.is_already_embedded", issue_id=self.issue.id)
-        #     return None
-
         body_with_badge = self.generate_body_with_badge(body)
+
+        if body_with_badge == body:
+            log.info("github.badge.embed.is_already_embedded", issue_id=self.issue.id)
+            return None
+
         await self.update_body(client, body_with_badge)
         log.info("github.badge.embed.embedded", issue_id=self.issue.id)
         return None

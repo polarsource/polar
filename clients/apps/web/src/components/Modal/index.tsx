@@ -1,4 +1,4 @@
-import React, { FunctionComponent, useEffect } from 'react'
+import React, { FunctionComponent, MouseEvent, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import FocusLock from 'react-focus-lock'
 
@@ -29,12 +29,12 @@ export const Modal: FunctionComponent<ModalProps> = ({
     }
   }, [isShown])
 
+  const onInnerClick = (e: MouseEvent) => {
+    e.stopPropagation()
+  }
+
   const modal = (
     <React.Fragment>
-      <div
-        onClick={hide}
-        className="absolute top-0 bottom-0 left-0 right-0 z-10 bg-black opacity-50"
-      ></div>
       <FocusLock>
         <div
           className="fixed top-0 bottom-0 left-0 right-0 z-10"
@@ -42,8 +42,14 @@ export const Modal: FunctionComponent<ModalProps> = ({
           tabIndex={-1}
           role="dialog"
         >
-          <div className="flex h-full w-full items-center justify-center">
-            <div className="fixed min-w-[800px] overflow-hidden rounded-xl bg-white shadow dark:bg-gray-800">
+          <div
+            className="flex h-full w-full items-center justify-center bg-black/50"
+            onClick={() => hide()}
+          >
+            <div
+              className="z-10 min-w-[800px] overflow-hidden rounded-xl bg-white shadow dark:bg-gray-800"
+              onClick={onInnerClick}
+            >
               {modalContent}
             </div>
           </div>

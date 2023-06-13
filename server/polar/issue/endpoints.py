@@ -192,7 +192,7 @@ async def add_issue_comment(
             repository=auth.repository,
             issue=issue,
         )
-        message = badge.generate_body_with_badge(message)
+        message += badge.badge_markdown("")
 
     await github_issue_service.add_comment_as_user(
         session,

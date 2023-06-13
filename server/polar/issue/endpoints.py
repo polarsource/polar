@@ -13,7 +13,9 @@ from polar.organization.service import organization as organization_service
 from .schemas import IssueRead, IssueReferenceRead
 from .service import issue as issue_service
 
+from polar.integrations.github.client import get_anonymous_client
 from polar.integrations.github.service.issue import github_issue as github_issue_service
+from polar.integrations.github.service.organization import github_organization as github_organization_service
 
 router = APIRouter(tags=["issues"])
 
@@ -105,6 +107,34 @@ async def get_public_issue(
             org_name=org_name,
             repo_name=repo_name,
             issue=number,
+        )
+        return issue
+    except ResourceNotFound:
+        raise HTTPException(
+            status_code=404,
+            detail="Organization, repo and issue combination not found",
+        )
+
+
+@router.post(
+    "/{platform}/{org_name}/{repo_name}/issues/{number}", response_model=IssueRead
+)
+async def sync_external_issue(
+    platform: Platforms,
+    org_name: str,
+    repo_name: str,
+    number: int,
+    session: AsyncSession = Depends(get_db_session),
+) -> Issue:
+    client = get_anonymous_client()
+
+    try:
+        _, __, issue = await github_organization_service.sync_external_org_with_repo_and_issue(
+            session,
+            client=client,
+            org_name=org_name,
+            repo_name=repo_name,
+            issue_number=number,
         )
         return issue
     except ResourceNotFound:

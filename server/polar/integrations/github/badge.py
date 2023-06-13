@@ -89,7 +89,7 @@ class GithubBadge:
             number=self.issue.number,
         )
 
-    def _badge_markdown(self, message: str) -> str:
+    def badge_markdown(self, message: str) -> str:
         funding_url = self.generate_funding_url()
 
         darkmode_url = self.generate_svg_url(darkmode=True)
@@ -130,7 +130,7 @@ class GithubBadge:
         if self.badge_is_embedded(body):
             body = self.generate_body_without_badge(body)
 
-        return f"{body}\n\n{self._badge_markdown(promotion)}"
+        return f"{body}\n\n{self.badge_markdown(promotion)}"
 
     def generate_body_without_badge(self, body: str) -> str:
         # Remove content between tags

@@ -5,7 +5,7 @@ import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
-import { ChangeEvent, useState } from 'react'
+import { ChangeEvent, MouseEvent, useState } from 'react'
 
 type IssueInfo = {
   organization: string
@@ -35,12 +35,16 @@ const NewPledgePage: NextPage = () => {
     setUrl(event.target.value)
   }
 
-  const syncExternalIssue = async () => {
+  const syncExternalIssue = async (
+    event: MouseEvent<HTMLButtonElement, MouseEvent>,
+  ) => {
+    event.preventDefault()
     setIsLoading(true)
     const issue = await api.issues.syncExternalIssue({
       platform: Platforms.GITHUB,
       requestBody: { url },
     })
+    console.log(issue)
     setIsLoading(false)
     router.push(`/${issue.owner}/${issue.repo}/issues/${issue.number}`)
   }
@@ -60,7 +64,7 @@ const NewPledgePage: NextPage = () => {
             <div className="w-full py-5 px-3 text-left md:px-6">
               <form className="flex flex-col">
                 <label
-                  htmlFor="email"
+                  htmlFor="url"
                   className="mt-4 mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
                 >
                   Paste link here
@@ -68,7 +72,7 @@ const NewPledgePage: NextPage = () => {
                   polarsource/polar#123)
                 </label>
                 <input
-                  type="email"
+                  type="text"
                   id="url"
                   onChange={onUrlChange}
                   onBlur={onUrlChange}
@@ -79,7 +83,7 @@ const NewPledgePage: NextPage = () => {
                 <div className="mt-6">
                   <PrimaryButton
                     disabled={false}
-                    loading={false}
+                    loading={isLoading}
                     onClick={syncExternalIssue}
                   >
                     Pledge

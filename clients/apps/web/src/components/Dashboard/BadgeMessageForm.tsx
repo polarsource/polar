@@ -1,6 +1,5 @@
 import { Marked } from '@ts-stack/markdown'
-import { IssueDashboardRead, Platforms } from 'polarkit/api/client'
-import { useBadgeWithComment } from 'polarkit/hooks'
+import { IssueDashboardRead } from 'polarkit/api/client'
 import { classNames } from 'polarkit/utils'
 import { ChangeEvent, MouseEvent, useEffect, useRef, useState } from 'react'
 import LabeledRadioButton from '../UI/LabeledRadioButton'
@@ -9,6 +8,7 @@ const BadgeMessageForm = (props: {
   orgName: string
   repoName: string
   issue: IssueDashboardRead
+  onBadgeWithComment: (comment: string) => Promise<void>
 }) => {
   const [message, setMessage] = useState(
     `## Funding
@@ -35,18 +35,12 @@ const BadgeMessageForm = (props: {
     setCanSave(e.target.value !== props.issue.badge_custom_content)
   }
 
-  const badgeWithComment = useBadgeWithComment()
+  const [isLoading, setIsLoading] = useState(false)
 
   const onClickUpdate = async (e: MouseEvent<HTMLButtonElement>) => {
-    await badgeWithComment.mutateAsync({
-      platform: Platforms.GITHUB,
-      orgName: props.orgName,
-      repoName: props.repoName,
-      issueNumber: props.issue.number,
-      body: {
-        message: message,
-      },
-    })
+    setIsLoading(true)
+    await props.onBadgeWithComment(message)
+    setIsLoading(false)
   }
 
   return (
@@ -81,7 +75,7 @@ const BadgeMessageForm = (props: {
           onClick={onClickUpdate}
           disabled={!canSave}
           className={classNames(
-            badgeWithComment.isLoading ? 'cursor-wait' : '',
+            isLoading ? 'cursor-wait' : '',
             canSave ? 'cursor-pointer text-blue-600' : 'text-gray-500',
             'font-medium',
           )}

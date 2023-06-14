@@ -32,7 +32,10 @@ const NewPledgePage: NextPage = ({
       return
     }
 
-    router.push(`/${issue.owner}/${issue.repo}/issues/${issue.number}`)
+    // If on polar.new, make sure to redirect user to polar.sh
+    router.push(
+      `https://polar.sh/${issue.owner}/${issue.repo}/issues/${issue.number}`,
+    )
   }
 
   return (

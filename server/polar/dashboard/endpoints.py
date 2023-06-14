@@ -392,9 +392,9 @@ def issue_to_schema(issue: Issue) -> IssueDashboardRead:
 
 
 def issue_progress(issue: Issue) -> IssueStatus:
-    # completed
+    # closed
     if issue.issue_closed_at:
-        return IssueStatus.completed
+        return IssueStatus.closed
 
     # pull_request
     for r in issue.references:

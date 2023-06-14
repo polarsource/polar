@@ -262,7 +262,7 @@ const PledgerPledgePending = ({
                 {payload.issue_number}
               </>
             </Link>{' '}
-            has been completed. Review it.
+            has been closed. Review it.
           </>
         ),
         icon: <DollarSignIcon />,

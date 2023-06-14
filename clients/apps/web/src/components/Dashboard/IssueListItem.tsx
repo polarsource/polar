@@ -74,8 +74,8 @@ const IssueListItem = (props: {
         return 'building'
       case IssueStatus.PULL_REQUEST:
         return 'pull_request'
-      case IssueStatus.COMPLETED:
-        return 'completed'
+      case IssueStatus.CLOSED:
+        return 'closed'
       case IssueStatus.IN_PROGRESS:
         return 'in_progress'
       case IssueStatus.TRIAGED:
@@ -109,7 +109,7 @@ const IssueListItem = (props: {
    */
   const dependentOrg = props.dependents && props.dependents[0].organization
   const showPledgeAction =
-    isDependency && props.issue.progress !== IssueStatus.COMPLETED
+    isDependency && props.issue.progress !== IssueStatus.CLOSED
 
   const redirectToPledge = () => {
     if (!dependentOrg) return

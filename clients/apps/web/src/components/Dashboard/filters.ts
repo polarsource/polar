@@ -8,7 +8,7 @@ export type DashboardFilters = {
   statusTriaged: boolean
   statusInProgress: boolean
   statusPullRequest: boolean
-  statusCompleted: boolean
+  statusClosed: boolean
   onlyPledged: boolean
   sort?: IssueSortBy
 }
@@ -29,8 +29,8 @@ export const navigate = (router: NextRouter, filters: DashboardFilters) => {
   if (filters.statusPullRequest) {
     statuses.push('pull_request')
   }
-  if (filters.statusCompleted) {
-    statuses.push('completed')
+  if (filters.statusClosed) {
+    statuses.push('closed')
   }
 
   params.set('statuses', statuses.join(','))

@@ -19,7 +19,7 @@ class IssueStatus(str, Enum):
     triaged = "triaged"
     in_progress = "in_progress"
     pull_request = "pull_request"
-    completed = "completed"
+    closed = "closed"
 
     # deprecated
     building = "building"

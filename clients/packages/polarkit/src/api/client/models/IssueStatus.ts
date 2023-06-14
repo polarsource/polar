@@ -10,6 +10,6 @@ export enum IssueStatus {
   TRIAGED = 'triaged',
   IN_PROGRESS = 'in_progress',
   PULL_REQUEST = 'pull_request',
-  COMPLETED = 'completed',
+  CLOSED = 'closed',
   BUILDING = 'building',
 }

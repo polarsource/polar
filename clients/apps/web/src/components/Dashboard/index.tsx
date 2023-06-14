@@ -18,7 +18,7 @@ const buildStatusesFilter = (filters: DashboardFilters): Array<IssueStatus> => {
   filters.statusTriaged && next.push(IssueStatus.TRIAGED)
   filters.statusInProgress && next.push(IssueStatus.IN_PROGRESS)
   filters.statusPullRequest && next.push(IssueStatus.PULL_REQUEST)
-  filters.statusCompleted && next.push(IssueStatus.COMPLETED)
+  filters.statusClosed && next.push(IssueStatus.CLOSED)
   return next
 }
 
@@ -29,7 +29,7 @@ export const DefaultFilters: DashboardFilters = {
   statusTriaged: true,
   statusInProgress: true,
   statusPullRequest: true,
-  statusCompleted: false,
+  statusClosed: false,
   sort: undefined,
   onlyPledged: false,
 }
@@ -109,7 +109,7 @@ const Dashboard = ({
           f.statusTriaged = statuses.includes('triaged')
           f.statusInProgress = statuses.includes('in_progress')
           f.statusPullRequest = statuses.includes('pull_request')
-          f.statusCompleted = statuses.includes('completed')
+          f.statusClosed = statuses.includes('closed')
         }
       }
       if (s.has('sort')) {

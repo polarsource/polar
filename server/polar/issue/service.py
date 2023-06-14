@@ -168,7 +168,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         if include_statuses:
             conds: list[ColumnElement[bool]] = []
 
-            is_completed = Issue.issue_closed_at.is_not(None)
+            is_closed = Issue.issue_closed_at.is_not(None)
 
             is_pull_request = Issue.issue_has_pull_request_relationship.is_(True)
 
@@ -181,7 +181,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 not_(is_triaged),
                 not_(is_in_progress),
                 not_(is_pull_request),
-                not_(is_completed),
+                not_(is_closed),
             )
 
             for status in include_statuses:
@@ -195,7 +195,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                             is_triaged,
                             not_(is_in_progress),
                             not_(is_pull_request),
-                            not_(is_completed),
+                            not_(is_closed),
                         )
                     )
 
@@ -206,7 +206,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                             not_(is_triaged),
                             is_in_progress,
                             not_(is_pull_request),
-                            not_(is_completed),
+                            not_(is_closed),
                         )
                     )
 
@@ -217,18 +217,18 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                             not_(is_triaged),
                             not_(is_in_progress),
                             is_pull_request,
-                            not_(is_completed),
+                            not_(is_closed),
                         )
                     )
 
-                if status == IssueStatus.completed:
+                if status == IssueStatus.closed:
                     conds.append(
                         and_(
                             not_(is_backlog),
                             not_(is_triaged),
                             not_(is_in_progress),
                             not_(is_pull_request),
-                            is_completed,
+                            is_closed,
                         )
                     )
 

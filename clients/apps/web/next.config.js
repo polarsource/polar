@@ -5,6 +5,7 @@ const nextConfig = {
   transpilePackages: ['polarkit'],
   async rewrites() {
     return [
+      // Framer site rewrites
       {
         source: '/',
         destination: 'https://splendid-help-401117.framer.app/',
@@ -32,6 +33,18 @@ const nextConfig = {
       {
         source: '/legal/terms',
         destination: 'https://splendid-help-401117.framer.app/legal/terms',
+      },
+
+      // polar.new rewrite
+      {
+        source: '/:path*',
+        destination: '/new',
+        has: [
+          {
+            type: 'host',
+            value: 'polar.new',
+          },
+        ],
       },
     ]
   },

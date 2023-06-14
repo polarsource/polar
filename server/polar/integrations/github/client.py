@@ -156,11 +156,15 @@ async def get_user_client(
     return get_client(oauth.access_token)
 
 
-def get_anonymous_client() -> GitHub[UnauthAuthStrategy]:
-    return GitHub()
-
 def get_client(access_token: str) -> GitHub[TokenAuthStrategy]:
     return GitHub(access_token)
+
+
+def get_polar_client() -> GitHub[TokenAuthStrategy]:
+    """Instead of making anonymous requests, use the polar user's access token,
+    so we're at least allowed 5000 reqs/s
+    """
+    return get_client(settings.GITHUB_POLAR_USER_ACCESS_TOKEN)
 
 
 def get_app_client() -> GitHub[AppAuthStrategy]:

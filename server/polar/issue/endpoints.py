@@ -14,7 +14,7 @@ from polar.organization.service import organization as organization_service
 from .schemas import ExternalGitHubIssueCreate, IssueRead, IssueReferenceRead
 from .service import issue as issue_service
 
-from polar.integrations.github.client import get_anonymous_client, get_user_client
+from polar.integrations.github.client import get_polar_client, get_user_client
 from polar.integrations.github.service.issue import github_issue as github_issue_service
 from polar.integrations.github.service.url import github_url
 from polar.integrations.github.service.organization import (
@@ -130,7 +130,7 @@ async def sync_external_issue(
     session: AsyncSession = Depends(get_db_session),
 ) -> GitHubIssue:
     if auth.user is None:
-        client = get_anonymous_client()
+        client = get_polar_client()
     else:
         # If we have a user, make sure to use their GitHub auth, to use as little
         # anonymous rate limiting as possible

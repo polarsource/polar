@@ -106,8 +106,8 @@ services:
     numInstances: 1
     healthCheckPath: /readyz
     autoDeploy: false # deploys are triggered by github actions
-    domains:
-      - api.polar.sh
+    # domains:
+    #   - api.polar.sh
     envVars:
       # CORS
       - key: POLAR_CORS_ORIGINS

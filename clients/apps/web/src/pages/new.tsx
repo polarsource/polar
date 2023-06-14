@@ -1,15 +1,13 @@
 import HowItWorks from '@/components/Pledge/HowItWorks'
 import type { NextPage } from 'next'
 import { useRouter } from 'next/router'
-import { api } from 'polarkit/api'
-import { ApiError, Platforms } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
+import { parseGitHubIssueUrl } from 'polarkit/utils'
 import { ChangeEvent, MouseEvent, useState } from 'react'
 
 const NewPledgePage: NextPage = () => {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [url, setUrl] = useState('')
 
@@ -18,22 +16,17 @@ const NewPledgePage: NextPage = () => {
     setUrl(event.target.value)
   }
 
-  const syncExternalIssue = async (event: MouseEvent) => {
+  const pledgeToIssue = async (event: MouseEvent) => {
     event.preventDefault()
-    setIsLoading(true)
-    try {
-      const issue = await api.issues.syncExternalIssue({
-        platform: Platforms.GITHUB,
-        requestBody: { url },
-      })
-      setIsLoading(false)
-      router.push(`/${issue.owner}/${issue.repo}/issues/${issue.number}`)
-    } catch (e) {
-      setIsLoading(false)
-      if (e instanceof ApiError) {
-        setErrorMessage(e.body.detail)
-      }
+
+    const issue = parseGitHubIssueUrl(url)
+
+    if (!issue) {
+      setErrorMessage('Invalid GitHub issue link')
+      return
     }
+
+    router.push(`/${issue.owner}/${issue.repo}/issues/${issue.number}`)
   }
 
   return (
@@ -68,13 +61,7 @@ const NewPledgePage: NextPage = () => {
                 />
 
                 <div className="mt-6">
-                  <PrimaryButton
-                    disabled={false}
-                    loading={isLoading}
-                    onClick={syncExternalIssue}
-                  >
-                    Pledge
-                  </PrimaryButton>
+                  <PrimaryButton onClick={pledgeToIssue}>Pledge</PrimaryButton>
                 </div>
 
                 {errorMessage && (

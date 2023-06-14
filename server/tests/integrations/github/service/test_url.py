@@ -55,3 +55,6 @@ def test_parse_unique_urls() -> None:
         GitHubIssue(raw="#7", number=7),
         GitHubIssue(raw="#5653", number=5653),
     ]
+
+def test_other_domains() -> None:
+    assert github_url.parse_urls("https://www.example.org/org/repo/issues/17423") == []

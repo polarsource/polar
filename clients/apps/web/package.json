@@ -12,7 +12,7 @@
     "chromatic": "chromatic --exit-zero-on-changes --only-changed --exit-once-uploaded"
   },
   "engines": {
-    "node": ">= 19 <20"
+    "node": ">= 18 <20"
   },
   "dependencies": {
     "@heroicons/react": "^2.0.16",

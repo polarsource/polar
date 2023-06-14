@@ -68,7 +68,7 @@ async def pledge_created_discord_alert(hook: PledgeHook) -> None:
 
     embed.add_embed_field(
         name="Backoffice",
-        value="[Open](https://dashboard.polar.sh/backoffice/pledges)",
+        value="[Open](https://polar.sh/backoffice/pledges)",
     )
 
     webhook.add_embed(embed)

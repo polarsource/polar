@@ -53,7 +53,7 @@ You&apos;ll receive the funds once {{issue_org_name}}/{{issue_repo_name}}#{{issu
 
 {% if not maintainer_has_stripe_account -%}
 <br><br>Create a Stripe account with Polar today to avoid any delay with future transfers.<br>
-<a href="https://dashboard.polar.sh/dashboard/{{issue_org_name}}">dashboard.polar.sh/dashboard/{{issue_org_name}}</a>
+<a href="https://polar.sh/dashboard/{{issue_org_name}}">polar.sh/dashboard/{{issue_org_name}}</a>
 {% endif -%}
 """  # noqa: E501
 
@@ -80,7 +80,7 @@ We&apos;ve notified the backers and unless we receive any disputes within the ne
 
 {% if not maintainer_has_stripe_account %}
 Create a Stripe account with Polar today to ensure we can transfer the funds directly once the review period is completed.<br>
-<a href="https://dashboard.polar.sh/dashboard/{{issue_org_name}}">dashboard.polar.sh/dashboard/{{issue_org_name}}</a>
+<a href="https://polar.sh/dashboard/{{issue_org_name}}">polar.sh/dashboard/{{issue_org_name}}</a>
 {% endif %}
 """  # noqa: E501
 

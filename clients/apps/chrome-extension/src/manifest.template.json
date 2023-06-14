@@ -33,7 +33,8 @@
     {
       "js": ["auth.js"],
       "prod:matches": [
-        "https://dashboard.polar.sh/dashboard/settings/extension"
+        "https://dashboard.polar.sh/dashboard/settings/extension",
+        "https://polar.sh/dashboard/settings/extension"
       ],
       "dev:matches": ["http://127.0.0.1:3000/dashboard/settings/extension"]
     }

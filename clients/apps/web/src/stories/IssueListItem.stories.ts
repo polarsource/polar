@@ -243,7 +243,7 @@ const issuePullRequest = {
   ...dashboardIssue,
   progress: IssueStatus.PULL_REQUEST,
 }
-const issueCompleted = { ...dashboardIssue, progress: IssueStatus.COMPLETED }
+const issueClosed = { ...dashboardIssue, progress: IssueStatus.CLOSED }
 
 const dependents: IssueReadWithRelations = {
   ...issue,
@@ -262,13 +262,13 @@ const meta: Meta<typeof IssueListItem> = {
   tags: ['autodocs'],
   argTypes: {
     issue: {
-      options: ['Backlog', 'Triaged', 'InProgress', 'PullRequest', 'Completed'],
+      options: ['Backlog', 'Triaged', 'InProgress', 'PullRequest', 'Closed'],
       mapping: {
         Backlog: dashboardIssue,
         Triaged: issueTriaged,
         InProgress: issueInProgress,
         PullRequest: issuePullRequest,
-        Completed: issueCompleted,
+        Closed: issueClosed,
       },
       defaultValue: issuePullRequest,
     },
@@ -363,11 +363,11 @@ export const StatusPullRequest: Story = {
   },
 }
 
-export const StatusCompleted: Story = {
+export const StatusClosed: Story = {
   args: {
     ...Default.args,
     references: referencesMerged,
-    issue: issueCompleted,
+    issue: issueClosed,
   },
 }
 

@@ -129,7 +129,7 @@ export type Progress =
   | 'backlog'
   | 'building'
   | 'pull_request'
-  | 'completed'
+  | 'closed'
   | 'triaged'
   | 'in_progress'
 
@@ -144,7 +144,7 @@ const IssueProgress = (props: { progress: Progress }) => {
       {progress === 'building' && <Progress50 />}
       {progress === 'in_progress' && <Progress50 />}
       {progress === 'pull_request' && <Progress75 />}
-      {progress === 'completed' && <Progress100 />}
+      {progress === 'closed' && <Progress100 />}
     </div>
   )
 }

@@ -68,7 +68,7 @@ const Search = (props: {
       statusTriaged: true,
       statusInProgress: true,
       statusPullRequest: true,
-      statusCompleted: false,
+      statusClosed: false,
     }
     onSetFilters(f)
     navigate(router, f)
@@ -173,11 +173,11 @@ const Search = (props: {
             Pull request
           </Checkbox>
           <Checkbox
-            id="statusCompleted"
-            value={filters.statusCompleted}
+            id="statusClosed"
+            value={filters.statusClosed}
             onChange={onStatusChange}
           >
-            Completed
+            Closed
           </Checkbox>
         </div>
         <div className="flex items-center justify-between">

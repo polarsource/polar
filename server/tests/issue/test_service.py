@@ -238,7 +238,7 @@ async def test_list_by_repository_type_and_status_filter_triaged(
         id=uuid.uuid4(),
         organization_id=organization.id,
         repository_id=repository.id,
-        title="issue_4_completed",
+        title="issue_4_closed",
         number=secrets.randbelow(100000),
         platform=Platforms.github,
         external_id=secrets.randbelow(100000),
@@ -294,20 +294,20 @@ async def test_list_by_repository_type_and_status_filter_triaged(
     names = [i.title for i in issues]
     assert names == []
 
-    # completed
+    # closed
 
     (issues, count) = await issue_service.list_by_repository_type_and_status(
         session,
         repository_ids=[repository.id],
         issue_list_type=IssueListType.issues,
         sort_by=IssueSortBy.newest,
-        include_statuses=[IssueStatus.completed],
+        include_statuses=[IssueStatus.closed],
     )
 
     assert count == 1
     names = [i.title for i in issues]
     assert names == [
-        "issue_4_completed",
+        "issue_4_closed",
     ]
 
     # backlog

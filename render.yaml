@@ -1,34 +1,4 @@
 services:
-  # Frontend
-  - type: web
-    name: web
-    env: node
-    buildCommand: pnpm install; pnpm build
-    startCommand: pnpm start -p 10000
-    branch: main
-    rootDir: clients/apps/web
-    numInstances: 1
-    healthCheckPath: /
-    region: ohio
-    plan: standard
-    envVars:
-      - key: NEXT_PUBLIC_API_URL
-        value: "https://api.polar.sh"
-      - key: NEXT_PUBLIC_GITHUB_INSTALLATION_URL
-        value: "https://github.com/apps/polar-sh/installations/new"
-      - key: NEXT_PUBLIC_SENTRY_ENABLED
-        value: "true"
-
-      # Workaround for https://community.render.com/t/how-to-debug-issues-with-deploy-time-health-check/12300
-      # and https://github.com/vercel/next.js/issues/49677
-      - key: PORT
-        value: "10000"
-      - fromGroup: web-stripe
-      - fromGroup: web-posthog
-
-    domains:
-      - dashboard.polar.sh
-
   # FastAPI Backend
   - type: web
     name: server
@@ -268,14 +238,4 @@ envVarGroups:
   - key: POLAR_STRIPE_SECRET_KEY
     sync: false
   - key: POLAR_STRIPE_WEBHOOK_SECRET
-    sync: false
-
-- name: web-stripe
-  envVars:
-  - key: NEXT_PUBLIC_STRIPE_KEY
-    sync: false
-
-- name: web-posthog
-  envVars:
-  - key: NEXT_PUBLIC_POSTHOG_TOKEN
     sync: false

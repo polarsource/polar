@@ -550,8 +550,9 @@ export const BadgePromotionModal = (props: {
   }
 
   const pledgePageLink = `https://dashboard.polar.sh/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
-  const pledgeBadgeSVG = `https://apo.polar.sh/api/github/${props.orgName}/${props.repoName}/issues/${props.issue.number}/pledge.svg`
+  const pledgeBadgeSVG = `https://api.polar.sh/api/github/${props.orgName}/${props.repoName}/issues/${props.issue.number}/pledge.svg`
   const pledgeEmbed = `<a href="${pledgePageLink}"><picture><source media="(prefers-color-scheme: dark)" srcset="${pledgeBadgeSVG}?darkmode=1"><img alt="Fund with Polar" src="${pledgeBadgeSVG}"></picture></a>`
+  const gitHubIssueLink = `https://github.com/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
 
   return (
     <>
@@ -559,11 +560,11 @@ export const BadgePromotionModal = (props: {
         <div className="flex items-center space-x-2">
           <BadgedCheckmarkLargeIcon />
           <div className="text-gray pr-2 text-xl font-medium">
-            Badge added to #{props.issue.number}
+            Badge added to <a href={gitHubIssueLink}>#{props.issue.number}</a>
           </div>
           <button
             onClick={clickRemoveBadge}
-            className="text-gray flex cursor-pointer items-center rounded-full border border-gray-200 px-2 py-0.5 pr-3 hover:bg-gray-100"
+            className="text-gray flex cursor-pointer items-center rounded-full border border-gray-200 px-2 py-0.5 pr-3 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <XIcon /> Remove
           </button>
@@ -599,14 +600,14 @@ export const BadgePromotionModal = (props: {
           <div className="flex w-full overflow-hidden rounded-lg border">
             <input
               id="badge-page-link"
-              className="flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600"
+              className="flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600 dark:text-gray-400"
               onClick={() => {
                 copyToClipboard('badge-page-link')
               }}
               value={pledgePageLink}
             />
             <div
-              className="cursor-pointer bg-blue-50 px-3 py-2 text-blue-600"
+              className="cursor-pointer bg-blue-50 px-3 py-2 text-blue-600 dark:bg-gray-500 dark:text-white"
               onClick={() => {
                 copyToClipboard('badge-page-link')
               }}
@@ -621,14 +622,14 @@ export const BadgePromotionModal = (props: {
           <div className="flex w-full overflow-hidden rounded-lg border">
             <input
               id="badge-embed-content"
-              className="flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600"
+              className="flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600 dark:text-gray-400"
               value={pledgeEmbed}
               onClick={() => {
                 copyToClipboard('badge-embed-content')
               }}
             />
             <div
-              className="cursor-pointer bg-blue-50 px-3 py-2 text-blue-600"
+              className="cursor-pointer bg-blue-50 px-3 py-2 text-blue-600 dark:bg-gray-500 dark:text-white"
               onClick={() => {
                 copyToClipboard('badge-embed-content')
               }}
@@ -668,14 +669,14 @@ const PostCommentForm = (props: {
       <img src={props.user.avatar_url} className="h-6 w-6 rounded-full" />
       <div className="flex h-full flex-1 flex-col overflow-hidden rounded-md border ">
         <textarea
-          className="overflow-hiddens max-h-[10rem] w-full flex-1 border-0 px-2 py-1 text-gray-800 outline-0"
+          className="overflow-hiddens max-h-[10rem] w-full flex-1 border-0 px-2 py-1 text-gray-800 outline-0 dark:bg-gray-700 dark:text-white"
           value={message}
           onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
             setMessage(e.target.value)
           }}
         ></textarea>
-        <div className="flex justify-between border-t bg-blue-50 px-2 py-1">
-          <div className="text-sm text-gray-900">
+        <div className="flex justify-between border-t bg-blue-50 px-2 py-1 dark:bg-gray-900">
+          <div className="text-sm text-gray-900 dark:text-gray-100">
             🔔 This will notify watchers
           </div>
           <button

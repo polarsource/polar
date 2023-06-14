@@ -1,4 +1,6 @@
+import { Badge } from '@/../../../packages/polarkit/src/components'
 import { Marked } from '@ts-stack/markdown'
+import { useTheme } from 'next-themes'
 import { IssueDashboardRead } from 'polarkit/api/client'
 import { classNames } from 'polarkit/utils'
 import { ChangeEvent, MouseEvent, useEffect, useRef, useState } from 'react'
@@ -43,6 +45,8 @@ const BadgeMessageForm = (props: {
     setIsLoading(false)
   }
 
+  const { resolvedTheme } = useTheme()
+
   return (
     <div className="flex flex-col space-y-2">
       <div className="text-gray flex justify-between">
@@ -53,12 +57,20 @@ const BadgeMessageForm = (props: {
           onSelected={setDescirptionMode}
         />
       </div>
-      <div className="rounded-xl bg-white py-2 px-4 shadow">
-        {descriptionMode === 'View' && <div className="prose" ref={ref} />}
+      <div className="rounded-xl bg-white py-2 px-4 shadow dark:bg-gray-800">
+        {descriptionMode === 'View' && (
+          <>
+            <div className="prose dark:prose-invert" ref={ref} />
+            <Badge
+              showAmountRaised={false}
+              darkmode={resolvedTheme === 'dark'}
+            />
+          </>
+        )}
         {descriptionMode === 'Edit' && (
           <>
             <textarea
-              className="w-full rounded-md border-0 text-gray-800"
+              className="w-full rounded-md border-0 text-gray-800 dark:bg-gray-800 dark:text-white"
               rows={6}
               value={message}
               onChange={onChange}

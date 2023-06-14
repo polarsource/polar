@@ -103,7 +103,6 @@ services:
     dockerCommand: "./hack/production_run_server.sh"
     region: ohio
     plan: standard
-    branch: main
     numInstances: 1
     healthCheckPath: /readyz
     autoDeploy: false # deploys are triggered by github actions

@@ -1,25 +1,31 @@
 import HowItWorks from '@/components/Pledge/HowItWorks'
-import type { NextPage } from 'next'
+import type { GetServerSideProps, NextPage } from 'next'
 import { useRouter } from 'next/router'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
-import { parseGitHubIssueUrl } from 'polarkit/utils'
+import { parseGitHubIssueLink } from 'polarkit/utils'
 import { ChangeEvent, MouseEvent, useState } from 'react'
 
-const NewPledgePage: NextPage = () => {
+const NewPledgePage: NextPage = ({
+  link: linkProp = '',
+  errorMessage: errorMessageProp = '',
+}: {
+  link?: string
+  errorMessage?: string
+}) => {
   const router = useRouter()
-  const [errorMessage, setErrorMessage] = useState('')
-  const [url, setUrl] = useState('')
+  const [errorMessage, setErrorMessage] = useState(errorMessageProp)
+  const [link, setLink] = useState(linkProp)
 
-  const onUrlChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const onLinkChange = async (event: ChangeEvent<HTMLInputElement>) => {
     setErrorMessage('')
-    setUrl(event.target.value)
+    setLink(event.target.value)
   }
 
   const pledgeToIssue = async (event: MouseEvent) => {
     event.preventDefault()
 
-    const issue = parseGitHubIssueUrl(url)
+    const issue = parseGitHubIssueLink(link)
 
     if (!issue) {
       setErrorMessage('Invalid GitHub issue link')
@@ -44,7 +50,7 @@ const NewPledgePage: NextPage = () => {
             <div className="w-full py-5 px-3 text-left md:px-6">
               <form className="flex flex-col">
                 <label
-                  htmlFor="url"
+                  htmlFor="link"
                   className="mt-4 mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
                 >
                   Paste link here
@@ -53,10 +59,10 @@ const NewPledgePage: NextPage = () => {
                 </label>
                 <input
                   type="text"
-                  id="url"
-                  onChange={onUrlChange}
-                  onBlur={onUrlChange}
-                  value={url}
+                  id="link"
+                  onChange={onLinkChange}
+                  onBlur={onLinkChange}
+                  value={link}
                   className="block w-full rounded-lg border-gray-200 bg-transparent py-2.5 px-3 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
                 />
 
@@ -76,6 +82,30 @@ const NewPledgePage: NextPage = () => {
       </div>
     </>
   )
+}
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  if (context.query.link && typeof context.query.link === 'string') {
+    const issue = parseGitHubIssueLink(context.query.link)
+
+    if (!issue) {
+      return {
+        props: {
+          link: context.query.link,
+          errorMessage: 'Invalid GitHub issue link',
+        },
+      }
+    }
+
+    return {
+      redirect: {
+        permanent: false,
+        destination: `/${issue.owner}/${issue.repo}/issues/${issue.number}`,
+      },
+    }
+  }
+
+  return { props: {} }
 }
 
 export default NewPledgePage

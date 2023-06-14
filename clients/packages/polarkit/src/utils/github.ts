@@ -12,7 +12,7 @@ export const githubPullReqeustUrl = (
   number: number,
 ) => `${githubRepoUrl(owner, repo)}/pull/${number}`
 
-export const parseGitHubIssueUrl = (url: string): GitHubIssue | undefined => {
+export const parseGitHubIssueLink = (url: string): GitHubIssue | undefined => {
   const re =
     /^(?<owner>[a-z0-9][a-z0-9-]*)?(?:\/(?<repo>[a-z0-9_\.-]+))?#(?<number>\d+)|(?:https?:\/\/(?:www\.)?github\.com\/)(?<owner2>[a-z0-9][a-z0-9-]*)?(?:\/(?<repo2>[a-z0-9_\.-]+))?(?:#|\/issues\/)(?<number2>\d+)$/i
   const match = url.match(re)

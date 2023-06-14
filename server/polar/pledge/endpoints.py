@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
+from polar.integrations.github.client import get_polar_client
 from polar.models import Pledge, Repository
 from polar.exceptions import ResourceNotFound, NotPermitted
 from polar.enums import Platforms
@@ -11,6 +12,9 @@ from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession, get_db_session
 from polar.organization.schemas import OrganizationPublicRead
 from polar.organization.service import organization as organization_service
+from polar.integrations.github.service.organization import (
+    github_organization as gh_organization
+)
 from polar.repository.schemas import RepositoryRead
 from polar.issue.schemas import IssueRead
 from polar.user_organization.service import (
@@ -67,12 +71,13 @@ async def get_pledge_with_resources(
 ) -> PledgeResources:
     try:
         includes = include.split(",")
-        org, repo, issue = await organization_service.get_with_repo_and_issue(
+        client = get_polar_client()
+        org, repo, issue = await gh_organization.sync_external_org_with_repo_and_issue(
             session,
-            platform=platform,
+            client=client,
             org_name=org_name,
             repo_name=repo_name,
-            issue=number,
+            issue_number=number,
         )
 
         included_pledge = None

@@ -120,45 +120,6 @@ async def get_public_issue(
         )
 
 
-@router.post(
-    "/{platform}/external_issues", response_model=GitHubIssue
-)
-async def sync_external_issue(
-    platform: Platforms,
-    external_issue: ExternalGitHubIssueCreate,
-    auth: Auth = Depends(Auth.optional_user),
-    session: AsyncSession = Depends(get_db_session),
-) -> GitHubIssue:
-    if auth.user is None:
-        client = get_polar_client()
-    else:
-        # If we have a user, make sure to use their GitHub auth, to use as little
-        # anonymous rate limiting as possible
-        client = await get_user_client(session, auth.user)
-    urls = github_url.parse_urls(external_issue.url)
-
-    if len(urls) != 1 or urls[0].owner is None or urls[0].repo is None:
-        raise HTTPException(
-            status_code=404,
-            detail="No issue reference found",
-        )
-
-    try:
-        await github_organization_service.sync_external_org_with_repo_and_issue(
-            session,
-            client=client,
-            org_name=urls[0].owner,
-            repo_name=urls[0].repo,
-            issue_number=urls[0].number,
-        )
-        return urls[0]
-    except ResourceNotFound:
-        raise HTTPException(
-            status_code=404,
-            detail="Organization, repo and issue combination not found",
-        )
-
-
 @router.get(
     "/{platform}/{org_name}/{repo_name}/issues/{number}/references",
     response_model=List[IssueReferenceRead],

@@ -58,3 +58,4 @@ jobs:
         run: "./.github/workflows/deploy_server.sh ${{ steps.push.outputs.digest }}"
         env:
           RENDER_DEPLOY_KEY_WORKER: ${{ secrets.RENDER_DEPLOY_KEY_WORKER }}
+          RENDER_DEPLOY_KEY_API: ${{ secrets.RENDER_DEPLOY_KEY_API }}

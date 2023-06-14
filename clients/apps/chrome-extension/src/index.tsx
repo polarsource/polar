@@ -83,7 +83,8 @@ const mountAuthorizationBanner = () => {
             overflow: 'hidden',
             width: '100%',
             border: 'none',
-            height: 72,
+            height: '48px',
+            borderRadius: '0.375rem',
           }}
         >
           <FrameContextConsumer>

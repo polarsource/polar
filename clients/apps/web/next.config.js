@@ -9,6 +9,12 @@ const nextConfig = {
       {
         source: '/',
         destination: 'https://splendid-help-401117.framer.app/',
+        missing: [
+          {
+            type: 'host',
+            value: 'polar.new', // do not rewrite for polar.new, polar.new has another rule below
+          },
+        ],
       },
       {
         source: '/faq',
@@ -37,7 +43,7 @@ const nextConfig = {
 
       // polar.new rewrite
       {
-        source: '/:path*',
+        source: '/',
         destination: '/new',
         has: [
           {
@@ -68,6 +74,19 @@ const nextConfig = {
           {
             type: 'host',
             value: 'dashboard.polar.sh',
+          },
+        ],
+        permanent: false,
+      },
+
+      // Redirect polar.new/anything (but not "polar.new/") to "polar.new/"
+      {
+        source: '/(.+)',
+        destination: 'https://polar.new',
+        has: [
+          {
+            type: 'host',
+            value: 'polar.new',
           },
         ],
         permanent: false,

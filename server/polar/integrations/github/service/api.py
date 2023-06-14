@@ -17,12 +17,12 @@ class RateLimit(Schema):
 
 class GitHubApi:
     async def get_rate_limit(self, client: GitHub[Any]) -> RateLimit:
-        r = await client.rest.meta.async_get_octocat()
+        r = await client.rest.rate_limit.async_get()
         return RateLimit(
-            limit=int(r.headers["X-RateLimit-Limit"]),
-            remaining=int(r.headers["X-RateLimit-Remaining"]),
-            used=int(r.headers["X-RateLimit-Used"]),
-            reset=int(r.headers["X-RateLimit-Reset"]),
+            limit=r.parsed_data.resources.core.limit,
+            remaining=r.parsed_data.resources.core.remaining,
+            used=r.parsed_data.resources.core.used,
+            reset=r.parsed_data.resources.core.reset,
         )
 
     # Support for custom headers

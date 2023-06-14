@@ -35,6 +35,32 @@ const nextConfig = {
       },
     ]
   },
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/dashboard',
+        has: [
+          {
+            type: 'host',
+            value: 'dashboard.polar.sh',
+          },
+        ],
+        permanent: false,
+      },
+      {
+        source: '/:path*',
+        destination: 'https://polar.sh/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'dashboard.polar.sh',
+          },
+        ],
+        permanent: false,
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig

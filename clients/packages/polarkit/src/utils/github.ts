@@ -1,4 +1,9 @@
-import { GitHubIssue } from 'api/client'
+type GitHubIssue = {
+  raw: string
+  owner: string
+  repo: string
+  number: number
+}
 
 export const githubRepoUrl = (owner: string, repo: string) =>
   `https://www.github.com/${owner}/${repo}`

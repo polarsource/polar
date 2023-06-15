@@ -22,6 +22,7 @@ from polar.user_organization.service import (
 )
 
 from .schemas import (
+    ConfirmPledgesResponse,
     PledgeCreate,
     PledgeMutationResponse,
     PledgeUpdate,
@@ -200,6 +201,33 @@ async def list_personal_pledges(
 ) -> list[PledgeRead]:
     pledges = await pledge_service.list_by_pledging_user(session, auth.user.id)
     return [PledgeRead.from_db(p) for p in pledges]
+
+
+@router.post(
+    "/{platform}/{org_name}/{repo_name}/issues/{number}/confirm_pledges",
+    response_model=ConfirmPledgesResponse,
+)
+async def confirm_pledges(
+    platform: Platforms,
+    org_name: str,
+    repo_name: str,
+    number: int,
+    auth: Auth = Depends(Auth.current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> ConfirmPledgesResponse:
+    org, repo, issue = await organization_service.get_with_repo_and_issue(
+        session=session,
+        platform=platform,
+        org_name=org_name,
+        repo_name=repo_name,
+        issue=number,
+    )
+
+    await pledge_service.mark_pending_by_issue_id(
+        session, issue_id=issue.id,
+    )
+
+    return ConfirmPledgesResponse()
 
 
 @router.post(

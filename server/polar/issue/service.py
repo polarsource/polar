@@ -331,6 +331,10 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         total_count = rows[0][1] if len(rows) > 0 else 0
         issues = [r[0] for r in rows]
 
+        print([i.id for i in issues])
+        print("ANOTHER ISSUE INCLUDED?", len([i for i in issues if str(i.id) == '6371a104-c2b3-4b94-bc77-bfec3a36548e']) > 0)
+        print("ISSUE INCLUDED?", len([i for i in issues if str(i.id) == 'd0be7709-dcb7-430a-986d-467db37452e0']) > 0)
+
         return (issues, total_count)
 
     async def list_issue_references(

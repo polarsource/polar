@@ -25,6 +25,7 @@ from polar.pledge.hooks import (
     PledgeHook,
     PledgePaidHook,
     pledge_created as pledge_created_hook,
+    pledge_confirmation_pending as pledge_confirmation_pending_hook,
     pledge_pending as pledge_pending_hook,
     pledge_paid as pledge_paid_hook,
     pledge_updated as pledge_updated_hook,
@@ -139,6 +140,13 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
     )
 
 
+async def pledge_confirmation_pending_notification(
+    pledge: Pledge,
+    session: AsyncSession
+) -> None:
+    ... # TODO: implement
+
+
 async def pledge_pending_notification(pledge: Pledge, session: AsyncSession) -> None:
     issue = await issue_service.get_by_id(session, pledge.issue_id)
     if not issue:
@@ -237,6 +245,15 @@ async def hook_pledge_created_notifications(hook: PledgeHook) -> None:
 
 
 pledge_created_hook.add(hook_pledge_created_notifications)
+
+
+async def hook_pledge_confirmation_pending_notifications(hook: PledgeHook) -> None:
+    session = hook.session
+    pledge = hook.pledge
+    await pledge_confirmation_pending_notification(pledge, session)
+
+
+pledge_confirmation_pending_hook.add(hook_pledge_confirmation_pending_notifications)
 
 
 async def hook_pledge_pending_notifications(hook: PledgeHook) -> None:

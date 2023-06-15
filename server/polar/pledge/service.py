@@ -40,6 +40,7 @@ from .hooks import (
     pledge_created,
     pledge_disputed,
     pledge_updated,
+    pledge_confirmation_pending,
     pledge_pending,
     pledge_paid,
 )
@@ -421,7 +422,39 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 )
                 .values(
                     state=PledgeState.confirmation_pending,
-                    # scheduled_payout_at=utc_now() + timedelta(days=14),
+                )
+                .returning(Pledge)
+            )
+            await session.execute(statement)
+            await session.commit()
+
+            # FIXME: it would be cool if we could only trigger these events if the
+            # update statement above modified the record
+            await pledge_updated.call(PledgeHook(session, pledge))
+            await pledge_confirmation_pending.call(PledgeHook(session, pledge))
+
+    async def mark_pending_by_issue_id(
+        self, session: AsyncSession, issue_id: UUID
+    ) -> None:
+        get = sql.select(Pledge).where(
+            Pledge.issue_id == issue_id,
+            Pledge.state.in_(PledgeState.to_pending_states()),
+        )
+
+        res = await session.execute(get)
+        pledges = res.scalars().unique().all()
+
+        for pledge in pledges:
+            # Update pledge
+            statement = (
+                sql.update(Pledge)
+                .where(
+                    Pledge.id == pledge.id,
+                    Pledge.state.in_(PledgeState.to_pending_states()),
+                )
+                .values(
+                    state=PledgeState.pending,
+                    scheduled_payout_at=utc_now() + timedelta(days=14),
                 )
                 .returning(Pledge)
             )

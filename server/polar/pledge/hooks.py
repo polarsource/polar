@@ -22,6 +22,7 @@ class PledgePaidHook:
 # (not the same as created in the initiated state)
 pledge_created: Hook[PledgeHook] = Hook()
 pledge_disputed: Hook[PledgeHook] = Hook()
+pledge_confirmation_pending: Hook[PledgeHook] = Hook()
 pledge_pending: Hook[PledgeHook] = Hook()
 pledge_paid: Hook[PledgePaidHook] = Hook()
 pledge_updated: Hook[PledgeHook] = Hook()

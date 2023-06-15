@@ -549,7 +549,7 @@ export const BadgePromotionModal = (props: {
     navigator.clipboard.writeText(copyText.value)
   }
 
-  const pledgePageLink = `https://dashboard.polar.sh/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
+  const pledgePageLink = `https://polar.sh/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
   const pledgeBadgeSVG = `https://api.polar.sh/api/github/${props.orgName}/${props.repoName}/issues/${props.issue.number}/pledge.svg`
   const pledgeEmbed = `<a href="${pledgePageLink}"><picture><source media="(prefers-color-scheme: dark)" srcset="${pledgeBadgeSVG}?darkmode=1"><img alt="Fund with Polar" src="${pledgeBadgeSVG}"></picture></a>`
   const gitHubIssueLink = `https://github.com/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
@@ -559,18 +559,21 @@ export const BadgePromotionModal = (props: {
       <ModalHeader hide={toggle}>
         <div className="flex items-center space-x-2">
           <BadgedCheckmarkLargeIcon />
-          <div className="text-gray pr-2 text-xl font-medium">
-            Badge added to <a href={gitHubIssueLink}>#{props.issue.number}</a>
+          <div className="pr-2 text-lg font-medium text-gray-900">
+            Badge added to{' '}
+            <a href={gitHubIssueLink}>
+              {props.repoName}#{props.issue.number}
+            </a>
           </div>
           <button
             onClick={clickRemoveBadge}
-            className="text-gray flex cursor-pointer items-center rounded-full border border-gray-200 px-2 py-0.5 pr-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="text-gray flex cursor-pointer items-center rounded-full border border-gray-200 px-2 py-0.5 pr-3 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <XIcon /> Remove
           </button>
         </div>
       </ModalHeader>
-      <div className="bg-gray-75 w-full px-4 py-2 dark:bg-gray-700">
+      <div className="bg-gray-75 w-full px-5 py-4 dark:bg-gray-700">
         <BadgeMessageForm
           orgName={props.orgName}
           repoName={props.repoName}
@@ -578,9 +581,9 @@ export const BadgePromotionModal = (props: {
           onBadgeWithComment={props.onBadgeWithComment}
         />
       </div>
-      <div className="grid w-full grid-cols-2 space-x-6 bg-white px-4 py-2 dark:bg-gray-800">
+      <div className="grid w-full grid-cols-2 space-x-6 bg-white px-5 pt-3.5 pb-7 dark:bg-gray-800">
         <div className="flex flex-col">
-          <div className="font-medium">Post a comment</div>
+          <div className="text-sm font-medium">Post a Github comment</div>
 
           <PostCommentForm
             orgName={props.orgName}
@@ -592,9 +595,9 @@ export const BadgePromotionModal = (props: {
         </div>
 
         <div className="flex flex-col">
-          <div className="font-medium">Spread the word</div>
+          <div className="text-sm font-medium">Spread the word</div>
 
-          <div className="mt-2 text-sm text-gray-500">
+          <div className="mt-2 mb-1 text-xs text-gray-500">
             Share link to the pledge page
           </div>
           <div className="flex w-full overflow-hidden rounded-lg border">
@@ -607,7 +610,7 @@ export const BadgePromotionModal = (props: {
               value={pledgePageLink}
             />
             <div
-              className="cursor-pointer bg-blue-50 px-3 py-2 text-blue-600 dark:bg-gray-500 dark:text-white"
+              className="cursor-pointer bg-blue-50 px-3 py-2 text-sm text-blue-600 dark:bg-gray-500 dark:text-white"
               onClick={() => {
                 copyToClipboard('badge-page-link')
               }}
@@ -616,7 +619,7 @@ export const BadgePromotionModal = (props: {
             </div>
           </div>
 
-          <div className="mt-2 text-sm text-gray-500">
+          <div className="my-2 text-xs text-gray-500">
             Embed badge on website
           </div>
           <div className="flex w-full overflow-hidden rounded-lg border">
@@ -629,7 +632,7 @@ export const BadgePromotionModal = (props: {
               }}
             />
             <div
-              className="cursor-pointer bg-blue-50 px-3 py-2 text-blue-600 dark:bg-gray-500 dark:text-white"
+              className="cursor-pointer bg-blue-50 px-3 py-2 text-sm text-blue-600 dark:bg-gray-500 dark:text-white"
               onClick={() => {
                 copyToClipboard('badge-embed-content')
               }}
@@ -651,7 +654,7 @@ const PostCommentForm = (props: {
   onAddComment: (message: string) => Promise<void>
 }) => {
   const [message, setMessage] = useState(
-    '👋 I’m looking for funding to get this issue solved.',
+    'You can pledge behind and help support this effort using Polar.sh',
   )
 
   const [loading, setIsLoading] = useState(false)
@@ -669,15 +672,15 @@ const PostCommentForm = (props: {
       <img src={props.user.avatar_url} className="h-6 w-6 rounded-full" />
       <div className="flex h-full flex-1 flex-col overflow-hidden rounded-md border ">
         <textarea
-          className="overflow-hiddens max-h-[10rem] w-full flex-1 border-0 px-2 py-1 text-gray-800 outline-0 dark:bg-gray-700 dark:text-white"
+          className="overflow-hiddens max-h-[10rem] w-full flex-1 border-0 px-4 py-2.5 text-gray-800 outline-0 dark:bg-gray-700 dark:text-white"
           value={message}
           onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
             setMessage(e.target.value)
           }}
         ></textarea>
-        <div className="flex justify-between border-t bg-blue-50 px-2 py-1 dark:bg-gray-900">
-          <div className="text-sm text-gray-900 dark:text-gray-100">
-            🔔 This will notify watchers
+        <div className="flex items-center justify-between border-t bg-blue-50 px-4 py-2 dark:bg-gray-900">
+          <div className="text-xs text-gray-900 dark:text-gray-100">
+            🔔 Comments on your behalf
           </div>
           <button
             onClick={submitComment}

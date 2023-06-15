@@ -12,13 +12,9 @@ const BadgeMessageForm = (props: {
   issue: IssueDashboardRead
   onBadgeWithComment: (comment: string) => Promise<void>
 }) => {
-  const [message, setMessage] = useState(
-    `## Funding
-    
-* Lorem ipsum dolor sit amet
-* Lorem ipsum dolor sit amet
-`,
-  )
+  // TODO: Get this from backend based on settings to reflect how it's currently embedded.
+  // Starting with empty string now since that is how it currently would work.
+  const [message, setMessage] = useState('')
 
   const [descriptionMode, setDescirptionMode] = useState('View')
 
@@ -48,16 +44,18 @@ const BadgeMessageForm = (props: {
   const { resolvedTheme } = useTheme()
 
   return (
-    <div className="flex flex-col space-y-2">
-      <div className="text-gray flex justify-between">
-        <div className="font-medium">Markdown added to issue description</div>
+    <div className="flex flex-col space-y-3">
+      <div className="text-gray flex items-center justify-between">
+        <div className="text-sm font-medium text-gray-900">
+          Customize Polar description in issue
+        </div>
         <LabeledRadioButton
           values={['View', 'Edit']}
           value={descriptionMode}
           onSelected={setDescirptionMode}
         />
       </div>
-      <div className="rounded-xl bg-white py-2 px-4 shadow dark:bg-gray-800">
+      <div className="rounded-xl bg-white py-3.5 px-5 shadow dark:bg-gray-800">
         {descriptionMode === 'View' && (
           <>
             <div className="prose dark:prose-invert" ref={ref} />
@@ -88,8 +86,8 @@ const BadgeMessageForm = (props: {
           disabled={!canSave}
           className={classNames(
             isLoading ? 'cursor-wait' : '',
-            canSave ? 'cursor-pointer text-blue-600' : 'text-gray-500',
-            'font-medium',
+            canSave ? 'cursor-pointer text-blue-600' : 'text-gray-400',
+            'text-sm font-medium',
           )}
         >
           Update

@@ -162,8 +162,6 @@ async def dashboard(
     limit = 100
     offset = (page - 1) * limit
 
-    print("STATUS", status)
-
     #
     # Select top level issues
     #
@@ -184,8 +182,6 @@ async def dashboard(
         limit=limit,
         offset=offset,
     )
-
-    print('ISSUES COUNT', len(issues), total_issue_count)
 
     issue_organizations = list(
         (

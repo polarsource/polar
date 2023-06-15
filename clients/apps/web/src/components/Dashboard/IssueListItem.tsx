@@ -269,6 +269,7 @@ const IssueListItem = (props: {
             <IssueListItemDecoration
               orgName={props.org.name}
               repoName={props.repo.name}
+              issueNumber={props.issue.number}
               pledges={mergedPledges}
               references={props.references}
               showDisputeAction={true}

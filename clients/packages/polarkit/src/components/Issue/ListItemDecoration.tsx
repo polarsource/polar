@@ -24,6 +24,7 @@ export const getExpectedHeight = ({
 const IssueListItemDecoration = ({
   orgName,
   repoName,
+  issueNumber,
   pledges,
   references,
   showDisputeAction,
@@ -31,6 +32,7 @@ const IssueListItemDecoration = ({
 }: {
   orgName: string
   repoName: string
+  issueNumber: number
   pledges: PledgeRead[]
   references: IssueReferenceRead[]
   showDisputeAction?: boolean
@@ -106,7 +108,12 @@ const IssueListItemDecoration = ({
       <div className="flex flex-row items-center px-4 py-3">
         {showPledges && (
           <div className="stretch mr-4 flex-none">
-            <IssuePledge pledges={pledges} />
+            <IssuePledge
+              orgName={orgName}
+              repoName={repoName}
+              issueNumber={issueNumber}
+              pledges={pledges}
+            />
           </div>
         )}
 

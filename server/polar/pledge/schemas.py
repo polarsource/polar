@@ -16,7 +16,9 @@ class PledgeState(str, Enum):
     initiated = "initiated"
     # Polar has received the money.
     created = "created"
-    # The issue has been closed, but the pledge has not been paid.
+    # The issue has been closed, awaiting maintainer to confirm the issue is fixed.
+    confirmation_pending = "confirmation_pending"
+    # The fix was confirmed, but the pledge has not been paid.
     pending = "pending"
     # The pledge has been paid out to the maintainer.
     paid = "paid"
@@ -30,10 +32,11 @@ class PledgeState(str, Enum):
     # The states in which this pledge is "active", i.e. is listed on the issue
     @classmethod
     def active_states(cls) -> list[PledgeState]:
-        return [cls.created, cls.pending, cls.paid, cls.disputed]
+        return [cls.created, cls.confirmation_pending,
+                cls.pending, cls.paid, cls.disputed]
 
     # Happy path:
-    # initiated -> created -> pending -> paid
+    # initiated -> created -> confirmation_pending -> pending -> paid
 
     @classmethod
     def to_created_states(cls) -> list[PledgeState]:
@@ -43,11 +46,18 @@ class PledgeState(str, Enum):
         return [cls.initiated]
 
     @classmethod
+    def to_confirmation_pending_states(cls) -> list[PledgeState]:
+        """
+        Allowed states to move into confirmation pending from
+        """
+        return [cls.created, cls.disputed]
+
+    @classmethod
     def to_pending_states(cls) -> list[PledgeState]:
         """
         Allowed states to move into pending from
         """
-        return [cls.created, cls.disputed]
+        return [cls.confirmation_pending]
 
     @classmethod
     def to_disputed_states(cls) -> list[PledgeState]:

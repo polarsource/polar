@@ -16,8 +16,7 @@ from tests.fixtures.random_objects import create_issue
 BADGED_BODY = """Hello my issue
 
 <!-- POLAR PLEDGE BADGE START -->
-<a href="http://127.0.0.1:3000/testorg/testrepo/issues/123">
-<picture>
+<a href="http://127.0.0.1:3000/testorg/testrepo/issues/123"><picture>
   <source media="(prefers-color-scheme: dark)" srcset="http://127.0.0.1:3000/api/github/testorg/testrepo/issues/123/pledge.svg?darkmode=1">
   <img alt="Fund with Polar" src="http://127.0.0.1:3000/api/github/testorg/testrepo/issues/123/pledge.svg">
 </picture>
@@ -64,8 +63,7 @@ async def test_add_badge_custom_content(
 <!-- POLAR PLEDGE BADGE START -->
 Hello, please sponsor me.
 
-<a href="http://127.0.0.1:3000/testorg/testrepo/issues/123">
-<picture>
+<a href="http://127.0.0.1:3000/testorg/testrepo/issues/123"><picture>
   <source media="(prefers-color-scheme: dark)" srcset="http://127.0.0.1:3000/api/github/testorg/testrepo/issues/123/pledge.svg?darkmode=1">
   <img alt="Fund with Polar" src="http://127.0.0.1:3000/api/github/testorg/testrepo/issues/123/pledge.svg">
 </picture>
@@ -107,8 +105,7 @@ async def test_remove_badge_custom_content(
 Hello, please sponsor me.
 Anything can go here!
 
-<a href="http://127.0.0.1:3000/testorg/testrepo/issues/123">
-<picture>
+<a href="http://127.0.0.1:3000/testorg/testrepo/issues/123"><picture>
   <source media="(prefers-color-scheme: dark)" srcset="http://127.0.0.1:3000/api/github/testorg/testrepo/issues/123/pledge.svg?darkmode=1">
   <img alt="Fund with Polar" src="http://127.0.0.1:3000/api/github/testorg/testrepo/issues/123/pledge.svg">
 </picture>

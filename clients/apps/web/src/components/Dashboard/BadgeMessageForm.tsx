@@ -46,7 +46,7 @@ const BadgeMessageForm = (props: {
   return (
     <div className="flex flex-col space-y-3">
       <div className="text-gray flex items-center justify-between">
-        <div className="text-sm font-medium text-gray-900">
+        <div className="text-sm font-medium">
           Customize Polar description in issue
         </div>
         <LabeledRadioButton

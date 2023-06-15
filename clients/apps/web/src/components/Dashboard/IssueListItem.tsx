@@ -559,7 +559,7 @@ export const BadgePromotionModal = (props: {
       <ModalHeader hide={toggle}>
         <div className="flex items-center space-x-2">
           <BadgedCheckmarkLargeIcon />
-          <div className="pr-2 text-lg font-medium text-gray-900">
+          <div className="pr-2 text-lg font-medium">
             Badge added to{' '}
             <a href={gitHubIssueLink}>
               {props.repoName}#{props.issue.number}

@@ -100,8 +100,7 @@ class GithubBadge:
             message += "\n\n"
 
         return f"""{PLEDGE_BADGE_COMMENT_START}
-{message}<a href="{funding_url}">
-<picture>
+{message}<a href="{funding_url}"><picture>
   <source media="(prefers-color-scheme: dark)" srcset="{darkmode_url}">
   <img alt="Fund with Polar" src="{lightmode_url}">
 </picture>

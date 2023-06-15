@@ -567,7 +567,7 @@ export const BadgePromotionModal = (props: {
           </div>
           <button
             onClick={clickRemoveBadge}
-            className="text-gray flex cursor-pointer items-center rounded-full border border-gray-200 px-2 py-0.5 pr-3 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="text-gray flex cursor-pointer items-center rounded-full border border-gray-200 px-2 py-0.5 pr-3 text-sm text-gray-500 hover:bg-gray-100 dark:border-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"
           >
             <XIcon /> Remove
           </button>
@@ -597,7 +597,7 @@ export const BadgePromotionModal = (props: {
         <div className="flex flex-col">
           <div className="text-sm font-medium">Spread the word</div>
 
-          <div className="mt-2 mb-1 text-xs text-gray-500">
+          <div className="mt-2 mb-1 text-xs text-gray-500 dark:text-gray-400">
             Share link to the pledge page
           </div>
           <div className="flex w-full overflow-hidden rounded-lg border">
@@ -610,7 +610,7 @@ export const BadgePromotionModal = (props: {
               value={pledgePageLink}
             />
             <div
-              className="cursor-pointer bg-blue-50 px-3 py-2 text-sm text-blue-600 dark:bg-gray-500 dark:text-white"
+              className="cursor-pointer bg-blue-50 px-3 py-2 text-sm font-medium  text-blue-600 dark:bg-blue-500/30 dark:text-blue-300"
               onClick={() => {
                 copyToClipboard('badge-page-link')
               }}
@@ -619,7 +619,7 @@ export const BadgePromotionModal = (props: {
             </div>
           </div>
 
-          <div className="my-2 text-xs text-gray-500">
+          <div className="my-2 text-xs text-gray-500 dark:text-gray-400">
             Embed badge on website
           </div>
           <div className="flex w-full overflow-hidden rounded-lg border">
@@ -632,7 +632,7 @@ export const BadgePromotionModal = (props: {
               }}
             />
             <div
-              className="cursor-pointer bg-blue-50 px-3 py-2 text-sm text-blue-600 dark:bg-gray-500 dark:text-white"
+              className="cursor-pointer bg-blue-50 px-3 py-2 text-sm font-medium text-blue-600 dark:bg-blue-500/30 dark:text-blue-300"
               onClick={() => {
                 copyToClipboard('badge-embed-content')
               }}
@@ -674,19 +674,22 @@ const PostCommentForm = (props: {
         <textarea
           className="overflow-hiddens max-h-[10rem] w-full flex-1 border-0 px-4 py-2.5 text-gray-800 outline-0 dark:bg-gray-700 dark:text-white"
           value={message}
+          disabled={posted || loading}
           onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
             setMessage(e.target.value)
           }}
         ></textarea>
-        <div className="flex items-center justify-between border-t bg-blue-50 px-4 py-2 dark:bg-gray-900">
-          <div className="text-xs text-gray-900 dark:text-gray-100">
+        <div className="flex items-center justify-between border-t bg-blue-50 px-4 py-2 dark:bg-blue-500/30">
+          <div className="text-xs text-gray-900 dark:text-white/90">
             🔔 Comments on your behalf
           </div>
           <button
             onClick={submitComment}
             disabled={posted || loading}
             className={classNames(
-              !posted ? 'text-blue-600' : 'text-gray-600',
+              !posted
+                ? 'text-blue-600 dark:text-blue-300'
+                : 'text-gray-400 dark:text-blue-200/40',
               'font-medium',
             )}
           >
@@ -728,11 +731,11 @@ const BadgedCheckmarkLargeIcon = () => {
       viewBox="0 0 16 16"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="h-5 w-5"
+      className="h-5 w-5 text-green-600 dark:text-green-500"
     >
       <path
         d="M5.75 8.5625L7.4375 10.25L10.25 6.3125M14.75 8C14.75 8.951 14.2775 9.7925 13.5553 10.301C13.6331 10.7456 13.6026 11.2024 13.4664 11.6327C13.3303 12.063 13.0924 12.4541 12.773 12.773C12.4541 13.0924 12.063 13.3303 11.6327 13.4664C11.2024 13.6026 10.7456 13.6331 10.301 13.5552C10.0417 13.9246 9.69714 14.226 9.2966 14.434C8.89607 14.642 8.45131 14.7504 8 14.75C7.049 14.75 6.2075 14.2775 5.699 13.5552C5.25443 13.633 4.79766 13.6025 4.36737 13.4663C3.93707 13.3302 3.54591 13.0924 3.227 12.773C2.90759 12.4541 2.66973 12.063 2.53357 11.6327C2.3974 11.2024 2.36693 10.7456 2.44475 10.301C2.07539 10.0417 1.77397 9.69714 1.566 9.2966C1.35802 8.89607 1.24963 8.45131 1.25 8C1.25 7.049 1.7225 6.2075 2.44475 5.699C2.36693 5.25442 2.3974 4.79764 2.53357 4.36734C2.66973 3.93703 2.90759 3.54588 3.227 3.227C3.54591 2.90765 3.93707 2.66982 4.36737 2.53366C4.79766 2.39749 5.25443 2.367 5.699 2.44475C5.95838 2.07544 6.30292 1.77405 6.70344 1.56608C7.10397 1.35811 7.5487 1.2497 8 1.25C8.951 1.25 9.7925 1.7225 10.301 2.44475C10.7456 2.367 11.2023 2.39749 11.6326 2.53366C12.0629 2.66982 12.4541 2.90765 12.773 3.227C13.0924 3.54591 13.3302 3.93707 13.4663 4.36737C13.6025 4.79766 13.633 5.25442 13.5553 5.699C13.9246 5.95834 14.226 6.30286 14.434 6.7034C14.642 7.10394 14.7504 7.54869 14.75 8Z"
-        stroke="#2D8C31"
+        stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"

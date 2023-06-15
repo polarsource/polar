@@ -164,3 +164,7 @@ class PledgeResources(Schema):
     issue: IssueRead | None
     organization: OrganizationPublicRead | None
     repository: RepositoryRead | None
+
+
+class ConfirmPledgesResponse(Schema):
+    ...

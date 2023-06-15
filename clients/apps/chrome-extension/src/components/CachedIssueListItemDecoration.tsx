@@ -70,6 +70,7 @@ const CachedIssueListItemDecoration = ({
                 <IssueListItemDecoration
                   orgName={orgName}
                   repoName={repoName}
+                  issueNumber={number}
                   pledges={value.pledges}
                   references={value.references}
                 />

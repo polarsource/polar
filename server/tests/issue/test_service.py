@@ -250,6 +250,76 @@ async def test_list_by_repository_type_and_status_filter_triaged(
         assignees=None,
     )
 
+    issue_5 = await Issue.create(
+        session=session,
+        id=uuid.uuid4(),
+        organization_id=organization.id,
+        repository_id=repository.id,
+        title="issue_5_pull_request",
+        number=secrets.randbelow(100000),
+        platform=Platforms.github,
+        external_id=secrets.randbelow(100000),
+        state="open",
+        issue_created_at=datetime(2023, 1, 17),
+        issue_modified_at=datetime(2023, 1, 17),
+        assignee=None,
+        assignees=None,
+        issue_has_pull_request_relationship=True,
+    )
+
+    issue_6 = await Issue.create(
+        session=session,
+        id=uuid.uuid4(),
+        organization_id=organization.id,
+        repository_id=repository.id,
+        title="issue_6_closed_with_pr",
+        number=secrets.randbelow(100000),
+        platform=Platforms.github,
+        external_id=secrets.randbelow(100000),
+        state="closed",
+        issue_created_at=datetime(2023, 1, 17),
+        issue_modified_at=datetime(2023, 1, 17),
+        issue_closed_at=datetime(2023, 1, 17),
+        assignee=None,
+        assignees=None,
+        issue_has_pull_request_relationship=True,
+    )
+
+    issue_7 = await Issue.create(
+        session=session,
+        id=uuid.uuid4(),
+        organization_id=organization.id,
+        repository_id=repository.id,
+        title="issue_7_pull_request_with_in_progress",
+        number=secrets.randbelow(100000),
+        platform=Platforms.github,
+        external_id=secrets.randbelow(100000),
+        state="open",
+        issue_created_at=datetime(2023, 1, 18),
+        issue_modified_at=datetime(2023, 1, 18),
+        assignee=None,
+        assignees=None,
+        issue_has_pull_request_relationship=True,
+        issue_has_in_progress_relationship=True,
+    )
+
+    issue_8 = await Issue.create(
+        session=session,
+        id=uuid.uuid4(),
+        organization_id=organization.id,
+        repository_id=repository.id,
+        title="issue_8_in_progress",
+        number=secrets.randbelow(100000),
+        platform=Platforms.github,
+        external_id=secrets.randbelow(100000),
+        state="open",
+        issue_created_at=datetime(2023, 1, 19),
+        issue_modified_at=datetime(2023, 1, 19),
+        assignee=github.jsonify(ghuser),  # also assigned / triaged
+        assignees=github.jsonify([ghuser]),
+        issue_has_in_progress_relationship=True,
+    )
+
     # backlog or triaged
 
     (issues, count) = await issue_service.list_by_repository_type_and_status(
@@ -280,6 +350,22 @@ async def test_list_by_repository_type_and_status_filter_triaged(
         "issue_1_triaged",
     ]
 
+    # in progress
+
+    (issues, count) = await issue_service.list_by_repository_type_and_status(
+        session,
+        repository_ids=[repository.id],
+        issue_list_type=IssueListType.issues,
+        sort_by=IssueSortBy.newest,
+        include_statuses=[IssueStatus.in_progress],
+    )
+
+    names = [i.title for i in issues]
+    assert names == [
+        "issue_8_in_progress",
+    ]
+    assert count == 1
+
     # pull_request
 
     (issues, count) = await issue_service.list_by_repository_type_and_status(
@@ -290,9 +376,12 @@ async def test_list_by_repository_type_and_status_filter_triaged(
         include_statuses=[IssueStatus.pull_request],
     )
 
-    assert count == 0
     names = [i.title for i in issues]
-    assert names == []
+    assert names == [
+        "issue_7_pull_request_with_in_progress",
+        "issue_5_pull_request",
+    ]
+    assert count == 2
 
     # closed
 
@@ -304,11 +393,12 @@ async def test_list_by_repository_type_and_status_filter_triaged(
         include_statuses=[IssueStatus.closed],
     )
 
-    assert count == 1
     names = [i.title for i in issues]
     assert names == [
+        "issue_6_closed_with_pr",
         "issue_4_closed",
     ]
+    assert count == 2
 
     # backlog
 

@@ -191,7 +191,6 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 if status == IssueStatus.triaged:
                     conds.append(
                         and_(
-                            not_(is_backlog),
                             is_triaged,
                             not_(is_in_progress),
                             not_(is_pull_request),
@@ -202,8 +201,6 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 if status == IssueStatus.in_progress:
                     conds.append(
                         and_(
-                            not_(is_backlog),
-                            not_(is_triaged),
                             is_in_progress,
                             not_(is_pull_request),
                             not_(is_closed),
@@ -213,9 +210,6 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 if status == IssueStatus.pull_request:
                     conds.append(
                         and_(
-                            not_(is_backlog),
-                            not_(is_triaged),
-                            not_(is_in_progress),
                             is_pull_request,
                             not_(is_closed),
                         )
@@ -224,10 +218,6 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 if status == IssueStatus.closed:
                     conds.append(
                         and_(
-                            not_(is_backlog),
-                            not_(is_triaged),
-                            not_(is_in_progress),
-                            not_(is_pull_request),
                             is_closed,
                         )
                     )

@@ -136,23 +136,13 @@ const IssueListItem = (props: {
   }
 
   const rowMotion = {
-    rest: {
-      ease: 'easeOut',
-      duration: 0.2,
-      type: 'tween',
-    },
-    hover: {
-      transition: {
-        duration: 0.4,
-        type: 'tween',
-        ease: 'easeIn',
-      },
-    },
+    rest: {},
+    hover: {},
   }
 
   const rightSideMotion = {
     rest: {
-      x: props.canAddRemovePolarLabel ? 100 : 0,
+      x: props.canAddRemovePolarLabel ? 115 : 0,
     },
     hover: {
       x: 0,
@@ -244,8 +234,12 @@ const IssueListItem = (props: {
           </div>
           <motion.div
             className="flex items-center gap-6"
-            layout
             variants={rightSideMotion}
+            transition={{
+              type: 'spring',
+              damping: 25,
+              stiffness: 250,
+            }}
           >
             <>
               <div className="flex items-center gap-6">

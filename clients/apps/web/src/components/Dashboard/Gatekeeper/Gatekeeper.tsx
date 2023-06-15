@@ -9,7 +9,8 @@ const Gatekeeper = (props: { children: React.ReactElement }) => {
     return <></>
   }
 
-  if (!currentUser.invite_only_approved) {
+  const requireInvite = false // Do not require invites! Anyone can sign up now. :-)
+  if (requireInvite && !currentUser.invite_only_approved) {
     return <InviteOnly />
   }
 

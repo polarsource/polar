@@ -95,9 +95,12 @@ class GithubBadge:
         darkmode_url = self.generate_svg_url(darkmode=True)
         lightmode_url = self.generate_svg_url(darkmode=False)
 
+        message = message.rstrip()
+        if message:
+            message += "\n\n"
+
         return f"""{PLEDGE_BADGE_COMMENT_START}
-{message}\n\n
-<a href="{funding_url}">
+{message}<a href="{funding_url}">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="{darkmode_url}">
   <img alt="Fund with Polar" src="{lightmode_url}">
@@ -113,10 +116,8 @@ class GithubBadge:
         return f"{PLEDGE_BADGE_COMMENT_LEGACY}\n[{svg_markdown}]({funding_url})"
 
     def default_promotion_message(self) -> str:
-        return """## Funding
-
-* Lorem ipsum dolor sit amet
-* Lorem ipsum dolor sit amet"""
+        # TODO: add a message here!
+        return ""
 
     def generate_body_with_badge(self, body: str) -> str:
         promotion = (

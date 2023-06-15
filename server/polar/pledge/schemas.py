@@ -57,7 +57,7 @@ class PledgeState(str, Enum):
         """
         Allowed states to move into pending from
         """
-        return [cls.confirmation_pending]
+        return [cls.created, cls.confirmation_pending]
 
     @classmethod
     def to_disputed_states(cls) -> list[PledgeState]:

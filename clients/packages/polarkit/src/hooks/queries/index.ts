@@ -140,3 +140,23 @@ export const useNotificationsMarkRead = () =>
       queryClient.invalidateQueries(['notifications'])
     },
   })
+
+export const useIssueMarkConfirmed = () =>
+  useMutation({
+    mutationFn: (variables: {
+      platform: string
+      orgName: string
+      repoName: string
+      issueNumber: number
+    }) => {
+      return api.pledges.confirmPledges({
+        platform: Platforms.GITHUB,
+        orgName: variables.orgName,
+        repoName: variables.repoName,
+        number: variables.issueNumber,
+      })
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.invalidateQueries(['dashboard'])
+    },
+  })

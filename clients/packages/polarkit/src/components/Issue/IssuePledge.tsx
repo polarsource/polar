@@ -1,5 +1,5 @@
-import { api } from 'polarkit/api'
 import { Platforms, PledgeRead, PledgeState } from 'polarkit/api/client'
+import { useIssueMarkConfirmed } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/utils'
 import IssueConfirmButton from './IssueConfirmButton'
 
@@ -11,6 +11,8 @@ interface Props {
 }
 
 const IssuePledge = (props: Props) => {
+  const markConfirmed = useIssueMarkConfirmed()
+
   const { orgName, repoName, issueNumber, pledges } = props
 
   const totalPledgeAmount = pledges.reduce(
@@ -23,11 +25,11 @@ const IssuePledge = (props: Props) => {
   )
 
   const confirmPledges = async () => {
-    await api.pledges.confirmPledges({
+    markConfirmed.mutate({
       platform: Platforms.GITHUB,
       orgName,
       repoName,
-      number: issueNumber,
+      issueNumber,
     })
   }
 

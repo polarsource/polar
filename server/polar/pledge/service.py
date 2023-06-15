@@ -400,12 +400,12 @@ class PledgeService(ResourceServiceReader[Pledge]):
         backer.invite_only_approved = True
         await backer.save(session)
 
-    async def mark_pending_by_issue_id(
+    async def mark_confirmation_pending_by_issue_id(
         self, session: AsyncSession, issue_id: UUID
     ) -> None:
         get = sql.select(Pledge).where(
             Pledge.issue_id == issue_id,
-            Pledge.state.in_(PledgeState.to_pending_states()),
+            Pledge.state.in_(PledgeState.to_confirmation_pending_states()),
         )
 
         res = await session.execute(get)
@@ -417,11 +417,11 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 sql.update(Pledge)
                 .where(
                     Pledge.id == pledge.id,
-                    Pledge.state.in_(PledgeState.to_pending_states()),
+                    Pledge.state.in_(PledgeState.to_confirmation_pending_states()),
                 )
                 .values(
-                    state=PledgeState.pending,
-                    scheduled_payout_at=utc_now() + timedelta(days=14),
+                    state=PledgeState.confirmation_pending,
+                    # scheduled_payout_at=utc_now() + timedelta(days=14),
                 )
                 .returning(Pledge)
             )

@@ -35,14 +35,15 @@ from polar.issue.hooks import IssueHook, issue_upserted
 log = structlog.get_logger()
 
 
-async def mark_pledges_pending_on_issue_close(
+async def mark_pledges_confirmation_pending_on_issue_close(
     hook: IssueHook,
 ) -> None:
     if hook.issue.state == "closed":
-        await pledge_service.mark_pending_by_issue_id(hook.session, hook.issue.id)
+        await pledge_service.mark_confirmation_pending_by_issue_id(
+            hook.session, hook.issue.id)
 
 
-issue_upserted.add(mark_pledges_pending_on_issue_close)
+issue_upserted.add(mark_pledges_confirmation_pending_on_issue_close)
 
 
 async def pledge_created_discord_alert(hook: PledgeHook) -> None:

@@ -55,7 +55,7 @@ const BadgeMessageForm = (props: {
           onSelected={setDescirptionMode}
         />
       </div>
-      <div className="rounded-xl bg-white py-3.5 px-5 shadow dark:bg-gray-800">
+      <div className="rounded-xl bg-white py-3.5 px-5 shadow dark:bg-gray-800 dark:ring-1 dark:ring-gray-600">
         {descriptionMode === 'View' && (
           <>
             <div className="prose dark:prose-invert" ref={ref} />
@@ -86,7 +86,9 @@ const BadgeMessageForm = (props: {
           disabled={!canSave}
           className={classNames(
             isLoading ? 'cursor-wait' : '',
-            canSave ? 'cursor-pointer text-blue-600' : 'text-gray-400',
+            canSave
+              ? 'cursor-pointer text-blue-600 dark:text-blue-500'
+              : 'text-gray-400 dark:text-gray-500',
             'text-sm font-medium',
           )}
         >

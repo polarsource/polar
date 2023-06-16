@@ -7,10 +7,12 @@ import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
 import {
   IssueDashboardRead,
+  IssuePublicRead,
   IssueReferenceRead,
   IssueStatus,
   OrganizationPublicRead,
   Platforms,
+  RepositoryPublicRead,
   RepositoryRead,
   UserRead,
   type PledgeRead,
@@ -44,16 +46,19 @@ import IssueProgress, { Progress } from './IssueProgress'
 
 const IssueListItem = (props: {
   org: OrganizationPublicRead
-  repo: RepositoryRead
-  issue: IssueDashboardRead
+  repo: RepositoryRead | RepositoryPublicRead
+  issue: IssueDashboardRead | IssuePublicRead
   references: IssueReferenceRead[]
   dependents?: IssueReadWithRelations[]
   pledges: PledgeRead[]
   checkJustPledged?: boolean
   canAddRemovePolarLabel: boolean
+  showIssueProgress: boolean
+  right?: React.ReactElement
 }) => {
   const { title, number, state, issue_created_at, reactions, comments } =
     props.issue
+
   const router = useRouter()
 
   const createdAt = new Date(issue_created_at)
@@ -255,7 +260,9 @@ const IssueListItem = (props: {
                 )}
               </div>
 
-              <IssueProgress progress={issueProgress} />
+              {props.showIssueProgress && (
+                <IssueProgress progress={issueProgress} />
+              )}
 
               {showPledgeAction && <PledgeNow onClick={redirectToPledge} />}
 
@@ -266,6 +273,8 @@ const IssueListItem = (props: {
                   issue={props.issue}
                 />
               )}
+
+              {props.right}
             </>
           </motion.div>
         </div>

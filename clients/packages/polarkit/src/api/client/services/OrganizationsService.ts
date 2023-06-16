@@ -4,6 +4,7 @@
 import type { OrganizationBadgeSettingsRead } from '../models/OrganizationBadgeSettingsRead';
 import type { OrganizationBadgeSettingsUpdate } from '../models/OrganizationBadgeSettingsUpdate';
 import type { OrganizationPrivateRead } from '../models/OrganizationPrivateRead';
+import type { OrganizationPublicPageRead } from '../models/OrganizationPublicPageRead';
 import type { OrganizationSettingsUpdate } from '../models/OrganizationSettingsUpdate';
 import type { Platforms } from '../models/Platforms';
 
@@ -116,6 +117,36 @@ export class OrganizationsService {
       },
       body: requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Get Public Issues
+   * @returns OrganizationPublicPageRead Successful Response
+   * @throws ApiError
+   */
+  public getPublicIssues({
+    platform,
+    orgName,
+    repoName,
+  }: {
+    platform: Platforms,
+    orgName: string,
+    repoName?: string,
+  }): CancelablePromise<OrganizationPublicPageRead> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/{platform}/{org_name}/public',
+      path: {
+        'platform': platform,
+        'org_name': orgName,
+      },
+      query: {
+        'repo_name': repoName,
+      },
       errors: {
         422: `Validation Error`,
       },

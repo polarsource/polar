@@ -2,6 +2,7 @@ import Modal, { ModalBox } from '@/components/Shared/Modal'
 import { useRequireAuth } from '@/hooks'
 import { useToastLatestPledged } from '@/hooks/stripe'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
 import {
@@ -166,9 +167,12 @@ const IssueListItem = (props: {
           <div className="flex flex-row items-center">
             {isDependency && (
               <div className="mr-3 flex-shrink-0 justify-center rounded-full bg-white p-[1px] shadow">
-                <img
+                <Image
+                  alt={`Avatar of ${props.org.name}`}
                   src={props.org.avatar_url}
                   className="h-8 w-8 rounded-full"
+                  height={200}
+                  width={200}
                 />
               </div>
             )}
@@ -663,7 +667,13 @@ const PostCommentForm = (props: {
 
   return (
     <div className="mt-3 flex flex-1 space-x-2">
-      <img src={props.user.avatar_url} className="h-6 w-6 rounded-full" />
+      {props.user.avatar_url && (
+        <Image
+          alt={`Avatar of ${props.user.username}`}
+          src={props.user.avatar_url}
+          className="h-6 w-6 rounded-full"
+        />
+      )}
       <div className="flex h-full flex-1 flex-col overflow-hidden rounded-md border ">
         <textarea
           className="overflow-hiddens max-h-[10rem] w-full flex-1 border-0 px-4 py-2.5 text-gray-800 outline-0 dark:bg-gray-700 dark:text-white"

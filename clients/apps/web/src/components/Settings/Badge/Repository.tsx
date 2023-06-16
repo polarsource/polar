@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import { type RepositoryBadgeSettingsRead } from 'polarkit/api/client'
 import { classNames } from 'polarkit/utils'
 
@@ -128,9 +129,12 @@ export const BadgeRepository = ({
     >
       <div className="my-auto flex basis-3/6 flex-row items-center">
         {repo.avatar_url && (
-          <img
+          <Image
+            alt={`Avatar of ${repo.name}`}
             className="h-6 w-6 rounded-full bg-white"
             src={repo.avatar_url}
+            height={200}
+            width={200}
           />
         )}
         <strong className="ml-2.5 mr-3 font-normal">{repo.name}</strong>

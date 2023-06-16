@@ -4,6 +4,7 @@ import {
 } from '@heroicons/react/20/solid'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { Command } from 'cmdk'
+import Image from 'next/image'
 import {
   OrganizationPrivateRead,
   OrganizationPublicRead,
@@ -401,7 +402,15 @@ const Item = ({
 
 const Avatar = (props: { url: string }) => {
   const { url } = props
-  return <img src={url} className="h-5 w-5 rounded-full bg-white" />
+  return (
+    <Image
+      alt="Avatar"
+      src={url}
+      height={200}
+      width={200}
+      className="h-5 w-5 rounded-full bg-white"
+    />
+  )
 }
 
 const Text = ({ children }: { children: React.ReactNode }) => {
@@ -450,10 +459,12 @@ const SelectedOrgRepo = ({
   return (
     <SelectedBox onClick={onClick}>
       <div className="flex items-center justify-between space-x-2 ">
-        <img
+        <Image
           src={org.avatar_url}
-          alt=""
+          alt="Avatar"
           className="h-6 w-6 flex-shrink-0 rounded-full bg-white"
+          height={200}
+          width={200}
         />
         <div className="flex items-center space-x-1 overflow-hidden ">
           <span className="flex-shrink-0 font-medium text-gray-900 dark:text-gray-200">
@@ -492,11 +503,15 @@ const SelectedEmptySelfUserPlaceholder = ({
   return (
     <SelectedBox onClick={onClick}>
       <div className="flex items-center justify-between space-x-2 ">
-        <img
-          src={user.avatar_url}
-          alt=""
-          className="h-6 w-6 flex-shrink-0 rounded-full"
-        />
+        {user.avatar_url && (
+          <Image
+            src={user.avatar_url}
+            width={200}
+            height={200}
+            alt="Avatar"
+            className="h-6 w-6 flex-shrink-0 rounded-full"
+          />
+        )}
         <div className="flex items-center space-x-1 overflow-hidden ">
           <span className="flex-shrink-0 font-medium text-gray-900 dark:text-gray-200">
             {user.username}

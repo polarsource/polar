@@ -2,6 +2,7 @@ import {
   ArrowRightCircleIcon,
   ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/20/solid'
+import Image from 'next/image'
 import { BackofficePledgeRead, PledgeState } from 'polarkit/api/client'
 import { ThinButton } from 'polarkit/components/ui'
 import {
@@ -68,7 +69,13 @@ const PledgeItem = ({
         <td className="whitespace-nowrap px-2 py-2 text-sm font-medium text-gray-900">
           <div className="flex items-center space-x-1">
             {pledge.pledger_avatar && (
-              <img className="h-6 w-6" src={pledge.pledger_avatar} />
+              <Image
+                className="h-6 w-6"
+                src={pledge.pledger_avatar}
+                alt={`Avatar`}
+                height={200}
+                width={200}
+              />
             )}
             {pledge.pledger_name && (
               <a href={`https://github.com/${pledge.pledger_name}`}>

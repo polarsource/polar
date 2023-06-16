@@ -1,13 +1,15 @@
+import { api } from '@/../../../packages/polarkit'
 import LoadingScreen, {
   LoadingScreenError,
 } from '@/components/Dashboard/LoadingScreen'
 import Layout from '@/components/Layout/EmptyLayout'
-import { useGithubOAuthCallback } from '@/hooks'
+import { useAuth } from '@/hooks'
 import type { NextPageWithLayout } from '@/utils/next'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
+import posthog from 'posthog-js'
 import { ParsedUrlQuery } from 'querystring'
-import type { ReactElement } from 'react'
+import { ReactElement, useEffect, useState } from 'react'
 
 export interface PageQuery extends ParsedUrlQuery {
   provider?: string
@@ -19,19 +21,52 @@ const GithubAuthPage: NextPageWithLayout = () => {
   const router = useRouter()
   const query = router.query as PageQuery
 
-  const { success, error, gotoUrl } = useGithubOAuthCallback(
-    query.code,
-    query.state,
-  )
+  const session = useAuth()
+  const [error, setError] = useState<string | null>(null)
 
-  if (success && gotoUrl) {
-    router.push(gotoUrl)
-    return <></>
+  const exchange = async (code: string, state: string) => {
+    try {
+      const response = await api.integrations.githubCallback({
+        code: code,
+        state: state,
+      })
+
+      if (response.success) {
+        await session
+          .login((authenticated: boolean) => {
+            if (!authenticated) {
+              setError('Something went wrong logging in')
+            }
+          })
+          .then((user) => {
+            posthog.identify(`user:${user.id}`)
+          })
+
+        router.push(response.goto_url || '/dashboard')
+        return
+      } else {
+        setError('Invalid response')
+      }
+    } catch (err) {
+      setError('Something went wrong exchanging the OAuth code for a cookie')
+    }
   }
 
-  if (success) {
-    router.push('/dashboard')
-    return <></>
+  // Try once on page load
+  useEffect(() => {
+    if (query.code && query.state) {
+      exchange(query.code, query.state)
+    }
+  }, [])
+
+  if (!query.code || !query.state) {
+    return (
+      <LoadingScreen animate={false}>
+        <LoadingScreenError
+          error={'Cannot authenticate without an OAuth code and state'}
+        />
+      </LoadingScreen>
+    )
   }
 
   if (error) {

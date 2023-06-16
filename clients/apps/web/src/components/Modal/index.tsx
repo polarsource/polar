@@ -13,21 +13,22 @@ export const Modal: FunctionComponent<ModalProps> = ({
   hide,
   modalContent,
 }) => {
-  const onKeyDown = (event: KeyboardEvent) => {
-    if (event.keyCode === 27 && isShown) {
-      hide()
-    }
-  }
-
   useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.keyCode === 27 && isShown) {
+        hide()
+      }
+    }
+
     isShown
       ? (document.body.style.overflow = 'hidden')
       : (document.body.style.overflow = 'unset')
+
     document.addEventListener('keydown', onKeyDown, false)
     return () => {
       document.removeEventListener('keydown', onKeyDown, false)
     }
-  }, [isShown])
+  }, [isShown, hide])
 
   const onInnerClick = (e: MouseEvent) => {
     e.stopPropagation()

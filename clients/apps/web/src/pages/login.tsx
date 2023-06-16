@@ -14,7 +14,7 @@ const Page: NextLayoutComponentType = (props: { gotoUrl?: string }) => {
       router.push('/dashboard')
       return
     }
-  }, [currentUser])
+  }, [currentUser, router])
 
   return (
     <>

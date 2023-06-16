@@ -90,13 +90,12 @@ const IssueListPage = (props: {
 }) => {
   const [issues, setIssues] = useState<IssueReadWithRelations[]>()
 
-  const y = yayson({ adapter: 'default' })
-  const store = new y.Store()
-
   const { page } = props
 
   useEffect(() => {
     if (page) {
+      const y = yayson({ adapter: 'default' })
+      const store = new y.Store()
       const issues: IssueReadWithRelations[] = store.sync(page)
       setIssues(issues)
     } else {
@@ -182,10 +181,10 @@ const Header = (props: {
     return 'Most wanted'
   }
 
-  const issuesTabFilters = [IssueSortBy.ISSUES_DEFAULT]
-  const dependenciesTabFilters = [IssueSortBy.DEPENDENCIES_DEFAULT]
-
   const tabFilters: IssueSortBy[] = useMemo(() => {
+    const issuesTabFilters = [IssueSortBy.ISSUES_DEFAULT]
+    const dependenciesTabFilters = [IssueSortBy.DEPENDENCIES_DEFAULT]
+
     return props.filters.tab === IssueListType.ISSUES
       ? issuesTabFilters
       : dependenciesTabFilters
@@ -207,7 +206,7 @@ const Header = (props: {
   const width = useMemo(() => {
     const t = getTitle(props.filters.sort || tabFilters[0])
     return t.length * 7.5 + 35 // TODO(gustav): can we use the on-screen size instead somehow?
-  }, [props.filters.sort])
+  }, [props.filters.sort, tabFilters])
 
   return (
     <div className="flex h-12 items-center justify-between px-2">

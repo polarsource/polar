@@ -16,20 +16,6 @@ export const useGithubOAuthCallback = (
   const [success, setSuccess] = useState<boolean>(false)
   const [gotoUrl, setGotoUrl] = useState<string | null>(null)
 
-  const login = async () => {
-    session
-      .login((authenticated: boolean) => {
-        if (authenticated) {
-          setSuccess(true)
-        } else {
-          setError('Something went wrong logging in')
-        }
-      })
-      .then((user) => {
-        posthog.identify(`user:${user.id}`)
-      })
-  }
-
   useEffect(() => {
     let cancelled = false
     let request: ReturnType<typeof api.integrations.githubCallback>
@@ -37,6 +23,20 @@ export const useGithubOAuthCallback = (
     if (!code || !state) {
       setError('Cannot authenticate without an OAuth code and state')
       return
+    }
+
+    const login = async () => {
+      session
+        .login((authenticated: boolean) => {
+          if (authenticated) {
+            setSuccess(true)
+          } else {
+            setError('Something went wrong logging in')
+          }
+        })
+        .then((user) => {
+          posthog.identify(`user:${user.id}`)
+        })
     }
 
     const exchange = async () => {
@@ -66,7 +66,7 @@ export const useGithubOAuthCallback = (
         cancelled = true
       }
     }
-  }, [code, state])
+  }, [code, state, session])
 
   return { success, error, gotoUrl }
 }

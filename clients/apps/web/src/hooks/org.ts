@@ -57,7 +57,7 @@ export const useCurrentOrgAndRepoFromURL = (): {
     // global stores
     setCurrentOrgRepo(nextOrg, nextRepo)
     setUserHaveOrgs(nextUserHaveOrgs)
-  }, [userOrgQuery, setCurrentOrgRepo, setUserHaveOrgs])
+  }, [userOrgQuery, setCurrentOrgRepo, setUserHaveOrgs, queryOrg, queryRepo])
 
   return {
     org,

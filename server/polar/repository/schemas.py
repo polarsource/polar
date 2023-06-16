@@ -88,3 +88,17 @@ class RepositoryRead(RepositoryCreate):
 
     class Config:
         orm_mode = True
+
+
+class RepositoryPublicRead(Schema):
+    platform: Platforms
+    id: UUID
+    visibility: Repository.Visibility
+    name: str
+    description: str | None = None
+    stars: int | None = None
+    license: str | None = None
+    homepage: str | None = None
+
+    class Config:
+        orm_mode = True

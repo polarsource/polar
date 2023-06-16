@@ -5,12 +5,14 @@ from typing import Sequence
 from datetime import datetime
 
 from pydantic import BaseModel
+from polar.dashboard.schemas import IssueDashboardRead
 
 from polar.integrations.github import client as github
+from polar.issue.schemas import IssuePublicRead
 from polar.kit.schemas import Schema
 from polar.models.organization import Organization
 from polar.enums import Platforms
-from polar.repository.schemas import RepositoryRead
+from polar.repository.schemas import RepositoryPublicRead, RepositoryRead
 
 
 class OrganizationSettingsRead(BaseModel):
@@ -152,3 +154,9 @@ class OrganizationSyncedRepositoryRead(Schema):
 
 class OrganizationSyncedRead(Schema):
     repos: list[OrganizationSyncedRepositoryRead]
+
+
+class OrganizationPublicPageRead(Schema):
+    organization: OrganizationPublicRead
+    repositories: list[RepositoryPublicRead]
+    issues: list[IssuePublicRead]

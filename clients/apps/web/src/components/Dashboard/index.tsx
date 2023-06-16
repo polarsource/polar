@@ -121,7 +121,7 @@ const Dashboard = ({
 
       setFilters(f)
     }
-  }, [router.query])
+  }, [router.query, isPersonal])
 
   let [statuses, setStatuses] = useState<Array<IssueStatus>>(
     buildStatusesFilter(filters),

@@ -21,7 +21,7 @@ const Page: NextLayoutComponentType = () => {
       router.push(`/dashboard/${org.name}`)
       return
     }
-  }, [isLoaded, org, repo])
+  }, [isLoaded, org, repo, router])
 
   if (!isLoaded) {
     return <></>

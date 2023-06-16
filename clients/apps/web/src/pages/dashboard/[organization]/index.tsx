@@ -19,7 +19,7 @@ const Page: NextLayoutComponentType = () => {
       router.push('/dashboard')
       return
     }
-  }, [isLoaded, org])
+  }, [isLoaded, org, router])
 
   useEffect(() => {
     if (status === 'stripe-connected') {

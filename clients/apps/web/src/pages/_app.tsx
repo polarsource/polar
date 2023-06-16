@@ -49,7 +49,7 @@ const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
     return () => {
       router.events.off('routeChangeComplete', handleRouteChange)
     }
-  }, [])
+  }, [router])
 
   return (
     <>

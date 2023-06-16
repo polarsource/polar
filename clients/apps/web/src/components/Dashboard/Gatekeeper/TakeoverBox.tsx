@@ -13,7 +13,7 @@ const TakeoverBox = (props: {
     } else {
       setShow(true)
     }
-  })
+  }, [setShow, props.fadeOut])
 
   return (
     <div

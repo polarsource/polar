@@ -7,6 +7,7 @@ from typing import Self, Type, Union
 from pydantic import parse_obj_as
 
 import structlog
+from polar.dashboard.schemas import IssueStatus
 
 from polar.integrations.github import client as github
 from polar.integrations.github.badge import GithubBadge
@@ -346,3 +347,27 @@ class PostIssueComment(Schema):
 
 class IssueUpdateBadgeMessage(Schema):
     message: str
+
+
+class IssuePublicRead(Schema):
+    id: UUID
+    platform: Platforms
+    organization_id: UUID
+    repository_id: UUID
+    number: int
+    title: str
+    # author: JSONAny
+    labels: JSONAny
+    # closed_by: JSONAny
+    reactions: JSONAny
+    state: Issue.State
+    # state_reason: str | None
+    issue_closed_at: datetime | None
+    issue_modified_at: datetime | None
+    issue_created_at: datetime
+    comments: int | None
+    progress: IssueStatus | None = None
+    # badge_custom_content: str | None = None
+
+    class Config:
+        orm_mode = True

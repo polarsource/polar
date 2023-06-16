@@ -9,6 +9,7 @@ from sqlalchemy.orm import (
     InstrumentedAttribute,
     contains_eager,
 )
+from polar.issue.schemas import IssuePublicRead
 
 from polar.kit.services import ResourceService
 from polar.exceptions import ResourceNotFound
@@ -39,12 +40,9 @@ class OrganizationService(
         return [self.model.external_id]
 
     async def list_installed(self, session: AsyncSession) -> Sequence[Organization]:
-        stmt = (
-            sql.select(Organization)
-            .where(
-                Organization.deleted_at.is_(None),
-                Organization.installation_id.is_not(None),
-            )
+        stmt = sql.select(Organization).where(
+            Organization.deleted_at.is_(None),
+            Organization.installation_id.is_not(None),
         )
         res = await session.execute(stmt)
         return res.scalars().all()

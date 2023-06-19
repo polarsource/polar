@@ -4,6 +4,7 @@ import {
   RepositoryPublicRead,
 } from 'polarkit/api/client'
 import { PolarTimeAgo } from 'polarkit/components/ui'
+import { abbrStars } from '.'
 import IssueListItem from '../Dashboard/IssueListItem'
 
 const IssuesLookingForFunding = ({
@@ -23,7 +24,6 @@ const IssuesLookingForFunding = ({
         (r: RepositoryPublicRead) => r.id === i.repository_id,
       )
       if (!repo) {
-        console.log('skip', repo)
         continue
       }
 
@@ -48,18 +48,39 @@ const IssuesLookingForFunding = ({
       <div className="flex flex-col justify-between space-y-4 md:flex-row md:space-y-0 md:space-x-6">
         {top3.map((i) => (
           <div
-            className="flex-1 rounded-lg px-4 py-3 text-gray-500 shadow"
+            className="flex-1 rounded-lg px-6 py-4 text-gray-500 shadow"
             key={i.issue.id}
           >
             <a className="font-medium text-gray-900" href={i.issue_href}>
               {i.issue.title}
             </a>
-            <p className="">
+            <p className="mt-2 text-sm">
               #{i.issue.number} opened{' '}
               <PolarTimeAgo date={new Date(i.issue.issue_created_at)} />
             </p>
             <div className="mt-6 flex items-center justify-between">
-              <p>👍 {i.issue.reactions.plus_one}</p>
+              <div className="inline-flex gap-2">
+                {(i.issue.reactions.plus_one &&
+                  i.issue.reactions.plus_one > 0 && (
+                    <p>
+                      👍{' '}
+                      <span className="text-black/50">
+                        {abbrStars(i.issue.reactions.plus_one)}
+                      </span>
+                    </p>
+                  )) ||
+                  null}
+                {(i.issue.comments && i.issue.comments > 0 && (
+                  <p>
+                    💬{' '}
+                    <span className="text-black/50">
+                      {abbrStars(i.issue.comments)}
+                    </span>
+                  </p>
+                )) ||
+                  null}
+              </div>
+
               <a
                 href={i.pledge_href}
                 className="rounded-md bg-blue-600 py-0.5 px-2 text-sm text-white hover:bg-blue-500"

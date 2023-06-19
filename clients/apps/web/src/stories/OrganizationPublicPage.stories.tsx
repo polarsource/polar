@@ -29,7 +29,21 @@ export const Default: Story = {
   args: {
     organization: orgWithBio,
     repositories: [repo],
-    issues: [issue, issue, issue, issue, issue, issue],
+    issues: [
+      {
+        ...issue,
+        reactions: { ...issue.reactions, plus_one: 1000 },
+        comments: 5,
+      },
+      issue,
+      {
+        ...issue,
+        reactions: { ...issue.reactions, plus_one: 0 },
+      },
+      issue,
+      issue,
+      issue,
+    ],
   },
   render: (args) => {
     return (

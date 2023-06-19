@@ -116,7 +116,15 @@ async def cron_refresh_issues(ctx: JobContext) -> None:
         orgs = await organization_service.list_installed(session)
         for org in orgs:
             client = get_app_installation_client(org.installation_id)
-            rate_limit = await github_api.get_rate_limit(client)
+            try:
+                rate_limit = await github_api.get_rate_limit(client)
+            except Exception as e:
+                log.info(
+                    "failed to get rate limit, treating it as no remaining",
+                    org_name=org.name,
+                    err=e,
+                )
+                continue
 
             if rate_limit.remaining < 1000:
                 log.info(
@@ -124,7 +132,7 @@ async def cron_refresh_issues(ctx: JobContext) -> None:
                     org_name=org.name,
                     rate_limit_remaining=rate_limit.remaining,
                 )
-                return
+                continue
 
             issues = await github_issue.list_issues_to_crawl_issue(session, org)
 
@@ -148,7 +156,16 @@ async def cron_refresh_issue_timelines(ctx: JobContext) -> None:
         orgs = await organization_service.list_installed(session)
         for org in orgs:
             client = get_app_installation_client(org.installation_id)
-            rate_limit = await github_api.get_rate_limit(client)
+
+            try:
+                rate_limit = await github_api.get_rate_limit(client)
+            except Exception as e:
+                log.info(
+                    "failed to get rate limit, treating it as no remaining",
+                    org_name=org.name,
+                    err=e,
+                )
+                continue
 
             if rate_limit.remaining < 1000:
                 log.info(
@@ -156,7 +173,7 @@ async def cron_refresh_issue_timelines(ctx: JobContext) -> None:
                     org_name=org.name,
                     rate_limit_remaining=rate_limit.remaining,
                 )
-                return
+                continue
 
             issues = await github_issue.list_issues_to_crawl_timeline(session, org)
 

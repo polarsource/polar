@@ -25,6 +25,7 @@ const orgWithBio = {
 const repoWithData = {
   ...repo,
   stars: 2303,
+  homepage: 'google.com',
 }
 
 export const Default: Story = {
@@ -46,7 +47,16 @@ export const WithoutBio: Story = {
   ...Default,
   args: {
     organization: org,
-    repository: repoWithData,
+    repository: repo,
+    issues: [issue, issue, issue, issue, issue, issue],
+  },
+}
+
+export const WithoutBioAndLicense: Story = {
+  ...Default,
+  args: {
+    organization: org,
+    repository: { ...repo, license: undefined },
     issues: [issue, issue, issue, issue, issue, issue],
   },
 }

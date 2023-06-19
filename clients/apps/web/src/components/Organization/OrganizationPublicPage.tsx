@@ -3,6 +3,7 @@ import {
   OrganizationPublicRead,
   RepositoryPublicRead,
 } from 'polarkit/api/client'
+import { prettyURL } from '.'
 import IssuesLookingForFunding from './IssuesLookingForFunding'
 
 const OrganizationPublicPage = ({
@@ -22,20 +23,28 @@ const OrganizationPublicPage = ({
         for funding
       </h1>
 
-      <div>
+      <div className="flex flex-col items-center space-y-4">
         <div className="text-center text-gray-500">{organization.bio}</div>
 
-        <div className="mt-2 flex w-full justify-center gap-4 text-sm text-gray-500">
+        <div className="mt-2 flex w-full justify-center gap-4 text-sm text-gray-600">
           {organization.company && <div>{organization.company}</div>}
 
           {organization.blog && (
-            <a href={organization.blog}>{organization.blog}</a>
+            <a
+              className="text-blue-600 hover:text-blue-700"
+              href={organization.blog}
+            >
+              {prettyURL(organization.blog)}
+            </a>
           )}
 
           {organization.email && <div>{organization.email}</div>}
 
           {organization.twitter_username && (
-            <a href={`https://twitter.com/${organization.twitter_username}`}>
+            <a
+              className="text-blue-600 hover:text-blue-700"
+              href={`https://twitter.com/${organization.twitter_username}`}
+            >
               @{organization.twitter_username}
             </a>
           )}

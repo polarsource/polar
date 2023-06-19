@@ -3,6 +3,7 @@ import {
   OrganizationPublicRead,
   RepositoryPublicRead,
 } from 'polarkit/api/client'
+import { abbrStars, prettyURL } from '.'
 import IssuesLookingForFunding from './IssuesLookingForFunding'
 
 const RepositoryPublicPage = ({
@@ -27,10 +28,13 @@ const RepositoryPublicPage = ({
 
         <div className="flex items-center space-x-4 text-gray-600">
           {repository.license && <p>{repository.license}</p>}
-          <p>{repository.stars} stars</p>
+          {repository.stars && <p>{abbrStars(repository.stars)} stars</p>}
           {repository.homepage && (
-            <a className="text-blue-600" href={repository.homepage}>
-              {repository.homepage}
+            <a
+              className="text-blue-600 hover:text-blue-700"
+              href={repository.homepage}
+            >
+              {prettyURL(repository.homepage)}
             </a>
           )}
         </div>

@@ -671,6 +671,8 @@ const PostCommentForm = (props: {
         <Image
           alt={`Avatar of ${props.user.username}`}
           src={props.user.avatar_url}
+          height={200}
+          width={200}
           className="h-6 w-6 rounded-full"
         />
       )}

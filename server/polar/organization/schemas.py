@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from uuid import UUID
-from typing import Sequence
 from datetime import datetime
+from typing import Sequence
+from uuid import UUID
 
 from pydantic import BaseModel
-from polar.dashboard.schemas import IssueDashboardRead
 
+from polar.dashboard.schemas import IssueDashboardRead
+from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.issue.schemas import IssuePublicRead
 from polar.kit.schemas import Schema
 from polar.models.organization import Organization
-from polar.enums import Platforms
 from polar.repository.schemas import RepositoryPublicRead, RepositoryRead
 
 
@@ -98,6 +98,14 @@ class OrganizationPublicRead(Schema):
     platform: Platforms
     name: str
     avatar_url: str
+
+    bio: str | None
+    pretty_name: str | None
+    company: str | None
+    blog: str | None
+    location: str | None
+    email: str | None
+    twitter_username: str | None
 
     class Config:
         orm_mode = True

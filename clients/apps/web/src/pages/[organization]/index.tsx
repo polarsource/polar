@@ -1,5 +1,5 @@
 import EmptyLayout from '@/components/Layout/EmptyLayout'
-import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
+import PublicPage from '@/components/Organization/PublicPage'
 import RepoSelection from '@/components/Organization/RepoSelection'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import type { GetServerSideProps, NextLayoutComponentType } from 'next'
@@ -52,19 +52,11 @@ const Page: NextLayoutComponentType = ({
           />
         </div>
 
-        <h1 className="text-center text-3xl font-normal text-gray-800 dark:text-gray-300 md:text-3xl">
-          {organization.name} have{' '}
-          {issues && issues?.length > 0 ? issues?.length : 'no'} issues looking
-          for funding
-        </h1>
-
-        {issues && (
-          <IssuesLookingForFunding
-            organization={organization}
-            repositories={repositories}
-            issues={issues}
-          />
-        )}
+        <PublicPage
+          organization={organization}
+          repositories={repositories}
+          issues={issues}
+        />
       </div>
     </>
   )

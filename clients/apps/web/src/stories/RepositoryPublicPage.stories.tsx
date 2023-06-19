@@ -56,7 +56,7 @@ export const WithoutBioAndLicense: Story = {
   ...Default,
   args: {
     organization: org,
-    repository: { ...repo, license: undefined },
+    repository: { ...repo, license: undefined, stars: 0 },
     issues: [issue, issue, issue, issue, issue, issue],
   },
 }

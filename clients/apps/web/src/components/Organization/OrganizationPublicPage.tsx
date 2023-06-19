@@ -4,6 +4,7 @@ import {
   RepositoryPublicRead,
 } from 'polarkit/api/client'
 import { prettyURL } from '.'
+import HowItWorks from '../Pledge/HowItWorks'
 import IssuesLookingForFunding from './IssuesLookingForFunding'
 
 const OrganizationPublicPage = ({
@@ -24,7 +25,9 @@ const OrganizationPublicPage = ({
       </h1>
 
       <div className="flex flex-col items-center space-y-4">
-        <div className="text-center text-gray-500">{organization.bio}</div>
+        {organization.bio && (
+          <div className="text-center text-gray-500">{organization.bio}</div>
+        )}
 
         <div className="mt-2 flex w-full justify-center gap-4 text-sm text-gray-600">
           {organization.company && <div>{organization.company}</div>}
@@ -58,6 +61,15 @@ const OrganizationPublicPage = ({
           issues={issues}
         />
       )}
+
+      <HowItWorks />
+
+      <div className="flex items-center justify-center gap-6">
+        <a className="text-blue-600 hover:text-blue-500" href="/faq">
+          Polar FAQ
+        </a>
+        <span className="text-gray-500">&copy; Polar Software Inc 2023</span>
+      </div>
     </>
   )
 }

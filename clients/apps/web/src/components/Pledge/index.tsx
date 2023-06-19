@@ -22,7 +22,7 @@ const Pledge = ({
 }) => {
   return (
     <>
-      <div className="mt-8 flex flex-col md:mt-14">
+      <div className="flex flex-col">
         <WhiteCard
           className="flex flex-col items-stretch rounded-none p-2 text-center md:flex-row md:rounded-xl md:pr-0"
           padding={false}
@@ -47,8 +47,8 @@ const Pledge = ({
             </div>
           </div>
         </WhiteCard>
-        <RepositoryCard organization={organization} repository={repository} />
       </div>
+      <RepositoryCard organization={organization} repository={repository} />
     </>
   )
 }

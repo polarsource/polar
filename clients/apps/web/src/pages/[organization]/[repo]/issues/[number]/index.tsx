@@ -46,7 +46,7 @@ const PledgePage: NextPage = ({
       <Head>
         <title>Polar | {issue.title}</title>
       </Head>
-      <div className="mx-auto mt-12 w-full md:mt-24 md:w-[826px]">
+      <div className="mx-auto mt-12 mb-24 flex w-full flex-col gap-12 md:mt-24 md:w-[826px]">
         <h1 className="text-center text-3xl font-normal text-gray-800 dark:text-gray-300 md:text-4xl">
           Complete your backing
         </h1>
@@ -60,6 +60,13 @@ const PledgePage: NextPage = ({
         />
 
         <HowItWorks />
+
+        <div className="flex items-center justify-center gap-6">
+          <a className="text-blue-600 hover:text-blue-500" href="/faq">
+            Polar FAQ
+          </a>
+          <span className="text-gray-500">&copy; Polar Software Inc 2023</span>
+        </div>
       </div>
     </>
   )

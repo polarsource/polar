@@ -1,9 +1,12 @@
 from typing import Any, Dict, List, Sequence, Union
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from polar.auth.dependencies import Auth
 from polar.dashboard.schemas import (
     Entry,
+    IssueDashboardRead,
     IssueListResponse,
     IssueListType,
     IssueRelationship,
@@ -12,21 +15,20 @@ from polar.dashboard.schemas import (
     PaginationResponse,
     Relationship,
     RelationshipData,
-    IssueDashboardRead,
 )
 from polar.enums import Platforms
+from polar.integrations.github.service.organization import github_organization
 from polar.issue.schemas import IssueRead, IssueReferenceRead
+from polar.issue.service import issue
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.organization.schemas import OrganizationPublicRead
-from polar.repository.schemas import RepositoryRead
-from polar.issue.service import issue
 from polar.pledge.schemas import PledgeRead, PledgeState
-from polar.repository.service import repository
-from polar.auth.dependencies import Auth
 from polar.postgres import AsyncSession, get_db_session, sql
+from polar.repository.schemas import RepositoryRead
+from polar.repository.service import repository
 
 router = APIRouter(tags=["dashboard"])
 

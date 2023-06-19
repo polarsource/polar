@@ -1,27 +1,26 @@
 from datetime import datetime
 from typing import Any, Tuple, Union
 from uuid import UUID
-from asyncpg import UniqueViolationError
+
+import structlog
 from githubkit import GitHub
 from githubkit.exception import RequestFailed
 
-import structlog
+from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
 from polar.issue.schemas import IssueCreate
 from polar.kit.utils import utc_now
-
 from polar.models import Organization, User
 from polar.models.issue import Issue
 from polar.models.repository import Repository
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import OrganizationService
-from polar.enums import Platforms
 from polar.postgres import AsyncSession
 from polar.repository.schemas import RepositoryCreate
 
 from .. import client as github
-from .repository import github_repository
 from .issue import github_issue
+from .repository import github_repository
 
 log = structlog.get_logger(service="GithubOrganizationService")
 
@@ -76,6 +75,8 @@ class GithubOrganizationService(OrganizationService):
         organization = await self.upsert(session, to_create)
         if not organization:
             return None
+
+        await self.populate_org_metadata(session, organization)
 
         # TODO: Better error handling?
         await self.add_user(session, organization, user, is_admin=True)
@@ -320,6 +321,53 @@ class GithubOrganizationService(OrganizationService):
             issue = await github_issue.create(session, issue_schema)
 
         return (organization, repository, issue)
+
+    async def populate_org_metadata(
+        self, session: AsyncSession, org: Organization
+    ) -> None:
+        if not org.installation_id:
+            return None
+
+        if org.is_personal:
+            return await self._populate_github_user_metadata(session, org)
+
+        return await self._populate_github_org_metadata(session, org)
+
+    async def _populate_github_org_metadata(
+        self, session: AsyncSession, org: Organization
+    ) -> None:
+        client = github.get_app_installation_client(org.installation_id)
+        github_org = client.rest.orgs.get(org.name)
+
+        gh = github_org.parsed_data
+
+        org.bio = gh.description
+        org.pretty_name = gh.name if gh.name else None
+        org.company = gh.company if gh.company else None
+        org.blog = gh.blog if gh.blog else None
+        org.location = gh.location if gh.location else None
+        org.email = gh.email if gh.email else None
+        org.twitter_username = gh.twitter_username if gh.twitter_username else None
+
+        await org.save(session=session)
+
+    async def _populate_github_user_metadata(
+        self, session: AsyncSession, org: Organization
+    ) -> None:
+        client = github.get_app_installation_client(org.installation_id)
+        github_org = client.rest.users.get_by_username(org.name)
+
+        gh = github_org.parsed_data
+
+        org.bio = gh.bio
+        org.pretty_name = gh.name
+        org.company = gh.company
+        org.blog = gh.blog
+        org.location = gh.location
+        org.email = gh.email
+        org.twitter_username = gh.twitter_username if gh.twitter_username else None
+
+        await org.save(session=session)
 
 
 github_organization = GithubOrganizationService(Organization)

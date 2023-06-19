@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any, Tuple, Union
 from uuid import UUID
+from asyncpg import UniqueViolationError
 from githubkit import GitHub
 from githubkit.exception import RequestFailed
 
@@ -22,7 +23,7 @@ from .. import client as github
 from .repository import github_repository
 from .issue import github_issue
 
-log = structlog.get_logger()
+log = structlog.get_logger(service="GithubOrganizationService")
 
 
 class GithubOrganizationService(OrganizationService):
@@ -185,7 +186,6 @@ class GithubOrganizationService(OrganizationService):
 
         return org
 
-
     async def sync_external_org_with_repo_and_issue(
         self,
         session: AsyncSession,
@@ -195,9 +195,7 @@ class GithubOrganizationService(OrganizationService):
         repo_name: str,
         issue_number: int,
     ) -> Tuple[Organization, Repository, Issue]:
-        organization = await self.get_by_name(
-            session, Platforms.github, org_name
-        )
+        organization = await self.get_by_name(session, Platforms.github, org_name)
 
         try:
             repo_response = await client.rest.repos.async_get(org_name, repo_name)
@@ -250,11 +248,10 @@ class GithubOrganizationService(OrganizationService):
 
             return (organization, repository, issue)
         except RequestFailed as e:
-                if e.response.status_code == 404:
-                    raise ResourceNotFound()
-                # re-raise other status codes
-                raise e
-
+            if e.response.status_code == 404:
+                raise ResourceNotFound()
+            # re-raise other status codes
+            raise e
 
 
 github_organization = GithubOrganizationService(Organization)

@@ -4,6 +4,8 @@ from typing import AsyncGenerator
 import pytest_asyncio
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql import text
+
 
 from polar.kit.utils import generate_uuid
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -27,6 +29,7 @@ async def initialize_test_database(session: AsyncSession) -> None:
 
     async with AsyncEngineLocal.begin() as conn:
         await conn.run_sync(Model.metadata.drop_all)
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
         await conn.run_sync(Model.metadata.create_all)
 
 
@@ -36,6 +39,7 @@ async def initialize_test_database_function(session: AsyncSession) -> None:
 
     async with AsyncEngineLocal.begin() as conn:
         await conn.run_sync(Model.metadata.drop_all)
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
         await conn.run_sync(Model.metadata.create_all)
 
 

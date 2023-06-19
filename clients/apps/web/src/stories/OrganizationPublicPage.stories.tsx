@@ -38,6 +38,8 @@ export const Default: Story = {
       issue,
       {
         ...issue,
+        title:
+          'SecretStr comparison fails when field is defined with Field SecretStr comparison fails when field is defined with Field SecretStr comparison fails when field is defined with Field',
         reactions: { ...issue.reactions, plus_one: 0 },
       },
       issue,

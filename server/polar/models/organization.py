@@ -1,15 +1,15 @@
-from uuid import UUID
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
+from uuid import UUID
 
+from citext import CIText
 from sqlalchemy import TIMESTAMP, Boolean, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from citext import CIText
 
+from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
-from polar.enums import Platforms
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.account import Account
@@ -90,6 +90,15 @@ class Organization(RecordModel):
         uselist=True,
         lazy="raise",
     )
+
+    # Org description or user bio
+    bio: Mapped[str | None] = mapped_column(String, nullable=True)
+    pretty_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    company: Mapped[str | None] = mapped_column(String, nullable=True)
+    blog: Mapped[str | None] = mapped_column(String, nullable=True)
+    location: Mapped[str | None] = mapped_column(String, nullable=True)
+    email: Mapped[str | None] = mapped_column(String, nullable=True)
+    twitter_username: Mapped[str | None] = mapped_column(String, nullable=True)
 
     __mutables__ = {
         "name",

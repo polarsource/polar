@@ -1960,12 +1960,17 @@ description = "A sqlalchemy plugin that allows postgres use of CITEXT."
 category = "main"
 optional = false
 python-versions = "*"
-files = [
-    {file = "sqlalchemy-citext-1.8.0.tar.gz", hash = "sha256:a1740e693a9a334e7c8f60ae731083fe75ce6c1605bb9ca6644a6f1f63b15b77"},
-]
+files = []
+develop = false
 
 [package.dependencies]
 SQLAlchemy = ">=0.6"
+
+[package.source]
+type = "git"
+url = "https://github.com/akolov/sqlalchemy-citext.git"
+reference = "15b3de84730bb4645c83d890a73f5c9b6b289531"
+resolved_reference = "15b3de84730bb4645c83d890a73f5c9b6b289531"
 
 [[package]]
 name = "sqlalchemy-searchable"
@@ -2625,4 +2630,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "ed32357e6fa23b5bf757f0c74e9e6fafc5f3ad345993bb538bc90fbc565ff02a"
+content-hash = "69cc57d33d42da7762e59cfae1cbadf4c78e79e43df561ccfdc9a1015251c39c"

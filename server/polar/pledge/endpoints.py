@@ -13,7 +13,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.organization.schemas import OrganizationPublicRead
 from polar.organization.service import organization as organization_service
 from polar.integrations.github.service.organization import (
-    github_organization as gh_organization
+    github_organization as gh_organization,
 )
 from polar.repository.schemas import RepositoryRead
 from polar.issue.schemas import IssueRead
@@ -69,9 +69,10 @@ async def get_pledge_with_resources(
     include: str = "organization,repository,issue",
     session: AsyncSession = Depends(get_db_session),
 ) -> PledgeResources:
+    includes = include.split(",")
+    client = get_polar_client()
+
     try:
-        includes = include.split(",")
-        client = get_polar_client()
         org, repo, issue = await gh_organization.sync_external_org_with_repo_and_issue(
             session,
             client=client,
@@ -79,39 +80,39 @@ async def get_pledge_with_resources(
             repo_name=repo_name,
             issue_number=number,
         )
-
-        included_pledge = None
-        if pledge_id:
-            pledge = await get_pledge_or_404(
-                session,
-                pledge_id=pledge_id,
-                for_repository=repo,
-            )
-            included_pledge = PledgeRead.from_db(pledge)
-
-        included_org = None
-        if "organization" in includes:
-            included_org = OrganizationPublicRead.from_orm(org)
-
-        included_repo = None
-        if "repository" in includes:
-            included_repo = RepositoryRead.from_orm(repo)
-
-        included_issue = None
-        if "issue" in includes:
-            included_issue = IssueRead.from_orm(issue)
-
-        return PledgeResources(
-            pledge=included_pledge,
-            organization=included_org,
-            repository=included_repo,
-            issue=included_issue,
-        )
     except ResourceNotFound:
         raise HTTPException(
             status_code=404,
             detail="Organization, repo and issue combination not found",
         )
+
+    included_pledge = None
+    if pledge_id:
+        pledge = await get_pledge_or_404(
+            session,
+            pledge_id=pledge_id,
+            for_repository=repo,
+        )
+        included_pledge = PledgeRead.from_db(pledge)
+
+    included_org = None
+    if "organization" in includes:
+        included_org = OrganizationPublicRead.from_orm(org)
+
+    included_repo = None
+    if "repository" in includes:
+        included_repo = RepositoryRead.from_orm(repo)
+
+    included_issue = None
+    if "issue" in includes:
+        included_issue = IssueRead.from_orm(issue)
+
+    return PledgeResources(
+        pledge=included_pledge,
+        organization=included_org,
+        repository=included_repo,
+        issue=included_issue,
+    )
 
 
 @router.post(

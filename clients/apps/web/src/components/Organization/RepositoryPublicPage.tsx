@@ -24,11 +24,16 @@ const RepositoryPublicPage = ({
       </h1>
 
       <div className="flex flex-col items-center space-y-4">
-        <p className="text-center text-gray-500">{repository.description}</p>
+        {repository.description && (
+          <p className="text-center text-gray-500">{repository.description}</p>
+        )}
 
         <div className="flex items-center space-x-4 text-gray-600">
           {repository.license && <p>{repository.license}</p>}
-          {repository.stars && <p>{abbrStars(repository.stars)} stars</p>}
+          {(repository.stars && repository.stars > 0 && (
+            <p>{abbrStars(repository.stars)} stars</p>
+          )) ||
+            null}
           {repository.homepage && (
             <a
               className="text-blue-600 hover:text-blue-700"

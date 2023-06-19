@@ -4,8 +4,16 @@ from polar.integrations.github.schemas import GitHubIssue
 
 
 class GitHubUrlService:
-    issue_re = re.compile(
-        r"(?P<owner>[a-z0-9][a-z0-9-]*)?(?:/(?P<repo>[a-z0-9_\.-]+))?#(?P<number>\d+)|(?:https?://(?:www\.)?github\.com/)(?P<owner2>[a-z0-9][a-z0-9-]*)?(?:/(?P<repo2>[a-z0-9_\.-]+))?(?:#|/issues/)(?P<number2>\d+)",
+    # "org/repo#14"
+    # "repo#14"
+    # "#14"
+    org_repo_number_re = re.compile(
+        r"(?P<owner>[a-z0-9][a-z0-9-]*)?(?:/(?P<repo>[a-z0-9_\.-]+))?#(?P<number>\d++)(?![a-z])",
+        re.IGNORECASE,
+    )
+
+    href_re = re.compile(
+        r"(?:https?://(?:www\.)?github\.com/)(?P<owner>[a-z0-9][a-z0-9-]*)?(?:/(?P<repo>[a-z0-9_\.-]+))?(?:#|/issues/)(?P<number>\d++)(?![a-z])",
         re.IGNORECASE,
     )
 
@@ -14,14 +22,24 @@ class GitHubUrlService:
         given a body of text, parse out the dependencies (i.e. issues in other repos
         that this body references)
         """
+        patterns = [
+            self.org_repo_number_re,
+            self.href_re,
+        ]
+
+        for pattern in patterns:
+            for m in pattern.finditer(body):
+                print(m)
+
         dependencies = [
             GitHubIssue(
                 raw=m.group(0),
-                owner=m.group("owner") or m.group("owner2"),
-                repo=m.group("repo") or m.group("repo2"),
-                number=int(m.group("number") or m.group("number2")),
+                owner=m.group("owner"),
+                repo=m.group("repo"),
+                number=int(m.group("number")),
             )
-            for m in self.issue_re.finditer(body)
+            for pattern in patterns
+            for m in pattern.finditer(body)
         ]
 
         # Deduplicate the dependencies
@@ -34,5 +52,6 @@ class GitHubUrlService:
             ret.append(dependency)
 
         return ret
+
 
 github_url = GitHubUrlService()

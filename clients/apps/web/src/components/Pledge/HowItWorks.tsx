@@ -21,8 +21,8 @@ const HowItWorks: NextLayoutComponentType = () => {
 
   return (
     <>
-      <div className="mb-20 text-left">
-        <ul className="mt-2 flex flex-col items-center justify-center space-y-5 p-5 md:mt-6 md:flex-row md:space-y-0 md:space-x-4 md:p-0">
+      <div className="text-left">
+        <ul className="flex flex-col items-center justify-center space-y-5 md:flex-row md:space-y-0 md:space-x-4">
           <li className="flex w-full flex-col rounded-xl bg-white p-4 shadow dark:bg-gray-800 dark:ring-1 dark:ring-gray-700 md:w-auto">
             <div className="flex flex-row items-center space-x-1 text-blue-600 dark:text-blue-500">
               <CurrencyDollarIcon width={24} height={24} />

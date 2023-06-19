@@ -8,7 +8,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Item, Left, SelectedBox, Text } from '../Dropdown'
 
 export function RepoSelection(props: {
-  onSelectRepo: (org: string, repo: string) => void
+  onSelectRepo: (repo: string) => void
+  onSelectAll: () => void
   organization: OrganizationPublicRead
   repositories: RepositoryPublicRead[]
   value: RepositoryPublicRead | undefined
@@ -31,16 +32,14 @@ export function RepoSelection(props: {
     setInputValue('')
   }
 
-  const onSelectRepo = (
-    org: OrganizationPublicRead,
-    repo: RepositoryPublicRead,
-  ) => {
-    if (org && repo) {
-      resetDropdown()
-      if (props.onSelectRepo) {
-        props.onSelectRepo(org.name, repo.name)
-      }
-    }
+  const onSelectRepo = (repo: RepositoryPublicRead) => {
+    resetDropdown()
+    props.onSelectRepo(repo.name)
+  }
+
+  const onSelectAll = () => {
+    resetDropdown()
+    props.onSelectAll()
   }
 
   const onValueChange = (search: string) => {
@@ -104,12 +103,18 @@ export function RepoSelection(props: {
                   No results found.
                 </Command.Empty>
 
+                <Item value="all repositories" onSelect={() => onSelectAll()}>
+                  <Left>
+                    <Text>All repositories</Text>
+                  </Left>
+                </Item>
+
                 {repositories &&
                   repositories.map((r) => (
                     <Item
                       value={`${organization.name}/${r.name}`}
                       key={r.id}
-                      onSelect={() => onSelectRepo(organization, r)}
+                      onSelect={() => onSelectRepo(r)}
                     >
                       <Left>
                         <Text>{r.name}</Text>

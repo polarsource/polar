@@ -32,7 +32,7 @@ const RepositoryCard = ({
 
   return (
     <>
-      <GrayCard className="mt-6 py-6 px-8 text-center" padding={false}>
+      <GrayCard className="px-8 text-center">
         <div className="flex flex-row items-center justify-center space-x-2">
           <img
             className="h-8 w-8 rounded-full bg-white"

@@ -1,4 +1,4 @@
-import EmptyLayout from '@/components/Layout/EmptyLayout'
+import TopbarLayout from '@/components/Layout/TopbarLayout'
 import OrganizationPublicPage from '@/components/Organization/OrganizationPublicPage'
 import RepoSelection from '@/components/Organization/RepoSelection'
 import PageNotFound from '@/components/Shared/PageNotFound'
@@ -37,7 +37,7 @@ const Page: NextLayoutComponentType = ({
       <Head>
         <title>Polar | {organization.name}</title>
       </Head>
-      <div className="mx-auto mt-12 flex w-full flex-col space-y-12 px-2 md:max-w-[970px] md:px-0">
+      <div className="mx-auto mt-12 mb-24 flex w-full flex-col space-y-12 px-2 md:max-w-[970px] md:px-0">
         <div className="flex items-center space-x-4 text-black">
           <img src={organization.avatar_url} className="h-8 w-8 rounded-full" />
           <div className="text-lg font-medium">{organization.name}</div>
@@ -46,8 +46,11 @@ const Page: NextLayoutComponentType = ({
             organization={organization}
             repositories={repositories}
             value={undefined}
-            onSelectRepo={(org, repo) => {
-              router.push(`/${org}/${repo}`)
+            onSelectRepo={(repo) => {
+              router.push(`/${organization.name}/${repo}`)
+            }}
+            onSelectAll={() => {
+              router.push(`/${organization.name}`)
             }}
           />
         </div>
@@ -63,7 +66,7 @@ const Page: NextLayoutComponentType = ({
 }
 
 Page.getLayout = (page: ReactElement) => {
-  return <EmptyLayout>{page}</EmptyLayout>
+  return <TopbarLayout>{page}</TopbarLayout>
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {

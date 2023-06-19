@@ -1,6 +1,6 @@
 import EmptyLayout from '@/components/Layout/EmptyLayout'
-import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
 import RepoSelection from '@/components/Organization/RepoSelection'
+import RepositoryPublicPage from '@/components/Organization/RepositoryPublicPage'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import Head from 'next/head'
@@ -56,39 +56,20 @@ const Page: NextLayoutComponentType = ({
             organization={organization}
             repositories={repositories}
             value={repo}
-            onSelectRepo={(org, repo) => {
-              router.push(`/${org}/${repo}`)
+            onSelectRepo={(repo) => {
+              router.push(`/${organization.name}/${repo}`)
+            }}
+            onSelectAll={() => {
+              router.push(`/${organization.name}`)
             }}
           />
         </div>
 
-        <h1 className="text-center text-3xl font-normal text-gray-800 dark:text-gray-300 md:text-3xl">
-          {organization.name}/{repo.name} have{' '}
-          {issues && issues?.length > 0 ? issues?.length : 'no'} issues looking
-          for funding
-        </h1>
-
-        <div className="flex flex-col items-center space-y-4">
-          <p className="text-center text-gray-500">{repo.description}</p>
-
-          <div className="flex items-center space-x-4 text-gray-600">
-            {repo.license && <p>{repo.license}</p>}
-            <p>{repo.stars} stars</p>
-            {repo.homepage && (
-              <a className="text-blue-600" href={repo.homepage}>
-                {repo.homepage}
-              </a>
-            )}
-          </div>
-        </div>
-
-        {issues && (
-          <IssuesLookingForFunding
-            organization={organization}
-            repositories={repositories}
-            issues={issues}
-          />
-        )}
+        <RepositoryPublicPage
+          organization={organization}
+          repository={repo}
+          issues={issues}
+        />
       </div>
     </>
   )

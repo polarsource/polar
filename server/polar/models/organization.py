@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import TIMESTAMP, Boolean, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from citext import CIText
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
@@ -30,7 +31,7 @@ class Organization(RecordModel):
     )
 
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
-    name: Mapped[str] = mapped_column(String(length=50), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(CIText(), nullable=False, unique=True)
     external_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
     avatar_url: Mapped[str | None] = mapped_column(String)
     is_personal: Mapped[bool] = mapped_column(Boolean, nullable=False)

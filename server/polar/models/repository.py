@@ -2,6 +2,7 @@ from uuid import UUID
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any
+from citext import CIText
 
 from sqlalchemy import (
     TIMESTAMP,
@@ -47,7 +48,7 @@ class Repository(RecordModel):
         lazy="joined",
     )
 
-    name: Mapped[str] = mapped_column(String, nullable=False)
+    name: Mapped[str] = mapped_column(CIText(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     open_issues: Mapped[int | None] = mapped_column(Integer, nullable=True)

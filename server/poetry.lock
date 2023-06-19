@@ -1954,6 +1954,20 @@ pymysql = ["pymysql"]
 sqlcipher = ["sqlcipher3-binary"]
 
 [[package]]
+name = "sqlalchemy-citext"
+version = "1.8.0"
+description = "A sqlalchemy plugin that allows postgres use of CITEXT."
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "sqlalchemy-citext-1.8.0.tar.gz", hash = "sha256:a1740e693a9a334e7c8f60ae731083fe75ce6c1605bb9ca6644a6f1f63b15b77"},
+]
+
+[package.dependencies]
+SQLAlchemy = ">=0.6"
+
+[[package]]
 name = "sqlalchemy-searchable"
 version = "1.4.1"
 description = "Provides fulltext search capabilities for declarative SQLAlchemy models."
@@ -2611,4 +2625,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "612dfdfc83fcac395210202dc72590c767971bd7fc80ec5887c2faa51632fd91"
+content-hash = "ed32357e6fa23b5bf757f0c74e9e6fafc5f3ad345993bb538bc90fbc565ff02a"

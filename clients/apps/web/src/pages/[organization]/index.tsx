@@ -1,5 +1,5 @@
 import EmptyLayout from '@/components/Layout/EmptyLayout'
-import PublicPage from '@/components/Organization/PublicPage'
+import OrganizationPublicPage from '@/components/Organization/OrganizationPublicPage'
 import RepoSelection from '@/components/Organization/RepoSelection'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import type { GetServerSideProps, NextLayoutComponentType } from 'next'
@@ -52,7 +52,7 @@ const Page: NextLayoutComponentType = ({
           />
         </div>
 
-        <PublicPage
+        <OrganizationPublicPage
           organization={organization}
           repositories={repositories}
           issues={issues}

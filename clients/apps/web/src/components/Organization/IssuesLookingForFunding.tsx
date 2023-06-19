@@ -48,16 +48,17 @@ const IssuesLookingForFunding = ({
       <div className="flex flex-col justify-between space-y-4 md:flex-row md:space-y-0 md:space-x-6">
         {top3.map((i) => (
           <div
-            className="flex-1 rounded-lg px-6 py-4 text-gray-500 shadow"
+            className="flex flex-1 flex-col rounded-lg px-6 py-4 text-gray-500 shadow"
             key={i.issue.id}
           >
             <a className="font-medium text-gray-900" href={i.issue_href}>
               {i.issue.title}
             </a>
-            <p className="mt-2 text-sm">
+            <p className="mt-2 flex-1 text-sm">
               #{i.issue.number} opened{' '}
               <PolarTimeAgo date={new Date(i.issue.issue_created_at)} />
             </p>
+
             <div className="mt-6 flex items-center justify-between">
               <div className="inline-flex gap-2">
                 {(i.issue.reactions.plus_one &&

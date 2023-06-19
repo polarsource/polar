@@ -23,6 +23,17 @@ class RepositoryService(
     def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
         return [self.model.external_id]
 
+    async def get_by_org_and_name(
+        self, session: AsyncSession, organization_id: UUID, name: str
+    ) -> Repository | None:
+        statement = sql.select(Repository).where(
+            Repository.organization_id == organization_id,
+            Repository.deleted_at.is_(None),
+            Repository.name == name,
+        )
+        res = await session.execute(statement)
+        return res.scalars().unique().one_or_none()
+
     async def list_by_organization(
         self,
         session: AsyncSession,

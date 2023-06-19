@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import structlog
 import re
-from polar.exceptions import IntegrityError
+from polar.exceptions import IntegrityError, ResourceNotFound
 from githubkit.exception import RequestFailed
 from polar.integrations.github.client import (
     get_app_installation_client,
@@ -63,20 +63,19 @@ class GitHubIssueDependenciesService:
                 continue
 
             try:
-                _, _, dependency_issue = \
-                    await github_organization.sync_external_org_with_repo_and_issue(
-                        session,
-                        client=client,
-                        org_name=dependency.owner,
-                        repo_name=dependency.repo,
-                        issue_number=dependency.number
-                    )
-            except RequestFailed as e:
-                # 404s are nothing to worry about, this could be a broken link
-                if e.response.status_code == 404:
-                    continue
-                # re-raise other status codes
-                raise e
+                (
+                    _,
+                    _,
+                    dependency_issue,
+                ) = await github_organization.sync_external_org_with_repo_and_issue(
+                    session,
+                    client=client,
+                    org_name=dependency.owner,
+                    repo_name=dependency.repo,
+                    issue_number=dependency.number,
+                )
+            except ResourceNotFound as e:
+                continue
 
             issue_dependency = IssueDependency(
                 organization_id=org.id,

@@ -5,7 +5,6 @@ import { issue, org, repo } from './testdata'
 const meta: Meta<typeof RepositoryPublicPage> = {
   title: 'Pages/RepositoryPublicPage',
   component: RepositoryPublicPage,
-  tags: ['autodocs'],
 }
 
 export default meta
@@ -29,6 +28,10 @@ const repoWithData = {
 }
 
 export const Default: Story = {
+  parameters: {
+    chromatic: { viewports: [390, 1200] },
+  },
+
   args: {
     organization: orgWithBio,
     repository: repoWithData,

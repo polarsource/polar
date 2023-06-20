@@ -1,6 +1,7 @@
 from typing import Sequence
-from fastapi import APIRouter, Depends, HTTPException
+
 import structlog
+from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
 from polar.dashboard.schemas import (
@@ -9,30 +10,30 @@ from polar.dashboard.schemas import (
     IssueSortBy,
     IssueStatus,
 )
-from polar.issue.schemas import IssuePublicRead
-from polar.models import Organization
 from polar.enums import Platforms
+from polar.integrations.stripe.service import stripe
+from polar.issue.schemas import IssuePublicRead
+from polar.issue.service import issue as issue_service
+from polar.models import Organization
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.postgres import AsyncSession, get_db_session
-from polar.integrations.stripe.service import stripe
 from polar.repository.schemas import RepositoryPublicRead
+from polar.repository.service import repository as repository_service
 from polar.user_organization.schemas import UserOrganizationSettingsUpdate
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 
 from .schemas import (
+    OrganizationBadgeSettingsRead,
+    OrganizationBadgeSettingsUpdate,
     OrganizationPrivateRead,
     OrganizationPublicPageRead,
     OrganizationPublicRead,
     OrganizationSettingsUpdate,
-    OrganizationBadgeSettingsUpdate,
-    OrganizationBadgeSettingsRead,
 )
 from .service import organization
-from polar.issue.service import issue as issue_service
-from polar.repository.service import repository as repository_service
 
 log = structlog.get_logger()
 
@@ -156,13 +157,13 @@ async def get_public_issues(
             detail="Organization not found",
         )
 
-    repositories: Sequence[Repository] = []
-
     all_org_repos = await repository_service.list_by_organization(
         session,
         organization_id=org.id,
     )
-    all_org_repos = [r for r in all_org_repos if r.is_private is False]
+    all_org_repos = [
+        r for r in all_org_repos if r.is_private is False and r.is_archived is False
+    ]
 
     if repo_name:
         repo = await repository_service.get_by(
@@ -170,7 +171,8 @@ async def get_public_issues(
             organization_id=org.id,
             name=repo_name,
             is_private=False,
-            # deleted_at=None,
+            is_archived=False,
+            deleted_at=None,
         )
 
         if not repo:
@@ -179,16 +181,9 @@ async def get_public_issues(
                 detail="Repository not found",
             )
 
-        # repositories = [repo]
-        issues_in_repos = [r for r in repositories if r.is_private is False]
+        issues_in_repos = [repo]
     else:
         issues_in_repos = all_org_repos
-
-    # if not issues_in_repos:
-    #     raise HTTPException(
-    #         status_code=404,
-    #         detail="Repository not found",
-    #     )
 
     issues_in_repos_ids = [r.id for r in issues_in_repos]
 

@@ -35,6 +35,7 @@ const DashboardLayout = (props: {
             filters={filters}
             onSetFilters={onSetFilters}
             showTabs={showTabs}
+            fixed={true}
           />
         )}
         <div className={bodyClasses}>

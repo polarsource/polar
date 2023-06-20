@@ -27,6 +27,7 @@ const orgWithBio = {
 export const Default: Story = {
   parameters: {
     chromatic: { viewports: [390, 1200] },
+    themes: ['light'],
   },
 
   args: {
@@ -65,5 +66,13 @@ export const WithoutBio: Story = {
     organization: org,
     repositories: [repo],
     issues: [issue, issue, issue, issue, issue, issue],
+  },
+}
+
+export const Dark: Story = {
+  ...Default,
+  parameters: {
+    ...Default.parameters,
+    themes: ['dark'],
   },
 }

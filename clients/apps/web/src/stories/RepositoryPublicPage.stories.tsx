@@ -30,6 +30,7 @@ const repoWithData = {
 export const Default: Story = {
   parameters: {
     chromatic: { viewports: [390, 1200] },
+    themes: ['light'],
   },
 
   args: {
@@ -43,6 +44,14 @@ export const Default: Story = {
         <RepositoryPublicPage {...args} />
       </div>
     )
+  },
+}
+
+export const Dark: Story = {
+  ...Default,
+  parameters: {
+    ...Default.parameters,
+    themes: ['dark'],
   },
 }
 

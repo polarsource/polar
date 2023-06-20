@@ -3,23 +3,6 @@ import '../src/styles/globals.scss'
 
 const preview: Preview = {
   parameters: {
-    darkMode: {
-      // stylePreview: true,
-      // classTarget: 'html',
-    },
-    backgrounds: {
-      default: 'gray-50',
-      values: [
-        {
-          name: 'gray-50',
-          value: '#FDFDFC',
-        },
-        {
-          name: 'gray-950',
-          value: '#111217',
-        },
-      ],
-    },
     actions: { argTypesRegex: '^on[A-Z].*' },
     controls: {
       matchers: {
@@ -30,20 +13,62 @@ const preview: Preview = {
   },
 }
 
+const classNames = (...strs: string[]): string => {
+  return strs.join(' ')
+}
+
 export const decorators = [
   (StoryFn, { globals, parameters }) => {
-    //const theme =
-    // globals.theme || parameters.theme || (isChromatic() ? 'stacked' : 'light')
+    type Layouts = 'stacked' | 'side-by-side' | 'none'
+
+    const themeLayout = parameters?.layout || 'stacked'
+    const themes = parameters?.themes || ['light-striped', 'dark-striped']
+
+    const themeConfigs = {
+      'light-striped': {
+        outer: 'bg-gray-50',
+        stripes: 'bg-stripes-sky-100',
+        inner: 'light text-gray-900',
+      },
+      'dark-striped': {
+        outer: 'bg-[#111217]',
+        stripes: 'bg-stripes-gray-900',
+        inner: 'dark text-gray-200',
+      },
+      light: {
+        outer: 'bg-gray-50',
+        stripes: '',
+        inner: 'light text-gray-900',
+      },
+      dark: {
+        outer: 'bg-[#111217]',
+        stripes: '',
+        inner: 'dark text-gray-200',
+      },
+    }
+
+    const renderThemes = themes.map(
+      (t) => themeConfigs[t] || themeConfigs['light-striped'],
+    )
 
     return (
-      <div className="flex flex-col space-y-8 antialiased">
-        <div className="light bg-gray-50 p-4 text-gray-900">
-          <StoryFn />
-        </div>
-        <div className="h-4 bg-red-200"></div>
-        <div className="bg-gray-950 dark p-4 text-gray-200">
-          <StoryFn />
-        </div>
+      <div
+        className={classNames(
+          'flex antialiased',
+          themeLayout === 'side-by-side'
+            ? 'flex-row space-x-8'
+            : 'flex-col space-y-8',
+        )}
+      >
+        {renderThemes.map((t) => (
+          <div className={t.outer}>
+            <div className={classNames('bg-stripes p-4', t.stripes)}>
+              <div className={t.inner}>
+                <StoryFn />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     )
   },

@@ -4,6 +4,7 @@ import {
   RepositoryPublicRead,
 } from 'polarkit/api/client'
 import { abbrStars, prettyURL } from '.'
+import HowItWorks from '../Pledge/HowItWorks'
 import IssuesLookingForFunding from './IssuesLookingForFunding'
 
 const RepositoryPublicPage = ({
@@ -52,6 +53,15 @@ const RepositoryPublicPage = ({
           issues={issues}
         />
       )}
+
+      <HowItWorks />
+
+      <div className="flex items-center justify-center gap-6">
+        <a className="text-blue-600 hover:text-blue-500" href="/faq">
+          Polar FAQ
+        </a>
+        <span className="text-gray-500">&copy; Polar Software Inc 2023</span>
+      </div>
     </>
   )
 }

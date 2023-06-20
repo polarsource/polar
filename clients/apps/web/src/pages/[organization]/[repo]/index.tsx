@@ -1,9 +1,10 @@
-import EmptyLayout from '@/components/Layout/EmptyLayout'
-import RepoSelection from '@/components/Organization/RepoSelection'
+import PublicLayout from '@/components/Layout/PublicLayout'
+import Navigation from '@/components/Organization/Navigation'
 import RepositoryPublicPage from '@/components/Organization/RepositoryPublicPage'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import Head from 'next/head'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit'
 import {
@@ -12,6 +13,7 @@ import {
   Platforms,
   RepositoryPublicRead,
 } from 'polarkit/api/client'
+import { LogoType } from 'polarkit/components/brand'
 import { ReactElement } from 'react'
 
 const Page: NextLayoutComponentType = ({
@@ -47,36 +49,29 @@ const Page: NextLayoutComponentType = ({
         </title>
       </Head>
 
-      <div className="mx-auto mt-12 flex w-full flex-col space-y-12 px-2 md:max-w-[970px] md:px-0">
-        <div className="flex items-center space-x-4 text-black">
-          <img src={organization.avatar_url} className="h-8 w-8 rounded-full" />
-          <div className="text-lg font-medium">{organization.name}</div>
-          <div>/</div>
-          <RepoSelection
-            organization={organization}
-            repositories={repositories}
-            value={repo}
-            onSelectRepo={(repo) => {
-              router.push(`/${organization.name}/${repo}`)
-            }}
-            onSelectAll={() => {
-              router.push(`/${organization.name}`)
-            }}
-          />
-        </div>
-
-        <RepositoryPublicPage
+      <div className="flex items-center justify-between">
+        <Navigation
           organization={organization}
+          repositories={repositories}
           repository={repo}
-          issues={issues}
-        />
+        ></Navigation>
+
+        <Link href="/">
+          <LogoType />
+        </Link>
       </div>
+
+      <RepositoryPublicPage
+        organization={organization}
+        repository={repo}
+        issues={issues}
+      />
     </>
   )
 }
 
 Page.getLayout = (page: ReactElement) => {
-  return <EmptyLayout>{page}</EmptyLayout>
+  return <PublicLayout>{page}</PublicLayout>
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {

@@ -1,36 +1,36 @@
 from __future__ import annotations
-from uuid import UUID
+
 from typing import List, Sequence, Tuple
+from uuid import UUID
+
+import structlog
 from sqlalchemy import (
+    ColumnElement,
     Integer,
+    and_,
     asc,
     desc,
+    distinct,
     func,
     not_,
     nullslast,
     or_,
-    and_,
-    ColumnElement,
 )
-from sqlalchemy.orm import joinedload, contains_eager
-import structlog
-from sqlalchemy.orm import InstrumentedAttribute
-from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
+from sqlalchemy.orm import InstrumentedAttribute, contains_eager, joinedload
 
+from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
+from polar.enums import Platforms
 from polar.kit.services import ResourceService
 from polar.models.issue import Issue
+from polar.models.issue_dependency import IssueDependency
+from polar.models.issue_reference import IssueReference
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository
-from polar.enums import Platforms
-from polar.models.issue_dependency import IssueDependency
-from polar.models.issue_reference import IssueReference
 from polar.models.user import User
 from polar.postgres import AsyncSession, sql
 
-
 from .schemas import IssueCreate, IssueUpdate
-
 
 log = structlog.get_logger()
 
@@ -108,11 +108,12 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         offset: int = 0,
         limit: int | None = None,
         include_statuses: list[IssueStatus] | None = None,
+        have_polar_badge: bool | None = None,  # If issue has the polar badge or not
     ) -> Tuple[Sequence[Issue], int]:  # (issues, total_issue_count)
         statement = (
             sql.select(
                 Issue,
-                sql.func.count(Issue.id).over().label("total_count"),
+                sql.func.count().over().label("total_count"),
             )
             .join(
                 Issue.pledges,
@@ -164,6 +165,11 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 statement = statement.where(Pledge.id.is_not(None))
             else:
                 statement = statement.where(Pledge.id.is_(None))
+
+        if have_polar_badge is not None:
+            statement = statement.where(
+                Issue.has_pledge_badge_label == have_polar_badge
+            )
 
         if include_statuses:
             conds: list[ColumnElement[bool]] = []

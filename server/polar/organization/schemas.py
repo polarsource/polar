@@ -168,3 +168,4 @@ class OrganizationPublicPageRead(Schema):
     organization: OrganizationPublicRead
     repositories: list[RepositoryPublicRead]
     issues: list[IssuePublicRead]
+    total_issue_count: int

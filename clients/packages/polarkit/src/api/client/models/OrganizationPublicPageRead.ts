@@ -10,5 +10,6 @@ export type OrganizationPublicPageRead = {
   organization: OrganizationPublicRead;
   repositories: Array<RepositoryPublicRead>;
   issues: Array<IssuePublicRead>;
+  total_issue_count: number;
 };
 

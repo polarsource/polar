@@ -11,17 +11,18 @@ const OrganizationPublicPage = ({
   organization,
   repositories,
   issues,
+  totalIssueCount,
 }: {
   organization: OrganizationPublicRead
   repositories: RepositoryPublicRead[]
   issues?: IssuePublicRead[]
+  totalIssueCount: number
 }) => {
   return (
     <>
       <h1 className="text-center text-3xl font-normal text-gray-800 dark:text-gray-300 md:text-3xl">
-        {organization.name} have{' '}
-        {issues && issues?.length > 0 ? issues?.length : 'no'} issues looking
-        for funding
+        {organization.name} have {totalIssueCount > 0 ? totalIssueCount : 'no'}{' '}
+        {totalIssueCount === 1 ? 'issue' : 'issues'} looking for funding
       </h1>
 
       <div className="flex flex-col items-center space-y-4">

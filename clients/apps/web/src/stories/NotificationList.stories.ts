@@ -12,6 +12,9 @@ const meta: Meta<typeof List> = {
   title: 'Organisms/NotificationList',
   component: List,
   tags: ['autodocs'],
+  parameters: {
+    themeLayout: 'side-by-side',
+  },
 }
 
 export default meta

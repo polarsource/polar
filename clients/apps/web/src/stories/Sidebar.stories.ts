@@ -15,6 +15,9 @@ const meta: Meta<typeof Sidebar> = {
       filters = f
     },
   },
+  parameters: {
+    themeLayout: 'side-by-side',
+  },
 }
 
 export default meta

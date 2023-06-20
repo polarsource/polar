@@ -38,3 +38,4 @@ jobs:
           projectToken: ${{ secrets.CI_CHROMATIC_PROJECT_TOKEN }}
           workingDir: ./clients/apps/web
           onlyChanged: true
+          exitOnceUploaded: true

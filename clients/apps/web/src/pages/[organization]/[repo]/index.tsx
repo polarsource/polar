@@ -20,17 +20,20 @@ const Page: NextLayoutComponentType = ({
   organization,
   repositories,
   issues,
+  totalIssueCount,
 }: {
   organization?: OrganizationPublicRead
   repositories?: RepositoryPublicRead[]
   issues?: IssuePublicRead[]
+  totalIssueCount?: number
 }) => {
   const router = useRouter()
 
-  if (!organization) {
-    return <PageNotFound />
-  }
-  if (!repositories) {
+  if (
+    organization === undefined ||
+    repositories === undefined ||
+    totalIssueCount === undefined
+  ) {
     return <PageNotFound />
   }
 
@@ -65,6 +68,7 @@ const Page: NextLayoutComponentType = ({
         organization={organization}
         repository={repo}
         issues={issues}
+        totalIssueCount={totalIssueCount}
       />
     </>
   )
@@ -88,8 +92,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       orgName: context.params.organization,
       repoName: context.params.repo,
     })
-    const { organization, repositories, issues } = res
-    return { props: { organization, repositories, issues } }
+    const {
+      organization,
+      repositories,
+      issues,
+      total_issue_count: totalIssueCount,
+    } = res
+    return { props: { organization, repositories, issues, totalIssueCount } }
   } catch (Error) {
     return { props: {} }
   }

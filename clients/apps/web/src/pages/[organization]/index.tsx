@@ -5,7 +5,6 @@ import PageNotFound from '@/components/Shared/PageNotFound'
 import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 import { api } from 'polarkit'
 import {
   IssuePublicRead,
@@ -20,17 +19,18 @@ const Page: NextLayoutComponentType = ({
   organization,
   repositories,
   issues,
+  totalIssueCount,
 }: {
   organization?: OrganizationPublicRead
   repositories?: RepositoryPublicRead[]
   issues?: IssuePublicRead[]
+  totalIssueCount?: number
 }) => {
-  const router = useRouter()
-
-  if (!organization) {
-    return <PageNotFound />
-  }
-  if (!repositories) {
+  if (
+    organization === undefined ||
+    repositories === undefined ||
+    totalIssueCount === undefined
+  ) {
     return <PageNotFound />
   }
 
@@ -56,6 +56,7 @@ const Page: NextLayoutComponentType = ({
         organization={organization}
         repositories={repositories}
         issues={issues}
+        totalIssueCount={totalIssueCount}
       />
     </>
   )
@@ -75,8 +76,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       platform: Platforms.GITHUB,
       orgName: context.params.organization,
     })
-    const { organization, repositories, issues } = res
-    return { props: { organization, repositories, issues } }
+    const {
+      organization,
+      repositories,
+      issues,
+      total_issue_count: totalIssueCount,
+    } = res
+    return { props: { organization, repositories, issues, totalIssueCount } }
   } catch (Error) {
     return { props: {} }
   }

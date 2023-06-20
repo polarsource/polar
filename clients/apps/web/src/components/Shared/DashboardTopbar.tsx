@@ -2,13 +2,14 @@ import AccountTopbar from '@/components/Dashboard/Account/Topbar'
 import RepoSelection from '@/components/Dashboard/RepoSelection'
 import SetupAccount from '@/components/Dashboard/SetupAccount'
 import { useRequireAuth } from '@/hooks'
-import { Cog8ToothIcon } from '@heroicons/react/24/outline'
+import { Cog8ToothIcon, EyeIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Topbar from './Topbar'
+import TopbarPill from './TopbarPill'
 
 const SettingsLink = ({ orgSlug }: { orgSlug?: string }) => {
   let path = '/dashboard/settings'
@@ -28,6 +29,21 @@ const SettingsLink = ({ orgSlug }: { orgSlug?: string }) => {
   )
 }
 
+const PublicPageLink = ({ path }: { path: string }) => {
+  return (
+    <>
+      <Link href={path}>
+        <TopbarPill color="gray" withIcon>
+          <>
+            <span>Public site</span>
+            <EyeIcon className="h-6 w-6" />
+          </>
+        </TopbarPill>
+      </Link>
+    </>
+  )
+}
+
 const DashboardNav = ({
   showSetupAccount,
 }: {
@@ -39,6 +55,16 @@ const DashboardNav = ({
 
   const { currentUser } = useRequireAuth()
   const userOrgQuery = useUserOrganizations(currentUser)
+
+  const publicPath = useMemo(() => {
+    if (currentRepo && currentOrg) {
+      return `/${currentOrg.name}/${currentRepo.name}`
+    }
+    if (currentOrg) {
+      return `/${currentOrg.name}`
+    }
+    return undefined
+  }, [currentOrg, currentRepo])
 
   if (!currentOrg || !currentUser || !userOrgQuery.data) {
     return <></>
@@ -60,6 +86,7 @@ const DashboardNav = ({
         organizations={userOrgQuery.data}
       />
       <AccountTopbar showSetupAccount={showSetupAccount} />
+      {publicPath && <PublicPageLink path={publicPath} />}
       <SettingsLink orgSlug={currentOrg.name} />
     </>
   )
@@ -91,6 +118,7 @@ const PersonalDashboardNav = () => {
         currentUser={currentUser}
         organizations={userOrgQuery.data}
       />
+      <PublicPageLink path={`/${currentUser.username}`} />
       <SettingsLink orgSlug={'personal'} />
     </>
   )

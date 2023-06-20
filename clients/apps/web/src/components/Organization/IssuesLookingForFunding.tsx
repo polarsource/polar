@@ -4,7 +4,7 @@ import {
   RepositoryPublicRead,
 } from 'polarkit/api/client'
 import { PolarTimeAgo } from 'polarkit/components/ui'
-import { abbrStars } from '.'
+import IconCounter from '../Dashboard/IconCounter'
 import IssueListItem from '../Dashboard/IssueListItem'
 
 const IssuesLookingForFunding = ({
@@ -48,10 +48,13 @@ const IssuesLookingForFunding = ({
       <div className="flex flex-col justify-between space-y-4 md:flex-row md:space-y-0 md:space-x-6">
         {top3.map((i) => (
           <div
-            className="flex flex-1 flex-col rounded-lg px-6 py-4 text-gray-500 shadow"
+            className="flex flex-1 flex-col rounded-lg px-6 py-4 text-gray-500 shadow dark:bg-gray-900 dark:ring-1 dark:ring-gray-800"
             key={i.issue.id}
           >
-            <a className="font-medium text-gray-900" href={i.issue_href}>
+            <a
+              className="font-medium text-gray-900 dark:text-gray-200"
+              href={i.issue_href}
+            >
               {i.issue.title}
             </a>
             <p className="mt-2 flex-1 text-sm">
@@ -60,25 +63,19 @@ const IssuesLookingForFunding = ({
             </p>
 
             <div className="mt-6 flex items-center justify-between">
-              <div className="inline-flex gap-2">
+              <div className="flex items-center gap-6">
+                {(i.issue.comments && i.issue.comments > 0 && (
+                  <IconCounter icon="comments" count={i.issue.comments} />
+                )) ||
+                  null}
+
                 {(i.issue.reactions.plus_one &&
                   i.issue.reactions.plus_one > 0 && (
-                    <p>
-                      👍{' '}
-                      <span className="text-black/50">
-                        {abbrStars(i.issue.reactions.plus_one)}
-                      </span>
-                    </p>
+                    <IconCounter
+                      icon="thumbs_up"
+                      count={i.issue.reactions.plus_one}
+                    />
                   )) ||
-                  null}
-                {(i.issue.comments && i.issue.comments > 0 && (
-                  <p>
-                    💬{' '}
-                    <span className="text-black/50">
-                      {abbrStars(i.issue.comments)}
-                    </span>
-                  </p>
-                )) ||
                   null}
               </div>
 

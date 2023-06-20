@@ -1,12 +1,13 @@
+import TopbarLayout from '@/components/Layout/TopbarLayout'
 import Pledge from '@/components/Pledge'
 import HowItWorks from '@/components/Pledge/HowItWorks'
 import PageNotFound from '@/components/Shared/PageNotFound'
-import type { GetServerSideProps, NextPage } from 'next'
+import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { api } from 'polarkit'
 import { Platforms, PledgeResources } from 'polarkit/api/client'
 import { posthog } from 'posthog-js'
-import { useEffect } from 'react'
+import { ReactElement, useEffect } from 'react'
 
 type Params = PledgeResources & {
   query?: {
@@ -15,7 +16,7 @@ type Params = PledgeResources & {
   }
 }
 
-const PledgePage: NextPage = ({
+const PledgePage: NextLayoutComponentType = ({
   organization,
   repository,
   issue,
@@ -70,6 +71,10 @@ const PledgePage: NextPage = ({
       </div>
     </>
   )
+}
+
+PledgePage.getLayout = (page: ReactElement) => {
+  return <TopbarLayout>{page}</TopbarLayout>
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {

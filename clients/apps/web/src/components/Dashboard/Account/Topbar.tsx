@@ -1,9 +1,9 @@
 import BalanceBadge from '@/components/Dashboard/Account/BalanceBadge'
 import StripeOnboardingButton from '@/components/Dashboard/Account/StripeOnboardingButton'
+import TopbarPill from '@/components/Shared/TopbarPill'
 import { Visibility } from 'polarkit/api/client'
 import { useOrganizationAccounts } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
-import BalanceBadgeBox from './BalanceBadgeBox'
 
 const AccountTopbar = ({
   showSetupAccount,
@@ -21,9 +21,9 @@ const AccountTopbar = ({
 
   if (hasPublicRepos && accountQuery.isLoading) {
     return (
-      <BalanceBadgeBox>
+      <TopbarPill color="blue">
         <div className="h-6 w-14"></div>
-      </BalanceBadgeBox>
+      </TopbarPill>
     )
   } else if (accounts?.length === 1) {
     return (

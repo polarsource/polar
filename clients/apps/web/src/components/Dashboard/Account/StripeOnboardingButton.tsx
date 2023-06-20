@@ -1,7 +1,7 @@
+import TopbarPill from '@/components/Shared/TopbarPill'
 import { api } from 'polarkit'
 import { Platforms } from 'polarkit/api/client'
 import { useStore } from 'polarkit/store'
-import BalanceBadgeBox from './BalanceBadgeBox'
 
 const StripeOnboardingButton = ({
   stripeId,
@@ -36,11 +36,11 @@ const StripeOnboardingButton = ({
         onboard()
       }}
     >
-      <BalanceBadgeBox>
-        <span className="whitespace-nowrap">
+      <TopbarPill color="blue">
+        <span>
           {stripeId ? 'Finish Stripe onboarding' : 'Sign up with Stripe'}
         </span>
-      </BalanceBadgeBox>
+      </TopbarPill>
     </a>
   )
 }

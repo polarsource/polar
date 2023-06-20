@@ -193,6 +193,7 @@ async def get_public_issues(
         issue_list_type=IssueListType.issues,
         sort_by=IssueSortBy.issues_default,
         limit=50,
+        have_polar_badge=True,
         include_statuses=[
             IssueStatus.backlog,
             IssueStatus.triaged,
@@ -205,4 +206,5 @@ async def get_public_issues(
         organization=OrganizationPublicRead.from_orm(org),
         repositories=[RepositoryPublicRead.from_orm(r) for r in all_org_repos],
         issues=[IssuePublicRead.from_orm(i) for i in issues],
+        total_issue_count=count,
     )

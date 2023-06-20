@@ -113,7 +113,7 @@ const IssueListItemDecoration = ({
         <div
           className={classNames(
             showPledges ? 'border-l pl-4 dark:border-gray-700' : '',
-            'flex-1',
+            'flex-1 space-y-1',
           )}
         >
           {haveReferences &&

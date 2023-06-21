@@ -75,11 +75,14 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  const data = await getData('zegloforko', '')
-
-  console.log(data.total_issue_count)
+  if (typeof req.query.org !== 'string') {
+    return
+  }
 
   try {
+    const org = req.query.org
+    const data = await getData(org, '')
+
     const svg = await renderOG(
       data.organization.name,
       data.total_issue_count,

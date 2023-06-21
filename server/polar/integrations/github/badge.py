@@ -1,9 +1,11 @@
 from dataclasses import dataclass
+
 import structlog
+from githubkit import AppInstallationAuthStrategy, GitHub
 
 from polar.config import settings
-from polar.models import Organization, Repository, Issue
-from githubkit import GitHub, AppInstallationAuthStrategy
+from polar.models import Issue, Organization, Repository
+
 from . import client as github
 
 log = structlog.get_logger()
@@ -99,8 +101,11 @@ class GithubBadge:
         if message:
             message += "\n\n"
 
+        # Note: the newline between <a> and <picture> is important. GitHubs markdown
+        # parser freaks out if it isn't there!
         return f"""{PLEDGE_BADGE_COMMENT_START}
-{message}<a href="{funding_url}"><picture>
+{message}<a href="{funding_url}">
+<picture>
   <source media="(prefers-color-scheme: dark)" srcset="{darkmode_url}">
   <img alt="Fund with Polar" src="{lightmode_url}">
 </picture>

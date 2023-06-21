@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "polar-docs"
+version = "0.1.0"
+description = "Documentation, FAQ & Blog for Polar"
+authors = ["Polar Team <support@polar.sh>"]
+license = "Apache-2.0"
+readme = "README.md"
+packages = [{include = "polar_docs"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+mkdocs-material = "^9.1.16"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

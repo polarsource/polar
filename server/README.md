@@ -5,6 +5,9 @@
 ```bash
 # Run these commands in this directory (./server)
 #
+# Create a .env file and edit it
+cp .env.template .env
+
 # Start PostgreSQL and Redis
 docker compose up -d
 
@@ -17,9 +20,6 @@ poetry run task --list
 
 # Use our VSCode workspace (extensions, settings etc)
 code polar.code-workspace
-
-# Create a .env file and edit it
-cp .env.template .env
 
 # Run database migrations
 poetry run task db_migrate

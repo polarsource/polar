@@ -6,7 +6,6 @@ import { issue, org } from './testdata'
 const meta: Meta<typeof OpenGraphImage> = {
   title: 'Organisms/OpenGraphImage',
   component: OpenGraphImage,
-  tags: ['autodocs'],
   parameters: {
     themes: ['light'],
   },

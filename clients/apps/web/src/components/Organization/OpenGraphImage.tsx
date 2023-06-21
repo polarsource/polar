@@ -1,5 +1,8 @@
 import { IssuePublicRead } from 'polarkit/api/client'
 
+import ogLogo from './og_logo.png'
+import ogThumbsUp from './og_thumbs_up.png'
+
 const OpenGraphImage = (props: {
   org_name: string
   issue_count: number
@@ -18,6 +21,8 @@ const OpenGraphImage = (props: {
         days > 0 ? `${days} ${days === 1 ? 'day' : 'days'} ago` : 'today',
     }
   })
+
+  const imageBaseURL = 'http://127.0.0.1:3000'
 
   return (
     <div
@@ -122,16 +127,31 @@ const OpenGraphImage = (props: {
             <div
               style={{
                 display: 'flex',
+                flexDirection: 'row',
                 alignItems: 'center',
                 fontSize: '24px',
+                lineHeight: '36px',
                 gap: '20px',
                 color: '#808080',
                 flexShrink: 0,
+                justifyContent: 'center',
               }}
             >
-              {}
               {i.reactions.plus_one > 0 && (
-                <div>{`👍 ${i.reactions.plus_one}`}</div>
+                <>
+                  <img
+                    style={{
+                      height: '36px',
+                    }}
+                    src={imageBaseURL + '/' + ogThumbsUp.src}
+                  />
+                  <div
+                    style={{
+                      marginLeft: '12px',
+                      verticalAlign: 'center',
+                    }}
+                  >{`${i.reactions.plus_one}`}</div>
+                </>
               )}
               <div
                 style={{
@@ -140,6 +160,7 @@ const OpenGraphImage = (props: {
                   fontSize: '24px',
                   padding: '14px 28px',
                   borderRadius: '8px',
+                  lineHeight: '24px',
                 }}
               >
                 Pledge
@@ -166,7 +187,7 @@ const OpenGraphImage = (props: {
           position: 'absolute',
           bottom: '50px',
         }}
-        src="http://127.0.0.1:3000/og_logotype.png"
+        src={imageBaseURL + '/' + ogLogo.src}
       />
     </div>
   )

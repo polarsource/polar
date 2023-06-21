@@ -1,8 +1,5 @@
 import { IssuePublicRead } from 'polarkit/api/client'
 
-import ogLogo from './og_logo.png'
-import ogThumbsUp from './og_thumbs_up.png'
-
 const OpenGraphImage = (props: {
   org_name: string
   issue_count: number
@@ -22,7 +19,7 @@ const OpenGraphImage = (props: {
     }
   })
 
-  const imageBaseURL = 'http://127.0.0.1:3000'
+  const imageBaseURL = 'https://polar.sh/'
 
   return (
     <div
@@ -143,7 +140,7 @@ const OpenGraphImage = (props: {
                     style={{
                       height: '36px',
                     }}
-                    src={imageBaseURL + '/' + ogThumbsUp.src}
+                    src={imageBaseURL + '/og_thumbs_up.png'}
                   />
                   <div
                     style={{
@@ -187,7 +184,7 @@ const OpenGraphImage = (props: {
           position: 'absolute',
           bottom: '50px',
         }}
-        src={imageBaseURL + '/' + ogLogo.src}
+        src={imageBaseURL + '/og_logotype.png'}
       />
     </div>
   )

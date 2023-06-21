@@ -39,7 +39,7 @@
     "react-timeago": "^7.1.0",
     "react-use": "^17.4.0",
     "sass": "^1.59.3",
-    "satori": "^0.8.1",
+    "satori": "^0.10.1",
     "tailwindcss-radix": "^2.8.0",
     "yayson": "^3.0.0"
   },

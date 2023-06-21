@@ -38,6 +38,18 @@ const Page: NextLayoutComponentType = ({
     <>
       <Head>
         <title>Polar | {organization.name}</title>
+        <meta
+          property="og:title"
+          content={`${organization.name} seeks funding for issues`}
+        />
+        <meta
+          property="og:description"
+          content={`${organization.name} seeks funding for issues on Polar`}
+        />
+        <meta
+          property="og:image"
+          content={`/api/og/render.svg?org=${organization.name}`}
+        />
       </Head>
 
       <div className="flex items-center justify-between">

@@ -1,6 +1,6 @@
 import EventEmitter from 'eventemitter3'
 import { useEffect } from 'react'
-import { getServerURL } from '../../utils'
+import { getServerURL } from '../../api'
 import { onIssueUpdated } from './issues'
 import { onOrganizationUpdated } from './organizations'
 

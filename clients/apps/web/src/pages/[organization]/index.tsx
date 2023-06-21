@@ -50,6 +50,8 @@ const Page: NextLayoutComponentType = ({
           property="og:image"
           content={`/api/og/render.svg?org=${organization.name}`}
         />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
       </Head>
 
       <div className="flex items-center justify-between">

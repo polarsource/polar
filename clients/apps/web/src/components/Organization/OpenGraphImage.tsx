@@ -24,8 +24,8 @@ const OpenGraphImage = (props: {
   return (
     <div
       style={{
-        height: 630,
-        width: 1200,
+        height: '100%',
+        width: '100%',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -57,6 +57,8 @@ const OpenGraphImage = (props: {
         >
           <img
             src={props.avatar}
+            height={48}
+            width={48}
             style={{
               height: 48,
               width: 48,

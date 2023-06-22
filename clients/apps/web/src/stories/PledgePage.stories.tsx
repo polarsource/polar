@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
+import PublicLayout from '@/components/Layout/PublicLayout'
 import Pledge from '../components/Pledge'
 import { issue, org, repo } from './testdata'
 
@@ -24,9 +25,9 @@ export const Default: Story = {
 
   render: (args) => {
     return (
-      <div className="mx-auto mt-12 mb-24 flex w-full flex-col gap-12 md:mt-24 md:w-[826px]">
+      <PublicLayout>
         <Pledge {...args} />
-      </div>
+      </PublicLayout>
     )
   },
 }

@@ -1,3 +1,4 @@
+import PublicLayout from '@/components/Layout/PublicLayout'
 import OrganizationPublicPage from '@/components/Organization/OrganizationPublicPage'
 import type { Meta, StoryObj } from '@storybook/react'
 import { issue, org, repo } from './testdata'
@@ -53,9 +54,9 @@ export const Default: Story = {
   },
   render: (args) => {
     return (
-      <div className="mx-auto mt-12 flex w-full flex-col space-y-12 px-2 md:max-w-[970px] md:px-0">
+      <PublicLayout>
         <OrganizationPublicPage {...args} />
-      </div>
+      </PublicLayout>
     )
   },
 }

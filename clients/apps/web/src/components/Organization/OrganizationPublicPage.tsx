@@ -18,6 +18,12 @@ const OrganizationPublicPage = ({
   issues?: IssuePublicRead[]
   totalIssueCount: number
 }) => {
+  const showMeta =
+    organization.bio ||
+    organization.company ||
+    organization.email ||
+    organization.twitter_username
+
   return (
     <>
       <h1 className="text-center text-3xl font-normal text-gray-800 dark:text-gray-300 md:text-3xl">
@@ -25,35 +31,37 @@ const OrganizationPublicPage = ({
         {totalIssueCount === 1 ? 'issue' : 'issues'} looking for funding
       </h1>
 
-      <div className="flex flex-col items-center space-y-4">
-        {organization.bio && (
-          <div className="text-center text-gray-500">{organization.bio}</div>
-        )}
-
-        <div className="mt-2 flex w-full justify-center gap-4 text-sm text-gray-600">
-          {organization.company && <div>{organization.company}</div>}
-
-          {organization.blog && (
-            <a
-              className="text-blue-600 hover:text-blue-700"
-              href={organization.blog}
-            >
-              {prettyURL(organization.blog)}
-            </a>
+      {showMeta && (
+        <div className="flex flex-col items-center space-y-4">
+          {organization.bio && (
+            <div className="text-center text-gray-500">{organization.bio}</div>
           )}
 
-          {organization.email && <div>{organization.email}</div>}
+          <div className="mt-2 flex w-full justify-center gap-4 text-sm text-gray-600">
+            {organization.company && <div>{organization.company}</div>}
 
-          {organization.twitter_username && (
-            <a
-              className="text-blue-600 hover:text-blue-700"
-              href={`https://twitter.com/${organization.twitter_username}`}
-            >
-              @{organization.twitter_username}
-            </a>
-          )}
+            {organization.blog && (
+              <a
+                className="text-blue-600 hover:text-blue-700"
+                href={organization.blog}
+              >
+                {prettyURL(organization.blog)}
+              </a>
+            )}
+
+            {organization.email && <div>{organization.email}</div>}
+
+            {organization.twitter_username && (
+              <a
+                className="text-blue-600 hover:text-blue-700"
+                href={`https://twitter.com/${organization.twitter_username}`}
+              >
+                @{organization.twitter_username}
+              </a>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {issues && (
         <IssuesLookingForFunding

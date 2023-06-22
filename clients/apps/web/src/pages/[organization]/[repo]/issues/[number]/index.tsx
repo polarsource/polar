@@ -1,3 +1,4 @@
+import PublicLayout from '@/components/Layout/PublicLayout'
 import TopbarLayout from '@/components/Layout/TopbarLayout'
 import Pledge from '@/components/Pledge'
 import HowItWorks from '@/components/Pledge/HowItWorks'
@@ -74,34 +75,37 @@ const PledgePage: NextLayoutComponentType = ({
           content={`${organization.name} seeks funding for ${issue.title} Polar`}
         ></meta>
       </Head>
-      <div className="mx-auto mt-12 mb-24 flex w-full flex-col gap-12 md:mt-24 md:w-[826px]">
-        <h1 className="text-center text-3xl font-normal text-gray-800 dark:text-gray-300 md:text-4xl">
-          Complete your backing
-        </h1>
 
-        <Pledge
-          organization={organization}
-          repository={repository}
-          issue={issue}
-          asOrg={query?.as_org}
-          gotoURL={query?.goto_url}
-        />
+      <h1 className="text-center text-3xl font-normal text-gray-800 dark:text-gray-300 md:text-4xl">
+        Complete your backing
+      </h1>
 
-        <HowItWorks />
+      <Pledge
+        organization={organization}
+        repository={repository}
+        issue={issue}
+        asOrg={query?.as_org}
+        gotoURL={query?.goto_url}
+      />
 
-        <div className="flex items-center justify-center gap-6">
-          <a className="text-blue-600 hover:text-blue-500" href="/faq">
-            Polar FAQ
-          </a>
-          <span className="text-gray-500">&copy; Polar Software Inc 2023</span>
-        </div>
+      <HowItWorks />
+
+      <div className="flex items-center justify-center gap-6">
+        <a className="text-blue-600 hover:text-blue-500" href="/faq">
+          Polar FAQ
+        </a>
+        <span className="text-gray-500">&copy; Polar Software Inc 2023</span>
       </div>
     </>
   )
 }
 
 PledgePage.getLayout = (page: ReactElement) => {
-  return <TopbarLayout>{page}</TopbarLayout>
+  return (
+    <TopbarLayout>
+      <PublicLayout>{page}</PublicLayout>
+    </TopbarLayout>
+  )
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {

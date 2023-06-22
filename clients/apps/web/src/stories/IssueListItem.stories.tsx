@@ -13,21 +13,9 @@ import {
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
 import IssueListItem from '../components/Dashboard/IssueListItem'
-import { issue, org, repo } from './testdata'
+import { addDays, addHours, issue, org, repo } from './testdata'
 
 type Story = StoryObj<typeof IssueListItem>
-
-function addDays(date: Date, days: number) {
-  var result = new Date(date)
-  result.setDate(result.getDate() + days)
-  return result
-}
-
-function addHours(date: Date, hours: number) {
-  var result = new Date(date)
-  result.setHours(result.getHours() + hours)
-  return result
-}
 
 const pledges: PledgeRead[] = [
   {

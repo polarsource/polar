@@ -42,10 +42,9 @@ const RepositoryPublicPage = ({
 
         <div className="flex flex-wrap items-center space-x-4 text-gray-600">
           {repository.license && <p>{repository.license}</p>}
-          {(repository.stars && repository.stars > 0 && (
-            <p>{abbrStars(repository.stars)} stars</p>
-          )) ||
-            null}
+
+          <p>{abbrStars(repository.stars || 0)} stars</p>
+
           {repository.homepage && (
             <a
               className="text-blue-600 hover:text-blue-700"

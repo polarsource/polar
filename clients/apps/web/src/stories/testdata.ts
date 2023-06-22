@@ -18,6 +18,18 @@ import {
   Visibility,
 } from 'polarkit/api/client'
 
+export function addDays(date: Date, days: number) {
+  var result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
+}
+
+export function addHours(date: Date, hours: number) {
+  var result = new Date(date)
+  result.setHours(result.getHours() + hours)
+  return result
+}
+
 export const org: OrganizationPublicRead = {
   id: 'xxxabc',
   platform: Platforms.GITHUB,
@@ -48,9 +60,9 @@ export const issue: IssueRead = {
   },
   state: State.OPEN,
   id: 'cc',
-  issue_created_at: '2023-04-08',
+  issue_created_at: addDays(new Date(), -7).toISOString(),
   external_id: 123,
-  created_at: '2023-04-08',
+  created_at: addDays(new Date(), -7).toISOString(),
 }
 
 export const repo: RepositoryRead = {
@@ -65,7 +77,7 @@ export const repo: RepositoryRead = {
 
 export const pledge: PledgeRead = {
   id: 'pppp',
-  created_at: '2023-04-02',
+  created_at: addDays(new Date(), -7).toISOString(),
   issue_id: issue.id,
   amount: 3000,
   repository_id: repo.id,
@@ -85,7 +97,7 @@ export const privateOrganization: OrganizationPrivateRead = {
   external_id: 123,
   is_personal: false,
   status: Status.ACTIVE,
-  created_at: '2023-01-01',
+  created_at: addDays(new Date(), -7).toISOString(),
   repositories: [
     {
       platform: Platforms.GITHUB,
@@ -139,13 +151,13 @@ const pledgerPledgePendingNotification: PledgerPledgePendingNotification = {
   issue_org_name: 'polarsource',
   issue_repo_name: 'polar',
   issue_number: 123,
-  pledge_date: '2023-03-24',
+  pledge_date: addDays(new Date(), -2).toISOString(),
 }
 
 export const notification_maintainerPledgeCreatedNotification: NotificationRead =
   {
     id: 'x',
-    created_at: '2023-05-02',
+    created_at: addDays(new Date(), -2).toISOString(),
     type: NotificationType.MAINTAINER_PLEDGE_CREATED_NOTIFICATION,
     payload: maintainerPledgeCreatedNotification,
   }

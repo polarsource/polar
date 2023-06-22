@@ -5,22 +5,30 @@ import {
 } from 'polarkit/api/client'
 import { abbrStars, prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
+import Header from './Header'
 import IssuesLookingForFunding from './IssuesLookingForFunding'
 
 const RepositoryPublicPage = ({
   organization,
   repository,
+  repositories,
   issues,
   totalIssueCount,
 }: {
   organization: OrganizationPublicRead
   repository: RepositoryPublicRead
+  repositories: RepositoryPublicRead[]
   issues?: IssuePublicRead[]
-
   totalIssueCount: number
 }) => {
   return (
     <>
+      <Header
+        organization={organization}
+        repositories={repositories}
+        repository={repository}
+      />
+
       <h1 className="text-center text-3xl font-normal text-gray-800 dark:text-gray-300 md:text-3xl">
         {organization.name}/{repository.name} have{' '}
         {totalIssueCount > 0 ? totalIssueCount : 'no'}{' '}

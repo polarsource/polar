@@ -65,6 +65,24 @@ const Page: NextLayoutComponentType = ({
         />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
+
+        <meta
+          property="twitter:image"
+          content={`https://polar.sh/og?org=${organization.name}&repo=${repo.name}`}
+        />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta
+          name="twitter:image:alt"
+          content={`${organization.name}/${repo.name} seeks funding for issues`}
+        />
+        <meta
+          name="twitter:title"
+          content={`${organization.name}/${repo.name} seeks funding for issues`}
+        />
+        <meta
+          name="twitter:description"
+          content={`${organization.name}/${repo.name} seeks funding for issues on Polar`}
+        ></meta>
       </Head>
 
       <div className="flex items-center justify-between">

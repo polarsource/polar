@@ -55,8 +55,8 @@ const OpenGraphImage = (props: {
             fontSize: '42px',
             color: '#727374',
             width: '100%',
+            minWidth: '100%',
             justifyContent: 'center',
-            overflow: 'hidden',
           }}
         >
           <img
@@ -76,7 +76,8 @@ const OpenGraphImage = (props: {
               color: '#181A1F',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
-              textOverflow: 'ellipsis',
+              // TODO: figure out a way to enable ellipsis without truncating shorter words
+              // textOverflow: 'ellipsis',
             }}
           >
             {props.repo_name
@@ -195,8 +196,9 @@ const OpenGraphImage = (props: {
       ></div>
 
       <img
+        height={50}
+        width={142}
         style={{
-          height: '50px',
           position: 'absolute',
           bottom: '50px',
         }}

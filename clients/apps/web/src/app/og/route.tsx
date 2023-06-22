@@ -3,6 +3,7 @@ import { ImageResponse, NextRequest } from 'next/server'
 import {
   IssuePublicRead,
   OrganizationPublicPageRead,
+  RepositoryPublicRead,
 } from 'polarkit/api/client'
 
 export const runtime = 'edge'
@@ -27,6 +28,7 @@ const getFontBuffer = async (name: string) => {
 
 const renderOG = async (
   org_name: string,
+  repository: RepositoryPublicRead | undefined,
   issue_count: number,
   avatar: string,
   issues: IssuePublicRead[],
@@ -38,6 +40,7 @@ const renderOG = async (
     (
       <OpenGraphImage
         org_name={org_name}
+        repo_name={repository?.name}
         issue_count={issue_count}
         avatar={avatar}
         issues={issues}
@@ -66,11 +69,23 @@ const renderOG = async (
 
 const getData = async (
   org: string,
-  repo: string,
+  repo: string | null,
 ): Promise<OrganizationPublicPageRead> => {
-  return await fetch(`${getServerURL()}/api/v1/github/${org}/public`, {
-    method: 'GET',
-  }).then((response) => response.json())
+  const params = new URLSearchParams()
+  if (repo) {
+    params.set('repo_name', repo)
+  }
+  return await fetch(
+    `${getServerURL()}/api/v1/github/${org}/public?${params.toString()}`,
+    {
+      method: 'GET',
+    },
+  ).then((response) => {
+    if (!response.ok) {
+      throw new Error(`Unexpected ${response.status} status code`)
+    }
+    return response.json()
+  })
 }
 
 import { Inter } from 'next/font/google'
@@ -86,10 +101,13 @@ export async function GET(req: NextRequest) {
       throw new Error('no org')
     }
 
-    const data = await getData(org, '')
+    const repo = searchParams.get('repo')
+
+    const data = await getData(org, repo)
 
     return await renderOG(
       data.organization.name,
+      data.repositories.find((r) => r.name === repo),
       data.total_issue_count,
       data.organization.avatar_url,
       data.issues,

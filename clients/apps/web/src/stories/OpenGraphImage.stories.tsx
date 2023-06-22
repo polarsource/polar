@@ -82,6 +82,54 @@ export const IssueLongTitle: Story = {
   },
 }
 
+export const Repository: Story = {
+  args: {
+    org_name: org.name,
+    repo_name: 'foobar',
+    issue_count: 15,
+    avatar: org.avatar_url,
+    issues: [
+      {
+        ...issue,
+        title:
+          'Lorem ipsum dolor sit amet: Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum',
+      },
+      issue,
+    ],
+  },
+  render: (args) => {
+    return (
+      <div className="absolute">
+        <OpenGraphImage {...args} />
+      </div>
+    )
+  },
+}
+
+export const RepositoryLongName: Story = {
+  args: {
+    org_name: org.name,
+    repo_name: 'lorem-ipsum-dorlor-sit-amet-this-is-a-long-name',
+    issue_count: 15,
+    avatar: org.avatar_url,
+    issues: [
+      {
+        ...issue,
+        title:
+          'Lorem ipsum dolor sit amet: Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum',
+      },
+      issue,
+    ],
+  },
+  render: (args) => {
+    return (
+      <div className="absolute">
+        <OpenGraphImage {...args} />
+      </div>
+    )
+  },
+}
+
 export const OneIssue: Story = {
   args: {
     org_name: org.name,

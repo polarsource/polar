@@ -2,6 +2,7 @@ import { IssuePublicRead } from 'polarkit/api/client'
 
 const OpenGraphImage = (props: {
   org_name: string
+  repo_name?: string
   issue_count: number
   avatar: string
   issues: IssuePublicRead[]
@@ -24,8 +25,8 @@ const OpenGraphImage = (props: {
   return (
     <div
       style={{
-        height: '100%',
-        width: '100%',
+        height: 630,
+        width: 1200,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -53,6 +54,9 @@ const OpenGraphImage = (props: {
             gap: '12px',
             fontSize: '42px',
             color: '#727374',
+            width: '100%',
+            justifyContent: 'center',
+            overflow: 'hidden',
           }}
         >
           <img
@@ -63,17 +67,27 @@ const OpenGraphImage = (props: {
               height: 48,
               width: 48,
               borderRadius: 48,
+              flexShrink: 0,
             }}
           />
           <div
             style={{
               fontWeight: 'bold',
               color: '#181A1F',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
             }}
           >
-            {props.org_name}
+            {props.repo_name
+              ? `${props.org_name}/${props.repo_name}`
+              : props.org_name}
           </div>
-          <div>{`seeks backing for ${props.issue_count} ${
+          <div
+            style={{
+              flexShrink: 0,
+            }}
+          >{`seeks backing for ${props.issue_count} ${
             props.issue_count === 1 ? 'issue' : 'issues'
           }`}</div>
         </div>

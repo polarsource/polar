@@ -32,7 +32,7 @@ const RepositoryPublicPage = ({
           <p className="text-center text-gray-500">{repository.description}</p>
         )}
 
-        <div className="flex items-center space-x-4 text-gray-600">
+        <div className="flex flex-wrap items-center space-x-4 text-gray-600">
           {repository.license && <p>{repository.license}</p>}
           {(repository.stars && repository.stars > 0 && (
             <p>{abbrStars(repository.stars)} stars</p>

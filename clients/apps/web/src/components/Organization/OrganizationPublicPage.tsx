@@ -32,12 +32,14 @@ const OrganizationPublicPage = ({
       </h1>
 
       {showMeta && (
-        <div className="flex flex-col items-center space-y-4">
+        <div className="flex flex-col  items-center space-y-4">
           {organization.bio && (
-            <div className="text-center text-gray-500">{organization.bio}</div>
+            <div className="nowrap text-center text-gray-500">
+              {organization.bio}
+            </div>
           )}
 
-          <div className="mt-2 flex w-full justify-center gap-4 text-sm text-gray-600">
+          <div className="mt-2 flex w-full flex-wrap justify-center gap-4 text-sm text-gray-600">
             {organization.company && <div>{organization.company}</div>}
 
             {organization.blog && (

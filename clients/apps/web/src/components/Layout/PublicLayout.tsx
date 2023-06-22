@@ -3,7 +3,7 @@ import EmptyLayout from './EmptyLayout'
 const PublicLayout = ({ children }: { children: React.ReactElement }) => {
   return (
     <EmptyLayout>
-      <div className="mx-auto mt-12 mb-24 flex w-full flex-col space-y-12 px-2 md:max-w-[970px] md:px-0">
+      <div className="mb:mt-12 mb:mb-24 mx-auto mt-8 mb-16 flex w-full max-w-[970px] flex-col space-y-8 px-2 md:space-y-12 lg:px-0">
         {children}
       </div>
     </EmptyLayout>

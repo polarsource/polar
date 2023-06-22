@@ -28,10 +28,12 @@ const OpenGraphImage = (props: {
   let h1 = ''
   if (props.largeIssue) {
     h1 = 'seeks backing for'
-  } else {
+  } else if (props.issue_count > 0) {
     h1 = `seeks backing for ${props.issue_count} ${
       props.issue_count === 1 ? 'issue' : 'issues'
     }`
+  } else {
+    h1 = 'seeks backing'
   }
 
   return (

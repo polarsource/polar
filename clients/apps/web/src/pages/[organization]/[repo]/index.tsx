@@ -1,10 +1,8 @@
 import PublicLayout from '@/components/Layout/PublicLayout'
-import Navigation from '@/components/Organization/Navigation'
 import RepositoryPublicPage from '@/components/Organization/RepositoryPublicPage'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import Head from 'next/head'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit'
 import {
@@ -13,7 +11,6 @@ import {
   Platforms,
   RepositoryPublicRead,
 } from 'polarkit/api/client'
-import { LogoType } from 'polarkit/components/brand'
 import { ReactElement } from 'react'
 
 const Page: NextLayoutComponentType = ({
@@ -85,20 +82,9 @@ const Page: NextLayoutComponentType = ({
         ></meta>
       </Head>
 
-      <div className="flex items-center justify-between">
-        <Navigation
-          organization={organization}
-          repositories={repositories}
-          repository={repo}
-        ></Navigation>
-
-        <Link href="/">
-          <LogoType />
-        </Link>
-      </div>
-
       <RepositoryPublicPage
         organization={organization}
+        repositories={repositories}
         repository={repo}
         issues={issues}
         totalIssueCount={totalIssueCount}

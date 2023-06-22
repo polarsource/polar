@@ -5,6 +5,7 @@ import {
 } from 'polarkit/api/client'
 import { prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
+import Header from './Header'
 import IssuesLookingForFunding from './IssuesLookingForFunding'
 
 const OrganizationPublicPage = ({
@@ -26,6 +27,8 @@ const OrganizationPublicPage = ({
 
   return (
     <>
+      <Header organization={organization} repositories={repositories} />
+
       <h1 className="text-center text-3xl font-normal text-gray-800 dark:text-gray-300 md:text-3xl">
         {organization.name} have {totalIssueCount > 0 ? totalIssueCount : 'no'}{' '}
         {totalIssueCount === 1 ? 'issue' : 'issues'} looking for funding

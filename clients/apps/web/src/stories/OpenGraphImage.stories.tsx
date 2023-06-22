@@ -178,3 +178,61 @@ export const NoIssues: Story = {
     )
   },
 }
+
+export const LargeIssue: Story = {
+  args: {
+    org_name: org.name,
+    issue_count: 0,
+    avatar: org.avatar_url,
+    issues: [issue],
+    largeIssue: true,
+  },
+  render: (args) => {
+    return (
+      <div
+        className="relative"
+        style={{
+          height: 630,
+          width: 1200,
+        }}
+      >
+        <div className="absolute">
+          <OpenGraphImage {...args} />
+        </div>
+      </div>
+    )
+  },
+}
+
+export const LargeIssueNoReactions: Story = {
+  args: {
+    org_name: org.name,
+    issue_count: 0,
+    avatar: org.avatar_url,
+    issues: [
+      {
+        ...issue,
+        reactions: {
+          ...issue.reactions,
+          plus_one: 0,
+        },
+      },
+    ],
+    largeIssue: true,
+  },
+  render: (args) => {
+    return (
+      <div
+        className="relative"
+        style={{
+          height: 630,
+          width: 1200,
+        }}
+      >
+        <div className="absolute">
+          <OpenGraphImage {...args} />
+        </div>
+      </div>
+    )
+  },
+}

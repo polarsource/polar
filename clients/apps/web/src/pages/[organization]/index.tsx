@@ -46,7 +46,11 @@ const Page: NextLayoutComponentType = ({
           property="og:description"
           content={`${organization.name} seeks funding for issues on Polar`}
         />
-        <meta property="og:image" content={`/og?org=${organization.name}`} />
+        <meta name="og:site_name" content="Polar"></meta>
+        <meta
+          property="og:image"
+          content={`https://polar.sh/og?org=${organization.name}`}
+        />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
       </Head>

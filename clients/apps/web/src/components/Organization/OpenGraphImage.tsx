@@ -6,8 +6,11 @@ const OpenGraphImage = (props: {
   issue_count: number
   avatar: string
   issues: IssuePublicRead[]
+  largeIssue: boolean
 }) => {
-  const showIssues = props.issues.slice(0, 2).map((i) => {
+  const issueCount = props.largeIssue ? 1 : 2
+
+  const showIssues = props.issues.slice(0, issueCount).map((i) => {
     const now = new Date()
     const createdAt = new Date(i.issue_created_at)
     const days = Math.floor(
@@ -21,6 +24,15 @@ const OpenGraphImage = (props: {
   })
 
   const imageBaseURL = 'https://polar.sh/'
+
+  let h1 = ''
+  if (props.largeIssue) {
+    h1 = 'seeks backing for'
+  } else {
+    h1 = `seeks backing for ${props.issue_count} ${
+      props.issue_count === 1 ? 'issue' : 'issues'
+    }`
+  }
 
   return (
     <div
@@ -88,17 +100,15 @@ const OpenGraphImage = (props: {
                 // textOverflow: 'ellipsis',
               }}
             >
-              {props.repo_name
-                ? `${props.org_name}/${props.repo_name}`
-                : props.org_name}
+              {props.org_name}
             </div>
             <div
               style={{
                 flexShrink: 0,
               }}
-            >{`seeks backing for ${props.issue_count} ${
-              props.issue_count === 1 ? 'issue' : 'issues'
-            }`}</div>
+            >
+              {h1}
+            </div>
           </div>
 
           {showIssues.map((i) => (
@@ -107,10 +117,10 @@ const OpenGraphImage = (props: {
               style={{
                 background: 'white',
                 width: '1080px',
-                height: '131px',
+                height: props.largeIssue ? '300px' : '131px',
                 display: 'flex',
                 borderRadius: '24px',
-                flexDirection: 'row',
+                flexDirection: props.largeIssue ? 'column' : 'row',
                 padding: '25px 38px',
                 boxShadow:
                   '0px 1px 8px rgba(0, 0, 0, 0.07), 0px 0.5px 2.5px rgba(0, 0, 0, 0.16)',
@@ -150,17 +160,22 @@ const OpenGraphImage = (props: {
                 style={{
                   display: 'flex',
                   flexDirection: 'row',
+                  justifyContent: props.largeIssue ? 'space-between' : 'center',
                   alignItems: 'center',
                   fontSize: '24px',
                   lineHeight: '36px',
                   gap: '20px',
                   color: '#808080',
                   flexShrink: 0,
-                  justifyContent: 'center',
                 }}
               >
-                {i.reactions.plus_one > 0 && (
-                  <>
+                {(i.reactions.plus_one > 0 && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                    }}
+                  >
                     <img
                       style={{
                         height: '36px',
@@ -173,8 +188,8 @@ const OpenGraphImage = (props: {
                         verticalAlign: 'center',
                       }}
                     >{`${i.reactions.plus_one}`}</div>
-                  </>
-                )}
+                  </div>
+                )) || <div></div>}
                 <div
                   style={{
                     background: '#4667CA',
@@ -192,16 +207,18 @@ const OpenGraphImage = (props: {
           ))}
         </div>
 
-        <div
-          style={{
-            background:
-              'linear-gradient(180deg, rgba(254, 253, 249, 0) 0%, #FEFDF9 56.95%)',
-            height: '300px',
-            width: '100%',
-            position: 'absolute',
-            top: '305px',
-          }}
-        ></div>
+        {!props.largeIssue && (
+          <div
+            style={{
+              background:
+                'linear-gradient(180deg, rgba(254, 253, 249, 0) 0%, #FEFDF9 56.95%)',
+              height: '300px',
+              width: '100%',
+              position: 'absolute',
+              top: '305px',
+            }}
+          ></div>
+        )}
 
         <img
           height={50}

@@ -32,6 +32,7 @@ const renderOG = async (
   issue_count: number,
   avatar: string,
   issues: IssuePublicRead[],
+  largeIssue: boolean,
 ) => {
   // const interRegular = await getFontBuffer('Inter-Regular.ttf')
   // const interMedium = await getFontBuffer('Inter-Medium.ttf')
@@ -44,6 +45,7 @@ const renderOG = async (
         issue_count={issue_count}
         avatar={avatar}
         issues={issues}
+        largeIssue={largeIssue}
       />
     ),
     {
@@ -102,8 +104,19 @@ export async function GET(req: NextRequest) {
     }
 
     const repo = searchParams.get('repo')
+    const number = searchParams.get('number')
 
     const data = await getData(org, repo)
+
+    let largeIssue = false
+
+    if (number) {
+      const singleIssue = data.issues.find((i) => i.number)
+      if (singleIssue) {
+        data.issues = [singleIssue]
+        largeIssue = true
+      }
+    }
 
     return await renderOG(
       data.organization.name,
@@ -111,6 +124,7 @@ export async function GET(req: NextRequest) {
       data.total_issue_count,
       data.organization.avatar_url,
       data.issues,
+      largeIssue,
     )
   } catch (error) {
     console.log(error)

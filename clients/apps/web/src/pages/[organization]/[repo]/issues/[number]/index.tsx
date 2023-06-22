@@ -46,6 +46,33 @@ const PledgePage: NextLayoutComponentType = ({
     <>
       <Head>
         <title>Polar | {issue.title}</title>
+        <meta property="og:title" content={`Back ${issue.title}`} />
+        <meta
+          property="og:description"
+          content={`${organization.name} seeks funding for ${issue.title} Polar`}
+        />
+        <meta name="og:site_name" content="Polar"></meta>
+        <meta
+          property="og:image"
+          content={`https://polar.sh/og?org=${organization.name}&repo=${repository.name}&number=${issue.number}`}
+        />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+
+        <meta
+          property="twitter:image"
+          content={`https://polar.sh/og?org=${organization.name}&repo=${repository.name}&number=${issue.number}`}
+        />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta
+          name="twitter:image:alt"
+          content={`${organization.name} seeks funding for ${issue.title} Polar`}
+        />
+        <meta name="twitter:title" content={`Back ${issue.title}`} />
+        <meta
+          name="twitter:description"
+          content={`${organization.name} seeks funding for ${issue.title} Polar`}
+        ></meta>
       </Head>
       <div className="mx-auto mt-12 mb-24 flex w-full flex-col gap-12 md:mt-24 md:w-[826px]">
         <h1 className="text-center text-3xl font-normal text-gray-800 dark:text-gray-300 md:text-4xl">

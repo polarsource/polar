@@ -126,7 +126,11 @@ databases:
   - name: polar
     databaseName: polar
     user: polar
-    ipAllowList: [] # allow only internal connections
+    ipAllowList:
+      - source: 34.90.244.142/32
+        description: mason_app_1
+      - source: 35.204.223.102/32
+        description: mason_app_2
     plan: standard
 
 

@@ -1,32 +1,32 @@
+from datetime import datetime, timezone
 from typing import Sequence
 from uuid import UUID
-from datetime import datetime, timezone
 
 import structlog
-from sqlalchemy import and_, or_, distinct
+from sqlalchemy import and_, distinct, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import (
     InstrumentedAttribute,
     contains_eager,
 )
-from polar.issue.schemas import IssuePublicRead
 
-from polar.kit.services import ResourceService
-from polar.exceptions import ResourceNotFound
-from polar.models import Organization, User, UserOrganization, Repository, Issue
 from polar.enums import Platforms
+from polar.exceptions import ResourceNotFound
+from polar.issue.schemas import IssuePublicRead
+from polar.issue.service import issue as issue_service
+from polar.kit.services import ResourceService
+from polar.models import Issue, Organization, Repository, User, UserOrganization
 from polar.models.pull_request import PullRequest
 from polar.postgres import AsyncSession, sql
-from polar.issue.service import issue as issue_service
 from polar.repository.service import repository as repository_service
 
 from .schemas import (
+    OrganizationBadgeSettingsRead,
+    OrganizationBadgeSettingsUpdate,
     OrganizationCreate,
     OrganizationSettingsUpdate,
     OrganizationUpdate,
     RepositoryBadgeSettingsRead,
-    OrganizationBadgeSettingsRead,
-    OrganizationBadgeSettingsUpdate,
 )
 
 log = structlog.get_logger()
@@ -335,6 +335,7 @@ class OrganizationService(
 
         return OrganizationBadgeSettingsRead(
             show_amount=organization.pledge_badge_show_amount,
+            message=organization.default_badge_custom_content,
             repositories=repos,
         )
 
@@ -346,6 +347,9 @@ class OrganizationService(
     ) -> OrganizationBadgeSettingsUpdate:
         if settings.show_amount is not None:
             organization.pledge_badge_show_amount = settings.show_amount
+
+        if settings.message:
+            organization.default_badge_custom_content = settings.message
 
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(timezone.utc)
@@ -462,6 +466,21 @@ class OrganizationService(
                 repo["auto_embedded_issues"] += mapped["issue_count"]
 
         return ret
+
+    async def set_default_issue_badge_custom_message(
+        self, session: AsyncSession, org: Organization, message: str
+    ) -> Organization:
+        stmt = (
+            sql.update(Organization)
+            .where(Organization.id == org.id)
+            .values(default_badge_custom_content=message)
+        )
+        await session.execute(stmt)
+        await session.commit()
+
+        # update the in memory version as well
+        org.default_badge_custom_content = message
+        return org
 
 
 organization = OrganizationService(Organization)

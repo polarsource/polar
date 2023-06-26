@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from 'polarkit'
 import {
   ExternalGitHubCommitReference,
   IssueDashboardRead,
@@ -13,7 +15,7 @@ import {
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
 import IssueListItem from '../components/Dashboard/IssueListItem'
-import { addDays, addHours, issue, org, repo } from './testdata'
+import { addDays, addHours, issue, org, pledge, repo } from './testdata'
 
 type Story = StoryObj<typeof IssueListItem>
 
@@ -323,6 +325,13 @@ const meta: Meta<typeof IssueListItem> = {
     org: org,
     issue: dashboardIssue,
   },
+  render: (args) => {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <IssueListItem {...args} />
+      </QueryClientProvider>
+    )
+  },
 }
 
 export default meta
@@ -440,12 +449,25 @@ export const PledgeDisputableMultiple: Story = {
   },
 }
 
+export const PledgeConfirmationPending: Story = {
+  args: {
+    ...Default.args,
+    pledges: [
+      {
+        ...pledge,
+        state: PledgeState.CONFIRMATION_PENDING,
+      },
+    ],
+  },
+}
+
 export const Dependency: Story = {
   args: {
     ...Default.args,
     dependents: [dependents],
   },
 }
+
 export const DependencyMultiple: Story = {
   args: {
     ...Default.args,

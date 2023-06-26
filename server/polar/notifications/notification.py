@@ -59,6 +59,33 @@ You&apos;ll receive the funds once {{issue_org_name}}/{{issue_repo_name}}#{{issu
 """  # noqa: E501
 
 
+class MaintainerPledgeConfirmationPendingNotification(NotificationBase):
+    pledger_name: str
+    pledge_amount: str
+    issue_url: str
+    issue_title: str
+    issue_org_name: str
+    issue_repo_name: str
+    issue_number: int
+    maintainer_has_stripe_account: bool
+
+    def subject(self) -> str:
+        return "Please confirm that {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}} is completed"  # noqa: E501
+
+    def body(self) -> str:
+        return """Hi,<br><br>
+
+Your backers have pledged ${{pledge_amount}} behind <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}</a> which which has now been closed.<br><br>
+
+Before you can receive the money, please verify that the issue is completed on <a href="https://polar.sh/dashboard/{{issue_org_name}}?statuses=backlog%2Ctriaged%2Cin_progress%2Cpull_request%2Cclosed&tab=issues&onlyPledged=1">your Polar dashboard</a>.<br><br>
+
+{% if not maintainer_has_stripe_account %}
+Create a Stripe account with Polar today to ensure we can transfer the funds directly once the review period is completed.<br>
+<a href="https://polar.sh/dashboard/{{issue_org_name}}">polar.sh/dashboard/{{issue_org_name}}</a>
+{% endif %}
+"""  # noqa: E501
+
+
 class MaintainerPledgePendingNotification(NotificationBase):
     pledger_name: str
     pledge_amount: str

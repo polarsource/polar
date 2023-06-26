@@ -10,6 +10,7 @@ from polar.models.pledge import Pledge
 from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
 from polar.notifications.notification import (
+    MaintainerPledgeConfirmationPendingNotification,
     MaintainerPledgeCreatedNotification,
     MaintainerPledgePaidNotification,
     MaintainerPledgePendingNotification,
@@ -53,10 +54,12 @@ async def mark_pledges_confirmation_pending_on_issue_close(
     hook: IssueHook,
 ) -> None:
     if hook.issue.state == "closed":
+        # Mark pledges in "created" as "confirmation_pending"
         await pledge_service.mark_confirmation_pending_by_issue_id(
             hook.session, hook.issue.id
         )
     else:
+        # Mark pledges in "confirmation_pending" as "created"
         await pledge_service.mark_confirmation_pending_as_created_by_issue_id(
             hook.session, hook.issue.id
         )
@@ -159,10 +162,41 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
 
 
 async def pledge_confirmation_pending_notification(
-    pledge: Pledge,
-    session: AsyncSession
+    pledge: Pledge, session: AsyncSession
 ) -> None:
-    ... # TODO: implement
+    issue = await issue_service.get_by_id(session, pledge.issue_id)
+    if not issue:
+        log.error("pledge_confirmation_pending_notification.no_issue_found")
+        return
+
+    org = await organization_service.get(session, issue.organization_id)
+    if not org:
+        log.error("pledge_confirmation_pending_notification.no_org_found")
+        return
+
+    repo = await repository_service.get(session, issue.repository_id)
+    if not repo:
+        log.error("pledge_confirmation_pending_notification.no_repo_found")
+        return
+
+    n = MaintainerPledgeConfirmationPendingNotification(
+        pledger_name=pledger_name(pledge),
+        pledge_amount=get_cents_in_dollar_string(pledge.amount),
+        issue_url=issue_url(org, repo, issue),
+        issue_title=issue.title,
+        issue_org_name=org.name,
+        issue_repo_name=repo.name,
+        issue_number=issue.number,
+        maintainer_has_stripe_account=True if org.account else False,
+    )
+
+    await notification_service.send_to_org(
+        session=session,
+        org_id=org.id,
+        notif=PartialNotification(
+            issue_id=pledge.issue_id, pledge_id=pledge.id, payload=n
+        ),
+    )
 
 
 async def pledge_pending_notification(pledge: Pledge, session: AsyncSession) -> None:

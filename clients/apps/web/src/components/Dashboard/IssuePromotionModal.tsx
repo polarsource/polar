@@ -2,6 +2,7 @@ import { useRequireAuth } from '@/hooks'
 import Image from 'next/image'
 import { IssueDashboardRead, Platforms, UserRead } from 'polarkit/api/client'
 import {
+  useBadgeSettings,
   useBadgeWithComment,
   useIssueAddComment,
   useIssueAddPolarBadge,
@@ -167,6 +168,8 @@ export const BadgePromotionModal = (props: {
   const pledgeEmbed = `<a href="${pledgePageLink}"><picture><source media="(prefers-color-scheme: dark)" srcset="${pledgeBadgeSVG}?darkmode=1"><img alt="Fund with Polar" src="${pledgeBadgeSVG}"></picture></a>`
   const gitHubIssueLink = `https://github.com/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
 
+  const badgeSettings = useBadgeSettings(Platforms.GITHUB, props.orgName)
+
   return (
     <>
       <ModalHeader hide={toggle}>
@@ -190,9 +193,11 @@ export const BadgePromotionModal = (props: {
         <BadgeMessageForm
           orgName={props.orgName}
           value={
-            props.issue.badge_custom_content || DEFAULT_BADGE_PROMOTION_MESSAGE
+            props.issue.badge_custom_content ||
+            badgeSettings.data?.message ||
+            DEFAULT_BADGE_PROMOTION_MESSAGE
           }
-          showAmountRaised={false}
+          showAmountRaised={badgeSettings.data?.show_amount || false}
           onUpdate={props.onBadgeWithComment}
           onChange={() => {}}
           showUpdateButton={true}
@@ -225,7 +230,7 @@ export const BadgePromotionModal = (props: {
               onClick={() => {
                 copyToClipboard('badge-page-link')
               }}
-              value={pledgePageLink}
+              defaultValue={pledgePageLink}
             />
             <div
               className="cursor-pointer bg-blue-50 px-3 py-2 text-sm font-medium  text-blue-600 dark:bg-blue-500/30 dark:text-blue-300"
@@ -244,7 +249,7 @@ export const BadgePromotionModal = (props: {
             <input
               id="badge-embed-content"
               className="flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600 dark:text-gray-400"
-              value={pledgeEmbed}
+              defaultValue={pledgeEmbed}
               onClick={() => {
                 copyToClipboard('badge-embed-content')
               }}

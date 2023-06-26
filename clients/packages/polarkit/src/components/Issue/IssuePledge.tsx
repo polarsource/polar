@@ -35,15 +35,15 @@ const IssuePledge = (props: Props) => {
 
   return (
     <>
-      <div className="flex items-center gap-2">
-        <p className="space-x-1 rounded-2xl bg-blue-800 px-3 py-1 text-sm text-blue-300 dark:bg-blue-200 dark:text-blue-700">
+      <div className="flex flex-row items-center justify-center space-x-4">
+        <p className="flex-shrink-0 rounded-2xl bg-blue-800 px-3 py-1 text-sm text-blue-300 dark:bg-blue-200 dark:text-blue-700">
           ${' '}
-          <span className="text-blue-100 dark:text-blue-900">
+          <span className="whitespace-nowrap text-blue-100 dark:text-blue-900">
             {getCentsInDollarString(totalPledgeAmount)}
           </span>
         </p>
+        {confirmable && <IssueConfirmButton onClick={confirmPledges} />}
       </div>
-      {confirmable && <IssueConfirmButton onClick={confirmPledges} />}
     </>
   )
 }

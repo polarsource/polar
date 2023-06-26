@@ -1,28 +1,30 @@
 from __future__ import annotations
-import datetime
 
+import datetime
 from typing import Any, Sequence, Union
 from uuid import UUID
-from githubkit import GitHub, Response
-from githubkit.rest.models import Issue as GitHubIssue, Label
-from githubkit.webhooks.models import Label as WebhookLabel
-from githubkit.exception import RequestFailed
-from sqlalchemy import asc, or_
 
 import structlog
-from polar.dashboard.schemas import IssueListType, IssueSortBy
-from polar.kit.extensions.sqlalchemy import sql
+from githubkit import GitHub, Response
+from githubkit.exception import RequestFailed
+from githubkit.rest.models import Issue as GitHubIssue
+from githubkit.rest.models import Label
+from githubkit.webhooks.models import Label as WebhookLabel
+from sqlalchemy import asc, or_
 
-from polar.kit.utils import utc_now
-from polar.issue.schemas import IssueCreate
-from polar.issue.service import IssueService
-from polar.models import Issue, Organization, Repository
+from polar.dashboard.schemas import IssueListType, IssueSortBy
 from polar.enums import Platforms
-from polar.models.user import User
-from polar.postgres import AsyncSession
 from polar.integrations.github import client as github
 from polar.integrations.github.service.api import github_api
-from polar.issue.hooks import issue_upserted, IssueHook
+from polar.issue.hooks import IssueHook, issue_upserted
+from polar.issue.schemas import IssueCreate
+from polar.issue.service import IssueService
+from polar.kit.extensions.sqlalchemy import sql
+from polar.kit.utils import utc_now
+from polar.models import Issue, Organization, Repository
+from polar.models.user import User
+from polar.postgres import AsyncSession
+
 from ..badge import GithubBadge
 
 log = structlog.get_logger()
@@ -41,6 +43,7 @@ class GithubIssueService(IssueService):
         data: Union[
             github.webhooks.IssuesOpenedPropIssue,
             github.webhooks.IssuesClosedPropIssue,
+            github.webhooks.IssuesReopenedPropIssue,
             github.webhooks.Issue,
             github.rest.Issue,
         ],
@@ -63,6 +66,7 @@ class GithubIssueService(IssueService):
             Union[
                 github.webhooks.IssuesOpenedPropIssue,
                 github.webhooks.IssuesClosedPropIssue,
+                github.webhooks.IssuesReopenedPropIssue,
                 github.webhooks.Issue,
                 github.rest.Issue,
             ],
@@ -74,6 +78,7 @@ class GithubIssueService(IssueService):
             issue: Union[
                 github.webhooks.IssuesOpenedPropIssue,
                 github.webhooks.IssuesClosedPropIssue,
+                github.webhooks.IssuesReopenedPropIssue,
                 github.webhooks.Issue,
                 github.rest.Issue,
             ],

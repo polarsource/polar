@@ -1,24 +1,24 @@
 from typing import Any, Sequence, Union
 
 import structlog
-from polar.context import ExecutionContext
 
+from polar.context import ExecutionContext
 from polar.integrations.github import client as github
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.organization.hooks import OrganizationHook, organization_upserted
-from polar.postgres import AsyncSessionLocal, AsyncSession
+from polar.postgres import AsyncSession, AsyncSessionLocal
 from polar.worker import JobContext, PolarWorkerContext, enqueue_job, task
 
 from .. import service
 from .utils import (
     get_event_issue,
+    get_organization_and_repo,
     remove_repositories,
     upsert_issue,
     upsert_pull_request,
-    get_organization_and_repo,
 )
 
 log = structlog.get_logger()
@@ -278,6 +278,7 @@ async def handle_issue(
         github.webhooks.IssuesOpened,
         github.webhooks.IssuesEdited,
         github.webhooks.IssuesClosed,
+        github.webhooks.IssuesReopened,
         github.webhooks.IssuesDeleted,
     ],
 ) -> Issue:
@@ -304,6 +305,28 @@ async def issue_opened(
     with polar_context.to_execution_context():
         parsed = github.webhooks.parse_obj(scope, payload)
         if not isinstance(parsed, github.webhooks.IssuesOpened):
+            log.error("github.webhook.unexpected_type")
+            raise Exception("unexpected webhook payload")
+
+        async with AsyncSessionLocal() as session:
+            issue = await handle_issue(session, scope, action, parsed)
+
+            # Add badge if has label
+            if issue.has_pledge_badge_label:
+                await update_issue_embed(session, issue=issue, embed=True)
+
+
+@task("github.webhook.issues.reopened")
+async def issue_reopened(
+    ctx: JobContext,
+    scope: str,
+    action: str,
+    payload: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        parsed = github.webhooks.parse_obj(scope, payload)
+        if not isinstance(parsed, github.webhooks.IssuesReopened):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 

@@ -1,5 +1,5 @@
-from uuid import UUID
 from typing import Any, Literal, Optional, Tuple
+from uuid import UUID
 
 import structlog
 from fastapi import (
@@ -11,32 +11,32 @@ from fastapi import (
 )
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
+from httpx_oauth.oauth2 import OAuth2Token
 from pydantic import BaseModel, ValidationError
-from polar.context import ExecutionContext
 
-from polar.kit import jwt
 from polar.auth.dependencies import Auth
+from polar.auth.service import AuthService, LoginResponse
 from polar.config import settings
+from polar.context import ExecutionContext
 from polar.enums import Platforms
 from polar.integrations.github import client as github
+from polar.kit import jwt
 from polar.models import Organization
 from polar.organization.schemas import OrganizationPrivateRead
-from polar.postgres import AsyncSession, get_db_session
-from polar.worker import enqueue_job
-from polar.auth.service import AuthService, LoginResponse
-from httpx_oauth.oauth2 import OAuth2Token
 from polar.pledge.service import pledge as pledge_service
+from polar.postgres import AsyncSession, get_db_session
 from polar.posthog.service import posthog_service
+from polar.worker import enqueue_job
 
-from .service.organization import github_organization
-from .service.repository import github_repository
-from .service.issue import github_issue
-from .service.user import github_user
 from .schemas import (
-    GithubBadgeRead,
     AuthorizationResponse,
+    GithubBadgeRead,
     OAuthAccessToken,
 )
+from .service.issue import github_issue
+from .service.organization import github_organization
+from .service.repository import github_repository
+from .service.user import github_user
 
 log = structlog.get_logger()
 
@@ -209,6 +209,7 @@ IMPLEMENTED_WEBHOOKS = {
     "issues.edited",
     "issues.closed",
     "issues.deleted",
+    "issues.reopened",
     "issues.labeled",
     "issues.unlabeled",
     "issues.assigned",

@@ -1,10 +1,11 @@
 from abc import abstractmethod
 from typing import Tuple
-from jinja2.nativetypes import NativeEnvironment
+
 from jinja2 import StrictUndefined
+from jinja2.nativetypes import NativeEnvironment
+from pydantic import BaseModel
 
 from polar.models.user import User
-from pydantic import BaseModel
 
 
 class NotificationBase(BaseModel):

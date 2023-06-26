@@ -1,32 +1,35 @@
 from __future__ import annotations
-from enum import Enum
 
-from uuid import UUID
 from datetime import datetime
+from enum import Enum
 from typing import Self, Type, Union
-from pydantic import parse_obj_as
+from uuid import UUID
 
 import structlog
-from polar.dashboard.schemas import IssueStatus
+from pydantic import parse_obj_as
 
+from polar.dashboard.schemas import IssueStatus
+from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.integrations.github.badge import GithubBadge
-from polar.kit.schemas import Schema
-from polar.models.issue import Issue
-from polar.enums import Platforms
-from polar.models.issue_reference import (
-    IssueReference,
-    ReferenceType,
-    ExternalGitHubPullRequestReference as ExternalGitHubPullRequestReferenceModel,
-    ExternalGitHubCommitReference as ExternalGitHubCommitReferenceModel,
-)
-from polar.types import JSONAny
-
 from polar.integrations.github.types import (
     GithubIssue,
     GithubPullRequestFull,
     GithubPullRequestSimple,
 )
+from polar.kit.schemas import Schema
+from polar.models.issue import Issue
+from polar.models.issue_reference import (
+    ExternalGitHubCommitReference as ExternalGitHubCommitReferenceModel,
+)
+from polar.models.issue_reference import (
+    ExternalGitHubPullRequestReference as ExternalGitHubPullRequestReferenceModel,
+)
+from polar.models.issue_reference import (
+    IssueReference,
+    ReferenceType,
+)
+from polar.types import JSONAny
 
 log = structlog.get_logger()
 
@@ -95,6 +98,7 @@ class IssueAndPullRequestBase(Base):
             github.webhooks.PullRequestReopenedPropPullRequest,
             github.webhooks.IssuesOpenedPropIssue,
             github.webhooks.IssuesClosedPropIssue,
+            github.webhooks.IssuesReopenedPropIssue,
             github.webhooks.Issue,
         ],
         organization_id: UUID,
@@ -148,6 +152,7 @@ class IssueCreate(IssueAndPullRequestBase):
             GithubIssue,
             github.webhooks.IssuesOpenedPropIssue,
             github.webhooks.IssuesClosedPropIssue,
+            github.webhooks.IssuesReopenedPropIssue,
             github.webhooks.Issue,
         ],
         organization_id: UUID,

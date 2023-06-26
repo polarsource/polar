@@ -192,6 +192,7 @@ export const BadgePromotionModal = (props: {
           value={
             props.issue.badge_custom_content || DEFAULT_BADGE_PROMOTION_MESSAGE
           }
+          showAmountRaised={false}
           onUpdate={props.onBadgeWithComment}
           onChange={() => {}}
           showUpdateButton={true}

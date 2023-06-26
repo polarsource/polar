@@ -106,7 +106,7 @@ const BadgeSetup = ({
     show_amount: false,
     repositories: {},
     repositories_order: [],
-    message: DEFAULT_BADGE_PROMOTION_MESSAGE,
+    message: '',
   })
   const [isRetroactiveEnabled, setRetroactiveEnabled] = useState<boolean>(false)
   const emitter = useSSE(org.platform, org.name)
@@ -252,6 +252,7 @@ const BadgeSetup = ({
               value={settings.message || DEFAULT_BADGE_PROMOTION_MESSAGE}
               onUpdate={async (value: string) => {}}
               showUpdateButton={false}
+              showAmountRaised={settings.show_amount}
               onChange={(value: string) => {
                 setSettings((prev) => {
                   return {
@@ -412,6 +413,7 @@ export const Controls = ({
   const save = async () => {
     const data: OrganizationBadgeSettingsUpdate = {
       show_amount: settings.show_amount,
+      message: settings.message || '',
       repositories: Object.values(settings.repositories).map((repo) => {
         return {
           id: repo.id,

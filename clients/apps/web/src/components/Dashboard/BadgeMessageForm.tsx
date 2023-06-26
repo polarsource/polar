@@ -12,6 +12,7 @@ const BadgeMessageForm = (props: {
   showUpdateButton: boolean
   onChange: (comment: string) => void
   innerClassNames: string
+  showAmountRaised: boolean
 }) => {
   const [message, setMessage] = useState('')
 
@@ -31,6 +32,7 @@ const BadgeMessageForm = (props: {
   const onChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value)
     setCanSave(e.target.value !== props.value)
+    props.onChange(e.target.value)
   }
 
   const [isLoading, setIsLoading] = useState(false)
@@ -65,7 +67,8 @@ const BadgeMessageForm = (props: {
           <>
             <div className="prose dark:prose-invert" ref={ref} />
             <Badge
-              showAmountRaised={false}
+              showAmountRaised={props.showAmountRaised}
+              amountRaised="250"
               darkmode={resolvedTheme === 'dark'}
             />
           </>

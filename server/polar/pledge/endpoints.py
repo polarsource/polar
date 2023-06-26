@@ -1,22 +1,23 @@
 from typing import Sequence
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
-from polar.integrations.github.client import get_polar_client
-from polar.models import Pledge, Repository
-from polar.exceptions import ResourceNotFound, NotPermitted
 from polar.enums import Platforms
-from polar.models.user import User
-from polar.models.user_organization import UserOrganization
-from polar.postgres import AsyncSession, get_db_session
-from polar.organization.schemas import OrganizationPublicRead
-from polar.organization.service import organization as organization_service
+from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.integrations.github.client import get_polar_client
 from polar.integrations.github.service.organization import (
     github_organization as gh_organization,
 )
-from polar.repository.schemas import RepositoryRead
 from polar.issue.schemas import IssueRead
+from polar.models import Pledge, Repository
+from polar.models.user import User
+from polar.models.user_organization import UserOrganization
+from polar.organization.schemas import OrganizationPublicRead
+from polar.organization.service import organization as organization_service
+from polar.postgres import AsyncSession, get_db_session
+from polar.repository.schemas import RepositoryRead
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -25,9 +26,9 @@ from .schemas import (
     ConfirmPledgesResponse,
     PledgeCreate,
     PledgeMutationResponse,
-    PledgeUpdate,
     PledgeRead,
     PledgeResources,
+    PledgeUpdate,
 )
 from .service import pledge as pledge_service
 
@@ -159,6 +160,26 @@ async def create_pledge(
         )
 
 
+@router.get(
+    "/{platform}/{org_name}/{repo_name}/issues/{number}/pledges/{pledge_id}",
+    response_model=PledgeRead,
+)
+async def get_pledge(
+    platform: Platforms,
+    org_name: str,
+    repo_name: str,
+    number: int,
+    pledge_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
+) -> PledgeRead:
+    pledge = await pledge_service.get_with_loaded(session, pledge_id)
+    if not pledge:
+        raise HTTPException(status_code=404, detail="Pledge not found")
+
+    return PledgeRead.from_db(pledge)
+
+
 @router.patch(
     "/{platform}/{org_name}/{repo_name}/issues/{number}/pledges/{pledge_id}",
     response_model=PledgeMutationResponse,
@@ -224,7 +245,8 @@ async def confirm_pledges(
     )
 
     await pledge_service.mark_pending_by_issue_id(
-        session, issue_id=issue.id,
+        session,
+        issue_id=issue.id,
     )
 
     return ConfirmPledgesResponse()

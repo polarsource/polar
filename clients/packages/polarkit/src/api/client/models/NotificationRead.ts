@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
+import type { MaintainerPledgeConfirmationPendingNotification } from './MaintainerPledgeConfirmationPendingNotification';
 import type { MaintainerPledgeCreatedNotification } from './MaintainerPledgeCreatedNotification';
 import type { MaintainerPledgePaidNotification } from './MaintainerPledgePaidNotification';
 import type { MaintainerPledgePendingNotification } from './MaintainerPledgePendingNotification';
@@ -12,6 +13,6 @@ export type NotificationRead = {
   id: string;
   type: NotificationType;
   created_at: string;
-  payload: (MaintainerPledgePaidNotification | MaintainerPledgePendingNotification | MaintainerPledgeCreatedNotification | PledgerPledgePendingNotification);
+  payload: (MaintainerPledgePaidNotification | MaintainerPledgeConfirmationPendingNotification | MaintainerPledgePendingNotification | MaintainerPledgeCreatedNotification | PledgerPledgePendingNotification);
 };
 

@@ -91,6 +91,40 @@ export class PledgesService {
   }
 
   /**
+   * Get Pledge
+   * @returns PledgeRead Successful Response
+   * @throws ApiError
+   */
+  public getPledge({
+    platform,
+    orgName,
+    repoName,
+    number,
+    pledgeId,
+  }: {
+    platform: Platforms,
+    orgName: string,
+    repoName: string,
+    number: number,
+    pledgeId: string,
+  }): CancelablePromise<PledgeRead> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}/pledges/{pledge_id}',
+      path: {
+        'platform': platform,
+        'org_name': orgName,
+        'repo_name': repoName,
+        'number': number,
+        'pledge_id': pledgeId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
    * Update Pledge
    * @returns PledgeMutationResponse Successful Response
    * @throws ApiError

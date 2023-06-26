@@ -38,6 +38,7 @@ export { IssueStatus } from './models/IssueStatus';
 export type { IssueUpdateBadgeMessage } from './models/IssueUpdateBadgeMessage';
 export type { LoginResponse } from './models/LoginResponse';
 export type { LogoutResponse } from './models/LogoutResponse';
+export type { MaintainerPledgeConfirmationPendingNotification } from './models/MaintainerPledgeConfirmationPendingNotification';
 export type { MaintainerPledgeCreatedNotification } from './models/MaintainerPledgeCreatedNotification';
 export type { MaintainerPledgePaidNotification } from './models/MaintainerPledgePaidNotification';
 export type { MaintainerPledgePendingNotification } from './models/MaintainerPledgePendingNotification';

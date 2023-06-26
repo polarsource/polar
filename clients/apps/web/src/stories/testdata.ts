@@ -1,5 +1,6 @@
 import {
   IssueRead,
+  MaintainerPledgeConfirmationPendingNotification,
   MaintainerPledgeCreatedNotification,
   MaintainerPledgePaidNotification,
   MaintainerPledgePendingNotification,
@@ -123,6 +124,18 @@ const maintainerPledgeCreatedNotification: MaintainerPledgeCreatedNotification =
     maintainer_has_stripe_account: false,
   }
 
+const maintainerPledgeConfirmationPendingNotification: MaintainerPledgeConfirmationPendingNotification =
+  {
+    pledger_name: 'xx',
+    pledge_amount: '123.50',
+    issue_url: '#',
+    issue_title: 'Hello World',
+    issue_org_name: 'polarsource',
+    issue_repo_name: 'polar',
+    issue_number: 123,
+    maintainer_has_stripe_account: false,
+  }
+
 const maintainerPledgePendingNotification: MaintainerPledgePendingNotification =
   {
     pledger_name: 'xx',
@@ -161,6 +174,12 @@ export const notification_maintainerPledgeCreatedNotification: NotificationRead 
     type: NotificationType.MAINTAINER_PLEDGE_CREATED_NOTIFICATION,
     payload: maintainerPledgeCreatedNotification,
   }
+
+export const notification_maintainerPledgeConfirmationPendingNotification = {
+  ...notification_maintainerPledgeCreatedNotification,
+  type: NotificationType.MAINTAINER_PLEDGE_CONFIRMATION_PENDING_NOTIFICATION,
+  payload: maintainerPledgeConfirmationPendingNotification,
+}
 
 export const notification_maintainerPledgePendingNotification = {
   ...notification_maintainerPledgeCreatedNotification,

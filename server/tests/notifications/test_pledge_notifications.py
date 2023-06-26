@@ -1,5 +1,8 @@
 from unittest.mock import ANY
+
 import pytest
+from pytest_mock import MockerFixture
+
 from polar.kit.extensions.sqlalchemy import sql
 from polar.models.issue import Issue
 from polar.models.notification import Notification
@@ -11,9 +14,8 @@ from polar.notifications.notification import MaintainerPledgeCreatedNotification
 from polar.notifications.schemas import NotificationType
 from polar.notifications.service import NotificationsService, PartialNotification
 from polar.pledge.schemas import PledgeState
-from polar.postgres import AsyncSession
-from pytest_mock import MockerFixture
 from polar.pledge.service import pledge as pledge_service
+from polar.postgres import AsyncSession
 
 
 @pytest.mark.asyncio
@@ -53,6 +55,7 @@ async def test_create_pledge_from_created(
             issue_id=issue.id,
             pledge_id=pledge.id,
             payload=MaintainerPledgeCreatedNotification(
+                pledge_id=pledge.id,
                 pledger_name=organization.name,
                 pledge_amount="123",
                 issue_url=f"https://github.com/{organization.name}/{repository.name}/issues/{issue.number}",

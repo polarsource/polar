@@ -1,17 +1,24 @@
 import { BellIcon } from '@heroicons/react/24/outline'
 import {
+  MaintainerPledgeConfirmationPendingNotification,
   MaintainerPledgeCreatedNotification,
   MaintainerPledgePaidNotification,
   MaintainerPledgePendingNotification,
   NotificationRead,
   NotificationType,
+  Platforms,
+  PledgeState,
   PledgerPledgePendingNotification,
 } from 'polarkit/api/client'
 import { GitMergeIcon } from 'polarkit/components/icons'
-import { PolarTimeAgo } from 'polarkit/components/ui'
-import { useNotifications, useNotificationsMarkRead } from 'polarkit/hooks'
+import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
+import {
+  useGetPledge,
+  useNotifications,
+  useNotificationsMarkRead,
+} from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 const Popover = () => {
   const [show, setShow] = useState(false)
@@ -183,6 +190,83 @@ const MaintainerPledgeCreated = ({
   )
 }
 
+const MaintainerPledgeConfirmationPendingWrapper = ({
+  n,
+  payload,
+}: {
+  n: NotificationRead
+  payload: MaintainerPledgeConfirmationPendingNotification
+}) => {
+  const pledge = useGetPledge(
+    Platforms.GITHUB,
+    payload.issue_org_name,
+    payload.issue_repo_name,
+    payload.issue_number,
+    payload.pledge_id,
+  )
+
+  const canMarkSolved = useMemo(() => {
+    return pledge.data?.state === PledgeState.CONFIRMATION_PENDING
+  }, [pledge])
+  const isMarkedSolved = useMemo(() => {
+    return pledge.data?.state === PledgeState.PENDING
+  }, [pledge])
+
+  return (
+    <MaintainerPledgeConfirmationPending
+      n={n}
+      payload={payload}
+      canMarkSolved={canMarkSolved}
+      isMarkedSolved={isMarkedSolved}
+    />
+  )
+}
+
+const MaintainerPledgeConfirmationPending = ({
+  n,
+  payload,
+  canMarkSolved,
+  isMarkedSolved,
+}: {
+  n: NotificationRead
+  payload: MaintainerPledgeConfirmationPendingNotification
+  canMarkSolved: boolean
+  isMarkedSolved: boolean
+}) => {
+  return (
+    <Item
+      n={n}
+      iconClasses="bg-blue-200 text-blue-600 dark:bg-blue-600/80 dark:text-blue-200"
+    >
+      {{
+        text: (
+          <div className="flex flex-col space-y-2">
+            <div>
+              Confirm that{' '}
+              <Link href={payload.issue_url}>
+                <>
+                  {payload.issue_org_name}/{payload.issue_repo_name}#
+                  {payload.issue_number}
+                </>
+              </Link>{' '}
+              has been solved.
+            </div>
+            <div>
+              {canMarkSolved && (
+                <PrimaryButton fullWidth={false}>
+                  <span>Mark as solved</span>
+                </PrimaryButton>
+              )}
+              {isMarkedSolved && <>Confirmed!</>}
+            </div>
+          </div>
+        ),
+        icon: <DollarSignIcon />,
+      }}
+    </Item>
+  )
+}
+
 const MaintainerPledgePending = ({
   n,
   payload,
@@ -281,6 +365,13 @@ export const Notification = ({ n }: { n: NotificationRead }) => {
         />
       )
 
+    case NotificationType.MAINTAINER_PLEDGE_CONFIRMATION_PENDING_NOTIFICATION:
+      return (
+        <MaintainerPledgeConfirmationPendingWrapper
+          n={n}
+          payload={n.payload as MaintainerPledgeConfirmationPendingNotification}
+        />
+      )
     case NotificationType.MAINTAINER_PLEDGE_PENDING_NOTIFICATION:
       return (
         <MaintainerPledgePending
@@ -303,57 +394,6 @@ export const Notification = ({ n }: { n: NotificationRead }) => {
         />
       )
   }
-
-  /*if (n.type === 'issue_pledged_branch_created') {
-    return (
-      <BranchCreatedNotification
-        n={n}
-        payload={n.payload as IssuePledgedBranchCreated}
-      />
-    )
-  }
-  if (n.type === 'issue_pledged_pull_request_created') {
-    return (
-      <PullRequestCreatedNotification
-        n={n}
-        payload={n.payload as IssuePledgedPullRequestCreated}
-      />
-    )
-  }
-  if (n.type === 'issue_pledged_pull_request_merged') {
-    return (
-      <PullRequestMergedNotification
-        n={n}
-        payload={n.payload as IssuePledgedPullRequestMerged}
-      />
-    )
-  }
-  if (n.type === 'maintainer_issue_branch_created') {
-    return (
-      <BranchCreatedNotification
-        n={n}
-        payload={n.payload as MaintainerIssueBranchCreated}
-      />
-    )
-  }
-
-  if (n.type === 'maintainer_issue_pull_request_created') {
-    return (
-      <PullRequestCreatedNotification
-        n={n}
-        payload={n.payload as MaintainerIssuePullRequestCreated}
-      />
-    )
-  }
-
-  if (n.type === 'maintainer_issue_pull_request_merged') {
-    return (
-      <PullRequestMergedNotification
-        n={n}
-        payload={n.payload as MaintainerIssuePullRequestMerged}
-      />
-    )
-  }*/
 
   return <></>
 }

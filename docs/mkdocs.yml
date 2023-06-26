@@ -1,3 +1,32 @@
 site_name: Polar
+repo_url: https://github.com/polarsource/polar
+repo_name: polarsource/polar
 theme:
   name: material
+  font:
+    text: Inter
+    code: Roboto Mono
+  features:
+    - navigation.footer
+  palette:
+    - scheme: polar-light
+      toggle:
+          icon: material/brightness-7
+          name: Switch to dark mode
+    - scheme: polar-dark
+      toggle:
+          icon: material/brightness-4
+          name: Switch to light mode
+
+extra:
+  homepage: https://polar.sh
+  social:
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/@polar_sh
+      name: polar_sh on Twitter
+    - icon: fontawesome/brands/github
+      link: https://github.com/polarsource
+      name: polarsource on Github
+
+extra_css:
+  - stylesheets/extra.css

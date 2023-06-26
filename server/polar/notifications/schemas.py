@@ -1,11 +1,11 @@
 from datetime import datetime
+from enum import Enum
 from typing import Self, Union
 from uuid import UUID
 
 from polar.kit.schemas import Schema
-from enum import Enum
-
 from polar.notifications.notification import (
+    MaintainerPledgeConfirmationPendingNotification,
     MaintainerPledgeCreatedNotification,
     MaintainerPledgePaidNotification,
     MaintainerPledgePendingNotification,
@@ -15,6 +15,9 @@ from polar.notifications.notification import (
 
 class NotificationType(str, Enum):
     MaintainerPledgePaidNotification = "MaintainerPledgePaidNotification"
+    MaintainerPledgeConfirmationPendingNotification = (
+        "MaintainerPledgeConfirmationPendingNotification"
+    )
     MaintainerPledgePendingNotification = "MaintainerPledgePendingNotification"
     MaintainerPledgeCreatedNotification = "MaintainerPledgeCreatedNotification"
     PledgerPledgePendingNotification = "PledgerPledgePendingNotification"
@@ -30,6 +33,7 @@ class NotificationRead(Schema):
     created_at: datetime
     payload: Union[
         MaintainerPledgePaidNotification,
+        MaintainerPledgeConfirmationPendingNotification,
         MaintainerPledgePendingNotification,
         MaintainerPledgeCreatedNotification,
         PledgerPledgePendingNotification,

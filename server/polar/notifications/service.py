@@ -1,27 +1,30 @@
 from typing import Sequence, Union
 from uuid import UUID
+
+import structlog
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, parse_obj_as
 from sqlalchemy import desc
-import structlog
+
 from polar.kit.extensions.sqlalchemy import sql
+from polar.models.issue import Issue
+from polar.models.notification import Notification
 from polar.models.pledge import Pledge
 from polar.models.pull_request import PullRequest
 from polar.models.user_notification import UserNotification
 from polar.notifications.notification import (
+    MaintainerPledgeConfirmationPendingNotification,
     MaintainerPledgeCreatedNotification,
     MaintainerPledgePaidNotification,
     MaintainerPledgePendingNotification,
     NotificationBase,
     PledgerPledgePendingNotification,
 )
-from polar.models.notification import Notification
-from polar.models.issue import Issue
 from polar.postgres import AsyncSession
-from polar.worker import enqueue_job
-from fastapi.encoders import jsonable_encoder
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.worker import enqueue_job
 
 log = structlog.get_logger()
 
@@ -146,6 +149,7 @@ class NotificationsService:
         self, n: Notification
     ) -> Union[
         MaintainerPledgeCreatedNotification,
+        MaintainerPledgeConfirmationPendingNotification,
         MaintainerPledgePendingNotification,
         MaintainerPledgePaidNotification,
         PledgerPledgePendingNotification,
@@ -153,6 +157,10 @@ class NotificationsService:
         match n.type:
             case "MaintainerPledgeCreatedNotification":
                 return parse_obj_as(MaintainerPledgeCreatedNotification, n.payload)
+            case "MaintainerPledgeConfirmationPendingNotification":
+                return parse_obj_as(
+                    MaintainerPledgeConfirmationPendingNotification, n.payload
+                )
             case "MaintainerPledgePendingNotification":
                 return parse_obj_as(MaintainerPledgePendingNotification, n.payload)
             case "MaintainerPledgePaidNotification":

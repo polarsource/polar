@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
+import { BadgePromotionModal } from '@/components/Dashboard/IssuePromotionModal'
 import { IssueDashboardRead, OrganizationPublicRead } from 'polarkit/api/client'
-import { BadgePromotionModal } from '../components/Dashboard/IssueListItem'
 import { issue, org, repo, user } from './testdata'
 
 type Story = StoryObj<typeof BadgePromotionModal>

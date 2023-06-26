@@ -1,3 +1,5 @@
+import BadgeMessageForm from '@/components/Dashboard/BadgeMessageForm'
+import { DEFAULT_BADGE_PROMOTION_MESSAGE } from '@/components/Dashboard/IssuePromotionModal'
 import {
   ExclamationCircleIcon,
   QuestionMarkCircleIcon,
@@ -16,7 +18,6 @@ import { useBadgeSettings, useSSE } from 'polarkit/hooks'
 import { classNames } from 'polarkit/utils'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useTimeoutFn } from 'react-use'
-import FakePullRequest from '../FakePullRequest'
 import SettingsCheckbox from '../SettingsCheckbox'
 import BadgeRepositories from './Repositories'
 import { AllRetroactiveChanges, RetroactiveChanges } from './types'
@@ -31,6 +32,7 @@ interface SSEIssueSyncEvent {
 
 interface MappedRepoSettings {
   show_amount: boolean
+  message: string | undefined
   repositories: {
     [id: string]: RepositoryBadgeSettingsRead
   }
@@ -38,19 +40,20 @@ interface MappedRepoSettings {
 }
 
 const getMappedSettings = (
-  current: OrganizationBadgeSettingsRead | undefined,
+  remote: OrganizationBadgeSettingsRead | undefined,
 ): MappedRepoSettings | undefined => {
-  if (!current) return undefined
+  if (!remote) return undefined
 
   let order: string[] = []
   let mapped: Record<string, RepositoryBadgeSettingsRead> = {}
-  current.repositories.map((repo) => {
+  remote.repositories.map((repo) => {
     order.push(repo.id)
     mapped[repo.id] = repo
   })
 
   let ret = {
-    show_amount: current.show_amount,
+    show_amount: remote.show_amount,
+    message: remote.message || DEFAULT_BADGE_PROMOTION_MESSAGE,
     repositories: mapped,
     repositories_order: order,
   }
@@ -103,13 +106,13 @@ const BadgeSetup = ({
     show_amount: false,
     repositories: {},
     repositories_order: [],
+    message: DEFAULT_BADGE_PROMOTION_MESSAGE,
   })
   const [isRetroactiveEnabled, setRetroactiveEnabled] = useState<boolean>(false)
   const emitter = useSSE(org.platform, org.name)
 
   useEffect(() => {
     if (!remoteSettings.data) return
-
     const settings = getMappedSettings(remoteSettings.data)
     if (settings) {
       setSettings(settings)
@@ -244,7 +247,22 @@ const BadgeSetup = ({
       >
         <div className="w-full rounded-xl bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-inset dark:ring-gray-700">
           <div className="flex flex-col space-y-4 p-5">
-            <FakePullRequest showAmount={settings.show_amount} />
+            <BadgeMessageForm
+              orgName={org.name}
+              value={settings.message || DEFAULT_BADGE_PROMOTION_MESSAGE}
+              onUpdate={async (value: string) => {}}
+              showUpdateButton={false}
+              onChange={(value: string) => {
+                setSettings((prev) => {
+                  return {
+                    ...prev,
+                    message: value,
+                  }
+                })
+                setAnyBadgeSettingChanged(true)
+              }}
+              innerClassNames="border"
+            />
             <SettingsCheckbox
               id="show-raised"
               title="Show amount pledged"
@@ -268,10 +286,11 @@ const BadgeSetup = ({
             />
             <p className="ml-2 text-xs">
               <strong className="block font-semibold">
-                How is the badge added?
+                How is the Polar section added?
               </strong>
-              Polar edits the issue description to add the badge (SVG) at the
-              end. You can remove it at any time.
+              Polar edits the issue description to add your custom promotion
+              message and the Polar badge (SVG) at the end. You can remove it at
+              any time.
             </p>
           </div>
         </div>

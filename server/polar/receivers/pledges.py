@@ -150,6 +150,7 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
         issue_repo_name=repo.name,
         issue_number=issue.number,
         maintainer_has_stripe_account=True if org.account else False,
+        pledge_id=pledge.id,
     )
 
     await notification_service.send_to_org(
@@ -188,6 +189,7 @@ async def pledge_confirmation_pending_notification(
         issue_repo_name=repo.name,
         issue_number=issue.number,
         maintainer_has_stripe_account=True if org.account else False,
+        pledge_id=pledge.id,
     )
 
     await notification_service.send_to_org(
@@ -224,6 +226,7 @@ async def pledge_pending_notification(pledge: Pledge, session: AsyncSession) -> 
         issue_repo_name=repo.name,
         issue_number=issue.number,
         maintainer_has_stripe_account=True if org.account else False,
+        pledge_id=pledge.id,
     )
 
     await notification_service.send_to_org(
@@ -243,6 +246,7 @@ async def pledge_pending_notification(pledge: Pledge, session: AsyncSession) -> 
         issue_org_name=org.name,
         issue_repo_name=repo.name,
         issue_number=issue.number,
+        pledge_id=pledge.id,
     )
 
     await notification_service.send_to_pledger(
@@ -279,6 +283,7 @@ async def pledge_paid_notification(
         issue_repo_name=repo.name,
         issue_number=issue.number,
         paid_out_amount=get_cents_in_dollar_string(transaction.amount),
+        pledge_id=pledge.id,
     )
 
     await notification_service.send_to_org(

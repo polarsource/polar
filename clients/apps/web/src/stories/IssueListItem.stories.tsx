@@ -452,6 +452,8 @@ export const PledgeDisputableMultiple: Story = {
 export const PledgeConfirmationPending: Story = {
   args: {
     ...Default.args,
+    issue: issueClosed,
+    references: referencesMerged,
     pledges: [
       {
         ...pledge,

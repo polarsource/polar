@@ -16,6 +16,9 @@ from tests.fixtures.random_objects import create_issue
 BADGED_BODY = """Hello my issue
 
 <!-- POLAR PLEDGE BADGE START -->
+## Funding
+* Help funding this issue by pledging to it with Polar 💰
+
 <a href="http://127.0.0.1:3000/testorg/testrepo/issues/123">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="http://127.0.0.1:3000/api/github/testorg/testrepo/issues/123/pledge.svg?darkmode=1">
@@ -51,6 +54,9 @@ async def test_add_badge_custom_content(
     predictable_issue.badge_custom_content = "Hello, please sponsor me."
     await predictable_issue.save(session)
 
+    predictable_organization.default_badge_custom_content = None
+    await predictable_organization.save(session)
+
     res = GithubBadge(
         organization=predictable_organization,
         repository=predictable_repository,
@@ -63,6 +69,45 @@ async def test_add_badge_custom_content(
 
 <!-- POLAR PLEDGE BADGE START -->
 Hello, please sponsor me.
+
+<a href="http://127.0.0.1:3000/testorg/testrepo/issues/123">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="http://127.0.0.1:3000/api/github/testorg/testrepo/issues/123/pledge.svg?darkmode=1">
+  <img alt="Fund with Polar" src="http://127.0.0.1:3000/api/github/testorg/testrepo/issues/123/pledge.svg">
+</picture>
+</a>
+<!-- POLAR PLEDGE BADGE END -->
+"""
+    )
+
+
+@pytest.mark.asyncio
+async def test_add_badge_custom_organization_content(
+    predictable_organization: Organization,
+    predictable_repository: Repository,
+    predictable_issue: Issue,
+    session: AsyncSession,
+) -> None:
+    predictable_issue.badge_custom_content = None
+    await predictable_issue.save(session)
+
+    predictable_organization.default_badge_custom_content = (
+        "Default message from organization."
+    )
+    await predictable_organization.save(session)
+
+    res = GithubBadge(
+        organization=predictable_organization,
+        repository=predictable_repository,
+        issue=predictable_issue,
+    ).generate_body_with_badge("""Hello my issue""")
+
+    assert (
+        res
+        == """Hello my issue
+
+<!-- POLAR PLEDGE BADGE START -->
+Default message from organization.
 
 <a href="http://127.0.0.1:3000/testorg/testrepo/issues/123">
 <picture>

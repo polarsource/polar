@@ -17,7 +17,8 @@ BADGED_BODY = """Hello my issue
 
 <!-- POLAR PLEDGE BADGE START -->
 ## Funding
-* Help funding this issue by pledging to it with Polar 💰
+* You can sponsor this specific effort via a [Polar.sh](https://polar.sh) pledge below
+* We receive the pledge once the issue is completed & verified
 
 <a href="http://127.0.0.1:3000/testorg/testrepo/issues/123">
 <picture>

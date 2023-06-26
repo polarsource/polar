@@ -124,7 +124,7 @@ class GithubBadge:
             return self.issue.badge_custom_content
         if self.organization.default_badge_custom_content:
             return self.organization.default_badge_custom_content
-        return "## Funding\n* Help funding this issue by pledging to it with Polar 💰"
+        return "## Funding\n* You can sponsor this specific effort via a [Polar.sh](https://polar.sh) pledge below\n* We receive the pledge once the issue is completed & verified"  # noqa: E501
 
     def generate_body_with_badge(self, body: str) -> str:
         promotion = self.promotion_message().rstrip()

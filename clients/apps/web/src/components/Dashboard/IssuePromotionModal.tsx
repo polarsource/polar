@@ -133,7 +133,7 @@ export const AddBadgeButton = (props: {
 }
 
 export const DEFAULT_BADGE_PROMOTION_MESSAGE =
-  '## Funding\n* Help funding this issue by pledging to it with Polar 💰'
+  '## Funding\n* You can sponsor this specific effort via a [Polar.sh](https://polar.sh) pledge below\n* We receive the pledge once the issue is completed & verified'
 
 export const BadgePromotionModal = (props: {
   orgName: string

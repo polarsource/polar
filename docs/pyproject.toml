@@ -8,8 +8,8 @@ readme = "README.md"
 packages = [{include = "polar_docs"}]
 
 [tool.poetry.dependencies]
-python = "^3.11"
-mkdocs-material = "^9.1.16"
+python = "^3.9"
+mkdocs-material = "^9.1.17"
 
 
 [build-system]

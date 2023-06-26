@@ -11,5 +11,6 @@ export type MaintainerPledgePendingNotification = {
   issue_repo_name: string;
   issue_number: number;
   maintainer_has_stripe_account: boolean;
+  pledge_id?: string;
 };
 

@@ -10,5 +10,6 @@ export type PledgerPledgePendingNotification = {
   issue_org_name: string;
   issue_repo_name: string;
   pledge_date: string;
+  pledge_id?: string;
 };
 

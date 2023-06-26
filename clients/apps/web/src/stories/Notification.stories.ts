@@ -1,7 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import { Notification } from '../components/Notifications/Popover'
 import {
+  MaintainerPledgeConfirmationPending,
+  Notification,
+} from '../components/Notifications/Popover'
+import {
+  notification_maintainerPledgeConfirmationPendingNotification,
   notification_maintainerPledgeCreatedNotification,
   notification_maintainerPledgePaidNotification,
   notification_maintainerPledgePendingNotification,
@@ -41,3 +45,14 @@ export const PledgerPledgePendingNotificationItem: Story = {
     n: notification_pledgerPledgePendingNotification,
   },
 }
+
+type StoryConfirmationPending = StoryObj<
+  typeof MaintainerPledgeConfirmationPending
+>
+
+export const MaintainerPledgeConfirmationPendingNotificationItem: StoryConfirmationPending =
+  {
+    args: {
+      n: notification_maintainerPledgeConfirmationPendingNotification,
+    },
+  }

@@ -119,17 +119,15 @@ class GithubBadge:
         svg_markdown = f"![Fund with Polar]({svg_url})"
         return f"{PLEDGE_BADGE_COMMENT_LEGACY}\n[{svg_markdown}]({funding_url})"
 
-    def default_promotion_message(self) -> str:
-        # TODO: add a message here!
-        return ""
+    def promotion_message(self) -> str:
+        if self.issue.badge_custom_content:
+            return self.issue.badge_custom_content
+        if self.organization.default_badge_custom_content:
+            return self.organization.default_badge_custom_content
+        return "## Funding\n* Help funding this issue by pledging to it with Polar 💰"
 
     def generate_body_with_badge(self, body: str) -> str:
-        promotion = (
-            self.issue.badge_custom_content
-            if self.issue.badge_custom_content
-            else self.default_promotion_message()
-        )
-        promotion = promotion.rstrip()
+        promotion = self.promotion_message().rstrip()
 
         # Remove badge from message if already embedded
         if self.badge_is_embedded(body):

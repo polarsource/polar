@@ -1,48 +1,48 @@
 from __future__ import annotations
-from datetime import timedelta
+
 import datetime
 import math
-
-from uuid import UUID
+from datetime import timedelta
 from typing import List, Sequence
+from uuid import UUID
 
 import structlog
-from polar.enums import Platforms
-
-from polar.kit.services import ResourceServiceReader
-from polar.integrations.stripe.service import stripe
-from polar.kit.utils import utc_now
-from polar.models.issue import Issue
-from polar.models.organization import Organization
-from polar.models.pledge_transaction import PledgeTransaction
-from polar.models.repository import Repository
-from polar.models.user import User
-from polar.models.pledge import Pledge
-from polar.postgres import AsyncSession, sql
 from sqlalchemy.orm import (
     joinedload,
 )
-from polar.organization.service import organization as organization_service
-from polar.account.service import account as account_service
-from polar.exceptions import ResourceNotFound, NotPermitted
 
-from .schemas import (
-    PledgeCreate,
-    PledgeMutationResponse,
-    PledgeTransactionType,
-    PledgeUpdate,
-    PledgeState,
-)
+from polar.account.service import account as account_service
+from polar.enums import Platforms
+from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.integrations.stripe.service import stripe
+from polar.kit.hook import Hook
+from polar.kit.services import ResourceServiceReader
+from polar.kit.utils import utc_now
+from polar.models.issue import Issue
+from polar.models.organization import Organization
+from polar.models.pledge import Pledge
+from polar.models.pledge_transaction import PledgeTransaction
+from polar.models.repository import Repository
+from polar.models.user import User
+from polar.organization.service import organization as organization_service
+from polar.postgres import AsyncSession, sql
 
 from .hooks import (
     PledgeHook,
     PledgePaidHook,
+    pledge_confirmation_pending,
     pledge_created,
     pledge_disputed,
-    pledge_updated,
-    pledge_confirmation_pending,
-    pledge_pending,
     pledge_paid,
+    pledge_pending,
+    pledge_updated,
+)
+from .schemas import (
+    PledgeCreate,
+    PledgeMutationResponse,
+    PledgeState,
+    PledgeTransactionType,
+    PledgeUpdate,
 )
 
 log = structlog.get_logger()
@@ -401,12 +401,17 @@ class PledgeService(ResourceServiceReader[Pledge]):
         backer.invite_only_approved = True
         await backer.save(session)
 
-    async def mark_confirmation_pending_by_issue_id(
-        self, session: AsyncSession, issue_id: UUID
+    async def transition_by_issue_id(
+        self,
+        session: AsyncSession,
+        issue_id: UUID,
+        from_states: list[PledgeState],
+        to_state: PledgeState,
+        hook: Hook[PledgeHook] | None = None,
     ) -> None:
         get = sql.select(Pledge).where(
             Pledge.issue_id == issue_id,
-            Pledge.state.in_(PledgeState.to_confirmation_pending_states()),
+            Pledge.state.in_(from_states),
         )
 
         res = await session.execute(get)
@@ -418,11 +423,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 sql.update(Pledge)
                 .where(
                     Pledge.id == pledge.id,
-                    Pledge.state.in_(PledgeState.to_confirmation_pending_states()),
+                    Pledge.state.in_(from_states),
                 )
-                .values(
-                    state=PledgeState.confirmation_pending,
-                )
+                .values(state=to_state)
                 .returning(Pledge)
             )
             await session.execute(statement)
@@ -431,40 +434,41 @@ class PledgeService(ResourceServiceReader[Pledge]):
             # FIXME: it would be cool if we could only trigger these events if the
             # update statement above modified the record
             await pledge_updated.call(PledgeHook(session, pledge))
-            await pledge_confirmation_pending.call(PledgeHook(session, pledge))
+
+            if hook:
+                await hook.call(PledgeHook(session, pledge))
+
+    async def mark_confirmation_pending_by_issue_id(
+        self, session: AsyncSession, issue_id: UUID
+    ) -> None:
+        await self.transition_by_issue_id(
+            session,
+            issue_id,
+            from_states=PledgeState.to_confirmation_pending_states(),
+            to_state=PledgeState.confirmation_pending,
+            hook=pledge_confirmation_pending,
+        )
+
+    async def mark_confirmation_pending_as_created_by_issue_id(
+        self, session: AsyncSession, issue_id: UUID
+    ) -> None:
+        await self.transition_by_issue_id(
+            session,
+            issue_id,
+            from_states=[PledgeState.confirmation_pending],
+            to_state=PledgeState.created,
+        )
 
     async def mark_pending_by_issue_id(
         self, session: AsyncSession, issue_id: UUID
     ) -> None:
-        get = sql.select(Pledge).where(
-            Pledge.issue_id == issue_id,
-            Pledge.state.in_(PledgeState.to_pending_states()),
+        await self.transition_by_issue_id(
+            session,
+            issue_id,
+            from_states=PledgeState.to_pending_states(),
+            to_state=PledgeState.pending,
+            hook=pledge_pending,
         )
-
-        res = await session.execute(get)
-        pledges = res.scalars().unique().all()
-
-        for pledge in pledges:
-            # Update pledge
-            statement = (
-                sql.update(Pledge)
-                .where(
-                    Pledge.id == pledge.id,
-                    Pledge.state.in_(PledgeState.to_pending_states()),
-                )
-                .values(
-                    state=PledgeState.pending,
-                    scheduled_payout_at=utc_now() + timedelta(days=14),
-                )
-                .returning(Pledge)
-            )
-            await session.execute(statement)
-            await session.commit()
-
-            # FIXME: it would be cool if we could only trigger these events if the
-            # update statement above modified the record
-            await pledge_updated.call(PledgeHook(session, pledge))
-            await pledge_pending.call(PledgeHook(session, pledge))
 
     async def mark_pending_by_pledge_id(
         self, session: AsyncSession, pledge_id: UUID

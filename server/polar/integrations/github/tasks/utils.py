@@ -1,11 +1,12 @@
 from typing import Sequence, Union
 from uuid import UUID
+
 import structlog
 
-from polar.integrations.github import service
-from polar.models import Organization, Repository, Issue, PullRequest
-from polar.postgres import AsyncSession
 from polar.integrations.github import client as github
+from polar.integrations.github import service
+from polar.models import Issue, Organization, PullRequest, Repository
+from polar.postgres import AsyncSession
 from polar.pull_request.schemas import FullPullRequestCreate
 
 log = structlog.get_logger()
@@ -65,6 +66,7 @@ async def get_event_org_repo(
         github.webhooks.PullRequestClosed,
         github.webhooks.PullRequestReopened,
         github.webhooks.PullRequestSynchronize,
+        github.webhooks.IssuesReopened,
     ],
 ) -> Union[tuple[Organization, Repository], None]:
     repository_id = event.repository.id
@@ -104,6 +106,7 @@ async def upsert_issue(
         github.webhooks.IssuesEdited,
         github.webhooks.IssuesClosed,
         github.webhooks.IssuesDeleted,
+        github.webhooks.IssuesReopened,
     ],
 ) -> Issue | None:
     owner_id = event.repository.owner.id

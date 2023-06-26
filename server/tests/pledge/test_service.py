@@ -1,9 +1,11 @@
-from dataclasses import dataclass
-from datetime import timedelta
 import re
 import uuid
+from dataclasses import dataclass
+from datetime import timedelta
+
 import pytest
 from pytest_mock import MockerFixture
+
 from polar.enums import AccountType
 from polar.kit.utils import utc_now
 from polar.models.account import Account
@@ -13,10 +15,8 @@ from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.pledge.schemas import PledgeState
-
-from polar.postgres import AsyncSession
-
 from polar.pledge.service import pledge as pledge_service
+from polar.postgres import AsyncSession
 
 
 @pytest.mark.asyncio
@@ -49,8 +49,9 @@ async def test_mark_confirmation_pending_by_issue_id(
     pledging_organization: Organization,
     mocker: MockerFixture,
 ) -> None:
-    confirmation_pending_notif = \
-        mocker.patch("polar.receivers.pledges.pledge_confirmation_pending_notification")
+    confirmation_pending_notif = mocker.patch(
+        "polar.receivers.pledges.pledge_confirmation_pending_notification"
+    )
 
     amount = 2000
     fee = 200
@@ -87,14 +88,6 @@ async def test_mark_confirmation_pending_by_issue_id(
         PledgeState.confirmation_pending,
         PledgeState.confirmation_pending,
     ]
-
-    # get
-    # got = await pledge_service.get(session, pledge.id)
-    # assert got is not None
-    # assert got.state == PledgeState.pending
-
-    # pending_notif.assert_called_once
-    # paid_notif.assert_not_called
 
     assert confirmation_pending_notif.call_count == 3
 
@@ -147,14 +140,6 @@ async def test_mark_pending_by_issue_id(
         PledgeState.pending,
         PledgeState.pending,
     ]
-
-    # get
-    # got = await pledge_service.get(session, pledge.id)
-    # assert got is not None
-    # assert got.state == PledgeState.pending
-
-    # pending_notif.assert_called_once
-    # paid_notif.assert_not_called
 
     assert pending_notif.call_count == 3
     paid_notif.assert_not_called()

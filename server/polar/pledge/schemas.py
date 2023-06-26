@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from uuid import UUID
 from datetime import datetime
 from enum import Enum
+from uuid import UUID
 
+from polar.issue.schemas import IssueRead
 from polar.kit.schemas import Schema
 from polar.models.pledge import Pledge
 from polar.organization.schemas import OrganizationPublicRead
 from polar.repository.schemas import RepositoryRead
-from polar.issue.schemas import IssueRead
 
 
 class PledgeState(str, Enum):
@@ -32,8 +32,13 @@ class PledgeState(str, Enum):
     # The states in which this pledge is "active", i.e. is listed on the issue
     @classmethod
     def active_states(cls) -> list[PledgeState]:
-        return [cls.created, cls.confirmation_pending,
-                cls.pending, cls.paid, cls.disputed]
+        return [
+            cls.created,
+            cls.confirmation_pending,
+            cls.pending,
+            cls.paid,
+            cls.disputed,
+        ]
 
     # Happy path:
     # initiated -> created -> confirmation_pending -> pending -> paid
@@ -43,14 +48,14 @@ class PledgeState(str, Enum):
         """
         Allowed states to move into initiated from
         """
-        return [cls.initiated]
+        return [cls.initiated, cls.confirmation_pending]
 
     @classmethod
     def to_confirmation_pending_states(cls) -> list[PledgeState]:
         """
         Allowed states to move into confirmation pending from
         """
-        return [cls.created, cls.disputed]
+        return [cls.created]
 
     @classmethod
     def to_pending_states(cls) -> list[PledgeState]:
@@ -64,7 +69,7 @@ class PledgeState(str, Enum):
         """
         Allowed states to move into disputed from
         """
-        return [cls.created, cls.pending]
+        return [cls.created, cls.confirmation_pending, cls.pending]
 
     @classmethod
     def to_paid_states(cls) -> list[PledgeState]:

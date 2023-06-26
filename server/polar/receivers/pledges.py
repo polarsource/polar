@@ -1,5 +1,9 @@
-from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 import structlog
+from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
+
+from polar.config import settings
+from polar.issue.hooks import IssueHook, issue_upserted
+from polar.issue.service import issue as issue_service
 from polar.models import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
@@ -11,27 +15,36 @@ from polar.notifications.notification import (
     MaintainerPledgePendingNotification,
     PledgerPledgePendingNotification,
 )
-from polar.pledge.service import pledge as pledge_service
-from polar.postgres import AsyncSession
 from polar.notifications.service import (
     PartialNotification,
     get_cents_in_dollar_string,
+)
+from polar.notifications.service import (
     notifications as notification_service,
 )
-from polar.issue.service import issue as issue_service
 from polar.organization.service import organization as organization_service
-from polar.repository.service import repository as repository_service
 from polar.pledge.hooks import (
     PledgeHook,
     PledgePaidHook,
-    pledge_created as pledge_created_hook,
+)
+from polar.pledge.hooks import (
     pledge_confirmation_pending as pledge_confirmation_pending_hook,
-    pledge_pending as pledge_pending_hook,
+)
+from polar.pledge.hooks import (
+    pledge_created as pledge_created_hook,
+)
+from polar.pledge.hooks import (
     pledge_paid as pledge_paid_hook,
+)
+from polar.pledge.hooks import (
+    pledge_pending as pledge_pending_hook,
+)
+from polar.pledge.hooks import (
     pledge_updated as pledge_updated_hook,
 )
-from polar.config import settings
-from polar.issue.hooks import IssueHook, issue_upserted
+from polar.pledge.service import pledge as pledge_service
+from polar.postgres import AsyncSession
+from polar.repository.service import repository as repository_service
 
 log = structlog.get_logger()
 
@@ -41,7 +54,12 @@ async def mark_pledges_confirmation_pending_on_issue_close(
 ) -> None:
     if hook.issue.state == "closed":
         await pledge_service.mark_confirmation_pending_by_issue_id(
-            hook.session, hook.issue.id)
+            hook.session, hook.issue.id
+        )
+    else:
+        await pledge_service.mark_confirmation_pending_as_created_by_issue_id(
+            hook.session, hook.issue.id
+        )
 
 
 issue_upserted.add(mark_pledges_confirmation_pending_on_issue_close)

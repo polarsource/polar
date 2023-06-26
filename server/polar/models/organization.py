@@ -64,6 +64,12 @@ class Organization(RecordModel):
         Boolean, nullable=False, default=False
     )
 
+    default_badge_custom_content: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+        default=None,
+    )
+
     onboarded_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
     users: "Mapped[User]" = relationship(

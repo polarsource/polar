@@ -18,6 +18,7 @@ from polar.repository.schemas import RepositoryPublicRead, RepositoryRead
 class OrganizationSettingsRead(BaseModel):
     pledge_badge_show_amount: bool = False
 
+    # TODO: remove, it's unused
     email_notification_maintainer_issue_receives_backing: bool = False
     email_notification_maintainer_issue_branch_created: bool = False
     email_notification_maintainer_pull_request_created: bool = False
@@ -32,6 +33,7 @@ class OrganizationSettingsRead(BaseModel):
 class OrganizationSettingsUpdate(Schema):
     pledge_badge_show_amount: bool | None = None
 
+    # TODO: remove, it's unused
     email_notification_maintainer_issue_receives_backing: bool | None = None
     email_notification_maintainer_issue_branch_created: bool | None = None
     email_notification_maintainer_pull_request_created: bool | None = None
@@ -54,6 +56,7 @@ class OrganizationPrivateBase(Schema):
     installation_updated_at: datetime | None = None
     installation_suspended_at: datetime | None = None
     onboarded_at: datetime | None = None
+    default_badge_custom_content: str | None = None
 
 
 class OrganizationCreate(OrganizationPrivateBase):
@@ -147,11 +150,13 @@ class RepositoryBadgeSettingsRead(Schema):
 
 class OrganizationBadgeSettingsUpdate(Schema):
     show_amount: bool
+    message: str
     repositories: Sequence[RepositoryBadgeSettingsUpdate]
 
 
 class OrganizationBadgeSettingsRead(Schema):
     show_amount: bool
+    message: str | None
     repositories: Sequence[RepositoryBadgeSettingsRead]
 
 

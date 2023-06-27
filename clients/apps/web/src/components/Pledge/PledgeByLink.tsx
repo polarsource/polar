@@ -1,21 +1,22 @@
-import HowItWorks from '@/components/Pledge/HowItWorks'
-import type { GetServerSideProps, NextPage } from 'next'
-import { useRouter } from 'next/router'
+'use client'
+
+import { useRouter } from 'next/navigation'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
-import { parseGitHubIssueLink } from 'polarkit/utils'
+import { parseGitHubIssueLink } from 'polarkit/github'
 import { ChangeEvent, MouseEvent, useState } from 'react'
+import HowItWorks from './HowItWorks'
 
-const NewPledgePage: NextPage = ({
-  link: linkProp = '',
-  errorMessage: errorMessageProp = '',
+const PledgeByLink = ({
+  initLinkValue,
+  initErrorMessage,
 }: {
-  link?: string
-  errorMessage?: string
+  initLinkValue: string
+  initErrorMessage: string
 }) => {
   const router = useRouter()
-  const [errorMessage, setErrorMessage] = useState(errorMessageProp)
-  const [link, setLink] = useState(linkProp)
+  const [errorMessage, setErrorMessage] = useState(initErrorMessage)
+  const [link, setLink] = useState(initLinkValue)
 
   const onLinkChange = async (event: ChangeEvent<HTMLInputElement>) => {
     setErrorMessage('')
@@ -62,6 +63,7 @@ const NewPledgePage: NextPage = ({
                     polarsource/polar#123)
                   </span>
                 </label>
+
                 <input
                   type="text"
                   id="link"
@@ -89,28 +91,4 @@ const NewPledgePage: NextPage = ({
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  if (context.query.link && typeof context.query.link === 'string') {
-    const issue = parseGitHubIssueLink(context.query.link)
-
-    if (!issue) {
-      return {
-        props: {
-          link: context.query.link,
-          errorMessage: 'Invalid GitHub issue link',
-        },
-      }
-    }
-
-    return {
-      redirect: {
-        permanent: false,
-        destination: `/${issue.owner}/${issue.repo}/issues/${issue.number}`,
-      },
-    }
-  }
-
-  return { props: {} }
-}
-
-export default NewPledgePage
+export default PledgeByLink

@@ -12,7 +12,8 @@ import {
   GitPullRequestIcon,
 } from 'polarkit/components/icons'
 import { PolarTimeAgo } from 'polarkit/components/ui'
-import { classNames, githubPullReqeustUrl } from 'polarkit/utils'
+import { githubPullReqeustUrl } from 'polarkit/github'
+import { classNames } from 'polarkit/utils'
 import { generateMarkdownTitle } from './markdown'
 
 const IssueReference = (props: {

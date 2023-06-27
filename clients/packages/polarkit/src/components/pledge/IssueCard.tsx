@@ -6,7 +6,7 @@ import {
   RepositoryRead,
   type IssueRead,
 } from '../../api/client'
-import { githubIssueUrl } from '../../utils/github'
+import { githubIssueUrl } from '../../github'
 
 const IssueCard = ({
   issue,

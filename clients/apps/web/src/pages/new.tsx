@@ -40,12 +40,12 @@ const NewPledgePage: NextPage = ({
 
   return (
     <>
-      <div className="mx-auto mt-12 w-full md:mt-24 md:w-[826px]">
+      <div className="mx-auto mt-12 w-full p-6 md:mt-24 md:w-[826px]">
         <h1 className="text-center text-3xl font-normal text-gray-800 dark:text-gray-300 md:text-4xl">
           Back an issue
         </h1>
 
-        <div className="mt-8 flex flex-col md:mt-14">
+        <div className="mt-8 mb-12 flex flex-col md:mt-14">
           <WhiteCard
             className="flex flex-col items-stretch rounded-none p-2 text-center md:flex-row md:rounded-xl md:pr-0"
             padding={false}
@@ -54,11 +54,13 @@ const NewPledgePage: NextPage = ({
               <form className="flex flex-col">
                 <label
                   htmlFor="link"
-                  className="mt-4 mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+                  className="text mt-4 mb-2 text-sm font-medium"
                 >
-                  Paste link here
-                  (https://github.com/polarsource/polar/issues/123,
-                  polarsource/polar#123)
+                  Github issue link{' '}
+                  <span className="font-normal text-gray-500 dark:text-gray-400">
+                    (e.g. https://github.com/polarsource/polar/issues/123,
+                    polarsource/polar#123)
+                  </span>
                 </label>
                 <input
                   type="text"

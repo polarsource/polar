@@ -52,7 +52,7 @@ const Topbar = (props: {
           <>
             <Link
               href="/"
-              className="hidden flex-shrink-0 items-center space-x-2 font-semibold text-gray-700 md:inline-flex"
+              className="flex-shrink-0 items-center space-x-2 font-semibold text-gray-700 md:inline-flex"
             >
               <LogoType />
             </Link>

@@ -24,6 +24,7 @@ from polar.models.pledge import Pledge
 from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
 from polar.models.user import User
+from polar.models.user_organization import UserOrganization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, sql
 
@@ -689,6 +690,53 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         await pledge_disputed.call(PledgeHook(session, pledge))
         await pledge_updated.call(PledgeHook(session, pledge))
+
+    def user_can_read_pledge(
+        self, user: User, pledge: Pledge, memberships: Sequence[UserOrganization]
+    ) -> bool:
+        return self.user_can_admin_sender_pledge(
+            user, pledge, memberships
+        ) or self.user_can_admin_received_pledge(pledge, memberships)
+
+    def user_can_admin_sender_pledge(
+        self, user: User, pledge: Pledge, memberships: Sequence[UserOrganization]
+    ) -> bool:
+        """
+        Returns true if the User can modify the pledge on behalf of the entity that sent
+        the pledge, such as disputing it.
+        """
+
+        if pledge.by_user_id == user.id:
+            return True
+
+        if pledge.by_organization_id:
+            for m in memberships:
+                if m.organization_id == pledge.by_organization_id and m.is_admin:
+                    return True
+
+        return False
+
+    def user_can_admin_received_pledge(
+        self, pledge: Pledge, memberships: Sequence[UserOrganization]
+    ) -> bool:
+        """
+        Returns true if the User can modify the pledge on behalf of the entity that
+        received the pledge, such as confirming it, and managing payouts.
+        """
+        for m in memberships:
+            if m.organization_id == pledge.organization_id and m.is_admin:
+                return True
+
+        return False
+
+    def user_can_admin_received_pledge_on_issue(
+        self, issue: Issue, memberships: Sequence[UserOrganization]
+    ) -> bool:
+        for m in memberships:
+            if m.organization_id == issue.organization_id and m.is_admin:
+                return True
+
+        return False
 
 
 pledge = PledgeService(Pledge)

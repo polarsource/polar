@@ -1,8 +1,13 @@
 import PledgeByLink from '@/components/Pledge/PledgeByLink'
+import { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { parseGitHubIssueLink } from 'polarkit/github'
 
-export default async function Page({
+export const metadata: Metadata = {
+  title: 'Create a new pledge',
+}
+
+export default function Page({
   searchParams,
 }: {
   searchParams: { [key: string]: string | string[] | undefined }

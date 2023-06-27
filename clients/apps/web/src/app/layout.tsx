@@ -1,9 +1,30 @@
-import { Metadata } from 'next'
-
 import '../styles/globals.scss'
 
+import { Metadata } from 'next'
+
 export const metadata: Metadata = {
-  title: 'Polar',
+  title: {
+    template: '%s | Polar',
+    default: 'Polar',
+  },
+  description:
+    'Pledge for progress. Polar gives open source maintainers a better and funded backlog based on what drives the most impact within their community.',
+  openGraph: {
+    images:
+      'https://framerusercontent.com/images/RY34ZklhknDgQWNxaSSQDYqVBM.jpg',
+    type: 'website',
+    title: 'Polar - Pledge for progress',
+    description:
+      'Polar gives open source maintainers a better and funded backlog based on what drives the most impact within their community. ',
+  },
+  twitter: {
+    images:
+      'https://framerusercontent.com/images/RY34ZklhknDgQWNxaSSQDYqVBM.jpg',
+    card: 'summary_large_image',
+    title: 'Polar - Pledge for progress',
+    description:
+      'Polar gives open source maintainers a better and funded backlog based on what drives the most impact within their community. ',
+  },
 }
 
 export default function RootLayout({

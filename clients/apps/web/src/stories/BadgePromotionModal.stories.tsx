@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 import { BadgePromotionModal } from '@/components/Dashboard/IssuePromotionModal'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from 'polarkit'
 import { IssueDashboardRead, OrganizationPublicRead } from 'polarkit/api/client'
 import { issue, org, repo, user } from './testdata'
 
@@ -26,6 +28,13 @@ const meta: Meta<typeof BadgePromotionModal> = {
     isShown: true,
     toggle: () => {},
     user: user,
+  },
+  render: (args) => {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <BadgePromotionModal {...args} />
+      </QueryClientProvider>
+    )
   },
 }
 

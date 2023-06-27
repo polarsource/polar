@@ -1,5 +1,4 @@
-import { Platforms, PledgeRead, PledgeState } from 'polarkit/api/client'
-import { useIssueMarkConfirmed } from 'polarkit/hooks'
+import { PledgeRead, PledgeState } from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/utils'
 import { useMemo } from 'react'
 import IssueConfirmButton from './IssueConfirmButton'
@@ -9,12 +8,24 @@ interface Props {
   repoName: string
   issueNumber: number
   pledges: PledgeRead[]
+  onConfirmPledges: (
+    orgName: string,
+    repoName: string,
+    issueNumber: number,
+  ) => Promise<void>
+  showConfirmPledgeAction: boolean
+  confirmPledgeIsLoading: boolean
 }
 
 const IssuePledge = (props: Props) => {
-  const markConfirmed = useIssueMarkConfirmed()
-
-  const { orgName, repoName, issueNumber, pledges } = props
+  const {
+    orgName,
+    repoName,
+    issueNumber,
+    pledges,
+    showConfirmPledgeAction,
+    confirmPledgeIsLoading,
+  } = props
 
   const totalPledgeAmount = pledges.reduce(
     (accumulator, pledge) => accumulator + pledge.amount,
@@ -22,12 +33,7 @@ const IssuePledge = (props: Props) => {
   )
 
   const confirmPledges = async () => {
-    await markConfirmed.mutateAsync({
-      platform: Platforms.GITHUB,
-      orgName,
-      repoName,
-      issueNumber,
-    })
+    await props.onConfirmPledges(orgName, repoName, issueNumber)
   }
 
   const confirmable = useMemo(() => {
@@ -35,20 +41,21 @@ const IssuePledge = (props: Props) => {
       pledges.some(
         (p) =>
           p.state === PledgeState.CONFIRMATION_PENDING &&
-          p.authed_user_can_admin,
-      ) && !markConfirmed.isLoading
+          p.authed_user_can_admin_received,
+      ) && !confirmPledgeIsLoading
     )
-  }, [pledges, markConfirmed])
+  }, [pledges, confirmPledgeIsLoading])
 
   const isConfirmed = useMemo(() => {
     return (
       !confirmable &&
       pledges.some(
-        (p) => p.state === PledgeState.PENDING && p.authed_user_can_admin,
+        (p) =>
+          p.state === PledgeState.PENDING && p.authed_user_can_admin_received,
       ) &&
-      !markConfirmed.isLoading
+      !confirmPledgeIsLoading
     )
-  }, [pledges, markConfirmed, confirmable])
+  }, [pledges, confirmPledgeIsLoading, confirmable])
 
   return (
     <>
@@ -59,17 +66,22 @@ const IssuePledge = (props: Props) => {
             {getCentsInDollarString(totalPledgeAmount)}
           </span>
         </p>
-        {isConfirmed && (
-          <span className="text-sm font-medium text-gray-600 dark:text-gray-500">
-            Confirmed
-          </span>
+
+        {showConfirmPledgeAction && (
+          <>
+            {isConfirmed && (
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-500">
+                Confirmed
+              </span>
+            )}
+            {confirmPledgeIsLoading && (
+              <span className="text-sm font-medium text-gray-600  dark:text-gray-500">
+                Confirming...
+              </span>
+            )}
+            {confirmable && <IssueConfirmButton onClick={confirmPledges} />}
+          </>
         )}
-        {markConfirmed.isLoading && (
-          <span className="text-sm font-medium text-gray-600  dark:text-gray-500">
-            Confirming...
-          </span>
-        )}
-        {confirmable && <IssueConfirmButton onClick={confirmPledges} />}
       </div>
     </>
   )

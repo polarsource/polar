@@ -16,5 +16,7 @@ export type PledgeRead = {
   pledger_avatar?: string;
   authed_user_can_admin?: boolean;
   scheduled_payout_at?: string;
+  authed_user_can_admin_sender?: boolean;
+  authed_user_can_admin_received?: boolean;
 };
 

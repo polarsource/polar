@@ -136,8 +136,14 @@ class PledgeRead(Schema):
     pledger_name: str | None
     pledger_avatar: str | None
 
-    authed_user_can_admin: bool = False
+    authed_user_can_admin: bool = False  # deprecated
     scheduled_payout_at: datetime | None = None
+
+    # If the user can admin the _sending_ of the pledge (disputing, etc)
+    authed_user_can_admin_sender: bool = False
+
+    # If the user can admin the _receiving_ of the pledge (confirm it, manage payouts, ...)  # noqa: E501
+    authed_user_can_admin_received: bool = False
 
     @classmethod
     def from_db(cls, o: Pledge) -> PledgeRead:

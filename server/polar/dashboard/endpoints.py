@@ -22,13 +22,19 @@ from polar.issue.schemas import IssueRead, IssueReferenceRead
 from polar.issue.service import issue
 from polar.models.issue import Issue
 from polar.models.organization import Organization
+from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.models.user import User
+from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import OrganizationPublicRead
 from polar.pledge.schemas import PledgeRead, PledgeState
+from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session, sql
 from polar.repository.schemas import RepositoryRead
 from polar.repository.service import repository
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 
 router = APIRouter(tags=["dashboard"])
 
@@ -257,6 +263,14 @@ async def dashboard(
         set(PledgeState.active_states()) | set([PledgeState.disputed])
     )
 
+    # load user memberships
+    user_memberships: Sequence[UserOrganization] = []
+    if for_user:
+        user_memberships = await user_organization_service.list_by_user_id(
+            session,
+            for_user.id,
+        )
+
     # add pledges to included
     for i in issues:
         for pled in i.pledges:
@@ -274,6 +288,18 @@ async def dashboard(
 
             if user_can_admin:
                 pledge_read.authed_user_can_admin = True
+
+            if for_user:
+                pledge_read.authed_user_can_admin_sender = (
+                    pledge_service.user_can_admin_sender_pledge(
+                        for_user, pled, user_memberships
+                    )
+                )
+                pledge_read.authed_user_can_admin_received = (
+                    pledge_service.user_can_admin_received_pledge(
+                        pled, user_memberships
+                    )
+                )
 
             # for pled in pledges:
             included[str(pled.id)] = Entry(

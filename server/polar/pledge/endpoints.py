@@ -171,11 +171,22 @@ async def get_pledge(
     number: int,
     pledge_id: UUID,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
+    auth: Auth = Depends(Auth.current_user),
 ) -> PledgeRead:
     pledge = await pledge_service.get_with_loaded(session, pledge_id)
     if not pledge:
         raise HTTPException(status_code=404, detail="Pledge not found")
+
+    user_memberships = await user_organization_service.list_by_user_id(
+        session,
+        auth.user.id,
+    )
+
+    if not pledge_service.user_can_read_pledge(auth.user, pledge, user_memberships):
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied",
+        )
 
     return PledgeRead.from_db(pledge)
 
@@ -244,6 +255,19 @@ async def confirm_pledges(
         issue=number,
     )
 
+    user_memberships = await user_organization_service.list_by_user_id(
+        session,
+        auth.user.id,
+    )
+
+    if not pledge_service.user_can_admin_received_pledge_on_issue(
+        issue, user_memberships
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied",
+        )
+
     await pledge_service.mark_pending_by_issue_id(
         session,
         issue_id=issue.id,
@@ -267,11 +291,18 @@ async def dispute_pledge(
         raise HTTPException(status_code=404, detail="Pledge not found")
 
     # authorize
-    memberships = await user_organization_service.list_by_user_id(
-        session, user_id=auth.user.id
+    user_memberships = await user_organization_service.list_by_user_id(
+        session,
+        auth.user.id,
     )
-    if not authorize(pledge, auth.user, memberships):
-        raise HTTPException(status_code=404, detail="Pledge not found")
+
+    if not pledge_service.user_can_admin_sender_pledge(
+        auth.user, pledge, user_memberships
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied",
+        )
 
     await pledge_service.mark_disputed(
         session, pledge_id=pledge_id, by_user_id=auth.user.id, reason=reason
@@ -283,16 +314,3 @@ async def dispute_pledge(
         raise HTTPException(status_code=404, detail="Pledge not found")
 
     return PledgeRead.from_db(pledge)
-
-
-def authorize(
-    pledge: Pledge, user: User, memberships: Sequence[UserOrganization]
-) -> bool:
-    if pledge.by_user_id == user.id:
-        return True
-
-    orgs = [m.organization_id for m in memberships]
-    if pledge.by_organization_id in orgs:
-        return True
-
-    return False

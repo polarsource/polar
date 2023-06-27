@@ -71,12 +71,12 @@ const IssuePledge = (props: Props) => {
           <>
             {isConfirmed && (
               <span className="text-sm font-medium text-gray-600 dark:text-gray-500">
-                Confirmed
+                Solved
               </span>
             )}
             {confirmPledgeIsLoading && (
-              <span className="text-sm font-medium text-gray-600  dark:text-gray-500">
-                Confirming...
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-500">
+                Loading...
               </span>
             )}
             {confirmable && <IssueConfirmButton onClick={confirmPledges} />}

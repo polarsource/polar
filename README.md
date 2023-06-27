@@ -13,7 +13,7 @@
   
 <a href="https://polar.sh">Website</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<span>Private Alpha - <a href="https://polar.sh/request">Request early access</a></span>
+<span>Public Alpha - <a href="https://polar.sh/login">Get started</a></span>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://polar.sh/faq">FAQ</a>
 
@@ -45,9 +45,6 @@ For backers:
 3. **Monthly budget (Soon).** Automatically distribute a monthly budget across dependencies. Going from one-off to subscription. 
 
 Read more in our [Hello World](https://github.com/orgs/polarsource/discussions/391) announcement.
-
-#### Currently in Private Alpha
-[Request an invite](https://polar.sh/request). We'll shortly send out invites and on weekly basis as we build towards a public beta. 
 
 ## Roadmap, Issues & Feature Requests
 [Join our discussions](https://github.com/orgs/polarsource/discussions) to help shape the future of Polar and to see what we're working on. We're excited to hear from you!

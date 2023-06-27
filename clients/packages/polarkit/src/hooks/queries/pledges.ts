@@ -47,8 +47,9 @@ export const useIssueMarkConfirmed = () =>
         number: variables.issueNumber,
       })
     },
-    onSuccess: (result, variables, ctx) => {
-      queryClient.invalidateQueries(['dashboard'])
-      queryClient.invalidateQueries(['pledge'])
+    onSuccess: async (result, variables, ctx) => {
+      await queryClient.invalidateQueries(['dashboard'])
+      await queryClient.invalidateQueries(['pledge'])
+      await queryClient.invalidateQueries(['listPersonalPledges'])
     },
   })

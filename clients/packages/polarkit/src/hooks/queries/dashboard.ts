@@ -65,7 +65,8 @@ export const usePersonalDashboard = (
 ): UseInfiniteQueryResult<IssueListResponse> =>
   useInfiniteQuery({
     queryKey: [
-      'personalDashboard',
+      'dashboard',
+      'personal',
       tab,
       q,
       JSON.stringify(status), // Array as cache key,

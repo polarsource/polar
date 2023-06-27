@@ -1,8 +1,7 @@
-import { QueryClient } from '@tanstack/react-query'
 import { CancelablePromise, PolarAPI } from './client'
 export { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-
-export const queryClient = new QueryClient()
+export { queryClient } from './query'
+export { CancelablePromise }
 
 export const getServerURL = (path?: string): string => {
   path = path !== undefined ? path : ''
@@ -15,5 +14,3 @@ export const api = new PolarAPI({
   BASE: getServerURL(),
   WITH_CREDENTIALS: true,
 })
-
-export { CancelablePromise }

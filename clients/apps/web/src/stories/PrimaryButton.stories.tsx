@@ -18,10 +18,18 @@ export const Primary: Story = {
   },
 }
 
-export const PrimarySkinny: Story = {
+export const PrimaryNonFullWidth: Story = {
   args: {
-    children: 'Click me',
+    children: <span>Click me</span>,
     fullWidth: false,
+  },
+}
+
+export const PrimaryNonFullWidthSizeSmall: Story = {
+  args: {
+    children: <span>Click me</span>,
+    fullWidth: false,
+    size: 'small',
   },
 }
 

@@ -59,6 +59,7 @@ export const MaintainerPledgeConfirmationPendingNotificationItem: StoryConfirmat
         notification_maintainerPledgeConfirmationPendingNotification.payload,
       canMarkSolved: false,
       isMarkedSolved: false,
+      onMarkSoved: async () => {},
     },
     render: (args) => {
       return (
@@ -75,6 +76,16 @@ export const MaintainerPledgeConfirmationPendingNotificationItemCanSolve: StoryC
     args: {
       ...MaintainerPledgeConfirmationPendingNotificationItem.args,
       canMarkSolved: true,
+    },
+  }
+
+export const MaintainerPledgeConfirmationPendingNotificationItemLoading: StoryConfirmationPending =
+  {
+    ...MaintainerPledgeConfirmationPendingNotificationItem,
+    args: {
+      ...MaintainerPledgeConfirmationPendingNotificationItem.args,
+      canMarkSolved: true,
+      isLoading: true,
     },
   }
 

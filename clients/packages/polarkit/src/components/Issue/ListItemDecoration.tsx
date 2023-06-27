@@ -29,14 +29,24 @@ const IssueListItemDecoration = ({
   references,
   showDisputeAction,
   onDispute,
+  onConfirmPledges,
+  showConfirmPledgeAction,
+  confirmPledgeIsLoading,
 }: {
   orgName: string
   repoName: string
   issueNumber: number
   pledges: PledgeRead[]
   references: IssueReferenceRead[]
-  showDisputeAction?: boolean
-  onDispute?: (pledge: PledgeRead) => void
+  showDisputeAction: boolean
+  onDispute: (pledge: PledgeRead) => void
+  onConfirmPledges: (
+    orgName: string,
+    repoName: string,
+    issueNumber: number,
+  ) => Promise<void>
+  showConfirmPledgeAction: boolean
+  confirmPledgeIsLoading: boolean
 }) => {
   const showPledges = pledges && pledges.length > 0
 
@@ -58,7 +68,7 @@ const IssueListItemDecoration = ({
     pledges
       ?.filter(
         (p) =>
-          p.authed_user_can_admin &&
+          p.authed_user_can_admin_sender &&
           p.scheduled_payout_at &&
           p.state === PledgeState.PENDING &&
           remainingDays(p) >= 0,
@@ -80,7 +90,7 @@ const IssueListItemDecoration = ({
     pledges &&
     pledges.find(
       (p) =>
-        p.authed_user_can_admin &&
+        p.authed_user_can_admin_sender &&
         p.scheduled_payout_at &&
         p.state === PledgeState.PENDING &&
         remainingDays(p) >= 0,
@@ -113,6 +123,9 @@ const IssueListItemDecoration = ({
               repoName={repoName}
               issueNumber={issueNumber}
               pledges={pledges}
+              onConfirmPledges={onConfirmPledges}
+              showConfirmPledgeAction={showConfirmPledgeAction}
+              confirmPledgeIsLoading={confirmPledgeIsLoading}
             />
           </div>
         )}
@@ -174,7 +187,7 @@ const IssueListItemDecoration = ({
           {disputedPledges.map((p) => {
             return (
               <div key={p.id}>
-                {p.authed_user_can_admin && (
+                {p.authed_user_can_admin_sender && (
                   <span className="text-sm text-gray-500">
                     You've disputed your pledge{' '}
                     {disputeBoxShowAmount && (
@@ -183,7 +196,7 @@ const IssueListItemDecoration = ({
                   </span>
                 )}
 
-                {!p.authed_user_can_admin && (
+                {p.authed_user_can_admin_received && (
                   <span className="text-sm text-gray-500">
                     {p.pledger_name} disputed their pledge{' '}
                     {disputeBoxShowAmount && (

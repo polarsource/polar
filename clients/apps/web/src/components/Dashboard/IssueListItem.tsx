@@ -10,6 +10,7 @@ import {
   IssueReferenceRead,
   IssueStatus,
   OrganizationPublicRead,
+  Platforms,
   RepositoryPublicRead,
   RepositoryRead,
   type PledgeRead,
@@ -21,6 +22,7 @@ import {
   generateMarkdownTitle,
 } from 'polarkit/components/Issue'
 import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
+import { useIssueMarkConfirmed } from 'polarkit/hooks'
 import { getCentsInDollarString, githubIssueUrl } from 'polarkit/utils'
 import { ChangeEvent, useState } from 'react'
 import PledgeNow from '../Pledge/PledgeNow'
@@ -141,6 +143,21 @@ const IssueListItem = (props: {
   }
 
   const [isHovered, setIsHovered] = useState(false)
+
+  const markConfirmed = useIssueMarkConfirmed()
+
+  const onConfirmPledge = async (
+    orgName: string,
+    repoName: string,
+    issueNumber: number,
+  ) => {
+    await markConfirmed.mutateAsync({
+      platform: Platforms.GITHUB,
+      orgName,
+      repoName,
+      issueNumber,
+    })
+  }
 
   return (
     <>
@@ -274,6 +291,9 @@ const IssueListItem = (props: {
               references={props.references}
               showDisputeAction={true}
               onDispute={onDispute}
+              showConfirmPledgeAction={true}
+              onConfirmPledges={onConfirmPledge}
+              confirmPledgeIsLoading={markConfirmed.isLoading}
             />
           </IssueActivityBox>
         )}

@@ -43,6 +43,7 @@ const pledgeDisputable: PledgeRead[] = [
     state: PledgeState.PENDING,
     scheduled_payout_at: addDays(new Date(), 7).toISOString(),
     authed_user_can_admin: true,
+    authed_user_can_admin_sender: true,
     pledger_name: 'zz',
   },
 ]
@@ -58,6 +59,7 @@ const pledgeDisputableToday: PledgeRead[] = [
     state: PledgeState.PENDING,
     scheduled_payout_at: addHours(new Date(), 2).toISOString(),
     authed_user_can_admin: true,
+    authed_user_can_admin_sender: true,
     pledger_name: 'zz',
   },
 ]
@@ -73,6 +75,7 @@ const pledgeDisputableYesterday: PledgeRead[] = [
     state: PledgeState.PENDING,
     scheduled_payout_at: addDays(new Date(), -1).toISOString(),
     authed_user_can_admin: true,
+    authed_user_can_admin_sender: true,
     pledger_name: 'zz',
   },
 ]
@@ -87,6 +90,7 @@ const pledgeDisputed: PledgeRead[] = [
     organization_id: 'yy',
     state: PledgeState.DISPUTED,
     authed_user_can_admin: true,
+    authed_user_can_admin_sender: true,
     pledger_name: 'zz',
   },
 ]
@@ -100,7 +104,7 @@ const pledgeDisputedByOther: PledgeRead[] = [
     repository_id: 'xx',
     organization_id: 'yy',
     state: PledgeState.DISPUTED,
-    authed_user_can_admin: false,
+    authed_user_can_admin_received: true,
     pledger_name: 'zz',
   },
 ]
@@ -458,6 +462,22 @@ export const PledgeConfirmationPending: Story = {
       {
         ...pledge,
         state: PledgeState.CONFIRMATION_PENDING,
+        authed_user_can_admin_received: true,
+      },
+    ],
+  },
+}
+
+export const PledgeConfirmationPendingConfirmed: Story = {
+  args: {
+    ...Default.args,
+    issue: issueClosed,
+    references: referencesMerged,
+    pledges: [
+      {
+        ...pledge,
+        state: PledgeState.PENDING,
+        authed_user_can_admin_received: true,
       },
     ],
   },

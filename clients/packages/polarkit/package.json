@@ -12,6 +12,7 @@
     "./store": "./src/store/index.ts",
     "./hooks": "./src/hooks/index.ts",
     "./utils": "./src/utils/index.ts",
+    "./github": "./src/github/index.ts",
     "./components": "./src/components/index.ts",
     "./components/ui": "./src/components/ui/index.ts",
     "./components/pledge": "./src/components/pledge/index.ts",

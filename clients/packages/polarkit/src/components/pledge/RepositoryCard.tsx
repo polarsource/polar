@@ -1,5 +1,5 @@
 import { OrganizationPublicRead, type RepositoryRead } from '../../api/client'
-import { githubRepoUrl } from '../../utils/github'
+import { githubRepoUrl } from '../../github'
 import { GrayCard } from '../ui/Cards'
 
 const abbrStars = (stars: number): string => {

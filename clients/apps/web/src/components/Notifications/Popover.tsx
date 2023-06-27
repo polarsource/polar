@@ -14,6 +14,7 @@ import { GitMergeIcon } from 'polarkit/components/icons'
 import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
 import {
   useGetPledge,
+  useIssueMarkConfirmed,
   useNotifications,
   useNotificationsMarkRead,
 } from 'polarkit/hooks'
@@ -212,12 +213,25 @@ const MaintainerPledgeConfirmationPendingWrapper = ({
     return pledge.data?.state === PledgeState.PENDING
   }, [pledge])
 
+  const markSolved = useIssueMarkConfirmed()
+
+  const onMarkSolved = async () => {
+    await markSolved.mutateAsync({
+      platform: Platforms.GITHUB,
+      orgName: payload.issue_org_name,
+      repoName: payload.issue_repo_name,
+      issueNumber: payload.issue_number,
+    })
+  }
+
   return (
     <MaintainerPledgeConfirmationPending
       n={n}
       payload={payload}
       canMarkSolved={canMarkSolved}
       isMarkedSolved={isMarkedSolved}
+      isLoading={markSolved.isLoading}
+      onMarkSoved={onMarkSolved}
     />
   )
 }
@@ -227,11 +241,15 @@ export const MaintainerPledgeConfirmationPending = ({
   payload,
   canMarkSolved,
   isMarkedSolved,
+  isLoading,
+  onMarkSoved,
 }: {
   n: NotificationRead
   payload: MaintainerPledgeConfirmationPendingNotification
   canMarkSolved: boolean
   isMarkedSolved: boolean
+  isLoading: boolean
+  onMarkSoved: () => Promise<void>
 }) => {
   return (
     <Item
@@ -253,7 +271,13 @@ export const MaintainerPledgeConfirmationPending = ({
             </div>
             <div>
               {canMarkSolved && (
-                <PrimaryButton fullWidth={false}>
+                <PrimaryButton
+                  fullWidth={false}
+                  size="small"
+                  loading={isLoading}
+                  disabled={isLoading}
+                  onClick={onMarkSoved}
+                >
                   <span>Mark as solved</span>
                 </PrimaryButton>
               )}

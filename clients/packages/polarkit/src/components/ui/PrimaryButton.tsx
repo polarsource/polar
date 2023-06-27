@@ -66,12 +66,14 @@ const TinyLoadingSpinner = (props: { disabled: boolean }) => {
 }
 
 type Color = 'blue' | 'gray' | 'red' | 'green' | 'lightblue'
+type Size = 'normal' | 'small'
 
 type ButtonProps = {
   children: React.ReactNode
   href?: string
   color: Color
   fullWidth: boolean
+  size: Size
   onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
 } & typeof defaultProps
 
@@ -79,6 +81,7 @@ const defaultProps = {
   disabled: false,
   loading: false,
   color: 'blue' as Color,
+  size: 'normal' as Size,
   fullWidth: true,
   classNames: '',
 }
@@ -130,13 +133,21 @@ const text = (color: Color, loading: boolean, disabled: boolean) => {
   return 'text-white'
 }
 
+const size = (size: Size) => {
+  if (size === 'small') {
+    return 'px-3 py-1.5 min-h-6'
+  }
+  return 'px-5 py-2 min-h-6'
+}
+
 const PrimaryButton = (props: ButtonProps) => {
   const disabled = props.disabled ? props.disabled : false
   let classes = classNames(
     bg(props.color, props.loading, disabled),
     text(props.color, props.loading, disabled),
+    size(props.size),
     props.fullWidth ? 'w-full' : '',
-    'rounded-lg px-5 py-2 min-h-6 text-center text-sm font-medium inline-flex items-center space-x-2 transition-colors duration-100 justify-center',
+    'rounded-lg  text-center text-sm font-medium inline-flex items-center space-x-2 transition-colors duration-100 justify-center',
     props.classNames,
   )
   return (

@@ -1,6 +1,7 @@
 import { Platforms, PledgeRead, PledgeState } from 'polarkit/api/client'
 import { useIssueMarkConfirmed } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/utils'
+import { useMemo } from 'react'
 import IssueConfirmButton from './IssueConfirmButton'
 
 interface Props {
@@ -20,18 +21,34 @@ const IssuePledge = (props: Props) => {
     0,
   )
 
-  const confirmable = pledges.some(
-    (p) => p.state === PledgeState.CONFIRMATION_PENDING,
-  )
-
   const confirmPledges = async () => {
-    markConfirmed.mutate({
+    await markConfirmed.mutateAsync({
       platform: Platforms.GITHUB,
       orgName,
       repoName,
       issueNumber,
     })
   }
+
+  const confirmable = useMemo(() => {
+    return (
+      pledges.some(
+        (p) =>
+          p.state === PledgeState.CONFIRMATION_PENDING &&
+          p.authed_user_can_admin,
+      ) && !markConfirmed.isLoading
+    )
+  }, [pledges, markConfirmed])
+
+  const isConfirmed = useMemo(() => {
+    return (
+      !confirmable &&
+      pledges.some(
+        (p) => p.state === PledgeState.PENDING && p.authed_user_can_admin,
+      ) &&
+      !markConfirmed.isLoading
+    )
+  }, [pledges, markConfirmed, confirmable])
 
   return (
     <>
@@ -42,6 +59,16 @@ const IssuePledge = (props: Props) => {
             {getCentsInDollarString(totalPledgeAmount)}
           </span>
         </p>
+        {isConfirmed && (
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-500">
+            Confirmed
+          </span>
+        )}
+        {markConfirmed.isLoading && (
+          <span className="text-sm font-medium text-gray-600  dark:text-gray-500">
+            Confirming...
+          </span>
+        )}
         {confirmable && <IssueConfirmButton onClick={confirmPledges} />}
       </div>
     </>

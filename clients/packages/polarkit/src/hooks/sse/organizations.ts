@@ -1,4 +1,4 @@
-import { queryClient } from '../../api'
+import { queryClient } from '../../..'
 
 export const onOrganizationUpdated = async (params: {
   organization_id: string

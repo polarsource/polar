@@ -1,3 +1,12 @@
 INHERIT: mkdocs.yml
-plugins:
-  - blog
+nav:
+  - Blog:
+    - blog/index.md
+theme:
+  features:
+    - search.highlight
+    - search.share
+    - search.suggest
+  plugins:
+    - blog
+    - search

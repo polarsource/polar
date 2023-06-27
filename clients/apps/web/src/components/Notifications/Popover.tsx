@@ -222,7 +222,7 @@ const MaintainerPledgeConfirmationPendingWrapper = ({
   )
 }
 
-const MaintainerPledgeConfirmationPending = ({
+export const MaintainerPledgeConfirmationPending = ({
   n,
   payload,
   canMarkSolved,
@@ -240,7 +240,7 @@ const MaintainerPledgeConfirmationPending = ({
     >
       {{
         text: (
-          <div className="flex flex-col space-y-2">
+          <div className="flex flex-col space-y-1">
             <div>
               Confirm that{' '}
               <Link href={payload.issue_url}>
@@ -257,7 +257,11 @@ const MaintainerPledgeConfirmationPending = ({
                   <span>Mark as solved</span>
                 </PrimaryButton>
               )}
-              {isMarkedSolved && <>Confirmed!</>}
+              {isMarkedSolved && (
+                <div className="font-medium text-green-600">
+                  Marked as solved
+                </div>
+              )}
             </div>
           </div>
         ),

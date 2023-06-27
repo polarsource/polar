@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from 'polarkit'
 import {
   MaintainerPledgeConfirmationPending,
   Notification,
@@ -15,7 +17,6 @@ import {
 const meta: Meta<typeof Notification> = {
   title: 'Organisms/Notification',
   component: Notification,
-  tags: ['autodocs'],
 }
 
 export default meta
@@ -54,5 +55,34 @@ export const MaintainerPledgeConfirmationPendingNotificationItem: StoryConfirmat
   {
     args: {
       n: notification_maintainerPledgeConfirmationPendingNotification,
+      payload:
+        notification_maintainerPledgeConfirmationPendingNotification.payload,
+      canMarkSolved: false,
+      isMarkedSolved: false,
+    },
+    render: (args) => {
+      return (
+        <QueryClientProvider client={queryClient}>
+          <MaintainerPledgeConfirmationPending {...args} />
+        </QueryClientProvider>
+      )
+    },
+  }
+
+export const MaintainerPledgeConfirmationPendingNotificationItemCanSolve: StoryConfirmationPending =
+  {
+    ...MaintainerPledgeConfirmationPendingNotificationItem,
+    args: {
+      ...MaintainerPledgeConfirmationPendingNotificationItem.args,
+      canMarkSolved: true,
+    },
+  }
+
+export const MaintainerPledgeConfirmationPendingNotificationItemIsSolved: StoryConfirmationPending =
+  {
+    ...MaintainerPledgeConfirmationPendingNotificationItem,
+    args: {
+      ...MaintainerPledgeConfirmationPendingNotificationItem.args,
+      isMarkedSolved: true,
     },
   }

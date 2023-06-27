@@ -1,6 +1,8 @@
 import PublicLayout from '@/components/Layout/PublicLayout'
 import RepositoryPublicPage from '@/components/Organization/RepositoryPublicPage'
 import type { Meta, StoryObj } from '@storybook/react'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from 'polarkit'
 import { issue, org, repo } from './testdata'
 
 const meta: Meta<typeof RepositoryPublicPage> = {
@@ -41,9 +43,11 @@ export const Default: Story = {
   },
   render: (args) => {
     return (
-      <PublicLayout>
-        <RepositoryPublicPage {...args} />
-      </PublicLayout>
+      <QueryClientProvider client={queryClient}>
+        <PublicLayout>
+          <RepositoryPublicPage {...args} />
+        </PublicLayout>
+      </QueryClientProvider>
     )
   },
 }

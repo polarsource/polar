@@ -3,23 +3,41 @@ repo_url: https://github.com/polarsource/polar
 repo_name: polarsource/polar
 theme:
   name: material
+  custom_dir: overrides
+  logo_light: assets/polar-logo-blue.svg
+  logo_dark: assets/polar-logo-white.svg
+  favicon: assets/favicon.png
   font:
     text: Inter
     code: Roboto Mono
   features:
     - navigation.footer
+    - header.autohide
   palette:
-    - scheme: polar-light
+    - media: "(prefers-color-scheme: light)"
+      scheme: polar-light
+      primary: indigo
+      accent: indigo
       toggle:
-          icon: material/brightness-7
+          icon: material/weather-sunny
           name: Switch to dark mode
-    - scheme: polar-dark
+    - media: "(prefers-color-scheme: dark)"
+      scheme: polar-dark
+      primary: indigo
+      accent: indigo
       toggle:
-          icon: material/brightness-4
+          icon: material/weather-night
           name: Switch to light mode
 
+markdown_extensions:
+  - abbr
+  - attr_list
+  - admonition
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.superfences
+
 extra:
-  homepage: https://polar.sh
   social:
     - icon: fontawesome/brands/twitter
       link: https://twitter.com/@polar_sh

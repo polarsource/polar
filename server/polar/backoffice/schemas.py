@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Self
 from uuid import UUID
+
 from polar.models.pledge import Pledge
 from polar.pledge.schemas import PledgeRead, PledgeState
 
@@ -25,9 +26,9 @@ class BackofficePledgeRead(PledgeRead):
         if o.user:
             pledger_name = o.user.username
             pledger_avatar = o.user.avatar_url
-        if o.organization:
-            pledger_name = o.organization.name
-            pledger_avatar = o.organization.avatar_url
+        if o.by_organization:
+            pledger_name = o.by_organization.name
+            pledger_avatar = o.by_organization.avatar_url
 
         return cls(
             id=o.id,

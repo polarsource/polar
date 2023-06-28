@@ -152,9 +152,9 @@ class PledgeRead(Schema):
         if o.user:
             pledger_name = o.user.username
             pledger_avatar = o.user.avatar_url
-        if o.organization:
-            pledger_name = o.organization.name
-            pledger_avatar = o.organization.avatar_url
+        if o.by_organization:
+            pledger_name = o.by_organization.name
+            pledger_avatar = o.by_organization.avatar_url
 
         return PledgeRead(
             id=o.id,
@@ -171,7 +171,7 @@ class PledgeRead(Schema):
 
 
 class PledgeResources(Schema):
-    pledge: PledgeRead | None
+    pledge: PledgeRead
     issue: IssueRead | None
     organization: OrganizationPublicRead | None
     repository: RepositoryRead | None

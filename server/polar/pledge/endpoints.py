@@ -88,7 +88,6 @@ async def get_pledge_with_resources(
             detail="Organization, repo and issue combination not found",
         )
 
-    included_pledge = None
     if pledge_id:
         pledge = await get_pledge_or_404(
             session,
@@ -233,6 +232,30 @@ async def list_personal_pledges(
 ) -> list[PledgeRead]:
     pledges = await pledge_service.list_by_pledging_user(session, auth.user.id)
     return [PledgeRead.from_db(p) for p in pledges]
+
+
+@router.get(
+    "/{platform}/{org_name}/pledges",
+    response_model=list[PledgeResources],
+)
+async def list_organization_pledges(
+    platform: Platforms,
+    org_name: str,
+    auth: Auth = Depends(Auth.user_with_org_access),
+    session: AsyncSession = Depends(get_db_session),
+) -> list[PledgeResources]:
+    pledges = await pledge_service.list_by_receiving_organization(
+        session, auth.organization.id
+    )
+    return [
+        PledgeResources(
+            pledge=PledgeRead.from_db(p),
+            issue=IssueRead.from_orm(p.issue),
+            repository=RepositoryRead.from_orm(p.to_repository),
+            organization=OrganizationPublicRead.from_orm(p.to_organization),
+        )
+        for p in pledges
+    ]
 
 
 @router.post(

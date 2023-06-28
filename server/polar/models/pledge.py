@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, String, BigInteger, ForeignKey
+from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
@@ -17,8 +17,12 @@ class Pledge(RecordModel):
     issue_id: Mapped[UUID] = mapped_column(
         PostgresUUID, ForeignKey("issues.id"), nullable=False, index=True
     )
-    repository_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)
-    organization_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=False)
+    repository_id: Mapped[UUID] = mapped_column(
+        PostgresUUID, ForeignKey("repositories.id"), nullable=False
+    )
+    organization_id: Mapped[UUID] = mapped_column(
+        PostgresUUID, ForeignKey("organizations.id"), nullable=False
+    )
     payment_id: Mapped[str] = mapped_column(String, nullable=True, index=True)
     transfer_id: Mapped[str] = mapped_column(String, nullable=True)
 
@@ -66,8 +70,16 @@ class Pledge(RecordModel):
 
     user: Mapped[User] = relationship("User", foreign_keys=[by_user_id], lazy="raise")
 
-    organization: Mapped[Organization] = relationship(
+    by_organization: Mapped[Organization] = relationship(
         "Organization", foreign_keys=[by_organization_id], lazy="raise"
+    )
+
+    to_repository: Mapped[Organization] = relationship(
+        "Repository", foreign_keys=[repository_id], lazy="raise"
+    )
+
+    to_organization: Mapped[Organization] = relationship(
+        "Organization", foreign_keys=[organization_id], lazy="raise"
     )
 
     issue: Mapped[Issue] = relationship("Issue", foreign_keys=[issue_id], lazy="raise")

@@ -59,7 +59,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             sql.select(Pledge)
             .options(
                 joinedload(Pledge.user),
-                joinedload(Pledge.organization),
+                joinedload(Pledge.by_organization),
                 joinedload(Pledge.issue).joinedload(Issue.organization),
                 joinedload(Pledge.issue).joinedload(Issue.repository),
             )
@@ -79,7 +79,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
             .options(
                 joinedload(Pledge.user),
-                joinedload(Pledge.organization),
+                joinedload(Pledge.by_organization),
             )
         )
         res = await session.execute(statement)
@@ -97,7 +97,27 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
             .options(
                 joinedload(Pledge.user),
-                joinedload(Pledge.organization),
+                joinedload(Pledge.by_organization),
+            )
+        )
+        res = await session.execute(statement)
+        issues = res.scalars().unique().all()
+        return issues
+
+    async def list_by_receiving_organization(
+        self, session: AsyncSession, organization_id: UUID
+    ) -> Sequence[Pledge]:
+        statement = (
+            sql.select(Pledge)
+            .where(
+                Pledge.organization_id == organization_id,
+            )
+            .options(
+                joinedload(Pledge.user),
+                joinedload(Pledge.by_organization),
+                joinedload(Pledge.issue),
+                joinedload(Pledge.to_repository),
+                joinedload(Pledge.to_organization),
             )
         )
         res = await session.execute(statement)
@@ -115,7 +135,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             sql.select(Pledge)
             .options(
                 joinedload(Pledge.user),
-                joinedload(Pledge.organization),
+                joinedload(Pledge.by_organization),
             )
             .filter(
                 Pledge.issue_id.in_(issue_ids),

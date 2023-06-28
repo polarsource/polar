@@ -119,7 +119,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 isouter=True,
             )
             .join(
-                Pledge.organization,
+                Pledge.by_organization,
                 isouter=True,
             )
             .join(
@@ -307,7 +307,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             statement = statement.options(
                 contains_eager(Issue.pledges),
                 contains_eager(Issue.pledges).contains_eager(Pledge.user),
-                contains_eager(Issue.pledges).contains_eager(Pledge.organization),
+                contains_eager(Issue.pledges).contains_eager(Pledge.by_organization),
             )
             statement = statement.group_by(
                 Issue.id,

@@ -1,17 +1,18 @@
 from __future__ import annotations
-from sqlalchemy import desc
+
 import structlog
-from polar.backoffice.schemas import BackofficePledgeRead
-from polar.kit.extensions.sqlalchemy import sql
+from sqlalchemy import desc
 from sqlalchemy.orm import (
     joinedload,
 )
+
+from polar.backoffice.schemas import BackofficePledgeRead
+from polar.kit.extensions.sqlalchemy import sql
 from polar.models.account import Account
 from polar.models.issue import Issue
 from polar.models.pledge import Pledge
 from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession
-
 
 log = structlog.get_logger()
 
@@ -21,7 +22,7 @@ class BackofficePledgeService:
         self, session: AsyncSession, customers: bool | None = None
     ) -> list[BackofficePledgeRead]:
         stmt = sql.select(Pledge).options(
-            joinedload(Pledge.organization),
+            joinedload(Pledge.by_organization),
             joinedload(Pledge.user),
             joinedload(Pledge.issue).joinedload(Issue.organization),
             joinedload(Pledge.issue).joinedload(Issue.repository),

@@ -1,22 +1,22 @@
-from datetime import datetime
 import secrets
 import uuid
+from datetime import datetime
+
 import pytest
+
 from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
 from polar.enums import Platforms
+from polar.integrations.github import client as github
+from polar.issue.service import issue as issue_service
 from polar.models.issue import Issue
 from polar.models.issue_dependency import IssueDependency
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository
-from polar.integrations.github import client as github
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.pledge.schemas import PledgeState
-
 from polar.postgres import AsyncSession
-
-from polar.issue.service import issue as issue_service
 from tests import fixtures
 from tests.fixtures import predictable_objects, random_objects
 
@@ -518,7 +518,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
     assert issues[0].pledges[0].user.username is not None
 
     assert issues[0].pledges[1].by_organization_id is not None
-    assert issues[0].pledges[1].organization.name is not None
+    assert issues[0].pledges[1].by_organization.name is not None
 
 
 @pytest.mark.asyncio

@@ -116,8 +116,8 @@ def issue_url(org: Organization, repo: Repository, issue: Issue) -> str:
 
 
 def pledger_name(pledge: Pledge) -> str:
-    if pledge.organization:
-        return pledge.organization.name
+    if pledge.by_organization:
+        return pledge.by_organization.name
     if pledge.user:
         return pledge.user.username
     return "anonymous"

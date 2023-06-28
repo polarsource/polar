@@ -3,7 +3,8 @@ import {
   PledgeRead,
   PledgeState,
 } from 'polarkit/api/client'
-import { classNames, getCentsInDollarString } from 'polarkit/utils'
+import { getCentsInDollarString } from 'polarkit/money'
+import { classNames } from 'polarkit/utils'
 import IssuePledge from './IssuePledge'
 import IssueReference from './Reference'
 

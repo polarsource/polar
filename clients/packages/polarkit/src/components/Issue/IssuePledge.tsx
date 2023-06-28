@@ -1,5 +1,5 @@
 import { PledgeRead, PledgeState } from 'polarkit/api/client'
-import { getCentsInDollarString } from 'polarkit/utils'
+import { getCentsInDollarString } from 'polarkit/money'
 import { useMemo } from 'react'
 import IssueConfirmButton from './IssueConfirmButton'
 

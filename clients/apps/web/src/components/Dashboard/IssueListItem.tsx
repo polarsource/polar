@@ -24,7 +24,7 @@ import {
 import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
 import { githubIssueUrl } from 'polarkit/github'
 import { useIssueMarkConfirmed } from 'polarkit/hooks'
-import { getCentsInDollarString } from 'polarkit/utils'
+import { getCentsInDollarString } from 'polarkit/money'
 import { ChangeEvent, useState } from 'react'
 import PledgeNow from '../Pledge/PledgeNow'
 import IconCounter from './IconCounter'

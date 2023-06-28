@@ -1,8 +1,8 @@
 import { useToast } from '@/components/UI/Toast/use-toast'
 import { api } from 'polarkit/api'
 import { Platforms, PledgeRead } from 'polarkit/api/client'
+import { getCentsInDollarString } from 'polarkit/money'
 import { useStore } from 'polarkit/store'
-import { getCentsInDollarString } from 'polarkit/utils'
 import { useEffect, useState } from 'react'
 
 export const useToastLatestPledged = (

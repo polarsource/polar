@@ -6,25 +6,12 @@ import {
   RepositoryPublicRead,
 } from 'polarkit/api/client'
 
+import { Inter } from 'next/font/google'
+import { getServerURL } from 'polarkit/api/url'
+
+const inter = Inter({ subsets: ['latin'] })
+
 export const runtime = 'edge'
-
-const getServerURL = (path?: string): string => {
-  path = path !== undefined ? path : ''
-  const baseURL = process?.env?.NEXT_PUBLIC_API_URL
-  const baseWithPath = `${baseURL}${path}`
-  return baseWithPath
-}
-
-/*const readPublicFileBuffer = async (filename: string) => {
-  const publicDirectory = path.join(process.cwd(), '/public')
-  const fileContents = await fs.readFile(publicDirectory + filename)
-  return fileContents
-}
-
-const getFontBuffer = async (name: string) => {
-  const fontPath = `/fonts/${name}`
-  return await readPublicFileBuffer(fontPath)
-}*/
 
 const renderOG = async (
   org_name: string,
@@ -34,9 +21,6 @@ const renderOG = async (
   issues: IssuePublicRead[],
   largeIssue: boolean,
 ) => {
-  // const interRegular = await getFontBuffer('Inter-Regular.ttf')
-  // const interMedium = await getFontBuffer('Inter-Medium.ttf')
-
   return new ImageResponse(
     (
       <OpenGraphImage
@@ -51,20 +35,6 @@ const renderOG = async (
     {
       height: 630,
       width: 1200,
-      /*fonts: [
-        {
-          name: 'Inter',
-          data: interRegular,
-          weight: 400,
-          style: 'normal',
-        },
-        {
-          name: 'Inter',
-          data: interMedium,
-          weight: 500,
-          style: 'medium',
-        },
-      ],*/
     },
   )
 }
@@ -89,10 +59,6 @@ const getData = async (
     return response.json()
   })
 }
-
-import { Inter } from 'next/font/google'
-
-const inter = Inter({ subsets: ['latin'] })
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)

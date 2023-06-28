@@ -1,6 +1,6 @@
 import { useTheme } from 'next-themes'
 import { CONFIG } from 'polarkit'
-import { Badge } from 'polarkit/components'
+import { Badge } from 'polarkit/components/badge'
 
 const FakePullRequest = ({ showAmount }: { showAmount: boolean }) => {
   return (

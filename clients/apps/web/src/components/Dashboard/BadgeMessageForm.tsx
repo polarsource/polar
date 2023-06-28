@@ -1,6 +1,6 @@
-import { Badge } from '@/../../../packages/polarkit/src/components'
 import { Marked } from '@ts-stack/markdown'
 import { useTheme } from 'next-themes'
+import { Badge } from 'polarkit/components/badge'
 import { classNames } from 'polarkit/utils'
 import { ChangeEvent, MouseEvent, useEffect, useRef, useState } from 'react'
 import LabeledRadioButton from '../UI/LabeledRadioButton'

@@ -2,8 +2,8 @@ import TopbarPill from '@/components/Shared/TopbarPill'
 import { ArrowRightCircleIcon as SolidArrowRightCircleIcon } from '@heroicons/react/24/solid'
 import { api } from 'polarkit'
 import { AccountRead, Platforms } from 'polarkit/api/client'
+import { formatCurrencyAndAmount } from 'polarkit/money'
 import { useStore } from 'polarkit/store'
-import { formatCurrencyAndAmount } from 'polarkit/utils'
 
 const BalanceBadge = ({ account }: { account: AccountRead }) => {
   const currentOrg = useStore((store) => store.currentOrg)

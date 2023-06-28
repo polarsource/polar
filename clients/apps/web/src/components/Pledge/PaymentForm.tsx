@@ -12,7 +12,7 @@ import {
   RepositoryRead,
 } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
-import { getCentsInDollarString } from 'polarkit/utils'
+import { getCentsInDollarString } from 'polarkit/money'
 import posthog from 'posthog-js'
 import { useEffect, useState } from 'react'
 

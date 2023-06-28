@@ -10,7 +10,7 @@ import {
   useBackofficePledgeMarkDisputed,
   useBackofficePledgeMarkPending,
 } from 'polarkit/hooks'
-import { getCentsInDollarString } from 'polarkit/utils'
+import { getCentsInDollarString } from 'polarkit/money'
 import { useState, type MouseEvent } from 'react'
 
 const PledgeItem = ({

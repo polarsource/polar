@@ -142,7 +142,9 @@ async def get_badge_settings(
     if organization is None:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    repository = await github_repository.get_by(session, name=repo)
+    repository = await github_repository.get_by_org_and_name(
+        session, organization.id, repo
+    )
     if repository is None:
         raise HTTPException(status_code=404, detail="Repository not found")
 

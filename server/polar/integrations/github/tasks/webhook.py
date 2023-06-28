@@ -496,7 +496,7 @@ async def issue_labeled_async(
     log.debug("issue_labeled_async", label=event.label, issue_id=issue.id)
 
     # Add/remove polar badge if label has changed
-    if event.label == "polar":
+    if event.label.name == "polar":
         await update_issue_embed(
             session, issue=issue, embed=issue.has_pledge_badge_label
         )

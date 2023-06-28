@@ -8,7 +8,7 @@ import type { PledgeRead } from './PledgeRead';
 import type { RepositoryRead } from './RepositoryRead';
 
 export type PledgeResources = {
-  pledge?: PledgeRead;
+  pledge: PledgeRead;
   issue?: IssueRead;
   organization?: OrganizationPublicRead;
   repository?: RepositoryRead;

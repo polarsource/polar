@@ -53,3 +53,19 @@ export const useIssueMarkConfirmed = () =>
       await queryClient.invalidateQueries(['listPersonalPledges'])
     },
   })
+
+export const useListPledgesForOrganization = (
+  platform: Platforms,
+  orgName: string,
+) =>
+  useQuery(
+    ['pledge', 'list', platform, orgName],
+    () =>
+      api.pledges.listOrganizationPledges({
+        platform,
+        orgName,
+      }),
+    {
+      retry: defaultRetry,
+    },
+  )

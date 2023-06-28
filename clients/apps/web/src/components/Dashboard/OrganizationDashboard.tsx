@@ -1,8 +1,8 @@
-import DashboardLayout from '@/components/Layout/DashboardLayout'
 import OnboardingInstallChromeExtension from '@/components/Onboarding/OnboardingInstallChromeExtension'
 import { IssueStatus } from 'polarkit/api/client'
 import { useDashboard } from 'polarkit/hooks'
 import { Dispatch, SetStateAction } from 'react'
+import DashboardSidebarLayout from '../Layout/DashboardSidebarLayout'
 import IssueList from './IssueList'
 import { DashboardFilters } from './filters'
 
@@ -32,7 +32,7 @@ const OrganizationDashboard = ({
   const totalCount = dashboard?.pages[0].pagination.total_count || undefined
 
   return (
-    <DashboardLayout
+    <DashboardSidebarLayout
       filters={filters}
       onSetFilters={onSetFilters}
       showSidebar={true}
@@ -52,7 +52,7 @@ const OrganizationDashboard = ({
           fetchNextPage={dashboardQuery.fetchNextPage}
         />
       </div>
-    </DashboardLayout>
+    </DashboardSidebarLayout>
   )
 }
 

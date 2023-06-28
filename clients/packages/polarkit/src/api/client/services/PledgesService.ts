@@ -175,6 +175,31 @@ export class PledgesService {
   }
 
   /**
+   * List Organization Pledges
+   * @returns PledgeResources Successful Response
+   * @throws ApiError
+   */
+  public listOrganizationPledges({
+    platform,
+    orgName,
+  }: {
+    platform: Platforms,
+    orgName: string,
+  }): CancelablePromise<Array<PledgeResources>> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/{platform}/{org_name}/pledges',
+      path: {
+        'platform': platform,
+        'org_name': orgName,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
    * Confirm Pledges
    * @returns ConfirmPledgesResponse Successful Response
    * @throws ApiError

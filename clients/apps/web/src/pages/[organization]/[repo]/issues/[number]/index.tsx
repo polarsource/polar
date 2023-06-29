@@ -6,11 +6,19 @@ import PageNotFound from '@/components/Shared/PageNotFound'
 import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { api } from 'polarkit'
-import { Platforms, PledgeResources } from 'polarkit/api/client'
+import {
+  IssueRead,
+  OrganizationPublicRead,
+  Platforms,
+  RepositoryRead,
+} from 'polarkit/api/client'
 import { posthog } from 'posthog-js'
 import { ReactElement, useEffect } from 'react'
 
-type Params = PledgeResources & {
+type Params = {
+  issue?: IssueRead
+  organization?: OrganizationPublicRead
+  repository?: RepositoryRead
   query?: {
     as_org?: string
     goto_url?: string

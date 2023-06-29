@@ -5,7 +5,13 @@ import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit'
-import { Platforms, type PledgeResources } from 'polarkit/api/client'
+import {
+  IssueRead,
+  OrganizationPublicRead,
+  Platforms,
+  PledgeRead,
+  RepositoryRead,
+} from 'polarkit/api/client'
 import { PolarTimeAgo } from 'polarkit/components/ui'
 import { GrayCard } from 'polarkit/components/ui/Cards'
 import { useStore } from 'polarkit/store'
@@ -17,7 +23,11 @@ const PledgeStatusPage: NextLayoutComponentType = ({
   issue,
   pledge,
   query,
-}: PledgeResources & {
+}: {
+  pledge?: PledgeRead
+  issue?: IssueRead
+  organization?: OrganizationPublicRead
+  repository?: RepositoryRead
   query?: {
     payment_intent_id: string
     payment_intent_client_secret: string

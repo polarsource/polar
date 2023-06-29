@@ -6,6 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from polar.config import settings
 from polar.dashboard.schemas import IssueDashboardRead
 from polar.enums import Platforms
 from polar.integrations.github import client as github
@@ -56,7 +57,7 @@ class OrganizationPrivateBase(Schema):
     installation_updated_at: datetime | None = None
     installation_suspended_at: datetime | None = None
     onboarded_at: datetime | None = None
-    pledge_minimum_amount: int
+    pledge_minimum_amount: int = settings.MINIMUM_ORG_PLEDGE_AMOUNT
     default_badge_custom_content: str | None = None
 
 

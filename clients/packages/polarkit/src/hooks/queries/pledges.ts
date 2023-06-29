@@ -55,17 +55,18 @@ export const useIssueMarkConfirmed = () =>
   })
 
 export const useListPledgesForOrganization = (
-  platform: Platforms,
-  orgName: string,
+  platform?: Platforms,
+  orgName?: string,
 ) =>
   useQuery(
     ['pledge', 'list', platform, orgName],
     () =>
       api.pledges.listOrganizationPledges({
-        platform,
-        orgName,
+        platform: platform || Platforms.GITHUB,
+        orgName: orgName || '',
       }),
     {
       retry: defaultRetry,
+      enabled: !!platform && !!orgName,
     },
   )

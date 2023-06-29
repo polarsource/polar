@@ -38,6 +38,14 @@ export const org: OrganizationPublicRead = {
   avatar_url: 'https://avatars.githubusercontent.com/u/110818415?s=48&v=4',
 }
 
+export const orgPrivate: OrganizationPrivateRead = {
+  ...org,
+  is_personal: false,
+  external_id: 123,
+  status: Status.ACTIVE,
+  created_at: '2024',
+}
+
 export const user: UserRead = {
   username: 'zegl',
   email: 'test@example.com',

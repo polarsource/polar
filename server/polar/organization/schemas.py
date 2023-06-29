@@ -150,12 +150,14 @@ class RepositoryBadgeSettingsRead(Schema):
 
 class OrganizationBadgeSettingsUpdate(Schema):
     show_amount: bool
+    minimum_amount: int
     message: str
     repositories: Sequence[RepositoryBadgeSettingsUpdate]
 
 
 class OrganizationBadgeSettingsRead(Schema):
     show_amount: bool
+    minimum_amount: int
     message: str | None
     repositories: Sequence[RepositoryBadgeSettingsRead]
 

@@ -335,6 +335,7 @@ class OrganizationService(
 
         return OrganizationBadgeSettingsRead(
             show_amount=organization.pledge_badge_show_amount,
+            minimum_amount=organization.pledge_minimum_amount,
             message=organization.default_badge_custom_content,
             repositories=repos,
         )
@@ -347,6 +348,9 @@ class OrganizationService(
     ) -> OrganizationBadgeSettingsUpdate:
         if settings.show_amount is not None:
             organization.pledge_badge_show_amount = settings.show_amount
+
+        if settings.minimum_amount:
+            organization.pledge_minimum_amount = settings.minimum_amount
 
         if settings.message:
             organization.default_badge_custom_content = settings.message

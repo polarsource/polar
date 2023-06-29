@@ -64,6 +64,11 @@ class Organization(RecordModel):
         Boolean, nullable=False, default=False
     )
 
+    # Minimum amount required to pledge. Default to $20 (2000 cents)
+    pledge_minimum_amount: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=2000
+    )
+
     default_badge_custom_content: Mapped[str | None] = mapped_column(
         String,
         nullable=True,
@@ -116,5 +121,6 @@ class Organization(RecordModel):
         "installation_suspended_at",
         "status",
         "pledge_badge_show_amount",
+        "pledge_minimum_amount",
         "deleted_at",
     }

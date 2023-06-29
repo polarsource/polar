@@ -6,6 +6,7 @@ import type { RepositoryBadgeSettingsUpdate } from './RepositoryBadgeSettingsUpd
 
 export type OrganizationBadgeSettingsUpdate = {
   show_amount: boolean;
+  minimum_amount: number;
   message: string;
   repositories: Array<RepositoryBadgeSettingsUpdate>;
 };

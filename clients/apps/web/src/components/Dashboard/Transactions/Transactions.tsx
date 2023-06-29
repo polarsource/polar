@@ -58,7 +58,7 @@ const Transactions = (props: {
 
   return (
     <div className="flex flex-col space-y-8">
-      <div className="flex justify-between space-x-8 px-2">
+      <div className="flex space-x-8 px-2">
         <HeaderPill
           title="Current peldges"
           amount={currentPledgesAmount}
@@ -71,12 +71,14 @@ const Transactions = (props: {
           active={props.tab === 'rewarded'}
           href={`/dashboard/${org.name}/pledges/rewarded`}
         />
-        <HeaderPill
-          title="Rewarded to contributors"
-          amount={0}
-          active={false}
-          href={`/dashboard/${org.name}/pledges`}
-        />
+        {false && (
+          <HeaderPill
+            title="Rewarded to contributors"
+            amount={0}
+            active={false}
+            href={`/dashboard/${org.name}/pledges`}
+          />
+        )}
       </div>
       {paid.length > 0 && (
         <List
@@ -124,18 +126,46 @@ const HeaderPill = (props: {
     <Link
       href={props.href}
       className={classNames(
-        props.active ? 'bg-white shadow' : 'border bg-gray-200',
-        'flex flex-1 flex-col rounded-md py-4 px-6',
+        props.active
+          ? 'dark-ring-200 border bg-white shadow dark:bg-gray-600 dark:ring-1 dark:ring-gray-500'
+          : ' bg-transparenthover:bg-gray-100/50 border dark:bg-gray-700 dark:ring-1 dark:ring-gray-800',
+        'transition-background relative flex w-full max-w-[300px] flex-col rounded-xl py-4  px-5 duration-200',
       )}
     >
-      <div className="flex-1 text-lg font-medium text-gray-500">
+      <div className="text-gray dark:text-gray text-md flex-1 font-medium text-gray-500">
         {props.title}
       </div>
-      <div className="text-2xl font-medium text-gray-900">
+      <div className="text-3xl font-medium text-gray-900 dark:text-gray-300">
         ${getCentsInDollarString(props.amount, true)}
       </div>
+      {props.active && (
+        <>
+          <Triangle />
+          <div className="absolute left-1/2 bottom-0 -ml-6 h-2 w-12  bg-white dark:bg-gray-600"></div>
+        </>
+      )}
     </Link>
   )
 }
 
 export default Transactions
+
+const Triangle = () => (
+  <svg
+    width="27"
+    height="15"
+    viewBox="0 0 27 15"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className="absolute -bottom-[12px] left-1/2 -ml-[14px] text-white dark:hidden dark:text-gray-600"
+    style={{
+      filter:
+        'drop-shadow(0 1px 8px rgb(0 0 0 / 0.07)) drop-shadow(0 0.5px 2.5px rgb(0 0 0 / 0.16))',
+    }}
+  >
+    <path
+      d="M13.6641 15L0.673682 5.39648e-07L26.6544 -1.73166e-06L13.6641 15Z"
+      fill="currentColor"
+    />
+  </svg>
+)

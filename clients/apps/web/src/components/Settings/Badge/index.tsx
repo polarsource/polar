@@ -32,6 +32,7 @@ interface SSEIssueSyncEvent {
 
 interface MappedRepoSettings {
   show_amount: boolean
+  minimum_amount: number
   message: string | undefined
   repositories: {
     [id: string]: RepositoryBadgeSettingsRead
@@ -53,6 +54,7 @@ const getMappedSettings = (
 
   let ret = {
     show_amount: remote.show_amount,
+    minimum_amount: remote.minimum_amount,
     message: remote.message || DEFAULT_BADGE_PROMOTION_MESSAGE,
     repositories: mapped,
     repositories_order: order,
@@ -104,6 +106,7 @@ const BadgeSetup = ({
   const remoteSettings = useBadgeSettings(org.platform, org.name)
   const [settings, setSettings] = useState<MappedRepoSettings>({
     show_amount: false,
+    minimum_amount: 2000,
     repositories: {},
     repositories_order: [],
     message: '',
@@ -278,6 +281,23 @@ const BadgeSetup = ({
                 setAnyBadgeSettingChanged(true)
               }}
             />
+
+            <label htmlFor="minimum-pledge">Minimum pledge amount</label>
+            <input
+              type="number"
+              id="minimum-pledge"
+              min="1"
+              value={settings.minimum_amount}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setSettings((prev) => {
+                  return {
+                    ...prev,
+                    minimum_amount: parseInt(e.target.value),
+                  }
+                })
+                setAnyBadgeSettingChanged(true)
+              }}
+            />
           </div>
           <div className="flex flex-row items-center rounded-b-xl border-t border-gray-200 bg-gray-100/50 px-4 py-3 text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
             <QuestionMarkCircleIcon
@@ -413,6 +433,7 @@ export const Controls = ({
   const save = async () => {
     const data: OrganizationBadgeSettingsUpdate = {
       show_amount: settings.show_amount,
+      minimum_amount: settings.minimum_amount,
       message: settings.message || '',
       repositories: Object.values(settings.repositories).map((repo) => {
         return {

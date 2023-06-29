@@ -1,5 +1,6 @@
 import BadgeMessageForm from '@/components/Dashboard/BadgeMessageForm'
 import { DEFAULT_BADGE_PROMOTION_MESSAGE } from '@/components/Dashboard/IssuePromotionModal'
+import MoneyInput from '@/components/UI/MoneyInput'
 import {
   ExclamationCircleIcon,
   QuestionMarkCircleIcon,
@@ -15,7 +16,6 @@ import {
 } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { useBadgeSettings, useSSE } from 'polarkit/hooks'
-import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useTimeoutFn } from 'react-use'
@@ -268,37 +268,55 @@ const BadgeSetup = ({
               }}
               innerClassNames="border"
             />
-            <SettingsCheckbox
-              id="show-raised"
-              title="Show amount pledged"
-              isChecked={settings.show_amount}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setSettings((prev) => {
-                  return {
-                    ...prev,
-                    show_amount: e.target.checked,
-                  }
-                })
-                setAnyBadgeSettingChanged(true)
-              }}
-            />
 
-            <label htmlFor="minimum-pledge">Minimum pledge amount</label>
-            <input
-              type="number"
-              id="minimum-pledge"
-              min="1"
-              value={getCentsInDollarString(settings.minimum_amount)}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setSettings((prev) => {
-                  return {
-                    ...prev,
-                    minimum_amount: parseInt(e.target.value) * 100,
-                  }
-                })
-                setAnyBadgeSettingChanged(true)
-              }}
-            />
+            <div className="flex flex-row items-center">
+              <div className="w-1/2">
+                <SettingsCheckbox
+                  id="show-raised"
+                  title="Show amount pledged"
+                  isChecked={settings.show_amount}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setSettings((prev) => {
+                      return {
+                        ...prev,
+                        show_amount: e.target.checked,
+                      }
+                    })
+                    setAnyBadgeSettingChanged(true)
+                  }}
+                />
+              </div>
+
+              <div className="w-1/2">
+                <div className="flex flex-row items-center text-right">
+                  <label htmlFor="minimum-pledge" className="mr-4 w-64 text-sm">
+                    Minimum pledge
+                  </label>
+                  <div className="">
+                    <MoneyInput
+                      id="minimum-pledge"
+                      name="minimum-pledge"
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        let amount = parseInt(e.target.value)
+                        if (isNaN(amount)) {
+                          amount = 0
+                        }
+
+                        setSettings((prev) => {
+                          return {
+                            ...prev,
+                            minimum_amount: amount * 100,
+                          }
+                        })
+                        setAnyBadgeSettingChanged(true)
+                      }}
+                      placeholder={settings.minimum_amount}
+                      value={settings.minimum_amount}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="flex flex-row items-center rounded-b-xl border-t border-gray-200 bg-gray-100/50 px-4 py-3 text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
             <QuestionMarkCircleIcon

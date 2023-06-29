@@ -56,6 +56,7 @@ class OrganizationPrivateBase(Schema):
     installation_updated_at: datetime | None = None
     installation_suspended_at: datetime | None = None
     onboarded_at: datetime | None = None
+    pledge_minimum_amount: int
     default_badge_custom_content: str | None = None
 
 

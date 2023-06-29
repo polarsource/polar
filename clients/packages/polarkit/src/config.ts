@@ -34,9 +34,6 @@ let defaults = {
     5,
   ),
   GITHUB_EMBED_LABEL: process?.env?.NEXT_PUBLIC_GITHUB_EMBED_LABEL || 'polar',
-  // Minimum amount in cents
-  MINIMUM_PLEDGE_AMOUNT:
-    process?.env?.NEXT_PUBLIC_MINIMUM_PLEDGE_AMOUNT || 2000,
   SENTRY_ENABLED: process?.env?.NEXT_PUBLIC_SENTRY_ENABLED || false,
   POSTHOG_TOKEN: process?.env?.NEXT_PUBLIC_POSTHOG_TOKEN || '',
   STRIPE_COUNTRIES_WHITELIST_CSV:

@@ -110,6 +110,8 @@ class OrganizationPublicRead(Schema):
     email: str | None
     twitter_username: str | None
 
+    pledge_minimum_amount: int
+
     class Config:
         orm_mode = True
 

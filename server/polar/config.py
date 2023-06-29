@@ -82,6 +82,9 @@ class Settings(BaseSettings):
 
     POSTHOG_PROJECT_API_KEY: str = ""
 
+    # Default organization setting for minimum pledge amount ($20)
+    MINIMUM_ORG_PLEDGE_AMOUNT: int = 2000
+
     class Config:
         env_prefix = "polar_"
         env_file_encoding = "utf-8"

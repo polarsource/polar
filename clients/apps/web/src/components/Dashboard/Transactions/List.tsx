@@ -49,11 +49,11 @@ const List = (props: {
 
   return (
     <div>
-      <h2 className=" px-2 font-medium text-gray-900 dark:text-gray-500">
+      <h2 className="px-2 font-medium text-gray-900 dark:text-gray-500">
         {title}
       </h2>
       <table className="w-full text-left">
-        <thead className=" text-gray-900 dark:text-gray-500">
+        <thead className="text-gray-900 dark:text-gray-500">
           <tr>
             <th
               scope="col"
@@ -115,7 +115,7 @@ const List = (props: {
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200">
+        <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
           {pledges &&
             pledges.map((t) => (
               <tr key={t.pledge.id}>

@@ -302,15 +302,13 @@ const PledgeForm = ({
           Amount to pledge
         </label>
         <div className="mt-2 flex flex-row items-center space-x-4">
-          <div className="relative w-3/5">
-            <MoneyInput
-              id="amount"
-              name="amount"
-              onChange={onAmountChange}
-              onBlur={onAmountChange}
-              placeholder={organization.pledge_minimum_amount}
-            />
-          </div>
+          <MoneyInput
+            id="amount"
+            name="amount"
+            onChange={onAmountChange}
+            onBlur={onAmountChange}
+            placeholder={organization.pledge_minimum_amount}
+          />
           <p className="w-2/5 text-xs text-gray-500 dark:text-gray-400">
             Minimum is $
             {getCentsInDollarString(organization.pledge_minimum_amount)}

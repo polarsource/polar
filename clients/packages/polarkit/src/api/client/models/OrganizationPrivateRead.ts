@@ -26,6 +26,7 @@ export type OrganizationPrivateRead = {
   installation_updated_at?: string;
   installation_suspended_at?: string;
   onboarded_at?: string;
+  pledge_minimum_amount: number;
   default_badge_custom_content?: string;
   id: string;
   status: Status;

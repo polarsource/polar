@@ -16,5 +16,6 @@ export type OrganizationPublicRead = {
   location?: string;
   email?: string;
   twitter_username?: string;
+  pledge_minimum_amount: number;
 };
 

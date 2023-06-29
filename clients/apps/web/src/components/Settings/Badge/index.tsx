@@ -15,6 +15,7 @@ import {
 } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { useBadgeSettings, useSSE } from 'polarkit/hooks'
+import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useTimeoutFn } from 'react-use'
@@ -287,12 +288,12 @@ const BadgeSetup = ({
               type="number"
               id="minimum-pledge"
               min="1"
-              value={settings.minimum_amount}
+              value={getCentsInDollarString(settings.minimum_amount)}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 setSettings((prev) => {
                   return {
                     ...prev,
-                    minimum_amount: parseInt(e.target.value),
+                    minimum_amount: parseInt(e.target.value) * 100,
                   }
                 })
                 setAnyBadgeSettingChanged(true)

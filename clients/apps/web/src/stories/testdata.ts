@@ -45,6 +45,7 @@ export const orgPrivate: OrganizationPrivateRead = {
   external_id: 123,
   status: Status.ACTIVE,
   created_at: '2024',
+  pledge_minimum_amount: 2000,
 }
 
 export const user: UserRead = {
@@ -108,6 +109,7 @@ export const privateOrganization: OrganizationPrivateRead = {
   is_personal: false,
   status: Status.ACTIVE,
   created_at: addDays(new Date(), -7).toISOString(),
+  pledge_minimum_amount: 2000,
   repositories: [
     {
       platform: Platforms.GITHUB,

@@ -15,8 +15,8 @@ import { PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
 import { useState } from 'react'
-import { Modal as ModernModal } from '../../Modal'
-import SetupAccount from '../SetupAccount'
+import SetupAccount from '../Dashboard/SetupAccount'
+import { Modal as ModernModal } from '../Modal'
 import List from './List'
 
 const Finance = (props: {

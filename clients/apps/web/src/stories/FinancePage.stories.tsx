@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import Finance from '@/components/Dashboard/Finance/Finance'
+import Finance from '@/components/Finance/Finance'
 import { AccountType, PledgeResources, PledgeState } from 'polarkit/api/client'
 import { issue, org, orgPrivate, repo } from './testdata'
 

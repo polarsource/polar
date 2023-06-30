@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import List, { Column } from '@/components/Dashboard/Finance/List'
+import List, { Column } from '@/components/Finance/List'
 import { PledgeResources, PledgeState } from 'polarkit/api/client'
 import { issue, org, repo } from './testdata'
 

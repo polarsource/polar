@@ -1,5 +1,5 @@
-import Transactions from '@/components/Dashboard/Finance/Finance'
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
+import Transactions from '@/components/Finance/Finance'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import type { NextLayoutComponentType } from 'next'
 import Head from 'next/head'

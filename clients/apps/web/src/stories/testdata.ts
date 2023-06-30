@@ -36,6 +36,7 @@ export const org: OrganizationPublicRead = {
   platform: Platforms.GITHUB,
   name: 'pydantic',
   avatar_url: 'https://avatars.githubusercontent.com/u/110818415?s=48&v=4',
+  pledge_minimum_amount: 2000,
 }
 
 export const orgPrivate: OrganizationPrivateRead = {

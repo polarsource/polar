@@ -7,7 +7,7 @@ import { issue, org, repo } from './testdata'
 type Story = StoryObj<typeof List>
 
 const meta: Meta<typeof List> = {
-  title: 'Organisms/TransactionPledgeList',
+  title: 'Organisms/FinancePledgeList',
   component: List,
   tags: ['autodocs'],
 }

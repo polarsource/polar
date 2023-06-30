@@ -1,13 +1,16 @@
-import AccountTopbar from '@/components/Dashboard/Account/Topbar'
 import RepoSelection from '@/components/Dashboard/RepoSelection'
-import SetupAccount from '@/components/Dashboard/SetupAccount'
 import { useRequireAuth } from '@/hooks'
-import { Cog8ToothIcon, EyeIcon } from '@heroicons/react/24/outline'
+import {
+  Cog8ToothIcon,
+  CurrencyDollarIcon,
+  EyeIcon,
+} from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useUserOrganizations } from 'polarkit/hooks'
+import { Visibility } from 'polarkit/api/client'
+import { useOrganizationAccounts, useUserOrganizations } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import Topbar from './Topbar'
 import TopbarPill from './TopbarPill'
 
@@ -29,6 +32,36 @@ const SettingsLink = ({ orgSlug }: { orgSlug?: string }) => {
   )
 }
 
+const MoneyLink = ({ orgSlug }: { orgSlug: string }) => {
+  const accountQuery = useOrganizationAccounts(orgSlug)
+  const accounts = accountQuery.data
+  const currentOrg = useStore((state) => state.currentOrg)
+
+  const hasPublicRepos =
+    currentOrg &&
+    currentOrg.repositories &&
+    currentOrg.repositories.some((r) => r.visibility === Visibility.PUBLIC)
+
+  const hasSetup = accounts?.some((a) => a.is_details_submitted && a.stripe_id)
+  const showBadge = hasPublicRepos && !hasSetup && accountQuery.isFetched
+
+  return (
+    <>
+      <div className="relative">
+        <Link href={`/finance/${orgSlug}`}>
+          <CurrencyDollarIcon
+            className="h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-100 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+            aria-hidden="true"
+          />
+          {showBadge && (
+            <div className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></div>
+          )}
+        </Link>
+      </div>
+    </>
+  )
+}
+
 const PublicPageLink = ({ path }: { path: string }) => {
   return (
     <>
@@ -44,11 +77,7 @@ const PublicPageLink = ({ path }: { path: string }) => {
   )
 }
 
-const DashboardNav = ({
-  showSetupAccount,
-}: {
-  showSetupAccount: (_: boolean) => void
-}) => {
+const DashboardNav = () => {
   const router = useRouter()
   const currentOrg = useStore((state) => state.currentOrg)
   const currentRepo = useStore((state) => state.currentRepo)
@@ -85,9 +114,9 @@ const DashboardNav = ({
         currentUser={currentUser}
         organizations={userOrgQuery.data}
       />
-      <AccountTopbar showSetupAccount={showSetupAccount} />
       {publicPath && <PublicPageLink path={publicPath} />}
       <SettingsLink orgSlug={currentOrg.name} />
+      <MoneyLink orgSlug={currentOrg.name} />
     </>
   )
 }
@@ -125,15 +154,11 @@ const PersonalDashboardNav = () => {
 }
 
 const DashboardTopbar = () => {
-  const [showSetupAccount, setShowSetupAccount] = useState(false)
   return (
     <>
-      {showSetupAccount && (
-        <SetupAccount onClose={() => setShowSetupAccount(false)} />
-      )}
       <Topbar isFixed={true}>
         {{
-          left: <DashboardNav showSetupAccount={setShowSetupAccount} />,
+          left: <DashboardNav />,
         }}
       </Topbar>
     </>

@@ -556,6 +556,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         pledge.state = PledgeState.paid
         pledge.transfer_id = transaction_id
+        pledge.paid_at = utc_now()
 
         transaction = PledgeTransaction(
             pledge_id=pledge.id,
@@ -579,6 +580,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             raise ResourceNotFound(f"Pledge not found with payment_id: {payment_id}")
 
         if pledge.state in PledgeState.to_refunded_states():
+            pledge.refunded_at = utc_now()
             if amount == pledge.amount:
                 pledge.state = PledgeState.refunded
             elif amount < pledge.amount:

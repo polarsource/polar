@@ -138,6 +138,8 @@ class PledgeRead(Schema):
 
     authed_user_can_admin: bool = False  # deprecated
     scheduled_payout_at: datetime | None = None
+    paid_at: datetime | None = None
+    refunded_at: datetime | None = None
 
     # If the user can admin the _sending_ of the pledge (disputing, etc)
     authed_user_can_admin_sender: bool = False

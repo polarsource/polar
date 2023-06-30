@@ -3,15 +3,22 @@ from typing import List, Sequence
 from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
-from polar.integrations.github.schemas import GitHubIssue
-from polar.integrations.github.badge import GithubBadge
-from polar.models import Issue
 from polar.enums import Platforms
-from polar.postgres import AsyncSession, get_db_session
 from polar.exceptions import ResourceNotFound
+from polar.integrations.github.badge import GithubBadge
+from polar.integrations.github.client import get_polar_client
+from polar.integrations.github.service.issue import github_issue as github_issue_service
+from polar.integrations.github.service.organization import (
+    github_organization as github_organization_service,
+)
+from polar.kit.schemas import Schema
+from polar.models import Issue
+from polar.organization.schemas import OrganizationPublicRead
 from polar.organization.service import organization as organization_service
+from polar.postgres import AsyncSession, get_db_session
+from polar.repository.schemas import RepositoryRead
+
 from .schemas import (
-    ExternalGitHubIssueCreate,
     IssueRead,
     IssueReferenceRead,
     IssueUpdateBadgeMessage,
@@ -19,14 +26,57 @@ from .schemas import (
 )
 from .service import issue as issue_service
 
-from polar.integrations.github.client import get_polar_client, get_user_client
-from polar.integrations.github.service.issue import github_issue as github_issue_service
-from polar.integrations.github.service.url import github_url
-from polar.integrations.github.service.organization import (
-    github_organization as github_organization_service,
-)
-
 router = APIRouter(tags=["issues"])
+
+
+class IssueResources(Schema):
+    issue: IssueRead
+    organization: OrganizationPublicRead | None
+    repository: RepositoryRead | None
+
+
+@router.get(
+    "/{platform}/{org_name}/{repo_name}/issues/{number}", response_model=IssueResources
+)
+async def get_or_sync_external(
+    platform: Platforms,
+    org_name: str,
+    repo_name: str,
+    number: int,
+    include: str = "organization,repository",
+    session: AsyncSession = Depends(get_db_session),
+) -> IssueResources:
+    includes = include.split(",")
+    client = get_polar_client()
+
+    try:
+        res = await github_organization_service.sync_external_org_with_repo_and_issue(
+            session,
+            client=client,
+            org_name=org_name,
+            repo_name=repo_name,
+            issue_number=number,
+        )
+        org, repo, issue = res
+    except ResourceNotFound:
+        raise HTTPException(
+            status_code=404,
+            detail="Organization, repo and issue combination not found",
+        )
+
+    included_org = None
+    if "organization" in includes:
+        included_org = OrganizationPublicRead.from_orm(org)
+
+    included_repo = None
+    if "repository" in includes:
+        included_repo = RepositoryRead.from_orm(repo)
+
+    return IssueResources(
+        issue=IssueRead.from_orm(issue),
+        organization=included_org,
+        repository=included_repo,
+    )
 
 
 @router.get("/{platform}/{org_name}/{repo_name}/issues", response_model=list[IssueRead])
@@ -97,32 +147,6 @@ async def remove_polar_badge(
     )
 
     return issue
-
-
-@router.get(
-    "/{platform}/{org_name}/{repo_name}/issues/{number}", response_model=IssueRead
-)
-async def get_public_issue(
-    platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    number: int,
-    session: AsyncSession = Depends(get_db_session),
-) -> Issue:
-    try:
-        _, __, issue = await organization_service.get_with_repo_and_issue(
-            session,
-            platform=platform,
-            org_name=org_name,
-            repo_name=repo_name,
-            issue=number,
-        )
-        return issue
-    except ResourceNotFound:
-        raise HTTPException(
-            status_code=404,
-            detail="Organization, repo and issue combination not found",
-        )
 
 
 @router.get(

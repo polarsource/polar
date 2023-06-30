@@ -126,12 +126,12 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       return { props: {} }
     }
 
-    const res = await api.pledges.getPledgeWithResources({
+    const res = await api.issues.getOrSyncExternal({
       platform: Platforms.GITHUB,
       orgName: context.params.organization,
       repoName: context.params.repo,
       number: parseInt(context.params.number),
-      include: 'issue,organization,repository',
+      include: 'organization,repository',
     })
     const { organization, repository, issue } = res
     return { props: { organization, repository, issue, query: context.query } }

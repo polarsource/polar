@@ -3,6 +3,7 @@
 /* eslint-disable */
 import type { IssueRead } from '../models/IssueRead';
 import type { IssueReferenceRead } from '../models/IssueReferenceRead';
+import type { IssueResources } from '../models/IssueResources';
 import type { IssueUpdateBadgeMessage } from '../models/IssueUpdateBadgeMessage';
 import type { Platforms } from '../models/Platforms';
 import type { PostIssueComment } from '../models/PostIssueComment';
@@ -13,6 +14,42 @@ import type { BaseHttpRequest } from '../core/BaseHttpRequest';
 export class IssuesService {
 
   constructor(public readonly httpRequest: BaseHttpRequest) {}
+
+  /**
+   * Get Or Sync External
+   * @returns IssueResources Successful Response
+   * @throws ApiError
+   */
+  public getOrSyncExternal({
+    platform,
+    orgName,
+    repoName,
+    number,
+    include = 'organization,repository',
+  }: {
+    platform: Platforms,
+    orgName: string,
+    repoName: string,
+    number: number,
+    include?: string,
+  }): CancelablePromise<IssueResources> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}',
+      path: {
+        'platform': platform,
+        'org_name': orgName,
+        'repo_name': repoName,
+        'number': number,
+      },
+      query: {
+        'include': include,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
 
   /**
    * Get Repository Issues
@@ -97,37 +134,6 @@ export class IssuesService {
         'org_name': orgName,
         'repo_name': repoName,
         'issue_number': issueNumber,
-      },
-      errors: {
-        422: `Validation Error`,
-      },
-    });
-  }
-
-  /**
-   * Get Public Issue
-   * @returns IssueRead Successful Response
-   * @throws ApiError
-   */
-  public getPublicIssue({
-    platform,
-    orgName,
-    repoName,
-    number,
-  }: {
-    platform: Platforms,
-    orgName: string,
-    repoName: string,
-    number: number,
-  }): CancelablePromise<IssueRead> {
-    return this.httpRequest.request({
-      method: 'GET',
-      url: '/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}',
-      path: {
-        'platform': platform,
-        'org_name': orgName,
-        'repo_name': repoName,
-        'number': number,
       },
       errors: {
         422: `Validation Error`,

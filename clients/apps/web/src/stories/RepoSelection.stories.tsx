@@ -40,6 +40,7 @@ const selfUserOrg: OrganizationPrivateRead = {
   status: Status.ACTIVE,
   created_at: '2023-01-01',
   avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+  pledge_minimum_amount: 2000,
 }
 
 export const WithSelfUserOrgInstalled: Story = {

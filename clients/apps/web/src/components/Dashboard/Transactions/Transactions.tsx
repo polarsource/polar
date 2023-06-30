@@ -1,19 +1,31 @@
+import Banner from '@/components/Banner/Banner'
+import Icon from '@/components/Icons/Icon'
+import Stripe from '@/components/Icons/Stripe'
+import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
+import { api } from 'polarkit/api'
 import {
+  AccountRead,
   OrganizationPrivateRead,
+  Platforms,
   PledgeResources,
   PledgeState,
 } from 'polarkit/api/client'
+import { PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
+import { useState } from 'react'
+import { Modal as ModernModal } from '../../Modal'
+import SetupAccount from '../SetupAccount'
 import List from './List'
 
 const Transactions = (props: {
   org: OrganizationPrivateRead
   tab: 'current' | 'rewarded'
   pledges: PledgeResources[]
+  accounts: AccountRead[]
 }) => {
-  const { org, tab, pledges } = props
+  const { org, tab, pledges, accounts } = props
 
   const refundedStates = [PledgeState.REFUNDED, PledgeState.CHARGE_DISPUTED]
   const inReviewStates = [
@@ -59,6 +71,8 @@ const Transactions = (props: {
 
   return (
     <div className="flex flex-col space-y-8">
+      <StripeBanner org={org} accounts={accounts} />
+
       <div className="flex space-x-8 px-2">
         <HeaderPill
           title="Current peldges"
@@ -170,3 +184,121 @@ const Triangle = () => (
     />
   </svg>
 )
+
+const StripeBanner = (props: {
+  org: OrganizationPrivateRead
+  accounts: AccountRead[]
+}) => {
+  const { org, accounts } = props
+
+  const goToStripeDashboard = async (account: AccountRead) => {
+    const link = await api.accounts.dashboardLink({
+      platform: Platforms.GITHUB,
+      orgName: org.name,
+      stripeId: account.stripe_id,
+    })
+    window.location.href = link.url
+  }
+
+  const goToStripeOnboarding = async (account: AccountRead) => {
+    const link = await api.accounts.onboardingLink({
+      platform: Platforms.GITHUB,
+      orgName: org.name,
+      stripeId: account.stripe_id,
+    })
+    window.location.href = link.url
+  }
+
+  const [showSetupModal, setShowSetupModal] = useState(false)
+
+  const toggle = () => {
+    setShowSetupModal(!showSetupModal)
+  }
+
+  if (accounts.length === 0) {
+    return (
+      <>
+        <Banner
+          color="default"
+          right={
+            <PrimaryButton
+              size="small"
+              onClick={(e) => {
+                e.preventDefault()
+                goToStripeOnboarding(accounts[0])
+              }}
+            >
+              <span>Setup up stripe</span>
+            </PrimaryButton>
+          }
+        >
+          <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
+          <span className="text-sm">
+            You need to set up a <strong>Stripe account</strong> to receive
+            payouts
+          </span>
+        </Banner>
+        <ModernModal
+          isShown={showSetupModal}
+          hide={toggle}
+          modalContent={
+            <SetupAccount onClose={() => setShowSetupModal(false)} />
+          }
+        />
+      </>
+    )
+  }
+
+  if (accounts.length > 0 && !accounts[0].is_details_submitted) {
+    return (
+      <Banner
+        color="default"
+        right={
+          <PrimaryButton
+            size="small"
+            onClick={(e) => {
+              e.preventDefault()
+              goToStripeOnboarding(accounts[0])
+            }}
+          >
+            <span>Continue setup</span>
+          </PrimaryButton>
+        }
+      >
+        <Icon classes="bg-blue-500" icon={<Stripe />} />
+        <span className="text-sm">
+          You need to set up a <strong>Stripe account</strong> to receive
+          payouts
+        </span>
+      </Banner>
+    )
+  }
+
+  if (accounts.length > 0 && accounts[0].is_details_submitted) {
+    return (
+      <>
+        <Banner
+          color="muted"
+          right={
+            <button
+              className="text-blue-500 dark:text-blue-600"
+              onClick={(e) => {
+                e.preventDefault()
+                goToStripeDashboard(accounts[0])
+              }}
+            >
+              Go to Stripe
+            </button>
+          }
+        >
+          <Icon classes="bg-blue-500" icon={<Stripe />} />
+          <span className="text-sm">
+            Payouts will be sent to Stripe account {accounts[0].stripe_id}
+          </span>
+        </Banner>
+      </>
+    )
+  }
+
+  return null
+}

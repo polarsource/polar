@@ -1,8 +1,8 @@
 """customize minimum pledge amount
 
 Revision ID: e1649ad1d26b
-Revises: c72cb47114df
-Create Date: 2023-06-29 12:15:04.936702
+Revises: da8a4e9d4431
+Create Date: 2023-06-30 08:08:00
 
 """
 import sqlalchemy as sa
@@ -13,7 +13,7 @@ from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 # revision identifiers, used by Alembic.
 revision = "e1649ad1d26b"
-down_revision = "c12e0331363b"
+down_revision = "da8a4e9d4431"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

@@ -88,6 +88,7 @@ async def get_pledge_with_resources(
             detail="Organization, repo and issue combination not found",
         )
 
+    included_pledge = None
     if pledge_id:
         pledge = await get_pledge_or_404(
             session,

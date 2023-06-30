@@ -6,10 +6,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from polar.auth.dependencies import Auth
 from polar.enums import Platforms
 from polar.exceptions import NotPermitted, ResourceNotFound
-from polar.integrations.github.client import get_polar_client
-from polar.integrations.github.service.organization import (
-    github_organization as gh_organization,
-)
 from polar.issue.schemas import IssueRead
 from polar.models import Pledge, Repository
 from polar.organization.schemas import OrganizationPublicRead
@@ -70,15 +66,14 @@ async def get_pledge_with_resources(
     session: AsyncSession = Depends(get_db_session),
 ) -> PledgeResources:
     includes = include.split(",")
-    client = get_polar_client()
 
     try:
-        org, repo, issue = await gh_organization.sync_external_org_with_repo_and_issue(
+        org, repo, issue = await organization_service.get_with_repo_and_issue(
             session,
-            client=client,
+            platform=platform,
             org_name=org_name,
             repo_name=repo_name,
-            issue_number=number,
+            issue=number,
         )
     except ResourceNotFound:
         raise HTTPException(

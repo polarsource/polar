@@ -33,7 +33,7 @@ export class PledgesService {
     orgName: string,
     repoName: string,
     number: number,
-    pledgeId?: string,
+    pledgeId: string,
     include?: string,
   }): CancelablePromise<PledgeResources> {
     return this.httpRequest.request({

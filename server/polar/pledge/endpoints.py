@@ -12,8 +12,6 @@ from polar.integrations.github.service.organization import (
 )
 from polar.issue.schemas import IssueRead
 from polar.models import Pledge, Repository
-from polar.models.user import User
-from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import OrganizationPublicRead
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -66,7 +64,7 @@ async def get_pledge_with_resources(
     org_name: str,
     repo_name: str,
     number: int,
-    pledge_id: UUID | None = None,
+    pledge_id: UUID,
     # Mimic JSON-API's include query format
     include: str = "organization,repository,issue",
     session: AsyncSession = Depends(get_db_session),
@@ -88,13 +86,12 @@ async def get_pledge_with_resources(
             detail="Organization, repo and issue combination not found",
         )
 
-    if pledge_id:
-        pledge = await get_pledge_or_404(
-            session,
-            pledge_id=pledge_id,
-            for_repository=repo,
-        )
-        included_pledge = PledgeRead.from_db(pledge)
+    pledge = await get_pledge_or_404(
+        session,
+        pledge_id=pledge_id,
+        for_repository=repo,
+    )
+    included_pledge = PledgeRead.from_db(pledge)
 
     included_org = None
     if "organization" in includes:

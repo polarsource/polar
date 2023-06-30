@@ -111,7 +111,7 @@ class IssueAndPullRequestBase(Base):
         if not data.id:
             raise Exception("no external id set")
 
-        body = data.body if data.body else ""
+        body = data.body or ""
 
         return cls(
             platform=Platforms.github,
@@ -263,9 +263,10 @@ class IssueReferenceRead(Schema):
     def from_model(cls, m: IssueReference) -> IssueReferenceRead:
         match m.reference_type:
             case ReferenceType.PULL_REQUEST:
-                pr = m.pull_request
-                if pr:
-                    avatar = pr.author.get("avatar_url", None) if pr.author else None
+                if pr := m.pull_request:
+                    avatar = (
+                        pr.author.get("avatar_url", None) if pr.author else None
+                    )
                     if not avatar:
                         raise Exception(
                             "unable to convert IssueReference to IssueReferenceRead"
@@ -292,7 +293,7 @@ class IssueReferenceRead(Schema):
                             created_at=pr.issue_created_at,
                             merged_at=pr.merged_at,
                             closed_at=pr.issue_closed_at,
-                            is_draft=True if pr.is_draft else False,
+                            is_draft=bool(pr.is_draft),
                         ),
                     )
 

@@ -35,8 +35,7 @@ class PullRequestService(
             PullRequest.repository_id == repository_id
         )
         res = await session.execute(statement)
-        pulls = res.scalars().unique().all()
-        return pulls
+        return res.scalars().unique().all()
 
     async def list_referencing_issue(
         self, session: AsyncSession, issue: Issue
@@ -47,8 +46,7 @@ class PullRequestService(
             .where(IssueReference.issue_id == issue.id)
         )
         res = await session.execute(statement)
-        pulls = res.scalars().unique().all()
-        return pulls
+        return res.scalars().unique().all()
 
 
 class FullPullRequestService(

@@ -98,9 +98,7 @@ class Repository(RecordModel):
 
     @hybrid_property
     def visibility(self) -> Visibility:
-        if not self.is_private:
-            return self.Visibility.PUBLIC
-        return self.Visibility.PRIVATE
+        return self.Visibility.PRIVATE if self.is_private else self.Visibility.PUBLIC
 
     __mutables__ = {
         "name",

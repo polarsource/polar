@@ -23,7 +23,6 @@ async def get_repository_pull_requests(
     auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> Sequence[PullRequest]:
-    pull_requests = await pull_request.list_by_repository(
+    return await pull_request.list_by_repository(
         session=session, repository_id=auth.repository.id
     )
-    return pull_requests

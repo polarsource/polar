@@ -64,7 +64,7 @@ async def notifications_send(
 
             sender.send_to_user(
                 to_email_addr=user.email,
-                subject="[Polar] " + subject,
+                subject=f"[Polar] {subject}",
                 html_content=body,
             )
 

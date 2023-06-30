@@ -23,7 +23,6 @@ class LoggingEmailSender(EmailSender):
             subject=subject,
             html_content=html_content,
         )
-        pass
 
 
 class SendgridEmailSender(EmailSender):

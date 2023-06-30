@@ -37,14 +37,10 @@ class EnumType(TypeDecorator):
         self.enum_klass = enum_klass
 
     def process_bind_param(self, value: Any, dialect: Dialect) -> Any:
-        if isinstance(value, self.enum_klass):
-            return value.value
-        return value
+        return value.value if isinstance(value, self.enum_klass) else value
 
     def process_result_value(self, value: Any, dialect: Dialect) -> Any:
-        if value is None:
-            return value
-        return self.enum_klass(value)
+        return value if value is None else self.enum_klass(value)
 
 
 class IntEnum(EnumType):

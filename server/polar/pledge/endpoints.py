@@ -75,11 +75,11 @@ async def get_pledge_with_resources(
             repo_name=repo_name,
             issue=number,
         )
-    except ResourceNotFound:
+    except ResourceNotFound as e:
         raise HTTPException(
             status_code=404,
             detail="Organization, repo and issue combination not found",
-        )
+        ) from e
 
     pledge = await get_pledge_or_404(
         session,
@@ -96,10 +96,7 @@ async def get_pledge_with_resources(
     if "repository" in includes:
         included_repo = RepositoryRead.from_orm(repo)
 
-    included_issue = None
-    if "issue" in includes:
-        included_issue = IssueRead.from_orm(issue)
-
+    included_issue = IssueRead.from_orm(issue) if "issue" in includes else None
     return PledgeResources(
         pledge=included_pledge,
         organization=included_org,
@@ -143,12 +140,12 @@ async def create_pledge(
         raise HTTPException(
             status_code=404,
             detail=str(e),
-        )
+        ) from e
     except NotPermitted as e:
         raise HTTPException(
             status_code=403,
             detail=str(e),
-        )
+        ) from e
 
 
 @router.get(

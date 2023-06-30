@@ -66,7 +66,7 @@ const TinyLoadingSpinner = (props: { disabled: boolean }) => {
 }
 
 type Color = 'blue' | 'gray' | 'red' | 'green' | 'lightblue'
-type Size = 'normal' | 'small'
+type Size = 'normal' | 'small' | 'smaller'
 
 type ButtonProps = {
   children: React.ReactNode
@@ -135,9 +135,9 @@ const text = (color: Color, loading: boolean, disabled: boolean) => {
 
 const size = (size: Size) => {
   if (size === 'small') {
-    return 'px-3 py-1.5 min-h-6'
+    return 'px-3 py-1.5 min-h-6 text-sm font-medium '
   }
-  return 'px-5 py-2 min-h-6'
+  return 'px-5 py-2 min-h-6 text-sm font-medium '
 }
 
 const PrimaryButton = (props: ButtonProps) => {
@@ -147,18 +147,33 @@ const PrimaryButton = (props: ButtonProps) => {
     text(props.color, props.loading, disabled),
     size(props.size),
     props.fullWidth ? 'w-full' : '',
-    'rounded-lg  text-center text-sm font-medium inline-flex items-center space-x-2 transition-colors duration-100 justify-center',
+    'rounded-lg  text-center  inline-flex items-center space-x-2 transition-colors duration-100 justify-center',
     props.classNames,
   )
+
+  const spinnerOrPlaceholder = (): React.ReactNode => {
+    if (props.loading) {
+      if (props.size === 'normal') {
+        return <LargeLoadingSpinner disabled={disabled} />
+      } else {
+        return <TinyLoadingSpinner disabled={disabled} />
+      }
+    }
+    if (!props.loading) {
+      if (props.size === 'normal') {
+        return <div className="-mr-2 h-6 w-0"></div>
+      } else {
+        return <div className="-mr-2 h-4 w-0"></div>
+      }
+    }
+
+    return null
+  }
+
   return (
     <>
       <button className={classes} onClick={props.onClick} disabled={disabled}>
-        {!props.loading && (
-          <div className="-mr-2 h-6 w-0">
-            {/* Same height as LargeLoadingSpinner */}
-          </div>
-        )}
-        {props.loading && <LargeLoadingSpinner disabled={disabled} />}
+        {spinnerOrPlaceholder()}
         {!props.loading && props.children}
       </button>
     </>

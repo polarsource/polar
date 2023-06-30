@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 import Transactions from '@/components/Dashboard/Transactions/Transactions'
-import { PledgeResources, PledgeState } from 'polarkit/api/client'
+import { AccountType, PledgeResources, PledgeState } from 'polarkit/api/client'
 import { issue, org, orgPrivate, repo } from './testdata'
 
 type Story = StoryObj<typeof Transactions>
@@ -60,23 +60,79 @@ export const Default: Story = {
     pledges: all_pledge_states,
     org: orgPrivate,
     tab: 'current',
+    accounts: [],
   },
 }
 
 export const Rewarded: Story = {
+  ...Default,
   args: {
-    pledges: all_pledge_states,
-    org: orgPrivate,
+    ...Default.args,
     tab: 'rewarded',
   },
 }
 
 export const Dark: Story = {
+  ...Default,
   args: {
-    pledges: all_pledge_states,
-    org: orgPrivate,
+    ...Default.args,
     tab: 'current',
   },
+  parameters: {
+    themes: ['dark'],
+  },
+}
+
+export const StripeHalfSetup: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    tab: 'rewarded',
+    accounts: [
+      {
+        account_type: AccountType.STRIPE,
+        country: 'SE',
+        stripe_id: '',
+        is_details_submitted: false,
+        is_admin: true,
+      },
+    ],
+  },
+}
+
+export const StripeSetup: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    tab: 'rewarded',
+    accounts: [
+      {
+        account_type: AccountType.STRIPE,
+        country: 'SE',
+        stripe_id: 'xxx',
+        is_details_submitted: true,
+        is_admin: true,
+      },
+    ],
+  },
+}
+
+export const StripeSetupDark: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    tab: 'rewarded',
+    accounts: [
+      {
+        account_type: AccountType.STRIPE,
+        country: 'SE',
+        stripe_id: 'xxx',
+        is_details_submitted: true,
+        is_admin: true,
+      },
+    ],
+  },
+
   parameters: {
     themes: ['dark'],
   },

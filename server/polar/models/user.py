@@ -95,7 +95,11 @@ class User(RecordModel):
     }
 
     def get_platform_oauth_account(self, platform: Platforms) -> OAuthAccount | None:
-        for account in self.oauth_accounts:
-            if account.platform == platform:
-                return account
-        return None
+        return next(
+            (
+                account
+                for account in self.oauth_accounts
+                if account.platform == platform
+            ),
+            None,
+        )

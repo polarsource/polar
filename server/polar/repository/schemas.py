@@ -41,14 +41,8 @@ class RepositoryCreate(Schema):
     def from_github(
         cls, organization: Organization, repo: github.rest.Repository
     ) -> Self:
-        topics = None
-        if repo.topics:
-            topics = repo.topics
-
-        license = None
-        if repo.license_ and repo.license_.name:
-            license = repo.license_.name
-
+        topics = repo.topics or None
+        license = repo.license_.name if repo.license_ and repo.license_.name else None
         return cls(
             platform=Platforms.github,
             external_id=repo.id,

@@ -70,14 +70,13 @@ class OrganizationCreate(OrganizationPrivateBase):
     ) -> OrganizationCreate:
         account = installation.account
 
-        if isinstance(account, github.rest.SimpleUser):
-            is_personal = account.type.lower() == "user"
-            name = account.login
-            avatar_url = account.avatar_url
-            external_id = account.id
-        else:
+        if not isinstance(account, github.rest.SimpleUser):
             raise Exception("Polar does not support GitHub Enterprise")
 
+        is_personal = account.type.lower() == "user"
+        name = account.login
+        avatar_url = account.avatar_url
+        external_id = account.id
         if not name:
             raise Exception("repository.name is not set")
         if not avatar_url:

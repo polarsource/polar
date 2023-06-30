@@ -75,7 +75,7 @@ class MinimalPullRequestCreate(IssueAndPullRequestBase):
         create.merge_commit_sha = pr.merge_commit_sha
         create.head = github.jsonify(pr.head)
         create.base = github.jsonify(pr.base)
-        create.is_draft = True if pr.draft else False
+        create.is_draft = bool(pr.draft)
 
         return create
 

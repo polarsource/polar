@@ -92,8 +92,7 @@ async def get_badge_settings(
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationBadgeSettingsRead:
-    settings = await organization.get_badge_settings(session, auth.organization)
-    return settings
+    return await organization.get_badge_settings(session, auth.organization)
 
 
 @router.put(
@@ -107,10 +106,9 @@ async def update_badge_settings(
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationBadgeSettingsUpdate:
-    updated = await organization.update_badge_settings(
+    return await organization.update_badge_settings(
         session, auth.organization, settings
     )
-    return updated
 
 
 @router.put("/{platform}/{org_name}/settings", response_model=OrganizationPrivateRead)

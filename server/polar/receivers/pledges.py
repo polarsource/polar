@@ -118,9 +118,7 @@ def issue_url(org: Organization, repo: Repository, issue: Issue) -> str:
 def pledger_name(pledge: Pledge) -> str:
     if pledge.by_organization:
         return pledge.by_organization.name
-    if pledge.user:
-        return pledge.user.username
-    return "anonymous"
+    return pledge.user.username if pledge.user else "anonymous"
 
 
 async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> None:
@@ -149,7 +147,7 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
         issue_org_name=org.name,
         issue_repo_name=repo.name,
         issue_number=issue.number,
-        maintainer_has_stripe_account=True if org.account else False,
+        maintainer_has_stripe_account=bool(org.account),
         pledge_id=pledge.id,
     )
 
@@ -188,7 +186,7 @@ async def pledge_confirmation_pending_notification(
         issue_org_name=org.name,
         issue_repo_name=repo.name,
         issue_number=issue.number,
-        maintainer_has_stripe_account=True if org.account else False,
+        maintainer_has_stripe_account=bool(org.account),
         pledge_id=pledge.id,
     )
 
@@ -225,7 +223,7 @@ async def pledge_pending_notification(pledge: Pledge, session: AsyncSession) -> 
         issue_org_name=org.name,
         issue_repo_name=repo.name,
         issue_number=issue.number,
-        maintainer_has_stripe_account=True if org.account else False,
+        maintainer_has_stripe_account=bool(org.account),
         pledge_id=pledge.id,
     )
 

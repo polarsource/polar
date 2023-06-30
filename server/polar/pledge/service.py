@@ -83,8 +83,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
         )
         res = await session.execute(statement)
-        issues = res.scalars().unique().all()
-        return issues
+        return res.scalars().unique().all()
 
     async def list_by_pledging_user(
         self, session: AsyncSession, user_id: UUID
@@ -101,8 +100,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
         )
         res = await session.execute(statement)
-        issues = res.scalars().unique().all()
-        return issues
+        return res.scalars().unique().all()
 
     async def list_by_receiving_organization(
         self, session: AsyncSession, organization_id: UUID
@@ -122,8 +120,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
         )
         res = await session.execute(statement)
-        issues = res.scalars().unique().all()
-        return issues
+        return res.scalars().unique().all()
 
     async def get_by_issue_ids(
         self,
@@ -144,8 +141,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
         )
         res = await session.execute(statement)
-        issues = res.scalars().unique().all()
-        return issues
+        return res.scalars().unique().all()
 
     async def create_pledge(
         self,
@@ -579,17 +575,16 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not pledge:
             raise ResourceNotFound(f"Pledge not found with payment_id: {payment_id}")
 
-        if pledge.state in PledgeState.to_refunded_states():
-            pledge.refunded_at = utc_now()
-            if amount == pledge.amount:
-                pledge.state = PledgeState.refunded
-            elif amount < pledge.amount:
-                pledge.amount -= amount
-            else:
-                raise NotPermitted("Refunding error, unexpected amount!")
-        else:
+        if pledge.state not in PledgeState.to_refunded_states():
             raise NotPermitted("Refunding error, unexpected pledge status")
 
+        pledge.refunded_at = utc_now()
+        if amount == pledge.amount:
+            pledge.state = PledgeState.refunded
+        elif amount < pledge.amount:
+            pledge.amount -= amount
+        else:
+            raise NotPermitted("Refunding error, unexpected amount!")
         session.add(pledge)
         session.add(
             PledgeTransaction(
@@ -672,10 +667,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
     ) -> None:
         pledges = await self.get_by_issue_ids(session, issue_ids=[issue_id])
 
-        summed = 0
-        if pledges:
-            summed = sum([p.amount for p in pledges])
-
+        summed = sum(p.amount for p in pledges) if pledges else 0
         stmt = (
             sql.update(Issue)
             .where(Issue.id == issue_id)
@@ -746,20 +738,18 @@ class PledgeService(ResourceServiceReader[Pledge]):
         Returns true if the User can modify the pledge on behalf of the entity that
         received the pledge, such as confirming it, and managing payouts.
         """
-        for m in memberships:
-            if m.organization_id == pledge.organization_id and m.is_admin:
-                return True
-
-        return False
+        return any(
+            m.organization_id == pledge.organization_id and m.is_admin
+            for m in memberships
+        )
 
     def user_can_admin_received_pledge_on_issue(
         self, issue: Issue, memberships: Sequence[UserOrganization]
     ) -> bool:
-        for m in memberships:
-            if m.organization_id == issue.organization_id and m.is_admin:
-                return True
-
-        return False
+        return any(
+            m.organization_id == issue.organization_id and m.is_admin
+            for m in memberships
+        )
 
 
 pledge = PledgeService(Pledge)

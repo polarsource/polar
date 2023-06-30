@@ -28,13 +28,8 @@ def encode(
         expires_in = expires_in or DEFAULT_EXPIRATION
         expires_at = create_expiration_dt(seconds=expires_in)
 
-    to_encode.update(
-        {
-            "exp": expires_at,
-        }
-    )
-    encoded = jwt.encode(to_encode, secret, algorithm=ALGORITHM)
-    return encoded
+    to_encode["exp"] = expires_at
+    return jwt.encode(to_encode, secret, algorithm=ALGORITHM)
 
 
 def decode(*, token: str, secret: str) -> dict[str, Any]:

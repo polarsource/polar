@@ -372,9 +372,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         """
         stmt = (
             sql.select(IssueDependency)
-            .where(
-                IssueDependency.repository_id.in_(list(set([r.id for r in repos]))),
-            )
+            .where(IssueDependency.repository_id.in_(list({r.id for r in repos})))
             .options(
                 joinedload(IssueDependency.dependent_issue),
                 joinedload(IssueDependency.dependency_issue),

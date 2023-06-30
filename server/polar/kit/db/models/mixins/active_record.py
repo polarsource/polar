@@ -66,7 +66,7 @@ class ActiveRecordMixin:
 
         columns = cls.__mutables__
         if columns is not None:
-            return set(name(column) for column in columns)
+            return {name(column) for column in columns}
 
         columnNames = {c.name for c in cls.__table__.c}
         pks = {pk.name for pk in cls.__table__.primary_key}
@@ -74,8 +74,7 @@ class ActiveRecordMixin:
 
     @classmethod
     async def find(cls, session: AsyncSession, id: Any, key: str = "id") -> Self | None:
-        params = {}
-        params[key] = id
+        params = {key: id}
         return await cls.find_by(session, **params)
 
     @classmethod
@@ -98,8 +97,7 @@ class ActiveRecordMixin:
         instance = cls()
         instance.fill(**values)
 
-        created = await instance.save(session, autocommit=autocommit)
-        return created
+        return await instance.save(session, autocommit=autocommit)
 
     @classmethod
     async def upsert_many(
@@ -169,7 +167,7 @@ class ActiveRecordMixin:
         exclude: set[str] | None = None,
         **values: Any,
     ) -> Self:
-        exclude = exclude if exclude else set()
+        exclude = exclude or set()
         for col, value in values.items():
             if not hasattr(self, col):
                 raise Exception(f"has no attr: {col}")
@@ -198,8 +196,7 @@ class ActiveRecordMixin:
         if not include:
             include = self.get_mutable_keys()
         updated = self.fill(include=include, exclude=exclude, **values)
-        res = await updated.save(session, autocommit=autocommit)
-        return res
+        return await updated.save(session, autocommit=autocommit)
 
     async def delete(self: Any, session: AsyncSession) -> None:
         # TODO: Can we get an affected rows or similar to verify delete?
@@ -207,6 +204,5 @@ class ActiveRecordMixin:
         await session.commit()
 
     async def signal_state_change(self, session: AsyncSession, state: str) -> None:
-        signal = getattr(self, f"on_{state}_signal", None)
-        if signal:
+        if signal := getattr(self, f"on_{state}_signal", None):
             await signal.send_async(PolarContext(), item=self, session=session)

@@ -72,8 +72,7 @@ class OrganizationService(
             )
         )
         res = await session.execute(statement)
-        orgs = res.scalars().unique().all()
-        return orgs
+        return res.scalars().unique().all()
 
     async def _get_protected(
         self,
@@ -85,7 +84,7 @@ class OrganizationService(
         repo_name: str | None = None,
         user_id: UUID | None = None,
     ) -> Organization | None:
-        if not (user_id or repo_name):
+        if not user_id and not repo_name:
             raise ValueError(
                 "Must provide at least one relationship (user_id or repo_name)"
             )
@@ -96,7 +95,7 @@ class OrganizationService(
             Organization.deleted_at.is_(None),
         ]
 
-        if not (org_id or org_name):
+        if not org_id and not org_name:
             raise ValueError(
                 "Must provide at least one relationship (org_id or org_name)"
             )
@@ -119,10 +118,7 @@ class OrganizationService(
 
         query = query.where(and_(*filters))
         res = await session.execute(query)
-        org = res.scalars().unique().first()
-        if org:
-            return org
-        return None
+        return org if (org := res.scalars().unique().first()) else None
 
     async def get_for_user(
         self,
@@ -138,9 +134,7 @@ class OrganizationService(
             org_name=org_name,
             user_id=user_id,
         )
-        if not org:
-            return None
-        return org
+        return org or None
 
     async def get_by_id_for_user(
         self,
@@ -156,9 +150,7 @@ class OrganizationService(
             org_id=org_id,
             user_id=user_id,
         )
-        if not org:
-            return None
-        return org
+        return org or None
 
     async def get_with_repo_for_user(
         self,
@@ -364,10 +356,9 @@ class OrganizationService(
             session, [r.id for r in settings.repositories], organization.id
         )
         for repository_settings in settings.repositories:
-            repository = next(
+            if repository := next(
                 (r for r in repositories if r.id == repository_settings.id), None
-            )
-            if repository:
+            ):
                 await repository_service.update_badge_settings(
                     session, organization, repository, repository_settings
                 )

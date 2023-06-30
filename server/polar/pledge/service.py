@@ -111,6 +111,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             sql.select(Pledge)
             .where(
                 Pledge.organization_id == organization_id,
+                Pledge.state != PledgeState.initiated,
             )
             .options(
                 joinedload(Pledge.user),

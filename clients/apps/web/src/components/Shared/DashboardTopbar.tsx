@@ -12,7 +12,7 @@ import Topbar from './Topbar'
 import TopbarPill from './TopbarPill'
 
 const SettingsLink = ({ orgSlug }: { orgSlug?: string }) => {
-  let path = '/dashboard/settings'
+  let path = '/settings'
   if (orgSlug) {
     path += `/${orgSlug}`
   }

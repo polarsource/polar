@@ -8,7 +8,7 @@ import { ReactElement, useEffect } from 'react'
 const Page: NextPageWithLayout = () => {
   const router = useRouter()
   useEffect(() => {
-    router.push(`/dashboard/settings/personal`)
+    router.push(`/settings/personal`)
   })
 
   return (

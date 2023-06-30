@@ -225,7 +225,7 @@ const StripeBanner = (props: {
               size="small"
               onClick={(e) => {
                 e.preventDefault()
-                goToStripeOnboarding(accounts[0])
+                setShowSetupModal(true)
               }}
             >
               <span>Setup up stripe</span>

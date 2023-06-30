@@ -39,6 +39,10 @@ const List = (props: {
     )
   }
 
+  const issueLink = (pr: PledgeResources): string => {
+    return `https://github.com/${pr.organization?.name}/${pr.repository?.name}/issues/${pr.issue?.number}`
+  }
+
   const showEstimatedPayoutDate = columns.some(
     (c) => c === 'ESTIMATED_PAYOUT_DATE',
   )
@@ -114,7 +118,7 @@ const List = (props: {
                   <div className="flex items-center gap-2">
                     {icon(t.pledge)}
                     <span className="inline-flex flex-col">
-                      <a href="#" className="text-blue-600">
+                      <a href={issueLink(t)} className="text-blue-600">
                         {t.organization?.name}/{t.repository?.name}#
                         {t.issue?.number}
                       </a>

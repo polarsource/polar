@@ -1,5 +1,5 @@
+import Transactions from '@/components/Dashboard/Finance/Finance'
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
-import Transactions from '@/components/Dashboard/Transactions/Transactions'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import type { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
@@ -9,7 +9,7 @@ import {
   useOrganizationAccounts,
 } from 'polarkit/hooks'
 import { ReactElement, useEffect } from 'react'
-import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
+import { useCurrentOrgAndRepoFromURL } from '../../../hooks'
 
 const Page: NextLayoutComponentType = () => {
   const router = useRouter()

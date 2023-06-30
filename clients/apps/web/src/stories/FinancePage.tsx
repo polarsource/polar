@@ -1,14 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import Transactions from '@/components/Dashboard/Transactions/Transactions'
+import Finance from '@/components/Dashboard/Finance/Finance'
 import { AccountType, PledgeResources, PledgeState } from 'polarkit/api/client'
 import { issue, org, orgPrivate, repo } from './testdata'
 
-type Story = StoryObj<typeof Transactions>
+type Story = StoryObj<typeof Finance>
 
-const meta: Meta<typeof Transactions> = {
-  title: 'Pages/Transactions',
-  component: Transactions,
+const meta: Meta<typeof Finance> = {
+  title: 'Pages/Finance',
+  component: Finance,
   parameters: {
     themes: ['light'],
   },

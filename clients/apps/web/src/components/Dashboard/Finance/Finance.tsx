@@ -19,7 +19,7 @@ import { Modal as ModernModal } from '../../Modal'
 import SetupAccount from '../SetupAccount'
 import List from './List'
 
-const Transactions = (props: {
+const Finance = (props: {
   org: OrganizationPrivateRead
   tab: 'current' | 'rewarded'
   pledges: PledgeResources[]
@@ -78,20 +78,20 @@ const Transactions = (props: {
           title="Current peldges"
           amount={currentPledgesAmount}
           active={props.tab === 'current'}
-          href={`/dashboard/${org.name}/pledges`}
+          href={`/finance/${org.name}`}
         />
         <HeaderPill
           title={`Rewarded to ${org.name}`}
           amount={rewardedPledgesAmount}
           active={props.tab === 'rewarded'}
-          href={`/dashboard/${org.name}/pledges/rewarded`}
+          href={`/finance/${org.name}/rewarded`}
         />
         {false && (
           <HeaderPill
             title="Rewarded to contributors"
             amount={0}
             active={false}
-            href={`/dashboard/${org.name}/pledges`}
+            href={`/finance/${org.name}/contributors`}
           />
         )}
       </div>
@@ -163,7 +163,7 @@ const HeaderPill = (props: {
   )
 }
 
-export default Transactions
+export default Finance
 
 const Triangle = () => (
   <svg

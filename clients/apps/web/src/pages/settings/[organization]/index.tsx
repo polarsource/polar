@@ -143,8 +143,8 @@ const SettingsTopbar = () => {
               showRepositories={false}
               showConnectMore={false}
               currentOrg={currentOrg}
-              onSelectOrg={(org) => router.push(`/dashboard/settings/${org}`)}
-              onSelectUser={() => router.push(`/dashboard/settings/personal`)}
+              onSelectOrg={(org) => router.push(`/settings/${org}`)}
+              onSelectUser={() => router.push(`/settings/personal`)}
               currentUser={currentUser}
               organizations={userOrgQuery.data}
               defaultToUser={true}

@@ -15,10 +15,19 @@ const Transactions = (props: {
 }) => {
   const { org, tab, pledges } = props
 
+  const refundedStates = [PledgeState.REFUNDED, PledgeState.CHARGE_DISPUTED]
+  const inReviewStates = [
+    PledgeState.CONFIRMATION_PENDING,
+    PledgeState.DISPUTED,
+    PledgeState.PENDING,
+  ]
+  const paidStates = [PledgeState.PAID]
+
   const currentPledges =
     pledges.filter((pr) => pr.pledge.state !== PledgeState.PAID) || []
 
   const currentPledgesAmount = currentPledges
+    .filter((pr) => !refundedStates.includes(pr.pledge.state))
     .map((pr) => pr.pledge.amount)
     .reduce((a, b) => a + b, 0)
 
@@ -28,14 +37,6 @@ const Transactions = (props: {
   const rewardedPledgesAmount = rewardedPledges
     .map((pr) => pr.pledge.amount)
     .reduce((a, b) => a + b, 0)
-
-  const refundedStates = [PledgeState.REFUNDED, PledgeState.CHARGE_DISPUTED]
-  const inReviewStates = [
-    PledgeState.CONFIRMATION_PENDING,
-    PledgeState.DISPUTED,
-    PledgeState.PENDING,
-  ]
-  const paidStates = [PledgeState.PAID]
 
   const tabPledges = tab === 'current' ? currentPledges : rewardedPledges
 

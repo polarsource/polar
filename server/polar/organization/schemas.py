@@ -57,11 +57,13 @@ class OrganizationPrivateBase(Schema):
     installation_updated_at: datetime | None = None
     installation_suspended_at: datetime | None = None
     onboarded_at: datetime | None = None
-    pledge_minimum_amount: int = settings.MINIMUM_ORG_PLEDGE_AMOUNT
+    pledge_minimum_amount: int
     default_badge_custom_content: str | None = None
 
 
 class OrganizationCreate(OrganizationPrivateBase):
+    pledge_minimum_amount: int = settings.MINIMUM_ORG_PLEDGE_AMOUNT
+
     @classmethod
     def from_github_installation(
         cls, installation: github.rest.Installation

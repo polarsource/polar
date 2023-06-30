@@ -98,15 +98,6 @@ const List = (props: {
               </th>
             )}
 
-            {columns.length === 0 && (
-              <th
-                scope="col"
-                className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-left text-sm font-semibold"
-              >
-                &nbsp;
-              </th>
-            )}
-
             <th
               scope="col"
               className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-right text-sm font-semibold"
@@ -119,7 +110,7 @@ const List = (props: {
           {pledges &&
             pledges.map((t) => (
               <tr key={t.pledge.id}>
-                <td className=" px-2 py-3 text-sm text-gray-500">
+                <td className="px-2 py-3 text-sm text-gray-500">
                   <div className="flex items-center gap-2">
                     {icon(t.pledge)}
                     <span className="inline-flex flex-col">
@@ -157,17 +148,18 @@ const List = (props: {
 
                 {showPaidOutDate && (
                   <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500 ">
-                    TODO
+                    {(t.pledge.paid_at && formatDate(t.pledge.paid_at)) ||
+                      'Unknown'}
                   </td>
                 )}
 
                 {showRefundedDate && (
                   <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
-                    TODO
+                    {(t.pledge.refunded_at &&
+                      formatDate(t.pledge.refunded_at)) ||
+                      'Unknown'}
                   </td>
                 )}
-
-                {columns.length === 0 && <td>&nbsp;</td>}
 
                 <td className="whitespace-nowrap py-3 pr-3 text-right text-sm text-gray-500">
                   ${getCentsInDollarString(t.pledge.amount, true)}

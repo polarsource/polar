@@ -1,7 +1,7 @@
 import { classNames } from 'polarkit/utils'
 import React from 'react'
 
-type Color = 'default' | 'muted'
+type Color = 'default' | 'muted' | 'red'
 
 const Banner = ({
   children,
@@ -21,6 +21,9 @@ const Banner = ({
           : '',
         color === 'muted'
           ? 'bg-gray-75 border dark:border-gray-800  dark:bg-gray-900'
+          : '',
+        color === 'red'
+          ? 'border bg-red-100 text-red-600  dark:border-red-800 dark:bg-red-900 dark:text-red-600'
           : '',
       )}
     >

@@ -280,20 +280,29 @@ const StripeBanner = (props: {
         <Banner
           color="muted"
           right={
-            <button
-              className="text-blue-500 dark:text-blue-600"
-              onClick={(e) => {
-                e.preventDefault()
-                goToStripeDashboard(accounts[0])
-              }}
-            >
-              Go to Stripe
-            </button>
+            <>
+              {accounts[0].is_admin && (
+                <button
+                  className="text-blue-500 dark:text-blue-600"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    goToStripeDashboard(accounts[0])
+                  }}
+                >
+                  Go to Stripe
+                </button>
+              )}
+              {!accounts[0].is_admin && (
+                <span className="text-gray-400">
+                  Ask the admin to make changes
+                </span>
+              )}
+            </>
           }
         >
           <Icon classes="bg-blue-500" icon={<Stripe />} />
           <span className="text-sm">
-            Payouts will be sent to Stripe account {accounts[0].stripe_id}
+            Payouts will be sent to the connected Stripe account
           </span>
         </Banner>
       </>

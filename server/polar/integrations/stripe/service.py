@@ -1,7 +1,8 @@
 from typing import Tuple
-import stripe as stripe_lib
-from polar.account.schemas import AccountCreate
 
+import stripe as stripe_lib
+
+from polar.account.schemas import AccountCreate
 from polar.config import settings
 from polar.models.issue import Issue
 from polar.models.organization import Organization

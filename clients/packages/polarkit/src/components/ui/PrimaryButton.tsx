@@ -122,7 +122,7 @@ const bg = (color: Color, loading: boolean, disabled: boolean) => {
 
 const text = (color: Color, loading: boolean, disabled: boolean) => {
   if (disabled) {
-    return 'text-gray-400 dark:text-gray-500'
+    return 'text-gray-400 dark:text-gray-300'
   }
   if (loading) {
     return 'text-gray-400'

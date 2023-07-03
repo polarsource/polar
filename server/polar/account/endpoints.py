@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from polar.account.schemas import AccountCreate, AccountLink, AccountRead
 
+from polar.account.schemas import AccountCreate, AccountLink, AccountRead
 from polar.auth.dependencies import Auth
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, get_db_session
 
 from .service import account as account_service
-
 
 router = APIRouter(tags=["accounts"])
 

@@ -3,8 +3,8 @@ from typing import Any
 
 from pydantic import Field
 
-from polar.kit.schemas import Schema
 from polar.enums import AccountType
+from polar.kit.schemas import Schema
 
 
 class AccountLinkTypes(str, Enum):

@@ -117,6 +117,23 @@ export const StripeSetup: Story = {
   },
 }
 
+export const StripeSetupNotAdmin: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    tab: 'rewarded',
+    accounts: [
+      {
+        account_type: AccountType.STRIPE,
+        country: 'SE',
+        stripe_id: 'xxx',
+        is_details_submitted: true,
+        is_admin: false,
+      },
+    ],
+  },
+}
+
 export const StripeSetupDark: Story = {
   ...Default,
   args: {

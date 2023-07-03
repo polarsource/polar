@@ -69,28 +69,14 @@ export const ThreeUsers: Story = {
   },
 }
 
-export const TwoUsersAdjustedSplit: Story = {
+export const AdjustedSplit: Story = {
   args: {
     ...Default.args,
     shares: [
       {
         username: 'zegl',
-        share: 0.8,
-      },
-      {
-        username: 'birkjernstrom',
-      },
-    ],
-  },
-}
-
-export const ThreeUsersAdjustedSplit: Story = {
-  args: {
-    ...Default.args,
-    shares: [
-      {
-        username: 'zegl',
-        share: 0.33,
+        share: 0.4,
+        raw_value: '40',
       },
       {
         username: 'birkjernstrom',
@@ -109,10 +95,12 @@ export const MissingPercentages: Story = {
       {
         username: 'zegl',
         share: 0.1,
+        raw_value: '10',
       },
       {
         username: 'birkjernstrom',
         share: 0.1,
+        raw_value: '10',
       },
     ],
   },
@@ -125,10 +113,12 @@ export const TooManyPercentages: Story = {
       {
         username: 'zegl',
         share: 0.8,
+        raw_value: '80',
       },
       {
         username: 'birkjernstrom',
         share: 0.805,
+        raw_value: '80.5',
       },
     ],
   },

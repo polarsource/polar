@@ -73,7 +73,7 @@ const Finance = (props: {
     <div className="flex flex-col space-y-8">
       <StripeBanner org={org} accounts={accounts} />
 
-      <div className="flex space-x-8 px-2">
+      <div className="flex space-x-8">
         <HeaderPill
           title="Current peldges"
           amount={currentPledgesAmount}
@@ -142,21 +142,21 @@ const HeaderPill = (props: {
       href={props.href}
       className={classNames(
         props.active
-          ? 'dark-ring-200 border bg-white shadow dark:bg-gray-600 dark:ring-1 dark:ring-gray-500'
-          : ' bg-transparenthover:bg-gray-100/50 border dark:bg-gray-700 dark:ring-1 dark:ring-gray-800',
+          ? ' bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-gray-700'
+          : ' dark:bg-gray-950 border bg-transparent hover:bg-gray-100/50 dark:ring-1 dark:ring-gray-700 dark:hover:bg-gray-800/50',
         'transition-background relative flex w-full max-w-[300px] flex-col rounded-xl py-4  px-5 duration-200',
       )}
     >
-      <div className="text-gray dark:text-gray text-md flex-1 font-medium text-gray-500">
+      <div className=" text-md flex-1 font-medium text-gray-500 dark:text-gray-400">
         {props.title}
       </div>
-      <div className="text-3xl font-medium text-gray-900 dark:text-gray-300">
+      <div className="text-3xl font-medium text-gray-900 dark:text-gray-200">
         ${getCentsInDollarString(props.amount, true)}
       </div>
       {props.active && (
         <>
           <Triangle />
-          <div className="absolute left-1/2 bottom-0 -ml-6 h-2 w-12  bg-white dark:bg-gray-600"></div>
+          <div className="absolute left-1/2 bottom-0 -ml-6 h-2 w-12  bg-white dark:bg-gray-800"></div>
         </>
       )}
     </Link>
@@ -172,11 +172,12 @@ const Triangle = () => (
     viewBox="0 0 27 15"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
-    className="absolute -bottom-[12px] left-1/2 -ml-[14px] text-white dark:hidden dark:text-gray-600"
-    style={{
+    className="absolute -bottom-[12px] left-1/2 -ml-[14px] text-white drop-shadow filter dark:text-gray-800 dark:drop-shadow-[0_1px_0px_#3E3F42]"
+    /*style={{
       filter:
         'drop-shadow(0 1px 8px rgb(0 0 0 / 0.07)) drop-shadow(0 0.5px 2.5px rgb(0 0 0 / 0.16))',
     }}
+    */
   >
     <path
       d="M13.6641 15L0.673682 5.39648e-07L26.6544 -1.73166e-06L13.6641 15Z"
@@ -283,7 +284,7 @@ const StripeBanner = (props: {
             <>
               {accounts[0].is_admin && (
                 <button
-                  className="text-blue-500 dark:text-blue-600"
+                  className="font-medium text-blue-500 dark:text-blue-400"
                   onClick={(e) => {
                     e.preventDefault()
                     goToStripeDashboard(accounts[0])

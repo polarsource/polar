@@ -147,7 +147,7 @@ const PrimaryButton = (props: ButtonProps) => {
     text(props.color, props.loading, disabled),
     size(props.size),
     props.fullWidth ? 'w-full' : '',
-    'rounded-lg  text-center  inline-flex items-center space-x-2 transition-colors duration-100 justify-center',
+    'rounded-lg  text-center  inline-flex items-center space-x-2 transition-colors duration-100 justify-center whitespace-nowrap',
     props.classNames,
   )
 

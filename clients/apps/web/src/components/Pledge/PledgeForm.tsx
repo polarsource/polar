@@ -1,5 +1,6 @@
 import MoneyInput from '@/components/UI/MoneyInput'
 import { useAuth } from '@/hooks/auth'
+import { EnvelopeIcon } from '@heroicons/react/24/outline'
 import { Elements } from '@stripe/react-stripe-js'
 import { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
@@ -299,7 +300,7 @@ const PledgeForm = ({
           htmlFor="amount"
           className="text-sm font-medium text-gray-500 dark:text-gray-400"
         >
-          Amount to pledge
+          Choose amount to pledge
         </label>
         <div className="mt-2 flex flex-row items-center space-x-4">
           <MoneyInput
@@ -319,16 +320,23 @@ const PledgeForm = ({
           htmlFor="email"
           className="mt-4 mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
         >
-          Email
+          Contact details
         </label>
-        <input
-          type="email"
-          id="email"
-          onChange={onEmailChange}
-          onBlur={onEmailChange}
-          value={email}
-          className="block w-full rounded-lg border-gray-200 bg-transparent py-2.5 px-3 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
-        />
+        <div className="relative">
+          <input
+            type="email"
+            id="email"
+            onChange={onEmailChange}
+            onBlur={onEmailChange}
+            value={email}
+            className="block w-full rounded-lg border-gray-200 bg-transparent py-2.5 px-3 pl-10 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
+          />
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-20 flex items-center pl-3 text-lg">
+            <span className="text-gray-500">
+              <EnvelopeIcon className="h-6 w-6" />
+            </span>
+          </div>
+        </div>
 
         <div className="mt-5 mb-2">
           <Checkbox
@@ -420,7 +428,8 @@ const PledgeForm = ({
               loading={isSyncing}
               onClick={() => false}
             >
-              Pay ${getCentsInDollarString(organization.pledge_minimum_amount)}
+              Pledge $
+              {getCentsInDollarString(organization.pledge_minimum_amount)}
             </PrimaryButton>
           </div>
         )}

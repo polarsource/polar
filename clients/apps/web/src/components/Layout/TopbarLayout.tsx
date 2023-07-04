@@ -1,11 +1,17 @@
-import Topbar from '../Shared/Topbar'
+import Topbar, { LogoPosition } from '../Shared/Topbar'
 import EmptyLayout from './EmptyLayout'
 
-const TopbarLayout = ({ children }: { children: React.ReactElement }) => {
+const TopbarLayout = ({
+  children,
+  logoPosition,
+}: {
+  children: React.ReactElement
+  logoPosition?: LogoPosition
+}) => {
   return (
     <EmptyLayout>
       <>
-        <Topbar />
+        <Topbar logoPosition={logoPosition} />
         {children}
       </>
     </EmptyLayout>

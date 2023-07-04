@@ -37,6 +37,7 @@ export const org: OrganizationPublicRead = {
   name: 'pydantic',
   avatar_url: 'https://avatars.githubusercontent.com/u/110818415?s=48&v=4',
   pledge_minimum_amount: 2000,
+  pretty_name: 'Pydantic',
 }
 
 export const orgPrivate: OrganizationPrivateRead = {
@@ -84,6 +85,8 @@ export const repo: RepositoryRead = {
   visibility: Visibility.PUBLIC,
   is_private: false,
   license: 'Apache 2.0',
+  description: 'Data validation using Python type hints',
+  homepage: 'https://docs.pydantic.dev/latest/',
 }
 
 export const pledge: PledgeRead = {

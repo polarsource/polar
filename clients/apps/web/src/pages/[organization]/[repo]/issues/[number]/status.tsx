@@ -105,6 +105,7 @@ const PledgeStatusPage: NextLayoutComponentType = ({
             checkJustPledged={false}
             canAddRemovePolarLabel={false}
             showIssueProgress={true}
+            showPledgeAction={true}
           />
         </GrayCard>
 

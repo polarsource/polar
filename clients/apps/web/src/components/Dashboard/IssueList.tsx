@@ -120,6 +120,7 @@ const IssueListPage = (props: {
           key={issue.id}
           showIssueProgress={true}
           canAddRemovePolarLabel={props.canAddRemovePolarLabel}
+          showPledgeAction={true}
         />
       ))}
     </>

@@ -42,6 +42,7 @@ const IssueListItem = (props: {
   checkJustPledged?: boolean
   canAddRemovePolarLabel: boolean
   showIssueProgress: boolean
+  showPledgeAction: boolean
   right?: React.ReactElement
 }) => {
   const { title, number, state, issue_created_at, reactions, comments } =
@@ -114,7 +115,9 @@ const IssueListItem = (props: {
    */
   const dependentOrg = props.dependents && props.dependents[0].organization
   const showPledgeAction =
-    isDependency && props.issue.progress !== IssueStatus.CLOSED
+    isDependency &&
+    props.issue.progress !== IssueStatus.CLOSED &&
+    props.showPledgeAction
 
   const redirectToPledge = () => {
     if (!dependentOrg) return

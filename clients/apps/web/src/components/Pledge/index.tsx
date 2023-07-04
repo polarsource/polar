@@ -3,8 +3,9 @@ import {
   OrganizationPublicRead,
   RepositoryRead,
 } from 'polarkit/api/client'
-import { IssueCard, RepositoryCard } from 'polarkit/components/pledge'
+import { IssueCard } from 'polarkit/components/pledge'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
+import HowItWorks from './HowItWorks'
 import PledgeForm from './PledgeForm'
 
 const Pledge = ({
@@ -22,6 +23,22 @@ const Pledge = ({
 }) => {
   return (
     <>
+      <div className="flex flex-col items-center space-y-2">
+        <img
+          src={organization.avatar_url}
+          className="h-16 w-16 rounded-full border-2 border-white shadow"
+        />
+        <div className="text-center text-lg font-medium text-gray-900">
+          {organization.pretty_name || organization.name}
+        </div>
+        <div className="text-center text-gray-500">
+          {repository.description}
+        </div>
+        <h1 className="pt-4 text-center text-3xl text-gray-900 md:text-4xl">
+          Help {organization.name} prioritize this issue
+        </h1>
+      </div>
+
       <div className="flex flex-col">
         <WhiteCard
           className="flex flex-col items-stretch rounded-none p-2 text-center md:flex-row md:rounded-xl md:pr-0"
@@ -48,7 +65,15 @@ const Pledge = ({
           </div>
         </WhiteCard>
       </div>
-      <RepositoryCard organization={organization} repository={repository} />
+
+      <HowItWorks />
+
+      <div className="flex items-center justify-center gap-6">
+        <a className="text-blue-600 hover:text-blue-500" href="/faq">
+          Polar FAQ
+        </a>
+        <span className="text-gray-500">&copy; Polar Software Inc 2023</span>
+      </div>
     </>
   )
 }

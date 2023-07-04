@@ -6,6 +6,8 @@ import { useAuth } from '../../hooks'
 import Popover from '../Notifications/Popover'
 import Profile from './Profile'
 
+export type LogoPosition = 'center' | 'left'
+
 const Topbar = (props: {
   children?: {
     left?: React.ReactNode
@@ -14,6 +16,7 @@ const Topbar = (props: {
   isFixed?: boolean
   customLogoTitle?: string
   hideProfile?: boolean
+  logoPosition?: LogoPosition
 }) => {
   const className = classNames(
     props.isFixed ? 'fixed z-10' : '',
@@ -24,7 +27,20 @@ const Topbar = (props: {
   const hasMid = !!props?.children?.center
   const hideProfile = props?.hideProfile
 
+  const logoPosition: LogoPosition = props?.logoPosition || 'center'
+
   const { authenticated } = useAuth()
+
+  const logo = (
+    <>
+      <Link
+        href="/"
+        className="flex-shrink-0 items-center space-x-2 font-semibold text-gray-700 md:inline-flex"
+      >
+        <LogoType />
+      </Link>
+    </>
+  )
 
   // Support server side rendering and hydration.
   // First render is always as if the user was logged out
@@ -38,26 +54,20 @@ const Topbar = (props: {
       <div className={className}>
         <div className="flex items-center space-x-4 md:flex-1">
           {hasLeft && props.children && props.children.left}
+          {!hasLeft && logoPosition == 'left' && logo}
         </div>
 
         {props.customLogoTitle && (
           <div className="flex items-center space-x-1">
             <LogoIcon />
-            <span className="font-display text-xl">Backoffice</span>
+            <span className="font-display text-xl">
+              {props.customLogoTitle}
+            </span>
           </div>
         )}
 
         {hasMid && props.children && props.children.center}
-        {!hasMid && !props.customLogoTitle && (
-          <>
-            <Link
-              href="/"
-              className="flex-shrink-0 items-center space-x-2 font-semibold text-gray-700 md:inline-flex"
-            >
-              <LogoType />
-            </Link>
-          </>
-        )}
+        {!hasMid && !props.customLogoTitle && logoPosition == 'center' && logo}
 
         <div className="flex flex-shrink-0 justify-end space-x-4 md:flex-1">
           {showProfile && !hideProfile && (

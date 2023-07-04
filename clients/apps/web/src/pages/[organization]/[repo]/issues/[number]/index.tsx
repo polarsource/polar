@@ -1,7 +1,6 @@
 import PublicLayout from '@/components/Layout/PublicLayout'
 import TopbarLayout from '@/components/Layout/TopbarLayout'
 import Pledge from '@/components/Pledge'
-import HowItWorks from '@/components/Pledge/HowItWorks'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import Head from 'next/head'
@@ -84,10 +83,6 @@ const PledgePage: NextLayoutComponentType = ({
         ></meta>
       </Head>
 
-      <h1 className="text-center text-3xl font-normal text-gray-800 dark:text-gray-300 md:text-4xl">
-        Complete your backing
-      </h1>
-
       <Pledge
         organization={organization}
         repository={repository}
@@ -95,22 +90,13 @@ const PledgePage: NextLayoutComponentType = ({
         asOrg={query?.as_org}
         gotoURL={query?.goto_url}
       />
-
-      <HowItWorks />
-
-      <div className="flex items-center justify-center gap-6">
-        <a className="text-blue-600 hover:text-blue-500" href="/faq">
-          Polar FAQ
-        </a>
-        <span className="text-gray-500">&copy; Polar Software Inc 2023</span>
-      </div>
     </>
   )
 }
 
 PledgePage.getLayout = (page: ReactElement) => {
   return (
-    <TopbarLayout>
+    <TopbarLayout logoPosition="left">
       <PublicLayout>{page}</PublicLayout>
     </TopbarLayout>
   )

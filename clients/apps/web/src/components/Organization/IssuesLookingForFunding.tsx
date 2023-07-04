@@ -101,6 +101,7 @@ const IssuesLookingForFunding = ({
             pledges={[]}
             showIssueProgress={false}
             canAddRemovePolarLabel={false}
+            showPledgeAction={true}
             right={
               <>
                 <a href={i.pledge_href} className="font-medium text-blue-600">

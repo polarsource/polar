@@ -1,6 +1,6 @@
 import PublicLayout from '@/components/Layout/PublicLayout'
 import TopbarLayout from '@/components/Layout/TopbarLayout'
-import Pledge from '@/components/Pledge'
+import Pledge from '@/components/Pledge/Pledge'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import Head from 'next/head'

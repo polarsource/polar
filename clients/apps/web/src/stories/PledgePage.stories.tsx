@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 import PublicLayout from '@/components/Layout/PublicLayout'
-import Pledge from '../components/Pledge'
+import Pledge from '../components/Pledge/Pledge'
 import { issue, org, repo } from './testdata'
 
 const meta: Meta<typeof Pledge> = {

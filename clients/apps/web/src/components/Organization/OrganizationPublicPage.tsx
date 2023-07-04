@@ -5,6 +5,7 @@ import {
 } from 'polarkit/api/client'
 import { prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
+import Footer from './Footer'
 import Header from './Header'
 import IssuesLookingForFunding from './IssuesLookingForFunding'
 
@@ -78,12 +79,7 @@ const OrganizationPublicPage = ({
 
       <HowItWorks />
 
-      <div className="flex items-center justify-center gap-6">
-        <a className="text-blue-600 hover:text-blue-500" href="/faq">
-          Polar FAQ
-        </a>
-        <span className="text-gray-500">&copy; Polar Software Inc 2023</span>
-      </div>
+      <Footer />
     </>
   )
 }

@@ -5,6 +5,7 @@ import {
 } from 'polarkit/api/client'
 import { IssueCard } from 'polarkit/components/pledge'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
+import Footer from '../Organization/Footer'
 import HowItWorks from './HowItWorks'
 import PledgeForm from './PledgeForm'
 
@@ -23,7 +24,7 @@ const Pledge = ({
 }) => {
   return (
     <>
-      <div className="flex flex-col items-center space-y-2">
+      <div className="flex flex-col items-center ">
         <img
           src={organization.avatar_url}
           className="h-16 w-16 rounded-full border-2 border-white shadow"
@@ -69,12 +70,7 @@ const Pledge = ({
 
       <HowItWorks />
 
-      <div className="flex items-center justify-center gap-6">
-        <a className="text-blue-600 hover:text-blue-500" href="/faq">
-          Polar FAQ
-        </a>
-        <span className="text-gray-500">&copy; Polar Software Inc 2023</span>
-      </div>
+      <Footer />
     </>
   )
 }

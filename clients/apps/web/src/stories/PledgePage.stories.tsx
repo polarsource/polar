@@ -31,3 +31,18 @@ export const Default: Story = {
     )
   },
 }
+
+export const NoNameDescription: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    organization: {
+      ...org,
+      pretty_name: undefined,
+    },
+    repository: {
+      ...repo,
+      description: undefined,
+    },
+  },
+}

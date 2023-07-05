@@ -9,6 +9,7 @@ import {
   useIssueRemovePolarBadge,
 } from 'polarkit/hooks'
 import { classNames } from 'polarkit/utils'
+import { posthog } from 'posthog-js'
 import { ChangeEvent, useState } from 'react'
 import { ModalHeader, Modal as ModernModal } from '../Modal'
 import { useModal } from '../Modal/useModal'
@@ -39,6 +40,12 @@ export const AddBadgeButton = (props: {
         repoName: props.repoName,
         issueNumber: props.issue.number,
       })
+
+      posthog.capture('add-issue-badge', {
+        organization_name: props.orgName,
+        repository_name: props.repoName,
+        issue_number: props.issue.number,
+      })
     }
 
     toggle()
@@ -50,6 +57,12 @@ export const AddBadgeButton = (props: {
       orgName: props.orgName,
       repoName: props.repoName,
       issueNumber: props.issue.number,
+    })
+
+    posthog.capture('remove-issue-badge', {
+      organization_name: props.orgName,
+      repository_name: props.repoName,
+      issue_number: props.issue.number,
     })
   }
 
@@ -79,6 +92,12 @@ export const AddBadgeButton = (props: {
       body: {
         message: message,
       },
+    })
+
+    posthog.capture('badge-with-comment', {
+      organization_name: props.orgName,
+      repository_name: props.repoName,
+      issue_number: props.issue.number,
     })
   }
 
@@ -161,6 +180,13 @@ export const BadgePromotionModal = (props: {
     copyText.select()
     copyText.setSelectionRange(0, 99999)
     navigator.clipboard.writeText(copyText.value)
+
+    posthog.capture('copy-to-clipboard', {
+      value: id,
+      organization_name: props.orgName,
+      repository_name: props.repoName,
+      issue_number: props.issue.number,
+    })
   }
 
   const pledgePageLink = `https://polar.sh/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
@@ -287,7 +313,6 @@ export const BadgePromotionModal = (props: {
             <input
               id="badge-embed-content"
               className="flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600 dark:text-gray-400"
-              defaultValue={embed.embed}
               value={embed.embed}
               onClick={() => {
                 copyToClipboard('badge-embed-content')
@@ -327,6 +352,12 @@ const PostCommentForm = (props: {
     await props.onAddComment(message)
     setIsLoading(false)
     setPosted(true)
+
+    posthog.capture('posted-issue-comment', {
+      organization_name: props.orgName,
+      repository_name: props.repoName,
+      issue_number: props.issue.number,
+    })
   }
 
   return (

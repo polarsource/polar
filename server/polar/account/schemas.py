@@ -18,7 +18,7 @@ class AccountCreate(Schema):
     open_collective_slug: str | None = Field(None, min_length=1)
     country: str
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def validate_open_collective(cls, values: dict[str, Any]) -> dict[str, Any]:
         account_type: AccountType = values["account_type"]
         open_collective_slug: str | None = values.get("open_collective_slug")

@@ -1,36 +1,30 @@
-from typing import Sequence
+from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
 from polar.dashboard.schemas import (
-    IssueDashboardRead,
     IssueListType,
     IssueSortBy,
     IssueStatus,
 )
 from polar.enums import Platforms
-from polar.integrations.stripe.service import stripe
 from polar.issue.schemas import IssuePublicRead
 from polar.issue.service import issue as issue_service
-from polar.models import Organization
-from polar.models.repository import Repository
-from polar.models.user import User
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.schemas import RepositoryPublicRead
 from polar.repository.service import repository as repository_service
-from polar.user_organization.schemas import UserOrganizationSettingsUpdate
-from polar.user_organization.service import (
-    user_organization as user_organization_service,
-)
+from polar.tags.api import Tags
 
+from .schemas import (
+    Organization as OrganizationSchema,
+)
 from .schemas import (
     OrganizationBadgeSettingsRead,
     OrganizationBadgeSettingsUpdate,
     OrganizationPrivateRead,
     OrganizationPublicPageRead,
-    OrganizationPublicRead,
     OrganizationSettingsUpdate,
 )
 from .service import organization
@@ -40,46 +34,41 @@ log = structlog.get_logger()
 router = APIRouter(tags=["organizations"])
 
 
-@router.get("/{platform}/{org_name}", response_model=OrganizationPrivateRead)
+@router.get(
+    "/organizations/{id}",
+    response_model=OrganizationSchema,
+    tags=[Tags.PUBLIC],
+    description="Get an organization",
+    status_code=200,
+    responses={404: {}},
+)
 async def get(
+    id: UUID,
+    auth: Auth = Depends(Auth.optional_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationSchema:
+    org = await organization.get(session, id=id)
+
+    if org:
+        return OrganizationSchema.from_orm(org)
+
+    raise HTTPException(
+        status_code=404,
+        detail="Organization not found",
+    )
+
+
+@router.get(
+    "/{platform}/{org_name}",
+    response_model=OrganizationPrivateRead,
+    tags=[Tags.INTERNAL],
+)
+async def getInternal(
     platform: Platforms,
     org_name: str,
     auth: Auth = Depends(Auth.user_with_org_access),
-    session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationPrivateRead:
-    return await _get_org_for_user(session, auth.organization, auth.user)
-
-
-async def _get_org_for_user(
-    session: AsyncSession, org: Organization, user: User
-) -> OrganizationPrivateRead:
-    res = OrganizationPrivateRead.from_orm(org)
-
-    # Get personal settings
-    settings = await user_organization_service.get_settings(session, user.id, org.id)
-    res.email_notification_maintainer_issue_receives_backing = (
-        settings.email_notification_maintainer_issue_receives_backing
-    )
-    res.email_notification_maintainer_issue_branch_created = (
-        settings.email_notification_maintainer_issue_branch_created
-    )
-    res.email_notification_maintainer_pull_request_created = (
-        settings.email_notification_maintainer_pull_request_created
-    )
-    res.email_notification_maintainer_pull_request_merged = (
-        settings.email_notification_maintainer_pull_request_merged
-    )
-    res.email_notification_backed_issue_branch_created = (
-        settings.email_notification_backed_issue_branch_created
-    )
-    res.email_notification_backed_issue_pull_request_created = (
-        settings.email_notification_backed_issue_pull_request_created
-    )
-    res.email_notification_backed_issue_pull_request_merged = (
-        settings.email_notification_backed_issue_pull_request_merged
-    )
-
-    return res
+    return OrganizationPrivateRead.from_orm(auth.organization)
 
 
 @router.get(
@@ -98,6 +87,7 @@ async def get_badge_settings(
 @router.put(
     "/{platform}/{org_name}/badge_settings",
     response_model=OrganizationBadgeSettingsUpdate,
+    tags=[Tags.INTERNAL],
 )
 async def update_badge_settings(
     platform: Platforms,
@@ -111,7 +101,11 @@ async def update_badge_settings(
     )
 
 
-@router.put("/{platform}/{org_name}/settings", response_model=OrganizationPrivateRead)
+@router.put(
+    "/{platform}/{org_name}/settings",
+    response_model=OrganizationPrivateRead,
+    tags=[Tags.INTERNAL],
+)
 async def update_settings(
     platform: Platforms,
     org_name: str,
@@ -120,27 +114,13 @@ async def update_settings(
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationPrivateRead:
     updated = await organization.update_settings(session, auth.organization, settings)
-
-    # update user settings
-    user_settings = UserOrganizationSettingsUpdate(
-        email_notification_maintainer_issue_receives_backing=settings.email_notification_maintainer_issue_receives_backing,
-        email_notification_maintainer_issue_branch_created=settings.email_notification_maintainer_issue_branch_created,
-        email_notification_maintainer_pull_request_created=settings.email_notification_maintainer_pull_request_created,
-        email_notification_maintainer_pull_request_merged=settings.email_notification_maintainer_pull_request_merged,
-        email_notification_backed_issue_branch_created=settings.email_notification_backed_issue_branch_created,
-        email_notification_backed_issue_pull_request_created=settings.email_notification_backed_issue_pull_request_created,
-        email_notification_backed_issue_pull_request_merged=settings.email_notification_backed_issue_pull_request_merged,
-    )
-    await user_organization_service.update_settings(
-        session, auth.user.id, auth.organization.id, user_settings
-    )
-
-    return await _get_org_for_user(session, updated, auth.user)
+    return OrganizationPrivateRead.from_orm(updated)
 
 
 @router.get(
     "/{platform}/{org_name}/public",
     response_model=OrganizationPublicPageRead,
+    tags=[Tags.INTERNAL],
 )
 async def get_public_issues(
     platform: Platforms,
@@ -201,7 +181,7 @@ async def get_public_issues(
     )
 
     return OrganizationPublicPageRead(
-        organization=OrganizationPublicRead.from_orm(org),
+        organization=OrganizationSchema.from_orm(org),
         repositories=[RepositoryPublicRead.from_orm(r) for r in all_org_repos],
         issues=[IssuePublicRead.from_orm(i) for i in issues],
         total_issue_count=count,

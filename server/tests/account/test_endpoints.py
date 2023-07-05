@@ -40,6 +40,26 @@ async def open_collective_account(
 
 
 @pytest.mark.asyncio
+async def test_create_invalid_account_type(
+    user: User,
+    organization: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+) -> None:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.post(
+            f"/api/v1/github/{organization.name}/accounts",
+            json={
+                "account_type": "unknown",
+                "country": "US",
+            },
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("slug", [None, ""])
 async def test_create_open_collective_missing_slug(
     user: User,

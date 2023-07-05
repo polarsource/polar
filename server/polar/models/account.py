@@ -44,7 +44,7 @@ class Account(RecordModel):
     is_charges_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
     is_payouts_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
-    business_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    business_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     status: Mapped[str] = mapped_column(
         StringEnum(Status), nullable=False, default=Status.CREATED

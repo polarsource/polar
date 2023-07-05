@@ -40,7 +40,6 @@ def upgrade() -> None:
         "business_type",
         existing_type=sa.VARCHAR(length=10),
         type_=sa.String(length=255),
-        nullable=False,
     )
     # ### end Alembic commands ###
 
@@ -52,7 +51,6 @@ def downgrade() -> None:
         "business_type",
         existing_type=sa.String(length=255),
         type_=sa.VARCHAR(length=10),
-        nullable=True,
     )
     op.alter_column(
         "accounts", "stripe_id", existing_type=sa.VARCHAR(length=100), nullable=False

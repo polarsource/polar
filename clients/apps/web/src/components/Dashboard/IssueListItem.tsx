@@ -11,8 +11,7 @@ import {
   IssueStatus,
   Organization,
   Platforms,
-  RepositoryPublicRead,
-  RepositoryRead,
+  Repository,
   type PledgeRead,
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
@@ -34,7 +33,7 @@ import { AddBadgeButton } from './IssuePromotionModal'
 
 const IssueListItem = (props: {
   org: Organization
-  repo: RepositoryRead | RepositoryPublicRead
+  repo: Repository
   issue: IssueDashboardRead | IssuePublicRead
   references: IssueReferenceRead[]
   dependents?: IssueReadWithRelations[]

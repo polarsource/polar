@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Organization, RepositoryPublicRead } from 'polarkit/api/client'
+import { Organization, Repository } from 'polarkit/api/client'
 import { LogoType } from 'polarkit/components/brand'
 import Navigation from './Navigation'
 
@@ -9,8 +9,8 @@ const Header = ({
   repository,
 }: {
   organization: Organization
-  repositories: RepositoryPublicRead[]
-  repository?: RepositoryPublicRead
+  repositories: Repository[]
+  repository?: Repository
 }) => {
   return (
     <div className="flex flex-col-reverse items-center justify-between gap-4 md:flex-row">

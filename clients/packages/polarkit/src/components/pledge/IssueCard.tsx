@@ -3,7 +3,7 @@ import { PolarTimeAgo } from 'polarkit/components/ui'
 import {
   IssueDashboardRead,
   Organization,
-  RepositoryRead,
+  Repository,
   type IssueRead,
 } from '../../api/client'
 import { githubIssueUrl } from '../../github'
@@ -17,7 +17,7 @@ const IssueCard = ({
   issue: IssueRead | IssueDashboardRead
   className: string
   organization: Organization
-  repository: RepositoryRead
+  repository: Repository
 }) => {
   const url = githubIssueUrl(organization.name, repository.name, issue.number)
 

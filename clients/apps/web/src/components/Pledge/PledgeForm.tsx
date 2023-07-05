@@ -12,7 +12,7 @@ import {
   IssueRead,
   Organization,
   PledgeMutationResponse,
-  RepositoryRead,
+  Repository,
 } from 'polarkit/api/client'
 import { Checkbox, PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
@@ -30,7 +30,7 @@ type PledgeSync = {
 
 const generateRedirectURL = (
   organization: Organization,
-  repository: RepositoryRead,
+  repository: Repository,
   issue: IssueRead,
   pledge: PledgeMutationResponse,
   gotoURL?: string,
@@ -77,7 +77,7 @@ const PledgeForm = ({
 }: {
   issue: IssueRead
   organization: Organization
-  repository: RepositoryRead
+  repository: Repository
   asOrg?: string
   gotoURL?: string
 }) => {

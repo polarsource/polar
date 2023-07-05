@@ -1,8 +1,4 @@
-import {
-  IssuePublicRead,
-  Organization,
-  RepositoryPublicRead,
-} from 'polarkit/api/client'
+import { IssuePublicRead, Organization, Repository } from 'polarkit/api/client'
 import { abbrStars, prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
 import Footer from './Footer'
@@ -17,8 +13,8 @@ const RepositoryPublicPage = ({
   totalIssueCount,
 }: {
   organization: Organization
-  repository: RepositoryPublicRead
-  repositories: RepositoryPublicRead[]
+  repository: Repository
+  repositories: Repository[]
   issues?: IssuePublicRead[]
   totalIssueCount: number
 }) => {

@@ -5,6 +5,7 @@ import type { IssueRead } from '../models/IssueRead';
 import type { IssueReferenceRead } from '../models/IssueReferenceRead';
 import type { IssueResources } from '../models/IssueResources';
 import type { IssueUpdateBadgeMessage } from '../models/IssueUpdateBadgeMessage';
+import type { OrganizationPublicPageRead } from '../models/OrganizationPublicPageRead';
 import type { Platforms } from '../models/Platforms';
 import type { PostIssueComment } from '../models/PostIssueComment';
 
@@ -236,6 +237,36 @@ export class IssuesService {
       },
       body: requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Get organization public issues (Internal API)
+   * @returns OrganizationPublicPageRead Successful Response
+   * @throws ApiError
+   */
+  public getPublicIssues({
+    platform,
+    orgName,
+    repoName,
+  }: {
+    platform: Platforms,
+    orgName: string,
+    repoName?: string,
+  }): CancelablePromise<OrganizationPublicPageRead> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/{platform}/{org_name}/public',
+      path: {
+        'platform': platform,
+        'org_name': orgName,
+      },
+      query: {
+        'repo_name': repoName,
+      },
       errors: {
         422: `Validation Error`,
       },

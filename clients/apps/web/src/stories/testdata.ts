@@ -12,7 +12,7 @@ import {
   PledgeRead,
   PledgeState,
   PledgerPledgePendingNotification,
-  RepositoryRead,
+  Repository,
   State,
   UserRead,
   Visibility,
@@ -75,16 +75,15 @@ export const issue: IssueRead = {
   created_at: addDays(new Date(), -7).toISOString(),
 }
 
-export const repo: RepositoryRead = {
+export const repo: Repository = {
   platform: Platforms.GITHUB,
-  external_id: 123,
   name: 'pydantic',
   id: 'bb',
   visibility: Visibility.PUBLIC,
-  is_private: false,
   license: 'Apache 2.0',
   description: 'Data validation using Python type hints',
   homepage: 'https://docs.pydantic.dev/latest/',
+  organization: org,
 }
 
 export const pledge: PledgeRead = {
@@ -110,17 +109,6 @@ export const privateOrganization: OrganizationPrivateRead = {
   is_personal: false,
   created_at: addDays(new Date(), -7).toISOString(),
   pledge_minimum_amount: 2000,
-  repositories: [
-    {
-      platform: Platforms.GITHUB,
-      external_id: 1245,
-      organization_id: 'xxxxx-abc',
-      name: 'polar',
-      is_private: false,
-      id: 'xxxxrepo',
-      visibility: Visibility.PUBLIC,
-    },
-  ],
 }
 
 const maintainerPledgeCreatedNotification: MaintainerPledgeCreatedNotification =

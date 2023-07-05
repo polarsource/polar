@@ -1,5 +1,5 @@
 import { Command } from 'cmdk'
-import { Organization, RepositoryPublicRead } from 'polarkit/api/client'
+import { Organization, Repository } from 'polarkit/api/client'
 import { useOutsideClick } from 'polarkit/utils'
 import React, { useEffect, useRef, useState } from 'react'
 import { Item, Left, SelectedBox, Text } from '../Dropdown'
@@ -8,8 +8,8 @@ export function RepoSelection(props: {
   onSelectRepo: (repo: string) => void
   onSelectAll: () => void
   organization: Organization
-  repositories: RepositoryPublicRead[]
-  value: RepositoryPublicRead | undefined
+  repositories: Repository[]
+  value: Repository | undefined
 }) {
   const [value, setValue] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement | null>(null)
@@ -29,7 +29,7 @@ export function RepoSelection(props: {
     setInputValue('')
   }
 
-  const onSelectRepo = (repo: RepositoryPublicRead) => {
+  const onSelectRepo = (repo: Repository) => {
     resetDropdown()
     props.onSelectRepo(repo.name)
   }
@@ -133,7 +133,7 @@ const SelectedRepository = ({
   repository,
   onClick,
 }: {
-  repository: RepositoryPublicRead
+  repository: Repository
   onClick: () => void
 }) => {
   return (

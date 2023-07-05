@@ -9,7 +9,7 @@ import {
   PledgeRead,
   PledgeState,
   PullRequestReference,
-  RepositoryPublicRead,
+  Repository,
   State,
   Visibility,
 } from 'polarkit/api/client'
@@ -28,11 +28,12 @@ const OnboardingAddDependency = () => {
     name: 'x',
     pledge_minimum_amount: 2000,
   }
-  const demoRepo: RepositoryPublicRead = {
+  const demoRepo: Repository = {
     platform: Platforms.GITHUB,
     id: 'x',
     visibility: Visibility.PUBLIC,
     name: 'x',
+    organization: demoOrg,
   }
   const demoIssue: IssueDashboardRead = {
     id: '',
@@ -63,8 +64,7 @@ const OnboardingAddDependency = () => {
       repository: {
         ...demoRepo,
         name: 'api',
-        external_id: 123,
-        is_private: true,
+        visibility: Visibility.PUBLIC,
       },
 
       references: [],

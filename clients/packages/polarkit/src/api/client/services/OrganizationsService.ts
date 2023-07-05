@@ -5,7 +5,6 @@ import type { Organization } from '../models/Organization';
 import type { OrganizationBadgeSettingsRead } from '../models/OrganizationBadgeSettingsRead';
 import type { OrganizationBadgeSettingsUpdate } from '../models/OrganizationBadgeSettingsUpdate';
 import type { OrganizationPrivateRead } from '../models/OrganizationPrivateRead';
-import type { OrganizationPublicPageRead } from '../models/OrganizationPublicPageRead';
 import type { OrganizationSettingsUpdate } from '../models/OrganizationSettingsUpdate';
 import type { Platforms } from '../models/Platforms';
 
@@ -17,7 +16,7 @@ export class OrganizationsService {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
-   * Get
+   * Get an organization (Public API)
    * Get an organization
    * @returns Organization Successful Response
    * @throws ApiError
@@ -41,7 +40,7 @@ export class OrganizationsService {
   }
 
   /**
-   * List
+   * List organizations (Public API)
    * List organizations that the authenticated user is a member of. Requires authentication.
    * @returns Organization Successful Response
    * @throws ApiError
@@ -54,7 +53,7 @@ export class OrganizationsService {
   }
 
   /**
-   * Search
+   * Search organizations (Public API)
    * Search organizations.
    * @returns Organization Successful Response
    * @throws ApiError
@@ -80,7 +79,7 @@ export class OrganizationsService {
   }
 
   /**
-   * Lookup
+   * Lookup organization (Public API)
    * Lookup organization. Like search but returns at only one organization.
    * @returns Organization Successful Response
    * @throws ApiError
@@ -108,7 +107,7 @@ export class OrganizationsService {
 
   /**
    * @deprecated
-   * Getinternal
+   * Get an organization (Internal API)
    * @returns OrganizationPrivateRead Successful Response
    * @throws ApiError
    */
@@ -133,7 +132,7 @@ export class OrganizationsService {
   }
 
   /**
-   * Get Badge Settings
+   * Get badge settings (Internal API)
    * @returns OrganizationBadgeSettingsRead Successful Response
    * @throws ApiError
    */
@@ -158,7 +157,7 @@ export class OrganizationsService {
   }
 
   /**
-   * Update Badge Settings
+   * Update badge settings (Internal API)
    * @returns OrganizationBadgeSettingsUpdate Successful Response
    * @throws ApiError
    */
@@ -187,7 +186,7 @@ export class OrganizationsService {
   }
 
   /**
-   * Update Settings
+   * Update organization settings (Internal API)
    * @returns OrganizationPrivateRead Successful Response
    * @throws ApiError
    */
@@ -209,36 +208,6 @@ export class OrganizationsService {
       },
       body: requestBody,
       mediaType: 'application/json',
-      errors: {
-        422: `Validation Error`,
-      },
-    });
-  }
-
-  /**
-   * Get Public Issues
-   * @returns OrganizationPublicPageRead Successful Response
-   * @throws ApiError
-   */
-  public getPublicIssues({
-    platform,
-    orgName,
-    repoName,
-  }: {
-    platform: Platforms,
-    orgName: string,
-    repoName?: string,
-  }): CancelablePromise<OrganizationPublicPageRead> {
-    return this.httpRequest.request({
-      method: 'GET',
-      url: '/api/v1/{platform}/{org_name}/public',
-      path: {
-        'platform': platform,
-        'org_name': orgName,
-      },
-      query: {
-        'repo_name': repoName,
-      },
       errors: {
         422: `Validation Error`,
       },

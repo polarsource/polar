@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { Platforms } from './Platforms';
-import type { RepositoryRead } from './RepositoryRead';
+import type { RepositoryLegacyRead } from './RepositoryLegacyRead';
 
 export type OrganizationPrivateRead = {
   pledge_badge_show_amount?: boolean;
@@ -23,6 +23,6 @@ export type OrganizationPrivateRead = {
   id: string;
   created_at: string;
   modified_at?: string;
-  repositories?: Array<RepositoryRead>;
+  repositories?: Array<RepositoryLegacyRead>;
 };
 

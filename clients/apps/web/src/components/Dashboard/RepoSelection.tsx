@@ -7,7 +7,7 @@ import Image from 'next/image'
 import {
   Organization,
   OrganizationPrivateRead,
-  RepositoryRead,
+  Repository,
   UserRead,
 } from 'polarkit/api/client'
 import { CONFIG } from 'polarkit/config'
@@ -38,7 +38,7 @@ export function RepoSelection(props: {
   onSelectOrg?: (org: string) => void
   onSelectUser?: () => void
   currentOrg?: OrganizationPrivateRead
-  currentRepo?: RepositoryRead
+  currentRepo?: Repository
   fullWidth?: boolean
   showUserInDropdown?: boolean
   defaultToUser?: boolean
@@ -93,7 +93,7 @@ export function RepoSelection(props: {
     }
   }
 
-  const onSelectRepo = (org: Organization, repo: RepositoryRead) => {
+  const onSelectRepo = (org: Organization, repo: Repository) => {
     if (org && repo) {
       resetDropdown()
       if (props.onSelectRepo) {
@@ -393,7 +393,7 @@ const SelectedOrgRepo = ({
   onClick,
 }: {
   org: Organization
-  repo: RepositoryRead | undefined
+  repo: Repository | undefined
   onClick: () => void
 }) => {
   return (

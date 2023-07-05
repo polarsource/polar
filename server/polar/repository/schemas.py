@@ -1,19 +1,54 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Self, Type
+from typing import Self
 from uuid import UUID
 
 from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.kit.schemas import Schema
-from polar.models import Organization, Repository
+from polar.models import Organization as OrganizationModel
+from polar.models import Repository as RepositoryModel
+from polar.organization.schemas import Organization as OrganizationSchema
+from polar.visibility import Visibility
+
+
+class Repository(Schema):
+    id: UUID
+    platform: Platforms
+    visibility: Visibility
+    name: str
+    description: str | None = None
+    stars: int | None = None
+    license: str | None = None
+    homepage: str | None = None
+
+    organization: OrganizationSchema | None = None
+
+    @classmethod
+    def from_db(cls, r: RepositoryModel) -> Self:
+        return cls(
+            id=r.id,
+            platform=r.platform,
+            visibility=r.visibility,
+            name=r.name,
+            description=r.description,
+            stars=r.stars,
+            license=r.license,
+            homepage=r.homepage,
+            organization=OrganizationSchema.from_orm(r.organization),
+        )
+
+
+#
+# Internal models below. Not to be used in "public" APIs!
+#
 
 
 class RepositoryCreate(Schema):
     platform: Platforms
     external_id: int
-    organization_id: UUID | None = None
+    organization_id: UUID
     name: str
     description: str | None = None
     open_issues: int | None = None
@@ -39,7 +74,7 @@ class RepositoryCreate(Schema):
 
     @classmethod
     def from_github(
-        cls, organization: Organization, repo: github.rest.Repository
+        cls, organization: OrganizationModel, repo: github.rest.Repository
     ) -> Self:
         topics = repo.topics or None
         license = repo.license_.name if repo.license_ and repo.license_.name else None
@@ -76,23 +111,15 @@ class RepositoryUpdate(RepositoryCreate):
     ...
 
 
-class RepositoryPublicRead(Schema):
-    platform: Platforms
+class RepositoryLegacyRead(Schema):
     id: UUID
-    visibility: Repository.Visibility
+    platform: Platforms
+    visibility: Visibility
     name: str
     description: str | None = None
     stars: int | None = None
     license: str | None = None
     homepage: str | None = None
-
-    class Config:
-        orm_mode = True
-
-
-class RepositoryRead(RepositoryPublicRead, RepositoryCreate):
-    id: UUID
-    visibility: Repository.Visibility
 
     class Config:
         orm_mode = True

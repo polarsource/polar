@@ -29,6 +29,8 @@ from polar.models.issue_reference import (
     IssueReference,
     ReferenceType,
 )
+from polar.organization.schemas import Organization
+from polar.repository.schemas import Repository
 from polar.types import JSONAny
 
 log = structlog.get_logger()
@@ -264,9 +266,7 @@ class IssueReferenceRead(Schema):
         match m.reference_type:
             case ReferenceType.PULL_REQUEST:
                 if pr := m.pull_request:
-                    avatar = (
-                        pr.author.get("avatar_url", None) if pr.author else None
-                    )
+                    avatar = pr.author.get("avatar_url", None) if pr.author else None
                     if not avatar:
                         raise Exception(
                             "unable to convert IssueReference to IssueReferenceRead"
@@ -377,3 +377,11 @@ class IssuePublicRead(Schema):
 
     class Config:
         orm_mode = True
+
+
+# Internal model
+class OrganizationPublicPageRead(Schema):
+    organization: Organization
+    repositories: list[Repository]
+    issues: list[IssuePublicRead]
+    total_issue_count: int

@@ -1,17 +1,20 @@
 from typing import Sequence
 from uuid import UUID
+
 import structlog
-from sqlalchemy.orm import InstrumentedAttribute
+from sqlalchemy import and_, distinct
+from sqlalchemy.orm import InstrumentedAttribute, joinedload
 
 from polar.kit.services import ResourceService
 from polar.models import Repository
+from polar.models.issue import Issue
 from polar.models.organization import Organization
+from polar.models.pull_request import PullRequest
 from polar.organization.schemas import RepositoryBadgeSettingsUpdate
 from polar.postgres import AsyncSession, sql
 from polar.worker import enqueue_job
 
 from .schemas import RepositoryCreate, RepositoryUpdate
-
 
 log = structlog.get_logger()
 
@@ -23,14 +26,58 @@ class RepositoryService(
     def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
         return [self.model.external_id]
 
+    async def get_by_id(
+        self, session: AsyncSession, id: UUID, load_organization: bool = False
+    ) -> Repository | None:
+        statement = sql.select(Repository).where(
+            Repository.organization_id == id,
+            Repository.deleted_at.is_(None),
+        )
+
+        if load_organization:
+            statement = statement.options(joinedload(Repository.organization))
+
+        res = await session.execute(statement)
+        return res.scalars().unique().one_or_none()
+
+    async def list_by(
+        self,
+        session: AsyncSession,
+        *,
+        org_ids: list[UUID],
+        repository_name: str | None = None,
+        load_organization: bool = False,
+    ) -> Sequence[Repository]:
+        statement = sql.select(Repository).where(
+            Repository.organization_id.in_(org_ids),
+            Repository.deleted_at.is_(None),
+        )
+
+        if repository_name:
+            statement = statement.where(Repository.name == repository_name)
+
+        if load_organization:
+            statement = statement.options(joinedload(Repository.organization))
+
+        res = await session.execute(statement)
+        return res.scalars().unique().all()
+
     async def get_by_org_and_name(
-        self, session: AsyncSession, organization_id: UUID, name: str
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+        name: str,
+        load_organization: bool = False,
     ) -> Repository | None:
         statement = sql.select(Repository).where(
             Repository.organization_id == organization_id,
             Repository.deleted_at.is_(None),
             Repository.name == name,
         )
+
+        if load_organization:
+            statement = statement.options(joinedload(Repository.organization))
+
         res = await session.execute(statement)
         return res.scalars().unique().one_or_none()
 
@@ -107,6 +154,74 @@ class RepositoryService(
             )
 
         return settings
+
+    async def get_repositories_synced_count(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> dict[UUID, dict[str, int]]:
+        stmt = (
+            sql.select(
+                Repository.id,
+                Issue.has_pledge_badge_label.label("labelled"),
+                Issue.pledge_badge_embedded_at.is_not(None).label("embedded"),
+                sql.func.count(distinct(Issue.id)).label("issue_count"),
+                sql.func.count(distinct(PullRequest.id)).label("pull_request_count"),
+            )
+            .join(
+                Issue,
+                and_(Issue.repository_id == Repository.id, Issue.state == "open"),
+                isouter=True,
+            )
+            .join(
+                PullRequest,
+                and_(
+                    PullRequest.repository_id == Repository.id,
+                    PullRequest.state == "open",
+                ),
+                isouter=True,
+            )
+            .where(
+                Repository.organization_id == organization.id,
+                Repository.deleted_at.is_(None),
+            )
+            .group_by(Repository.id, "labelled", "embedded")
+        )
+
+        res = await session.execute(stmt)
+        rows = res.unique().all()
+
+        prs: dict[UUID, bool] = {}
+        ret: dict[UUID, dict[str, int]] = {}
+        for r in rows:
+            mapped = r._mapping
+            repo_id = mapped["id"]
+            repo = ret.setdefault(
+                repo_id,
+                {
+                    "synced_issues": 0,
+                    "auto_embedded_issues": 0,
+                    "label_embedded_issues": 0,
+                    # We get duplicate PR counts due to SQL grouping.
+                    # So we only need to set it once at initation here.
+                    "pull_requests": mapped["pull_request_count"],
+                },
+            )
+            is_labelled = mapped["labelled"]
+            repo["synced_issues"] += mapped["issue_count"]
+            if repo_id not in prs:
+                repo["synced_issues"] += mapped["pull_request_count"]
+                prs[repo_id] = True
+
+            if not mapped["embedded"]:
+                continue
+
+            if is_labelled:
+                repo["label_embedded_issues"] += mapped["issue_count"]
+            else:
+                repo["auto_embedded_issues"] += mapped["issue_count"]
+
+        return ret
 
 
 repository = RepositoryService(Repository)

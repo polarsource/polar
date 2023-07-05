@@ -22,7 +22,7 @@ from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.kit import jwt
 from polar.models import Organization
-from polar.organization.schemas import OrganizationPrivateRead
+from polar.organization.endpoints import OrganizationPrivateRead
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog.service import posthog_service

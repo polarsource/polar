@@ -11,7 +11,7 @@ from polar.models import Pledge, Repository
 from polar.organization.schemas import Organization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
-from polar.repository.schemas import RepositoryRead
+from polar.repository.schemas import Repository as RepositorySchema
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -94,7 +94,7 @@ async def get_pledge_with_resources(
 
     included_repo = None
     if "repository" in includes:
-        included_repo = RepositoryRead.from_orm(repo)
+        included_repo = RepositorySchema.from_db(repo)
 
     included_issue = IssueRead.from_orm(issue) if "issue" in includes else None
     return PledgeResources(
@@ -239,7 +239,7 @@ async def list_organization_pledges(
         PledgeResources(
             pledge=PledgeRead.from_db(p),
             issue=IssueRead.from_orm(p.issue),
-            repository=RepositoryRead.from_orm(p.to_repository),
+            repository=RepositorySchema.from_db(p.to_repository),
             organization=Organization.from_orm(p.to_organization),
         )
         for p in pledges

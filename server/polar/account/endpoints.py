@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import UUID4
 
 from polar.account.schemas import AccountCreate, AccountLink, AccountRead
 from polar.auth.dependencies import Auth
@@ -27,21 +28,25 @@ async def create_account(
 
 
 @router.get(
-    "/{platform}/{org_name}/accounts/{stripe_id}/onboarding_link",
+    "/{platform}/{org_name}/accounts/{account_id}/onboarding_link",
     response_model=AccountLink,
 )
 async def onboarding_link(
     platform: Platforms,
     org_name: str,
-    stripe_id: str,
+    account_id: UUID4,
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> AccountLink:
+    account = await account_service.get_by(
+        session, id=account_id, organization_id=auth.organization.id
+    )
+    if account is None:
+        raise HTTPException(status_code=404)
+
     link = await account_service.onboarding_link_for_user(
-        session,
-        auth.organization.id,
+        account,
         auth.user,
-        stripe_id,
         f"?platform={platform.value}&org_name={auth.organization.name}",
     )
     if not link:
@@ -50,28 +55,30 @@ async def onboarding_link(
 
 
 @router.get(
-    "/{platform}/{org_name}/accounts/{stripe_id}/dashboard_link",
+    "/{platform}/{org_name}/accounts/{account_id}/dashboard_link",
     response_model=AccountLink,
 )
 async def dashboard_link(
     platform: Platforms,
     org_name: str,
-    stripe_id: str,
+    account_id: UUID4,
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> AccountLink:
-    link = await account_service.dashboard_link(
-        session,
-        auth.organization.id,
-        stripe_id,
+    account = await account_service.get_by(
+        session, id=account_id, organization_id=auth.organization.id
     )
+    if account is None:
+        raise HTTPException(status_code=404)
+
+    link = await account_service.dashboard_link(account)
     if not link:
         raise HTTPException(status_code=400, detail="Error while creating link")
     return link
 
 
 @router.get("/{platform}/{org_name}/accounts", response_model=list[AccountRead | None])
-async def get_account(
+async def get_accounts(
     platform: Platforms,
     org_name: str,
     auth: Auth = Depends(Auth.user_with_org_access),

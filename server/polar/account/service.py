@@ -14,6 +14,7 @@ from polar.models.account import Account
 from polar.postgres import AsyncSession
 from polar.enums import AccountType
 from polar.integrations.stripe.service import stripe
+from polar.integrations.open_collective.service import open_collective
 
 
 log = structlog.get_logger()
@@ -95,38 +96,32 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         )
 
     async def onboarding_link_for_user(
-        self,
-        session: AsyncSession,
-        organization_id: UUID,
-        user: User,
-        stripe_id: str,
-        appendix: str | None = None,
+        self, account: Account, user: User, appendix: str | None = None
     ) -> AccountLink | None:
-        account = await self.get_by(
-            session=session, organization_id=organization_id, stripe_id=stripe_id
-        )
-        if account is None or account.admin_id != user.id:
+        if account.admin_id != user.id:
             # TODO: Error?
             return None
 
-        account_link = stripe.create_account_link(stripe_id, appendix)
-        return AccountLink(**account_link)
+        if account.account_type == AccountType.stripe:
+            assert account.stripe_id is not None
+            account_link = stripe.create_account_link(account.stripe_id, appendix)
+            return AccountLink(**account_link)
 
-    async def dashboard_link(
-        self,
-        session: AsyncSession,
-        organization_id: UUID,
-        stripe_id: str,
-    ) -> AccountLink | None:
-        account = await self.get_by(
-            session=session, organization_id=organization_id, stripe_id=stripe_id
-        )
-        if account is None:
-            # TODO: Error?
-            return None
+        return None
 
-        account_link = stripe.create_login_link(stripe_id)
-        return AccountLink(**account_link)
+    async def dashboard_link(self, account: Account) -> AccountLink | None:
+        if account.account_type == AccountType.stripe:
+            assert account.stripe_id is not None
+            account_link = stripe.create_login_link(account.stripe_id)
+            return AccountLink(**account_link)
+        elif account.account_type == AccountType.open_collective:
+            assert account.open_collective_slug is not None
+            dashboard_link = open_collective.create_dashboard_link(
+                account.open_collective_slug
+            )
+            return AccountLink(created=1, url=dashboard_link)
+
+        return None
 
     def get_balance(
         self,

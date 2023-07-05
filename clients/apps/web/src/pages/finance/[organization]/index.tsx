@@ -1,5 +1,5 @@
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
-import Transactions from '@/components/Finance/Finance'
+import Finance from '@/components/Finance/Finance'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import type { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
@@ -32,7 +32,7 @@ const Page: NextLayoutComponentType = () => {
         <title>Polar{org ? ` ${org.name}` : ''}</title>
       </Head>
       {org && pledges.data && accounts.data && (
-        <Transactions
+        <Finance
           pledges={pledges.data}
           org={org}
           tab="current"

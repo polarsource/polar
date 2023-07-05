@@ -146,7 +146,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
     async def create_pledge(
         self,
         user: User | None,
-        platform: Platforms,
         pledge: PledgeCreate,
         org: Organization,
         repo: Repository,
@@ -155,7 +154,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
     ) -> PledgeMutationResponse:
         if pledge.pledge_as_org and user:
             return await self.create_pledge_as_org(
-                platform,
                 org,
                 repo,
                 issue,
@@ -167,7 +165,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
         # Pledge flow with logged in user
         if user:
             return await self.create_pledge_user(
-                platform,
                 org,
                 repo,
                 issue,
@@ -177,7 +174,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
 
         return await self.create_pledge_anonymous(
-            platform,
             org,
             repo,
             issue,
@@ -187,7 +183,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
     async def create_pledge_anonymous(
         self,
-        platform: Platforms,
         org: Organization,
         repo: Repository,
         issue: Issue,
@@ -225,7 +220,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
     async def create_pledge_user(
         self,
-        platform: Platforms,
         org: Organization,
         repo: Repository,
         issue: Issue,
@@ -267,7 +261,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
     async def create_pledge_as_org(
         self,
-        platform: Platforms,
         org: Organization,
         repo: Repository,
         issue: Issue,
@@ -281,7 +274,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         pledge_as_org = await organization_service.get_by_id_for_user(
             session=session,
-            platform=platform,
             org_id=pledge.pledge_as_org,
             user_id=user.id,
         )
@@ -354,7 +346,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
         ):
             pledge_as_org = await organization_service.get_by_id_for_user(
                 session=session,
-                platform=platform,
                 org_id=updates.pledge_as_org,
                 user_id=user.id,
             )

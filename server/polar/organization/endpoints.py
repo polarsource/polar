@@ -1,3 +1,4 @@
+from typing import List, Sequence
 from uuid import UUID
 
 import structlog
@@ -59,9 +60,77 @@ async def get(
 
 
 @router.get(
+    "/organizations",
+    response_model=Sequence[OrganizationSchema],
+    tags=[Tags.PUBLIC],
+    description="List organizations that the authenticated user is a member of. Requires authentication.",  # noqa: E501
+    status_code=200,
+)
+async def list(
+    auth: Auth = Depends(Auth.current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> Sequence[OrganizationSchema]:
+    orgs = await organization.get_all_org_repos_by_user_id(session, auth.user.id)
+    return [OrganizationSchema.from_orm(o) for o in orgs]
+
+
+@router.get(
+    "/organizations/search",
+    response_model=Sequence[OrganizationSchema],
+    tags=[Tags.PUBLIC],
+    description="Search organizations.",
+    status_code=200,
+)
+async def search(
+    platform: Platforms | None = None,
+    organization_name: str | None = None,
+    session: AsyncSession = Depends(get_db_session),
+) -> Sequence[OrganizationSchema]:
+    # Search by platform and organization name.
+    # Currently the only way to search
+    if platform and organization_name:
+        org = await organization.get_by_name(session, platform, organization_name)
+        return [OrganizationSchema.from_orm(org)]
+
+    # no org found
+    return []
+
+
+@router.get(
+    "/organizations/lookup",
+    response_model=OrganizationSchema,
+    tags=[Tags.PUBLIC],
+    description="Lookup organization. Like search but returns at only one organization.",
+    status_code=200,
+    responses={404: {}},
+)
+async def lookup(
+    platform: Platforms | None = None,
+    organization_name: str | None = None,
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationSchema:
+    # Search by platform and organization name.
+    # Currently the only way to search
+    if platform and organization_name:
+        org = await organization.get_by_name(session, platform, organization_name)
+        return OrganizationSchema.from_orm(org)
+
+    raise HTTPException(
+        status_code=404,
+        detail="Organization not found",
+    )
+
+
+#
+# Internal APIs below
+#
+
+
+@router.get(
     "/{platform}/{org_name}",
     response_model=OrganizationPrivateRead,
     tags=[Tags.INTERNAL],
+    deprecated=True,  # Use the public get endpoint instead
 )
 async def getInternal(
     platform: Platforms,

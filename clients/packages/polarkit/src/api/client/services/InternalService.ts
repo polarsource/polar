@@ -15,6 +15,7 @@ export class InternalService {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
+   * @deprecated
    * Getinternal
    * @returns OrganizationPrivateRead Successful Response
    * @throws ApiError

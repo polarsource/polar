@@ -4,7 +4,7 @@ import {
   IssueReferenceRead,
   IssueReferenceType,
   IssueStatus,
-  OrganizationPublicRead,
+  Organization,
   Platforms,
   PledgeRead,
   PledgeState,
@@ -21,7 +21,7 @@ import { ChangeEvent, MouseEvent, useState } from 'react'
 import IssueListItem from '../Dashboard/IssueListItem'
 
 const OnboardingAddDependency = () => {
-  const demoOrg: OrganizationPublicRead = {
+  const demoOrg: Organization = {
     id: '',
     avatar_url: 'https://avatars.githubusercontent.com/u/110818415?s=200&v=4',
     platform: Platforms.GITHUB,

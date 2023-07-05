@@ -7,7 +7,7 @@ import { useRouter } from 'next/router'
 import { api } from 'polarkit'
 import {
   IssueRead,
-  OrganizationPublicRead,
+  Organization,
   Platforms,
   PledgeRead,
   RepositoryRead,
@@ -26,7 +26,7 @@ const PledgeStatusPage: NextLayoutComponentType = ({
 }: {
   pledge?: PledgeRead
   issue?: IssueRead
-  organization?: OrganizationPublicRead
+  organization?: Organization
   repository?: RepositoryRead
   query?: {
     payment_intent_id: string

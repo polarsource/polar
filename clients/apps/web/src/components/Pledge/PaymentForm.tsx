@@ -7,7 +7,7 @@ import {
 } from '@stripe/stripe-js'
 import {
   IssueRead,
-  OrganizationPublicRead,
+  Organization,
   PledgeMutationResponse,
   RepositoryRead,
 } from 'polarkit/api/client'
@@ -29,7 +29,7 @@ const PaymentForm = ({
 }: {
   pledge?: PledgeMutationResponse
   issue: IssueRead
-  organization: OrganizationPublicRead
+  organization: Organization
   repository: RepositoryRead
   isSyncing: boolean
   setSyncing: (isLocked: boolean) => void

@@ -1,7 +1,6 @@
 import {
   OrganizationPrivateRead,
   Platforms,
-  Status,
 } from '@/../../../packages/polarkit/src/api/client'
 import RepoSelection from '@/components/Dashboard/RepoSelection'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -37,7 +36,6 @@ const selfUserOrg: OrganizationPrivateRead = {
   name: 'zegl',
   external_id: 123,
   is_personal: false,
-  status: Status.ACTIVE,
   created_at: '2023-01-01',
   avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
   pledge_minimum_amount: 2000,

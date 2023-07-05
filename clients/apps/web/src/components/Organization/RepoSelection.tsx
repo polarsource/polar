@@ -1,8 +1,5 @@
 import { Command } from 'cmdk'
-import {
-  OrganizationPublicRead,
-  RepositoryPublicRead,
-} from 'polarkit/api/client'
+import { Organization, RepositoryPublicRead } from 'polarkit/api/client'
 import { useOutsideClick } from 'polarkit/utils'
 import React, { useEffect, useRef, useState } from 'react'
 import { Item, Left, SelectedBox, Text } from '../Dropdown'
@@ -10,7 +7,7 @@ import { Item, Left, SelectedBox, Text } from '../Dropdown'
 export function RepoSelection(props: {
   onSelectRepo: (repo: string) => void
   onSelectAll: () => void
-  organization: OrganizationPublicRead
+  organization: Organization
   repositories: RepositoryPublicRead[]
   value: RepositoryPublicRead | undefined
 }) {

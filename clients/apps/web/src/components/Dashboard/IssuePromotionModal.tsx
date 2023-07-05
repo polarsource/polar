@@ -165,10 +165,29 @@ export const BadgePromotionModal = (props: {
 
   const pledgePageLink = `https://polar.sh/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
   const pledgeBadgeSVG = `https://api.polar.sh/api/github/${props.orgName}/${props.repoName}/issues/${props.issue.number}/pledge.svg`
-  const pledgeEmbed = `<a href="${pledgePageLink}"><picture><source media="(prefers-color-scheme: dark)" srcset="${pledgeBadgeSVG}?darkmode=1"><img alt="Fund with Polar" src="${pledgeBadgeSVG}"></picture></a>`
   const gitHubIssueLink = `https://github.com/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
 
   const badgeSettings = useBadgeSettings(Platforms.GITHUB, props.orgName)
+
+  const embeds = [
+    {
+      name: 'Light theme',
+      classNames: 'w-[100px]',
+      embed: `<a href="${pledgePageLink}"><img alt="Fund with Polar" src="${pledgeBadgeSVG}" /></a>`,
+    },
+    {
+      name: 'Dark theme',
+      classNames: 'w-[100px]',
+      embed: `<a href="${pledgePageLink}"><img alt="Fund with Polar" src="${pledgeBadgeSVG}?darkmode=1" /></a>`,
+    },
+    {
+      name: 'Match the system',
+      classNames: 'w-[130px]',
+      embed: `<a href="${pledgePageLink}"><picture><source media="(prefers-color-scheme: dark)" srcset="${pledgeBadgeSVG}?darkmode=1"><img alt="Fund with Polar" src="${pledgeBadgeSVG}"></picture></a>`,
+    },
+  ]
+
+  const [embed, setEmbed] = useState(embeds[0])
 
   return (
     <>
@@ -242,14 +261,34 @@ export const BadgePromotionModal = (props: {
             </div>
           </div>
 
-          <div className="my-2 text-xs text-gray-500 dark:text-gray-400">
-            Embed badge on website
+          <div className="my-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+            <span>Embed badge on website</span>
+
+            <select
+              className={classNames(
+                'border-0 bg-transparent p-0 text-xs',
+                embed.classNames,
+              )}
+              onChange={(e) => {
+                setEmbed(
+                  embeds.find((v) => v.name === e.currentTarget.value) ||
+                    embeds[0],
+                )
+              }}
+            >
+              {embeds.map((e) => (
+                <option value={e.name} selected={embed.name === e.name}>
+                  {e.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="flex w-full overflow-hidden rounded-lg border">
             <input
               id="badge-embed-content"
               className="flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600 dark:text-gray-400"
-              defaultValue={pledgeEmbed}
+              defaultValue={embed.embed}
+              value={embed.embed}
               onClick={() => {
                 copyToClipboard('badge-embed-content')
               }}

@@ -1,7 +1,8 @@
 from enum import Enum
 from typing import Any
+from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, root_validator
 
 from polar.enums import AccountType
 from polar.kit.schemas import Schema
@@ -13,8 +14,19 @@ class AccountLinkTypes(str, Enum):
 
 
 class AccountCreate(Schema):
-    account_type: AccountType | None
+    account_type: AccountType
+    open_collective_slug: str | None = None
     country: str
+
+    @root_validator
+    def validate_open_collective(cls, values: dict[str, Any]) -> dict[str, Any]:
+        account_type: AccountType = values["account_type"]
+        open_collective_slug: str | None = values.get("open_collective_slug")
+        if account_type == AccountType.open_collective and open_collective_slug is None:
+            raise ValueError(
+                "open_collective_slug must be provided for an OpenCollective account."
+            )
+        return values
 
 
 class AccountUpdate(Schema):
@@ -28,8 +40,10 @@ class AccountUpdate(Schema):
 
 
 class AccountRead(AccountCreate):
-    account_type: AccountType | None
-    stripe_id: str
+    id: UUID
+    account_type: AccountType
+    stripe_id: str | None
+    open_collective_slug: str | None
     balance: int | None
     balance_currency: str | None
     is_details_submitted: bool | None

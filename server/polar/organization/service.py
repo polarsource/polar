@@ -3,7 +3,7 @@ from typing import Sequence
 from uuid import UUID
 
 import structlog
-from sqlalchemy import and_, distinct, or_
+from sqlalchemy import ColumnElement, and_, distinct, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import (
     InstrumentedAttribute,
@@ -78,7 +78,7 @@ class OrganizationService(
         self,
         session: AsyncSession,
         *,
-        platform: Platforms,
+        platform: Platforms | None = None,
         org_name: str | None = None,
         org_id: UUID | None = None,
         repo_name: str | None = None,
@@ -89,16 +89,21 @@ class OrganizationService(
                 "Must provide at least one relationship (user_id or repo_name)"
             )
 
-        query = sql.select(Organization)
-        filters = [
-            Organization.platform == platform,
-            Organization.deleted_at.is_(None),
-        ]
-
         if not org_id and not org_name:
             raise ValueError(
                 "Must provide at least one relationship (org_id or org_name)"
             )
+
+        if org_name and not platform:
+            raise ValueError("If org_name is set platform must be provided")
+
+        query = sql.select(Organization)
+        filters: list[ColumnElement[bool]] = [
+            Organization.deleted_at.is_(None),
+        ]
+
+        if platform:
+            filters.append(Organization.platform == platform)
 
         if org_id:
             filters.append(Organization.id == org_id)
@@ -140,13 +145,11 @@ class OrganizationService(
         self,
         session: AsyncSession,
         *,
-        platform: Platforms,
         org_id: UUID,
         user_id: UUID,
     ) -> Organization | None:
         org = await self._get_protected(
             session,
-            platform=platform,
             org_id=org_id,
             user_id=user_id,
         )

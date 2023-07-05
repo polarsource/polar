@@ -7,45 +7,52 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from polar.config import settings
-from polar.dashboard.schemas import IssueDashboardRead
 from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.issue.schemas import IssuePublicRead
 from polar.kit.schemas import Schema
-from polar.models.organization import Organization
 from polar.repository.schemas import RepositoryPublicRead, RepositoryRead
 
 
+# Public model
+class Organization(Schema):
+    id: UUID
+    platform: Platforms
+    name: str
+    avatar_url: str
+
+    bio: str | None
+    pretty_name: str | None
+    company: str | None
+    blog: str | None
+    location: str | None
+    email: str | None
+    twitter_username: str | None
+
+    pledge_minimum_amount: int
+
+    class Config:
+        orm_mode = True
+
+
+#
+# Internal models below. Not to be used in "public" APIs!
+#
+
+
+# Internal model
 class OrganizationSettingsRead(BaseModel):
     pledge_badge_show_amount: bool = False
-
-    # TODO: remove, it's unused
-    email_notification_maintainer_issue_receives_backing: bool = False
-    email_notification_maintainer_issue_branch_created: bool = False
-    email_notification_maintainer_pull_request_created: bool = False
-    email_notification_maintainer_pull_request_merged: bool = False
-    email_notification_backed_issue_branch_created: bool = False
-    email_notification_backed_issue_pull_request_created: bool = False
-    email_notification_backed_issue_pull_request_merged: bool = False
-
     billing_email: str | None = None
 
 
+# Internal model
 class OrganizationSettingsUpdate(Schema):
     pledge_badge_show_amount: bool | None = None
-
-    # TODO: remove, it's unused
-    email_notification_maintainer_issue_receives_backing: bool | None = None
-    email_notification_maintainer_issue_branch_created: bool | None = None
-    email_notification_maintainer_pull_request_created: bool | None = None
-    email_notification_maintainer_pull_request_merged: bool | None = None
-    email_notification_backed_issue_branch_created: bool | None = None
-    email_notification_backed_issue_pull_request_created: bool | None = None
-    email_notification_backed_issue_pull_request_merged: bool | None = None
-
     billing_email: str | None = None
 
 
+# Internal model
 class OrganizationPrivateBase(Schema):
     platform: Platforms
     name: str
@@ -61,6 +68,7 @@ class OrganizationPrivateBase(Schema):
     default_badge_custom_content: str | None = None
 
 
+# Private model
 class OrganizationCreate(OrganizationPrivateBase):
     pledge_minimum_amount: int = settings.MINIMUM_ORG_PLEDGE_AMOUNT
 
@@ -95,35 +103,16 @@ class OrganizationCreate(OrganizationPrivateBase):
         )
 
 
+# Internal model
 class OrganizationUpdate(OrganizationCreate):
     ...
 
 
-class OrganizationPublicRead(Schema):
-    id: UUID
-    platform: Platforms
-    name: str
-    avatar_url: str
-
-    bio: str | None
-    pretty_name: str | None
-    company: str | None
-    blog: str | None
-    location: str | None
-    email: str | None
-    twitter_username: str | None
-
-    pledge_minimum_amount: int
-
-    class Config:
-        orm_mode = True
-
-
+# Internal model
 class OrganizationPrivateRead(OrganizationPrivateBase, OrganizationSettingsRead):
     id: UUID
 
-    # TODO: Different schema for unauthenticated requests? If we introduce them
-    status: Organization.Status
+    # status: Organization.Status
     created_at: datetime
     modified_at: datetime | None
 
@@ -133,12 +122,14 @@ class OrganizationPrivateRead(OrganizationPrivateBase, OrganizationSettingsRead)
         orm_mode = True
 
 
+# Internal model
 class RepositoryBadgeSettingsUpdate(Schema):
     id: UUID
     badge_auto_embed: bool
     retroactive: bool
 
 
+# Internal model
 class RepositoryBadgeSettingsRead(Schema):
     id: UUID
     avatar_url: str | None
@@ -153,6 +144,7 @@ class RepositoryBadgeSettingsRead(Schema):
     is_sync_completed: bool
 
 
+# Internal model
 class OrganizationBadgeSettingsUpdate(Schema):
     show_amount: bool
     minimum_amount: int
@@ -160,6 +152,7 @@ class OrganizationBadgeSettingsUpdate(Schema):
     repositories: Sequence[RepositoryBadgeSettingsUpdate]
 
 
+# Internal model
 class OrganizationBadgeSettingsRead(Schema):
     show_amount: bool
     minimum_amount: int
@@ -167,17 +160,20 @@ class OrganizationBadgeSettingsRead(Schema):
     repositories: Sequence[RepositoryBadgeSettingsRead]
 
 
+# Internal model
 class OrganizationSyncedRepositoryRead(Schema):
     id: UUID
     synced_issues_count: int
 
 
+# Internal model
 class OrganizationSyncedRead(Schema):
     repos: list[OrganizationSyncedRepositoryRead]
 
 
+# Internal model
 class OrganizationPublicPageRead(Schema):
-    organization: OrganizationPublicRead
+    organization: Organization
     repositories: list[RepositoryPublicRead]
     issues: list[IssuePublicRead]
     total_issue_count: int

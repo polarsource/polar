@@ -36,8 +36,8 @@ const Pledge = ({
           {repository.description}
         </div>
         <h1 className="pt-4 text-center text-3xl text-gray-900 dark:text-gray-300 md:text-4xl">
-          Help {organization.pretty_name || organization.name} prioritize this
-          issue
+          Sponsor {organization.pretty_name || organization.name}&apos;s work on
+          this issue
         </h1>
       </div>
 

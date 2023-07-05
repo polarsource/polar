@@ -8,7 +8,7 @@ from polar.enums import Platforms
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.issue.schemas import IssueRead
 from polar.models import Pledge, Repository
-from polar.organization.schemas import OrganizationPublicRead
+from polar.organization.schemas import Organization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.schemas import RepositoryRead
@@ -90,7 +90,7 @@ async def get_pledge_with_resources(
 
     included_org = None
     if "organization" in includes:
-        included_org = OrganizationPublicRead.from_orm(org)
+        included_org = Organization.from_orm(org)
 
     included_repo = None
     if "repository" in includes:
@@ -241,7 +241,7 @@ async def list_organization_pledges(
             pledge=PledgeRead.from_db(p),
             issue=IssueRead.from_orm(p.issue),
             repository=RepositoryRead.from_orm(p.to_repository),
-            organization=OrganizationPublicRead.from_orm(p.to_organization),
+            organization=Organization.from_orm(p.to_organization),
         )
         for p in pledges
     ]

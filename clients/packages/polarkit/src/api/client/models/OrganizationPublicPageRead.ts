@@ -4,11 +4,11 @@
 
 import type { IssuePublicRead } from './IssuePublicRead';
 import type { Organization } from './Organization';
-import type { RepositoryPublicRead } from './RepositoryPublicRead';
+import type { Repository } from './Repository';
 
 export type OrganizationPublicPageRead = {
   organization: Organization;
-  repositories: Array<RepositoryPublicRead>;
+  repositories: Array<Repository>;
   issues: Array<IssuePublicRead>;
   total_issue_count: number;
 };

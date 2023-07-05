@@ -9,7 +9,7 @@ import {
   IssuePublicRead,
   Organization,
   Platforms,
-  RepositoryPublicRead,
+  Repository,
 } from 'polarkit/api/client'
 import { ReactElement } from 'react'
 
@@ -20,7 +20,7 @@ const Page: NextLayoutComponentType = ({
   totalIssueCount,
 }: {
   organization?: Organization
-  repositories?: RepositoryPublicRead[]
+  repositories?: Repository[]
   issues?: IssuePublicRead[]
   totalIssueCount?: number
 }) => {
@@ -106,7 +106,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       return { props: {} }
     }
 
-    const res = await api.organizations.getPublicIssues({
+    const res = await api.issues.getPublicIssues({
       platform: Platforms.GITHUB,
       orgName: context.params.organization,
       repoName: context.params.repo,

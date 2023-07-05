@@ -10,7 +10,7 @@ import {
   Organization,
   Platforms,
   PledgeRead,
-  RepositoryRead,
+  Repository,
 } from 'polarkit/api/client'
 import { PolarTimeAgo } from 'polarkit/components/ui'
 import { GrayCard } from 'polarkit/components/ui/Cards'
@@ -27,7 +27,7 @@ const PledgeStatusPage: NextLayoutComponentType = ({
   pledge?: PledgeRead
   issue?: IssueRead
   organization?: Organization
-  repository?: RepositoryRead
+  repository?: Repository
   query?: {
     payment_intent_id: string
     payment_intent_client_secret: string

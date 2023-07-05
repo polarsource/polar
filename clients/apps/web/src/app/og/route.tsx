@@ -3,7 +3,7 @@ import { ImageResponse, NextRequest } from 'next/server'
 import {
   IssuePublicRead,
   OrganizationPublicPageRead,
-  RepositoryPublicRead,
+  Repository,
 } from 'polarkit/api/client'
 
 import { Inter } from 'next/font/google'
@@ -15,7 +15,7 @@ export const runtime = 'edge'
 
 const renderOG = async (
   org_name: string,
-  repository: RepositoryPublicRead | undefined,
+  repository: Repository | undefined,
   issue_count: number,
   avatar: string,
   issues: IssuePublicRead[],

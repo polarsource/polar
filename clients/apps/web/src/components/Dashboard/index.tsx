@@ -4,7 +4,7 @@ import {
   IssueSortBy,
   IssueStatus,
   Organization,
-  RepositoryRead,
+  Repository,
 } from 'polarkit/api/client'
 import { useSSE } from 'polarkit/hooks'
 import { useEffect, useRef, useState } from 'react'
@@ -69,7 +69,7 @@ const Dashboard = ({
   isPersonal,
 }: {
   org: Organization | undefined
-  repo: RepositoryRead | undefined
+  repo: Repository | undefined
   isPersonal: boolean
 }) => {
   const router = useRouter()

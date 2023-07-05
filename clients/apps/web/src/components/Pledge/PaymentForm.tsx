@@ -9,7 +9,7 @@ import {
   IssueRead,
   Organization,
   PledgeMutationResponse,
-  RepositoryRead,
+  Repository,
 } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
@@ -30,7 +30,7 @@ const PaymentForm = ({
   pledge?: PledgeMutationResponse
   issue: IssueRead
   organization: Organization
-  repository: RepositoryRead
+  repository: Repository
   isSyncing: boolean
   setSyncing: (isLocked: boolean) => void
   setErrorMessage: (message: string) => void

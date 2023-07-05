@@ -9,7 +9,7 @@ import {
   IssueRead,
   Organization,
   Platforms,
-  RepositoryRead,
+  Repository,
 } from 'polarkit/api/client'
 import { posthog } from 'posthog-js'
 import { ReactElement, useEffect } from 'react'
@@ -17,7 +17,7 @@ import { ReactElement, useEffect } from 'react'
 type Params = {
   issue?: IssueRead
   organization?: Organization
-  repository?: RepositoryRead
+  repository?: Repository
   query?: {
     as_org?: string
     goto_url?: string

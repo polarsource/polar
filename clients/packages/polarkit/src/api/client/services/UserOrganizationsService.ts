@@ -11,6 +11,7 @@ export class UserOrganizationsService {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
+   * @deprecated
    * Get User Organizations
    * @returns OrganizationPrivateRead Successful Response
    * @throws ApiError

@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router'
-import { Organization, RepositoryPublicRead } from 'polarkit/api/client'
+import { Organization, Repository } from 'polarkit/api/client'
 import RepoSelection from './RepoSelection'
 
 const Navigation = ({
@@ -8,8 +8,8 @@ const Navigation = ({
   repository,
 }: {
   organization: Organization
-  repositories: RepositoryPublicRead[]
-  repository?: RepositoryPublicRead
+  repositories: Repository[]
+  repository?: Repository
 }) => {
   const router = useRouter()
 

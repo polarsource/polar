@@ -3,7 +3,7 @@ import {
   IssueReferenceRead,
   Organization,
   PledgeRead,
-  RepositoryRead,
+  Repository,
 } from './client'
 
 export type IssueReadWithRelations = IssueDashboardRead & {
@@ -11,5 +11,5 @@ export type IssueReadWithRelations = IssueDashboardRead & {
   dependents: IssueReadWithRelations[]
   pledges: PledgeRead[]
   organization: Organization
-  repository: RepositoryRead
+  repository: Repository
 }

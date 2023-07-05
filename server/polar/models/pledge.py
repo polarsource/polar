@@ -8,6 +8,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.issue import Issue
 from polar.models.organization import Organization
+from polar.models.repository import Repository
 from polar.models.user import User
 
 
@@ -80,7 +81,7 @@ class Pledge(RecordModel):
         "Organization", foreign_keys=[by_organization_id], lazy="raise"
     )
 
-    to_repository: Mapped[Organization] = relationship(
+    to_repository: Mapped[Repository] = relationship(
         "Repository", foreign_keys=[repository_id], lazy="raise"
     )
 

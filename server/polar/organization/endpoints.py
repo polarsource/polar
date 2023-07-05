@@ -41,6 +41,7 @@ router = APIRouter(tags=["organizations"])
     tags=[Tags.PUBLIC],
     description="Get an organization",
     status_code=200,
+    summary="Get an organization (Public API)",
     responses={404: {}},
 )
 async def get(
@@ -64,6 +65,7 @@ async def get(
     response_model=Sequence[OrganizationSchema],
     tags=[Tags.PUBLIC],
     description="List organizations that the authenticated user is a member of. Requires authentication.",  # noqa: E501
+    summary="List organizations (Public API)",
     status_code=200,
 )
 async def list(
@@ -79,6 +81,7 @@ async def list(
     response_model=Sequence[OrganizationSchema],
     tags=[Tags.PUBLIC],
     description="Search organizations.",
+    summary="Search organizations (Public API)",
     status_code=200,
 )
 async def search(
@@ -100,7 +103,8 @@ async def search(
     "/organizations/lookup",
     response_model=OrganizationSchema,
     tags=[Tags.PUBLIC],
-    description="Lookup organization. Like search but returns at only one organization.",
+    description="Lookup organization. Like search but returns at only one organization.",  # noqa: E501
+    summary="Lookup organization (Public API)",
     status_code=200,
     responses={404: {}},
 )
@@ -131,6 +135,7 @@ async def lookup(
     response_model=OrganizationPrivateRead,
     tags=[Tags.INTERNAL],
     deprecated=True,  # Use the public get endpoint instead
+    summary="Get an organization (Internal API)",
 )
 async def getInternal(
     platform: Platforms,
@@ -143,6 +148,7 @@ async def getInternal(
 @router.get(
     "/{platform}/{org_name}/badge_settings",
     response_model=OrganizationBadgeSettingsRead,
+    summary="Get badge settings (Internal API)",
 )
 async def get_badge_settings(
     platform: Platforms,
@@ -157,6 +163,7 @@ async def get_badge_settings(
     "/{platform}/{org_name}/badge_settings",
     response_model=OrganizationBadgeSettingsUpdate,
     tags=[Tags.INTERNAL],
+    summary="Update badge settings (Internal API)",
 )
 async def update_badge_settings(
     platform: Platforms,
@@ -174,6 +181,7 @@ async def update_badge_settings(
     "/{platform}/{org_name}/settings",
     response_model=OrganizationPrivateRead,
     tags=[Tags.INTERNAL],
+    summary="Update organization settings (Internal API)",
 )
 async def update_settings(
     platform: Platforms,
@@ -190,6 +198,7 @@ async def update_settings(
     "/{platform}/{org_name}/public",
     response_model=OrganizationPublicPageRead,
     tags=[Tags.INTERNAL],
+    summary="Get organization public issues (Internal API)",
 )
 async def get_public_issues(
     platform: Platforms,

@@ -59,7 +59,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             session=session,
             organization_id=organization_id,
             admin_id=admin_id,
-            account_type=AccountCreate.account_type,
+            account_type=account.account_type,
             stripe_id=stripe_account.stripe_id,
             email=stripe_account.email,
             country=stripe_account.country,

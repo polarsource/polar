@@ -1,12 +1,13 @@
 import Banner from '@/components/Banner/Banner'
 import Icon from '@/components/Icons/Icon'
-import Stripe from '@/components/Icons/Stripe'
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
+import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from 'polarkit/account'
 import { api } from 'polarkit/api'
 import {
   AccountRead,
   Organization,
+  AccountType,
   Platforms,
   PledgeResources,
   PledgeState,
@@ -235,7 +236,7 @@ const AccountBanner = (props: {
         >
           <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
           <span className="text-sm">
-            You need to set up a <strong>Stripe</strong> or <strong>Open Collective</strong> to receive
+            You need to set up <strong>Stripe</strong> or <strong>Open Collective</strong> to receive
             payouts
           </span>
         </Banner>
@@ -251,6 +252,7 @@ const AccountBanner = (props: {
   }
 
   if (accounts.length > 0 && !accounts[0].is_details_submitted) {
+    const AccountTypeIcon = ACCOUNT_TYPE_ICON[accounts[0].account_type];
     return (
       <Banner
         color="default"
@@ -266,9 +268,9 @@ const AccountBanner = (props: {
           </PrimaryButton>
         }
       >
-        <Icon classes="bg-blue-500" icon={<Stripe />} />
+        <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
         <span className="text-sm">
-          You need to set up a <strong>Stripe account</strong> to receive
+          Continue the setup of your <strong>{ACCOUNT_TYPE_DISPLAY_NAMES[accounts[0].account_type]}</strong> account to receive
           payouts
         </span>
       </Banner>
@@ -276,6 +278,8 @@ const AccountBanner = (props: {
   }
 
   if (accounts.length > 0 && accounts[0].is_details_submitted) {
+    const accountType = accounts[0].account_type;
+    const AccountTypeIcon = ACCOUNT_TYPE_ICON[accountType];
     return (
       <>
         <Banner
@@ -290,7 +294,7 @@ const AccountBanner = (props: {
                     goToDashboard(accounts[0])
                   }}
                 >
-                  Go to Stripe
+                  Go to {ACCOUNT_TYPE_DISPLAY_NAMES[accountType]}
                 </button>
               )}
               {!accounts[0].is_admin && (
@@ -301,9 +305,10 @@ const AccountBanner = (props: {
             </>
           }
         >
-          <Icon classes="bg-blue-500" icon={<Stripe />} />
+          <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
           <span className="text-sm">
-            Payouts will be sent to the connected Stripe account
+            {accountType === AccountType.STRIPE && 'Payouts will be sent to the connected Stripe account'}
+            {accountType === AccountType.OPEN_COLLECTIVE && 'Payouts will be sent in bulk once per month to the connected Open Collective account'}
           </span>
         </Banner>
       </>

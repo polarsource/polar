@@ -5,8 +5,8 @@ import {
 import { Command } from 'cmdk'
 import Image from 'next/image'
 import {
+  Organization,
   OrganizationPrivateRead,
-  OrganizationPublicRead,
   RepositoryRead,
   UserRead,
 } from 'polarkit/api/client'
@@ -60,7 +60,7 @@ export function RepoSelection(props: {
   const { organizations, currentUser } = props
 
   const [dropdownSelectedOrg, setDropdowndropdownSelectedOrg] = useState<
-    OrganizationPublicRead | undefined
+    Organization | undefined
   >()
 
   const resetDropdown = () => {
@@ -69,7 +69,7 @@ export function RepoSelection(props: {
     setInputValue('')
   }
 
-  const onSelectOrg = (org: OrganizationPublicRead) => {
+  const onSelectOrg = (org: Organization) => {
     // If show repositories, open selection to show repositories
     if (props.showRepositories) {
       // Select org again, go to it!
@@ -93,7 +93,7 @@ export function RepoSelection(props: {
     }
   }
 
-  const onSelectRepo = (org: OrganizationPublicRead, repo: RepositoryRead) => {
+  const onSelectRepo = (org: Organization, repo: RepositoryRead) => {
     if (org && repo) {
       resetDropdown()
       if (props.onSelectRepo) {
@@ -392,7 +392,7 @@ const SelectedOrgRepo = ({
   repo,
   onClick,
 }: {
-  org: OrganizationPublicRead
+  org: Organization
   repo: RepositoryRead | undefined
   onClick: () => void
 }) => {

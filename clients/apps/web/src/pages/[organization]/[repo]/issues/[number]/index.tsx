@@ -7,7 +7,7 @@ import Head from 'next/head'
 import { api } from 'polarkit'
 import {
   IssueRead,
-  OrganizationPublicRead,
+  Organization,
   Platforms,
   RepositoryRead,
 } from 'polarkit/api/client'
@@ -16,7 +16,7 @@ import { ReactElement, useEffect } from 'react'
 
 type Params = {
   issue?: IssueRead
-  organization?: OrganizationPublicRead
+  organization?: Organization
   repository?: RepositoryRead
   query?: {
     as_org?: string

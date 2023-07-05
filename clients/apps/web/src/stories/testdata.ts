@@ -6,15 +6,14 @@ import {
   MaintainerPledgePendingNotification,
   NotificationRead,
   NotificationType,
+  Organization,
   OrganizationPrivateRead,
-  OrganizationPublicRead,
   Platforms,
   PledgeRead,
   PledgeState,
   PledgerPledgePendingNotification,
   RepositoryRead,
   State,
-  Status,
   UserRead,
   Visibility,
 } from 'polarkit/api/client'
@@ -31,7 +30,7 @@ export function addHours(date: Date, hours: number) {
   return result
 }
 
-export const org: OrganizationPublicRead = {
+export const org: Organization = {
   id: 'xxxabc',
   platform: Platforms.GITHUB,
   name: 'pydantic',
@@ -44,7 +43,6 @@ export const orgPrivate: OrganizationPrivateRead = {
   ...org,
   is_personal: false,
   external_id: 123,
-  status: Status.ACTIVE,
   created_at: '2024',
   pledge_minimum_amount: 2000,
 }
@@ -110,7 +108,6 @@ export const privateOrganization: OrganizationPrivateRead = {
   avatar_url: 'https://avatars.githubusercontent.com/u/105373340?s=400&v=4',
   external_id: 123,
   is_personal: false,
-  status: Status.ACTIVE,
   created_at: addDays(new Date(), -7).toISOString(),
   pledge_minimum_amount: 2000,
   repositories: [

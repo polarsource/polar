@@ -95,7 +95,7 @@ export const useOrganization = (orgName: string) =>
   useQuery(
     ['organization', orgName],
     () =>
-      api.organizations.get({
+      api.organizations.getInternal({
         platform: Platforms.GITHUB,
         orgName: orgName,
       }),

@@ -9,7 +9,7 @@ import {
   IssuePublicRead,
   IssueReferenceRead,
   IssueStatus,
-  OrganizationPublicRead,
+  Organization,
   Platforms,
   RepositoryPublicRead,
   RepositoryRead,
@@ -33,7 +33,7 @@ import IssueProgress, { Progress } from './IssueProgress'
 import { AddBadgeButton } from './IssuePromotionModal'
 
 const IssueListItem = (props: {
-  org: OrganizationPublicRead
+  org: Organization
   repo: RepositoryRead | RepositoryPublicRead
   issue: IssueDashboardRead | IssuePublicRead
   references: IssueReferenceRead[]

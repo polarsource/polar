@@ -1,6 +1,6 @@
 import {
   IssuePublicRead,
-  OrganizationPublicRead,
+  Organization,
   RepositoryPublicRead,
 } from 'polarkit/api/client'
 import { PolarTimeAgo } from 'polarkit/components/ui'
@@ -12,7 +12,7 @@ const IssuesLookingForFunding = ({
   repositories,
   issues,
 }: {
-  organization: OrganizationPublicRead
+  organization: Organization
   repositories: RepositoryPublicRead[]
   issues: IssuePublicRead[]
 }) => {

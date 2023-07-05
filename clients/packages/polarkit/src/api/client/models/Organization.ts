@@ -4,7 +4,7 @@
 
 import type { Platforms } from './Platforms';
 
-export type OrganizationPublicRead = {
+export type Organization = {
   id: string;
   platform: Platforms;
   name: string;

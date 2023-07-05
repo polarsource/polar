@@ -1,6 +1,6 @@
 import {
   IssuePublicRead,
-  OrganizationPublicRead,
+  Organization,
   RepositoryPublicRead,
 } from 'polarkit/api/client'
 import { prettyURL } from '.'
@@ -15,7 +15,7 @@ const OrganizationPublicPage = ({
   issues,
   totalIssueCount,
 }: {
-  organization: OrganizationPublicRead
+  organization: Organization
   repositories: RepositoryPublicRead[]
   issues?: IssuePublicRead[]
   totalIssueCount: number

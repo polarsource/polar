@@ -8,7 +8,7 @@ import {
   IssueReferenceRead,
   IssueReferenceType,
   IssueStatus,
-  OrganizationPublicRead,
+  Organization,
   PledgeRead,
   PledgeState,
   PullRequestReference,
@@ -208,7 +208,7 @@ const referencesCommit: IssueReferenceRead[] = [
 ]
 
 interface Issue extends IssueDashboardRead {
-  organization?: OrganizationPublicRead
+  organization?: Organization
 }
 
 const dashboardIssue: Issue = {

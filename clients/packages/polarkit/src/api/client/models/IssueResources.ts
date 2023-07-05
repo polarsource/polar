@@ -3,12 +3,12 @@
 /* eslint-disable */
 
 import type { IssueRead } from './IssueRead';
-import type { OrganizationPublicRead } from './OrganizationPublicRead';
+import type { Organization } from './Organization';
 import type { RepositoryRead } from './RepositoryRead';
 
 export type IssueResources = {
   issue: IssueRead;
-  organization?: OrganizationPublicRead;
+  organization?: Organization;
   repository?: RepositoryRead;
 };
 

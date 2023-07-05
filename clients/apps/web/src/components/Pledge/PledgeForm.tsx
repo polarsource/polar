@@ -10,7 +10,7 @@ import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
 import {
   IssueRead,
-  OrganizationPublicRead,
+  Organization,
   PledgeMutationResponse,
   RepositoryRead,
 } from 'polarkit/api/client'
@@ -29,7 +29,7 @@ type PledgeSync = {
 }
 
 const generateRedirectURL = (
-  organization: OrganizationPublicRead,
+  organization: Organization,
   repository: RepositoryRead,
   issue: IssueRead,
   pledge: PledgeMutationResponse,
@@ -76,7 +76,7 @@ const PledgeForm = ({
   gotoURL,
 }: {
   issue: IssueRead
-  organization: OrganizationPublicRead
+  organization: Organization
   repository: RepositoryRead
   asOrg?: string
   gotoURL?: string

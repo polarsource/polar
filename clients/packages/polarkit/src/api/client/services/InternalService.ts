@@ -1,8 +1,6 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { Organization } from '../models/Organization';
-import type { OrganizationBadgeSettingsRead } from '../models/OrganizationBadgeSettingsRead';
 import type { OrganizationBadgeSettingsUpdate } from '../models/OrganizationBadgeSettingsUpdate';
 import type { OrganizationPrivateRead } from '../models/OrganizationPrivateRead';
 import type { OrganizationPublicPageRead } from '../models/OrganizationPublicPageRead';
@@ -12,33 +10,9 @@ import type { Platforms } from '../models/Platforms';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
 
-export class OrganizationsService {
+export class InternalService {
 
   constructor(public readonly httpRequest: BaseHttpRequest) {}
-
-  /**
-   * Get
-   * Get an organization
-   * @returns Organization Successful Response
-   * @throws ApiError
-   */
-  public get({
-    id,
-  }: {
-    id: string,
-  }): CancelablePromise<Organization> {
-    return this.httpRequest.request({
-      method: 'GET',
-      url: '/api/v1/organizations/{id}',
-      path: {
-        'id': id,
-      },
-      errors: {
-        404: `Not Found`,
-        422: `Validation Error`,
-      },
-    });
-  }
 
   /**
    * Getinternal
@@ -55,31 +29,6 @@ export class OrganizationsService {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/{platform}/{org_name}',
-      path: {
-        'platform': platform,
-        'org_name': orgName,
-      },
-      errors: {
-        422: `Validation Error`,
-      },
-    });
-  }
-
-  /**
-   * Get Badge Settings
-   * @returns OrganizationBadgeSettingsRead Successful Response
-   * @throws ApiError
-   */
-  public getBadgeSettings({
-    platform,
-    orgName,
-  }: {
-    platform: Platforms,
-    orgName: string,
-  }): CancelablePromise<OrganizationBadgeSettingsRead> {
-    return this.httpRequest.request({
-      method: 'GET',
-      url: '/api/v1/{platform}/{org_name}/badge_settings',
       path: {
         'platform': platform,
         'org_name': orgName,

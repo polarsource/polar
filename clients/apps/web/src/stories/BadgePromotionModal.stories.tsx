@@ -3,13 +3,13 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { BadgePromotionModal } from '@/components/Dashboard/IssuePromotionModal'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from 'polarkit'
-import { IssueDashboardRead, OrganizationPublicRead } from 'polarkit/api/client'
+import { IssueDashboardRead, Organization } from 'polarkit/api/client'
 import { issue, org, repo, user } from './testdata'
 
 type Story = StoryObj<typeof BadgePromotionModal>
 
 interface Issue extends IssueDashboardRead {
-  organization?: OrganizationPublicRead
+  organization?: Organization
 }
 
 const dashboardIssue: Issue = {

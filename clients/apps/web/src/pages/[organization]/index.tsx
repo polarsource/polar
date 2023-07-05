@@ -6,7 +6,7 @@ import Head from 'next/head'
 import { api } from 'polarkit'
 import {
   IssuePublicRead,
-  OrganizationPublicRead,
+  Organization,
   Platforms,
   RepositoryPublicRead,
 } from 'polarkit/api/client'
@@ -18,7 +18,7 @@ const Page: NextLayoutComponentType = ({
   issues,
   totalIssueCount,
 }: {
-  organization?: OrganizationPublicRead
+  organization?: Organization
   repositories?: RepositoryPublicRead[]
   issues?: IssuePublicRead[]
   totalIssueCount?: number

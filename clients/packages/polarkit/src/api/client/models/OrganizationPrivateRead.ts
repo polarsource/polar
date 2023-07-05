@@ -4,17 +4,9 @@
 
 import type { Platforms } from './Platforms';
 import type { RepositoryRead } from './RepositoryRead';
-import type { Status } from './Status';
 
 export type OrganizationPrivateRead = {
   pledge_badge_show_amount?: boolean;
-  email_notification_maintainer_issue_receives_backing?: boolean;
-  email_notification_maintainer_issue_branch_created?: boolean;
-  email_notification_maintainer_pull_request_created?: boolean;
-  email_notification_maintainer_pull_request_merged?: boolean;
-  email_notification_backed_issue_branch_created?: boolean;
-  email_notification_backed_issue_pull_request_created?: boolean;
-  email_notification_backed_issue_pull_request_merged?: boolean;
   billing_email?: string;
   platform: Platforms;
   name: string;
@@ -29,7 +21,6 @@ export type OrganizationPrivateRead = {
   pledge_minimum_amount: number;
   default_badge_custom_content?: string;
   id: string;
-  status: Status;
   created_at: string;
   modified_at?: string;
   repositories?: Array<RepositoryRead>;

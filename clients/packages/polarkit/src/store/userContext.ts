@@ -3,8 +3,8 @@ import { api } from '../api'
 import {
   CancelablePromise,
   type IssueRead,
+  type Organization,
   type OrganizationPrivateRead,
-  type OrganizationPublicRead,
   type PledgeRead,
   type RepositoryRead,
   type UserRead,
@@ -53,7 +53,7 @@ export interface LastPledgeState {
     | undefined
   latestPledgeShown: boolean
   setLatestPledge: (
-    org: OrganizationPublicRead,
+    org: Organization,
     repo: RepositoryRead,
     issue: IssueRead,
     pledge: PledgeRead,
@@ -138,7 +138,7 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
     })
   },
   setLatestPledge: (
-    org: OrganizationPublicRead,
+    org: Organization,
     repo: RepositoryRead,
     issue: IssueRead,
     pledge: PledgeRead,

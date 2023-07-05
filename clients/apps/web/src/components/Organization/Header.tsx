@@ -1,8 +1,5 @@
 import Link from 'next/link'
-import {
-  OrganizationPublicRead,
-  RepositoryPublicRead,
-} from 'polarkit/api/client'
+import { Organization, RepositoryPublicRead } from 'polarkit/api/client'
 import { LogoType } from 'polarkit/components/brand'
 import Navigation from './Navigation'
 
@@ -11,7 +8,7 @@ const Header = ({
   repositories,
   repository,
 }: {
-  organization: OrganizationPublicRead
+  organization: Organization
   repositories: RepositoryPublicRead[]
   repository?: RepositoryPublicRead
 }) => {

@@ -128,7 +128,6 @@ async def create_pledge(
 
     try:
         return await pledge_service.create_pledge(
-            platform=platform,
             user=auth.user,
             org=org,
             repo=repo,

@@ -14,11 +14,11 @@ export class AccountsService {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
-   * Get Account
+   * Get Accounts
    * @returns AccountRead Successful Response
    * @throws ApiError
    */
-  public getAccount({
+  public getAccounts({
     platform,
     orgName,
   }: {
@@ -75,19 +75,19 @@ export class AccountsService {
   public onboardingLink({
     platform,
     orgName,
-    stripeId,
+    accountId,
   }: {
     platform: Platforms,
     orgName: string,
-    stripeId: string,
+    accountId: string,
   }): CancelablePromise<AccountLink> {
     return this.httpRequest.request({
       method: 'GET',
-      url: '/api/v1/{platform}/{org_name}/accounts/{stripe_id}/onboarding_link',
+      url: '/api/v1/{platform}/{org_name}/accounts/{account_id}/onboarding_link',
       path: {
         'platform': platform,
         'org_name': orgName,
-        'stripe_id': stripeId,
+        'account_id': accountId,
       },
       errors: {
         422: `Validation Error`,
@@ -103,19 +103,19 @@ export class AccountsService {
   public dashboardLink({
     platform,
     orgName,
-    stripeId,
+    accountId,
   }: {
     platform: Platforms,
     orgName: string,
-    stripeId: string,
+    accountId: string,
   }): CancelablePromise<AccountLink> {
     return this.httpRequest.request({
       method: 'GET',
-      url: '/api/v1/{platform}/{org_name}/accounts/{stripe_id}/dashboard_link',
+      url: '/api/v1/{platform}/{org_name}/accounts/{account_id}/dashboard_link',
       path: {
         'platform': platform,
         'org_name': orgName,
-        'stripe_id': stripeId,
+        'account_id': accountId,
       },
       errors: {
         422: `Validation Error`,

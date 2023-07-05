@@ -1,9 +1,8 @@
-from uuid import UUID
 from datetime import datetime
-from enum import Enum
 from typing import TYPE_CHECKING, Any
-from citext import CIText
+from uuid import UUID
 
+from citext import CIText
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
@@ -17,19 +16,16 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
-from polar.enums import Platforms
+from polar.visibility import Visibility
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.organization import Organization
 
 
 class Repository(RecordModel):
-    class Visibility(Enum):
-        PUBLIC = "public"
-        PRIVATE = "private"
-
     __tablename__ = "repositories"
     __table_args__ = (
         UniqueConstraint("external_id"),
@@ -39,7 +35,7 @@ class Repository(RecordModel):
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
     external_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
     organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID, ForeignKey("organizations.id"), nullable=True
+        PostgresUUID, ForeignKey("organizations.id"), nullable=False
     )
 
     organization: "Mapped[Organization]" = relationship(
@@ -98,7 +94,7 @@ class Repository(RecordModel):
 
     @hybrid_property
     def visibility(self) -> Visibility:
-        return self.Visibility.PRIVATE if self.is_private else self.Visibility.PUBLIC
+        return Visibility.PRIVATE if self.is_private else Visibility.PUBLIC
 
     __mutables__ = {
         "name",

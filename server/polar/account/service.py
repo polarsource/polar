@@ -31,9 +31,24 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         if existing is not None:
             return None
 
-        if account.account_type != AccountType.stripe:
-            return None
+        if account.account_type == AccountType.stripe:
+            return await self._create_stripe_account(
+                session, organization_id, admin_id, account
+            )
+        elif account.account_type == AccountType.open_collective:
+            return await self._create_open_collective_account(
+                session, organization_id, admin_id, account
+            )
 
+        return None
+
+    async def _create_stripe_account(
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+        admin_id: UUID,
+        account: AccountCreate,
+    ) -> Account | None:
         try:
             stripe_account = stripe.create_account(account)
         except Exception:
@@ -43,7 +58,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             session=session,
             organization_id=organization_id,
             admin_id=admin_id,
-            account_type="stripe",
+            account_type=AccountCreate.account_type,
             stripe_id=stripe_account.stripe_id,
             email=stripe_account.email,
             country=stripe_account.country,
@@ -53,6 +68,30 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             is_payouts_enabled=stripe_account.payouts_enabled,
             business_type=stripe_account.business_type,
             data=stripe_account.to_dict(),
+        )
+
+    async def _create_open_collective_account(
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+        admin_id: UUID,
+        account: AccountCreate,
+    ) -> Account | None:
+        return await Account.create(
+            session=session,
+            organization_id=organization_id,
+            admin_id=admin_id,
+            account_type=account.account_type,
+            open_collective_slug=account.open_collective_slug,
+            email=None,
+            country=account.country,
+            # For now, hard-code those values
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            business_type="fiscal_host",
+            data={},
         )
 
     async def onboarding_link_for_user(
@@ -95,6 +134,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
     ) -> Tuple[str, int] | None:
         if account.account_type != AccountType.stripe:
             return None
+        assert account.stripe_id is not None
         return stripe.retrieve_balance(account.stripe_id)
 
     def transfer(
@@ -102,6 +142,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
     ) -> str | None:
         if account.account_type != AccountType.stripe:
             return None
+        assert account.stripe_id is not None
         transfer = stripe.transfer(
             destination_stripe_id=account.stripe_id,
             amount=amount,

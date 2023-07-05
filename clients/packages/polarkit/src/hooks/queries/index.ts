@@ -50,7 +50,7 @@ export const useOrganizationAccounts = (repoOwner: string | undefined) =>
   useQuery(
     ['organization', repoOwner, 'account'],
     () =>
-      api.accounts.getAccount({
+      api.accounts.getAccounts({
         platform: Platforms.GITHUB,
         orgName: repoOwner || '',
       }),

@@ -71,7 +71,7 @@ const Finance = (props: {
 
   return (
     <div className="flex flex-col space-y-8">
-      <StripeBanner org={org} accounts={accounts} />
+      <AccountBanner org={org} accounts={accounts} />
 
       <div className="flex space-x-8">
         <HeaderPill
@@ -186,26 +186,26 @@ const Triangle = () => (
   </svg>
 )
 
-const StripeBanner = (props: {
+const AccountBanner = (props: {
   org: Organization
   accounts: AccountRead[]
 }) => {
   const { org, accounts } = props
 
-  const goToStripeDashboard = async (account: AccountRead) => {
+  const goToDashboard = async (account: AccountRead) => {
     const link = await api.accounts.dashboardLink({
       platform: Platforms.GITHUB,
       orgName: org.name,
-      stripeId: account.stripe_id,
+      accountId: account.id,
     })
     window.location.href = link.url
   }
 
-  const goToStripeOnboarding = async (account: AccountRead) => {
+  const goToOnboarding = async (account: AccountRead) => {
     const link = await api.accounts.onboardingLink({
       platform: Platforms.GITHUB,
       orgName: org.name,
-      stripeId: account.stripe_id,
+      accountId: account.id,
     })
     window.location.href = link.url
   }
@@ -229,13 +229,13 @@ const StripeBanner = (props: {
                 setShowSetupModal(true)
               }}
             >
-              <span>Setup up stripe</span>
+              <span>Setup</span>
             </PrimaryButton>
           }
         >
           <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
           <span className="text-sm">
-            You need to set up a <strong>Stripe account</strong> to receive
+            You need to set up a <strong>Stripe</strong> or <strong>Open Collective</strong> to receive
             payouts
           </span>
         </Banner>
@@ -259,7 +259,7 @@ const StripeBanner = (props: {
             size="small"
             onClick={(e) => {
               e.preventDefault()
-              goToStripeOnboarding(accounts[0])
+              goToOnboarding(accounts[0])
             }}
           >
             <span>Continue setup</span>
@@ -287,7 +287,7 @@ const StripeBanner = (props: {
                   className="font-medium text-blue-500 dark:text-blue-400"
                   onClick={(e) => {
                     e.preventDefault()
-                    goToStripeDashboard(accounts[0])
+                    goToDashboard(accounts[0])
                   }}
                 >
                   Go to Stripe

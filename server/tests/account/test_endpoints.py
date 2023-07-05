@@ -40,8 +40,10 @@ async def open_collective_account(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("slug", [None, ""])
 async def test_create_open_collective_missing_slug(
     user: User,
+    slug: str | None,
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
@@ -52,6 +54,7 @@ async def test_create_open_collective_missing_slug(
             json={
                 "account_type": "open_collective",
                 "country": "US",
+                **({"open_collective_slug": slug} if slug is not None else {}),
             },
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )

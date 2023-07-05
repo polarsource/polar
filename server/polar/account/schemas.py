@@ -23,9 +23,7 @@ class AccountCreate(Schema):
         account_type: AccountType = values["account_type"]
         open_collective_slug: str | None = values.get("open_collective_slug")
         if account_type == AccountType.open_collective and open_collective_slug is None:
-            raise ValueError(
-                "open_collective_slug must be provided for an OpenCollective account."
-            )
+            raise ValueError("The Open Collective slug must be provided.")
         return values
 
 

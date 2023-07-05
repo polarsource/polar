@@ -90,6 +90,7 @@ export const StripeHalfSetup: Story = {
     tab: 'rewarded',
     accounts: [
       {
+        id: 'xx',
         account_type: AccountType.STRIPE,
         country: 'SE',
         stripe_id: '',
@@ -107,6 +108,7 @@ export const StripeSetup: Story = {
     tab: 'rewarded',
     accounts: [
       {
+        id: 'xx',
         account_type: AccountType.STRIPE,
         country: 'SE',
         stripe_id: 'xxx',
@@ -124,6 +126,7 @@ export const StripeSetupNotAdmin: Story = {
     tab: 'rewarded',
     accounts: [
       {
+        id: 'xx',
         account_type: AccountType.STRIPE,
         country: 'SE',
         stripe_id: 'xxx',
@@ -141,9 +144,50 @@ export const StripeSetupDark: Story = {
     tab: 'rewarded',
     accounts: [
       {
+        id: 'xx',
         account_type: AccountType.STRIPE,
         country: 'SE',
         stripe_id: 'xxx',
+        is_details_submitted: true,
+        is_admin: true,
+      },
+    ],
+  },
+
+  parameters: {
+    themes: ['dark'],
+  },
+}
+
+export const OpenCollectiveSetup: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    tab: 'rewarded',
+    accounts: [
+      {
+        id: 'xx',
+        account_type: AccountType.OPEN_COLLECTIVE,
+        country: 'SE',
+        open_collective_slug: 'polar',
+        is_details_submitted: true,
+        is_admin: true,
+      },
+    ],
+  },
+}
+
+export const OpenCollectiveSetupDark: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    tab: 'rewarded',
+    accounts: [
+      {
+        id: 'xx',
+        account_type: AccountType.OPEN_COLLECTIVE,
+        country: 'SE',
+        open_collective_slug: 'polar',
         is_details_submitted: true,
         is_admin: true,
       },

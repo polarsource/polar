@@ -1,13 +1,13 @@
 from __future__ import annotations
-from typing import Self, Type
 
-from uuid import UUID
 from datetime import datetime
+from typing import Self, Type
+from uuid import UUID
 
+from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.kit.schemas import Schema
 from polar.models import Organization, Repository
-from polar.enums import Platforms
 
 
 class RepositoryCreate(Schema):
@@ -76,14 +76,6 @@ class RepositoryUpdate(RepositoryCreate):
     ...
 
 
-class RepositoryRead(RepositoryCreate):
-    id: UUID
-    visibility: Repository.Visibility
-
-    class Config:
-        orm_mode = True
-
-
 class RepositoryPublicRead(Schema):
     platform: Platforms
     id: UUID
@@ -93,6 +85,14 @@ class RepositoryPublicRead(Schema):
     stars: int | None = None
     license: str | None = None
     homepage: str | None = None
+
+    class Config:
+        orm_mode = True
+
+
+class RepositoryRead(RepositoryPublicRead, RepositoryCreate):
+    id: UUID
+    visibility: Repository.Visibility
 
     class Config:
         orm_mode = True

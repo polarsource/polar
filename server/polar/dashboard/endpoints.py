@@ -17,16 +17,14 @@ from polar.dashboard.schemas import (
     RelationshipData,
 )
 from polar.enums import Platforms
-from polar.integrations.github.service.organization import github_organization
 from polar.issue.schemas import IssueRead, IssueReferenceRead
 from polar.issue.service import issue
 from polar.models.issue import Issue
 from polar.models.organization import Organization
-from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
-from polar.organization.schemas import OrganizationPublicRead
+from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.schemas import PledgeRead, PledgeState
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session, sql
@@ -235,7 +233,7 @@ async def dashboard(
         included[str(i.organization_id)] = Entry(
             id=i.organization_id,
             type="organization",
-            attributes=OrganizationPublicRead.from_orm(
+            attributes=OrganizationSchema.from_orm(
                 [o for o in issue_organizations if o.id == i.organization_id][0]
             ),
         )
@@ -341,7 +339,7 @@ async def dashboard(
             included[str(dependent_issue.organization_id)] = Entry(
                 id=dependent_issue.organization_id,
                 type="organization",
-                attributes=OrganizationPublicRead.from_orm(
+                attributes=OrganizationSchema.from_orm(
                     [
                         o
                         for o in issue_organizations

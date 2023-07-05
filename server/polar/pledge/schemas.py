@@ -7,7 +7,7 @@ from uuid import UUID
 from polar.issue.schemas import IssueRead
 from polar.kit.schemas import Schema
 from polar.models.pledge import Pledge
-from polar.organization.schemas import OrganizationPublicRead
+from polar.organization.schemas import Organization
 from polar.repository.schemas import RepositoryRead
 
 
@@ -175,7 +175,7 @@ class PledgeRead(Schema):
 class PledgeResources(Schema):
     pledge: PledgeRead
     issue: IssueRead | None
-    organization: OrganizationPublicRead | None
+    organization: Organization | None
     repository: RepositoryRead | None
 
 

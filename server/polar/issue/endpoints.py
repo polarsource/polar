@@ -13,7 +13,7 @@ from polar.integrations.github.service.organization import (
 )
 from polar.kit.schemas import Schema
 from polar.models import Issue
-from polar.organization.schemas import OrganizationPublicRead
+from polar.organization.schemas import Organization as OrganizationSchema
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.schemas import RepositoryRead
@@ -31,7 +31,7 @@ router = APIRouter(tags=["issues"])
 
 class IssueResources(Schema):
     issue: IssueRead
-    organization: OrganizationPublicRead | None
+    organization: OrganizationSchema | None
     repository: RepositoryRead | None
 
 
@@ -66,7 +66,7 @@ async def get_or_sync_external(
 
     included_org = None
     if "organization" in includes:
-        included_org = OrganizationPublicRead.from_orm(org)
+        included_org = OrganizationSchema.from_orm(org)
 
     included_repo = None
     if "repository" in includes:

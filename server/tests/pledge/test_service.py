@@ -244,6 +244,7 @@ async def test_transfer(
         is_details_submitted=True,
         is_charges_enabled=True,
         is_payouts_enabled=True,
+        business_type="company",
     )
     # session.expire_all()
     await session.flush()

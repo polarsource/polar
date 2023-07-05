@@ -10,3 +10,4 @@ class Platforms(str, Enum):
 
 class AccountType(str, Enum):
     stripe = "stripe"
+    open_collective = "open_collective"

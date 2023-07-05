@@ -15,7 +15,7 @@ class AccountLinkTypes(str, Enum):
 
 class AccountCreate(Schema):
     account_type: AccountType
-    open_collective_slug: str | None = None
+    open_collective_slug: str | None = Field(None, min_length=1)
     country: str
 
     @root_validator

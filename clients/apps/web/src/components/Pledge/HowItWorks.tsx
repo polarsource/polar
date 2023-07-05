@@ -4,7 +4,7 @@ const HowItWorks: NextLayoutComponentType = () => {
   const steps = [
     {
       number: 1,
-      text: 'Pledge to an issue you want fixed.',
+      text: 'Pay now to sponsor the work behind this issue.',
     },
     {
       number: 2,
@@ -12,7 +12,7 @@ const HowItWorks: NextLayoutComponentType = () => {
     },
     {
       number: 3,
-      text: 'Funds are paid out after fix has been properly merged.',
+      text: 'Maintainer is rewarded once the issue is completed.',
     },
   ]
 
@@ -20,7 +20,7 @@ const HowItWorks: NextLayoutComponentType = () => {
     <>
       <div>
         <h3 className="text-center font-medium text-gray-900 dark:text-gray-400">
-          How does backing through Polar work?
+          How do pledges through Polar work?
         </h3>
         <div className="mt-4 grid md:grid-cols-3 md:gap-14 md:px-14">
           {steps.map((s) => (

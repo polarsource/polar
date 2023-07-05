@@ -429,7 +429,8 @@ const PledgeForm = ({
               onClick={() => false}
             >
               Pledge $
-              {getCentsInDollarString(organization.pledge_minimum_amount)}
+              {getCentsInDollarString(organization.pledge_minimum_amount)} to{' '}
+              {organization.pretty_name || organization.name}
             </PrimaryButton>
           </div>
         )}

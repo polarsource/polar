@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Sequence
 from uuid import UUID
 
@@ -5,16 +6,10 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
-from polar.dashboard.schemas import (
-    IssueListType,
-    IssueSortBy,
-    IssueStatus,
-)
 from polar.enums import Platforms
-from polar.issue.schemas import IssuePublicRead
-from polar.issue.service import issue as issue_service
 from polar.postgres import AsyncSession, get_db_session
-from polar.repository.schemas import RepositoryPublicRead
+from polar.repository.schemas import Repository as RepositorySchema
+from polar.repository.schemas import RepositoryLegacyRead
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 
@@ -24,9 +19,10 @@ from .schemas import (
 from .schemas import (
     OrganizationBadgeSettingsRead,
     OrganizationBadgeSettingsUpdate,
-    OrganizationPrivateRead,
-    OrganizationPublicPageRead,
+    OrganizationPrivateBase,
+    OrganizationSettingsRead,
     OrganizationSettingsUpdate,
+    RepositoryBadgeSettingsRead,
 )
 from .service import organization
 
@@ -130,6 +126,21 @@ async def lookup(
 #
 
 
+# Internal model
+class OrganizationPrivateRead(OrganizationPrivateBase, OrganizationSettingsRead):
+    id: UUID
+    created_at: datetime
+    modified_at: datetime | None
+
+    # TODO: remove ASAP!
+    # The import of RepositorySchema is why this definition needs to live here, and
+    # not in schemas.
+    repositories: List[RepositoryLegacyRead] | None
+
+    class Config:
+        orm_mode = True
+
+
 @router.get(
     "/{platform}/{org_name}",
     response_model=OrganizationPrivateRead,
@@ -156,7 +167,54 @@ async def get_badge_settings(
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationBadgeSettingsRead:
-    return await organization.get_badge_settings(session, auth.organization)
+    repositories = await repository_service.list_by_organization(
+        session, auth.organization.id, order_by_open_source=True
+    )
+
+    synced = await repository_service.get_repositories_synced_count(
+        session, auth.organization
+    )
+
+    repos = []
+    for repo in repositories:
+        open_issues = repo.open_issues or 0
+        synced_data = synced.get(
+            repo.id,
+            {
+                "synced_issues": 0,
+                "auto_embedded_issues": 0,
+                "label_embedded_issues": 0,
+                "pull_requests": 0,
+            },
+        )
+        synced_issues = synced_data["synced_issues"]
+        if synced_issues > open_issues:
+            open_issues = synced_issues
+
+        is_sync_completed = synced_issues == open_issues
+
+        repos.append(
+            RepositoryBadgeSettingsRead(
+                id=repo.id,
+                avatar_url=auth.organization.avatar_url,
+                badge_auto_embed=repo.pledge_badge_auto_embed,
+                name=repo.name,
+                synced_issues=synced_issues,
+                auto_embedded_issues=synced_data["auto_embedded_issues"],
+                label_embedded_issues=synced_data["label_embedded_issues"],
+                pull_requests=synced_data["pull_requests"],
+                open_issues=open_issues,
+                is_private=repo.is_private,
+                is_sync_completed=is_sync_completed,
+            )
+        )
+
+    return OrganizationBadgeSettingsRead(
+        show_amount=auth.organization.pledge_badge_show_amount,
+        minimum_amount=auth.organization.pledge_minimum_amount,
+        message=auth.organization.default_badge_custom_content,
+        repositories=repos,
+    )
 
 
 @router.put(
@@ -192,75 +250,3 @@ async def update_settings(
 ) -> OrganizationPrivateRead:
     updated = await organization.update_settings(session, auth.organization, settings)
     return OrganizationPrivateRead.from_orm(updated)
-
-
-@router.get(
-    "/{platform}/{org_name}/public",
-    response_model=OrganizationPublicPageRead,
-    tags=[Tags.INTERNAL],
-    summary="Get organization public issues (Internal API)",
-)
-async def get_public_issues(
-    platform: Platforms,
-    org_name: str,
-    repo_name: str | None = None,
-    session: AsyncSession = Depends(get_db_session),
-) -> OrganizationPublicPageRead:
-    org = await organization.get_by_name(session, platform, org_name)
-    if not org:
-        raise HTTPException(
-            status_code=404,
-            detail="Organization not found",
-        )
-
-    all_org_repos = await repository_service.list_by_organization(
-        session,
-        organization_id=org.id,
-    )
-    all_org_repos = [
-        r for r in all_org_repos if r.is_private is False and r.is_archived is False
-    ]
-
-    if repo_name:
-        repo = await repository_service.get_by(
-            session,
-            organization_id=org.id,
-            name=repo_name,
-            is_private=False,
-            is_archived=False,
-            deleted_at=None,
-        )
-
-        if not repo:
-            raise HTTPException(
-                status_code=404,
-                detail="Repository not found",
-            )
-
-        issues_in_repos = [repo]
-    else:
-        issues_in_repos = all_org_repos
-
-    issues_in_repos_ids = [r.id for r in issues_in_repos]
-
-    (issues, count) = await issue_service.list_by_repository_type_and_status(
-        session=session,
-        repository_ids=issues_in_repos_ids,
-        issue_list_type=IssueListType.issues,
-        sort_by=IssueSortBy.issues_default,
-        limit=50,
-        have_polar_badge=True,
-        include_statuses=[
-            IssueStatus.backlog,
-            IssueStatus.triaged,
-            IssueStatus.in_progress,
-            IssueStatus.pull_request,
-        ],
-    )
-
-    return OrganizationPublicPageRead(
-        organization=OrganizationSchema.from_orm(org),
-        repositories=[RepositoryPublicRead.from_orm(r) for r in all_org_repos],
-        issues=[IssuePublicRead.from_orm(i) for i in issues],
-        total_issue_count=count,
-    )

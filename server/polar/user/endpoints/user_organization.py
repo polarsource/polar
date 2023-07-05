@@ -4,15 +4,15 @@ from fastapi import APIRouter, Depends
 
 from polar.auth.dependencies import Auth
 from polar.models import Organization
-from polar.organization.schemas import OrganizationPrivateRead
+from polar.organization.endpoints import OrganizationPrivateRead
 from polar.organization.service import organization
 from polar.postgres import AsyncSession, get_db_session
-from polar.repository.schemas import RepositoryRead
+from polar.repository.schemas import RepositoryLegacyRead
 
 router = APIRouter(prefix="/user/organizations", tags=["user.organizations"])
 
 
-@router.get("", response_model=list[OrganizationPrivateRead])
+@router.get("", response_model=Sequence[OrganizationPrivateRead], deprecated=True)
 async def get_user_organizations(
     auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
@@ -25,7 +25,7 @@ async def get_user_organizations(
         o = OrganizationPrivateRead.from_orm(org)
 
         o.repositories = [
-            RepositoryRead.from_orm(repo)
+            RepositoryLegacyRead.from_orm(repo)
             for repo in org.repos
             if repo.organization_id == org.id
         ]

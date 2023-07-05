@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, Response
 
-from polar.models import User
 from polar.auth.dependencies import Auth
 from polar.auth.service import AuthService, LoginResponse, LogoutResponse
-from polar.user.service import user as user_service
+from polar.models import User
 from polar.postgres import AsyncSession, get_db_session
+from polar.user.service import user as user_service
 
 from ..schemas import UserRead, UserUpdateSettings
 

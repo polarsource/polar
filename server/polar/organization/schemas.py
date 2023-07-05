@@ -9,9 +9,7 @@ from pydantic import BaseModel
 from polar.config import settings
 from polar.enums import Platforms
 from polar.integrations.github import client as github
-from polar.issue.schemas import IssuePublicRead
 from polar.kit.schemas import Schema
-from polar.repository.schemas import RepositoryPublicRead, RepositoryRead
 
 
 # Public model
@@ -109,20 +107,6 @@ class OrganizationUpdate(OrganizationCreate):
 
 
 # Internal model
-class OrganizationPrivateRead(OrganizationPrivateBase, OrganizationSettingsRead):
-    id: UUID
-
-    # status: Organization.Status
-    created_at: datetime
-    modified_at: datetime | None
-
-    repositories: list[RepositoryRead] | None
-
-    class Config:
-        orm_mode = True
-
-
-# Internal model
 class RepositoryBadgeSettingsUpdate(Schema):
     id: UUID
     badge_auto_embed: bool
@@ -169,11 +153,3 @@ class OrganizationSyncedRepositoryRead(Schema):
 # Internal model
 class OrganizationSyncedRead(Schema):
     repos: list[OrganizationSyncedRepositoryRead]
-
-
-# Internal model
-class OrganizationPublicPageRead(Schema):
-    organization: Organization
-    repositories: list[RepositoryPublicRead]
-    issues: list[IssuePublicRead]
-    total_issue_count: int

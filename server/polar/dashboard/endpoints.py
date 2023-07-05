@@ -28,7 +28,7 @@ from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.schemas import PledgeRead, PledgeState
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session, sql
-from polar.repository.schemas import RepositoryRead
+from polar.repository.schemas import Repository as RepositorySchema
 from polar.repository.service import repository
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -242,7 +242,7 @@ async def dashboard(
         included[str(i.repository_id)] = Entry(
             id=i.repository_id,
             type="repository",
-            attributes=RepositoryRead.from_orm(
+            attributes=RepositorySchema.from_db(
                 [r for r in issue_repositories if r.id == i.repository_id][0]
             ),
         )
@@ -352,7 +352,7 @@ async def dashboard(
             included[str(dependent_issue.repository_id)] = Entry(
                 id=dependent_issue.repository_id,
                 type="repository",
-                attributes=RepositoryRead.from_orm(
+                attributes=RepositorySchema.from_db(
                     [
                         r
                         for r in issue_repositories

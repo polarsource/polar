@@ -3,7 +3,7 @@ from typing import Sequence
 from uuid import UUID
 
 import structlog
-from sqlalchemy import ColumnElement, and_, distinct, or_
+from sqlalchemy import ColumnElement, and_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import (
     InstrumentedAttribute,
@@ -12,21 +12,17 @@ from sqlalchemy.orm import (
 
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
-from polar.issue.schemas import IssuePublicRead
 from polar.issue.service import issue as issue_service
 from polar.kit.services import ResourceService
 from polar.models import Issue, Organization, Repository, User, UserOrganization
-from polar.models.pull_request import PullRequest
 from polar.postgres import AsyncSession, sql
 from polar.repository.service import repository as repository_service
 
 from .schemas import (
-    OrganizationBadgeSettingsRead,
     OrganizationBadgeSettingsUpdate,
     OrganizationCreate,
     OrganizationSettingsUpdate,
     OrganizationUpdate,
-    RepositoryBadgeSettingsRead,
 )
 
 log = structlog.get_logger()
@@ -56,6 +52,20 @@ class OrganizationService(
         self, session: AsyncSession, platform: Platforms, name: str
     ) -> Organization | None:
         return await self.get_by(session, platform=platform, name=name)
+
+    async def list_all_orgs_by_user_id(
+        self, session: AsyncSession, user_id: UUID
+    ) -> Sequence[Organization]:
+        statement = (
+            sql.select(Organization)
+            .join(UserOrganization)
+            .where(
+                UserOrganization.user_id == user_id,
+                Organization.deleted_at.is_(None),
+            )
+        )
+        res = await session.execute(statement)
+        return res.scalars().unique().all()
 
     async def get_all_org_repos_by_user_id(
         self, session: AsyncSession, user_id: UUID
@@ -283,58 +293,6 @@ class OrganizationService(
         await session.execute(stmt)
         await session.commit()
 
-    async def get_badge_settings(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> OrganizationBadgeSettingsRead:
-        repositories = await repository_service.list_by_organization(
-            session, organization.id, order_by_open_source=True
-        )
-
-        synced = await self.get_repositories_synced_count(session, organization)
-
-        repos = []
-        for repo in repositories:
-            open_issues = repo.open_issues or 0
-            synced_data = synced.get(
-                repo.id,
-                {
-                    "synced_issues": 0,
-                    "auto_embedded_issues": 0,
-                    "label_embedded_issues": 0,
-                    "pull_requests": 0,
-                },
-            )
-            synced_issues = synced_data["synced_issues"]
-            if synced_issues > open_issues:
-                open_issues = synced_issues
-
-            is_sync_completed = synced_issues == open_issues
-
-            repos.append(
-                RepositoryBadgeSettingsRead(
-                    id=repo.id,
-                    avatar_url=organization.avatar_url,
-                    badge_auto_embed=repo.pledge_badge_auto_embed,
-                    name=repo.name,
-                    synced_issues=synced_issues,
-                    auto_embedded_issues=synced_data["auto_embedded_issues"],
-                    label_embedded_issues=synced_data["label_embedded_issues"],
-                    pull_requests=synced_data["pull_requests"],
-                    open_issues=open_issues,
-                    is_private=repo.is_private,
-                    is_sync_completed=is_sync_completed,
-                )
-            )
-
-        return OrganizationBadgeSettingsRead(
-            show_amount=organization.pledge_badge_show_amount,
-            minimum_amount=organization.pledge_minimum_amount,
-            message=organization.default_badge_custom_content,
-            repositories=repos,
-        )
-
     async def update_badge_settings(
         self,
         session: AsyncSession,
@@ -396,74 +354,6 @@ class OrganizationService(
         )
 
         return updated
-
-    async def get_repositories_synced_count(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> dict[UUID, dict[str, int]]:
-        stmt = (
-            sql.select(
-                Repository.id,
-                Issue.has_pledge_badge_label.label("labelled"),
-                Issue.pledge_badge_embedded_at.is_not(None).label("embedded"),
-                sql.func.count(distinct(Issue.id)).label("issue_count"),
-                sql.func.count(distinct(PullRequest.id)).label("pull_request_count"),
-            )
-            .join(
-                Issue,
-                and_(Issue.repository_id == Repository.id, Issue.state == "open"),
-                isouter=True,
-            )
-            .join(
-                PullRequest,
-                and_(
-                    PullRequest.repository_id == Repository.id,
-                    PullRequest.state == "open",
-                ),
-                isouter=True,
-            )
-            .where(
-                Repository.organization_id == organization.id,
-                Repository.deleted_at.is_(None),
-            )
-            .group_by(Repository.id, "labelled", "embedded")
-        )
-
-        res = await session.execute(stmt)
-        rows = res.unique().all()
-
-        prs: dict[UUID, bool] = {}
-        ret: dict[UUID, dict[str, int]] = {}
-        for r in rows:
-            mapped = r._mapping
-            repo_id = mapped["id"]
-            repo = ret.setdefault(
-                repo_id,
-                {
-                    "synced_issues": 0,
-                    "auto_embedded_issues": 0,
-                    "label_embedded_issues": 0,
-                    # We get duplicate PR counts due to SQL grouping.
-                    # So we only need to set it once at initation here.
-                    "pull_requests": mapped["pull_request_count"],
-                },
-            )
-            is_labelled = mapped["labelled"]
-            repo["synced_issues"] += mapped["issue_count"]
-            if repo_id not in prs:
-                repo["synced_issues"] += mapped["pull_request_count"]
-                prs[repo_id] = True
-
-            if not mapped["embedded"]:
-                continue
-
-            if is_labelled:
-                repo["label_embedded_issues"] += mapped["issue_count"]
-            else:
-                repo["auto_embedded_issues"] += mapped["issue_count"]
-
-        return ret
 
     async def set_default_issue_badge_custom_message(
         self, session: AsyncSession, org: Organization, message: str

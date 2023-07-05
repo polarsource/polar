@@ -8,7 +8,7 @@ from polar.issue.schemas import IssueRead
 from polar.kit.schemas import Schema
 from polar.models.pledge import Pledge
 from polar.organization.schemas import Organization
-from polar.repository.schemas import RepositoryRead
+from polar.repository.schemas import Repository
 
 
 class PledgeState(str, Enum):
@@ -176,7 +176,7 @@ class PledgeResources(Schema):
     pledge: PledgeRead
     issue: IssueRead | None
     organization: Organization | None
-    repository: RepositoryRead | None
+    repository: Repository | None
 
 
 class ConfirmPledgesResponse(Schema):

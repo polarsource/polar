@@ -15,6 +15,7 @@ from polar.worker import enqueue_job
 from .service import stripe as stripe_service
 from polar.account.schemas import AccountUpdate
 from polar.account.service import account as account_service
+from polar.enums import AccountType
 
 log = structlog.get_logger()
 
@@ -63,8 +64,9 @@ async def stripe_connect_return(
     account = await account_service.get_by(
         session, organization_id=auth.organization.id
     )
-    if not account:
+    if not account or account.account_type != AccountType.stripe:
         raise HTTPException(status_code=400, detail="Error while getting account")
+    assert account.stripe_id is not None
     stripe_account = stripe_service.retrieve_account(account.stripe_id)
     await account_service.update(
         session,
@@ -81,7 +83,8 @@ async def stripe_connect_return(
     )
     return RedirectResponse(
         url=settings.generate_frontend_url(
-            f"/dashboard/{auth.organization.name}?status=stripe-connected")
+            f"/dashboard/{auth.organization.name}?status=stripe-connected"
+        )
     )
 
 

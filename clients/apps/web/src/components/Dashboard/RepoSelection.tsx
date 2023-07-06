@@ -4,12 +4,7 @@ import {
 } from '@heroicons/react/20/solid'
 import { Command } from 'cmdk'
 import Image from 'next/image'
-import {
-  Organization,
-  OrganizationPrivateRead,
-  Repository,
-  UserRead,
-} from 'polarkit/api/client'
+import { Organization, Repository, UserRead } from 'polarkit/api/client'
 import { CONFIG } from 'polarkit/config'
 import { useOutsideClick } from 'polarkit/utils'
 import React, { KeyboardEvent, useEffect, useRef, useState } from 'react'
@@ -37,13 +32,14 @@ export function RepoSelection(props: {
   onSelectRepo?: (org: string, repo: string) => void
   onSelectOrg?: (org: string) => void
   onSelectUser?: () => void
-  currentOrg?: OrganizationPrivateRead
+  currentOrg?: Organization
   currentRepo?: Repository
   fullWidth?: boolean
   showUserInDropdown?: boolean
   defaultToUser?: boolean
   showOrganizationRepositoryCount?: boolean
-  organizations: OrganizationPrivateRead[]
+  organizations: Organization[]
+  repositories?: Repository[]
   currentUser: UserRead
   initOpen?: boolean
 }) {
@@ -132,12 +128,22 @@ export function RepoSelection(props: {
     }
   }
 
-  type ListOrg = OrganizationPrivateRead & { unfilteredRepositoryCount: number }
+  type ListOrg = Organization & {
+    unfilteredRepositoryCount: number
+    repositories: Repository[]
+  }
 
   const [listOrgs, setListOrgs] = useState<ListOrg[]>([])
 
   // Value in <input>
   const [inputValue, setInputValue] = useState('')
+
+  const reposInOrg = (orgID: string): Repository[] => {
+    if (!props.repositories) {
+      return []
+    }
+    return props.repositories.filter((r) => r.organization?.id === orgID)
+  }
 
   useEffect(() => {
     let orgs: ListOrg[] = []
@@ -149,14 +155,15 @@ export function RepoSelection(props: {
           return {
             ...o,
             repositories: [],
-            unfilteredRepositoryCount: o.repositories?.length || 0,
+            unfilteredRepositoryCount: reposInOrg(o.id).length,
           }
         }) || []
     } else if (dropdownSelectedOrg === undefined && organizations) {
       orgs = organizations.map((o) => {
         return {
           ...o,
-          unfilteredRepositoryCount: o.repositories?.length || 0,
+          repositories: reposInOrg(o.id),
+          unfilteredRepositoryCount: reposInOrg(o.id).length,
         }
       })
     } else if (dropdownSelectedOrg) {
@@ -167,7 +174,8 @@ export function RepoSelection(props: {
           .map((o) => {
             return {
               ...o,
-              unfilteredRepositoryCount: o.repositories?.length || 0,
+              repositories: reposInOrg(o.id),
+              unfilteredRepositoryCount: reposInOrg(o.id).length,
             }
           }) || []
     } else {
@@ -184,7 +192,13 @@ export function RepoSelection(props: {
     }
 
     setListOrgs(orgs)
-  }, [dropdownSelectedOrg, organizations, inputValue, props.showRepositories])
+  }, [
+    dropdownSelectedOrg,
+    organizations,
+    inputValue,
+    props.showRepositories,
+    reposInOrg,
+  ])
 
   const onInputValueChange = (e: string) => {
     setValue(e)

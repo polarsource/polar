@@ -10,7 +10,11 @@ import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useOrganization, useUserOrganizations } from 'polarkit/hooks'
+import {
+  useListOrganizations,
+  useListRepositories,
+  useOrganization,
+} from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { ReactElement, useEffect, useMemo, useRef } from 'react'
 
@@ -122,9 +126,11 @@ const SettingsTopbar = () => {
   const currentOrg = useStore((state) => state.currentOrg)
 
   const { currentUser } = useRequireAuth()
-  const userOrgQuery = useUserOrganizations(currentUser)
 
-  if (!currentUser || !userOrgQuery.data) {
+  const listOrganizationsQuery = useListOrganizations()
+  const listRepositoriesQuery = useListRepositories()
+
+  if (!currentUser || !listRepositoriesQuery.data) {
     return <></>
   }
 
@@ -146,7 +152,7 @@ const SettingsTopbar = () => {
               onSelectOrg={(org) => router.push(`/settings/${org}`)}
               onSelectUser={() => router.push(`/settings/personal`)}
               currentUser={currentUser}
-              organizations={userOrgQuery.data}
+              organizations={listOrganizationsQuery.data || []}
               defaultToUser={true}
               showUserInDropdown={true}
             />

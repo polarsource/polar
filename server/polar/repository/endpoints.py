@@ -43,47 +43,10 @@ async def user_can_read(
 
     ids = [m.organization_id for m in user_memberships]
 
-    if repository.id in ids:
+    if repository.organization_id in ids:
         return True
 
     return False
-
-
-@router.get(
-    "/repositories/{id}",
-    response_model=RepositorySchema,
-    tags=[Tags.PUBLIC],
-    description="Get a repository",
-    status_code=200,
-    summary="Get a repository (Public API)",
-    responses={404: {}},
-)
-async def get(
-    id: UUID,
-    auth: Auth = Depends(Auth.optional_user),
-    session: AsyncSession = Depends(get_db_session),
-) -> RepositorySchema:
-    repo = await repository.get_by_id(session, id=id, load_organization=True)
-
-    if not repo:
-        raise HTTPException(
-            status_code=404,
-            detail="Repository not found",
-        )
-
-    if not user_can_read(session, auth, repo):
-        raise HTTPException(
-            status_code=404,
-            detail="Repository not found",
-        )
-
-    if repo:
-        return RepositorySchema.from_db(repo)
-
-    raise HTTPException(
-        status_code=404,
-        detail="Repository not found",
-    )
 
 
 @router.get(
@@ -125,10 +88,7 @@ async def search(
         name=organization_name,
     )
     if not org:
-        raise HTTPException(
-            status_code=404,
-            detail="Organization not found",
-        )
+        return []  # search endpoints returns empty lists in case of no matches
 
     repos = await repository.list_by(
         session,
@@ -140,7 +100,7 @@ async def search(
     # Anonymous requests can only see public repositories,
     # authed users can also see private repositories in orgs that they are a
     # member of
-    repos = [r for r in repos if user_can_read(session, auth, r)]
+    repos = [r for r in repos if await user_can_read(session, auth, r)]
 
     return [RepositorySchema.from_db(r) for r in repos]
 
@@ -179,10 +139,47 @@ async def lookup(
         load_organization=True,
     )
 
-    if not repo or not user_can_read(session, auth, repo):
+    if not repo or not await user_can_read(session, auth, repo):
         raise HTTPException(
             status_code=404,
             detail="Repository not found",
         )
 
     return RepositorySchema.from_db(repo)
+
+
+@router.get(
+    "/repositories/{id}",
+    response_model=RepositorySchema,
+    tags=[Tags.PUBLIC],
+    description="Get a repository",
+    status_code=200,
+    summary="Get a repository (Public API)",
+    responses={404: {}},
+)
+async def get(
+    id: UUID,
+    auth: Auth = Depends(Auth.optional_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> RepositorySchema:
+    repo = await repository.get_by_id(session, id=id, load_organization=True)
+
+    if not repo:
+        raise HTTPException(
+            status_code=404,
+            detail="Repository not found",
+        )
+
+    if not await user_can_read(session, auth, repo):
+        raise HTTPException(
+            status_code=404,
+            detail="Repository not found",
+        )
+
+    if repo:
+        return RepositorySchema.from_db(repo)
+
+    raise HTTPException(
+        status_code=404,
+        detail="Repository not found",
+    )

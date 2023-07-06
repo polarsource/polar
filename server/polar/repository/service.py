@@ -30,7 +30,7 @@ class RepositoryService(
         self, session: AsyncSession, id: UUID, load_organization: bool = False
     ) -> Repository | None:
         statement = sql.select(Repository).where(
-            Repository.organization_id == id,
+            Repository.id == id,
             Repository.deleted_at.is_(None),
         )
 

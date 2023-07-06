@@ -202,7 +202,6 @@ async def update_pledge(
 
     return await pledge_service.modify_pledge(
         session=session,
-        platform=platform,
         repo=repo,
         user=auth.user,
         pledge_id=pledge_id,

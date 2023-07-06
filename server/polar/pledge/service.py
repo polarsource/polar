@@ -310,7 +310,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
     async def modify_pledge(
         self,
-        platform: Platforms,
         session: AsyncSession,
         repo: Repository,
         user: User | None,

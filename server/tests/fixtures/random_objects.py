@@ -1,13 +1,16 @@
-from datetime import datetime
 import random
+import secrets
 import string
 import uuid
+from datetime import datetime
 
 import pytest_asyncio
+
 from polar.enums import Platforms
-
-import secrets
-
+from polar.integrations.github.service import (
+    github_organization,
+    github_repository,
+)
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
@@ -18,11 +21,6 @@ from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import OrganizationCreate
 from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession
-
-from polar.integrations.github.service import (
-    github_organization,
-    github_repository,
-)
 from polar.repository.schemas import RepositoryCreate
 
 
@@ -76,18 +74,25 @@ async def pledging_organization(session: AsyncSession) -> Organization:
 
 @pytest_asyncio.fixture(scope="function")
 async def repository(session: AsyncSession, organization: Organization) -> Repository:
-    return await create_repository(session, organization)
+    return await create_repository(session, organization, is_private=True)
+
+
+@pytest_asyncio.fixture(scope="function")
+async def public_repository(
+    session: AsyncSession, organization: Organization
+) -> Repository:
+    return await create_repository(session, organization, is_private=False)
 
 
 async def create_repository(
-    session: AsyncSession, organization: Organization
+    session: AsyncSession, organization: Organization, is_private: bool = True
 ) -> Repository:
     create_schema = RepositoryCreate(
         platform=Platforms.github,
         name=rstr("testrepo"),
         organization_id=organization.id,
         external_id=secrets.randbelow(100000),
-        is_private=True,
+        is_private=is_private,
     )
     repo = await github_repository.upsert(session, create_schema)
     session.add(repo)

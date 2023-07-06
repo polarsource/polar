@@ -32,31 +32,6 @@ router = APIRouter(tags=["organizations"])
 
 
 @router.get(
-    "/organizations/{id}",
-    response_model=OrganizationSchema,
-    tags=[Tags.PUBLIC],
-    description="Get an organization",
-    status_code=200,
-    summary="Get an organization (Public API)",
-    responses={404: {}},
-)
-async def get(
-    id: UUID,
-    auth: Auth = Depends(Auth.optional_user),
-    session: AsyncSession = Depends(get_db_session),
-) -> OrganizationSchema:
-    org = await organization.get(session, id=id)
-
-    if org:
-        return OrganizationSchema.from_orm(org)
-
-    raise HTTPException(
-        status_code=404,
-        detail="Organization not found",
-    )
-
-
-@router.get(
     "/organizations",
     response_model=Sequence[OrganizationSchema],
     tags=[Tags.PUBLIC],
@@ -68,7 +43,7 @@ async def list(
     auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> Sequence[OrganizationSchema]:
-    orgs = await organization.get_all_org_repos_by_user_id(session, auth.user.id)
+    orgs = await organization.list_all_orgs_by_user_id(session, auth.user.id)
     return [OrganizationSchema.from_orm(o) for o in orgs]
 
 
@@ -89,7 +64,8 @@ async def search(
     # Currently the only way to search
     if platform and organization_name:
         org = await organization.get_by_name(session, platform, organization_name)
-        return [OrganizationSchema.from_orm(org)]
+        if org:
+            return [OrganizationSchema.from_orm(org)]
 
     # no org found
     return []
@@ -113,6 +89,32 @@ async def lookup(
     # Currently the only way to search
     if platform and organization_name:
         org = await organization.get_by_name(session, platform, organization_name)
+        if org:
+            return OrganizationSchema.from_orm(org)
+
+    raise HTTPException(
+        status_code=404,
+        detail="Organization not found ",
+    )
+
+
+@router.get(
+    "/organizations/{id}",
+    response_model=OrganizationSchema,
+    tags=[Tags.PUBLIC],
+    description="Get an organization",
+    status_code=200,
+    summary="Get an organization (Public API)",
+    responses={404: {}},
+)
+async def get(
+    id: UUID,
+    auth: Auth = Depends(Auth.optional_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationSchema:
+    org = await organization.get(session, id=id)
+
+    if org:
         return OrganizationSchema.from_orm(org)
 
     raise HTTPException(

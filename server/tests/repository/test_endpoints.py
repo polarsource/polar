@@ -1,149 +1,75 @@
-from datetime import datetime
-
 import pytest
 from httpx import AsyncClient
 
 from polar.app import app
 from polar.config import settings
 from polar.models.organization import Organization
-from polar.models.user import User
+from polar.models.repository import Repository
 from polar.models.user_organization import UserOrganization
-from polar.postgres import AsyncSession
 
 
 @pytest.mark.asyncio
-async def test_get_organization_no_member_old_api(
+async def test_get_repository_private_not_member(
     organization: Organization,
+    repository: Repository,
     auth_jwt: str,
 ) -> None:
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.get(
-            "/api/v1/github/" + organization.name,
+            f"/api/v1/repositories/{repository.id}",
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 
+    print(response.text)
     assert response.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_get_organization_member_old_api(
+async def test_get_repository_public(
     organization: Organization,
+    public_repository: Repository,
+    auth_jwt: str,
+) -> None:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            f"/api/v1/repositories/{public_repository.id}",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    print(response.text)
+    assert response.status_code == 200
+    assert response.json()["id"] == str(public_repository.id)
+    assert response.json()["organization"]["id"] == str(organization.id)
+
+
+@pytest.mark.asyncio
+async def test_get_repository_private_member(
+    organization: Organization,
+    repository: Repository,
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
 ) -> None:
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.get(
-            "/api/v1/github/" + organization.name,
+            f"/api/v1/repositories/{repository.id}",
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 
+    print(response.text)
     assert response.status_code == 200
-    assert response.json()["id"] == str(organization.id)
+    assert response.json()["id"] == str(repository.id)
+    assert response.json()["organization"]["id"] == str(organization.id)
 
 
 @pytest.mark.asyncio
-async def test_get_organization_deleted_old_api(
-    session: AsyncSession,
+async def test_list_repositories_no_member(
     organization: Organization,
-    user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
-) -> None:
-    # soft-delete the organization
-    organization.deleted_at = datetime.utcnow()
-    await organization.save(session)
-
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            "/api/v1/github/" + organization.name,
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
-
-    assert response.status_code == 404
-
-
-@pytest.mark.asyncio
-async def test_get_organization(
-    organization: Organization,
+    repository: Repository,
     auth_jwt: str,
 ) -> None:
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.get(
-            f"/api/v1/organizations/{organization.id}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
-
-    assert response.status_code == 200
-    assert response.json()["id"] == str(organization.id)
-
-
-@pytest.mark.asyncio
-async def test_list_organization_member(
-    organization: Organization,
-    user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
-) -> None:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            "/api/v1/organizations",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
-
-    assert response.status_code == 200
-    assert response.json()[0]["id"] == str(organization.id)
-
-
-@pytest.mark.asyncio
-async def test_organization_lookup_not_found(
-    organization: Organization,
-    auth_jwt: str,
-) -> None:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            "/api/v1/organizations/lookup?platform=github&organization_name=foobar",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
-
-    assert response.status_code == 404
-
-
-@pytest.mark.asyncio
-async def test_organization_lookup(
-    organization: Organization,
-    auth_jwt: str,
-) -> None:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/organizations/lookup?platform=github&organization_name={organization.name}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
-
-    assert response.status_code == 200
-    assert response.json()["id"] == str(organization.id)
-
-
-@pytest.mark.asyncio
-async def test_organization_search(
-    organization: Organization,
-    auth_jwt: str,
-) -> None:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/organizations/search?platform=github&organization_name={organization.name}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
-
-    assert response.status_code == 200
-    assert response.json()[0]["id"] == str(organization.id)
-
-
-@pytest.mark.asyncio
-async def test_organization_search_no_matches(
-    organization: Organization,
-    auth_jwt: str,
-) -> None:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            "/api/v1/organizations/search?platform=github&organization_name=foobar",
+            "/api/v1/repositories",
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 
@@ -152,20 +78,116 @@ async def test_organization_search_no_matches(
 
 
 @pytest.mark.asyncio
-async def test_get_organization_deleted(
-    session: AsyncSession,
+async def test_list_repositories_member(
     organization: Organization,
+    repository: Repository,
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
 ) -> None:
-    # soft-delete the organization
-    organization.deleted_at = datetime.utcnow()
-    await organization.save(session)
-
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.get(
-            f"/api/v1/organizations/{organization.id}",
+            "/api/v1/repositories",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["id"] == str(repository.id)
+    assert response.json()[0]["organization"]["id"] == str(organization.id)
+
+
+@pytest.mark.asyncio
+async def test_repository_lookup_not_found(
+    organization: Organization,
+    auth_jwt: str,
+) -> None:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            "/api/v1/repositories/lookup?platform=github&organization_name=foobar&repository_name=barbar",
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_repository_lookup_public(
+    organization: Organization,
+    public_repository: Repository,
+    auth_jwt: str,
+) -> None:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            f"/api/v1/repositories/lookup?platform=github&organization_name={organization.name}&repository_name={public_repository.name}",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(public_repository.id)
+
+
+@pytest.mark.asyncio
+async def test_repository_lookup_private_member(
+    organization: Organization,
+    repository: Repository,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+) -> None:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            f"/api/v1/repositories/lookup?platform=github&organization_name={organization.name}&repository_name={repository.name}",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(repository.id)
+
+
+@pytest.mark.asyncio
+async def test_repository_lookup_private_non_member(
+    organization: Organization,
+    repository: Repository,
+    auth_jwt: str,
+) -> None:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            f"/api/v1/repositories/lookup?platform=github&organization_name={organization.name}&repository_name={repository.name}",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_repository_search_no_matching_org(
+    organization: Organization,
+    repository: Repository,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+) -> None:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            "/api/v1/repositories/search?platform=github&organization_name=foobar",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+@pytest.mark.asyncio
+async def test_repository_search_org(
+    organization: Organization,
+    repository: Repository,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+) -> None:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            f"/api/v1/repositories/search?platform=github&organization_name={organization.name}",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["id"] == str(repository.id)

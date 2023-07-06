@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_ID: str = ""
     GITHUB_CLIENT_SECRET: str = ""
     GITHUB_REDIRECT_URL: str = "http://127.0.0.1:3000/github/session"
-    GITHUB_POLAR_USER_ACCESS_TOKEN: str = ""
+    GITHUB_POLAR_USER_ACCESS_TOKEN: str | None = None
 
     # Stripe
     STRIPE_SECRET_KEY: str = ""

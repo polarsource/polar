@@ -1,22 +1,23 @@
-from typing import List
 import uuid
-from pydantic import parse_obj_as
+from typing import List
 
 import pytest
+from pydantic import parse_obj_as
+
+import polar.integrations.github.client as github
 from polar.enums import Platforms
+from polar.integrations.github.service.reference import (
+    TimelineEventType,
+    github_reference,
+)
 from polar.kit import utils
 from polar.models.issue import Issue
 from polar.models.issue_reference import ReferenceType
 from polar.models.organization import Organization
 from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
-from tests.fixtures.vcr import read_cassette
-from polar.integrations.github.service.reference import (
-    TimelineEventType,
-    github_reference,
-)
-import polar.integrations.github.client as github
 from polar.postgres import AsyncSession
+from tests.fixtures.vcr import read_cassette
 
 
 @pytest.mark.asyncio
@@ -54,6 +55,7 @@ async def test_parse_issue_timeline(
         platform=Platforms.github,
         created_at=utils.utc_now(),
         is_private=False,
+        organization_id=org.id,
     )
 
     await repo.save(session)

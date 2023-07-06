@@ -1,6 +1,5 @@
 import time
 from typing import Any, Union
-from pydantic import Field
 
 import structlog
 from fastapi.encoders import jsonable_encoder
@@ -15,6 +14,7 @@ from githubkit import (
     utils,
     webhooks,
 )
+from pydantic import Field
 
 from polar.config import settings
 from polar.enums import Platforms
@@ -164,6 +164,9 @@ def get_polar_client() -> GitHub[TokenAuthStrategy]:
     """Instead of making anonymous requests, use the polar user's access token,
     so we're at least allowed 5000 reqs/s
     """
+    if not settings.GITHUB_POLAR_USER_ACCESS_TOKEN:
+        raise Exception("GITHUB_POLAR_USER_ACCESS_TOKEN is not configured")
+
     return get_client(settings.GITHUB_POLAR_USER_ACCESS_TOKEN)
 
 

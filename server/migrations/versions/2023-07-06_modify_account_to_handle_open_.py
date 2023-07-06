@@ -1,8 +1,8 @@
 """Modify Account to handle Open Collective account type
 
 Revision ID: 980eb1553510
-Revises: e1649ad1d26b
-Create Date: 2023-07-05 11:02:43.048153
+Revises: ec055c88d51c
+Create Date: 2023-07-06 11:02:43.048153
 
 """
 from alembic import op
@@ -14,7 +14,7 @@ from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 # revision identifiers, used by Alembic.
 revision = "980eb1553510"
-down_revision = "e1649ad1d26b"
+down_revision = "ec055c88d51c"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

@@ -107,6 +107,12 @@ async def pledge_created_comment_on_github(hook: PledgeHook) -> None:
     session = hook.session
     pledge = hook.pledge
 
+    if not settings.GITHUB_POLAR_USER_ACCESS_TOKEN:
+        log.warning(
+            "GITHUB_POLAR_USER_ACCESS_TOKEN is not configured, skipping pledge_created_comment_on_github"  # noqa: E501
+        )
+        return
+
     issue = await issue_service.get_by_id(session, pledge.issue_id)
     if not issue:
         log.error(

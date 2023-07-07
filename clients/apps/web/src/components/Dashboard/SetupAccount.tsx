@@ -118,7 +118,7 @@ const SetupAccount = ({ onClose }: { onClose: () => void }) => {
                   onChange={onChangeAccountType}
                   className="font-display block w-full rounded-lg border-gray-200 bg-transparent py-2 px-4 pr-12 shadow-sm transition-colors focus:z-10 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-500"
                 >
-                  {ACCOUNT_TYPES.map((v) =>
+                  {ACCOUNT_TYPES.map((v: AccountType) =>
                     <option
                       key={v}
                       value={v}
@@ -141,7 +141,7 @@ const SetupAccount = ({ onClose }: { onClose: () => void }) => {
                       type="text"
                       id="open_collective_slug"
                       name="open_collective_slug"
-                      className="pl-60 font-display block w-full rounded-lg border-gray-200 bg-transparent py-2 px-4 pr-12 shadow-sm transition-colors focus:z-10 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-500"
+                      className="pl-60 font-display block w-full rounded-lg border-gray-200 bg-transparent py-2 shadow-sm transition-colors focus:z-10 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-500"
                       value={openCollectiveSlug || ''}
                       onChange={onChangeOpenCollectiveSlug}
                       required

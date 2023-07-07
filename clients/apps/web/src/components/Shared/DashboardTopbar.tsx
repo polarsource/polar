@@ -7,8 +7,13 @@ import {
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { Visibility } from 'polarkit/api/client'
-import { useOrganizationAccounts, useUserOrganizations } from 'polarkit/hooks'
+import { Platforms, Visibility } from 'polarkit/api/client'
+import {
+  useListOrganizations,
+  useListRepositories,
+  useOrganizationAccounts,
+  useSearchRepositories,
+} from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { useMemo } from 'react'
 import Topbar from './Topbar'
@@ -35,12 +40,15 @@ const SettingsLink = ({ orgSlug }: { orgSlug?: string }) => {
 const MoneyLink = ({ orgSlug }: { orgSlug: string }) => {
   const accountQuery = useOrganizationAccounts(orgSlug)
   const accounts = accountQuery.data
-  const currentOrg = useStore((state) => state.currentOrg)
+
+  const searchRepositoriesQuery = useSearchRepositories(
+    Platforms.GITHUB,
+    orgSlug,
+  )
 
   const hasPublicRepos =
-    currentOrg &&
-    currentOrg.repositories &&
-    currentOrg.repositories.some((r) => r.visibility === Visibility.PUBLIC)
+    searchRepositoriesQuery.data &&
+    searchRepositoriesQuery.data.some((r) => r.visibility === Visibility.PUBLIC)
 
   const hasSetup = accounts?.some((a) => a.is_details_submitted && a.stripe_id)
   const showBadge = hasPublicRepos && !hasSetup && accountQuery.isFetched
@@ -83,7 +91,8 @@ const DashboardNav = () => {
   const currentRepo = useStore((state) => state.currentRepo)
 
   const { currentUser } = useRequireAuth()
-  const userOrgQuery = useUserOrganizations(currentUser)
+  const listOrganizationQuery = useListOrganizations()
+  const listRepositoriesQuery = useListRepositories()
 
   const publicPath = useMemo(() => {
     if (currentRepo && currentOrg) {
@@ -95,7 +104,12 @@ const DashboardNav = () => {
     return undefined
   }, [currentOrg, currentRepo])
 
-  if (!currentOrg || !currentUser || !userOrgQuery.data) {
+  if (
+    !currentOrg ||
+    !currentUser ||
+    !listOrganizationQuery.data ||
+    !listRepositoriesQuery.data
+  ) {
     return <></>
   }
 
@@ -112,7 +126,8 @@ const DashboardNav = () => {
         showUserInDropdown={true}
         showOrganizationRepositoryCount={true}
         currentUser={currentUser}
-        organizations={userOrgQuery.data}
+        organizations={listOrganizationQuery.data}
+        repositories={listRepositoriesQuery.data}
       />
       {publicPath && <PublicPageLink path={publicPath} />}
       <SettingsLink orgSlug={currentOrg.name} />
@@ -125,9 +140,15 @@ const PersonalDashboardNav = () => {
   const router = useRouter()
 
   const { currentUser } = useRequireAuth()
-  const userOrgQuery = useUserOrganizations(currentUser)
 
-  if (!currentUser || !userOrgQuery.data) {
+  const listOrganizationQuery = useListOrganizations()
+  const listRepositoriesQuery = useListRepositories()
+
+  if (
+    !currentUser ||
+    !listOrganizationQuery.data ||
+    !listRepositoriesQuery.data
+  ) {
     return <></>
   }
 
@@ -145,7 +166,8 @@ const PersonalDashboardNav = () => {
         defaultToUser={true}
         showOrganizationRepositoryCount={true}
         currentUser={currentUser}
-        organizations={userOrgQuery.data}
+        organizations={listOrganizationQuery.data}
+        repositories={listRepositoriesQuery.data}
       />
       <PublicPageLink path={`/${currentUser.username}`} />
       <SettingsLink orgSlug={'personal'} />

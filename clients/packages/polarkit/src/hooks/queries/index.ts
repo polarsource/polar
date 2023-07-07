@@ -3,7 +3,6 @@ import {
   OrganizationPrivateRead,
   OrganizationSettingsUpdate,
   Repository,
-  type UserRead,
 } from 'polarkit/api/client'
 import { api, queryClient } from '../../api'
 import { Platforms } from '../../api/client'
@@ -21,46 +20,31 @@ export * from './pledges'
 export * from './settings'
 export * from './user'
 
-export const useUserOrganizations = (currentUser: UserRead | undefined) => {
-  const userId = currentUser?.id
-  const query = useQuery(
-    ['user', 'organizations', userId],
-    () => api.userOrganizations.getUserOrganizations(),
+export const useListOrganizations = () =>
+  useQuery(['user', 'organizations'], () => api.organizations.list(), {
+    retry: defaultRetry,
+  })
+
+export const useListRepositories = () =>
+  useQuery(['user', 'repositories'], () => api.repositories.list(), {
+    retry: defaultRetry,
+  })
+
+export const useSearchRepositories = (
+  platform: Platforms,
+  organizationName: string,
+) =>
+  useQuery(
+    ['user', 'repositories', platform, organizationName],
+    () =>
+      api.repositories.search({
+        platform: platform,
+        organizationName: organizationName,
+      }),
     {
-      enabled: !!userId,
       retry: defaultRetry,
     },
   )
-
-  let repositories: RepoListItem[] | undefined
-  if (query.isSuccess) {
-    const organizations = query.data
-    repositories = organizations
-      .map((org) => {
-        return (
-          org?.repositories?.map((repo) => {
-            return {
-              ...repo,
-              organization: org,
-            }
-          }) || []
-        )
-      })
-      .flat()
-  }
-
-  return {
-    ...query,
-    repositories,
-    findBySlug: (orgSlug: string, repoSlug: string) => {
-      if (!repositories) return undefined
-
-      return repositories.find(
-        (repo) => repo.organization.name === orgSlug && repo.name === repoSlug,
-      )
-    },
-  }
-}
 
 export const useOrganizationAccounts = (repoOwner: string | undefined) =>
   useQuery(

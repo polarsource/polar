@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
+import type { AccountType } from './AccountType';
 import type { PledgeState } from './PledgeState';
 
 export type BackofficePledgeRead = {
@@ -29,5 +30,6 @@ export type BackofficePledgeRead = {
   disputed_by_user_id?: string;
   disputed_at?: string;
   pledger_email?: string;
+  to_organization_account_type?: AccountType;
 };
 

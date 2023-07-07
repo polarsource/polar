@@ -23,6 +23,12 @@ const Pledges = () => {
             </th>
             <th
               scope="col"
+              className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
+            >
+              Account type
+            </th>
+            <th
+              scope="col"
               className="whitespace-nowrap px-2 py-3.5 text-left text-sm font-semibold text-gray-900"
             >
               State

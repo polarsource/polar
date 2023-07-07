@@ -105,7 +105,8 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
 
         if not collective.is_eligible:
             raise AccountServiceError(
-                "This collective is not eligible to receive payouts. You can use Stripe instead."
+                "This collective is not eligible to receive payouts. "
+                "You can use Stripe instead."
             )
 
         return await Account.create(

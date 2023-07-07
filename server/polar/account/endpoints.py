@@ -26,8 +26,6 @@ async def create_account(
     except AccountServiceError as e:
         raise HTTPException(status_code=400, detail=e.message)
 
-    if not created:
-        raise HTTPException(status_code=400, detail="Error while creating account")
     return AccountRead.from_orm(created)
 
 

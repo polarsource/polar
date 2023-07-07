@@ -211,7 +211,7 @@ const PledgeForm = ({
 
     if (amountInCents < organization.pledge_minimum_amount) {
       setErrorMessage(
-        `Minimum amount is ${getCentsInDollarString(
+        `Minimum amount is $${getCentsInDollarString(
           organization.pledge_minimum_amount,
         )}`,
       )
@@ -428,9 +428,10 @@ const PledgeForm = ({
               loading={isSyncing}
               onClick={() => false}
             >
-              Pledge $
-              {getCentsInDollarString(organization.pledge_minimum_amount)} to{' '}
-              {organization.pretty_name || organization.name}
+              Pledge ${amount > 0 && getCentsInDollarString(amount)}
+              {amount === 0 &&
+                getCentsInDollarString(organization.pledge_minimum_amount)}{' '}
+              to {organization.pretty_name || organization.name}
             </PrimaryButton>
           </div>
         )}

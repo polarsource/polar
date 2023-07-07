@@ -1,0 +1,14 @@
+{
+    "data": {
+        "collective": {
+            "host": {
+                "slug": "evilmartians"
+            },
+            "isActive": true,
+            "isApproved": true,
+            "isArchived": false,
+            "isFrozen": false,
+            "slug": "browserslist"
+        }
+    }
+}

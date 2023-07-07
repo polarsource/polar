@@ -66,6 +66,9 @@ class Settings(BaseSettings):
     # Stripe webhook secret
     STRIPE_WEBHOOK_SECRET: str = ""
 
+    # Open Collective
+    OPEN_COLLECTIVE_PERSONAL_TOKEN: str | None = None
+
     # Sentry
     SENTRY_DSN: str | None = None
 

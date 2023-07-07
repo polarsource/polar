@@ -6,7 +6,7 @@ from polar.auth.dependencies import Auth
 from polar.enums import Platforms
 from polar.postgres import AsyncSession, get_db_session
 
-from .service import account as account_service
+from .service import account as account_service, AccountServiceError
 
 router = APIRouter(tags=["accounts"])
 
@@ -19,9 +19,13 @@ async def create_account(
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> AccountRead:
-    created = await account_service.create_account(
-        session, auth.organization.id, auth.user.id, account
-    )
+    try:
+        created = await account_service.create_account(
+            session, auth.organization.id, auth.user.id, account
+        )
+    except AccountServiceError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+
     if not created:
         raise HTTPException(status_code=400, detail="Error while creating account")
     return AccountRead.from_orm(created)

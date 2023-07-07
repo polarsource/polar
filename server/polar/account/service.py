@@ -14,10 +14,20 @@ from polar.models.account import Account
 from polar.postgres import AsyncSession
 from polar.enums import AccountType
 from polar.integrations.stripe.service import stripe
-from polar.integrations.open_collective.service import open_collective
+from polar.integrations.open_collective.service import (
+    open_collective,
+    OpenCollectiveAPIError,
+    CollectiveNotFoundError,
+)
 
 
 log = structlog.get_logger()
+
+
+class AccountServiceError(Exception):
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(message)
 
 
 class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
@@ -78,6 +88,21 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         admin_id: UUID,
         account: AccountCreate,
     ) -> Account | None:
+        assert account.open_collective_slug is not None
+        try:
+            collective = await open_collective.get_collective(
+                account.open_collective_slug
+            )
+        except OpenCollectiveAPIError as e:
+            raise AccountServiceError(e.message) from e
+        except CollectiveNotFoundError as e:
+            raise AccountServiceError(e.message) from e
+
+        if not collective.is_eligible:
+            raise AccountServiceError(
+                "This collective is not eligible to receive payouts. You can use Stripe instead."
+            )
+
         return await Account.create(
             session=session,
             organization_id=organization_id,

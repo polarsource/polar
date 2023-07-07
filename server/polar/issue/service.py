@@ -44,16 +44,6 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
     ) -> Issue | None:
         return await self.get_by(session, platform=platform, external_id=external_id)
 
-    async def get_by_id(
-        self,
-        session: AsyncSession,
-        id: UUID,
-    ) -> Issue | None:
-        return await self.get_by(
-            session,
-            id=id,
-        )
-
     async def get_by_number(
         self,
         session: AsyncSession,

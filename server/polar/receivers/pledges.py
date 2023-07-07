@@ -79,7 +79,7 @@ async def pledge_created_discord_alert(hook: PledgeHook) -> None:
         url=settings.DISCORD_WEBHOOK_URL, content="New pledge"
     )
 
-    issue = await issue_service.get_by_id(session, pledge.issue_id)
+    issue = await issue_service.get(session, pledge.issue_id)
     if not issue:
         return
 
@@ -122,7 +122,7 @@ def pledger_name(pledge: Pledge) -> str:
 
 
 async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> None:
-    issue = await issue_service.get_by_id(session, pledge.issue_id)
+    issue = await issue_service.get(session, pledge.issue_id)
     if not issue:
         log.error("pledge_created_notification.no_issue_found")
         return
@@ -163,7 +163,7 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
 async def pledge_confirmation_pending_notification(
     pledge: Pledge, session: AsyncSession
 ) -> None:
-    issue = await issue_service.get_by_id(session, pledge.issue_id)
+    issue = await issue_service.get(session, pledge.issue_id)
     if not issue:
         log.error("pledge_confirmation_pending_notification.no_issue_found")
         return
@@ -200,7 +200,7 @@ async def pledge_confirmation_pending_notification(
 
 
 async def pledge_pending_notification(pledge: Pledge, session: AsyncSession) -> None:
-    issue = await issue_service.get_by_id(session, pledge.issue_id)
+    issue = await issue_service.get(session, pledge.issue_id)
     if not issue:
         log.error("pledge_pending_notification.no_issue_found")
         return
@@ -259,7 +259,7 @@ async def pledge_pending_notification(pledge: Pledge, session: AsyncSession) -> 
 async def pledge_paid_notification(
     pledge: Pledge, transaction: PledgeTransaction, session: AsyncSession
 ) -> None:
-    issue = await issue_service.get_by_id(session, pledge.issue_id)
+    issue = await issue_service.get(session, pledge.issue_id)
     if not issue:
         log.error("pledge_paid_notification.no_issue_found")
         return

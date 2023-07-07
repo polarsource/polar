@@ -10,7 +10,7 @@ async def update_issue_state(hook: IssueReferenceHook) -> None:
     session = hook.session
     ref = hook.issue_reference
 
-    issue = await issue_service.get_by_id(session, ref.issue_id)
+    issue = await issue_service.get(session, ref.issue_id)
     if not issue:
         return
 

@@ -1,0 +1,14 @@
+{
+    "data": {
+        "collective": {
+            "host": {
+                "slug": "opensource"
+            },
+            "isActive": true,
+            "isApproved": true,
+            "isArchived": false,
+            "isFrozen": false,
+            "slug": "babel"
+        }
+    }
+}

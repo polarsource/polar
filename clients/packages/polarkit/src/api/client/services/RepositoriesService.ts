@@ -12,30 +12,6 @@ export class RepositoriesService {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
-   * Get a repository (Public API)
-   * Get a repository
-   * @returns Repository Successful Response
-   * @throws ApiError
-   */
-  public get({
-    id,
-  }: {
-    id: string,
-  }): CancelablePromise<Repository> {
-    return this.httpRequest.request({
-      method: 'GET',
-      url: '/api/v1/repositories/{id}',
-      path: {
-        'id': id,
-      },
-      errors: {
-        404: `Not Found`,
-        422: `Validation Error`,
-      },
-    });
-  }
-
-  /**
    * List repositories (Public API)
    * List repositories in organizations that the authenticated user is a member of. Requires authentication.
    * @returns Repository Successful Response
@@ -100,6 +76,30 @@ export class RepositoriesService {
         'platform': platform,
         'organization_name': organizationName,
         'repository_name': repositoryName,
+      },
+      errors: {
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Get a repository (Public API)
+   * Get a repository
+   * @returns Repository Successful Response
+   * @throws ApiError
+   */
+  public get({
+    id,
+  }: {
+    id: string,
+  }): CancelablePromise<Repository> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/repositories/{id}',
+      path: {
+        'id': id,
       },
       errors: {
         404: `Not Found`,

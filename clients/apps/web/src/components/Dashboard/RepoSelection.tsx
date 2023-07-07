@@ -53,7 +53,7 @@ export function RepoSelection(props: {
     inputRef?.current?.focus()
   }, [])
 
-  const { organizations, currentUser } = props
+  const { organizations, currentUser, repositories } = props
 
   const [dropdownSelectedOrg, setDropdowndropdownSelectedOrg] = useState<
     Organization | undefined
@@ -138,14 +138,14 @@ export function RepoSelection(props: {
   // Value in <input>
   const [inputValue, setInputValue] = useState('')
 
-  const reposInOrg = (orgID: string): Repository[] => {
-    if (!props.repositories) {
-      return []
-    }
-    return props.repositories.filter((r) => r.organization?.id === orgID)
-  }
-
   useEffect(() => {
+    const reposInOrg = (orgID: string): Repository[] => {
+      if (!repositories) {
+        return []
+      }
+      return repositories.filter((r) => r.organization?.id === orgID)
+    }
+
     let orgs: ListOrg[] = []
 
     // No selected org, and no search: show only orgs
@@ -197,7 +197,7 @@ export function RepoSelection(props: {
     organizations,
     inputValue,
     props.showRepositories,
-    reposInOrg,
+    repositories,
   ])
 
   const onInputValueChange = (e: string) => {

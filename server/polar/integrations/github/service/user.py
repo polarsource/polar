@@ -1,19 +1,22 @@
-from typing import List, Any
+from typing import Any, List
+
 import structlog
 
 from polar.enums import Platforms
+from polar.integrations.github.client import GitHub, TokenAuthStrategy
 from polar.kit.extensions.sqlalchemy import sql
-from polar.models import User, OAuthAccount
+from polar.models import OAuthAccount, User
+from polar.organization.service import organization
 from polar.postgres import AsyncSession
 from polar.user.service import UserService
-from polar.organization.service import organization
-from polar.integrations.github.client import GitHub, TokenAuthStrategy
 
 from .. import client as github
 from ..schemas import OAuthAccessToken
-from ..types import GithubUser
 
 log = structlog.get_logger()
+
+
+GithubUser = github.rest.PrivateUser | github.rest.PublicUser
 
 
 class GithubUserService(UserService):
@@ -252,10 +255,10 @@ class GithubUserService(UserService):
         return gh_user
 
     def map_installations_func(
-            self,   
-            r: github.Response[github.rest.UserInstallationsGetResponse200],
+        self,
+        r: github.Response[github.rest.UserInstallationsGetResponse200],
     ) -> list[github.rest.Installation]:
-            return r.parsed_data.installations
+        return r.parsed_data.installations
 
     async def fetch_user_accessible_installations(
         self, session: AsyncSession, user: User
@@ -263,7 +266,7 @@ class GithubUserService(UserService):
         """
         Load user accessible installations from GitHub API
         Finds the union between app installations and the users user-to-server token.
-        """       
+        """
 
         client = await github.get_user_client(session, user)
         res = []

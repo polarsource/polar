@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Tuple
 from uuid import UUID
 
-
+import stripe.error as stripe_lib_error
 import structlog
 
 from polar.models.user import User
@@ -25,9 +25,14 @@ log = structlog.get_logger()
 
 
 class AccountServiceError(Exception):
-    def __init__(self, message: str):
+    def __init__(self, message: str) -> None:
         self.message = message
         super().__init__(message)
+
+
+class AccountAlreadyExistsError(AccountServiceError):
+    def __init__(self) -> None:
+        super().__init__("An account already exists for this organization.")
 
 
 class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
@@ -37,10 +42,10 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         organization_id: UUID,
         admin_id: UUID,
         account: AccountCreate,
-    ) -> Account | None:
+    ) -> Account:
         existing = await self.get_by(session=session, organization_id=organization_id)
         if existing is not None:
-            return None
+            raise AccountAlreadyExistsError()
 
         if account.account_type == AccountType.stripe:
             return await self._create_stripe_account(
@@ -51,7 +56,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
                 session, organization_id, admin_id, account
             )
 
-        return None
+        raise AccountServiceError("Unknown account type")
 
     async def _create_stripe_account(
         self,
@@ -59,11 +64,11 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         organization_id: UUID,
         admin_id: UUID,
         account: AccountCreate,
-    ) -> Account | None:
+    ) -> Account:
         try:
             stripe_account = stripe.create_account(account)
-        except Exception:
-            return None
+        except stripe_lib_error.StripeError as e:
+            raise AccountServiceError(e.user_message) from e
 
         return await Account.create(
             session=session,
@@ -87,7 +92,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         organization_id: UUID,
         admin_id: UUID,
         account: AccountCreate,
-    ) -> Account | None:
+    ) -> Account:
         assert account.open_collective_slug is not None
         try:
             collective = await open_collective.get_collective(

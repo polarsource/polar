@@ -3,7 +3,8 @@ import {
   ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/20/solid'
 import Image from 'next/image'
-import { BackofficePledgeRead, PledgeState } from 'polarkit/api/client'
+import { ACCOUNT_TYPE_DISPLAY_NAMES } from 'polarkit/account'
+import { AccountType, BackofficePledgeRead, PledgeState } from 'polarkit/api/client'
 import { ThinButton } from 'polarkit/components/ui'
 import {
   useBackofficePledgeApprove,
@@ -90,6 +91,9 @@ const PledgeItem = ({
             {pledge.receiver_org_name}
           </a>
         </td>
+        <td className="whitespace-nowrap px-2 py-2 text-sm font-medium text-gray-900">
+          {pledge.to_organization_account_type ? ACCOUNT_TYPE_DISPLAY_NAMES[pledge.to_organization_account_type] : '—'}
+        </td>
         <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-500">
           <div className="flex flex-col">
             {pledge.state}
@@ -119,7 +123,7 @@ const PledgeItem = ({
           </table>
         </td>
 
-        {showActions && (
+        {showActions && pledge.to_organization_account_type === AccountType.STRIPE && (
           <td className="relative flex items-center space-x-1 whitespace-nowrap py-2 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
             {pledge.payment_id && (
               <ThinButton
@@ -192,6 +196,13 @@ const PledgeItem = ({
             )}
           </td>
         )}
+
+        {showActions && pledge.to_organization_account_type === AccountType.OPEN_COLLECTIVE && (
+          <td className="whitespace-nowrap px-2 py-2 text-sm text-gray-500 italic">
+            Manual Open Collective Payouts
+          </td>
+        )}
+
       </tr>
 
       {showDisputeDetails && (

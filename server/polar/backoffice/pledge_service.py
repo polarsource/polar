@@ -23,6 +23,7 @@ class BackofficePledgeService:
     ) -> list[BackofficePledgeRead]:
         stmt = sql.select(Pledge).options(
             joinedload(Pledge.by_organization),
+            joinedload(Pledge.to_organization),
             joinedload(Pledge.user),
             joinedload(Pledge.issue).joinedload(Issue.organization),
             joinedload(Pledge.issue).joinedload(Issue.repository),

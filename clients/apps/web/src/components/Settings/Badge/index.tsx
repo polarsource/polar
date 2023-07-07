@@ -9,9 +9,9 @@ import { motion } from 'framer-motion'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
 import {
-  Organization,
   type OrganizationBadgeSettingsRead,
   type OrganizationBadgeSettingsUpdate,
+  type OrganizationPrivateRead,
   type RepositoryBadgeSettingsRead,
 } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
@@ -98,7 +98,7 @@ const BadgeSetup = ({
   setSyncIssuesCount,
   isSettingPage = false,
 }: {
-  org: Organization
+  org: OrganizationPrivateRead
   showControls: boolean
   setShowControls: (state: boolean) => void
   setSyncIssuesCount: (state: number) => void
@@ -420,7 +420,7 @@ export const Controls = ({
   isSettingPage,
   anyBadgeSettingChanged,
 }: {
-  org: Organization
+  org: OrganizationPrivateRead
   showControls: boolean
   setShowControls: (state: boolean) => void
   isRetroactiveEnabled: boolean

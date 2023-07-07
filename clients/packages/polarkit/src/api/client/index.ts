@@ -25,6 +25,7 @@ export type { HTTPValidationError } from './models/HTTPValidationError';
 export { InstallationCreate } from './models/InstallationCreate';
 export type { InviteCreate } from './models/InviteCreate';
 export type { InviteRead } from './models/InviteRead';
+export { Issue } from './models/Issue';
 export type { IssueDashboardRead } from './models/IssueDashboardRead';
 export type { IssueExtensionRead } from './models/IssueExtensionRead';
 export type { IssueListResponse } from './models/IssueListResponse';
@@ -67,6 +68,7 @@ export type { polar__integrations__stripe__endpoints__WebhookResponse } from './
 export type { PostIssueComment } from './models/PostIssueComment';
 export type { PullRequestRead } from './models/PullRequestRead';
 export type { PullRequestReference } from './models/PullRequestReference';
+export type { Reactions } from './models/Reactions';
 export type { Relationship } from './models/Relationship';
 export type { RelationshipData } from './models/RelationshipData';
 export type { Repository } from './models/Repository';

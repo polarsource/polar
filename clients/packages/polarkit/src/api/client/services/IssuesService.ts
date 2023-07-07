@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { Issue } from '../models/Issue';
 import type { IssueRead } from '../models/IssueRead';
 import type { IssueReferenceRead } from '../models/IssueReferenceRead';
 import type { IssueResources } from '../models/IssueResources';
@@ -15,6 +16,28 @@ import type { BaseHttpRequest } from '../core/BaseHttpRequest';
 export class IssuesService {
 
   constructor(public readonly httpRequest: BaseHttpRequest) {}
+
+  /**
+   * Get
+   * @returns Issue Successful Response
+   * @throws ApiError
+   */
+  public get({
+    id,
+  }: {
+    id: string,
+  }): CancelablePromise<Issue> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/issues/{id}',
+      path: {
+        'id': id,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
 
   /**
    * Get Or Sync External

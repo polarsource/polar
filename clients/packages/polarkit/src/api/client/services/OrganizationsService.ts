@@ -16,30 +16,6 @@ export class OrganizationsService {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
-   * Get an organization (Public API)
-   * Get an organization
-   * @returns Organization Successful Response
-   * @throws ApiError
-   */
-  public get({
-    id,
-  }: {
-    id: string,
-  }): CancelablePromise<Organization> {
-    return this.httpRequest.request({
-      method: 'GET',
-      url: '/api/v1/organizations/{id}',
-      path: {
-        'id': id,
-      },
-      errors: {
-        404: `Not Found`,
-        422: `Validation Error`,
-      },
-    });
-  }
-
-  /**
    * List organizations (Public API)
    * List organizations that the authenticated user is a member of. Requires authentication.
    * @returns Organization Successful Response
@@ -97,6 +73,30 @@ export class OrganizationsService {
       query: {
         'platform': platform,
         'organization_name': organizationName,
+      },
+      errors: {
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Get an organization (Public API)
+   * Get an organization
+   * @returns Organization Successful Response
+   * @throws ApiError
+   */
+  public get({
+    id,
+  }: {
+    id: string,
+  }): CancelablePromise<Organization> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/organizations/{id}',
+      path: {
+        'id': id,
       },
       errors: {
         404: `Not Found`,

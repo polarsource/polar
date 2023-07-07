@@ -203,7 +203,9 @@ const PaymentForm = ({
           loading={isSyncing}
           onClick={onSubmit}
         >
-          Pledge ${getCentsInDollarString(organization.pledge_minimum_amount)}{' '}
+          Pledge ${amount > 0 && getCentsInDollarString(amount)}
+          {amount === 0 &&
+            getCentsInDollarString(organization.pledge_minimum_amount)}{' '}
           to {organization.pretty_name || organization.name}
         </PrimaryButton>
       </div>

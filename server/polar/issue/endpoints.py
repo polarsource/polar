@@ -1,4 +1,5 @@
 from typing import List, Sequence
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -17,10 +18,12 @@ from polar.models import Issue
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
+from polar.repository.endpoints import user_can_read
 from polar.repository.schemas import Repository as RepositorySchema
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 
+from .schemas import Issue as IssueSchema
 from .schemas import (
     IssuePublicRead,
     IssueRead,
@@ -32,6 +35,38 @@ from .schemas import (
 from .service import issue as issue_service
 
 router = APIRouter(tags=["issues"])
+
+
+@router.get(
+    "/issues/{id}",
+    response_model=IssueSchema,
+    tags=[Tags.PUBLIC],
+)
+async def get(
+    id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.optional_user),
+) -> IssueSchema:
+    issue = await issue_service.get_loaded(session, id)
+
+    if not issue:
+        raise HTTPException(
+            status_code=404,
+            detail="Issue not found",
+        )
+
+    if not await user_can_read(session, auth, issue.repository):
+        raise HTTPException(
+            status_code=404,
+            detail="Issue not found",
+        )
+
+    return IssueSchema.from_db(issue)
+
+
+#
+# Internal APIs below
+#
 
 
 class IssueResources(Schema):

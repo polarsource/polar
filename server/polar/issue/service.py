@@ -39,6 +39,23 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
     def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
         return [self.model.external_id]
 
+    async def get_loaded(
+        self,
+        session: AsyncSession,
+        id: UUID,
+    ) -> Issue | None:
+        statement = (
+            sql.select(Issue)
+            .where(Issue.id == id)
+            .where(Issue.deleted_at.is_(None))
+            .options(
+                joinedload(Issue.repository),
+                joinedload(Issue.repository).joinedload(Repository.organization),
+            )
+        )
+        res = await session.execute(statement)
+        return res.scalars().unique().one_or_none()
+
     async def get_by_platform(
         self, session: AsyncSession, platform: Platforms, external_id: int
     ) -> Issue | None:

@@ -2,23 +2,19 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Self, Type, Union
+from typing import Literal, Self, Type, Union
 from uuid import UUID
 
 import structlog
+from fastapi.encoders import jsonable_encoder
 from pydantic import parse_obj_as
 
 from polar.dashboard.schemas import IssueStatus
 from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.integrations.github.badge import GithubBadge
-from polar.integrations.github.types import (
-    GithubIssue,
-    GithubPullRequestFull,
-    GithubPullRequestSimple,
-)
 from polar.kit.schemas import Schema
-from polar.models.issue import Issue
+from polar.models.issue import Issue as IssueModel
 from polar.models.issue_reference import (
     ExternalGitHubCommitReference as ExternalGitHubCommitReferenceModel,
 )
@@ -34,6 +30,72 @@ from polar.repository.schemas import Repository
 from polar.types import JSONAny
 
 log = structlog.get_logger()
+
+
+# Public API
+class Reactions(Schema):
+    total_count: int
+    plus_one: int
+    minus_one: int
+    laugh: int
+    hooray: int
+    confused: int
+    heart: int
+    rocket: int
+    eyes: int
+
+
+# Public API
+class Issue(Schema):
+    id: UUID
+    platform: Platforms
+    external_id: int
+    number: int
+    title: str
+    body: str | None
+    comments: int | None
+
+    # TODO: Add if needed
+    # author: JSONAny
+    # author_association: str | None
+    # labels: JSONAny
+    # assignee: JSONAny
+    # assignees: JSONAny
+    # milestone: JSONAny
+    # closed_by: JSONAny
+
+    reactions: Reactions | None
+
+    state: Literal["OPEN", "CLOSED"]
+
+    issue_closed_at: datetime | None
+    issue_modified_at: datetime | None
+    issue_created_at: datetime
+
+    repository: Repository
+
+    @classmethod
+    def from_db(cls, i: IssueModel) -> Self:
+        return cls(
+            id=i.id,
+            platform=i.platform,
+            external_id=i.external_id,
+            number=i.number,
+            title=i.title,
+            body=i.body,
+            comments=i.comments,
+            state="OPEN" if i.state == IssueModel.State.OPEN else "CLOSED",
+            issue_closed_at=i.issue_closed_at,
+            issue_modified_at=i.issue_modified_at,
+            issue_created_at=i.issue_created_at,
+            reactions=parse_obj_as(Reactions, i.reactions) if i.reactions else None,
+            repository=Repository.from_db(i.repository),
+        )
+
+
+#
+# Internal API schemas below
+#
 
 
 class Base(Schema):
@@ -57,7 +119,7 @@ class Base(Schema):
     closed_by: JSONAny
     reactions: JSONAny
 
-    state: Issue.State
+    state: IssueModel.State
     state_reason: str | None
 
     issue_closed_at: datetime | None
@@ -89,19 +151,18 @@ class IssueAndPullRequestBase(Base):
     def get_normalized_github_issue(
         cls: Type[Self],
         data: Union[
-            GithubIssue,
-            GithubPullRequestFull,
-            GithubPullRequestSimple,
-            github.rest.PullRequestSimple,
-            github.rest.PullRequest,
-            github.webhooks.PullRequestOpenedPropPullRequest,
-            github.webhooks.PullRequest,
-            github.webhooks.PullRequestClosedPropPullRequest,
-            github.webhooks.PullRequestReopenedPropPullRequest,
+            github.rest.Issue,
+            github.webhooks.Issue,
+            github.webhooks.IssuesOpenedPropIssue,
             github.webhooks.IssuesOpenedPropIssue,
             github.webhooks.IssuesClosedPropIssue,
             github.webhooks.IssuesReopenedPropIssue,
-            github.webhooks.Issue,
+            github.rest.PullRequest,
+            github.rest.PullRequestSimple,
+            github.webhooks.PullRequest,
+            github.webhooks.PullRequestOpenedPropPullRequest,
+            github.webhooks.PullRequestClosedPropPullRequest,
+            github.webhooks.PullRequestReopenedPropPullRequest,
         ],
         organization_id: UUID,
         repository_id: UUID,
@@ -113,7 +174,28 @@ class IssueAndPullRequestBase(Base):
         if not data.id:
             raise Exception("no external id set")
 
-        body = data.body or ""
+        reactions: Reactions | None = None
+
+        # All issue types have reactions, pull request types does not
+        if (
+            isinstance(data, github.rest.Issue)
+            or isinstance(data, github.webhooks.IssuesOpenedPropIssue)
+            or isinstance(data, github.webhooks.IssuesOpenedPropIssue)
+            or isinstance(data, github.webhooks.IssuesClosedPropIssue)
+            or isinstance(data, github.webhooks.IssuesReopenedPropIssue)
+            or isinstance(data, github.webhooks.Issue)
+        ) and data.reactions:
+            reactions = Reactions(
+                total_count=data.reactions.total_count,
+                plus_one=data.reactions.plus_one,
+                minus_one=data.reactions.minus_one,
+                laugh=data.reactions.laugh,
+                hooray=data.reactions.hooray,
+                confused=data.reactions.confused,
+                heart=data.reactions.heart,
+                rocket=data.reactions.rocket,
+                eyes=data.reactions.eyes,
+            )
 
         return cls(
             platform=Platforms.github,
@@ -122,7 +204,7 @@ class IssueAndPullRequestBase(Base):
             repository_id=repository_id,
             number=data.number,
             title=data.title,
-            body=body,
+            body=data.body if data.body else "",
             comments=getattr(data, "comments", None),
             author=github.jsonify(data.user),
             author_association=data.author_association,
@@ -132,8 +214,8 @@ class IssueAndPullRequestBase(Base):
             milestone=github.jsonify(data.milestone),
             # TODO: Verify this
             closed_by=github.jsonify(github.attr(data, "closed_by")),
-            reactions=github.jsonify(github.attr(data, "reactions")),
-            state=Issue.State(data.state),
+            reactions=jsonable_encoder(reactions),
+            state=IssueModel.State(data.state),
             state_reason=github.attr(data, "state_reason"),
             issue_closed_at=data.closed_at,
             issue_created_at=data.created_at,
@@ -151,11 +233,11 @@ class IssueCreate(IssueAndPullRequestBase):
     def from_github(
         cls,
         data: Union[
-            GithubIssue,
+            github.rest.Issue,
+            github.webhooks.Issue,
             github.webhooks.IssuesOpenedPropIssue,
             github.webhooks.IssuesClosedPropIssue,
             github.webhooks.IssuesReopenedPropIssue,
-            github.webhooks.Issue,
         ],
         organization_id: UUID,
         repository_id: UUID,
@@ -166,7 +248,7 @@ class IssueCreate(IssueAndPullRequestBase):
             repository_id=repository_id,
         )
 
-        ret.has_pledge_badge_label = Issue.contains_pledge_badge_label(ret.labels)
+        ret.has_pledge_badge_label = IssueModel.contains_pledge_badge_label(ret.labels)
 
         if ret.body:
             ret.pledge_badge_currently_embedded = GithubBadge.badge_is_embedded(
@@ -366,7 +448,7 @@ class IssuePublicRead(Schema):
     labels: JSONAny
     # closed_by: JSONAny
     reactions: JSONAny
-    state: Issue.State
+    state: IssueModel.State
     # state_reason: str | None
     issue_closed_at: datetime | None
     issue_modified_at: datetime | None

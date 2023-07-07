@@ -1,8 +1,10 @@
 import enum
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
-from datetime import datetime
 
+import sqlalchemy
+import sqlalchemy as sa
 from sqlalchemy import (
     TIMESTAMP,
     BigInteger,
@@ -14,7 +16,6 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-import sqlalchemy
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
     Mapped,
@@ -23,27 +24,19 @@ from sqlalchemy.orm import (
     mapped_column,
     relationship,
 )
-
+from sqlalchemy_utils.types.ts_vector import TSVectorType
 
 from polar.config import settings
+from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
-from polar.enums import Platforms
-
 from polar.types import JSONDict, JSONList
-
-import sqlalchemy as sa
-from sqlalchemy_utils.types.ts_vector import TSVectorType
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.issue_reference import IssueReference
     from polar.models.organization import Organization
-    from polar.models.repository import Repository
     from polar.models.pledge import Pledge
-
-
-class Platform(enum.Enum):
-    GITHUB = "github"
+    from polar.models.repository import Repository
 
 
 class IssueFields:
@@ -51,7 +44,7 @@ class IssueFields:
         OPEN = "open"
         CLOSED = "closed"
 
-    platform: Mapped[Platform] = mapped_column(StringEnum(Platforms), nullable=False)
+    platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
     external_id: Mapped[int] = mapped_column(Integer, nullable=False)
 
     @declared_attr

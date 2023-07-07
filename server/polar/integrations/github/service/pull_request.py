@@ -1,16 +1,16 @@
-from typing import Any, Sequence
-from githubkit import GitHub
+from typing import Any, Sequence, Union
 
 import structlog
+from githubkit import GitHub
 
-from polar.pull_request.hooks import PullRequestHook, pull_request_upserted
-from polar.models import PullRequest, Organization, Repository
 from polar.enums import Platforms
+from polar.models import Organization, PullRequest, Repository
 from polar.postgres import AsyncSession
+from polar.pull_request.hooks import PullRequestHook, pull_request_upserted
 from polar.pull_request.schemas import FullPullRequestCreate, MinimalPullRequestCreate
 from polar.pull_request.service import PullRequestService, full_pull_request
 
-from ..types import GithubPullRequestFull, GithubPullRequestSimple
+from .. import client as github
 
 log = structlog.get_logger()
 
@@ -25,7 +25,7 @@ class GithubPullRequestService(PullRequestService):
         self,
         session: AsyncSession,
         *,
-        data: GithubPullRequestSimple,
+        data: github.rest.PullRequestSimple,
         organization: Organization,
         repository: Repository,
     ) -> PullRequest:
@@ -41,11 +41,11 @@ class GithubPullRequestService(PullRequestService):
         self,
         session: AsyncSession,
         *,
-        data: Sequence[GithubPullRequestSimple],
+        data: Sequence[github.rest.PullRequestSimple],
         organization: Organization,
         repository: Repository,
     ) -> Sequence[PullRequest]:
-        def parse(pr: GithubPullRequestSimple) -> MinimalPullRequestCreate:
+        def parse(pr: github.rest.PullRequestSimple) -> MinimalPullRequestCreate:
             return MinimalPullRequestCreate.minimal_pull_request_from_github(
                 pr,
                 organization_id=organization.id,
@@ -77,7 +77,9 @@ class GithubPullRequestService(PullRequestService):
     async def store_full(
         self,
         session: AsyncSession,
-        data: GithubPullRequestFull,
+        data: Union[
+            github.rest.PullRequest, github.webhooks.PullRequestOpenedPropPullRequest
+        ],
         organization: Organization,
         repository: Repository,
     ) -> PullRequest:
@@ -92,11 +94,21 @@ class GithubPullRequestService(PullRequestService):
     async def store_many_full(
         self,
         session: AsyncSession,
-        data: Sequence[GithubPullRequestFull],
+        data: Sequence[
+            Union[
+                github.rest.PullRequest,
+                github.webhooks.PullRequestOpenedPropPullRequest,
+            ],
+        ],
         organization: Organization,
         repository: Repository,
     ) -> Sequence[PullRequest]:
-        def parse(pr: GithubPullRequestFull) -> FullPullRequestCreate:
+        def parse(
+            pr: Union[
+                github.rest.PullRequest,
+                github.webhooks.PullRequestOpenedPropPullRequest,
+            ],
+        ) -> FullPullRequestCreate:
             return FullPullRequestCreate.full_pull_request_from_github(
                 pr,
                 organization_id=organization.id,

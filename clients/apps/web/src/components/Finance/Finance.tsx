@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { api } from 'polarkit/api'
 import {
   AccountRead,
-  OrganizationPrivateRead,
+  Organization,
   Platforms,
   PledgeResources,
   PledgeState,
@@ -20,7 +20,7 @@ import { Modal as ModernModal } from '../Modal'
 import List from './List'
 
 const Finance = (props: {
-  org: OrganizationPrivateRead
+  org: Organization
   tab: 'current' | 'rewarded'
   pledges: PledgeResources[]
   accounts: AccountRead[]
@@ -187,7 +187,7 @@ const Triangle = () => (
 )
 
 const StripeBanner = (props: {
-  org: OrganizationPrivateRead
+  org: Organization
   accounts: AccountRead[]
 }) => {
   const { org, accounts } = props

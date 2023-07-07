@@ -1,21 +1,21 @@
 import { useRouter } from 'next/router'
-import type { OrganizationPrivateRead, Repository } from 'polarkit/api/client'
-import { useUserOrganizations } from 'polarkit/hooks'
+import type { Organization, Repository } from 'polarkit/api/client'
+import { useListOrganizations, useListRepositories } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { useEffect, useState } from 'react'
-import { useRequireAuth } from './auth'
 
 export const useCurrentOrgAndRepoFromURL = (): {
-  org: OrganizationPrivateRead | undefined
+  org: Organization | undefined
   repo: Repository | undefined
   isLoaded: boolean
   haveOrgs: boolean
 } => {
   const router = useRouter()
   const { organization: queryOrg, repo: queryRepo } = router.query
-  const { currentUser } = useRequireAuth()
-  const userOrgQuery = useUserOrganizations(currentUser)
-  const [org, setOrg] = useState<OrganizationPrivateRead | undefined>(undefined)
+  const listOrganizationsQuery = useListOrganizations()
+  const listRepositoriesQuery = useListRepositories()
+
+  const [org, setOrg] = useState<Organization | undefined>(undefined)
   const [repo, setRepo] = useState<Repository | undefined>(undefined)
   const [haveOrgs, setHaveOrgs] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
@@ -27,26 +27,36 @@ export const useCurrentOrgAndRepoFromURL = (): {
     const orgSlug = typeof queryOrg === 'string' ? queryOrg : ''
     const repoSlug = typeof queryRepo === 'string' ? queryRepo : ''
 
-    let nextOrg: OrganizationPrivateRead | undefined
+    let nextOrg: Organization | undefined
     let nextRepo: Repository | undefined
 
-    if (userOrgQuery.data) {
-      nextOrg = userOrgQuery.data.find(
-        (org: OrganizationPrivateRead) => org.name === orgSlug,
+    // Get repo and org
+    if (orgSlug && repoSlug && listRepositoriesQuery.data) {
+      const repo = listRepositoriesQuery.data.find(
+        (r) => r.name === repoSlug && r.organization?.name === orgSlug,
       )
-      if (nextOrg && repoSlug) {
-        nextRepo = nextOrg.repositories?.find((r) => r.name === repoSlug)
+
+      if (repo) {
+        nextOrg = repo.organization
+        nextRepo = repo
       }
+    }
+
+    // Get org if no org found above
+    if (!nextOrg && orgSlug && listOrganizationsQuery.data) {
+      nextOrg = listOrganizationsQuery.data.find((o) => o.name === orgSlug)
     }
 
     // local state
     setOrg(nextOrg)
     setRepo(nextRepo)
 
-    setIsLoaded(userOrgQuery.isSuccess)
+    setIsLoaded(
+      listOrganizationsQuery.isSuccess && listRepositoriesQuery.isSuccess,
+    )
 
     const nextUserHaveOrgs = !!(
-      userOrgQuery.data && userOrgQuery.data.length > 0
+      listOrganizationsQuery.data && listOrganizationsQuery.data.length > 0
     )
 
     setHaveOrgs(nextUserHaveOrgs)
@@ -54,7 +64,14 @@ export const useCurrentOrgAndRepoFromURL = (): {
     // global stores
     setCurrentOrgRepo(nextOrg, nextRepo)
     setUserHaveOrgs(nextUserHaveOrgs)
-  }, [userOrgQuery, setCurrentOrgRepo, setUserHaveOrgs, queryOrg, queryRepo])
+  }, [
+    listOrganizationsQuery,
+    listRepositoriesQuery,
+    setCurrentOrgRepo,
+    setUserHaveOrgs,
+    queryOrg,
+    queryRepo,
+  ])
 
   return {
     org,

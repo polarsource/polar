@@ -4,15 +4,14 @@ import DashboardSidebarLayout from '@/components/Layout/DashboardSidebarLayout'
 import OnboardingConnectReposToGetStarted from '@/components/Onboarding/OnboardingConnectReposToGetStarted'
 import type { NextLayoutComponentType } from 'next'
 import { useRouter } from 'next/router'
-import { useListPersonalPledges, useUserOrganizations } from 'polarkit/hooks'
+import { useListOrganizations, useListPersonalPledges } from 'polarkit/hooks'
 import { ReactElement, useEffect } from 'react'
-import { useCurrentOrgAndRepoFromURL, useRequireAuth } from '../../hooks'
+import { useCurrentOrgAndRepoFromURL } from '../../hooks'
 
 const Page: NextLayoutComponentType = () => {
   const { isLoaded, haveOrgs } = useCurrentOrgAndRepoFromURL()
-  const { currentUser } = useRequireAuth()
 
-  const userOrgQuery = useUserOrganizations(currentUser)
+  const listOrganizationsQuery = useListOrganizations()
   const personalPledges = useListPersonalPledges()
 
   const router = useRouter()
@@ -28,8 +27,12 @@ const Page: NextLayoutComponentType = () => {
     }
 
     // redirect to first org
-    if (haveOrgs && userOrgQuery?.data && userOrgQuery.data.length > 0) {
-      const gotoOrg = userOrgQuery.data[0]
+    if (
+      haveOrgs &&
+      listOrganizationsQuery?.data &&
+      listOrganizationsQuery.data.length > 0
+    ) {
+      const gotoOrg = listOrganizationsQuery.data[0]
       router.push(`/dashboard/${gotoOrg.name}`)
       return
     }

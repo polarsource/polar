@@ -5,7 +5,6 @@ import {
   Repository,
   type IssueRead,
   type Organization,
-  type OrganizationPrivateRead,
   type PledgeRead,
   type UserRead,
 } from '../api/client'
@@ -29,11 +28,11 @@ export interface OnboardingState {
 
 export interface ContextState {
   userHaveOrgs: boolean
-  currentOrg: OrganizationPrivateRead | undefined
+  currentOrg: Organization | undefined
   currentRepo: Repository | undefined
   setUserHaveOrgs: (userHaveOrgs: boolean) => void
   setCurrentOrgRepo: (
-    org: OrganizationPrivateRead | undefined,
+    org: Organization | undefined,
     repo: Repository | undefined,
   ) => void
 }
@@ -119,7 +118,7 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
     set({ userHaveOrgs })
   },
   setCurrentOrgRepo: (
-    org: OrganizationPrivateRead | undefined,
+    org: Organization | undefined,
     repo: Repository | undefined,
   ) => {
     set({

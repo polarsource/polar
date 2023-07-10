@@ -15,12 +15,11 @@ const stringToNumber = (
  * document.querySelectorAll('.PressableContext').forEach((d) => { if (d.checked && d.name !== '') { whitelist.push(d.name) } })
  * whitelist.join(',')
  *
+ * All countries supported by Stripe except Gibraltar (transfers not supported)
  *
- * Alpha: EU, US, GB & CA.
- * Will expand to more Stripe countries in the near future.
  */
 const STRIPE_COUNTRIES =
-  'AT,BE,BG,CA,HR,CY,CZ,DK,EE,FI,FR,DE,GR,HU,IE,IT,LV,LT,LU,MT,NL,NO,PL,PT,RO,SK,SI,ES,SE,GB,US'
+  'AL,AG,AR,AM,AU,AT,BH,BE,BO,BA,BG,KH,CA,CL,CO,CR,HR,CY,CZ,CI,DK,DO,EC,EG,SV,EE,ET,FI,FR,GM,DE,GH,GR,GT,GY,HK,HU,IS,IN,ID,IE,IL,IT,JM,JP,JO,KE,KW,LV,LI,LT,LU,MO,MG,MY,MT,MU,MX,MD,MN,MA,NA,NL,NZ,NG,MK,NO,OM,PA,PY,PE,PH,PL,PT,QA,RO,RW,SA,SN,RS,SG,SK,SI,ZA,KR,ES,LK,LC,SE,CH,TZ,TH,TT,TN,TR,AE,GB,US,UY,UZ,VN,DZ,AO,AZ,BS,BD,BJ,BT,BW,BN,GA,KZ,LA,MC,MZ,NE,PK,SM,TW'
 
 let defaults = {
   BASE_URL: process?.env?.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',

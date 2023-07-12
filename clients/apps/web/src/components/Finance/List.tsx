@@ -69,13 +69,13 @@ const List = (props: {
               scope="col"
               className="relative isolate whitespace-nowrap py-3.5 pr-2 text-left text-sm font-medium "
             >
-              Pledger
+              Backer
             </th>
             <th
               scope="col"
               className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-left text-sm font-medium"
             >
-              Pledge date
+              Date
             </th>
             {showEstimatedPayoutDate && (
               <th

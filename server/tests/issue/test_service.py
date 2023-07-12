@@ -513,12 +513,19 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
     assert len(issues[0].pledges) == 2
     assert len(issues[1].pledges) == 1
 
-    # assert that peldger metadata is joined
-    assert issues[0].pledges[0].by_user_id is not None
-    assert issues[0].pledges[0].user.username is not None
+    # Since our getter sorts by issues and not by pledges, we can get them in
+    # different order based on the join. So we sort them by created_at here
+    # to easily check against the same order creation in the test itself.
+    sorted_pledges = sorted(issues[0].pledges, key=lambda p: p.created_at)
 
-    assert issues[0].pledges[1].by_organization_id is not None
-    assert issues[0].pledges[1].by_organization.name is not None
+    # assert that peldger metadata is joined
+    assert sorted_pledges[0].id == pledge_issue_3_user.id
+    assert sorted_pledges[0].by_user_id is not None
+    assert sorted_pledges[0].user.username is not None
+
+    assert sorted_pledges[1].id == pledge_issue_3_org.id
+    assert sorted_pledges[1].by_organization_id is not None
+    assert sorted_pledges[1].by_organization.name is not None
 
 
 @pytest.mark.asyncio

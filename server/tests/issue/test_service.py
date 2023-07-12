@@ -518,7 +518,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
     # to easily check against the same order creation in the test itself.
     sorted_pledges = sorted(issues[0].pledges, key=lambda p: p.created_at)
 
-    # assert that peldger metadata is joined
+    # assert that backer metadata is joined
     assert sorted_pledges[0].id == pledge_issue_3_user.id
     assert sorted_pledges[0].by_user_id is not None
     assert sorted_pledges[0].user.username is not None

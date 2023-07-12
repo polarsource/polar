@@ -76,7 +76,7 @@ const Finance = (props: {
 
       <div className="flex space-x-8">
         <HeaderPill
-          title="Current peldges"
+          title="Current pledges"
           amount={currentPledgesAmount}
           active={props.tab === 'current'}
           href={`/finance/${org.name}`}

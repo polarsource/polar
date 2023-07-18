@@ -469,21 +469,5 @@ class GithubIssueService(IssueService):
             body=comment,
         )
 
-    async def add_comment_as_polar_sh_user(
-        self,
-        organization: Organization,
-        repository: Repository,
-        issue: Issue,
-        comment: str,
-    ) -> None:
-        client = github.get_polar_client()
-
-        await client.rest.issues.async_create_comment(
-            organization.name,
-            repository.name,
-            issue.number,
-            body=comment,
-        )
-
 
 github_issue = GithubIssueService(Issue)

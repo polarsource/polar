@@ -2,8 +2,6 @@ import structlog
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 
 from polar.config import settings
-from polar.integrations.github.badge import GithubBadge
-from polar.integrations.github.service.issue import github_issue as github_issue_service
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.issue.service import issue as issue_service
 from polar.models import Issue
@@ -101,60 +99,6 @@ async def pledge_created_discord_alert(hook: PledgeHook) -> None:
 
 
 pledge_created_hook.add(pledge_created_discord_alert)
-
-
-async def pledge_created_comment_on_github(hook: PledgeHook) -> None:
-    session = hook.session
-    pledge = hook.pledge
-
-    if not settings.GITHUB_POLAR_USER_ACCESS_TOKEN:
-        log.warning(
-            "GITHUB_POLAR_USER_ACCESS_TOKEN is not configured, skipping pledge_created_comment_on_github"  # noqa: E501
-        )
-        return
-
-    issue = await issue_service.get_by_id(session, pledge.issue_id)
-    if not issue:
-        log.error(
-            "pledge_created_comment_on_github.issue_not_found",
-            id=pledge.issue_id,
-        )
-        return
-
-    # TODO: ever_embedded or currently embedded?
-    if issue.pledge_badge_ever_embedded:
-        return
-
-    org = await organization_service.get(session, issue.organization_id)
-    if not org:
-        log.error(
-            "pledge_created_comment_on_github.organization_not_found",
-            id=issue.organization_id,
-        )
-        return
-
-    repo = await repository_service.get(session, issue.repository_id)
-    if not repo:
-        log.error(
-            "pledge_created_comment_on_github.repository_not_found",
-            id=issue.repository_id,
-        )
-        return
-
-    badge = GithubBadge(organization=org, repository=repo, issue=issue)
-    message = badge.badge_markdown(
-        f"A ${pledge.amount/100} pledge has been made towards this issue via [Polar](polar.sh)"  # noqa: E501
-    )
-
-    await github_issue_service.add_comment_as_polar_sh_user(
-        org,
-        repo,
-        issue,
-        message,
-    )
-
-
-pledge_created_hook.add(pledge_created_comment_on_github)
 
 
 async def pledge_created_issue_pledge_sum(hook: PledgeHook) -> None:

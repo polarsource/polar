@@ -1,6 +1,7 @@
+from posthog import Posthog
+
 from polar.config import settings
 from polar.models.user import User
-from posthog import Posthog
 
 
 class Service:
@@ -25,4 +26,4 @@ class Service:
         )
 
 
-posthog_service = Service()
+posthog = Service()

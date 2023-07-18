@@ -13,7 +13,9 @@ const GithubLoginButton = (props: {
     e.stopPropagation()
 
     const posthogProps = props.posthogProps || {}
-    posthog.capture('GitHub Signin Clicked', posthogProps)
+    posthog.capture('GitHub Signin Clicked', posthogProps, {
+      send_instantly: true,
+    })
 
     const res = await api.integrations.githubAuthorize({
       pledgeId: props.pledgeId,

@@ -8,6 +8,7 @@ from polar.kit.extensions.sqlalchemy import sql
 from polar.models import OAuthAccount, User
 from polar.organization.service import organization
 from polar.postgres import AsyncSession
+from polar.posthog import posthog
 from polar.user.service import UserService
 
 from .. import client as github
@@ -134,13 +135,24 @@ class GithubUserService(UserService):
             user = await self.login(
                 session, github_user=authenticated, user=existing_user, tokens=tokens
             )
+            event_name = "User Logged In"
         else:
             user = await self.signup(session, github_user=authenticated, tokens=tokens)
+            event_name = "User Signed Up"
 
-        await self._run_sync_github_admin_orgs(
+        org_count = await self._run_sync_github_admin_orgs(
             session,
             user=user,
             github_user=authenticated,
+        )
+        posthog.user_event(
+            user,
+            event_name,
+            {
+                "$set": {
+                    "org_count": org_count,
+                },
+            },
         )
         return user
 
@@ -163,25 +175,26 @@ class GithubUserService(UserService):
         *,
         user: User,
         github_user: GithubUser,
-    ) -> None:
+    ) -> int:
+        org_count = 0
+
         installations = await self.fetch_user_accessible_installations(session, user)
         log.info(
             "sync_github_admin_orgs.installations",
             user_id=user.id,
             installation_ids=[i.id for i in installations],
         )
-
         gh_oauth = user.get_platform_oauth_account(Platforms.github)
         if not gh_oauth:
             log.error("sync_github_admin_orgs.no_platform_oauth_found", user_id=user.id)
-            return
+            return org_count
 
         for i in installations:
             if not i.account:
                 continue
 
             if isinstance(i.account, github.rest.Enterprise):
-                log.error("sync_github_admin_orgs.github_enterprise_not_supoprted")
+                log.error("sync_github_admin_orgs.github_enterprise_not_supported")
                 continue
 
             org = await organization.get_by_platform(
@@ -201,6 +214,7 @@ class GithubUserService(UserService):
 
                 # Add as admin in Polar (or upgrade existing memeber to admin)
                 await organization.add_user(session, org, user, is_admin=True)
+                org_count += 1
             else:
                 try:
                     client = github.get_app_installation_client(i.id)
@@ -219,8 +233,9 @@ class GithubUserService(UserService):
                             user_id=user.id,
                         )
 
-                        # Add as admin in Polar (or upgrade existing memeber to admin)
+                        # Add as admin in Polar (or upgrade existing member to admin)
                         await organization.add_user(session, org, user, is_admin=True)
+                        org_count += 1
                 except Exception as e:
                     log.error(
                         "sync_github_admin_orgs.failed",
@@ -228,6 +243,8 @@ class GithubUserService(UserService):
                         org_id=org.id,
                         user_id=user.id,
                     )
+
+        return org_count
 
     async def fetch_authenticated_user(
         self,

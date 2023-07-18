@@ -81,9 +81,11 @@ class Service:
 
         self.client.identify(
             self.generate_distinct_user_id(user),
-            properties={
-                "username": user.username,
-            },
+            properties=self.decorate_properties(
+                {
+                    "username": user.username,
+                }
+            ),
         )
 
 

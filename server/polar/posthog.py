@@ -13,6 +13,8 @@ class Service:
             return
 
         self.client = Posthog(settings.POSTHOG_PROJECT_API_KEY)
+        self.client.disabled = settings.is_testing()
+        self.client.debug = settings.DEBUG
 
     def identify(self, user: User) -> None:
         if not self.client:

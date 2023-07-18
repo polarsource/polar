@@ -7,7 +7,13 @@ const Login = ({ gotoUrl }: { gotoUrl?: string }) => {
       <div id="polar-bg-gradient"></div>
       <div className="flex flex-col items-center">
         <LogoType70 className="mb-6 h-10" />
-        <GithubLoginButton size="large" gotoUrl={gotoUrl} />
+        <GithubLoginButton
+          size="large"
+          gotoUrl={gotoUrl}
+          posthogProps={{
+            view: 'Login Page',
+          }}
+        />
       </div>
     </div>
   )

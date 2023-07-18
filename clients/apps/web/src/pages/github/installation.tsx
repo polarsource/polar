@@ -90,7 +90,14 @@ const GithubInstallationPage: NextPageWithLayout = () => {
       <LoadingScreen animate={false}>
         <div className="flex flex-col items-center space-y-2">
           <p>Login to continue</p>
-          {gotoUrl && <GithubLoginButton gotoUrl={gotoUrl} />}
+          {gotoUrl && (
+            <GithubLoginButton
+              gotoUrl={gotoUrl}
+              posthogProps={{
+                view: 'Github Installation Page',
+              }}
+            />
+          )}
         </div>
       </LoadingScreen>
     )

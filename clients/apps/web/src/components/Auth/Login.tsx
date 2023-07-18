@@ -8,12 +8,6 @@ const Login = ({ gotoUrl }: { gotoUrl?: string }) => {
       <div className="flex flex-col items-center">
         <LogoType70 className="mb-6 h-10" />
         <GithubLoginButton size="large" gotoUrl={gotoUrl} />
-        <a
-          href="https://polar.sh/request"
-          className="mt-7 text-sm text-gray-500 dark:text-gray-400"
-        >
-          Request access
-        </a>
       </div>
     </div>
   )

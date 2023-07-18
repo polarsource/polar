@@ -17,6 +17,7 @@ import { IssueReadWithRelations } from 'polarkit/api/types'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { CONFIG } from 'polarkit/config'
 import { parseGitHubIssueLink } from 'polarkit/github'
+import { posthog } from 'posthog-js'
 import { ChangeEvent, MouseEvent, useState } from 'react'
 import IssueListItem from '../Dashboard/IssueListItem'
 
@@ -202,6 +203,13 @@ const OnboardingAddDependency = () => {
             <div>
               <PrimaryButton
                 onClick={() => {
+                  posthog.capture(
+                    'Connect Repository Clicked',
+                    {
+                      view: 'New Signup',
+                    },
+                    { send_instantly: true },
+                  )
                   window.open(CONFIG.GITHUB_INSTALLATION_URL, '_blank')
                 }}
               >

@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { Organization, Repository, UserRead } from 'polarkit/api/client'
 import { CONFIG } from 'polarkit/config'
 import { useOutsideClick } from 'polarkit/utils'
+import { posthog } from 'posthog-js'
 import React, { KeyboardEvent, useEffect, useRef, useState } from 'react'
 import {
   Avatar,
@@ -379,6 +380,13 @@ export function RepoSelection(props: {
                   <Item
                     value="Connect a repository"
                     onSelect={() => {
+                      posthog.capture(
+                        'Connect Repository Clicked',
+                        {
+                          view: 'Repo Selection',
+                        },
+                        { send_instantly: true },
+                      )
                       window.open(CONFIG.GITHUB_INSTALLATION_URL, '_blank')
                     }}
                   >

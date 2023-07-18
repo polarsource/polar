@@ -115,9 +115,7 @@ async def github_callback(
         await pledge_service.connect_backer(session, pledge_id=pledge_id, backer=user)
 
     posthog.identify(user)
-
     goto_url = state_data.get("goto_url", None)
-
     return AuthService.generate_login_cookie_response(
         request=request, response=response, user=user, goto_url=goto_url
     )
@@ -138,6 +136,16 @@ async def get_badge_settings(
     badge_type: Literal["pledge"],
     session: AsyncSession = Depends(get_db_session),
 ) -> GithubBadgeRead:
+    posthog.anonymous_event(
+        "Github Badge Settings Load",
+        {
+            "org": org,
+            "repo": repo,
+            "issue_number": number,
+            "badge_type": badge_type,
+        },
+    )
+
     organization = await github_organization.get_by_name(session, Platforms.github, org)
     if organization is None:
         raise HTTPException(status_code=404, detail="Organization not found")

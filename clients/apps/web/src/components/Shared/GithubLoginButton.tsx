@@ -1,14 +1,19 @@
 import { api } from 'polarkit'
+import posthog from 'posthog-js'
 import { MouseEvent } from 'react'
 
 const GithubLoginButton = (props: {
   pledgeId?: string
   gotoUrl?: string
   size?: 'large' | 'small'
+  posthogProps?: object
 }) => {
   const signin = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     e.stopPropagation()
+
+    const posthogProps = props.posthogProps || {}
+    posthog.capture('GitHub Signin Clicked', posthogProps)
 
     const res = await api.integrations.githubAuthorize({
       pledgeId: props.pledgeId,

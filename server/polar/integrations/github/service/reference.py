@@ -349,17 +349,7 @@ class GitHubIssueReferencesService:
                 issue.github_timeline_etag = res.headers.get("etag", None)
                 await issue.save(session)
 
-            try:
-                parsed_data = res.parsed_data
-            except ValidationError as e:
-                log.error(
-                    "github.sync_issue_references.validation_error",
-                    error=e,
-                    raw_response=res.text,
-                )
-                return
-
-            for event in parsed_data:
+            for event in res.parsed_data:
                 ref = await self.parse_issue_timeline_event(
                     session, org, repo, issue, event, client=client
                 )

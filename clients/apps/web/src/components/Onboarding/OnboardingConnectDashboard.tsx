@@ -4,7 +4,6 @@ import { CONFIG } from 'polarkit'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { useStore } from 'polarkit/store'
 import { classNames } from 'polarkit/utils'
-import { posthog } from 'posthog-js'
 import { MouseEvent, useEffect, useState } from 'react'
 import screenshot from './ScreenshotDashboard.png'
 
@@ -52,13 +51,6 @@ const OnboardingConnectPersonalDashboard = () => {
                 classNames="pl-3.5"
                 fullWidth={false}
                 onClick={() => {
-                  posthog.capture(
-                    'Connect Repository Clicked',
-                    {
-                      view: 'Onboarding Card Personal',
-                    },
-                    { send_instantly: true },
-                  )
                   window.open(CONFIG.GITHUB_INSTALLATION_URL, '_blank')
                 }}
               >

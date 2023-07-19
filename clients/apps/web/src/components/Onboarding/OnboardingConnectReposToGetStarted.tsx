@@ -3,7 +3,6 @@ import { useTheme } from 'next-themes'
 import Image from 'next/image'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { CONFIG } from 'polarkit/config'
-import { posthog } from 'posthog-js'
 import screenshot from './Screenshot.jpg'
 import screenshotDark from './ScreenshotDark.jpg'
 
@@ -22,13 +21,6 @@ const OnboardingConnectReposToGetStarted = () => {
         <PrimaryButton
           color="lightblue"
           onClick={() => {
-            posthog.capture(
-              'Connect Repository Clicked',
-              {
-                view: 'Onboarding Card',
-              },
-              { send_instantly: true },
-            )
             window.open(CONFIG.GITHUB_INSTALLATION_URL, '_blank')
           }}
         >

@@ -33,7 +33,6 @@
     rgba(252, 240, 236, 0) 100%
   );
   flex: none;
-  height: 1284px;
   left: calc(22.883597883597908% - 1344px / 2);
   mix-blend-mode: multiply;
   overflow: hidden;
@@ -42,12 +41,4 @@
   top: -405px;
   width: 1344px;
   z-index: 10;
-}
-
-@media(max-width:420px){
-  #polar-bg-gradient{
-    left: calc(22.883597883597908% - 500px);
-    height: 140vh;
-    width:200vw;
-  }
 }

@@ -27,7 +27,6 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 type PledgeSync = {
   amount: number
   email: string
-  approvedTos: boolean
 }
 
 const generateRedirectURL = (
@@ -88,7 +87,6 @@ const PledgeForm = ({
   const [email, setEmail] = useState('')
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [isSyncing, setSyncing] = useState(false)
-  const [approvedTos, setApprovedTos] = useState(false)
 
   const { currentUser, reloadUser } = useAuth()
 
@@ -162,10 +160,6 @@ const PledgeForm = ({
       return false
     }
 
-    if (!pledgeSync.approvedTos) {
-      return false
-    }
-
     // Sync if pledge is missing
     if (!pledge) {
       return true
@@ -223,7 +217,7 @@ const PledgeForm = ({
     }
 
     setAmount(amountInCents)
-    debouncedSync({ amount: amountInCents, email, approvedTos })
+    debouncedSync({ amount: amountInCents, email })
   }
 
   type Timeout = ReturnType<typeof setTimeout>
@@ -249,7 +243,7 @@ const PledgeForm = ({
     }
 
     setEmail(newEmail)
-    debouncedSync({ amount, email: newEmail, approvedTos })
+    debouncedSync({ amount, email: newEmail })
   }
 
   const router = useRouter()
@@ -276,13 +270,7 @@ const PledgeForm = ({
     await router.push(location)
   }
 
-  const onChangeAcceptTos = (e: ChangeEvent<HTMLInputElement>) => {
-    const approvedTos = e.target.checked
-    setApprovedTos(approvedTos)
-    debouncedSync({ amount, email, approvedTos })
-  }
-
-  const showStripeForm = pledge && approvedTos
+  const showStripeForm = pledge
 
   return (
     <>
@@ -336,23 +324,6 @@ const PledgeForm = ({
               <EnvelopeIcon className="h-6 w-6" />
             </span>
           </div>
-        </div>
-
-        <div className="mt-5 mb-2">
-          <Checkbox
-            id="accept_tos"
-            value={approvedTos}
-            onChange={onChangeAcceptTos}
-          >
-            I accept the{' '}
-            <Link href="https://polar.sh/legal/terms" className="underline">
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link href="https://polar.sh/legal/privacy" className="underline">
-              Privacy Policy
-            </Link>
-          </Checkbox>
         </div>
 
         {showStripeForm && (
@@ -441,6 +412,18 @@ const PledgeForm = ({
             {errorMessage}
           </div>
         )}
+
+        <p className="mt-5 text-sm text-gray-600">
+          By placing this pledge, you agree to our{' '}
+          <Link href="https://polar.sh/legal/terms" className="underline">
+            Terms of Service
+          </Link>{' '}
+          and understand our{' '}
+          <Link href="https://polar.sh/legal/privacy" className="underline">
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </form>
     </>
   )

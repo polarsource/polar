@@ -12,11 +12,12 @@ interface Props {
 }
 
 const MoneyInput = (props: Props) => {
-  let { id, name, onChange, placeholder } = props
+  let { id, name, onChange } = props
 
   let other: {
     value?: string
     onBlur?: (e: ChangeEvent<HTMLInputElement>) => void
+    onFocus?: (e: FocusEvent<HTMLInputElement>) => void
   } = {}
   if (props.value && props.value > 0) {
     other.value = getCentsInDollarString(props.value)

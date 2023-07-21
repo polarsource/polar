@@ -48,17 +48,14 @@ class Service:
             properties=self.decorate_properties(properties),
         )
 
-    def get_anonymous_client(self) -> AnonymousClient:
-        return AnonymousClient(self)
-
     def anonymous_event(
         self,
         event: str,
         properties: dict[str, Any] | None = None,
     ) -> None:
         """Shorthand for one-off anonymous event capture."""
-        client = self.get_anonymous_client()
-        client.capture(
+        self.capture(
+            distinct_id="polar_anonymous",
             event=event,
             properties=self.decorate_properties(properties),
         )
@@ -86,29 +83,6 @@ class Service:
                     "username": user.username,
                 }
             ),
-        )
-
-
-class AnonymousClient:
-    """Service wrapper to support anonymous event capture.
-
-    Useful to support getting an anonymous client with a retained distinct_id
-    between capture calls, e.g multiple events for the same anonymous user.
-    """
-
-    def __init__(self, service: Service) -> None:
-        self.service = service
-        self.anonymous_id = "anon:" + str(uuid.uuid4())
-
-    def capture(
-        self,
-        event: str,
-        properties: dict[str, Any] | None = None,
-    ) -> None:
-        self.service.capture(
-            self.anonymous_id,
-            event=event,
-            properties=properties,
         )
 
 

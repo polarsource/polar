@@ -6,12 +6,12 @@ const Badge = () => {
   const [orgSlug, setOrgSlug] = useState('')
   const [repoSlug, setRepoSlug] = useState('')
   const [issueNumber, setIssueNumber] = useState(0)
-  const [action, setAction] = useState(BackofficeBadge.action.EMBED)
+  const [action, setAction] = useState<BackofficeBadge.action>(BackofficeBadge.action.EMBED)
 
   const manageBadgeMutation = useBackofficeBadgeAction()
 
   const onSubmit = async () => {
-    const res = await manageBadgeMutation.mutateAsync({
+    await manageBadgeMutation.mutateAsync({
       org_slug: orgSlug,
       repo_slug: repoSlug,
       issue_number: issueNumber,
@@ -48,7 +48,10 @@ const Badge = () => {
           <select
             id="action"
             onChange={(e) => {
-              setAction(e.target.value)
+              if (e.target.value == BackofficeBadge.action.EMBED) {
+                return setAction(BackofficeBadge.action.REMOVE)
+              }
+              setAction(BackofficeBadge.action.EMBED)
             }}
             value={action}
           >

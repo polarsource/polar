@@ -102,6 +102,7 @@ const PledgeForm = ({
   useEffect(() => {
     if (currentUser && currentUser.email) {
       setEmail(currentUser.email)
+      synchronizePledge({ amount, email: currentUser.email })
     }
   }, [currentUser])
 

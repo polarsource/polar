@@ -180,7 +180,7 @@ const PaymentForm = ({
       <PaymentElement onChange={onStripeFormChange} />
 
       <div className="mt-6 mb-1 flex w-full text-sm text-gray-500 dark:text-gray-400">
-        <div className="w-full">Pledge</div>
+        <div className="w-full">Funding amount</div>
         <div className="w-full text-right">
           ${getCentsInDollarString(amount, true)}
         </div>
@@ -205,10 +205,7 @@ const PaymentForm = ({
           loading={isSyncing}
           onClick={onSubmit}
         >
-          Pledge ${amount > 0 && getCentsInDollarString(amount)}
-          {amount === 0 &&
-            getCentsInDollarString(organization.pledge_minimum_amount)}{' '}
-          to {organization.pretty_name || organization.name}
+          Fund this issue
         </PrimaryButton>
       </div>
     </div>

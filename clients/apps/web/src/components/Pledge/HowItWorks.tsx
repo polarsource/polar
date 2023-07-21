@@ -4,7 +4,7 @@ const HowItWorks: NextLayoutComponentType = () => {
   const steps = [
     {
       number: 1,
-      text: 'Pay now to sponsor the work behind this issue.',
+      text: 'Pay now to fund the work behind this issue.',
     },
     {
       number: 2,
@@ -20,7 +20,7 @@ const HowItWorks: NextLayoutComponentType = () => {
     <>
       <div>
         <h3 className="text-center font-medium text-gray-900 dark:text-gray-400">
-          How do pledges through Polar work?
+          How does funding with Polar work?
         </h3>
         <div className="mt-4 grid md:grid-cols-3 md:gap-14 md:px-14">
           {steps.map((s) => (

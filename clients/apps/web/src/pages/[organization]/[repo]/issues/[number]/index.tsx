@@ -53,8 +53,8 @@ const PledgePage: NextLayoutComponentType = ({
   return (
     <>
       <Head>
-        <title>Polar | {issue.title}</title>
-        <meta property="og:title" content={`Back ${issue.title}`} />
+        <title>Polar | Fund: {issue.title}</title>
+        <meta property="og:title" content={`Fund: ${issue.title}`} />
         <meta
           property="og:description"
           content={`${organization.name} seeks funding for ${issue.title} Polar`}

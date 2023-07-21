@@ -288,7 +288,7 @@ const PledgeForm = ({
           htmlFor="amount"
           className="text-sm font-medium text-gray-500 dark:text-gray-400"
         >
-          Choose amount to pledge
+          Funding amount
         </label>
         <div className="mt-2 flex flex-row items-center space-x-4">
           <MoneyInput
@@ -409,10 +409,7 @@ const PledgeForm = ({
               loading={isSyncing}
               onClick={() => false}
             >
-              Pledge ${amount > 0 && getCentsInDollarString(amount)}
-              {amount === 0 &&
-                getCentsInDollarString(organization.pledge_minimum_amount)}{' '}
-              to {organization.pretty_name || organization.name}
+              Fund this issue
             </PrimaryButton>
           </div>
         )}
@@ -424,7 +421,7 @@ const PledgeForm = ({
         )}
 
         <p className="mt-5 text-sm text-gray-600">
-          By placing this pledge, you agree to our{' '}
+          By funding this issue, you agree to our{' '}
           <Link href="https://polar.sh/legal/terms" className="underline">
             Terms of Service
           </Link>{' '}

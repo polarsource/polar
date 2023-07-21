@@ -11,6 +11,7 @@ const Page: NextLayoutComponentType & { theme?: string } = () => {
       <Link href="/backoffice/pledges_non_customers">
         Pledges to non customers
       </Link>
+      <Link href="/backoffice/badge">Issue Badge Admin</Link>
       <Link href="/backoffice/invites">Invites</Link>
     </div>
   )

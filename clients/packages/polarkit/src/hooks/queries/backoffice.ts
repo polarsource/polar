@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { api, queryClient } from '../../api'
 import { PledgeRead } from '../../api/client'
+import { BackofficeBadge } from '../../api/client'
 import { defaultRetry } from './retry'
 
 export const useBackofficeAllPledges = () =>
@@ -88,4 +89,14 @@ export const useBackofficeCreateInviteCode = () =>
     onSuccess: (result, variables, ctx) => {
       queryClient.invalidateQueries(['useBackofficeListInvites'])
     },
+  })
+
+
+export const useBackofficeBadgeAction = () =>
+  useMutation({
+    mutationFn: (badgeAction: BackofficeBadge) => {
+      return api.backoffice.manageBadge({
+        requestBody: badgeAction
+      })
+    }
   })

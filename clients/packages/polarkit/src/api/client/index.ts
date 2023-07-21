@@ -14,6 +14,8 @@ export type { AccountLink } from './models/AccountLink';
 export type { AccountRead } from './models/AccountRead';
 export { AccountType } from './models/AccountType';
 export type { AuthorizationResponse } from './models/AuthorizationResponse';
+export { BackofficeBadge } from './models/BackofficeBadge';
+export { BackofficeBadgeResponse } from './models/BackofficeBadgeResponse';
 export type { BackofficePledgeRead } from './models/BackofficePledgeRead';
 export type { ConfirmPledgesResponse } from './models/ConfirmPledgesResponse';
 export type { Entry_Any_ } from './models/Entry_Any_';

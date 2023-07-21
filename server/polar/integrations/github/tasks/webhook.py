@@ -451,21 +451,34 @@ async def update_issue_embed(
             session, issue.organization_id, issue.repository_id
         )
     except ValueError:
+        log.error(
+            "github.webhook.issues.badge",
+            error="no org/repo",
+            issue_id=issue.id,
+        )
         return False
 
     if embed:
-        return await service.github_issue.embed_badge(
+        res = await service.github_issue.embed_badge(
             session,
             organization=org,
             repository=repo,
             issue=issue,
             triggered_from_label=True,
         )
+        log.info(
+            "github.webhook.issues.badge.embed",
+            success=res,
+            issue_id=issue.id,
+        )
+        return res
 
     # Do not remove the badge if automatic badging is enabled
     if repo.pledge_badge_auto_embed:
         return False
 
+    # TODO: Implement logging here too as with `embed`
+    # However, we need to first update `remove_badge` to return a true bool
     return await service.github_issue.remove_badge(
         session,
         organization=org,
@@ -491,9 +504,17 @@ async def issue_labeled_async(
         )
         return
 
+    had_polar_label = issue.has_pledge_badge_label
     issue = await service.github_issue.set_labels(session, issue, event.issue.labels)
 
-    log.debug("issue_labeled_async", label=event.label, issue_id=issue.id)
+    log.info(
+        "github.webhook.issues.label",
+        action=action,
+        issue_id=issue.id,
+        label=event.label.name,
+        had_polar_label=had_polar_label,
+        should_have_polar_label=issue.has_pledge_badge_label,
+    )
 
     # Add/remove polar badge if label has changed
     if event.label.name == "polar":

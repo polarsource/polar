@@ -26,6 +26,7 @@ const PaymentForm = ({
   setErrorMessage,
   onSuccess,
   redirectTo,
+  hasDetails,
 }: {
   pledge?: PledgeMutationResponse
   issue: IssueRead
@@ -35,13 +36,14 @@ const PaymentForm = ({
   setSyncing: (isLocked: boolean) => void
   setErrorMessage: (message: string) => void
   onSuccess: (paymentIntent: PaymentIntent) => void
+  hasDetails: boolean
   redirectTo: string
 }) => {
   const stripe = useStripe()
   const elements = useElements()
 
   const [isStripeCompleted, setStripeCompleted] = useState(false)
-  const canSubmit = !isSyncing && pledge && isStripeCompleted
+  const canSubmit = !isSyncing && pledge && isStripeCompleted && hasDetails
   const amount = pledge?.amount || 0
   const fee = pledge?.fee || 0
   const amountIncludingFee = pledge?.amount_including_fee || 0

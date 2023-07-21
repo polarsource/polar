@@ -94,6 +94,14 @@ const PledgeForm = ({
     return email.match(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/)
   }
 
+  const hasValidDetails = () => {
+    let isValidEmail = validateEmail(email)
+    if (!isValidEmail) {
+      return false
+    }
+    return amount >= organization.pledge_minimum_amount
+  }
+
   // Redirect to personal dashboard if authenticated unless gotoURL is set
   if (!gotoURL && currentUser) {
     gotoURL = '/dashboard/personal?tab=dependencies'
@@ -377,6 +385,7 @@ const PledgeForm = ({
               setSyncing={setSyncing}
               setErrorMessage={setErrorMessage}
               onSuccess={onStripePaymentSuccess}
+              hasDetails={hasValidDetails()}
               redirectTo={generateRedirectURL(
                 organization,
                 repository,

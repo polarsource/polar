@@ -1,6 +1,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { BackofficeBadge } from '../models/BackofficeBadge';
+import type { BackofficeBadgeResponse } from '../models/BackofficeBadgeResponse';
 import type { BackofficePledgeRead } from '../models/BackofficePledgeRead';
 import type { InviteCreate } from '../models/InviteCreate';
 import type { InviteRead } from '../models/InviteRead';
@@ -152,6 +154,27 @@ export class BackofficeService {
       path: {
         'name': name,
       },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Manage Badge
+   * @returns BackofficeBadgeResponse Successful Response
+   * @throws ApiError
+   */
+  public manageBadge({
+    requestBody,
+  }: {
+    requestBody: BackofficeBadge,
+  }): CancelablePromise<BackofficeBadgeResponse> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/backoffice/badge',
+      body: requestBody,
+      mediaType: 'application/json',
       errors: {
         422: `Validation Error`,
       },

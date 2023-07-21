@@ -1,7 +1,8 @@
 from datetime import datetime
-from typing import Self
+from typing import Self, Literal
 from uuid import UUID
 
+from polar.kit.schemas import Schema
 from polar.models.pledge import Pledge
 from polar.pledge.schemas import PledgeRead, PledgeState
 from polar.enums import AccountType
@@ -59,3 +60,14 @@ class BackofficePledgeRead(PledgeRead):
             scheduled_payout_at=o.scheduled_payout_at,
             to_organization_account_type=to_organization_account_type,
         )
+
+
+class BackofficeBadge(Schema):
+    org_slug: str
+    repo_slug: str
+    issue_number: int
+    action: Literal["embed", "remove"]
+
+
+class BackofficeBadgeResponse(BackofficeBadge):
+    success: bool

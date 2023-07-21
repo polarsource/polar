@@ -1,5 +1,5 @@
 import { getCentsInDollarString } from 'polarkit/money'
-import { ChangeEvent } from 'react'
+import { ChangeEvent, FocusEvent } from 'react'
 
 interface Props {
   id: string
@@ -7,6 +7,7 @@ interface Props {
   onChange: (e: ChangeEvent<HTMLInputElement>) => void
   placeholder: number
   onBlur?: (e: ChangeEvent<HTMLInputElement>) => void
+  onFocus?: (e: FocusEvent<HTMLInputElement>) => void
   value?: number
 }
 
@@ -17,10 +18,13 @@ const MoneyInput = (props: Props) => {
     value?: string
     onBlur?: (e: ChangeEvent<HTMLInputElement>) => void
   } = {}
-  if (props.value) {
+  if (props.value && props.value > 0) {
     other.value = getCentsInDollarString(props.value)
+  } else {
+    other.value = ""
   }
   other.onBlur = props.onBlur
+  other.onFocus = props.onFocus
 
   return (
     <>

@@ -19,6 +19,8 @@ import { getCentsInDollarString } from 'polarkit/money'
 import posthog from 'posthog-js'
 import { ChangeEvent, useEffect, useRef, useState } from 'react'
 import PaymentForm from './PaymentForm'
+import { classNames } from 'polarkit/utils'
+
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
@@ -82,7 +84,7 @@ const PledgeForm = ({
   gotoURL?: string
 }) => {
   const [pledge, setPledge] = useState<PledgeMutationResponse | null>(null)
-  const [amount, setAmount] = useState(0)
+  const [amount, setAmount] = useState<number>(organization.pledge_minimum_amount)
   const [email, setEmail] = useState('')
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [isSyncing, setSyncing] = useState(false)
@@ -202,24 +204,14 @@ const PledgeForm = ({
   }
 
   const onAmountChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const newAmount = parseInt(event.target.value)
+    let newAmount = parseInt(event.target.value)
     if (isNaN(newAmount)) {
-      setErrorMessage('Please enter a valid amount')
-      return
+      newAmount = 0
     }
     const amountInCents = newAmount * 100
 
-    if (amountInCents < organization.pledge_minimum_amount) {
-      setErrorMessage(
-        `Minimum amount is $${getCentsInDollarString(
-          organization.pledge_minimum_amount,
-        )}`,
-      )
-      return
-    }
-
-    if (amount === 0) {
-      posthog.capture('Pledge amount entered', {
+    if (amount === organization.pledge_minimum_amount) {
+      posthog.capture('Pledge amount changed', {
         Amount: newAmount,
         'Organization ID': organization.id,
         'Organization Name': organization.name,
@@ -230,7 +222,6 @@ const PledgeForm = ({
       })
     }
 
-    setErrorMessage('')
     setAmount(amountInCents)
     debouncedSync({ amount: amountInCents, email, approvedTos })
   }
@@ -309,10 +300,16 @@ const PledgeForm = ({
             onChange={onAmountChange}
             onBlur={onAmountChange}
             placeholder={organization.pledge_minimum_amount}
+            value={amount}
+            onFocus={(event) => {
+              event.target.select()
+            }}
           />
-          <p className="w-2/5 text-xs text-gray-500 dark:text-gray-400">
-            Minimum is $
-            {getCentsInDollarString(organization.pledge_minimum_amount)}
+          <p className={classNames(
+            (amount < organization.pledge_minimum_amount) ? "text-red-500" : "",
+            "w-2/5 text-xs text-gray-500 dark:text-gray-400"
+          )}>
+            Minimum is ${getCentsInDollarString(organization.pledge_minimum_amount)}
           </p>
         </div>
 

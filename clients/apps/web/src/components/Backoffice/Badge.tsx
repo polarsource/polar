@@ -48,7 +48,7 @@ const Badge = () => {
           <select
             id="action"
             onChange={(e) => {
-              if (e.target.value == BackofficeBadge.action.EMBED) {
+              if (e.target.value == BackofficeBadge.action.REMOVE) {
                 return setAction(BackofficeBadge.action.REMOVE)
               }
               setAction(BackofficeBadge.action.EMBED)

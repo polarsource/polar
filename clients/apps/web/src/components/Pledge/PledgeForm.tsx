@@ -327,6 +327,9 @@ const PledgeForm = ({
             onBlur={onEmailChange}
             value={email}
             className="block w-full rounded-lg border-gray-200 bg-transparent py-2.5 px-3 pl-10 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
+            onFocus={(event) => {
+              event.target.select()
+            }}
           />
           <div className="pointer-events-none absolute inset-y-0 left-0 z-20 flex items-center pl-3 text-lg">
             <span className="text-gray-500">

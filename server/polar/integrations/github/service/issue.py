@@ -148,6 +148,7 @@ class GithubIssueService(IssueService):
         badge = GithubBadge(
             organization=organization, repository=repository, issue=issue
         )
+        # TODO: Abort unless not successful
         await badge.embed()
 
         stmt = (
@@ -190,6 +191,7 @@ class GithubIssueService(IssueService):
         badge = GithubBadge(
             organization=organization, repository=repository, issue=issue
         )
+        # TODO: Abort unless not successful
         await badge.remove()
 
         stmt = (
@@ -203,6 +205,8 @@ class GithubIssueService(IssueService):
         await session.execute(stmt)
         await session.commit()
 
+        # TODO: Return True instead to reflect update.
+        # Just need to write & perform tests before changing.
         return False
 
     # client.rest.issues_async_get

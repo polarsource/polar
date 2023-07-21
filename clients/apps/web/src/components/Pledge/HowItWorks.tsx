@@ -24,7 +24,7 @@ const HowItWorks: NextLayoutComponentType = () => {
         </h3>
         <div className="mt-4 grid md:grid-cols-3 md:gap-14 md:px-14">
           {steps.map((s) => (
-            <div className="flex flex-col items-center space-y-4 p-2">
+            <div key={`step-${s.number}`} className="flex flex-col items-center space-y-4 p-2">
               <div className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-blue-500 text-blue-500">
                 {s.number}
               </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BackofficeBadge } from 'polarkit/api/client'
+import { BackofficeBadge, BackofficeBadgeResponse } from 'polarkit/api/client'
 import { useBackofficeBadgeAction } from 'polarkit/hooks'
 
 const Badge = () => {
@@ -7,20 +7,35 @@ const Badge = () => {
   const [repoSlug, setRepoSlug] = useState('')
   const [issueNumber, setIssueNumber] = useState(0)
   const [action, setAction] = useState<BackofficeBadge.action>(BackofficeBadge.action.EMBED)
+  const [successURL, setSuccessURL] = useState('')
 
   const manageBadgeMutation = useBackofficeBadgeAction()
 
+  const generateGitHubURL = (badge: BackofficeBadgeResponse) => {
+    return `https://github.com/${badge.org_slug}/${badge.repo_slug}/issues/${badge.issue_number}`
+  }
+
   const onSubmit = async () => {
-    await manageBadgeMutation.mutateAsync({
+    const res = await manageBadgeMutation.mutateAsync({
       org_slug: orgSlug,
       repo_slug: repoSlug,
       issue_number: issueNumber,
       action: action,
     })
+
+    if (res.success) {
+      setSuccessURL(generateGitHubURL(res))
+    }
   }
 
   return (
     <>
+      {successURL && (
+        <div className="bg-green-200 py-2 px-4">
+          <strong>Success!</strong>{' '}
+          <a href={successURL} target="_blank">{successURL}</a>
+        </div>
+      )}
       <form>
         <div className="mt-4">
           <label htmlFor="org-slug" className="block">Org Slug</label>

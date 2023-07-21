@@ -265,6 +265,8 @@ async def add_issue_comment(
             repository=auth.repository,
             issue=issue,
         )
+        # Crucial with newlines. See: https://github.com/polarsource/polar/issues/868
+        message += "\n\n"
         message += badge.badge_markdown("")
 
     await github_issue_service.add_comment_as_user(

@@ -10,6 +10,7 @@ DEFAULT_EXPIRATION = 60 * 15  # 15 minutes
 ALGORITHM = "HS256"
 
 DecodeError = jwt.DecodeError
+ExpiredSignatureError = jwt.ExpiredSignatureError
 
 
 def create_expiration_dt(seconds: int) -> datetime:

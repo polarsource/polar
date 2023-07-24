@@ -99,7 +99,7 @@ class AuthService:
         try:
             decoded = jwt.decode(token=token, secret=settings.SECRET)
             return await user_service.get(session, id=decoded["user_id"])
-        except jwt.DecodeError:
+        except (jwt.DecodeError, jwt.ExpiredSignatureError):
             return None
 
     @classmethod

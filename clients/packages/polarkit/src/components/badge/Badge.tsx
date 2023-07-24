@@ -59,7 +59,7 @@ export const Badge = ({
               paddingRight: 11,
             }}
           >
-            Back issue
+            Fund this issue
           </div>
           {showAmountRaised && amountRaised && (
             <div

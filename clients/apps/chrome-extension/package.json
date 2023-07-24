@@ -20,8 +20,8 @@
     "build:prod": "npm run clean && API_URL=https://api.polar.sh WEB_URL=https://polar.sh npm run build:js && npm run build:css && npm run build:manifest-prod",
     "build:css": "tailwindcss -i ./src/frame.css -o ./extension/frame.css",
     "build:js": "webpack --config webpack.config.js && mv dist/content.js ./extension && mv dist/auth.js ./extension && mv dist/service-worker.js ./extension",
-    "build:manifest-dev": "npx ts-node-esm create-manifest.mts --dev > ./extension/manifest.json",
-    "build:manifest-prod": "npx ts-node-esm create-manifest.mts --production > ./extension/manifest.json",
+    "build:manifest-dev": "node --loader ts-node/esm create-manifest.mts --dev > ./extension/manifest.json",
+    "build:manifest-prod": "node --loader ts-node/esm create-manifest.mts --production > ./extension/manifest.json",
     "clean": "rm ./extension/*.{js,css} || true",
     "package": "zip extension.zip extension/*"
   },

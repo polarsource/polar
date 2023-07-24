@@ -11,6 +11,7 @@ from polar.models.issue_reference import IssueReference
 from polar.models.pledge import Pledge
 from polar.pledge.schemas import PledgeRead
 from polar.postgres import AsyncSession, get_db_session
+from polar.posthog import posthog
 
 from polar.issue.service import issue as issue_service
 from polar.pledge.service import pledge as pledge_service
@@ -32,12 +33,25 @@ async def list_issues_for_extension(
     session: AsyncSession = Depends(get_db_session),
 ) -> list[IssueExtensionRead]:
     # Update when we last saw this user and on which extension version
+    version = "unknown"
     auth.user.last_seen_at_extension = utils.utc_now()
     if request.headers.get("x-polar-agent"):
         parts = request.headers["x-polar-agent"].split("/")
         if len(parts) == 2:
-            auth.user.last_version_extension = parts[1]
+            version = parts[1]
+            auth.user.last_version_extension = version
+
     await auth.user.save(session=session)
+    posthog.user_event(
+        auth.user,
+        "Extension GitHub Issues Load",
+        {
+            "extension_version": version,
+            "org": org_name,
+            "repo": repo_name,
+            "numbers": numbers,
+        },
+    )
 
     issue_numbers = [int(number) for number in numbers.split(",")]
     issues = await issue_service.list_by_repository_and_numbers(

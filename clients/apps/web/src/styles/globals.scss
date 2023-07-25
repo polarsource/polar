@@ -43,3 +43,12 @@
   width: 1344px;
   z-index: 10;
 }
+
+@media(max-width:420px){
+  #polar-bg-gradient{
+    left: calc(22.883597883597908% - 500px);
+    height: 140vh;
+    width:200vw;
+  }
+}
+

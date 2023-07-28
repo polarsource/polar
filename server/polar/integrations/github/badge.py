@@ -4,6 +4,7 @@ import structlog
 from githubkit import AppInstallationAuthStrategy, GitHub
 
 from polar.config import settings
+from polar.kit import template
 from polar.models import Issue, Organization, Repository
 
 from . import client as github
@@ -119,12 +120,19 @@ class GithubBadge:
         svg_markdown = f"![Fund with Polar]({svg_url})"
         return f"{PLEDGE_BADGE_COMMENT_LEGACY}\n[{svg_markdown}]({funding_url})"
 
+    @classmethod
+    def generate_default_promotion_message(cls, organization: Organization) -> str:
+        return template.render(
+            "integrations/github/templates/badge/promotion.md",
+            polar_site_url=organization.polar_site_url,
+        )
+
     def promotion_message(self) -> str:
         if self.issue.badge_custom_content:
             return self.issue.badge_custom_content
         if self.organization.default_badge_custom_content:
             return self.organization.default_badge_custom_content
-        return "## Funding\n* You can sponsor this specific effort via a [Polar.sh](https://polar.sh) pledge below\n* We receive the pledge once the issue is completed & verified"  # noqa: E501
+        return self.generate_default_promotion_message(self.organization)
 
     def generate_body_with_badge(self, body: str) -> str:
         promotion = self.promotion_message().rstrip()

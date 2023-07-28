@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
 from polar.enums import Platforms
+from polar.integrations.github.badge import GithubBadge
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.schemas import Repository as RepositorySchema
 from polar.repository.schemas import RepositoryLegacyRead
@@ -214,10 +215,14 @@ async def get_badge_settings(
             )
         )
 
+    message = auth.organization.default_badge_custom_content
+    if not message:
+        message = GithubBadge.generate_default_promotion_message(auth.organization)
+
     return OrganizationBadgeSettingsRead(
         show_amount=auth.organization.pledge_badge_show_amount,
         minimum_amount=auth.organization.pledge_minimum_amount,
-        message=auth.organization.default_badge_custom_content,
+        message=message,
         repositories=repos,
     )
 

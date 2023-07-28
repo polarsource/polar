@@ -115,6 +115,13 @@ class Organization(RecordModel):
     email: Mapped[str | None] = mapped_column(String, nullable=True)
     twitter_username: Mapped[str | None] = mapped_column(String, nullable=True)
 
+    @property
+    def polar_site_url(self) -> str:
+        return "{base}/{slug}".format(
+            base=settings.FRONTEND_BASE_URL,
+            slug=self.name,
+        )
+
     __mutables__ = {
         "name",
         "avatar_url",

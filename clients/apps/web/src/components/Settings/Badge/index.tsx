@@ -1,5 +1,4 @@
 import BadgeMessageForm from '@/components/Dashboard/BadgeMessageForm'
-import { DEFAULT_BADGE_PROMOTION_MESSAGE } from '@/components/Dashboard/IssuePromotionModal'
 import MoneyInput from '@/components/UI/MoneyInput'
 import {
   ExclamationCircleIcon,
@@ -56,7 +55,7 @@ const getMappedSettings = (
   let ret = {
     show_amount: remote.show_amount,
     minimum_amount: remote.minimum_amount,
-    message: remote.message || DEFAULT_BADGE_PROMOTION_MESSAGE,
+    message: remote.message || '',
     repositories: mapped,
     repositories_order: order,
   }
@@ -253,7 +252,7 @@ const BadgeSetup = ({
           <div className="flex flex-col space-y-4 p-5">
             <BadgeMessageForm
               orgName={org.name}
-              value={settings.message || DEFAULT_BADGE_PROMOTION_MESSAGE}
+              value={settings.message || ''}
               onUpdate={async (value: string) => {}}
               showUpdateButton={false}
               showAmountRaised={settings.show_amount}

@@ -16,9 +16,11 @@ from tests.fixtures.random_objects import create_issue
 BADGED_BODY = """Hello my issue
 
 <!-- POLAR PLEDGE BADGE START -->
-## Funding
-* You can sponsor this specific effort via a [Polar.sh](https://polar.sh) pledge below
-* We receive the pledge once the issue is completed & verified
+## Upvote & Fund
+
+- We're using [Polar.sh](http://127.0.0.1:3000/testorg) so you can upvote and help fund this issue.
+- We receive the funding once the issue is completed & confirmed by you.
+- Thank you in advance for helping prioritize & fund our backlog.
 
 <a href="http://127.0.0.1:3000/testorg/testrepo/issues/123">
 <picture>

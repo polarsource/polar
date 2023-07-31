@@ -18,6 +18,36 @@ export class IssuesService {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
+   * Search issues (Public API)
+   * Search issues.
+   * @returns Issue Successful Response
+   * @throws ApiError
+   */
+  public search({
+    platform,
+    organizationName,
+    repositoryName,
+  }: {
+    platform: Platforms,
+    organizationName: string,
+    repositoryName?: string,
+  }): CancelablePromise<Array<Issue>> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/issues/search',
+      query: {
+        'platform': platform,
+        'organization_name': organizationName,
+        'repository_name': repositoryName,
+      },
+      errors: {
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
    * Get
    * @returns Issue Successful Response
    * @throws ApiError

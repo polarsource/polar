@@ -10,6 +10,7 @@ from polar.backoffice.schemas import BackofficePledgeRead
 from polar.kit.extensions.sqlalchemy import sql
 from polar.models.account import Account
 from polar.models.issue import Issue
+from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession
@@ -23,7 +24,7 @@ class BackofficePledgeService:
     ) -> list[BackofficePledgeRead]:
         stmt = sql.select(Pledge).options(
             joinedload(Pledge.by_organization),
-            joinedload(Pledge.to_organization),
+            joinedload(Pledge.to_organization).joinedload(Organization.account),
             joinedload(Pledge.user),
             joinedload(Pledge.issue).joinedload(Issue.organization),
             joinedload(Pledge.issue).joinedload(Issue.repository),

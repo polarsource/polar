@@ -85,7 +85,10 @@ class Organization(RecordModel):
     )
 
     account: "Mapped[Account | None]" = relationship(
-        "Account", back_populates="organization", uselist=False, lazy="joined"
+        "Account",
+        back_populates="organization",
+        uselist=False,
+        lazy="raise",
     )
 
     stripe_customer_id: Mapped[str | None] = mapped_column(

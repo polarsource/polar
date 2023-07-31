@@ -62,7 +62,9 @@ async def list(
     session: AsyncSession = Depends(get_db_session),
 ) -> Sequence[RepositorySchema]:
     orgs = await organization_service.list_all_orgs_by_user_id(session, auth.user.id)
-    repos = await repository.list_by(session, org_ids=[o.id for o in orgs])
+    repos = await repository.list_by(
+        session, org_ids=[o.id for o in orgs], load_organization=True
+    )
     return [RepositorySchema.from_db(r) for r in repos]
 
 

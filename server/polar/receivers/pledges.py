@@ -127,7 +127,7 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
         log.error("pledge_created_notification.no_issue_found")
         return
 
-    org: Organization | None = await organization_service.get(
+    org: Organization | None = await organization_service.get_with_loaded(
         session, issue.organization_id
     )
     if not org:
@@ -168,7 +168,7 @@ async def pledge_confirmation_pending_notification(
         log.error("pledge_confirmation_pending_notification.no_issue_found")
         return
 
-    org = await organization_service.get(session, issue.organization_id)
+    org = await organization_service.get_with_loaded(session, issue.organization_id)
     if not org:
         log.error("pledge_confirmation_pending_notification.no_org_found")
         return
@@ -205,7 +205,7 @@ async def pledge_pending_notification(pledge: Pledge, session: AsyncSession) -> 
         log.error("pledge_pending_notification.no_issue_found")
         return
 
-    org = await organization_service.get(session, issue.organization_id)
+    org = await organization_service.get_with_loaded(session, issue.organization_id)
     if not org:
         log.error("pledge_pending_notification.no_org_found")
         return

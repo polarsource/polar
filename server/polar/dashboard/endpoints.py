@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Sequence, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import joinedload
 
 from polar.auth.dependencies import Auth
 from polar.dashboard.schemas import (
@@ -181,6 +182,7 @@ async def dashboard(
         have_pledge=True if only_pledged else None,
         load_references=True,
         load_pledges=True,
+        load_repository=True,
         include_statuses=status,
         sort_by=sort,
         limit=limit,
@@ -205,9 +207,9 @@ async def dashboard(
     issue_repositories = list(
         (
             await session.execute(
-                sql.select(Repository).where(
-                    Repository.id.in_(list(set([i.repository_id for i in issues])))
-                )
+                sql.select(Repository)
+                .where(Repository.id.in_(list(set([i.repository_id for i in issues]))))
+                .options(joinedload(Repository.organization))
             )
         )
         .scalars()

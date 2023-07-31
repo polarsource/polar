@@ -39,9 +39,7 @@ class Repository(RecordModel):
     )
 
     organization: "Mapped[Organization]" = relationship(
-        "Organization",
-        back_populates="repos",
-        lazy="joined",
+        "Organization", back_populates="repos", lazy="raise"
     )
 
     name: Mapped[str] = mapped_column(CIText(), nullable=False)

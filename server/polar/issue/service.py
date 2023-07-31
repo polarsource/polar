@@ -7,6 +7,7 @@ import structlog
 from sqlalchemy import (
     ColumnElement,
     Integer,
+    alias,
     and_,
     asc,
     desc,
@@ -15,7 +16,7 @@ from sqlalchemy import (
     nullslast,
     or_,
 )
-from sqlalchemy.orm import InstrumentedAttribute, contains_eager, joinedload
+from sqlalchemy.orm import InstrumentedAttribute, aliased, contains_eager, joinedload
 
 from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
 from polar.enums import Platforms
@@ -110,12 +111,17 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         have_pledge: bool | None = None,  # If issues have pledge or not
         load_references: bool = False,
         load_pledges: bool = False,
+        load_repository: bool = False,
         sort_by: IssueSortBy = IssueSortBy.newest,
         offset: int = 0,
         limit: int | None = None,
         include_statuses: list[IssueStatus] | None = None,
         have_polar_badge: bool | None = None,  # If issue has the polar badge or not
     ) -> Tuple[Sequence[Issue], int]:  # (issues, total_issue_count)
+        pledge_by_organization = aliased(Organization)
+        issue_repository = aliased(Repository)
+        issue_organization = aliased(Organization, name="pledge_organization")
+
         statement = (
             sql.select(
                 Issue,
@@ -126,7 +132,8 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 isouter=True,
             )
             .join(
-                Pledge.by_organization,
+                pledge_by_organization,
+                Pledge.by_organization.of_type(pledge_by_organization),
                 isouter=True,
             )
             .join(
@@ -314,13 +321,40 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             statement = statement.options(
                 contains_eager(Issue.pledges),
                 contains_eager(Issue.pledges).contains_eager(Pledge.user),
-                contains_eager(Issue.pledges).contains_eager(Pledge.by_organization),
+                contains_eager(Issue.pledges).contains_eager(
+                    Pledge.by_organization.of_type(pledge_by_organization)
+                ),
             )
             statement = statement.group_by(
                 Issue.id,
                 Pledge.id,
                 User.id,
-                Organization.id,
+                pledge_by_organization.id,
+            )
+
+        elif load_repository:
+            statement = statement.join(
+                issue_repository,
+                Issue.repository.of_type(issue_repository),
+                isouter=False,
+            )
+
+            statement = statement.join(
+                issue_organization, issue_repository.organization, isouter=False
+            )
+
+            statement = statement.options(
+                contains_eager(
+                    Issue.repository.of_type(issue_repository)
+                ).contains_eager(
+                    issue_repository.organization.of_type(issue_organization)
+                )
+            )
+
+            statement = statement.group_by(
+                Issue.id,
+                issue_repository.id,
+                issue_organization.id,
             )
 
         else:

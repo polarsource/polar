@@ -38,6 +38,77 @@ router = APIRouter(tags=["issues"])
 
 
 @router.get(
+    "/issues/search",
+    response_model=Sequence[IssueSchema],
+    tags=[Tags.PUBLIC],
+    description="Search issues.",
+    summary="Search issues (Public API)",
+    status_code=200,
+    responses={404: {}},
+)
+async def search(
+    platform: Platforms,
+    organization_name: str,
+    repository_name: str | None = None,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.optional_user),
+) -> Sequence[IssueSchema]:
+    org = await organization_service.get_by_name(session, platform, organization_name)
+    if not org:
+        raise HTTPException(
+            status_code=404,
+            detail="Organization not found",
+        )
+
+    all_org_repos = await repository_service.list_by_organization(
+        session,
+        organization_id=org.id,
+    )
+    all_org_repos = [
+        r for r in all_org_repos if r.is_private is False and r.is_archived is False
+    ]
+
+    if repository_name:
+        repo = await repository_service.get_by(
+            session,
+            organization_id=org.id,
+            name=repository_name,
+            is_private=False,
+            is_archived=False,
+            deleted_at=None,
+        )
+
+        if not repo:
+            raise HTTPException(
+                status_code=404,
+                detail="Repository not found",
+            )
+
+        issues_in_repos = [repo]
+    else:
+        issues_in_repos = all_org_repos
+
+    issues_in_repos_ids = [r.id for r in issues_in_repos]
+
+    (issues, count) = await issue_service.list_by_repository_type_and_status(
+        session=session,
+        repository_ids=issues_in_repos_ids,
+        issue_list_type=IssueListType.issues,
+        sort_by=IssueSortBy.issues_default,
+        limit=50,
+        include_statuses=[
+            IssueStatus.backlog,
+            IssueStatus.triaged,
+            IssueStatus.in_progress,
+            IssueStatus.pull_request,
+        ],
+        load_repository=True,
+    )
+
+    return [IssueSchema.from_db(i) for i in issues]
+
+
+@router.get(
     "/issues/{id}",
     response_model=IssueSchema,
     tags=[Tags.PUBLIC],

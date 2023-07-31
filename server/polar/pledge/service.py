@@ -621,7 +621,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 "Pledge is not ready for payput (still in dispute window)"
             )
 
-        organization = await organization_service.get(
+        organization = await organization_service.get_with_loaded(
             session, id=pledge.organization_id
         )
         if organization is None or organization.account is None:

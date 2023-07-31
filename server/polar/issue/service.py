@@ -174,7 +174,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
 
         if have_polar_badge is not None:
             statement = statement.where(
-                Issue.has_pledge_badge_label == have_polar_badge
+                Issue.pledge_badge_currently_embedded == have_polar_badge
             )
 
         if include_statuses:

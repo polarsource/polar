@@ -1,23 +1,16 @@
-import Dashboard from '@/components/Dashboard'
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import type { NextLayoutComponentType } from 'next'
-import Head from 'next/head'
-import { ReactElement } from 'react'
+import { useRouter } from 'next/router'
+import { ReactElement, useEffect } from 'react'
 
 const Page: NextLayoutComponentType = () => {
-  return (
-    <>
-      <Head>
-        <title>Polar</title>
-      </Head>
-      <Dashboard
-        key="dashboard-personal"
-        org={undefined}
-        repo={undefined}
-        isPersonal={true}
-      />
-    </>
-  )
+  const router = useRouter()
+
+  useEffect(() => {
+    router.push(`/issues/personal`)
+  })
+
+  return <></>
 }
 
 Page.getLayout = (page: ReactElement) => {

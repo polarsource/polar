@@ -1,12 +1,15 @@
+import Dashboard, { DefaultFilters } from '@/components/Dashboard'
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
+import DashboardIssuesFilterLayout from '@/components/Layout/DashboardIssuesFilterLayout'
+import OnboardingConnectReposToGetStarted from '@/components/Onboarding/OnboardingConnectReposToGetStarted'
 import type { NextLayoutComponentType } from 'next'
 import { useRouter } from 'next/router'
 import { useListOrganizations, useListPersonalPledges } from 'polarkit/hooks'
 import { ReactElement, useEffect } from 'react'
-import { useCurrentOrgAndRepoFromURL } from '../../../hooks'
+import { useCurrentOrgAndRepoFromURL } from '../../hooks'
 
 const Page: NextLayoutComponentType = () => {
-  const { haveOrgs } = useCurrentOrgAndRepoFromURL()
+  const { isLoaded, haveOrgs } = useCurrentOrgAndRepoFromURL()
 
   const listOrganizationsQuery = useListOrganizations()
   const personalPledges = useListPersonalPledges()
@@ -17,13 +20,13 @@ const Page: NextLayoutComponentType = () => {
     const havePersonalPledges =
       (personalPledges?.data && personalPledges?.data.length > 0) || false
 
-    // Redirect to personal
+    // Show personal dashboard
     if (!haveOrgs && havePersonalPledges) {
       router.push(`/issues/personal`)
       return
     }
 
-    // Redirect to first org
+    // redirect to first org
     if (
       haveOrgs &&
       listOrganizationsQuery?.data &&
@@ -35,7 +38,31 @@ const Page: NextLayoutComponentType = () => {
     }
   })
 
-  return <></>
+  if (!isLoaded) {
+    return <></>
+  }
+
+  if (!haveOrgs) {
+    return (
+      <DashboardIssuesFilterLayout
+        isPersonalDashboard={false}
+        filters={DefaultFilters}
+        onSetFilters={() => {}}
+      >
+        <OnboardingConnectReposToGetStarted />
+      </DashboardIssuesFilterLayout>
+    )
+  }
+
+  return (
+    <Dashboard
+      key="dashboard-root"
+      org={undefined}
+      repo={undefined}
+      isPersonal={false}
+      isDependencies={false}
+    />
+  )
 }
 
 Page.getLayout = (page: ReactElement) => {

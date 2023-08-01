@@ -1,4 +1,4 @@
-import { classNames } from 'polarkit/utils'
+import SidebarNavigation from '../Dashboard/SidebarNavigation'
 import DashboardTopbar, {
   PersonalDashboardTopbar,
 } from '../Shared/DashboardTopbar'
@@ -9,16 +9,15 @@ const DashboardLayout = (props: {
 }) => {
   const { children, isPersonalDashboard } = props
 
-  const bodyClasses = classNames(
-    'flex min-h-screen flex-1 flex-col bg-gray-50 dark:bg-gray-950 pt-16 ',
-  )
-
   return (
     <div className="">
       {isPersonalDashboard && <PersonalDashboardTopbar />}
       {!isPersonalDashboard && <DashboardTopbar />}
       <div>
-        <div className={bodyClasses}>
+        <div className="dark:bg-gray-950 flex min-h-screen flex-1 flex-row bg-gray-50 pt-16">
+          <aside className="bg-gray-75 w-80 flex-shrink-0 border-r border-r-gray-200">
+            <SidebarNavigation />
+          </aside>
           <main className="flex-1">
             <div className="py-6">
               <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-8">

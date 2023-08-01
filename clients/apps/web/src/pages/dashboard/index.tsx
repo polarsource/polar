@@ -1,7 +1,4 @@
-import Dashboard, { DefaultFilters } from '@/components/Dashboard'
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
-import DashboardSidebarLayout from '@/components/Layout/DashboardSidebarLayout'
-import OnboardingConnectReposToGetStarted from '@/components/Onboarding/OnboardingConnectReposToGetStarted'
 import type { NextLayoutComponentType } from 'next'
 import { useRouter } from 'next/router'
 import { useListOrganizations, useListPersonalPledges } from 'polarkit/hooks'
@@ -9,7 +6,7 @@ import { ReactElement, useEffect } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../hooks'
 
 const Page: NextLayoutComponentType = () => {
-  const { isLoaded, haveOrgs } = useCurrentOrgAndRepoFromURL()
+  const { haveOrgs } = useCurrentOrgAndRepoFromURL()
 
   const listOrganizationsQuery = useListOrganizations()
   const personalPledges = useListPersonalPledges()
@@ -20,49 +17,25 @@ const Page: NextLayoutComponentType = () => {
     const havePersonalPledges =
       (personalPledges?.data && personalPledges?.data.length > 0) || false
 
-    // Show personal dashboard
+    // Redirect to personal
     if (!haveOrgs && havePersonalPledges) {
-      router.push(`/dashboard/personal`)
+      router.push(`/issues/personal`)
       return
     }
 
-    // redirect to first org
+    // Redirect to first org
     if (
       haveOrgs &&
       listOrganizationsQuery?.data?.items &&
       listOrganizationsQuery.data.items.length > 0
     ) {
       const gotoOrg = listOrganizationsQuery.data.items[0]
-      router.push(`/dashboard/${gotoOrg.name}`)
+      router.push(`/issues/${gotoOrg.name}`)
       return
     }
   })
 
-  if (!isLoaded) {
-    return <></>
-  }
-
-  if (!haveOrgs) {
-    return (
-      <DashboardSidebarLayout
-        showSidebar={false}
-        isPersonalDashboard={false}
-        filters={DefaultFilters}
-        onSetFilters={() => {}}
-      >
-        <OnboardingConnectReposToGetStarted />
-      </DashboardSidebarLayout>
-    )
-  }
-
-  return (
-    <Dashboard
-      key="dashboard-root"
-      org={undefined}
-      repo={undefined}
-      isPersonal={false}
-    />
-  )
+  return <></>
 }
 
 Page.getLayout = (page: ReactElement) => {

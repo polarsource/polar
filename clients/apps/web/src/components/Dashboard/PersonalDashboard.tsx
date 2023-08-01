@@ -2,7 +2,7 @@ import OnboardingConnectPersonalDashboard from '@/components/Onboarding/Onboardi
 import { IssueStatus } from 'polarkit/api/client'
 import { usePersonalDashboard } from 'polarkit/hooks'
 import { Dispatch, SetStateAction } from 'react'
-import DashboardSidebarLayout from '../Layout/DashboardSidebarLayout'
+import DashboardSidebarLayout from '../Layout/DashboardIssuesFilterLayout'
 import IssueList from './IssueList'
 import { DashboardFilters } from './filters'
 

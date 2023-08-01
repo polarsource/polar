@@ -2,7 +2,8 @@ import OnboardingInstallChromeExtension from '@/components/Onboarding/Onboarding
 import { IssueListType, IssueStatus } from 'polarkit/api/client'
 import { useDashboard } from 'polarkit/hooks'
 import { Dispatch, SetStateAction, useMemo } from 'react'
-import DashboardSidebarLayout from '../Layout/DashboardSidebarLayout'
+import DashboardIssuesFilterLayout from '../Layout/DashboardIssuesFilterLayout'
+import DashboardLayout from '../Layout/DashboardLayout'
 import OnboardingAddBadge from '../Onboarding/OnboardingAddBadge'
 import OnboardingAddDependency from '../Onboarding/OnboardingAddDependency'
 import { LabelSchema } from './IssueLabel'
@@ -93,31 +94,33 @@ const OrganizationDashboard = ({
   ])
 
   return (
-    <DashboardSidebarLayout
-      filters={filters}
-      onSetFilters={onSetFilters}
-      showSidebar={true}
-      isPersonalDashboard={false}
-    >
-      <div>
-        {showChromeOnboarding && <OnboardingInstallChromeExtension />}
-        {showDependenciesOnboarding && <OnboardingAddDependency />}
-        {showAddBadgeBanner && <OnboardingAddBadge />}
-        {showList && (
-          <IssueList
-            totalCount={totalCount}
-            loading={dashboardQuery.isLoading}
-            dashboard={dashboard}
-            filters={filters}
-            onSetFilters={onSetFilters}
-            isInitialLoading={dashboardQuery.isInitialLoading}
-            isFetchingNextPage={dashboardQuery.isFetchingNextPage}
-            hasNextPage={dashboardQuery.hasNextPage || false}
-            fetchNextPage={dashboardQuery.fetchNextPage}
-          />
-        )}
-      </div>
-    </DashboardSidebarLayout>
+    <DashboardLayout isPersonalDashboard={true}>
+      <DashboardIssuesFilterLayout
+        filters={filters}
+        onSetFilters={onSetFilters}
+        isPersonalDashboard={false}
+      >
+        {JSON.stringify(filters)}
+        <div>
+          {showChromeOnboarding && <OnboardingInstallChromeExtension />}
+          {showDependenciesOnboarding && <OnboardingAddDependency />}
+          {showAddBadgeBanner && <OnboardingAddBadge />}
+          {showList && (
+            <IssueList
+              totalCount={totalCount}
+              loading={dashboardQuery.isLoading}
+              dashboard={dashboard}
+              filters={filters}
+              onSetFilters={onSetFilters}
+              isInitialLoading={dashboardQuery.isInitialLoading}
+              isFetchingNextPage={dashboardQuery.isFetchingNextPage}
+              hasNextPage={dashboardQuery.hasNextPage || false}
+              fetchNextPage={dashboardQuery.fetchNextPage}
+            />
+          )}
+        </div>
+      </DashboardIssuesFilterLayout>
+    </DashboardLayout>
   )
 }
 

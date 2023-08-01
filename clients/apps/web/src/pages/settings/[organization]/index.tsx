@@ -1,20 +1,12 @@
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
-import RepoSelection from '@/components/Dashboard/RepoSelection'
-import EmptyLayout from '@/components/Layout/EmptyLayout'
+import DashboardLayout from '@/components/Layout/DashboardLayout'
 import BadgeSetup from '@/components/Settings/Badge'
 import NotificationSettings from '@/components/Settings/NotificationSettings'
-import Topbar from '@/components/Shared/Topbar'
 import { useRequireAuth } from '@/hooks/auth'
-import { ArrowLeftIcon } from '@heroicons/react/24/solid'
 import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
-import {
-  useListOrganizations,
-  useListRepositories,
-  useOrganization,
-} from 'polarkit/hooks'
+import { useOrganization } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { ReactElement, useEffect, useMemo, useRef } from 'react'
 
@@ -74,104 +66,57 @@ const SettingsPage: NextLayoutComponentType = () => {
 
   return (
     <>
-      <Head>
-        {showPersonalSettings && <title>Polar | Settings</title>}
-        {!showPersonalSettings && <title>Polar | Settings for {handle}</title>}
-      </Head>
-
-      <div className="relative z-0 mx-auto w-full max-w-[1100px] md:mt-16">
-        <div className="divide-y divide-gray-200 dark:divide-gray-800">
-          {showBadgeSettings && org && (
-            <Section>
-              <>
-                <SectionDescription
-                  title="Polar badge"
-                  description="Customize which issues Polar should embed a pledge badge for."
-                />
-
-                <BadgeSetup
-                  org={org}
-                  showControls={true}
-                  setShowControls={() => true}
-                  setSyncIssuesCount={(value: number) => true}
-                  isSettingPage={true}
-                />
-              </>
-            </Section>
+      <DashboardLayout isPersonalDashboard={handle === 'personal'}>
+        <Head>
+          {showPersonalSettings && <title>Polar | Settings</title>}
+          {!showPersonalSettings && (
+            <title>Polar | Settings for {handle}</title>
           )}
+        </Head>
 
-          {showEmailPreferences && (
-            <Section>
-              <>
-                <SectionDescription
-                  title="Email notifications"
-                  description="Polar will send emails for the notifications enabled below."
-                />
+        <div className="relative z-0 mx-auto w-full max-w-[1100px]">
+          <div className="divide-y divide-gray-200 dark:divide-gray-800">
+            {showBadgeSettings && org && (
+              <Section>
+                <>
+                  <SectionDescription
+                    title="Polar badge"
+                    description="Customize which issues Polar should embed a pledge badge for."
+                  />
 
-                <NotificationSettings />
-              </>
-            </Section>
-          )}
-        </div>
-      </div>
-    </>
-  )
-}
+                  <BadgeSetup
+                    org={org}
+                    showControls={true}
+                    setShowControls={() => true}
+                    setSyncIssuesCount={(value: number) => true}
+                    isSettingPage={true}
+                  />
+                </>
+              </Section>
+            )}
 
-const SettingsTopbar = () => {
-  const router = useRouter()
-  const { organization } = router.query
-  const handle: string = typeof organization === 'string' ? organization : ''
-
-  const currentOrg = useStore((state) => state.currentOrg)
-
-  const { currentUser } = useRequireAuth()
-
-  const listOrganizationsQuery = useListOrganizations()
-  const listRepositoriesQuery = useListRepositories()
-
-  if (!currentUser || !listRepositoriesQuery.data) {
-    return <></>
-  }
-
-  return (
-    <Topbar isFixed={true}>
-      {{
-        left: (
-          <Link href={`/dashboard/${handle}`}>
-            <ArrowLeftIcon className="h-6 w-6" />
-          </Link>
-        ),
-        center: (
-          <div className="flex items-center space-x-2 text-sm">
-            <div>Settings for</div>
-            <RepoSelection
-              showRepositories={false}
-              showConnectMore={false}
-              currentOrg={currentOrg}
-              onSelectOrg={(org) => router.push(`/settings/${org}`)}
-              onSelectUser={() => router.push(`/settings/personal`)}
-              currentUser={currentUser}
-              organizations={listOrganizationsQuery.data?.items || []}
-              defaultToUser={true}
-              showUserInDropdown={true}
-            />
+            {showEmailPreferences && (
+              <Section>
+                <>
+                  <SectionDescription
+                    title="Email notifications"
+                    description="Polar will send emails for the notifications enabled below."
+                  />
+                  <NotificationSettings />
+                </>
+              </Section>
+            )}
           </div>
-        ),
-      }}
-    </Topbar>
+        </div>
+      </DashboardLayout>
+    </>
   )
 }
 
 SettingsPage.getLayout = (page: ReactElement) => {
   return (
     <Gatekeeper>
-      <EmptyLayout>
-        <>
-          <SettingsTopbar />
-          {page}
-        </>
-      </EmptyLayout>
+      <>{page}</>
     </Gatekeeper>
   )
 }

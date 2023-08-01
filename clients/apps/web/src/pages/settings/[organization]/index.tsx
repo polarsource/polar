@@ -74,7 +74,7 @@ const SettingsPage: NextLayoutComponentType = () => {
           )}
         </Head>
 
-        <div className="relative z-0 mx-auto w-full max-w-[1100px]">
+        <div className="relative z-0">
           <div className="divide-y divide-gray-200 dark:divide-gray-800">
             {showBadgeSettings && org && (
               <Section>

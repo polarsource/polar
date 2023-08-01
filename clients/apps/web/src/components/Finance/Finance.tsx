@@ -6,8 +6,8 @@ import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from 'polarkit/account'
 import { api } from 'polarkit/api'
 import {
   AccountRead,
-  Organization,
   AccountType,
+  Organization,
   Platforms,
   PledgeResources,
   PledgeState,
@@ -236,8 +236,8 @@ const AccountBanner = (props: {
         >
           <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
           <span className="text-sm">
-            You need to set up <strong>Stripe</strong> or <strong>Open Collective</strong> to receive
-            payouts
+            You need to set up <strong>Stripe</strong> or{' '}
+            <strong>Open Collective</strong> to receive payouts
           </span>
         </Banner>
         <ModernModal
@@ -252,7 +252,7 @@ const AccountBanner = (props: {
   }
 
   if (accounts.length > 0 && !accounts[0].is_details_submitted) {
-    const AccountTypeIcon = ACCOUNT_TYPE_ICON[accounts[0].account_type];
+    const AccountTypeIcon = ACCOUNT_TYPE_ICON[accounts[0].account_type]
     return (
       <Banner
         color="default"
@@ -270,16 +270,19 @@ const AccountBanner = (props: {
       >
         <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
         <span className="text-sm">
-          Continue the setup of your <strong>{ACCOUNT_TYPE_DISPLAY_NAMES[accounts[0].account_type]}</strong> account to receive
-          payouts
+          Continue the setup of your{' '}
+          <strong>
+            {ACCOUNT_TYPE_DISPLAY_NAMES[accounts[0].account_type]}
+          </strong>{' '}
+          account to receive payouts
         </span>
       </Banner>
     )
   }
 
   if (accounts.length > 0 && accounts[0].is_details_submitted) {
-    const accountType = accounts[0].account_type;
-    const AccountTypeIcon = ACCOUNT_TYPE_ICON[accountType];
+    const accountType = accounts[0].account_type
+    const AccountTypeIcon = ACCOUNT_TYPE_ICON[accountType]
     return (
       <>
         <Banner
@@ -307,8 +310,10 @@ const AccountBanner = (props: {
         >
           <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
           <span className="text-sm">
-            {accountType === AccountType.STRIPE && 'Payouts will be sent to the connected Stripe account'}
-            {accountType === AccountType.OPEN_COLLECTIVE && 'Payouts will be sent in bulk once per month to the connected Open Collective account'}
+            {accountType === AccountType.STRIPE &&
+              'Payouts will be sent to the connected Stripe account'}
+            {accountType === AccountType.OPEN_COLLECTIVE &&
+              'Payouts will be sent in bulk once per month to the connected Open Collective account'}
           </span>
         </Banner>
       </>

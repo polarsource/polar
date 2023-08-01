@@ -42,7 +42,7 @@ const OnboardingInstallChromeExtension = () => {
     <>
       <div
         className={classNames(
-          'flex-start mt-2 mb-4 flex flex-row overflow-hidden rounded-xl bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-gray-700',
+          'flex-start flex flex-row overflow-hidden rounded-xl bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-gray-700',
         )}
       >
         <div className="flex-1">

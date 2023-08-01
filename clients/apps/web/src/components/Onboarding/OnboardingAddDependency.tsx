@@ -138,7 +138,7 @@ const OnboardingAddDependency = () => {
 
   return (
     <>
-      <div className="flex flex-col md:p-8 xl:p-16">
+      <div className="flex flex-col md:p-8 xl:p-16 ">
         <h2 className="text-center text-3xl">Sponsor issues you depend on</h2>
 
         <div className="relative mt-8 select-none">

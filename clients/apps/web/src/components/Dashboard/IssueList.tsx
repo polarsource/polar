@@ -1,5 +1,5 @@
-import { DashboardFilters, navigate } from '@/components/Dashboard/filters'
-import Spinner from '@/components/Shared/Spinner'
+import { DashboardFilters } from '@/components/Dashboard/filters'
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { InfiniteData } from '@tanstack/react-query'
 import { useRouter } from 'next/router'
 import {
@@ -10,13 +10,16 @@ import {
 import { IssueReadWithRelations } from 'polarkit/api/types'
 import { PrimaryButton } from 'polarkit/components/ui'
 import React, {
+  ChangeEvent,
   Dispatch,
+  FormEvent,
   SetStateAction,
   useEffect,
   useMemo,
   useState,
 } from 'react'
 import yayson from 'yayson'
+import Spinner from '../Shared/Spinner'
 import IssueListItem from './IssueListItem'
 
 const IssueList = (props: {
@@ -30,54 +33,46 @@ const IssueList = (props: {
   isInitialLoading: boolean
   isFetchingNextPage: boolean
 }) => {
-  if (!props.dashboard) {
-    return <></>
-  }
-
-  const { fetchNextPage, hasNextPage, isFetchingNextPage, isInitialLoading } =
-    props
+  const { fetchNextPage, hasNextPage, isFetchingNextPage } = props
 
   const canAddRemovePolarLabel = props.filters.tab === IssueListType.ISSUES
 
   return (
     <div className="divide-y dark:divide-gray-800">
-      <Header
-        totalCount={props.totalCount}
-        filters={props.filters}
-        onSetFilters={props.onSetFilters}
-        spinner={isInitialLoading}
-      />
-
-      {!props.loading && (
+      {props.dashboard && (
         <>
-          {props.dashboard.pages.map((group, i) => (
-            <IssueListPage
-              page={group}
-              key={i}
-              canAddRemovePolarLabel={canAddRemovePolarLabel}
-            />
-          ))}
+          {!props.loading && (
+            <>
+              {props.dashboard.pages.map((group, i) => (
+                <IssueListPage
+                  page={group}
+                  key={i}
+                  canAddRemovePolarLabel={canAddRemovePolarLabel}
+                />
+              ))}
+            </>
+          )}
+
+          {hasNextPage && (
+            <PrimaryButton
+              loading={isFetchingNextPage}
+              disabled={isFetchingNextPage}
+              onClick={fetchNextPage}
+            >
+              Load more
+            </PrimaryButton>
+          )}
+
+          {props &&
+            props.totalCount !== undefined &&
+            props.totalCount > 100 &&
+            !hasNextPage && (
+              <div className="p-4 text-center text-gray-500">
+                You&apos;ve reached the bottom... 🏝️
+              </div>
+            )}
         </>
       )}
-
-      {hasNextPage && (
-        <PrimaryButton
-          loading={isFetchingNextPage}
-          disabled={isFetchingNextPage}
-          onClick={fetchNextPage}
-        >
-          Load more
-        </PrimaryButton>
-      )}
-
-      {props &&
-        props.totalCount !== undefined &&
-        props.totalCount > 100 &&
-        !hasNextPage && (
-          <div className="p-4 text-center text-gray-500">
-            You&apos;ve reached the bottom... 🏝️
-          </div>
-        )}
     </div>
   )
 }
@@ -127,7 +122,7 @@ const IssueListPage = (props: {
   )
 }
 
-const Header = (props: {
+export const Header = (props: {
   filters: DashboardFilters
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
   totalCount?: number
@@ -155,7 +150,7 @@ const Header = (props: {
     }
 
     props.onSetFilters(filters)
-    navigate(router, filters)
+    //navigate(router, filters)
   }
 
   const getTitle = (sortBy: IssueSortBy): string => {
@@ -210,35 +205,87 @@ const Header = (props: {
     return t.length * 7.5 + 35 // TODO(gustav): can we use the on-screen size instead somehow?
   }, [props.filters.sort, tabFilters])
 
+  const onQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    console.log('onquerychange')
+    // return
+
+    // if not set, set to relevance
+    const sort = props.filters.sort || IssueSortBy.RELEVANCE
+    const f: DashboardFilters = {
+      ...props.filters,
+      q: event.target.value,
+      sort,
+    }
+    props.onSetFilters(f)
+
+    return false
+
+    // navigate(router, f)
+  }
+
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    //navigate(router, props.filters)
+  }
+
   return (
-    <div className="flex h-12 items-center justify-between px-2">
-      <div className="text-sm">
-        {props.totalCount !== undefined && (
-          <>
-            <strong className="font-medium">{props.totalCount}</strong>{' '}
-            <span className="text-gray-500">issues</span>
-          </>
-        )}
-      </div>
+    <div>
+      <form
+        className="mb-4 flex h-12 items-center justify-between px-2"
+        onSubmit={onSubmit}
+      >
+        <div className="relative w-full max-w-[500px] rounded-md shadow-sm">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+            {props.spinner && <Spinner />}
+            {!props.spinner && (
+              <MagnifyingGlassIcon
+                className="h-5 w-5 text-gray-500"
+                aria-hidden="true"
+              />
+            )}
+          </div>
+          <input
+            type="text"
+            name="query"
+            id="query"
+            className="block w-full rounded-lg border-0 py-2 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700 sm:text-sm sm:leading-6"
+            placeholder="Search issues"
+            onChange={onQueryChange}
+            value={props.filters.q || ''}
+          />
+        </div>
 
-      {props.spinner && <Spinner />}
+        <div>
+          <span className="mr-2 text-sm text-gray-500 dark:text-gray-400">
+            Sort:
+          </span>
+          <select
+            className="m-0 w-48 border-0 bg-transparent bg-right p-0 text-sm font-medium ring-0 focus:border-0 focus:ring-0"
+            onChange={onSelect}
+            style={{ width: `${width}px` }}
+            value={props.filters?.sort}
+          >
+            {options.map((v) => (
+              <option key={v} value={v}>
+                {getTitle(v)}
+              </option>
+            ))}
+          </select>
+        </div>
+      </form>
 
-      <div>
-        <span className="mr-2 text-sm text-gray-500 dark:text-gray-400">
-          Sort:
-        </span>
-        <select
-          className="m-0 w-48 border-0 bg-transparent bg-right p-0 text-sm font-medium ring-0 focus:border-0 focus:ring-0"
-          onChange={onSelect}
-          style={{ width: `${width}px` }}
-          value={props.filters?.sort}
-        >
-          {options.map((v) => (
-            <option key={v} value={v}>
-              {getTitle(v)}
-            </option>
-          ))}
-        </select>
+      <div className="mb-4 flex px-2">
+        <div className="text-sm">
+          {props.totalCount !== undefined && (
+            <>
+              <strong className="font-medium">{props.totalCount}</strong>{' '}
+              <span className="text-gray-500">issues</span>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )

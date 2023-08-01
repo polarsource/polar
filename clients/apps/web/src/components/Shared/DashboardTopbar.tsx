@@ -1,77 +1,13 @@
 import RepoSelection from '@/components/Dashboard/RepoSelection'
 import { useRequireAuth } from '@/hooks'
-import {
-  Cog8ToothIcon,
-  CurrencyDollarIcon,
-  EyeIcon,
-} from '@heroicons/react/24/outline'
+import { EyeIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { Platforms, Visibility } from 'polarkit/api/client'
-import {
-  useListOrganizations,
-  useListRepositories,
-  useOrganizationAccounts,
-  useSearchRepositories,
-} from 'polarkit/hooks'
+import { useListOrganizations, useListRepositories } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { useMemo } from 'react'
 import Topbar from './Topbar'
 import TopbarPill from './TopbarPill'
-
-const SettingsLink = ({ orgSlug }: { orgSlug?: string }) => {
-  let path = '/settings'
-  if (orgSlug) {
-    path += `/${orgSlug}`
-  }
-
-  return (
-    <>
-      <Link href={path}>
-        <Cog8ToothIcon
-          className="h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-100 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-          aria-hidden="true"
-        />
-      </Link>
-    </>
-  )
-}
-
-const MoneyLink = ({ orgSlug }: { orgSlug: string }) => {
-  const accountQuery = useOrganizationAccounts(orgSlug)
-  const accounts = accountQuery.data
-
-  const searchRepositoriesQuery = useSearchRepositories(
-    Platforms.GITHUB,
-    orgSlug,
-  )
-
-  const hasPublicRepos =
-    searchRepositoriesQuery.data &&
-    searchRepositoriesQuery.data.items &&
-    searchRepositoriesQuery.data.items.some(
-      (r) => r.visibility === Visibility.PUBLIC,
-    )
-
-  const hasSetup = accounts?.some((a) => a.is_details_submitted && a.stripe_id)
-  const showBadge = hasPublicRepos && !hasSetup && accountQuery.isFetched
-
-  return (
-    <>
-      <div className="relative">
-        <Link href={`/finance/${orgSlug}`}>
-          <CurrencyDollarIcon
-            className="h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-100 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-            aria-hidden="true"
-          />
-          {showBadge && (
-            <div className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></div>
-          )}
-        </Link>
-      </div>
-    </>
-  )
-}
 
 const PublicPageLink = ({ path }: { path: string }) => {
   return (
@@ -133,8 +69,6 @@ const DashboardNav = () => {
         repositories={listRepositoriesQuery.data?.items || []}
       />
       {publicPath && <PublicPageLink path={publicPath} />}
-      <SettingsLink orgSlug={currentOrg.name} />
-      <MoneyLink orgSlug={currentOrg.name} />
     </>
   )
 }
@@ -172,8 +106,6 @@ const PersonalDashboardNav = () => {
         organizations={listOrganizationQuery.data?.items || []}
         repositories={listRepositoriesQuery.data?.items || []}
       />
-      <PublicPageLink path={`/${currentUser.username}`} />
-      <SettingsLink orgSlug={'personal'} />
     </>
   )
 }

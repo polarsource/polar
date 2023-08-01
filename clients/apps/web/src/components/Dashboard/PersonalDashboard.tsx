@@ -2,7 +2,7 @@ import OnboardingConnectPersonalDashboard from '@/components/Onboarding/Onboardi
 import { IssueStatus } from 'polarkit/api/client'
 import { usePersonalDashboard } from 'polarkit/hooks'
 import { Dispatch, SetStateAction } from 'react'
-import DashboardSidebarLayout from '../Layout/DashboardIssuesFilterLayout'
+import DashboardLayout from '../Layout/DashboardLayout'
 import IssueList from './IssueList'
 import { DashboardFilters } from './filters'
 
@@ -26,12 +26,7 @@ const PersonalDashboard = ({
   const totalCount = dashboard?.pages[0].pagination.total_count || undefined
 
   return (
-    <DashboardSidebarLayout
-      filters={filters}
-      onSetFilters={onSetFilters}
-      showSidebar={true}
-      isPersonalDashboard={true}
-    >
+    <DashboardLayout isPersonalDashboard={true}>
       <div>
         <OnboardingConnectPersonalDashboard />
         <IssueList
@@ -46,7 +41,7 @@ const PersonalDashboard = ({
           fetchNextPage={dashboardQuery.fetchNextPage}
         />
       </div>
-    </DashboardSidebarLayout>
+    </DashboardLayout>
   )
 }
 

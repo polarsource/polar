@@ -1,6 +1,5 @@
-import Dashboard, { DefaultFilters } from '@/components/Dashboard'
+import Dashboard from '@/components/Dashboard'
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
-import DashboardIssuesFilterLayout from '@/components/Layout/DashboardIssuesFilterLayout'
 import OnboardingConnectReposToGetStarted from '@/components/Onboarding/OnboardingConnectReposToGetStarted'
 import type { NextLayoutComponentType } from 'next'
 import { useRouter } from 'next/router'
@@ -43,15 +42,7 @@ const Page: NextLayoutComponentType = () => {
   }
 
   if (!haveOrgs) {
-    return (
-      <DashboardIssuesFilterLayout
-        isPersonalDashboard={false}
-        filters={DefaultFilters}
-        onSetFilters={() => {}}
-      >
-        <OnboardingConnectReposToGetStarted />
-      </DashboardIssuesFilterLayout>
-    )
+    return <OnboardingConnectReposToGetStarted />
   }
 
   return (

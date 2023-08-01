@@ -47,6 +47,7 @@ class RepositoryService(
         org_ids: list[UUID],
         repository_name: str | None = None,
         load_organization: bool = False,
+        order_by_open_source: bool = False,
     ) -> Sequence[Repository]:
         statement = sql.select(Repository).where(
             Repository.organization_id.in_(org_ids),
@@ -58,6 +59,11 @@ class RepositoryService(
 
         if load_organization:
             statement = statement.options(joinedload(Repository.organization))
+
+        if order_by_open_source:
+            statement = statement.order_by(
+                Repository.is_private, Repository.created_at.desc()
+            )
 
         res = await session.execute(statement)
         return res.scalars().unique().all()
@@ -80,24 +86,6 @@ class RepositoryService(
 
         res = await session.execute(statement)
         return res.scalars().unique().one_or_none()
-
-    async def list_by_organization(
-        self,
-        session: AsyncSession,
-        organization_id: UUID,
-        order_by_open_source: bool = False,
-    ) -> Sequence[Repository]:
-        statement = sql.select(Repository).where(
-            Repository.organization_id == organization_id,
-            Repository.deleted_at.is_(None),
-        )
-        if order_by_open_source:
-            statement = statement.order_by(
-                Repository.is_private, Repository.created_at.desc()
-            )
-
-        res = await session.execute(statement)
-        return res.scalars().unique().all()
 
     async def list_by_ids_and_organization(
         self,

@@ -86,8 +86,11 @@ async def get_dashboard(
 
     # if repo name is set, use that repository
     if repo_name:
-        repo = await repository.get_by(
-            session, organization_id=auth.organization.id, name=repo_name
+        repo = await repository.get_by_org_and_name(
+            session,
+            organization_id=auth.organization.id,
+            name=repo_name,
+            load_organization=True,
         )
         if not repo:
             raise HTTPException(
@@ -99,9 +102,10 @@ async def get_dashboard(
         # if no repo name is set, use all repositories in the organization
         # TODO: Once we support it: Only show repositories that the user can see on
         # GitHub
-        repositories = await repository.list_by_organization(
+        repositories = await repository.list_by(
             session,
-            organization_id=auth.organization.id,
+            org_ids=[auth.organization.id],
+            load_organization=True,
         )
 
     if not repositories:

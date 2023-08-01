@@ -115,7 +115,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 joinedload(Pledge.user),
                 joinedload(Pledge.by_organization),
                 joinedload(Pledge.issue),
-                joinedload(Pledge.to_repository),
+                joinedload(Pledge.to_repository).joinedload(Repository.organization),
                 joinedload(Pledge.to_organization),
             )
         )

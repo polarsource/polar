@@ -38,9 +38,7 @@ export const navigate = (router: NextRouter, filters: DashboardFilters) => {
   if (filters.q) {
     params.set('q', filters.q)
   }
-  if (filters.tab) {
-    params.set('tab', filters.tab)
-  }
+
   if (filters.sort) {
     params.set('sort', filters.sort)
   }

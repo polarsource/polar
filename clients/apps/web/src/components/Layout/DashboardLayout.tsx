@@ -10,7 +10,7 @@ const DashboardLayout = (props: {
   const { children, isPersonalDashboard } = props
 
   return (
-    <div className="">
+    <div>
       {isPersonalDashboard && <PersonalDashboardTopbar />}
       {!isPersonalDashboard && <DashboardTopbar />}
       <div>

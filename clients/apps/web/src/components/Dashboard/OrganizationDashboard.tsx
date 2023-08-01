@@ -93,7 +93,7 @@ const OrganizationDashboard = ({
   ])
 
   return (
-    <DashboardLayout isPersonalDashboard={true}>
+    <DashboardLayout isPersonalDashboard={false}>
       <div className="space-y-4">
         <Header
           totalCount={totalCount}

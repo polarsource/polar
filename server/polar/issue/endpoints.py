@@ -412,6 +412,7 @@ async def get_public_issues(
     all_org_repos = await repository_service.list_by(
         session,
         org_ids=[org.id],
+        load_organization=True,
     )
     all_org_repos = [
         r for r in all_org_repos if r.is_private is False and r.is_archived is False

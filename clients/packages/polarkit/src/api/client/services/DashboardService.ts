@@ -25,6 +25,7 @@ export class DashboardService {
     q,
     sort,
     onlyPledged = false,
+    onlyBadged = false,
     page = 1,
   }: {
     issueListType?: IssueListType,
@@ -32,6 +33,7 @@ export class DashboardService {
     q?: string,
     sort?: IssueSortBy,
     onlyPledged?: boolean,
+    onlyBadged?: boolean,
     page?: number,
   }): CancelablePromise<IssueListResponse> {
     return this.httpRequest.request({
@@ -43,6 +45,7 @@ export class DashboardService {
         'q': q,
         'sort': sort,
         'only_pledged': onlyPledged,
+        'only_badged': onlyBadged,
         'page': page,
       },
       errors: {
@@ -65,6 +68,7 @@ export class DashboardService {
     q,
     sort,
     onlyPledged = false,
+    onlyBadged = false,
     page = 1,
   }: {
     platform: Platforms,
@@ -75,6 +79,7 @@ export class DashboardService {
     q?: string,
     sort?: IssueSortBy,
     onlyPledged?: boolean,
+    onlyBadged?: boolean,
     page?: number,
   }): CancelablePromise<IssueListResponse> {
     return this.httpRequest.request({
@@ -91,6 +96,7 @@ export class DashboardService {
         'q': q,
         'sort': sort,
         'only_pledged': onlyPledged,
+        'only_badged': onlyBadged,
         'page': page,
       },
       errors: {

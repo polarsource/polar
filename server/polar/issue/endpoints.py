@@ -60,9 +60,9 @@ async def search(
             detail="Organization not found",
         )
 
-    all_org_repos = await repository_service.list_by_organization(
+    all_org_repos = await repository_service.list_by(
         session,
-        organization_id=org.id,
+        org_ids=[org.id],
     )
     all_org_repos = [
         r for r in all_org_repos if r.is_private is False and r.is_archived is False
@@ -409,9 +409,9 @@ async def get_public_issues(
             detail="Organization not found",
         )
 
-    all_org_repos = await repository_service.list_by_organization(
+    all_org_repos = await repository_service.list_by(
         session,
-        organization_id=org.id,
+        org_ids=[org.id],
     )
     all_org_repos = [
         r for r in all_org_repos if r.is_private is False and r.is_archived is False

@@ -169,8 +169,8 @@ async def get_badge_settings(
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationBadgeSettingsRead:
-    repositories = await repository_service.list_by_organization(
-        session, auth.organization.id, order_by_open_source=True
+    repositories = await repository_service.list_by(
+        session, org_ids=[auth.organization.id], order_by_open_source=True
     )
 
     synced = await repository_service.get_repositories_synced_count(

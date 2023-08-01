@@ -4,6 +4,8 @@ from datetime import datetime
 from typing import Self
 from uuid import UUID
 
+from pydantic import Field
+
 from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.kit.schemas import Schema
@@ -17,9 +19,9 @@ class Repository(Schema):
     id: UUID
     platform: Platforms
     visibility: Visibility
-    name: str
+    name: str = Field(examples=["MyOrg"])
     description: str | None = None
-    stars: int | None = None
+    stars: int | None = Field(default=None, examples=[1337])
     license: str | None = None
     homepage: str | None = None
 

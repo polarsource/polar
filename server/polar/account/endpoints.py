@@ -4,9 +4,11 @@ from pydantic import UUID4
 from polar.account.schemas import AccountCreate, AccountLink, AccountRead
 from polar.auth.dependencies import Auth
 from polar.enums import Platforms
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 
-from .service import account as account_service, AccountServiceError
+from .service import AccountServiceError
+from .service import account as account_service
 
 router = APIRouter(tags=["accounts"])
 
@@ -84,15 +86,21 @@ async def get_accounts(
     platform: Platforms,
     org_name: str,
     auth: Auth = Depends(Auth.user_with_org_access),
+    session: AsyncSession = Depends(get_db_session),
 ) -> list[AccountRead | None]:
-    if auth.organization.account is not None:
-        ret = AccountRead.from_orm(auth.organization.account)
-        balance = account_service.get_balance(auth.organization.account)
+    # get loaded
+    org = await organization_service.get_with_loaded(
+        session=session, id=auth.organization.id
+    )
+
+    if org and org.account is not None:
+        ret = AccountRead.from_orm(org.account)
+        balance = account_service.get_balance(org.account)
         if balance is not None:
             currency, amount = balance
             ret.balance_currency = currency
             ret.balance = amount
-        ret.is_admin = auth.organization.account.admin_id == auth.user.id
+        ret.is_admin = org.account.admin_id == auth.user.id
         return [ret]
     else:
         return []

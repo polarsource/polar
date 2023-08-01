@@ -34,13 +34,6 @@ export const DefaultFilters: DashboardFilters = {
   onlyPledged: false,
 }
 
-const getTab = (tab: string | null): IssueListType => {
-  if (tab === 'dependencies') {
-    return IssueListType.DEPENDENCIES
-  }
-  return IssueListType.ISSUES
-}
-
 const getSort = (sort: string | null): IssueSortBy => {
   if (sort === 'newest') {
     return IssueSortBy.NEWEST
@@ -67,10 +60,12 @@ const Dashboard = ({
   org,
   repo,
   isPersonal,
+  isDependencies,
 }: {
   org: Organization | undefined
   repo: Repository | undefined
   isPersonal: boolean
+  isDependencies: boolean
 }) => {
   const router = useRouter()
 
@@ -92,14 +87,15 @@ const Dashboard = ({
       didSetFiltersFromURL.current = true
       const s = new URLSearchParams(window.location.search)
 
-      const useTab = isPersonal
-        ? IssueListType.DEPENDENCIES
-        : getTab(s.get('tab'))
+      const tab =
+        isPersonal || isDependencies
+          ? IssueListType.DEPENDENCIES
+          : IssueListType.ISSUES
 
       const f: DashboardFilters = {
         ...DefaultFilters,
         q: s.get('q') || '',
-        tab: useTab,
+        tab: tab,
       }
       if (s.has('statuses')) {
         const stat = s.get('statuses')

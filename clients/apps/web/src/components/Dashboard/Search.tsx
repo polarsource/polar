@@ -1,33 +1,16 @@
 import { MagnifyingGlassIcon } from '@heroicons/react/20/solid'
 import { useRouter } from 'next/router'
-import { IssueListType, IssueSortBy } from 'polarkit/api/client'
+import { IssueSortBy } from 'polarkit/api/client'
 import { Checkbox } from 'polarkit/components/ui'
 import { ChangeEvent, FormEvent } from 'react'
-import Tab from './Tab'
-import Tabs from './Tabs'
 import { DashboardFilters, navigate } from './filters'
 
 const Search = (props: {
   filters: DashboardFilters
-  showTabs: IssueListType[]
   onSetFilters: (f: DashboardFilters) => void
 }) => {
-  const { filters, onSetFilters, showTabs } = props
+  const { filters, onSetFilters } = props
   const router = useRouter()
-
-  const onTabChange = (tab: IssueListType) => {
-    let sort = filters.sort
-    if (tab === IssueListType.ISSUES) {
-      sort = IssueSortBy.ISSUES_DEFAULT
-    }
-    if (tab === IssueListType.DEPENDENCIES) {
-      sort = IssueSortBy.DEPENDENCIES_DEFAULT
-    }
-
-    const f: DashboardFilters = { ...filters, tab, sort }
-    onSetFilters(f)
-    navigate(router, f)
-  }
 
   const onQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
     event.preventDefault()
@@ -83,35 +66,8 @@ const Search = (props: {
     navigate(router, f)
   }
 
-  const tabName = (tab: IssueListType): string => {
-    switch (tab) {
-      case IssueListType.ISSUES:
-        return 'Issues'
-      case IssueListType.DEPENDENCIES:
-        return 'Dependencies'
-    }
-  }
-
   return (
     <div className="flex w-full flex-col space-y-3">
-      {showTabs.length > 1 && (
-        <Tabs>
-          <>
-            {showTabs.map((t) => {
-              return (
-                <Tab
-                  key={t}
-                  active={filters.tab === t}
-                  onClick={() => onTabChange(t)}
-                >
-                  <>{tabName(t)}</>
-                </Tab>
-              )
-            })}
-          </>
-        </Tabs>
-      )}
-
       <form className="space-y-4" onSubmit={onSubmit}>
         <div>
           <div className="relative mt-2 rounded-md shadow-sm">
@@ -132,74 +88,80 @@ const Search = (props: {
             />
           </div>
         </div>
-        <div className="flex items-center justify-between">
-          <div className="mt-1 text-sm font-medium text-gray-500 dark:text-gray-400">
-            Status
-          </div>
-          <div
-            className="cursor-pointer text-xs font-medium text-blue-500 dark:text-blue-600"
-            onClick={resetStatus}
-          >
-            Reset
-          </div>
-        </div>
-        <div className="space-y-3">
-          <Checkbox
-            id="statusBacklog"
-            value={filters.statusBacklog}
-            onChange={onStatusChange}
-          >
-            Backlog
-          </Checkbox>
-          <Checkbox
-            id="statusTriaged"
-            value={filters.statusTriaged}
-            onChange={onStatusChange}
-          >
-            Triaged
-          </Checkbox>
-          <Checkbox
-            id="statusInProgress"
-            value={filters.statusInProgress}
-            onChange={onStatusChange}
-          >
-            In progress
-          </Checkbox>
-          <Checkbox
-            id="statusPullRequest"
-            value={filters.statusPullRequest}
-            onChange={onStatusChange}
-          >
-            Pull request
-          </Checkbox>
-          <Checkbox
-            id="statusClosed"
-            value={filters.statusClosed}
-            onChange={onStatusChange}
-          >
-            Closed
-          </Checkbox>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="mt-1 text-sm font-medium text-gray-500 dark:text-gray-400">
-            Filters
-          </div>
-          <div
-            className="cursor-pointer text-xs font-medium text-blue-500 dark:text-blue-600"
-            onClick={resetFilters}
-          >
-            Reset
-          </div>
-        </div>
-        <div className="space-y-3">
-          <Checkbox
-            id="onlyPledged"
-            value={filters.onlyPledged}
-            onChange={onStatusChange}
-          >
-            Only Pledged
-          </Checkbox>
-        </div>
+
+        {false && (
+          <>
+            <div className="flex items-center justify-between">
+              <div className="mt-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+                Status
+              </div>
+              <div
+                className="cursor-pointer text-xs font-medium text-blue-500 dark:text-blue-600"
+                onClick={resetStatus}
+              >
+                Reset
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Checkbox
+                id="statusBacklog"
+                value={filters.statusBacklog}
+                onChange={onStatusChange}
+              >
+                Backlog
+              </Checkbox>
+              <Checkbox
+                id="statusTriaged"
+                value={filters.statusTriaged}
+                onChange={onStatusChange}
+              >
+                Triaged
+              </Checkbox>
+              <Checkbox
+                id="statusInProgress"
+                value={filters.statusInProgress}
+                onChange={onStatusChange}
+              >
+                In progress
+              </Checkbox>
+              <Checkbox
+                id="statusPullRequest"
+                value={filters.statusPullRequest}
+                onChange={onStatusChange}
+              >
+                Pull request
+              </Checkbox>
+              <Checkbox
+                id="statusClosed"
+                value={filters.statusClosed}
+                onChange={onStatusChange}
+              >
+                Closed
+              </Checkbox>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="mt-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+                Filters
+              </div>
+              <div
+                className="cursor-pointer text-xs font-medium text-blue-500 dark:text-blue-600"
+                onClick={resetFilters}
+              >
+                Reset
+              </div>
+            </div>
+            <div className="space-y-3">
+              <Checkbox
+                id="onlyPledged"
+                value={filters.onlyPledged}
+                onChange={onStatusChange}
+              >
+                Only Pledged
+              </Checkbox>
+            </div>
+          </>
+        )}
       </form>
     </div>
   )

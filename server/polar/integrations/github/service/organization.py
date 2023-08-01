@@ -242,7 +242,9 @@ class GithubOrganizationService(OrganizationService):
             )
 
         repository = await github_repository.get_by_org_and_name(
-            session, organization.id, repo_name
+            session,
+            organization.id,
+            repo_name,
         )
 
         if not repository:
@@ -319,6 +321,13 @@ class GithubOrganizationService(OrganizationService):
                 repository_id=repository.id,
             )
             issue = await github_issue.create(session, issue_schema)
+
+        # load repository for return
+        repository = await github_repository.get(
+            session, id=repository.id, load_organization=True
+        )
+        if not repository:
+            raise ResourceNotFound()
 
         return (organization, repository, issue)
 

@@ -123,7 +123,7 @@ SettingsPage.getLayout = (page: ReactElement) => {
 
 const Section = ({ children }: { children: ReactElement }) => {
   return (
-    <div className="flex flex-col space-y-4 p-4 py-10 md:flex-row md:space-x-20 md:space-y-0">
+    <div className="flex flex-col space-y-4 xl:flex-row-reverse xl:space-y-0">
       {children}
     </div>
   )
@@ -137,7 +137,7 @@ const SectionDescription = ({
   description: string
 }) => {
   return (
-    <div className="flex-shrink-0 md:w-60">
+    <div className="flex-shrink-0 xl:ml-8 xl:w-60">
       <h2 className="mb-2 font-medium">{title}</h2>
       <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>
     </div>

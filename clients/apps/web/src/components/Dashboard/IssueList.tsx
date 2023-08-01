@@ -1,4 +1,4 @@
-import { DashboardFilters } from '@/components/Dashboard/filters'
+import { DashboardFilters, navigate } from '@/components/Dashboard/filters'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { InfiniteData } from '@tanstack/react-query'
 import { useRouter } from 'next/router'
@@ -150,7 +150,7 @@ export const Header = (props: {
     }
 
     props.onSetFilters(filters)
-    //navigate(router, filters)
+    navigate(router, filters)
   }
 
   const getTitle = (sortBy: IssueSortBy): string => {
@@ -209,9 +209,6 @@ export const Header = (props: {
     event.preventDefault()
     event.stopPropagation()
 
-    console.log('onquerychange')
-    // return
-
     // if not set, set to relevance
     const sort = props.filters.sort || IssueSortBy.RELEVANCE
     const f: DashboardFilters = {
@@ -221,14 +218,12 @@ export const Header = (props: {
     }
     props.onSetFilters(f)
 
-    return false
-
-    // navigate(router, f)
+    navigate(router, f)
   }
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    //navigate(router, props.filters)
+    navigate(router, props.filters)
   }
 
   return (

@@ -48,6 +48,7 @@ async def get_personal_dashboard(
     q: Union[str, None] = Query(default=None),
     sort: Union[IssueSortBy, None] = Query(default=None),
     only_pledged: bool = Query(default=False),
+    only_badged: bool = Query(default=False),
     page: int = Query(default=1),
     auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
@@ -62,6 +63,7 @@ async def get_personal_dashboard(
         page=page,
         for_user=auth.user,
         only_pledged=only_pledged,
+        only_badged=only_badged,
     )
 
 
@@ -78,6 +80,7 @@ async def get_dashboard(
     q: Union[str, None] = Query(default=None),
     sort: Union[IssueSortBy, None] = Query(default=None),
     only_pledged: bool = Query(default=False),
+    only_badged: bool = Query(default=False),
     page: int = Query(default=1),
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
@@ -130,6 +133,7 @@ async def get_dashboard(
         for_org=auth.organization,
         for_user=show_pledges_for_user,
         only_pledged=only_pledged,
+        only_badged=only_badged,
         page=page,
     )
 
@@ -160,6 +164,7 @@ async def dashboard(
     for_org: Organization | None = None,
     for_user: User | None = None,
     only_pledged: bool = False,
+    only_badged: bool = False,
     page: int = 1,
 ) -> IssueListResponse:
     # Default sorting
@@ -184,6 +189,7 @@ async def dashboard(
         if for_user and IssueListType.dependencies
         else None,
         have_pledge=True if only_pledged else None,
+        have_polar_badge=True if only_badged else None,
         load_references=True,
         load_pledges=True,
         load_repository=True,

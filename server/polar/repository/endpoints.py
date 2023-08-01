@@ -164,7 +164,7 @@ async def get(
     auth: Auth = Depends(Auth.optional_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> RepositorySchema:
-    repo = await repository.get_by_id(session, id=id, load_organization=True)
+    repo = await repository.get(session, id=id, load_organization=True)
 
     if not repo:
         raise HTTPException(

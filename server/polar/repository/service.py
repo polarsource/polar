@@ -26,18 +26,22 @@ class RepositoryService(
     def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
         return [self.model.external_id]
 
-    async def get_by_id(
-        self, session: AsyncSession, id: UUID, load_organization: bool = False
+    async def get(
+        self,
+        session: AsyncSession,
+        id: UUID,
+        allow_deleted: bool = False,
+        load_organization: bool = False,
     ) -> Repository | None:
-        statement = sql.select(Repository).where(
-            Repository.id == id,
-            Repository.deleted_at.is_(None),
-        )
+        query = sql.select(Repository).where(Repository.id == id)
+
+        if not allow_deleted:
+            query = query.where(Repository.deleted_at.is_(None))
 
         if load_organization:
-            statement = statement.options(joinedload(Repository.organization))
+            query = query.options(joinedload(Repository.organization))
 
-        res = await session.execute(statement)
+        res = await session.execute(query)
         return res.scalars().unique().one_or_none()
 
     async def list_by(

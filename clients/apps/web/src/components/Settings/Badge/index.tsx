@@ -432,7 +432,7 @@ export const Controls = ({
   const router = useRouter()
 
   const redirectToOrgDashboard = () => {
-    router.push(`/dashboard/${org.name}`)
+    router.push(`/issues/${org.name}`)
   }
 
   const isRetroactiveApplicable = (

@@ -241,7 +241,7 @@ export const Header = (props: {
   return (
     <div>
       <form
-        className="mb-4 flex w-full flex-col justify-between space-y-2 px-2 lg:flex-row lg:items-center lg:space-x-2 lg:space-y-0"
+        className="mb-4 flex w-full flex-col justify-between space-y-2 lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0"
         onSubmit={onSubmit}
       >
         <div className="relative w-full shadow-sm lg:max-w-[500px]">
@@ -265,9 +265,9 @@ export const Header = (props: {
           />
         </div>
 
-        <div className="flex space-x-4">
+        <div className="flex flex-shrink-0 space-x-4">
           {canFilterByBadged && (
-            <div className="inline-flex items-center space-x-2 rounded-lg border bg-white py-2 pl-3 text-sm text-gray-500 shadow-sm  dark:text-gray-400 ">
+            <div className="inline-flex flex-shrink-0 items-center space-x-2 rounded-lg border bg-white py-2 pl-3 text-sm text-gray-500  shadow-sm dark:text-gray-400">
               <label htmlFor="only-badged">Only badged</label>
               <Checkbox
                 id="only-badged"

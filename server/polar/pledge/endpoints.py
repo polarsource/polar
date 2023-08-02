@@ -45,12 +45,13 @@ router = APIRouter(tags=["pledges"])
     status_code=200,
 )
 async def search(
+    platform: Platforms | None = None,
     organization_name: str
     | None = Query(
         default=None,
         min_length=1,
         example="my-org",
-        description="Search pledges in the organization with this name.",  # noqa: E501
+        description="Search pledges in the organization with this name. Requires platform to be set.",  # noqa: E501
     ),
     repository_name: str
     | None = Query(
@@ -62,6 +63,12 @@ async def search(
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.current_user),
 ) -> ListResource[PledgeSchema]:
+    if not platform:
+        raise HTTPException(
+            status_code=400,
+            detail="platform is not set",
+        )
+
     if not organization_name:
         raise HTTPException(
             status_code=400,

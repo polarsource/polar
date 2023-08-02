@@ -12,6 +12,7 @@ from polar.organization.schemas import Organization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.schemas import Repository as RepositorySchema
+from polar.tags.api import Tags
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -24,9 +25,49 @@ from .schemas import (
     PledgeResources,
     PledgeUpdate,
 )
+from .schemas import (
+    Pledge as PledgeSchema,
+)
 from .service import pledge as pledge_service
 
 router = APIRouter(tags=["pledges"])
+
+
+@router.get(
+    "/pledges/{id}",
+    response_model=PledgeSchema,
+    tags=[Tags.PUBLIC],
+    description="Get a pledge. Requires authentication.",  # noqa: E501
+    summary="Get pledge (Public API)",
+    status_code=200,
+)
+async def get(
+    id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.current_user),
+) -> PledgeSchema:
+    pledge = await pledge_service.get_with_loaded(session, id)
+    if not pledge:
+        raise HTTPException(
+            status_code=404,
+            detail="Pledge not found",
+        )
+
+    user_memberships = await user_organization_service.list_by_user_id(
+        session,
+        auth.user.id,
+    )
+
+    if not pledge_service.user_can_read_pledge(auth.user, pledge, user_memberships):
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied",
+        )
+
+    return PledgeSchema.from_db(pledge)
+
+
+# Internal APIs below
 
 
 async def get_pledge_or_404(

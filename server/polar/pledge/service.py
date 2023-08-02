@@ -61,46 +61,65 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 joinedload(Pledge.user),
                 joinedload(Pledge.by_organization),
                 joinedload(Pledge.issue).joinedload(Issue.organization),
-                joinedload(Pledge.issue).joinedload(Issue.repository),
+                joinedload(Pledge.issue)
+                .joinedload(Issue.repository)
+                .joinedload(Repository.organization),
             )
             .filter(Pledge.id == pledge_id)
         )
         res = await session.execute(statement)
         return res.scalars().unique().one_or_none()
 
-    async def list_by_repository(
-        self, session: AsyncSession, repository_id: UUID
+    async def list_by(
+        self,
+        session: AsyncSession,
+        organization_ids: list[UUID] | None = None,
+        repository_ids: list[UUID] | None = None,
+        pledging_user: UUID | None = None,
+        load_issue: bool = False,
     ) -> Sequence[Pledge]:
         statement = (
             sql.select(Pledge)
-            .where(
-                Pledge.repository_id == repository_id,
-                Pledge.state.in_(PledgeState.active_states()),
-            )
             .options(
                 joinedload(Pledge.user),
                 joinedload(Pledge.by_organization),
             )
+            .where(
+                Pledge.state.in_(PledgeState.active_states()),
+            )
         )
+
+        if organization_ids:
+            statement = statement.where(Pledge.organization_id.in_(organization_ids))
+
+        if repository_ids:
+            statement = statement.where(Pledge.repository_id.in_(repository_ids))
+
+        if pledging_user:
+            statement = statement.where(Pledge.by_user_id == pledging_user)
+
+        if load_issue:
+            statement = statement.options(
+                joinedload(Pledge.issue).joinedload(Issue.organization),
+                joinedload(Pledge.issue)
+                .joinedload(Issue.repository)
+                .joinedload(Repository.organization),
+            )
+
         res = await session.execute(statement)
         return res.scalars().unique().all()
+
+    async def list_by_repository(
+        self, session: AsyncSession, repository_id: UUID
+    ) -> Sequence[Pledge]:
+        # Deprecated, please use list_by directly
+        return await self.list_by(session, repository_ids=[repository_id])
 
     async def list_by_pledging_user(
         self, session: AsyncSession, user_id: UUID
     ) -> Sequence[Pledge]:
-        statement = (
-            sql.select(Pledge)
-            .where(
-                Pledge.by_user_id == user_id,
-                Pledge.state.in_(PledgeState.active_states()),
-            )
-            .options(
-                joinedload(Pledge.user),
-                joinedload(Pledge.by_organization),
-            )
-        )
-        res = await session.execute(statement)
-        return res.scalars().unique().all()
+        # Deprecated, please use list_by directly
+        return await self.list_by(session, pledging_user=user_id)
 
     async def list_by_receiving_organization(
         self, session: AsyncSession, organization_id: UUID

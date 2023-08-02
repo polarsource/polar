@@ -31,8 +31,8 @@ export const useCurrentOrgAndRepoFromURL = (): {
     let nextRepo: Repository | undefined
 
     // Get repo and org
-    if (orgSlug && repoSlug && listRepositoriesQuery.data) {
-      const repo = listRepositoriesQuery.data.find(
+    if (orgSlug && repoSlug && listRepositoriesQuery.data?.items) {
+      const repo = listRepositoriesQuery.data.items.find(
         (r) => r.name === repoSlug && r.organization?.name === orgSlug,
       )
 
@@ -43,8 +43,10 @@ export const useCurrentOrgAndRepoFromURL = (): {
     }
 
     // Get org if no org found above
-    if (!nextOrg && orgSlug && listOrganizationsQuery.data) {
-      nextOrg = listOrganizationsQuery.data.find((o) => o.name === orgSlug)
+    if (!nextOrg && orgSlug && listOrganizationsQuery.data?.items) {
+      nextOrg = listOrganizationsQuery.data.items.find(
+        (o) => o.name === orgSlug,
+      )
     }
 
     // local state
@@ -56,7 +58,8 @@ export const useCurrentOrgAndRepoFromURL = (): {
     )
 
     const nextUserHaveOrgs = !!(
-      listOrganizationsQuery.data && listOrganizationsQuery.data.length > 0
+      listOrganizationsQuery.data?.items &&
+      listOrganizationsQuery.data.items.length > 0
     )
 
     setHaveOrgs(nextUserHaveOrgs)

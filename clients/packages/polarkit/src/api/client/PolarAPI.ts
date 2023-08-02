@@ -47,7 +47,7 @@ export class PolarAPI {
 
   constructor(config?: Partial<OpenAPIConfig>, HttpRequest: HttpRequestConstructor = AxiosHttpRequest) {
     this.request = new HttpRequest({
-      BASE: config?.BASE ?? 'https://api.polar.sh',
+      BASE: config?.BASE ?? '',
       VERSION: config?.VERSION ?? '0.1.0',
       WITH_CREDENTIALS: config?.WITH_CREDENTIALS ?? false,
       CREDENTIALS: config?.CREDENTIALS ?? 'include',

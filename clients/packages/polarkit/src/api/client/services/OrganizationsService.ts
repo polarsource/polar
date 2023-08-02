@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { ListResource_Organization_ } from '../models/ListResource_Organization_';
 import type { Organization } from '../models/Organization';
 import type { OrganizationBadgeSettingsRead } from '../models/OrganizationBadgeSettingsRead';
 import type { OrganizationBadgeSettingsUpdate } from '../models/OrganizationBadgeSettingsUpdate';
@@ -18,10 +19,10 @@ export class OrganizationsService {
   /**
    * List organizations (Public API)
    * List organizations that the authenticated user is a member of. Requires authentication.
-   * @returns Organization Successful Response
+   * @returns ListResource_Organization_ Successful Response
    * @throws ApiError
    */
-  public list(): CancelablePromise<Array<Organization>> {
+  public list(): CancelablePromise<ListResource_Organization_> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/organizations',
@@ -31,7 +32,7 @@ export class OrganizationsService {
   /**
    * Search organizations (Public API)
    * Search organizations.
-   * @returns Organization Successful Response
+   * @returns ListResource_Organization_ Successful Response
    * @throws ApiError
    */
   public search({
@@ -40,7 +41,7 @@ export class OrganizationsService {
   }: {
     platform?: Platforms,
     organizationName?: string,
-  }): CancelablePromise<Array<Organization>> {
+  }): CancelablePromise<ListResource_Organization_> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/organizations/search',

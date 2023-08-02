@@ -19,7 +19,7 @@ export type OpenAPIConfig = {
 };
 
 export const OpenAPI: OpenAPIConfig = {
-  BASE: 'https://api.polar.sh',
+  BASE: '',
   VERSION: '0.1.0',
   WITH_CREDENTIALS: false,
   CREDENTIALS: 'include',

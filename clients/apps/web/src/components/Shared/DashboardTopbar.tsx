@@ -48,7 +48,10 @@ const MoneyLink = ({ orgSlug }: { orgSlug: string }) => {
 
   const hasPublicRepos =
     searchRepositoriesQuery.data &&
-    searchRepositoriesQuery.data.some((r) => r.visibility === Visibility.PUBLIC)
+    searchRepositoriesQuery.data.items &&
+    searchRepositoriesQuery.data.items.some(
+      (r) => r.visibility === Visibility.PUBLIC,
+    )
 
   const hasSetup = accounts?.some((a) => a.is_details_submitted && a.stripe_id)
   const showBadge = hasPublicRepos && !hasSetup && accountQuery.isFetched
@@ -126,8 +129,8 @@ const DashboardNav = () => {
         showUserInDropdown={true}
         showOrganizationRepositoryCount={true}
         currentUser={currentUser}
-        organizations={listOrganizationQuery.data}
-        repositories={listRepositoriesQuery.data}
+        organizations={listOrganizationQuery.data?.items || []}
+        repositories={listRepositoriesQuery.data?.items || []}
       />
       {publicPath && <PublicPageLink path={publicPath} />}
       <SettingsLink orgSlug={currentOrg.name} />
@@ -166,8 +169,8 @@ const PersonalDashboardNav = () => {
         defaultToUser={true}
         showOrganizationRepositoryCount={true}
         currentUser={currentUser}
-        organizations={listOrganizationQuery.data}
-        repositories={listRepositoriesQuery.data}
+        organizations={listOrganizationQuery.data?.items || []}
+        repositories={listRepositoriesQuery.data?.items || []}
       />
       <PublicPageLink path={`/${currentUser.username}`} />
       <SettingsLink orgSlug={'personal'} />

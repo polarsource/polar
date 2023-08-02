@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { ListResource_Repository_ } from '../models/ListResource_Repository_';
 import type { Platforms } from '../models/Platforms';
 import type { Repository } from '../models/Repository';
 
@@ -14,10 +15,10 @@ export class RepositoriesService {
   /**
    * List repositories (Public API)
    * List repositories in organizations that the authenticated user is a member of. Requires authentication.
-   * @returns Repository Successful Response
+   * @returns ListResource_Repository_ Successful Response
    * @throws ApiError
    */
-  public list(): CancelablePromise<Array<Repository>> {
+  public list(): CancelablePromise<ListResource_Repository_> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/repositories',
@@ -27,7 +28,7 @@ export class RepositoriesService {
   /**
    * Search repositories (Public API)
    * Search repositories.
-   * @returns Repository Successful Response
+   * @returns ListResource_Repository_ Successful Response
    * @throws ApiError
    */
   public search({
@@ -38,7 +39,7 @@ export class RepositoriesService {
     platform: Platforms,
     organizationName: string,
     repositoryName?: string,
-  }): CancelablePromise<Array<Repository>> {
+  }): CancelablePromise<ListResource_Repository_> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/repositories/search',

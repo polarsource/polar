@@ -152,7 +152,7 @@ const SettingsTopbar = () => {
               onSelectOrg={(org) => router.push(`/settings/${org}`)}
               onSelectUser={() => router.push(`/settings/personal`)}
               currentUser={currentUser}
-              organizations={listOrganizationsQuery.data || []}
+              organizations={listOrganizationsQuery.data?.items || []}
               defaultToUser={true}
               showUserInDropdown={true}
             />

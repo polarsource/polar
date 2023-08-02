@@ -6,6 +6,7 @@ import type { IssueRead } from '../models/IssueRead';
 import type { IssueReferenceRead } from '../models/IssueReferenceRead';
 import type { IssueResources } from '../models/IssueResources';
 import type { IssueUpdateBadgeMessage } from '../models/IssueUpdateBadgeMessage';
+import type { ListResource_Issue_ } from '../models/ListResource_Issue_';
 import type { OrganizationPublicPageRead } from '../models/OrganizationPublicPageRead';
 import type { Platforms } from '../models/Platforms';
 import type { PostIssueComment } from '../models/PostIssueComment';
@@ -20,7 +21,7 @@ export class IssuesService {
   /**
    * Search issues (Public API)
    * Search issues.
-   * @returns Issue Successful Response
+   * @returns ListResource_Issue_ Successful Response
    * @throws ApiError
    */
   public search({
@@ -31,7 +32,7 @@ export class IssuesService {
     platform: Platforms,
     organizationName: string,
     repositoryName?: string,
-  }): CancelablePromise<Array<Issue>> {
+  }): CancelablePromise<ListResource_Issue_> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/issues/search',

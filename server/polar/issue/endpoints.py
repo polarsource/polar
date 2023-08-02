@@ -22,6 +22,7 @@ from polar.repository.endpoints import user_can_read
 from polar.repository.schemas import Repository as RepositorySchema
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
+from polar.types import ListResource
 
 from .schemas import Issue as IssueSchema
 from .schemas import (
@@ -39,7 +40,7 @@ router = APIRouter(tags=["issues"])
 
 @router.get(
     "/issues/search",
-    response_model=Sequence[IssueSchema],
+    response_model=ListResource[IssueSchema],
     tags=[Tags.PUBLIC],
     description="Search issues.",
     summary="Search issues (Public API)",
@@ -52,7 +53,7 @@ async def search(
     repository_name: str | None = None,
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
-) -> Sequence[IssueSchema]:
+) -> ListResource[IssueSchema]:
     org = await organization_service.get_by_name(session, platform, organization_name)
     if not org:
         raise HTTPException(
@@ -105,7 +106,7 @@ async def search(
         load_repository=True,
     )
 
-    return [IssueSchema.from_db(i) for i in issues]
+    return ListResource(items=[IssueSchema.from_db(i) for i in issues])
 
 
 @router.get(

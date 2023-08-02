@@ -10,6 +10,7 @@ from polar.models.repository import Repository as RepositoryModel
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
+from polar.types import ListResource
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -51,7 +52,7 @@ async def user_can_read(
 
 @router.get(
     "/repositories",
-    response_model=Sequence[RepositorySchema],
+    response_model=ListResource[RepositorySchema],
     tags=[Tags.PUBLIC],
     description="List repositories in organizations that the authenticated user is a member of. Requires authentication.",  # noqa: E501
     summary="List repositories (Public API)",
@@ -60,17 +61,17 @@ async def user_can_read(
 async def list(
     auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
-) -> Sequence[RepositorySchema]:
+) -> ListResource[RepositorySchema]:
     orgs = await organization_service.list_all_orgs_by_user_id(session, auth.user.id)
     repos = await repository.list_by(
         session, org_ids=[o.id for o in orgs], load_organization=True
     )
-    return [RepositorySchema.from_db(r) for r in repos]
+    return ListResource(items=[RepositorySchema.from_db(r) for r in repos])
 
 
 @router.get(
     "/repositories/search",
-    response_model=Sequence[RepositorySchema],
+    response_model=ListResource[RepositorySchema],
     tags=[Tags.PUBLIC],
     description="Search repositories.",
     summary="Search repositories (Public API)",
@@ -83,14 +84,16 @@ async def search(
     repository_name: str | None = None,
     auth: Auth = Depends(Auth.optional_user),
     session: AsyncSession = Depends(get_db_session),
-) -> Sequence[RepositorySchema]:
+) -> ListResource[RepositorySchema]:
     org = await organization_service.get_by_name(
         session,
         platform=platform,
         name=organization_name,
     )
     if not org:
-        return []  # search endpoints returns empty lists in case of no matches
+        return (
+            ListResource()
+        )  # search endpoints returns empty lists in case of no matches
 
     repos = await repository.list_by(
         session,
@@ -104,7 +107,7 @@ async def search(
     # member of
     repos = [r for r in repos if await user_can_read(session, auth, r)]
 
-    return [RepositorySchema.from_db(r) for r in repos]
+    return ListResource(items=[RepositorySchema.from_db(r) for r in repos])
 
 
 @router.get(

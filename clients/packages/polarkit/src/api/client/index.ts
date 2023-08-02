@@ -18,6 +18,7 @@ export { BackofficeBadge } from './models/BackofficeBadge';
 export { BackofficeBadgeResponse } from './models/BackofficeBadgeResponse';
 export type { BackofficePledgeRead } from './models/BackofficePledgeRead';
 export type { ConfirmPledgesResponse } from './models/ConfirmPledgesResponse';
+export type { CurrencyAmount } from './models/CurrencyAmount';
 export type { Entry_Any_ } from './models/Entry_Any_';
 export type { Entry_IssueDashboardRead_ } from './models/Entry_IssueDashboardRead_';
 export type { ExternalGitHubCommitReference } from './models/ExternalGitHubCommitReference';
@@ -61,6 +62,7 @@ export type { OrganizationPublicPageRead } from './models/OrganizationPublicPage
 export type { OrganizationSettingsUpdate } from './models/OrganizationSettingsUpdate';
 export type { PaginationResponse } from './models/PaginationResponse';
 export { Platforms } from './models/Platforms';
+export type { Pledge } from './models/Pledge';
 export type { PledgeCreate } from './models/PledgeCreate';
 export type { PledgeMutationResponse } from './models/PledgeMutationResponse';
 export type { PledgeRead } from './models/PledgeRead';

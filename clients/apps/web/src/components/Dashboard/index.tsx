@@ -32,6 +32,7 @@ export const DefaultFilters: DashboardFilters = {
   statusClosed: false,
   sort: undefined,
   onlyPledged: false,
+  onlyBadged: false,
 }
 
 const getSort = (sort: string | null): IssueSortBy => {
@@ -113,6 +114,9 @@ const Dashboard = ({
       }
       if (s.has('onlyPledged')) {
         f.onlyPledged = true
+      }
+      if (s.has('onlyBadged')) {
+        f.onlyBadged = true
       }
 
       setFilters(f)

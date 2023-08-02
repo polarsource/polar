@@ -17,6 +17,7 @@ export const useDashboard = (
   status?: Array<IssueStatus>,
   sort?: IssueSortBy,
   onlyPledged?: boolean,
+  onlyBadged?: boolean,
 ): UseInfiniteQueryResult<IssueListResponse> =>
   useInfiniteQuery({
     queryKey: [
@@ -29,6 +30,7 @@ export const useDashboard = (
       JSON.stringify(status), // Array as cache key,
       sort,
       onlyPledged,
+      onlyBadged,
     ],
     queryFn: ({ signal, pageParam = 1 }) => {
       const promise = api.dashboard.getDashboard({
@@ -40,6 +42,7 @@ export const useDashboard = (
         status: status,
         sort: sort,
         onlyPledged: onlyPledged,
+        onlyBadged: onlyBadged,
         page: pageParam,
       })
 
@@ -62,6 +65,7 @@ export const usePersonalDashboard = (
   status?: Array<IssueStatus>,
   sort?: IssueSortBy,
   onlyPledged?: boolean,
+  onlyBadged?: boolean,
 ): UseInfiniteQueryResult<IssueListResponse> =>
   useInfiniteQuery({
     queryKey: [
@@ -72,6 +76,7 @@ export const usePersonalDashboard = (
       JSON.stringify(status), // Array as cache key,
       sort,
       onlyPledged,
+      onlyBadged,
     ],
     queryFn: ({ signal, pageParam }) => {
       const promise = api.dashboard.getPersonalDashboard({
@@ -80,6 +85,7 @@ export const usePersonalDashboard = (
         status: status,
         sort: sort,
         onlyPledged,
+        onlyBadged: onlyBadged,
         page: pageParam,
       })
 

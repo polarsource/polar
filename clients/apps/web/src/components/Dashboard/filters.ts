@@ -10,6 +10,7 @@ export type DashboardFilters = {
   statusPullRequest: boolean
   statusClosed: boolean
   onlyPledged: boolean
+  onlyBadged: boolean
   sort?: IssueSortBy
 }
 
@@ -45,6 +46,10 @@ export const navigate = (router: NextRouter, filters: DashboardFilters) => {
 
   if (filters.onlyPledged) {
     params.set('onlyPledged', '1')
+  }
+
+  if (filters.onlyBadged) {
+    params.set('onlyBadged', '1')
   }
 
   const url = new URL(window.location.href)

@@ -19,6 +19,38 @@ export class PledgesService {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
+   * Search pledges (Public API)
+   * Search pledges. Requires authentication. The user can only read pledges that they have made (personally or via an organization) or received (to organizations that they are a member of).
+   * @returns ListResource_Pledge_ Successful Response
+   * @throws ApiError
+   */
+  public search({
+    organizationName,
+    repositoryName,
+  }: {
+    /**
+     * Search pledges in the organization with this name.
+     */
+    organizationName?: string,
+    /**
+     * Search pledges in the repository with this name. Can only be used if organization_name is set.
+     */
+    repositoryName?: string,
+  }): CancelablePromise<ListResource_Pledge_> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/pledges/search',
+      query: {
+        'organization_name': organizationName,
+        'repository_name': repositoryName,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
    * Get pledge (Public API)
    * Get a pledge. Requires authentication.
    * @returns Pledge Successful Response
@@ -34,32 +66,6 @@ export class PledgesService {
       url: '/api/v1/pledges/{id}',
       path: {
         'id': id,
-      },
-      errors: {
-        422: `Validation Error`,
-      },
-    });
-  }
-
-  /**
-   * Search pledges (Public API)
-   * Search pledges. Requires authentication.
-   * @returns ListResource_Pledge_ Successful Response
-   * @throws ApiError
-   */
-  public search({
-    organizationName,
-  }: {
-    /**
-     * Search pledges in the organization with this name. Requires the authenticated user to be a member.
-     */
-    organizationName: string,
-  }): CancelablePromise<ListResource_Pledge_> {
-    return this.httpRequest.request({
-      method: 'GET',
-      url: '/api/v1/pledges/{id}/search',
-      query: {
-        'organization_name': organizationName,
       },
       errors: {
         422: `Validation Error`,

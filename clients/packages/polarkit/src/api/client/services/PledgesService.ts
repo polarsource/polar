@@ -3,6 +3,7 @@
 /* eslint-disable */
 import type { ConfirmPledgesResponse } from '../models/ConfirmPledgesResponse';
 import type { Platforms } from '../models/Platforms';
+import type { Pledge } from '../models/Pledge';
 import type { PledgeCreate } from '../models/PledgeCreate';
 import type { PledgeMutationResponse } from '../models/PledgeMutationResponse';
 import type { PledgeRead } from '../models/PledgeRead';
@@ -15,6 +16,29 @@ import type { BaseHttpRequest } from '../core/BaseHttpRequest';
 export class PledgesService {
 
   constructor(public readonly httpRequest: BaseHttpRequest) {}
+
+  /**
+   * Get pledge (Public API)
+   * Get a pledge. Requires authentication.
+   * @returns Pledge Successful Response
+   * @throws ApiError
+   */
+  public get({
+    id,
+  }: {
+    id: string,
+  }): CancelablePromise<Pledge> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/pledges/{id}',
+      path: {
+        'id': id,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
 
   /**
    * Get Pledge With Resources

@@ -4,13 +4,16 @@ from datetime import datetime
 from enum import Enum
 from uuid import UUID
 
-from polar.issue.schemas import IssueRead
+from pydantic import Field
+
+from polar.issue.schemas import Issue, IssueRead
 from polar.kit.schemas import Schema
-from polar.models.pledge import Pledge
+from polar.models.pledge import Pledge as PledgeModel
 from polar.organization.schemas import Organization
 from polar.repository.schemas import Repository
 
 
+# Public API
 class PledgeState(str, Enum):
     # Initiated by customer. Polar has not received money yet.
     initiated = "initiated"
@@ -90,6 +93,50 @@ class PledgeState(str, Enum):
         return PledgeState.__members__[s]
 
 
+# Public API
+class CurrencyAmount(Schema):
+    currency: str = Field(description="Three letter currency code (eg: USD)")
+    amount: int = Field(
+        description="Amount in the currencys smallest unit (cents if currency is USD)"
+    )
+
+
+# Public API
+class Pledge(Schema):
+    id: UUID = Field(description="Pledge ID")
+    created_at: datetime = Field(description="When the pledge was created")
+    amount: CurrencyAmount = Field(description="Amount pledged towards the issue")
+    state: PledgeState = Field(description="Current state of the pledge")
+
+    paid_at: datetime | None = Field(
+        description="If and when the pledge was paid to the maintainer."
+    )
+    refunded_at: datetime | None = Field(
+        description="If and when the pledge was refunded to the pledger"
+    )  # noqa: E501
+    scheduled_payout_at: datetime | None = Field(
+        description="When the payout is scheduled to be made to the maintainers behind the issue. Disputes must be made before this date."  # noqa: E501
+    )
+
+    issue: Issue = Field(description="The issue that the pledge was made towards")
+
+    @classmethod
+    def from_db(cls, o: PledgeModel) -> Pledge:
+        return Pledge(
+            id=o.id,
+            created_at=o.created_at,
+            amount=CurrencyAmount(currency="USD", amount=o.amount),
+            state=PledgeState.from_str(o.state),
+            paid_at=o.paid_at,
+            refunded_at=o.refunded_at,
+            scheduled_payout_at=o.scheduled_payout_at,
+            issue=Issue.from_db(o.issue),
+        )
+
+
+# Internal APIs below
+
+
 class PledgeTransactionType(str, Enum):
     pledge = "pledge"
     transfer = "transfer"
@@ -148,7 +195,7 @@ class PledgeRead(Schema):
     authed_user_can_admin_received: bool = False
 
     @classmethod
-    def from_db(cls, o: Pledge) -> PledgeRead:
+    def from_db(cls, o: PledgeModel) -> PledgeRead:
         pledger_name = None
         pledger_avatar = None
         if o.user:

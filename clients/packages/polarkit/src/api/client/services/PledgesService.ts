@@ -25,11 +25,13 @@ export class PledgesService {
    * @throws ApiError
    */
   public search({
+    platform,
     organizationName,
     repositoryName,
   }: {
+    platform?: Platforms,
     /**
-     * Search pledges in the organization with this name.
+     * Search pledges in the organization with this name. Requires platform to be set.
      */
     organizationName?: string,
     /**
@@ -41,6 +43,7 @@ export class PledgesService {
       method: 'GET',
       url: '/api/v1/pledges/search',
       query: {
+        'platform': platform,
         'organization_name': organizationName,
         'repository_name': repositoryName,
       },

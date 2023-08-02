@@ -74,7 +74,7 @@ async def test_list_repositories_no_member(
         )
 
     assert response.status_code == 200
-    assert response.json() == []
+    assert response.json()["items"] == []
 
 
 @pytest.mark.asyncio
@@ -92,8 +92,8 @@ async def test_list_repositories_member(
 
     assert response.status_code == 200
     assert len(response.json()) == 1
-    assert response.json()[0]["id"] == str(repository.id)
-    assert response.json()[0]["organization"]["id"] == str(organization.id)
+    assert response.json()["items"][0]["id"] == str(repository.id)
+    assert response.json()["items"][0]["organization"]["id"] == str(organization.id)
 
 
 @pytest.mark.asyncio
@@ -172,7 +172,7 @@ async def test_repository_search_no_matching_org(
         )
 
     assert response.status_code == 200
-    assert response.json() == []
+    assert response.json()["items"] == []
 
 
 @pytest.mark.asyncio
@@ -189,5 +189,5 @@ async def test_repository_search_org(
         )
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert response.json()[0]["id"] == str(repository.id)
+    assert len(response.json()["items"]) == 1
+    assert response.json()["items"][0]["id"] == str(repository.id)

@@ -89,7 +89,7 @@ async def test_list_organization_member(
         )
 
     assert response.status_code == 200
-    assert response.json()[0]["id"] == str(organization.id)
+    assert response.json()["items"][0]["id"] == str(organization.id)
 
 
 @pytest.mark.asyncio
@@ -133,7 +133,7 @@ async def test_organization_search(
         )
 
     assert response.status_code == 200
-    assert response.json()[0]["id"] == str(organization.id)
+    assert response.json()["items"][0]["id"] == str(organization.id)
 
 
 @pytest.mark.asyncio
@@ -148,7 +148,7 @@ async def test_organization_search_no_matches(
         )
 
     assert response.status_code == 200
-    assert response.json() == []
+    assert response.json()["items"] == []
 
 
 @pytest.mark.asyncio

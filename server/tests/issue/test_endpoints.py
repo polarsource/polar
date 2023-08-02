@@ -133,10 +133,10 @@ async def test_issue_search_public_repo(
         )
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert response.json()[0]["id"] == str(issue.id)
-    assert response.json()[0]["repository"]["id"] == str(repository.id)
-    assert response.json()[0]["repository"]["organization"]["id"] == str(
+    assert len(response.json()["items"]) == 1
+    assert response.json()["items"][0]["id"] == str(issue.id)
+    assert response.json()["items"][0]["repository"]["id"] == str(repository.id)
+    assert response.json()["items"][0]["repository"]["organization"]["id"] == str(
         organization.id
     )
 
@@ -160,8 +160,8 @@ async def test_issue_search_public_repo_without_repo_selector(
         )
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert response.json()[0]["id"] == str(issue.id)
+    assert len(response.json()["items"]) == 1
+    assert response.json()["items"][0]["id"] == str(issue.id)
 
 
 @pytest.mark.asyncio
@@ -205,4 +205,4 @@ async def test_issue_search_private_repo_without_repo_selector(
         )
 
     assert response.status_code == 200
-    assert response.json() == []
+    assert response.json()["items"] == []

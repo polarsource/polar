@@ -95,7 +95,7 @@ async def test_search_pledge(
 
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.get(
-            f"/api/v1/pledges/search?organization_name={organization.name}",
+            f"/api/v1/pledges/search?platform=github&organization_name={organization.name}",
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 
@@ -124,7 +124,7 @@ async def test_search_pledge_no_admin(
 
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.get(
-            f"/api/v1/pledges/search?organization_name={organization.name}",
+            f"/api/v1/pledges/search?platform=github&organization_name={organization.name}",
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 
@@ -141,7 +141,7 @@ async def test_search_pledge_no_member(
 ) -> None:
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.get(
-            f"/api/v1/pledges/search?organization_name={organization.name}",
+            f"/api/v1/pledges/search?platform=github&organization_name={organization.name}",
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 

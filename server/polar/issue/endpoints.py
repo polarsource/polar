@@ -113,6 +113,8 @@ async def search(
     "/issues/{id}",
     response_model=IssueSchema,
     tags=[Tags.PUBLIC],
+    description="Get issue",
+    summary="Get issue (Public API)",
 )
 async def get(
     id: UUID,

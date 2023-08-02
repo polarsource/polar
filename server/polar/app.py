@@ -79,11 +79,24 @@ def configure_openapi() -> None:
         description="""
 Welcome to the **Polar API** for [polar.sh](https://polar.sh).
 
-The Public API is currently a [work in progress](https://github.com/polarsource/polar/issues/834) and is in active development.
+The Public API is currently a [work in progress](https://github.com/polarsource/polar/issues/834) and is in active development. 🚀
 
-If you have any feedback or comments, reach out in the linked issue above, or reach out on the Polar Discord server.
+#### Authentication
+
+Use a personal cookie auth (steal it from your browser). A better authentication method for scripting is coming soon.
+
+#### Feedback
+
+If you have any feedback or comments, reach out in the [Polar API-issue](https://github.com/polarsource/polar/issues/834), or reach out on the Polar Discord server.
+
+We'd love to see what you've built with the API and to get your thoughts on how we can make the API better!
+
+#### Connecting
+
+The Polar API is online at `https://api.polar.sh`.
 """,  # noqa: E501
         routes=[format(r) for r in app.routes if show(r)],
+        servers=[{"url": "https://api.polar.sh"}],
     )
     openapi_schema["info"]["x-logo"] = {
         "url": "https://blog.polar.sh/content/images/2023/07/Frame-647--1-.png"

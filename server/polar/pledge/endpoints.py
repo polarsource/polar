@@ -1,7 +1,8 @@
 from typing import Sequence
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import Field
 
 from polar.auth.dependencies import Auth
 from polar.enums import Platforms
@@ -12,7 +13,9 @@ from polar.organization.schemas import Organization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.schemas import Repository as RepositorySchema
+from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
+from polar.types import ListResource
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -31,6 +34,93 @@ from .schemas import (
 from .service import pledge as pledge_service
 
 router = APIRouter(tags=["pledges"])
+
+
+@router.get(
+    "/pledges/search",
+    response_model=ListResource[PledgeSchema],
+    tags=[Tags.PUBLIC],
+    description="Search pledges. Requires authentication. The user can only read pledges that they have made (personally or via an organization) or received (to organizations that they are a member of).",  # noqa: E501
+    summary="Search pledges (Public API)",
+    status_code=200,
+)
+async def search(
+    organization_name: str
+    | None = Query(
+        default=None,
+        min_length=1,
+        example="my-org",
+        description="Search pledges in the organization with this name.",  # noqa: E501
+    ),
+    repository_name: str
+    | None = Query(
+        default=None,
+        min_length=1,
+        example="my-repo",
+        description="Search pledges in the repository with this name. Can only be used if organization_name is set.",  # noqa: E501
+    ),
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.current_user),
+) -> ListResource[PledgeSchema]:
+    if not organization_name:
+        raise HTTPException(
+            status_code=400,
+            detail="organization_name is not set",
+        )
+
+    # get org
+    org = await organization_service.get_by_name(
+        session,
+        platform=Platforms.github,
+        name=organization_name,
+    )
+
+    if not org:
+        raise HTTPException(
+            status_code=404,
+            detail="organization not found",
+        )
+
+    repository_ids = []
+
+    if repository_name:
+        repo = await repository_service.get_by_org_and_name(
+            session, organization_id=org.id, name=repository_name
+        )
+
+        if not repo:
+            raise HTTPException(
+                status_code=404,
+                detail="repository not found",
+            )
+
+        repository_ids = [repo.id]
+
+    else:
+        repos = await repository_service.list_by(session, org_ids=[org.id])
+        repository_ids = [r.id for r in repos]
+
+    pledges = await pledge_service.list_by(
+        session=session,
+        organization_ids=[org.id],
+        repository_ids=repository_ids,
+        load_issue=True,
+    )
+
+    user_memberships = await user_organization_service.list_by_user_id(
+        session,
+        auth.user.id,
+    )
+
+    return ListResource(
+        items=[
+            PledgeSchema.from_db(p)
+            for p in pledges
+            if pledge_service.user_can_read_pledge(
+                auth.user, p, user_memberships
+            )  # Authorization
+        ]
+    )
 
 
 @router.get(

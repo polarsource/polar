@@ -43,6 +43,7 @@ export { IssueStatus } from './models/IssueStatus';
 export type { IssueUpdateBadgeMessage } from './models/IssueUpdateBadgeMessage';
 export type { ListResource_Issue_ } from './models/ListResource_Issue_';
 export type { ListResource_Organization_ } from './models/ListResource_Organization_';
+export type { ListResource_Pledge_ } from './models/ListResource_Pledge_';
 export type { ListResource_Repository_ } from './models/ListResource_Repository_';
 export type { LoginResponse } from './models/LoginResponse';
 export type { LogoutResponse } from './models/LogoutResponse';

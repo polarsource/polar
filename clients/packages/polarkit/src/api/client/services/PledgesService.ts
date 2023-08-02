@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { ConfirmPledgesResponse } from '../models/ConfirmPledgesResponse';
+import type { ListResource_Pledge_ } from '../models/ListResource_Pledge_';
 import type { Platforms } from '../models/Platforms';
 import type { Pledge } from '../models/Pledge';
 import type { PledgeCreate } from '../models/PledgeCreate';
@@ -33,6 +34,32 @@ export class PledgesService {
       url: '/api/v1/pledges/{id}',
       path: {
         'id': id,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Search pledges (Public API)
+   * Search pledges. Requires authentication.
+   * @returns ListResource_Pledge_ Successful Response
+   * @throws ApiError
+   */
+  public search({
+    organizationName,
+  }: {
+    /**
+     * Search pledges in the organization with this name. Requires the authenticated user to be a member.
+     */
+    organizationName: string,
+  }): CancelablePromise<ListResource_Pledge_> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/pledges/{id}/search',
+      query: {
+        'organization_name': organizationName,
       },
       errors: {
         422: `Validation Error`,

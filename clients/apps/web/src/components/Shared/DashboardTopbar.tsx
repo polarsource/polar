@@ -57,9 +57,9 @@ const DashboardNav = () => {
       <RepoSelection
         showRepositories={true}
         showConnectMore={true}
-        onSelectOrg={(org) => router.push(`/dashboard/${org}`)}
-        onSelectRepo={(org, repo) => router.push(`/dashboard/${org}/${repo}`)}
-        onSelectUser={() => router.push('/dashboard/personal')}
+        onSelectOrg={(org) => router.push(`/issues/${org}`)}
+        onSelectRepo={(org, repo) => router.push(`/issues/${org}/${repo}`)}
+        onSelectUser={() => router.push('/issues/personal')}
         currentOrg={currentOrg}
         currentRepo={currentRepo}
         showUserInDropdown={true}
@@ -94,9 +94,9 @@ const PersonalDashboardNav = () => {
       <RepoSelection
         showRepositories={true}
         showConnectMore={true}
-        onSelectOrg={(org) => router.push(`/dashboard/${org}`)}
-        onSelectRepo={(org, repo) => router.push(`/dashboard/${org}/${repo}`)}
-        onSelectUser={() => router.push('/dashboard/personal')}
+        onSelectOrg={(org) => router.push(`/issues/${org}`)}
+        onSelectRepo={(org, repo) => router.push(`/issues/${org}/${repo}`)}
+        onSelectUser={() => router.push('/issues/personal')}
         currentOrg={undefined}
         currentRepo={undefined}
         showUserInDropdown={true}

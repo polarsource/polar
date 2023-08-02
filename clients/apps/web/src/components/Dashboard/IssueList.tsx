@@ -8,7 +8,7 @@ import {
   IssueSortBy,
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { Checkbox, PrimaryButton } from 'polarkit/components/ui'
 import React, {
   ChangeEvent,
   Dispatch,
@@ -226,13 +226,25 @@ export const Header = (props: {
     navigate(router, props.filters)
   }
 
+  const onOnlyBadgedChanged = (e: ChangeEvent<HTMLInputElement>) => {
+    const f: DashboardFilters = {
+      ...props.filters,
+      onlyBadged: e.target.checked,
+    }
+
+    props.onSetFilters(f)
+    navigate(router, f)
+  }
+
+  const canFilterByBadged = props.filters.tab === IssueListType.ISSUES
+
   return (
     <div>
       <form
-        className="mb-4 flex h-12 items-center justify-between px-2"
+        className="mb-4 flex w-full flex-col justify-between space-y-2 px-2 lg:flex-row lg:items-center lg:space-x-2 lg:space-y-0"
         onSubmit={onSubmit}
       >
-        <div className="relative w-full max-w-[500px] rounded-md shadow-sm">
+        <div className="relative w-full shadow-sm lg:max-w-[500px]">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
             {props.spinner && <Spinner />}
             {!props.spinner && (
@@ -253,22 +265,41 @@ export const Header = (props: {
           />
         </div>
 
-        <div>
-          <span className="mr-2 text-sm text-gray-500 dark:text-gray-400">
-            Sort:
-          </span>
-          <select
-            className="m-0 w-48 border-0 bg-transparent bg-right p-0 text-sm font-medium ring-0 focus:border-0 focus:ring-0"
-            onChange={onSelect}
-            style={{ width: `${width}px` }}
-            value={props.filters?.sort}
-          >
-            {options.map((v) => (
-              <option key={v} value={v}>
-                {getTitle(v)}
-              </option>
-            ))}
-          </select>
+        <div className="flex space-x-4">
+          {canFilterByBadged && (
+            <div className="inline-flex items-center space-x-2 rounded-lg border bg-white py-2 pl-3 text-sm text-gray-500 shadow-sm  dark:text-gray-400 ">
+              <label htmlFor="only-badged">Only badged</label>
+              <Checkbox
+                id="only-badged"
+                value={props.filters.onlyBadged}
+                onChange={onOnlyBadgedChanged}
+              >
+                <></>
+              </Checkbox>
+            </div>
+          )}
+
+          <div className="flex-shrink-0 rounded-lg border bg-white py-2 px-3 shadow-sm">
+            <label
+              htmlFor="sort-by"
+              className="mr-2 text-sm text-gray-500 dark:text-gray-400"
+            >
+              Sort by
+            </label>
+            <select
+              id="sort-by"
+              className="m-0 w-48 border-0 bg-transparent bg-right p-0 text-sm font-medium ring-0 focus:border-0 focus:ring-0"
+              onChange={onSelect}
+              style={{ width: `${width}px` }}
+              value={props.filters?.sort}
+            >
+              {options.map((v) => (
+                <option key={v} value={v}>
+                  {getTitle(v)}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </form>
 

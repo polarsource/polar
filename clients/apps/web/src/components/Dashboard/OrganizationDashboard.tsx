@@ -30,6 +30,7 @@ const OrganizationDashboard = ({
     statuses,
     filters.sort,
     filters.onlyPledged,
+    filters.onlyBadged,
   )
   const dashboard = dashboardQuery.data
   const totalCount = dashboard?.pages[0].pagination.total_count || undefined

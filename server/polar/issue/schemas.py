@@ -7,7 +7,7 @@ from uuid import UUID
 
 import structlog
 from fastapi.encoders import jsonable_encoder
-from pydantic import parse_obj_as
+from pydantic import Field, parse_obj_as
 
 from polar.dashboard.schemas import IssueStatus
 from polar.enums import Platforms
@@ -48,12 +48,14 @@ class Reactions(Schema):
 # Public API
 class Issue(Schema):
     id: UUID
-    platform: Platforms
-    external_id: int
-    number: int
-    title: str
-    body: str | None
-    comments: int | None
+    platform: Platforms = Field(description="Issue platform (currently always Github)")
+    external_id: int = Field(description="Github's ID (not the same as the #number)")
+    number: int = Field(description="Github #number")
+    title: str = Field(description="Github issue title")
+    body: str | None = Field(description="Github issue body")
+    comments: int | None = Field(
+        description="Number of Github comments made on the issue"
+    )
 
     # TODO: Add if needed
     # author: JSONAny
@@ -64,7 +66,7 @@ class Issue(Schema):
     # milestone: JSONAny
     # closed_by: JSONAny
 
-    reactions: Reactions | None
+    reactions: Reactions | None = Field(description="Github reactions")
 
     state: Literal["OPEN", "CLOSED"]
 
@@ -72,7 +74,7 @@ class Issue(Schema):
     issue_modified_at: datetime | None
     issue_created_at: datetime
 
-    repository: Repository
+    repository: Repository = Field(description="The repository that the issue is in")
 
     @classmethod
     def from_db(cls, i: IssueModel) -> Self:

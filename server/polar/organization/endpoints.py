@@ -12,6 +12,7 @@ from polar.repository.schemas import Repository as RepositorySchema
 from polar.repository.schemas import RepositoryLegacyRead
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
+from polar.types import ListResource
 
 from .schemas import (
     Organization as OrganizationSchema,
@@ -33,7 +34,7 @@ router = APIRouter(tags=["organizations"])
 
 @router.get(
     "/organizations",
-    response_model=Sequence[OrganizationSchema],
+    response_model=ListResource[OrganizationSchema],
     tags=[Tags.PUBLIC],
     description="List organizations that the authenticated user is a member of. Requires authentication.",  # noqa: E501
     summary="List organizations (Public API)",
@@ -42,14 +43,16 @@ router = APIRouter(tags=["organizations"])
 async def list(
     auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
-) -> Sequence[OrganizationSchema]:
+) -> ListResource[OrganizationSchema]:
     orgs = await organization.list_all_orgs_by_user_id(session, auth.user.id)
-    return [OrganizationSchema.from_orm(o) for o in orgs]
+    return ListResource(
+        items=[OrganizationSchema.from_orm(o) for o in orgs],
+    )
 
 
 @router.get(
     "/organizations/search",
-    response_model=Sequence[OrganizationSchema],
+    response_model=ListResource[OrganizationSchema],
     tags=[Tags.PUBLIC],
     description="Search organizations.",
     summary="Search organizations (Public API)",
@@ -59,16 +62,16 @@ async def search(
     platform: Platforms | None = None,
     organization_name: str | None = None,
     session: AsyncSession = Depends(get_db_session),
-) -> Sequence[OrganizationSchema]:
+) -> ListResource[OrganizationSchema]:
     # Search by platform and organization name.
     # Currently the only way to search
     if platform and organization_name:
         org = await organization.get_by_name(session, platform, organization_name)
         if org:
-            return [OrganizationSchema.from_orm(org)]
+            return ListResource(items=[OrganizationSchema.from_orm(org)])
 
     # no org found
-    return []
+    return ListResource(items=[])
 
 
 @router.get(

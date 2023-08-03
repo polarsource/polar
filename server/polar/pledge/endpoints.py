@@ -6,7 +6,7 @@ from pydantic import Field
 
 from polar.auth.dependencies import Auth
 from polar.enums import Platforms
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound, StripeError
 from polar.issue.schemas import IssueRead
 from polar.models import Pledge, Repository
 from polar.organization.schemas import Organization
@@ -246,6 +246,12 @@ async def get_pledge_with_resources(
 @router.post(
     "/{platform}/{org_name}/{repo_name}/issues/{number}/pledges",
     response_model=PledgeMutationResponse,
+    status_code=200,
+    responses={
+        400: {"detail": "message"},
+        403: {"detail": "message"},
+        404: {"detail": "message"},
+    },
 )
 async def create_pledge(
     platform: Platforms,
@@ -281,6 +287,11 @@ async def create_pledge(
     except NotPermitted as e:
         raise HTTPException(
             status_code=403,
+            detail=str(e),
+        ) from e
+    except StripeError as e:
+        raise HTTPException(
+            status_code=400,
             detail=str(e),
         ) from e
 

@@ -6,6 +6,7 @@ from datetime import timedelta
 from typing import List, Sequence
 from uuid import UUID
 
+import stripe.error as stripe_lib_error
 import structlog
 from sqlalchemy.orm import (
     joinedload,
@@ -13,7 +14,7 @@ from sqlalchemy.orm import (
 
 from polar.account.service import account as account_service
 from polar.enums import Platforms
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound, StripeError
 from polar.integrations.stripe.service import stripe
 from polar.kit.hook import Hook
 from polar.kit.services import ResourceServiceReader
@@ -221,12 +222,15 @@ class PledgeService(ResourceServiceReader[Pledge]):
         )
 
         # Create a payment intent with Stripe
-        payment_intent = stripe.create_anonymous_intent(
-            amount=db_pledge.amount_including_fee,
-            transfer_group=f"{db_pledge.id}",
-            issue=issue,
-            anonymous_email=pledge.email,
-        )
+        try:
+            payment_intent = stripe.create_anonymous_intent(
+                amount=db_pledge.amount_including_fee,
+                transfer_group=f"{db_pledge.id}",
+                issue=issue,
+                anonymous_email=pledge.email,
+            )
+        except stripe_lib_error.InvalidRequestError as e:
+            raise StripeError("Invalid Stripe Request") from e
 
         # Store the intent id
         db_pledge.payment_id = payment_intent.id

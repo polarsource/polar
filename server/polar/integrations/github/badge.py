@@ -123,7 +123,7 @@ class GithubBadge:
     @classmethod
     def generate_default_promotion_message(cls, organization: Organization) -> str:
         return template.render(
-            "integrations/github/templates/badge/promotion.md",
+            template.path(__file__, "templates/badge/promotion.md"),
             polar_site_url=organization.polar_site_url,
         )
 

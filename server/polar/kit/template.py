@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 from typing import Callable, Tuple
 
 import structlog
@@ -8,33 +8,40 @@ log = structlog.get_logger()
 
 
 class PolarLoader(BaseLoader):
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: Path) -> None:
         self.path = path
 
     def get_source(
-        self, environment: "Environment", template: str
+        self, environment: "Environment", template: Path
     ) -> Tuple[str, str | None, Callable[[], bool] | None]:
-        path = os.path.join(self.path, template)
-        if not os.path.exists(path):
+        path = Path(self.path, template)
+        if not path.exists():
             raise TemplateNotFound(template)
 
-        mtime = os.path.getmtime(path)
+        mtime = path.stat().st_mtime
         with open(path) as f:
             source = f.read()
 
-        return source, path, lambda: mtime == os.path.getmtime(path)
+        return source, str(path), lambda: mtime == Path(path).stat().st_mtime
 
 
-polar_package_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+polar_package_root = Path(__file__).parent.absolute()
 env = Environment(
     loader=PolarLoader(polar_package_root),
 )
 
 
-def render(filename: str, **kwargs: str) -> str:
-    return env.get_template(filename).render(**kwargs)
+def path(__from_file__: Path, relative_filename: Path) -> Path:
+    from_dir = Path(__from_file__).parent.absolute()
+    base = str(from_dir).replace(str(polar_package_root), "")
+    return Path(polar_package_root, base, relative_filename)
+
+
+def render(filename: Path | str, **kwargs: str) -> str:
+    return env.get_template(str(filename)).render(**kwargs)
 
 
 __all__ = [
+    "path",
     "render",
 ]

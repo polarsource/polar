@@ -27,7 +27,7 @@ const PersonalDashboard = ({
   const totalCount = dashboard?.pages[0].pagination.total_count || undefined
 
   return (
-    <DashboardLayout isPersonalDashboard={true}>
+    <DashboardLayout>
       <div>
         <OnboardingConnectPersonalDashboard />
         <IssueList

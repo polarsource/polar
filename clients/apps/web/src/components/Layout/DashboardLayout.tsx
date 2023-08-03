@@ -1,31 +1,34 @@
+import { classNames } from 'polarkit/utils'
 import SidebarNavigation from '../Dashboard/SidebarNavigation'
-import DashboardTopbar, {
-  PersonalDashboardTopbar,
-} from '../Shared/DashboardTopbar'
+import DashboardTopbar from '../Shared/DashboardTopbar'
 
 const DashboardLayout = (props: {
-  children: any
-  isPersonalDashboard: boolean
+  children: React.ReactElement
+  header?: React.ReactElement
 }) => {
-  const { children, isPersonalDashboard } = props
-
   return (
-    <div>
-      {isPersonalDashboard && <PersonalDashboardTopbar />}
-      {!isPersonalDashboard && <DashboardTopbar />}
-      <div>
-        <div className="dark:bg-gray-950 flex min-h-screen flex-1 flex-row bg-gray-50 pt-16">
-          <aside className="bg-gray-75 t-0 b-0 fixed min-h-screen w-80 flex-shrink-0 border-r border-r-gray-200">
-            <SidebarNavigation />
-          </aside>
-          <main className="flex-1 pl-80">
-            <div className="py-6">
-              <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-8">
-                {children}
-              </div>
+    <div id="xx" className="relative flex flex-col">
+      <DashboardTopbar />
+
+      <div className="dark:bg-gray-950 flex flex-row bg-gray-50">
+        <aside className="bg-gray-75 fixed top-16 bottom-0 left-0 w-80 flex-shrink-0 border-r border-r-gray-200 dark:border-r-gray-700 dark:bg-gray-800">
+          <SidebarNavigation />
+        </aside>
+        <main className="relative ml-80 w-full">
+          {props.header && (
+            <div className="fixed top-16 left-80 right-0 z-10">
+              {props.header}
             </div>
-          </main>
-        </div>
+          )}
+          <div
+            className={classNames(
+              props.header ? 'pt-36' : 'pt-24',
+              'relative mx-auto max-w-screen-2xl px-4 pt-24 pb-6 sm:px-6 md:px-8',
+            )}
+          >
+            {props.children}
+          </div>
+        </main>
       </div>
     </div>
   )

@@ -94,15 +94,17 @@ const OrganizationDashboard = ({
   ])
 
   return (
-    <DashboardLayout isPersonalDashboard={false}>
-      <div className="space-y-4">
+    <DashboardLayout
+      header={
         <Header
           totalCount={totalCount}
           filters={filters}
           onSetFilters={onSetFilters}
           spinner={dashboardQuery.isInitialLoading}
         />
-
+      }
+    >
+      <div className="space-y-4">
         {showChromeOnboarding && <OnboardingInstallChromeExtension />}
         {showDependenciesOnboarding && <OnboardingAddDependency />}
         {showAddBadgeBanner && <OnboardingAddBadge />}

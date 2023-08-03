@@ -26,10 +26,10 @@ const Page: NextLayoutComponentType = () => {
     // Redirect to first org
     if (
       haveOrgs &&
-      listOrganizationsQuery?.data &&
-      listOrganizationsQuery.data.length > 0
+      listOrganizationsQuery?.data?.items &&
+      listOrganizationsQuery.data.items.length > 0
     ) {
-      const gotoOrg = listOrganizationsQuery.data[0]
+      const gotoOrg = listOrganizationsQuery.data.items[0]
       router.push(`/issues/${gotoOrg.name}`)
       return
     }

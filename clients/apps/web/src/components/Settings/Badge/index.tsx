@@ -106,7 +106,7 @@ const BadgeSetup = ({
 }) => {
   const remoteSettings = useBadgeSettings(org.platform, org.name)
   const [settings, setSettings] = useState<MappedRepoSettings>({
-    show_amount: false,
+    show_amount: true,
     minimum_amount: 2000,
     repositories: {},
     repositories_order: [],

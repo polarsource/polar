@@ -49,7 +49,8 @@ export class IssuesService {
   }
 
   /**
-   * Get
+   * Get issue (Public API)
+   * Get issue
    * @returns Issue Successful Response
    * @throws ApiError
    */

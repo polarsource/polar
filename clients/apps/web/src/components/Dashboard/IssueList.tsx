@@ -239,35 +239,47 @@ export const Header = (props: {
   const canFilterByBadged = props.filters.tab === IssueListType.ISSUES
 
   return (
-    <div>
+    <>
       <form
-        className="mb-4 flex w-full flex-col justify-between space-y-2 lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0"
+        className="flex flex-col justify-between space-y-2 border-b bg-gray-100/50 px-2 py-2 backdrop-blur dark:bg-gray-700/50 lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0"
         onSubmit={onSubmit}
       >
-        <div className="relative w-full shadow-sm lg:max-w-[500px]">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            {props.spinner && <Spinner />}
-            {!props.spinner && (
-              <MagnifyingGlassIcon
-                className="h-5 w-5 text-gray-500"
-                aria-hidden="true"
-              />
-            )}
+        <div className="flex w-full items-center space-x-4 ">
+          <div className="relative w-full lg:max-w-[500px] ">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 ">
+              {props.spinner && <Spinner />}
+              {!props.spinner && (
+                <MagnifyingGlassIcon
+                  className="h-5 w-5 text-gray-500"
+                  aria-hidden="true"
+                />
+              )}
+            </div>
+            <input
+              type="text"
+              name="query"
+              id="query"
+              className="block w-full rounded-md border-0 bg-transparent py-2 pl-10 text-gray-900  placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700 sm:text-sm sm:leading-6"
+              placeholder="Search issues"
+              onChange={onQueryChange}
+              value={props.filters.q || ''}
+            />
           </div>
-          <input
-            type="text"
-            name="query"
-            id="query"
-            className="block w-full rounded-lg border-0 py-2 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700 sm:text-sm sm:leading-6"
-            placeholder="Search issues"
-            onChange={onQueryChange}
-            value={props.filters.q || ''}
-          />
+
+          {/*
+          <div className="flex-shrink-0 text-sm">
+            {props.totalCount !== undefined && (
+              <>
+                <strong className="font-medium">{props.totalCount}</strong>{' '}
+                <span className="text-gray-500">issues</span>
+              </>
+            )}
+            </div>*/}
         </div>
 
         <div className="flex flex-shrink-0 space-x-4">
           {canFilterByBadged && (
-            <div className="inline-flex flex-shrink-0 items-center space-x-2 rounded-lg border bg-white py-2 pl-3 text-sm text-gray-500  shadow-sm dark:text-gray-400">
+            <div className="inline-flex flex-shrink-0 items-center space-x-2 rounded-lg border bg-white py-2 pl-3 text-sm text-gray-500 shadow-sm  dark:bg-gray-900 dark:text-gray-400">
               <label htmlFor="only-badged">Only badged</label>
               <Checkbox
                 id="only-badged"
@@ -279,7 +291,7 @@ export const Header = (props: {
             </div>
           )}
 
-          <div className="flex-shrink-0 rounded-lg border bg-white py-2 px-3 shadow-sm">
+          <div className="flex-shrink-0 rounded-lg border bg-white py-2 px-3 shadow-sm dark:bg-gray-900">
             <label
               htmlFor="sort-by"
               className="mr-2 text-sm text-gray-500 dark:text-gray-400"
@@ -302,17 +314,6 @@ export const Header = (props: {
           </div>
         </div>
       </form>
-
-      <div className="mb-4 flex px-2">
-        <div className="text-sm">
-          {props.totalCount !== undefined && (
-            <>
-              <strong className="font-medium">{props.totalCount}</strong>{' '}
-              <span className="text-gray-500">issues</span>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+    </>
   )
 }

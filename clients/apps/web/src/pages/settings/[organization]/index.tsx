@@ -66,48 +66,48 @@ const SettingsPage: NextLayoutComponentType = () => {
 
   return (
     <>
-      <DashboardLayout isPersonalDashboard={handle === 'personal'}>
-        <Head>
-          {showPersonalSettings && <title>Polar | Settings</title>}
-          {!showPersonalSettings && (
-            <title>Polar | Settings for {handle}</title>
-          )}
-        </Head>
+      <Head>
+        {showPersonalSettings && <title>Polar | Settings</title>}
+        {!showPersonalSettings && <title>Polar | Settings for {handle}</title>}
+      </Head>
 
-        <div className="relative z-0">
-          <div className="divide-y divide-gray-200 dark:divide-gray-800">
-            {showBadgeSettings && org && (
-              <Section>
-                <>
-                  <SectionDescription
-                    title="Polar badge"
-                    description="Customize which issues Polar should embed a pledge badge for."
-                  />
+      <DashboardLayout>
+        <>
+          <div className="relative z-0">
+            <div className="divide-y divide-gray-200 dark:divide-gray-800">
+              {showBadgeSettings && org && (
+                <Section>
+                  <>
+                    <SectionDescription
+                      title="Polar badge"
+                      description="Customize which issues Polar should embed a pledge badge for."
+                    />
 
-                  <BadgeSetup
-                    org={org}
-                    showControls={true}
-                    setShowControls={() => true}
-                    setSyncIssuesCount={(value: number) => true}
-                    isSettingPage={true}
-                  />
-                </>
-              </Section>
-            )}
+                    <BadgeSetup
+                      org={org}
+                      showControls={true}
+                      setShowControls={() => true}
+                      setSyncIssuesCount={(value: number) => true}
+                      isSettingPage={true}
+                    />
+                  </>
+                </Section>
+              )}
 
-            {showEmailPreferences && (
-              <Section>
-                <>
-                  <SectionDescription
-                    title="Email notifications"
-                    description="Polar will send emails for the notifications enabled below."
-                  />
-                  <NotificationSettings />
-                </>
-              </Section>
-            )}
+              {showEmailPreferences && (
+                <Section>
+                  <>
+                    <SectionDescription
+                      title="Email notifications"
+                      description="Polar will send emails for the notifications enabled below."
+                    />
+                    <NotificationSettings />
+                  </>
+                </Section>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       </DashboardLayout>
     </>
   )
@@ -123,7 +123,7 @@ SettingsPage.getLayout = (page: ReactElement) => {
 
 const Section = ({ children }: { children: ReactElement }) => {
   return (
-    <div className="flex flex-col space-y-4 xl:flex-row-reverse xl:space-y-0">
+    <div className="mb-4 flex flex-col space-y-4 pt-4 xl:flex-row-reverse xl:space-y-0">
       {children}
     </div>
   )

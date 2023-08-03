@@ -15,7 +15,6 @@ const DashboardNav = () => {
   const listRepositoriesQuery = useListRepositories()
 
   if (
-    !currentOrg ||
     !currentUser ||
     !listOrganizationQuery.data ||
     !listRepositoriesQuery.data
@@ -34,6 +33,7 @@ const DashboardNav = () => {
         currentOrg={currentOrg}
         currentRepo={currentRepo}
         showUserInDropdown={true}
+        defaultToUser={true}
         showOrganizationRepositoryCount={true}
         currentUser={currentUser}
         organizations={listOrganizationQuery.data?.items || []}

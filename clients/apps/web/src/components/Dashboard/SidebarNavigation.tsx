@@ -58,13 +58,6 @@ const SidebarNavigation = () => {
         },
       ],
     },
-    {
-      id: 'org-settings',
-      title: 'Settings',
-      icon: <Cog8ToothIcon className="h-6 w-6" />,
-      link: `/settings/${org?.name}`,
-      if: org && isLoaded,
-    },
 
     // Non org navigation
     {
@@ -74,12 +67,14 @@ const SidebarNavigation = () => {
       link: `/dependencies/personal`,
       if: !org && isLoaded,
     },
+
+    // Always visible
     {
-      id: 'personal-settings',
+      id: 'settings',
       title: 'Settings',
       icon: <Cog8ToothIcon className="h-6 w-6" />,
-      link: `/settings/personal`,
-      if: !org && isLoaded,
+      link: `/settings`,
+      if: true,
     },
   ]
 
@@ -108,16 +103,22 @@ const SidebarNavigation = () => {
     .map((n) => {
       const isActive = router.asPath.startsWith(n.link)
 
-      return {
-        ...n,
-        isActive,
-        expandSubs: isActive || clickedFirstLevelLink === n.id,
-        subs: n.subs?.map((s) => {
+      const subs =
+        n.subs?.map((s) => {
           return {
             ...s,
             isActive: router.asPath.startsWith(s.link),
           }
-        }),
+        }) || []
+
+      const anySubIsActive = subs.find((s) => s.isActive)
+
+      return {
+        ...n,
+        isActive,
+        expandSubs:
+          isActive || clickedFirstLevelLink === n.id || anySubIsActive,
+        subs,
       }
     })
 

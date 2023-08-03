@@ -8,7 +8,7 @@ log = structlog.get_logger()
 
 
 class PolarLoader(BaseLoader):
-    def __init__(self, path):
+    def __init__(self, path: str) -> None:
         self.path = path
 
     def get_source(

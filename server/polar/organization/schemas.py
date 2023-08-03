@@ -40,7 +40,7 @@ class Organization(Schema):
 
 # Internal model
 class OrganizationSettingsRead(BaseModel):
-    pledge_badge_show_amount: bool = False
+    pledge_badge_show_amount: bool = True
     billing_email: str | None = None
 
 

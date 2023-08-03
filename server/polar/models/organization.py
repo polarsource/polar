@@ -62,7 +62,7 @@ class Organization(RecordModel):
 
     # Whether to show pledged amount in the badge
     pledge_badge_show_amount: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
+        Boolean, nullable=False, default=True
     )
 
     # Minimum amount required to pledge. Default to $20 (2000 cents)

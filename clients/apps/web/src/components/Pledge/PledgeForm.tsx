@@ -9,18 +9,18 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
 import {
+  ApiError,
   IssueRead,
   Organization,
   PledgeMutationResponse,
   Repository,
 } from 'polarkit/api/client'
-import { Checkbox, PrimaryButton } from 'polarkit/components/ui'
+import { PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
+import { classNames } from 'polarkit/utils'
 import posthog from 'posthog-js'
 import { ChangeEvent, useEffect, useRef, useState } from 'react'
 import PaymentForm from './PaymentForm'
-import { classNames } from 'polarkit/utils'
-
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
@@ -83,7 +83,9 @@ const PledgeForm = ({
   gotoURL?: string
 }) => {
   const [pledge, setPledge] = useState<PledgeMutationResponse | null>(null)
-  const [amount, setAmount] = useState<number>(organization.pledge_minimum_amount)
+  const [amount, setAmount] = useState<number>(
+    organization.pledge_minimum_amount,
+  )
   const [email, setEmail] = useState('')
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [isSyncing, setSyncing] = useState(false)
@@ -91,7 +93,7 @@ const PledgeForm = ({
   const { currentUser, reloadUser } = useAuth()
 
   const validateEmail = (email: string) => {
-    return email.match(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/)
+    return email.includes('@')
   }
 
   const hasValidDetails = () => {
@@ -193,16 +195,35 @@ const PledgeForm = ({
     }
 
     setSyncing(true)
+    setErrorMessage('')
+
     let updatedPledge: PledgeMutationResponse
-    if (!pledge) {
-      updatedPledge = await createPledge(pledgeSync)
-    } else {
-      updatedPledge = await updatePledge(pledgeSync)
+
+    try {
+      if (!pledge) {
+        updatedPledge = await createPledge(pledgeSync)
+      } else {
+        updatedPledge = await updatePledge(pledgeSync)
+      }
+
+      if (updatedPledge) {
+        setPledge(updatedPledge)
+      }
+    } catch (e) {
+      if (e instanceof ApiError) {
+        if (
+          e.message === 'Bad Request' &&
+          e.body &&
+          e.body.detail === 'Invalid Stripe Request'
+        ) {
+          // Probably a invalid email according to Stripe. Ignore this error.
+        } else {
+          // We didn't handle this error, raise it again.
+          setErrorMessage('Something went wrong, please try again')
+        }
+      }
     }
 
-    if (updatedPledge) {
-      setPledge(updatedPledge)
-    }
     setSyncing(false)
   }
 
@@ -302,11 +323,14 @@ const PledgeForm = ({
               event.target.select()
             }}
           />
-          <p className={classNames(
-            (amount < organization.pledge_minimum_amount) ? "text-red-500" : "",
-            "w-2/5 text-xs text-gray-500 dark:text-gray-400"
-          )}>
-            Minimum is ${getCentsInDollarString(organization.pledge_minimum_amount)}
+          <p
+            className={classNames(
+              amount < organization.pledge_minimum_amount ? 'text-red-500' : '',
+              'w-2/5 text-xs text-gray-500 dark:text-gray-400',
+            )}
+          >
+            Minimum is $
+            {getCentsInDollarString(organization.pledge_minimum_amount)}
           </p>
         </div>
 

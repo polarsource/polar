@@ -46,6 +46,10 @@ jobs:
           working-directory: ./clients
           run: pnpm build
  
+        - name: Test
+          working-directory: ./clients
+          run: pnpm test
+
   build_storybook:
     name: "Client: Storybook 🎨"
     timeout-minutes: 15

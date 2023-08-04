@@ -9,7 +9,8 @@
     "lint": "next lint",
     "storybook": "storybook dev -p 6006 --no-open",
     "build-storybook": "storybook build",
-    "chromatic": "chromatic --exit-zero-on-changes --exit-once-uploaded"
+    "chromatic": "chromatic --exit-zero-on-changes --exit-once-uploaded",
+    "test": "jest"
   },
   "engines": {
     "node": ">= 18 <20"
@@ -30,6 +31,7 @@
     "class-variance-authority": "^0.6.0",
     "cmdk": "^0.2.0",
     "framer-motion": "^10.12.4",
+    "jest": "^29.6.2",
     "next": "13.4.2",
     "next-themes": "^0.2.1",
     "polarkit": "workspace:*",
@@ -55,6 +57,8 @@
     "@storybook/react": "^7.0.12",
     "@storybook/react-webpack5": "^7.0.12",
     "@storybook/testing-library": "^0.0.14-next.2",
+    "@testing-library/jest-dom": "^5.14.1",
+    "@testing-library/react": "^13.0.0",
     "@types/node": "20.1.7",
     "@types/react": "18.2.6",
     "@types/react-dom": "18.2.4",
@@ -65,6 +69,7 @@
     "eslint": "8.40.0",
     "eslint-config-custom": "workspace:*",
     "eslint-config-next": "13.4.2",
+    "jest-environment-jsdom": "^29.6.2",
     "postcss": "^8.4.21",
     "prop-types": "^15.8.1",
     "storybook": "^7.0.24",

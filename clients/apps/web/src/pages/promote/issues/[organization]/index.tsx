@@ -54,10 +54,7 @@ const Page: NextLayoutComponentType = () => {
               {org && (
                 <Section>
                   <>
-                    <SectionDescription
-                      title="Polar badge"
-                      description="Customize which issues Polar should embed a pledge badge for."
-                    />
+                    <SectionDescription title="Badge settings" />
 
                     <BadgeSetup
                       org={org}
@@ -86,26 +83,11 @@ Page.getLayout = (page: ReactElement) => {
 }
 
 const Section = ({ children }: { children: ReactElement }) => {
-  return (
-    <div className="mb-4 flex flex-col space-y-4 pt-4 xl:flex-row-reverse xl:space-y-0">
-      {children}
-    </div>
-  )
+  return <div className="mb-4 flex flex-col space-y-4 pt-4">{children}</div>
 }
 
-const SectionDescription = ({
-  title,
-  description,
-}: {
-  title: string
-  description: string
-}) => {
-  return (
-    <div className="flex-shrink-0 xl:ml-8 xl:w-60">
-      <h2 className="mb-2 font-medium">{title}</h2>
-      <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>
-    </div>
-  )
+const SectionDescription = ({ title }: { title: string }) => {
+  return <h2 className="text-lg text-gray-500 dark:text-gray-400">{title}</h2>
 }
 
 export default Page

@@ -13,12 +13,13 @@ from polar.integrations.github.service.issue import github_issue as github_issue
 from polar.integrations.github.service.organization import (
     github_organization as github_organization_service,
 )
+from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.schemas import Schema
 from polar.models import Issue
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
-from polar.repository.endpoints import user_can_read
+from polar.repository.endpoints import user_can_read, user_can_write
 from polar.repository.schemas import Repository as RepositorySchema
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
@@ -32,6 +33,7 @@ from .schemas import (
     IssueUpdateBadgeMessage,
     OrganizationPublicPageRead,
     PostIssueComment,
+    UpdateIssue,
 )
 from .service import issue as issue_service
 
@@ -134,6 +136,51 @@ async def get(
             status_code=404,
             detail="Issue not found",
         )
+
+    return IssueSchema.from_db(issue)
+
+
+@router.post(
+    "/issues/{id}",
+    response_model=IssueSchema,
+    tags=[Tags.PUBLIC],
+    description="Update issue. Requires authentication.",
+    summary="Update issue. (Public API)",
+)
+async def update(
+    id: UUID,
+    update: UpdateIssue,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.current_user),
+) -> IssueSchema:
+    issue = await issue_service.get_loaded(session, id)
+
+    if not issue:
+        raise HTTPException(
+            status_code=404,
+            detail="Issue not found",
+        )
+
+    if not await user_can_write(session, auth, issue.repository):
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+        )
+
+    updated = False
+
+    if update.funding_goal:
+        if update.funding_goal.currency != "USD":
+            raise HTTPException(
+                status_code=400,
+                detail="Unexpected currency. Currency must be USD.",
+            )
+
+        issue.funding_goal = update.funding_goal.amount
+        updated = True
+
+    if updated:
+        await issue.save(session)
 
     return IssueSchema.from_db(issue)
 

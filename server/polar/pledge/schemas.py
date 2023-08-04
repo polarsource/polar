@@ -6,6 +6,7 @@ from uuid import UUID
 
 from pydantic import Field
 
+from polar.currency.schemas import CurrencyAmount
 from polar.issue.schemas import Issue, IssueRead
 from polar.kit.schemas import Schema
 from polar.models.pledge import Pledge as PledgeModel
@@ -91,14 +92,6 @@ class PledgeState(str, Enum):
     @classmethod
     def from_str(cls, s: str) -> PledgeState:
         return PledgeState.__members__[s]
-
-
-# Public API
-class CurrencyAmount(Schema):
-    currency: str = Field(description="Three letter currency code (eg: USD)")
-    amount: int = Field(
-        description="Amount in the currencys smallest unit (cents if currency is USD)"
-    )
 
 
 # Public API

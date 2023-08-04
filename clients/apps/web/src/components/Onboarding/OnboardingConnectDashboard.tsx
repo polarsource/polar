@@ -31,7 +31,7 @@ const OnboardingConnectPersonalDashboard = () => {
     <>
       <div
         className={classNames(
-          'flex-start rounded-xld mb-4 flex flex-row overflow-hidden bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-gray-700',
+          'flex-start mb-4 flex flex-row overflow-hidden rounded-xl bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-gray-700',
         )}
       >
         <div className="flex-1">

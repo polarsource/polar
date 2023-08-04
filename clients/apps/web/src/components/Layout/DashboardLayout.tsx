@@ -4,6 +4,7 @@ import DashboardTopbar from '../Shared/DashboardTopbar'
 
 const DashboardLayout = (props: {
   children: React.ReactElement
+  showSidebar: boolean
   header?: React.ReactElement
 }) => {
   return (
@@ -11,12 +12,24 @@ const DashboardLayout = (props: {
       <DashboardTopbar />
 
       <div className="dark:bg-gray-950 flex flex-row bg-gray-50">
-        <aside className="bg-gray-75 fixed top-16 bottom-0 left-0 w-80 flex-shrink-0 border-r border-r-gray-200 dark:border-r-gray-700 dark:bg-gray-800">
-          <SidebarNavigation />
-        </aside>
-        <main className="relative ml-80 w-full">
+        {props.showSidebar && (
+          <aside className="bg-gray-75 fixed top-16 bottom-0 left-0 w-80 flex-shrink-0 border-r border-r-gray-200 dark:border-r-gray-700 dark:bg-gray-800">
+            <SidebarNavigation />
+          </aside>
+        )}
+        <main
+          className={classNames(
+            props.showSidebar ? 'ml-80' : '',
+            'relative w-full',
+          )}
+        >
           {props.header && (
-            <div className="fixed top-16 left-80 right-0 z-10">
+            <div
+              className={classNames(
+                props.showSidebar ? 'left-80' : 'left-0',
+                'fixed top-16 right-0 z-10',
+              )}
+            >
               {props.header}
             </div>
           )}

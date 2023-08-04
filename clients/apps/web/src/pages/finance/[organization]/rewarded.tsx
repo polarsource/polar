@@ -46,7 +46,7 @@ const Page: NextLayoutComponentType = () => {
 Page.getLayout = (page: ReactElement) => {
   return (
     <Gatekeeper>
-      <DashboardLayout>{page}</DashboardLayout>
+      <DashboardLayout showSidebar={true}>{page}</DashboardLayout>
     </Gatekeeper>
   )
 }

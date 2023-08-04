@@ -95,6 +95,7 @@ const OrganizationDashboard = ({
 
   return (
     <DashboardLayout
+      showSidebar={true}
       header={
         <Header
           totalCount={totalCount}

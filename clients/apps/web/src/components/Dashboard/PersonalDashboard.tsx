@@ -28,6 +28,7 @@ const PersonalDashboard = ({
 
   return (
     <DashboardLayout
+      showSidebar={false}
       header={
         <Header
           totalCount={totalCount}

@@ -12,7 +12,7 @@ const Page: NextLayoutComponentType = () => {
         <title>Polar | Settings</title>
       </Head>
 
-      <DashboardLayout>
+      <DashboardLayout showSidebar={true}>
         <>
           <div className="relative z-0">
             <div className="divide-y divide-gray-200 dark:divide-gray-800">

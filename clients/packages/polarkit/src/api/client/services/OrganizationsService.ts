@@ -8,6 +8,7 @@ import type { OrganizationBadgeSettingsUpdate } from '../models/OrganizationBadg
 import type { OrganizationPrivateRead } from '../models/OrganizationPrivateRead';
 import type { OrganizationSettingsUpdate } from '../models/OrganizationSettingsUpdate';
 import type { Platforms } from '../models/Platforms';
+import type { UpdateOrganization } from '../models/UpdateOrganization';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -99,6 +100,34 @@ export class OrganizationsService {
       path: {
         'id': id,
       },
+      errors: {
+        404: `Not Found`,
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Get an organization (Public API)
+   * Get an organization
+   * @returns Organization Successful Response
+   * @throws ApiError
+   */
+  public update({
+    id,
+    requestBody,
+  }: {
+    id: string,
+    requestBody: UpdateOrganization,
+  }): CancelablePromise<Organization> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/organizations/{id}',
+      path: {
+        'id': id,
+      },
+      body: requestBody,
+      mediaType: 'application/json',
       errors: {
         404: `Not Found`,
         422: `Validation Error`,

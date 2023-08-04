@@ -10,6 +10,7 @@ import type { ListResource_Issue_ } from '../models/ListResource_Issue_';
 import type { OrganizationPublicPageRead } from '../models/OrganizationPublicPageRead';
 import type { Platforms } from '../models/Platforms';
 import type { PostIssueComment } from '../models/PostIssueComment';
+import type { UpdateIssue } from '../models/UpdateIssue';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -65,6 +66,33 @@ export class IssuesService {
       path: {
         'id': id,
       },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Update issue. (Public API)
+   * Update issue. Requires authentication.
+   * @returns Issue Successful Response
+   * @throws ApiError
+   */
+  public update({
+    id,
+    requestBody,
+  }: {
+    id: string,
+    requestBody: UpdateIssue,
+  }): CancelablePromise<Issue> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/issues/{id}',
+      path: {
+        'id': id,
+      },
+      body: requestBody,
+      mediaType: 'application/json',
       errors: {
         422: `Validation Error`,
       },

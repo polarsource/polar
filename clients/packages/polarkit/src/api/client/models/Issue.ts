@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
+import type { CurrencyAmount } from './CurrencyAmount';
 import type { Platforms } from './Platforms';
 import type { Reactions } from './Reactions';
 import type { Repository } from './Repository';
@@ -40,6 +41,7 @@ export type Issue = {
   issue_closed_at?: string;
   issue_modified_at?: string;
   issue_created_at: string;
+  funding_goal?: CurrencyAmount;
   /**
    * The repository that the issue is in
    */

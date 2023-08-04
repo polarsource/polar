@@ -21,5 +21,6 @@ export type IssuePublicRead = {
   issue_created_at: string;
   comments?: number;
   progress?: IssueStatus;
+  funding_goal?: number;
 };
 

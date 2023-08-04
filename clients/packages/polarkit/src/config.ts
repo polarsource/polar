@@ -37,6 +37,8 @@ let defaults = {
   POSTHOG_TOKEN: process?.env?.NEXT_PUBLIC_POSTHOG_TOKEN || '',
   STRIPE_COUNTRIES_WHITELIST_CSV:
     process?.env?.NEXT_PUBLIC_STRIPE_COUNTRIES_WHITELIST || STRIPE_COUNTRIES,
+  APPLE_DOMAIN_ASSOCIATION:
+    '<Replace with Apple Pay Domain Association from Stripe>',
 }
 
 export const CONFIG = {

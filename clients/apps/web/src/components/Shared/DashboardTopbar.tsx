@@ -1,8 +1,7 @@
 import RepoSelection from '@/components/Dashboard/RepoSelection'
-import { useRequireAuth } from '@/hooks'
+import { useCurrentOrgAndRepoFromURL, useRequireAuth } from '@/hooks'
 import { useRouter } from 'next/router'
 import { useListOrganizations, useListRepositories } from 'polarkit/hooks'
-import { useStore } from 'polarkit/store'
 import Topbar from './Topbar'
 
 export const path = (
@@ -54,8 +53,8 @@ export const path = (
 
 const DashboardNav = () => {
   const router = useRouter()
-  const currentOrg = useStore((state) => state.currentOrg)
-  const currentRepo = useStore((state) => state.currentRepo)
+
+  const { org: currentOrg, repo: currentRepo } = useCurrentOrgAndRepoFromURL()
 
   const { currentUser } = useRequireAuth()
   const listOrganizationQuery = useListOrganizations()

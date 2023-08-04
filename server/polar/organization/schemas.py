@@ -1,18 +1,20 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Sequence
+from typing import Self, Sequence
 from uuid import UUID
 
 from pydantic import BaseModel
 
 from polar.config import settings
+from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.kit.schemas import Schema
+from polar.models.organization import Organization as OrganizationModel
 
 
-# Public model
+# Public API
 class Organization(Schema):
     id: UUID
     platform: Platforms
@@ -28,9 +30,33 @@ class Organization(Schema):
     twitter_username: str | None
 
     pledge_minimum_amount: int
+    default_funding_goal: CurrencyAmount | None
 
-    class Config:
-        orm_mode = True
+    @classmethod
+    def from_db(cls, o: OrganizationModel) -> Self:
+        return cls(
+            id=o.id,
+            platform=o.platform,
+            name=o.name,
+            avatar_url=o.avatar_url,
+            bio=o.bio,
+            pretty_name=o.pretty_name,
+            company=o.company,
+            blog=o.blog,
+            location=o.location,
+            email=o.email,
+            twitter_username=o.twitter_username,
+            pledge_minimum_amount=o.pledge_minimum_amount,
+            default_funding_goal=CurrencyAmount(
+                currency="USD", amount=o.default_funding_goal
+            )
+            if o.default_funding_goal
+            else None,
+        )
+
+
+class UpdateOrganization(Schema):
+    default_funding_goal: CurrencyAmount | None = None
 
 
 #

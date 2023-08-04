@@ -8,7 +8,7 @@ from sqlalchemy.types import TypeDecorator as _TypeDecorator
 from sqlalchemy.engine.interfaces import Dialect
 
 if TYPE_CHECKING:  # pragma: no cover
-    GUIDTypeDecorator = _TypeDecorator[UUID] # type: ignore
+    GUIDTypeDecorator = _TypeDecorator[UUID]  # type: ignore
     TypeDecorator = _TypeDecorator[Any]
 else:
     GUIDTypeDecorator = _TypeDecorator

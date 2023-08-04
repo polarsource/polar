@@ -38,7 +38,7 @@ class Repository(Schema):
             stars=r.stars,
             license=r.license,
             homepage=r.homepage,
-            organization=OrganizationSchema.from_orm(r.organization),
+            organization=OrganizationSchema.from_db(r.organization),
         )
 
 

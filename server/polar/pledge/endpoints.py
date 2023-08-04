@@ -228,7 +228,7 @@ async def get_pledge_with_resources(
 
     included_org = None
     if "organization" in includes:
-        included_org = Organization.from_orm(org)
+        included_org = Organization.from_db(org)
 
     included_repo = None
     if "repository" in includes:
@@ -388,7 +388,7 @@ async def list_organization_pledges(
             pledge=PledgeRead.from_db(p),
             issue=IssueRead.from_orm(p.issue),
             repository=RepositorySchema.from_db(p.to_repository),
-            organization=Organization.from_orm(p.to_organization),
+            organization=Organization.from_db(p.to_organization),
         )
         for p in pledges
     ]

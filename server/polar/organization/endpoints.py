@@ -25,6 +25,7 @@ from .schemas import (
     OrganizationSettingsRead,
     OrganizationSettingsUpdate,
     RepositoryBadgeSettingsRead,
+    UpdateOrganization,
 )
 from .service import organization
 
@@ -47,7 +48,7 @@ async def list(
 ) -> ListResource[OrganizationSchema]:
     orgs = await organization.list_all_orgs_by_user_id(session, auth.user.id)
     return ListResource(
-        items=[OrganizationSchema.from_orm(o) for o in orgs],
+        items=[OrganizationSchema.from_db(o) for o in orgs],
     )
 
 
@@ -69,7 +70,7 @@ async def search(
     if platform and organization_name:
         org = await organization.get_by_name(session, platform, organization_name)
         if org:
-            return ListResource(items=[OrganizationSchema.from_orm(org)])
+            return ListResource(items=[OrganizationSchema.from_db(org)])
 
     # no org found
     return ListResource(items=[])
@@ -94,7 +95,7 @@ async def lookup(
     if platform and organization_name:
         org = await organization.get_by_name(session, platform, organization_name)
         if org:
-            return OrganizationSchema.from_orm(org)
+            return OrganizationSchema.from_db(org)
 
     raise HTTPException(
         status_code=404,
@@ -118,13 +119,56 @@ async def get(
 ) -> OrganizationSchema:
     org = await organization.get(session, id=id)
 
-    if org:
-        return OrganizationSchema.from_orm(org)
+    if not org:
+        raise HTTPException(
+            status_code=404,
+            detail="Organization not found",
+        )
 
-    raise HTTPException(
-        status_code=404,
-        detail="Organization not found",
-    )
+    return OrganizationSchema.from_db(org)
+
+
+@router.post(
+    "/organizations/{id}",
+    response_model=OrganizationSchema,
+    tags=[Tags.PUBLIC],
+    description="Get an organization",
+    status_code=200,
+    summary="Get an organization (Public API)",
+    responses={404: {}},
+)
+async def update(
+    id: UUID,
+    update: UpdateOrganization,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.current_user),
+) -> OrganizationSchema:
+    org = await organization.get(session, id)
+
+    if not org:
+        raise HTTPException(
+            status_code=404,
+            detail="Organization not found",
+        )
+
+    # TODO: Auth
+
+    updated = False
+
+    if update.default_funding_goal:
+        if update.default_funding_goal.currency != "USD":
+            raise HTTPException(
+                status_code=400,
+                detail="Unexpected currency. Currency must be USD.",
+            )
+
+        org.default_funding_goal = update.default_funding_goal.amount
+        updated = True
+
+    if updated:
+        await org.save(session)
+
+    return OrganizationSchema.from_db(org)
 
 
 #

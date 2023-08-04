@@ -136,14 +136,14 @@ async def manage_badge(
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> BackofficeBadgeResponse:
-    log.info('backoffice.badge', badge=badge.dict(), admin=auth.user.username)
+    log.info("backoffice.badge", badge=badge.dict(), admin=auth.user.username)
 
     org, repo, issue = await organization_service.get_with_repo_and_issue(
         session,
         platform=Platforms.github,
         org_name=badge.org_slug,
         repo_name=badge.repo_slug,
-        issue=badge.issue_number
+        issue=badge.issue_number,
     )
 
     if repo.pledge_badge_auto_embed:
@@ -173,4 +173,3 @@ async def manage_badge(
         action=badge.action,
         success=success,
     )
-

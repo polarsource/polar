@@ -9,11 +9,13 @@ from polar.kit.schemas import Schema
 
 T = TypeVar("T")
 
+
 class RateLimit(Schema):
     limit: int
     remaining: int
     used: int
     reset: int
+
 
 class GitHubApi:
     async def get_rate_limit(self, client: GitHub[Any]) -> RateLimit:

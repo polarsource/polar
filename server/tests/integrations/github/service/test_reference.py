@@ -45,6 +45,7 @@ async def test_parse_issue_timeline(
         is_personal=False,
         installation_id=123,
         installation_created_at=utils.utc_now(),
+        avatar_url="http://example.com/image.jpg",
     )
     await org.save(session)
 

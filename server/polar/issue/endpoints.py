@@ -229,7 +229,7 @@ async def get_or_sync_external(
 
     included_org = None
     if "organization" in includes:
-        included_org = OrganizationSchema.from_orm(org)
+        included_org = OrganizationSchema.from_db(org)
 
     included_repo = None
     if "repository" in includes:
@@ -506,7 +506,7 @@ async def get_public_issues(
     )
 
     return OrganizationPublicPageRead(
-        organization=OrganizationSchema.from_orm(org),
+        organization=OrganizationSchema.from_db(org),
         repositories=[RepositorySchema.from_db(r) for r in all_org_repos],
         issues=[IssuePublicRead.from_orm(i) for i in issues],
         total_issue_count=count,

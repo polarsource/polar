@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from citext import CIText
-from sqlalchemy import TIMESTAMP, Boolean, Integer, String, UniqueConstraint
+from sqlalchemy import TIMESTAMP, BigInteger, Boolean, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.config import settings
@@ -34,7 +34,7 @@ class Organization(RecordModel):
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
     name: Mapped[str] = mapped_column(CIText(), nullable=False, unique=True)
     external_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
-    avatar_url: Mapped[str | None] = mapped_column(String)
+    avatar_url: Mapped[str] = mapped_column(String, nullable=False)
     is_personal: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
     installation_id: Mapped[int] = mapped_column(Integer, nullable=True, unique=True)
@@ -74,6 +74,10 @@ class Organization(RecordModel):
         String,
         nullable=True,
         default=None,
+    )
+
+    default_funding_goal: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, default=None
     )
 
     onboarded_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))

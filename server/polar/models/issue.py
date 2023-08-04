@@ -215,7 +215,9 @@ class Issue(IssueFields, RecordModel):
             viewonly=True,
         )
 
-    funding_goal: Mapped[int] = mapped_column(BigInteger, nullable=True, default=None)
+    funding_goal: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, default=None
+    )
 
     # calculated sum of pledges, used for sorting
     # not to be exported through APIs

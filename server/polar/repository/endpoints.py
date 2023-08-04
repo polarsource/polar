@@ -50,6 +50,27 @@ async def user_can_read(
     return False
 
 
+async def user_can_write(
+    session: AsyncSession,
+    auth: Auth,
+    repository: RepositoryModel,
+) -> bool:
+    if not auth.user:
+        return False
+
+    user_memberships = await user_organization_service.list_by_user_id(
+        session,
+        auth.user.id,
+    )
+
+    ids = [m.organization_id for m in user_memberships if m.is_admin is True]
+
+    if repository.organization_id in ids:
+        return True
+
+    return False
+
+
 @router.get(
     "/repositories",
     response_model=ListResource[RepositorySchema],

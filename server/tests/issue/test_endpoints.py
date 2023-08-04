@@ -206,3 +206,50 @@ async def test_issue_search_private_repo_without_repo_selector(
 
     assert response.status_code == 200
     assert response.json()["items"] == []
+
+
+@pytest.mark.asyncio
+async def test_update_funding_goal(
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+    auth_jwt: str,
+    session: AsyncSession,
+    user_organization: UserOrganization,  # makes User a member of Organization
+) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
+    # get, default value should be None
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            f"/api/v1/issues/{issue.id}",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(issue.id)
+    assert response.json()["funding_goal"] is None
+
+    # update value
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.post(
+            f"/api/v1/issues/{issue.id}",
+            json={"funding_goal": {"currency": "USD", "amount": 12000}},
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(issue.id)
+    assert response.json()["funding_goal"] == {"currency": "USD", "amount": 12000}
+
+    # get after post, should be persisted
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            f"/api/v1/issues/{issue.id}",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(issue.id)
+    assert response.json()["funding_goal"] == {"currency": "USD", "amount": 12000}

@@ -9,6 +9,7 @@ import structlog
 from fastapi.encoders import jsonable_encoder
 from pydantic import Field, parse_obj_as
 
+from polar.currency.schemas import CurrencyAmount
 from polar.dashboard.schemas import IssueStatus
 from polar.enums import Platforms
 from polar.integrations.github import client as github
@@ -74,6 +75,8 @@ class Issue(Schema):
     issue_modified_at: datetime | None
     issue_created_at: datetime
 
+    funding_goal: CurrencyAmount | None
+
     repository: Repository = Field(description="The repository that the issue is in")
 
     @classmethod
@@ -91,8 +94,15 @@ class Issue(Schema):
             issue_modified_at=i.issue_modified_at,
             issue_created_at=i.issue_created_at,
             reactions=parse_obj_as(Reactions, i.reactions) if i.reactions else None,
+            funding_goal=CurrencyAmount(currency="USD", amount=i.funding_goal)
+            if i.funding_goal
+            else None,
             repository=Repository.from_db(i.repository),
         )
+
+
+class UpdateIssue(Schema):
+    funding_goal: CurrencyAmount | None = None
 
 
 #
@@ -458,6 +468,7 @@ class IssuePublicRead(Schema):
     comments: int | None
     progress: IssueStatus | None = None
     # badge_custom_content: str | None = None
+    funding_goal: int | None
 
     class Config:
         orm_mode = True

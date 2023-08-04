@@ -21,7 +21,7 @@ const Page: NextLayoutComponentType = () => {
 
     // Show personal dashboard
     if (!haveOrgs && havePersonalPledges) {
-      router.push(`/issues/personal`)
+      router.push(`/dependencies/personal`)
       return
     }
 

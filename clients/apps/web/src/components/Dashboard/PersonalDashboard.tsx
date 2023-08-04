@@ -3,7 +3,7 @@ import { IssueStatus } from 'polarkit/api/client'
 import { usePersonalDashboard } from 'polarkit/hooks'
 import { Dispatch, SetStateAction } from 'react'
 import DashboardLayout from '../Layout/DashboardLayout'
-import IssueList from './IssueList'
+import IssueList, { Header } from './IssueList'
 import { DashboardFilters } from './filters'
 
 const PersonalDashboard = ({
@@ -27,7 +27,16 @@ const PersonalDashboard = ({
   const totalCount = dashboard?.pages[0].pagination.total_count || undefined
 
   return (
-    <DashboardLayout>
+    <DashboardLayout
+      header={
+        <Header
+          totalCount={totalCount}
+          filters={filters}
+          onSetFilters={onSetFilters}
+          spinner={dashboardQuery.isInitialLoading}
+        />
+      }
+    >
       <div>
         <OnboardingConnectPersonalDashboard />
         <IssueList

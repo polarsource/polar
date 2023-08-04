@@ -39,7 +39,7 @@ class PolarWorkerContext(BaseModel):
 
 
 class WorkerSettings:
-    functions: list[Function | types.CoroutineType] = [] # type: ignore
+    functions: list[Function | types.CoroutineType] = []  # type: ignore
     cron_jobs: list[CronJob] = []
 
     redis_settings = RedisSettings().from_dsn(settings.redis_url)

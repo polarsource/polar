@@ -245,7 +245,7 @@ async def dashboard(
         included[str(i.organization_id)] = Entry(
             id=i.organization_id,
             type="organization",
-            attributes=OrganizationSchema.from_orm(
+            attributes=OrganizationSchema.from_db(
                 [o for o in issue_organizations if o.id == i.organization_id][0]
             ),
         )
@@ -351,7 +351,7 @@ async def dashboard(
             included[str(dependent_issue.organization_id)] = Entry(
                 id=dependent_issue.organization_id,
                 type="organization",
-                attributes=OrganizationSchema.from_orm(
+                attributes=OrganizationSchema.from_db(
                     [
                         o
                         for o in issue_organizations

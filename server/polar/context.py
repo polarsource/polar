@@ -8,7 +8,7 @@ class PolarContext:
 
 
 class ExecutionContext:
-    _contextvar: ClassVar[ContextVar] = ContextVar("ExecutionContext") # type: ignore
+    _contextvar: ClassVar[ContextVar] = ContextVar("ExecutionContext")  # type: ignore
 
     # is_during_installation is True this is an event (or request) triggered by the app
     # or repository installation flow.

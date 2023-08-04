@@ -169,3 +169,54 @@ async def test_get_organization_deleted(
         )
 
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_update_default_funding_goal(
+    organization: Organization,
+    auth_jwt: str,
+    session: AsyncSession,
+    user_organization: UserOrganization,  # makes User a member of Organization
+) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
+    # get, default value should be None
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            f"/api/v1/organizations/{organization.id}",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["default_funding_goal"] is None
+
+    # update value
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.post(
+            f"/api/v1/organizations/{organization.id}",
+            json={"default_funding_goal": {"currency": "USD", "amount": 12000}},
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["default_funding_goal"] == {
+        "currency": "USD",
+        "amount": 12000,
+    }
+
+    # get after post, should be persisted
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            f"/api/v1/organizations/{organization.id}",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["default_funding_goal"] == {
+        "currency": "USD",
+        "amount": 12000,
+    }

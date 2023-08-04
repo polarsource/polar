@@ -1,7 +1,6 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
-  Cog8ToothIcon,
   CubeIcon,
   CurrencyDollarIcon,
   ExclamationCircleIcon,
@@ -69,13 +68,13 @@ const SidebarNavigation = () => {
     },
 
     // Always visible
-    {
-      id: 'settings',
-      title: 'Settings',
-      icon: <Cog8ToothIcon className="h-6 w-6" />,
-      link: `/settings`,
-      if: true,
-    },
+    // {
+    //   id: 'settings',
+    //   title: 'Settings',
+    //   icon: <Cog8ToothIcon className="h-6 w-6" />,
+    //   link: `/settings`,
+    //   if: true,
+    // },
   ]
 
   const [clickedFirstLevelLink, setClickedFirstLevelLink] = useState('')

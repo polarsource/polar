@@ -12,7 +12,7 @@ class PolarLoader(BaseLoader):
         self.path = path
 
     def get_source(
-        self, environment: "Environment", template: Path
+        self, environment: "Environment", template: str
     ) -> Tuple[str, str | None, Callable[[], bool] | None]:
         path = Path(self.path, template)
         if not path.exists():
@@ -31,7 +31,7 @@ env = Environment(
 )
 
 
-def path(__from_file__: Path, relative_filename: Path) -> Path:
+def path(__from_file__: str, relative_filename: str) -> Path:
     from_dir = Path(__from_file__).parent.absolute()
     base = str(from_dir).replace(str(polar_package_root), "")
     return Path(polar_package_root, base, relative_filename)

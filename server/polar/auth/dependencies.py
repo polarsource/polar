@@ -9,7 +9,7 @@ from polar.organization.service import organization as organization_service
 from .service import AuthService
 
 
-async def must_current_active_user(
+async def current_user_required(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
 ) -> User:
@@ -19,7 +19,7 @@ async def must_current_active_user(
     return user
 
 
-async def optional_current_active_user(
+async def current_user_optional(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
 ) -> User | None:
@@ -64,15 +64,11 @@ class Auth:
     ###############################################################################
 
     @classmethod
-    async def current_user(
-        cls, user: User = Depends(must_current_active_user)
-    ) -> "Auth":
+    async def current_user(cls, user: User = Depends(current_user_required)) -> "Auth":
         return Auth(user=user)
 
     @classmethod
-    async def optional_user(
-        cls, user: User = Depends(optional_current_active_user)
-    ) -> "Auth":
+    async def optional_user(cls, user: User = Depends(current_user_optional)) -> "Auth":
         return Auth(user=user)
 
     @classmethod
@@ -82,7 +78,7 @@ class Auth:
         platform: Platforms,
         org_name: str,
         session: AsyncSession = Depends(get_db_session),
-        user: User = Depends(must_current_active_user),
+        user: User = Depends(current_user_required),
     ) -> "Auth":
         organization = await organization_service.get_for_user(
             session,
@@ -104,7 +100,7 @@ class Auth:
         org_name: str,
         repo_name: str,
         session: AsyncSession = Depends(get_db_session),
-        user: User = Depends(must_current_active_user),
+        user: User = Depends(current_user_required),
     ) -> "Auth":
         try:
             org, repo = await organization_service.get_with_repo_for_user(
@@ -125,7 +121,7 @@ class Auth:
     async def backoffice_user(
         cls,
         *,
-        user: User = Depends(must_current_active_user),
+        user: User = Depends(current_user_required),
     ) -> "Auth":
         allowed = ["zegl", "birkjernstrom", "hult", "petterheterjag"]
 

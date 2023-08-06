@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import Request, HTTPException, Depends
 
 from polar.models import User, Organization, Repository
@@ -84,6 +86,25 @@ class Auth:
             session,
             platform=platform,
             org_name=org_name,
+            user_id=user.id,
+        )
+        if not organization:
+            raise HTTPException(
+                status_code=404, detail="Organization not found for user"
+            )
+        return Auth(user=user, organization=organization)
+
+    @classmethod
+    async def user_with_org_access_by_id(
+        cls,
+        *,
+        id: UUID,
+        session: AsyncSession = Depends(get_db_session),
+        user: User = Depends(current_user_required),
+    ) -> "Auth":
+        organization = await organization_service.get_by_id_for_user(
+            session,
+            org_id=id,
             user_id=user.id,
         )
         if not organization:

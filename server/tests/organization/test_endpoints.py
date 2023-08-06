@@ -172,6 +172,22 @@ async def test_get_organization_deleted(
 
 
 @pytest.mark.asyncio
+async def test_update_organization_permission(
+    session: AsyncSession,
+    organization: Organization,
+    auth_jwt: str,
+) -> None:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.post(
+            f"/api/v1/organizations/{organization.id}",
+            json={"default_funding_goal": {"currency": "USD", "amount": 12000}},
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_update_default_funding_goal(
     organization: Organization,
     auth_jwt: str,

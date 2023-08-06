@@ -141,19 +141,11 @@ async def update(
     id: UUID,
     update: UpdateOrganization,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
+    auth: Auth = Depends(Auth.user_with_org_access_by_id),
 ) -> OrganizationSchema:
-    org = await organization.get(session, id)
-
-    if not org:
-        raise HTTPException(
-            status_code=404,
-            detail="Organization not found",
-        )
-
-    # TODO: Auth
-
     updated = False
+    # TODO:Raise 404 on org not found vs. 403 on forbidden
+    org = auth.organization
 
     if update.default_funding_goal:
         if update.default_funding_goal.currency != "USD":

@@ -1,4 +1,5 @@
 import {
+  Issue,
   IssueRead,
   MaintainerPledgeConfirmationPendingNotification,
   MaintainerPledgeCreatedNotification,
@@ -59,7 +60,7 @@ export const user: UserRead = {
   email_promotions_and_events: false,
 }
 
-export const issue: IssueRead = {
+export const issueRead: IssueRead = {
   platform: Platforms.GITHUB,
   organization_id: 'aa',
   repository_id: 'bb',
@@ -75,6 +76,7 @@ export const issue: IssueRead = {
   created_at: addDays(new Date(), -7).toISOString(),
 }
 
+// Public API
 export const repo: Repository = {
   platform: Platforms.GITHUB,
   name: 'pydantic',
@@ -86,10 +88,34 @@ export const repo: Repository = {
   organization: org,
 }
 
+// Public API
+export const issue: Issue = {
+  platform: Platforms.GITHUB,
+  number: 222,
+  title: 'SecretStr comparison fails when field is defined with Field',
+  reactions: {
+    total_count: 3,
+    plus_one: 3,
+    minus_one: 0,
+    laugh: 0,
+    hooray: 0,
+    confused: 0,
+    heart: 0,
+    rocket: 0,
+    eyes: 0,
+  },
+  state: Issue.state.OPEN,
+  id: 'cc',
+  issue_created_at: addDays(new Date(), -7).toISOString(),
+  external_id: 123,
+  repository: repo,
+  funding: {},
+}
+
 export const pledge: PledgeRead = {
   id: 'pppp',
   created_at: addDays(new Date(), -7).toISOString(),
-  issue_id: issue.id,
+  issue_id: issueRead.id,
   amount: 3000,
   repository_id: repo.id,
   organization_id: org.id,

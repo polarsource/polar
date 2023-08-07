@@ -15,7 +15,7 @@ import {
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
 import IssueListItem from '../components/Dashboard/IssueListItem'
-import { addDays, addHours, issue, org, pledge, repo } from './testdata'
+import { addDays, addHours, issueRead, org, pledge, repo } from './testdata'
 
 type Story = StoryObj<typeof IssueListItem>
 
@@ -212,7 +212,7 @@ interface Issue extends IssueDashboardRead {
 }
 
 const dashboardIssue: Issue = {
-  ...issue,
+  ...issueRead,
   organization: org,
 }
 
@@ -240,7 +240,7 @@ const issuePullRequest = {
 const issueClosed = { ...dashboardIssue, progress: IssueStatus.CLOSED }
 
 const dependents: IssueReadWithRelations = {
-  ...issue,
+  ...issueRead,
   number: 123,
   title: "Wow, we're blocked by this thing",
   organization: { ...org, name: 'someorg' },

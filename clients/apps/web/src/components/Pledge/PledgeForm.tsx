@@ -10,6 +10,7 @@ import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
 import {
   ApiError,
+  Issue,
   IssueRead,
   Organization,
   PledgeMutationResponse,
@@ -30,9 +31,6 @@ type PledgeSync = {
 }
 
 const generateRedirectURL = (
-  organization: Organization,
-  repository: Repository,
-  issue: IssueRead,
   pledge: PledgeMutationResponse,
   gotoURL?: string,
   paymentIntent?: PaymentIntent,
@@ -76,7 +74,7 @@ const PledgeForm = ({
   asOrg,
   gotoURL,
 }: {
-  issue: IssueRead
+  issue: IssueRead | Issue
   organization: Organization
   repository: Repository
   asOrg?: string
@@ -289,14 +287,7 @@ const PledgeForm = ({
       throw new Error('got payment success but no pledge')
     }
 
-    const location = generateRedirectURL(
-      organization,
-      repository,
-      issue,
-      pledge,
-      gotoURL,
-      paymentIntent,
-    )
+    const location = generateRedirectURL(pledge, gotoURL, paymentIntent)
     await router.push(location)
   }
 
@@ -410,13 +401,7 @@ const PledgeForm = ({
               setErrorMessage={setErrorMessage}
               onSuccess={onStripePaymentSuccess}
               hasDetails={hasValidDetails()}
-              redirectTo={generateRedirectURL(
-                organization,
-                repository,
-                issue,
-                pledge,
-                gotoURL,
-              )}
+              redirectTo={generateRedirectURL(pledge, gotoURL)}
             />
           </Elements>
         )}

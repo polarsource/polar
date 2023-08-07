@@ -6,6 +6,7 @@ import {
   StripePaymentElementChangeEvent,
 } from '@stripe/stripe-js'
 import {
+  Issue,
   IssueRead,
   Organization,
   PledgeMutationResponse,
@@ -29,7 +30,7 @@ const PaymentForm = ({
   hasDetails,
 }: {
   pledge?: PledgeMutationResponse
-  issue: IssueRead
+  issue: IssueRead | Issue
   organization: Organization
   repository: Repository
   isSyncing: boolean

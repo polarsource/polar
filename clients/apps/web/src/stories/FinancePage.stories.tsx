@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import Finance from '@/components/Finance/Finance'
 import { AccountType, PledgeResources, PledgeState } from 'polarkit/api/client'
-import { issue, org, orgPrivate, repo } from './testdata'
+import { issue, issueRead, org, orgPrivate, repo } from './testdata'
 
 type Story = StoryObj<typeof Finance>
 
@@ -49,7 +49,7 @@ let all_pledge_states: PledgeResources[] = Object.values(PledgeState).map(
       },
       issue: {
         ...issue,
-        title: `${issue.title} (${s})`,
+        title: `${issueRead.title} (${s})`,
       },
     }
   },

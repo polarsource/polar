@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 import OpenGraphImage from '@/components/Organization/OpenGraphImage'
-import { issue, org } from './testdata'
+import { issueRead, org } from './testdata'
 
 const meta: Meta<typeof OpenGraphImage> = {
   title: 'Organisms/OpenGraphImage',
@@ -20,7 +20,7 @@ export const Default: Story = {
     org_name: org.name,
     issue_count: 15,
     avatar: org.avatar_url,
-    issues: [issue, issue],
+    issues: [issueRead, issueRead],
   },
   render: (args) => {
     return (
@@ -37,14 +37,14 @@ export const IssueToday: Story = {
     issue_count: 15,
     avatar: org.avatar_url,
     issues: [
-      { ...issue, issue_created_at: new Date().toString() },
+      { ...issueRead, issue_created_at: new Date().toString() },
       {
-        ...issue,
+        ...issueRead,
         issue_created_at: new Date(
           new Date().getTime() - 60 * 60 * 24 * 1000,
         ).toString(),
         reactions: {
-          ...issue.reactions,
+          ...issueRead.reactions,
           plus_one: 0,
         },
       },
@@ -66,11 +66,11 @@ export const IssueLongTitle: Story = {
     avatar: org.avatar_url,
     issues: [
       {
-        ...issue,
+        ...issueRead,
         title:
           'Lorem ipsum dolor sit amet: Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum',
       },
-      issue,
+      issueRead,
     ],
   },
   render: (args) => {
@@ -90,11 +90,11 @@ export const Repository: Story = {
     avatar: org.avatar_url,
     issues: [
       {
-        ...issue,
+        ...issueRead,
         title:
           'Lorem ipsum dolor sit amet: Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum',
       },
-      issue,
+      issueRead,
     ],
   },
   render: (args) => {
@@ -114,11 +114,11 @@ export const RepositoryLongName: Story = {
     avatar: org.avatar_url,
     issues: [
       {
-        ...issue,
+        ...issueRead,
         title:
           'Lorem ipsum dolor sit amet: Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum',
       },
-      issue,
+      issueRead,
     ],
   },
   render: (args) => {
@@ -136,7 +136,7 @@ export const OneIssue: Story = {
     issue_count: 1,
     avatar: org.avatar_url,
     // issues: IssuePublicRead[],
-    issues: [issue],
+    issues: [issueRead],
   },
   render: (args) => {
     return (
@@ -184,7 +184,7 @@ export const LargeIssue: Story = {
     org_name: org.name,
     issue_count: 0,
     avatar: org.avatar_url,
-    issues: [issue],
+    issues: [issueRead],
     largeIssue: true,
   },
   render: (args) => {
@@ -211,9 +211,9 @@ export const LargeIssueNoReactions: Story = {
     avatar: org.avatar_url,
     issues: [
       {
-        ...issue,
+        ...issueRead,
         reactions: {
-          ...issue.reactions,
+          ...issueRead.reactions,
           plus_one: 0,
         },
       },

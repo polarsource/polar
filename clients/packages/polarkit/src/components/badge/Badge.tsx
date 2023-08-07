@@ -16,17 +16,17 @@ import { getCentsInDollarString } from '../../money'
 
 export const Badge = ({
   showAmountRaised = false,
-  amountRaised = undefined,
+  // amountRaised = undefined,
   darkmode = false,
   funding = undefined,
 }: {
   showAmountRaised?: boolean
-  amountRaised?: string
+  // amountRaised?: string
   darkmode: boolean
   funding?: Funding
 }) => {
   const showFundingGoal = funding && funding.funding_goal && funding.pledges_sum
-  const showAmount = !showFundingGoal && showAmountRaised && amountRaised
+  const showAmount = !showFundingGoal && showAmountRaised
 
   const progress =
     showFundingGoal && funding && funding.pledges_sum && funding.funding_goal
@@ -83,7 +83,8 @@ export const Badge = ({
           >
             Fund this issue
           </div>
-          {showAmount && (
+
+          {showAmount && funding?.pledges_sum?.amount !== undefined && (
             <div
               style={{
                 display: 'flex',
@@ -105,7 +106,15 @@ export const Badge = ({
                   transitionDuration: '200ms',
                 }}
               >
-                <span style={{ whiteSpace: 'pre' }}>${amountRaised}&nbsp;</span>
+                <span style={{ whiteSpace: 'pre' }}>
+                  $
+                  {getCentsInDollarString(
+                    funding?.pledges_sum?.amount,
+                    false,
+                    true,
+                  )}
+                  &nbsp;
+                </span>
                 <span
                   style={{
                     color: darkmode ? '#A3A3A3' : '#727374',
@@ -118,66 +127,79 @@ export const Badge = ({
             </div>
           )}
 
-          {showFundingGoal && (
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                marginRight: 12,
-                marginLeft: 6,
-                //flexGrow: 1,
-                fontSize: 12,
-                // lineHeight: 20,
-                // background: 'purple',
-                flexShrink: '1',
-                gap: '2px',
-              }}
-            >
+          {showFundingGoal &&
+            funding.pledges_sum?.amount !== undefined &&
+            funding.funding_goal?.amount !== undefined && (
               <div
                 style={{
                   display: 'flex',
-                  color: darkmode ? '#D1D1CC' : '#727374', // gray-500
+                  flexDirection: 'column',
+                  marginRight: 12,
+                  marginLeft: 6,
+                  //flexGrow: 1,
+                  fontSize: 12,
+                  // lineHeight: 20,
+                  // background: 'purple',
+                  flexShrink: '1',
                   gap: '2px',
                 }}
               >
-                <span
+                <div
                   style={{
-                    fontWeight: 'medium',
-                    color: darkmode ? '#FDFDFC' : '#3E3F42', // gray-700
+                    display: 'flex',
+                    color: darkmode ? '#D1D1CC' : '#727374', // gray-500
+                    gap: '2px',
                   }}
                 >
-                  ${getCentsInDollarString(funding.pledges_sum.amount)}&nbsp;
-                </span>
-                <span>
-                  / ${getCentsInDollarString(funding.funding_goal.amount)}{' '}
-                  pledged
-                </span>
-              </div>
+                  <span
+                    style={{
+                      fontWeight: 'medium',
+                      color: darkmode ? '#FDFDFC' : '#3E3F42', // gray-700
+                    }}
+                  >
+                    $
+                    {getCentsInDollarString(
+                      funding.pledges_sum.amount,
+                      false,
+                      true,
+                    )}
+                    &nbsp;
+                  </span>
+                  <span>
+                    / $
+                    {getCentsInDollarString(
+                      funding.funding_goal.amount,
+                      false,
+                      true,
+                    )}{' '}
+                    pledged
+                  </span>
+                </div>
 
-              <div
-                style={{
-                  display: 'flex',
-                  borderRadius: '2px',
-                  overflow: 'hidden',
-                }}
-              >
                 <div
                   style={{
-                    width: `${progress}%`,
-                    height: '4px',
-                    backgroundColor: '#4667CA', // blue-600
+                    display: 'flex',
+                    borderRadius: '2px',
+                    overflow: 'hidden',
                   }}
-                ></div>
-                <div
-                  style={{
-                    flexGrow: '1',
-                    height: '4px',
-                    backgroundColor: '#E5E5E1', // gray-200
-                  }}
-                ></div>
+                >
+                  <div
+                    style={{
+                      width: `${progress}%`,
+                      height: '4px',
+                      backgroundColor: '#4667CA', // blue-600
+                    }}
+                  ></div>
+                  <div
+                    style={{
+                      flexGrow: '1',
+                      height: '4px',
+                      backgroundColor: '#E5E5E1', // gray-200
+                    }}
+                  ></div>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           <div
             style={{

@@ -1,13 +1,23 @@
 export const getCentsInDollarString = (
   cents: number,
   showCents = false,
+  pretty = false,
 ): string => {
   const dollars = cents / 100
+
+  let show: Number
+
   if (cents % 100 === 0 && !showCents) {
-    return dollars.toFixed(0)
+    show = Number(dollars.toFixed(0))
   } else {
-    return dollars.toFixed(2)
+    show = Number(dollars.toFixed(2))
   }
+
+  if (pretty) {
+    return show.toLocaleString()
+  }
+
+  return show.toString()
 }
 
 export const formatCurrencyAndAmount = (

@@ -5,17 +5,12 @@ import PageNotFound from '@/components/Shared/PageNotFound'
 import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { api } from 'polarkit'
-import {
-  IssueRead,
-  Organization,
-  Platforms,
-  Repository,
-} from 'polarkit/api/client'
+import { Issue, Organization, Platforms, Repository } from 'polarkit/api/client'
 import { posthog } from 'posthog-js'
 import { ReactElement, useEffect } from 'react'
 
 type Params = {
-  issue?: IssueRead
+  issue?: Issue
   organization?: Organization
   repository?: Repository
   query?: {

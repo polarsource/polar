@@ -253,7 +253,8 @@ const BadgeSetup = ({
             <BadgeMessageForm
               orgName={org.name}
               value={settings.message || ''}
-              onUpdate={async (value: string) => {}}
+              onUpdateMessage={async (value: string) => {}}
+              onUpdateFundingGoal={async () => {}}
               showUpdateButton={false}
               showAmountRaised={settings.show_amount}
               onChange={(value: string) => {
@@ -266,6 +267,7 @@ const BadgeSetup = ({
                 setAnyBadgeSettingChanged(true)
               }}
               innerClassNames="border"
+              funding={{}}
             />
 
             <div className="flex flex-row items-center">

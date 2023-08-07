@@ -25,7 +25,11 @@ export const Badge = ({
   darkmode: boolean
   funding?: Funding
 }) => {
-  const showFundingGoal = funding && funding.funding_goal && funding.pledges_sum
+  const showFundingGoal =
+    funding &&
+    funding.funding_goal &&
+    funding.pledges_sum &&
+    funding.funding_goal.amount > 0
   const showAmount = !showFundingGoal && showAmountRaised
 
   const progress =
@@ -136,10 +140,7 @@ export const Badge = ({
                   flexDirection: 'column',
                   marginRight: 12,
                   marginLeft: 6,
-                  //flexGrow: 1,
                   fontSize: 12,
-                  // lineHeight: 20,
-                  // background: 'purple',
                   flexShrink: '1',
                   gap: '2px',
                 }}
@@ -149,12 +150,14 @@ export const Badge = ({
                     display: 'flex',
                     color: darkmode ? '#D1D1CC' : '#727374', // gray-500
                     gap: '2px',
+                    flexShrink: '0',
                   }}
                 >
                   <span
                     style={{
                       fontWeight: 'medium',
                       color: darkmode ? '#FDFDFC' : '#3E3F42', // gray-700
+                      flexShrink: '0',
                     }}
                   >
                     $
@@ -165,7 +168,11 @@ export const Badge = ({
                     )}
                     &nbsp;
                   </span>
-                  <span>
+                  <span
+                    style={{
+                      flexShrink: '0',
+                    }}
+                  >
                     / $
                     {getCentsInDollarString(
                       funding.funding_goal.amount,
@@ -188,6 +195,9 @@ export const Badge = ({
                       width: `${progress}%`,
                       height: '4px',
                       backgroundColor: '#4667CA', // blue-600
+
+                      transitionProperty: 'all',
+                      transitionDuration: '200ms',
                     }}
                   ></div>
                   <div

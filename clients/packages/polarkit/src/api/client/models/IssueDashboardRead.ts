@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
+import type { Funding } from './Funding';
 import type { IssueStatus } from './IssueStatus';
 import type { Platforms } from './Platforms';
 import type { State } from './State';
@@ -25,5 +26,6 @@ export type IssueDashboardRead = {
   comments?: number;
   progress?: IssueStatus;
   badge_custom_content?: string;
+  funding: Funding;
 };
 

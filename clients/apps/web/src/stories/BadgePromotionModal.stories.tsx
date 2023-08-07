@@ -14,6 +14,7 @@ interface Issue extends IssueDashboardRead {
 
 const dashboardIssue: Issue = {
   ...issueRead,
+  funding: {},
   organization: org,
 }
 
@@ -41,3 +42,17 @@ const meta: Meta<typeof BadgePromotionModal> = {
 export default meta
 
 export const Default: Story = {}
+
+export const FundingGoal: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    issue: {
+      ...dashboardIssue,
+      funding: {
+        funding_goal: { currency: 'USD', amount: 123000 },
+        pledges_sum: { currency: 'USD', amount: 8000 },
+      },
+    },
+  },
+}

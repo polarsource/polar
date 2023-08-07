@@ -1,10 +1,13 @@
 import { InfiniteData, useMutation } from '@tanstack/react-query'
 import { api, queryClient } from '../../api'
 import {
+  CurrencyAmount,
+  Issue,
   IssueListResponse,
   IssueUpdateBadgeMessage,
   Platforms,
   PostIssueComment,
+  State,
 } from '../../api/client'
 
 export const useIssueAddPolarBadge = () =>
@@ -35,7 +38,21 @@ export const useIssueAddPolarBadge = () =>
                 ...p,
                 data: p.data.map((issue) => {
                   if (issue.id === result.id) {
-                    return { ...issue, attributes: result }
+                    return {
+                      ...issue,
+                      attributes: {
+                        ...result,
+
+                        // Map Issue (Public API) to IssueDashboardRead
+                        organization_id:
+                          result.repository?.organization?.id || '',
+                        repository_id: result?.repository.id || '',
+                        state:
+                          result.state === Issue.state.OPEN
+                            ? State.OPEN
+                            : State.CLOSED,
+                      },
+                    }
                   }
                   return { ...issue }
                 }),
@@ -73,7 +90,21 @@ export const useIssueRemovePolarBadge = () =>
                 ...p,
                 data: p.data.map((issue) => {
                   if (issue.id === result.id) {
-                    return { ...issue, attributes: result }
+                    return {
+                      ...issue,
+                      attributes: {
+                        ...result,
+
+                        // Map Issue (Public API) to IssueDashboardRead
+                        organization_id:
+                          result.repository?.organization?.id || '',
+                        repository_id: result?.repository.id || '',
+                        state:
+                          result.state === Issue.state.OPEN
+                            ? State.OPEN
+                            : State.CLOSED,
+                      },
+                    }
                   }
                   return { ...issue }
                 }),
@@ -119,6 +150,18 @@ export const useBadgeWithComment = () =>
         repoName: variables.repoName,
         issueNumber: variables.issueNumber,
         requestBody: variables.body,
+      })
+    },
+  })
+
+export const useUpdateIssue = () =>
+  useMutation({
+    mutationFn: (variables: { id: string; funding_goal?: CurrencyAmount }) => {
+      return api.issues.update({
+        id: variables.id,
+        requestBody: {
+          funding_goal: variables.funding_goal,
+        },
       })
     },
   })

@@ -165,7 +165,7 @@ export class IssuesService {
 
   /**
    * Add Polar Badge
-   * @returns IssueRead Successful Response
+   * @returns Issue Successful Response
    * @throws ApiError
    */
   public addPolarBadge({
@@ -178,7 +178,7 @@ export class IssuesService {
     orgName: string,
     repoName: string,
     issueNumber: number,
-  }): CancelablePromise<IssueRead> {
+  }): CancelablePromise<Issue> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/{platform}/{org_name}/{repo_name}/issue/{issue_number}/add_badge',
@@ -196,7 +196,7 @@ export class IssuesService {
 
   /**
    * Remove Polar Badge
-   * @returns IssueRead Successful Response
+   * @returns Issue Successful Response
    * @throws ApiError
    */
   public removePolarBadge({
@@ -209,7 +209,7 @@ export class IssuesService {
     orgName: string,
     repoName: string,
     issueNumber: number,
-  }): CancelablePromise<IssueRead> {
+  }): CancelablePromise<Issue> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/{platform}/{org_name}/{repo_name}/issue/{issue_number}/remove_badge',

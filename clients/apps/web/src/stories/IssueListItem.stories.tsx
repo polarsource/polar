@@ -214,6 +214,7 @@ interface Issue extends IssueDashboardRead {
 const dashboardIssue: Issue = {
   ...issueRead,
   organization: org,
+  funding: {},
 }
 
 const issueTriaged = {
@@ -248,6 +249,7 @@ const dependents: IssueReadWithRelations = {
   references: [],
   pledges: [],
   dependents: [],
+  funding: {},
 }
 
 const meta: Meta<typeof IssueListItem> = {

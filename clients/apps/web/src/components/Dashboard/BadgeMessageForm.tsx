@@ -68,8 +68,10 @@ const BadgeMessageForm = (props: {
             <div className="prose dark:prose-invert" ref={ref} />
             <Badge
               showAmountRaised={props.showAmountRaised}
-              amountRaised="250"
               darkmode={resolvedTheme === 'dark'}
+              funding={{
+                pledges_sum: { currency: 'USD', amount: 2500 },
+              }}
             />
           </>
         )}

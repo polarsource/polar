@@ -1,4 +1,6 @@
 from typing import Literal
+
+from polar.issue.schemas import Funding
 from polar.kit.schemas import Schema
 
 
@@ -22,6 +24,7 @@ class OAuthAccessToken(Schema):
 class GithubBadgeRead(Schema):
     badge_type: Literal["pledge"]
     amount: int
+    funding: Funding
 
 
 class GitHubIssue(Schema):

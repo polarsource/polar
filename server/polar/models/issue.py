@@ -219,8 +219,7 @@ class Issue(IssueFields, RecordModel):
         BigInteger, nullable=True, default=None
     )
 
-    # calculated sum of pledges, used for sorting
-    # not to be exported through APIs
+    # calculated sum of pledges, used for sorting and in Public APIs
     pledged_amount_sum: Mapped[int] = mapped_column(
         BigInteger, nullable=False, default=0
     )

@@ -47,6 +47,14 @@ class Reactions(Schema):
 
 
 # Public API
+class Funding(Schema):
+    funding_goal: CurrencyAmount | None
+    pledges_sum: CurrencyAmount | None = Field(
+        description="Sum of pledges to this isuse (including currently open pledges and pledges that have been paid out). Always in USD."  # noqa: E501
+    )
+
+
+# Public API
 class Issue(Schema):
     id: UUID
     platform: Platforms = Field(description="Issue platform (currently always Github)")
@@ -75,12 +83,19 @@ class Issue(Schema):
     issue_modified_at: datetime | None
     issue_created_at: datetime
 
-    funding_goal: CurrencyAmount | None
+    funding: Funding
 
     repository: Repository = Field(description="The repository that the issue is in")
 
     @classmethod
     def from_db(cls, i: IssueModel) -> Self:
+        funding = Funding(
+            funding_goal=CurrencyAmount(currency="USD", amount=i.funding_goal)
+            if i.funding_goal
+            else None,
+            pledges_sum=CurrencyAmount(currency="USD", amount=i.pledged_amount_sum),
+        )
+
         return cls(
             id=i.id,
             platform=i.platform,
@@ -94,9 +109,7 @@ class Issue(Schema):
             issue_modified_at=i.issue_modified_at,
             issue_created_at=i.issue_created_at,
             reactions=parse_obj_as(Reactions, i.reactions) if i.reactions else None,
-            funding_goal=CurrencyAmount(currency="USD", amount=i.funding_goal)
-            if i.funding_goal
-            else None,
+            funding=funding,
             repository=Repository.from_db(i.repository),
         )
 

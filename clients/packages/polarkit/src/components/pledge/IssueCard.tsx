@@ -1,13 +1,7 @@
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
 import { PolarTimeAgo } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
-import {
-  Issue,
-  IssueDashboardRead,
-  Organization,
-  Repository,
-  type IssueRead,
-} from '../../api/client'
+import { Issue, Organization, Repository } from '../../api/client'
 import { githubIssueUrl } from '../../github'
 
 const IssueCard = ({
@@ -16,7 +10,7 @@ const IssueCard = ({
   organization,
   repository,
 }: {
-  issue: IssueRead | IssueDashboardRead | Issue
+  issue: Issue
   className: string
   organization: Organization
   repository: Repository
@@ -24,7 +18,11 @@ const IssueCard = ({
   const url = githubIssueUrl(organization.name, repository.name, issue.number)
 
   const fundingProgress =
-    'funding' in issue ? <FundingGoal issue={issue} /> : <></>
+    'funding' in issue && 'repository' in issue ? (
+      <FundingGoal issue={issue} />
+    ) : (
+      <>{JSON.stringify(issue)}</>
+    )
 
   return (
     <>
@@ -44,7 +42,7 @@ const IssueCard = ({
           </p>
           <div className="mt-3 flex flex-row justify-center space-x-2">
             <p className="w-16 text-sm text-gray-600 dark:text-gray-400">
-              <span className="mr-2">👍</span> {issue.reactions.plus_one}
+              <span className="mr-2">👍</span> {issue?.reactions?.plus_one || 0}
             </p>
             <p className="h-4 w-16 text-sm text-gray-500 dark:text-gray-400">
               <span className="relative top-1 mr-2 inline-block h-4">

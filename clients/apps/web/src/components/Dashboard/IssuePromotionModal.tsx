@@ -1,12 +1,18 @@
 import { useRequireAuth } from '@/hooks'
 import Image from 'next/image'
-import { IssueDashboardRead, Platforms, UserRead } from 'polarkit/api/client'
+import {
+  CurrencyAmount,
+  IssueDashboardRead,
+  Platforms,
+  UserRead,
+} from 'polarkit/api/client'
 import {
   useBadgeSettings,
   useBadgeWithComment,
   useIssueAddComment,
   useIssueAddPolarBadge,
   useIssueRemovePolarBadge,
+  useUpdateIssue,
 } from 'polarkit/hooks'
 import { classNames } from 'polarkit/utils'
 import { posthog } from 'posthog-js'
@@ -101,6 +107,21 @@ export const AddBadgeButton = (props: {
     })
   }
 
+  const updateIssue = useUpdateIssue()
+
+  const onUpdateFundingGoal = async (amount: CurrencyAmount) => {
+    await updateIssue.mutateAsync({
+      id: props.issue.id,
+      funding_goal: amount,
+    })
+
+    posthog.capture('set-issue-funding-goal', {
+      organization_name: props.orgName,
+      repository_name: props.repoName,
+      issue_number: props.issue.number,
+    })
+  }
+
   const { currentUser } = useRequireAuth()
 
   if (!currentUser) {
@@ -144,6 +165,7 @@ export const AddBadgeButton = (props: {
             user={currentUser}
             onAddComment={onAddComment}
             onBadgeWithComment={onBadgeWithComment}
+            onUpdateFundingGoal={onUpdateFundingGoal}
           />
         }
       />
@@ -161,6 +183,7 @@ export const BadgePromotionModal = (props: {
   user: UserRead
   onAddComment: (message: string) => Promise<void>
   onBadgeWithComment: (comment: string) => Promise<void>
+  onUpdateFundingGoal: (amount: CurrencyAmount) => Promise<void>
 }) => {
   const { isShown, toggle } = props
 
@@ -240,7 +263,9 @@ export const BadgePromotionModal = (props: {
             ''
           }
           showAmountRaised={badgeSettings.data?.show_amount || false}
-          onUpdate={props.onBadgeWithComment}
+          funding={props.issue.funding}
+          onUpdateMessage={props.onBadgeWithComment}
+          onUpdateFundingGoal={props.onUpdateFundingGoal}
           onChange={() => {}}
           showUpdateButton={true}
           innerClassNames="shadow"

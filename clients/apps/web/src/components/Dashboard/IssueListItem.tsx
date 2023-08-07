@@ -271,7 +271,7 @@ const IssueListItem = (props: {
 
               {showPledgeAction && <PledgeNow onClick={redirectToPledge} />}
 
-              {props.canAddRemovePolarLabel && (
+              {props.canAddRemovePolarLabel && 'funding' in props.issue && (
                 <AddBadgeButton
                   orgName={props.org.name}
                   repoName={props.repo.name}

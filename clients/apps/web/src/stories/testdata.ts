@@ -107,7 +107,6 @@ export const issue: Issue = {
   state: Issue.state.OPEN,
   id: 'cc',
   issue_created_at: addDays(new Date(), -7).toISOString(),
-  external_id: 123,
   repository: repo,
   funding: {},
 }

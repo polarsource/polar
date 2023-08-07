@@ -14,10 +14,6 @@ export type Issue = {
    */
   platform: Platforms;
   /**
-   * Github's ID (not the same as the #number)
-   */
-  external_id: number;
-  /**
    * Github #number
    */
   number: number;

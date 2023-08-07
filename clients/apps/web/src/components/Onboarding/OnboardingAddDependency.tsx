@@ -50,6 +50,7 @@ const OnboardingAddDependency = () => {
     number: 123,
     issue_created_at: 'x',
     state: State.OPEN,
+    funding: {},
   }
 
   const demoDependents: IssueReadWithRelations[] = [

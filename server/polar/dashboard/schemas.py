@@ -1,11 +1,15 @@
 from datetime import datetime
-from typing import Any, Generic, List, TypeVar
-from uuid import UUID
-from polar.enums import Platforms
-from polar.models.issue import Issue
-from polar.kit.schemas import Schema
-from pydantic.generics import GenericModel
 from enum import Enum
+from typing import Any, Generic, List, Self, TypeVar
+from uuid import UUID
+
+from pydantic.generics import GenericModel
+
+from polar.currency.schemas import CurrencyAmount
+from polar.enums import Platforms
+from polar.funding.schemas import Funding
+from polar.kit.schemas import Schema
+from polar.models.issue import Issue
 from polar.types import JSONAny
 
 
@@ -94,9 +98,65 @@ class IssueDashboardRead(Schema):
     comments: int | None
     progress: IssueStatus | None = None
     badge_custom_content: str | None = None
+    funding: Funding
 
-    class Config:
-        orm_mode = True
+    @classmethod
+    def from_db(cls, i: Issue) -> Self:
+        funding = Funding(
+            funding_goal=CurrencyAmount(currency="USD", amount=i.funding_goal)
+            if i.funding_goal
+            else None,
+            pledges_sum=CurrencyAmount(currency="USD", amount=i.pledged_amount_sum),
+        )
+
+        return cls(
+            id=i.id,
+            platform=i.platform,
+            organization_id=i.organization_id,
+            repository_id=i.repository_id,
+            number=i.number,
+            title=i.title,
+            author=i.author,
+            labels=i.labels,
+            closed_by=i.closed_by,
+            reactions=i.reactions,
+            state=Issue.State.OPEN
+            if i.state == "OPEN" or i.state == "open"
+            else Issue.State.CLOSED,
+            state_reason=i.state_reason,
+            issue_closed_at=i.issue_closed_at,
+            issue_modified_at=i.issue_modified_at,
+            issue_created_at=i.issue_created_at,
+            comments=i.comments,
+            progress=issue_progress(i),
+            badge_custom_content=i.badge_custom_content,
+            funding=funding,
+        )
+
+
+def issue_progress(issue: Issue) -> IssueStatus:
+    # closed
+    if issue.issue_closed_at:
+        return IssueStatus.closed
+
+    # pull_request
+    for r in issue.references:
+        if r.pull_request and not r.pull_request.is_draft:
+            return IssueStatus.pull_request
+
+    # building
+    for r in issue.references:
+        if r.pull_request and r.pull_request.is_draft:
+            return IssueStatus.in_progress
+    if issue.references:
+        return IssueStatus.in_progress
+
+    # triaged
+    if issue.assignee or issue.assignees:
+        return IssueStatus.triaged
+
+    # backlog
+    return IssueStatus.backlog
 
 
 class PaginationResponse(Schema):

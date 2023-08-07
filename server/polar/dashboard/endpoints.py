@@ -404,7 +404,7 @@ async def dashboard(
         Entry[IssueDashboardRead](
             id=i.id,
             type="issue",
-            attributes=issue_to_schema(i),
+            attributes=IssueDashboardRead.from_db(i),
             relationships=issue_relationships.get(i.id, None),
         )
         for i in issues
@@ -421,34 +421,3 @@ async def dashboard(
             next_page=next_page,
         ),
     )
-
-
-def issue_to_schema(issue: Issue) -> IssueDashboardRead:
-    r = IssueDashboardRead.from_orm(issue)
-    r.progress = issue_progress(issue)
-    return r
-
-
-def issue_progress(issue: Issue) -> IssueStatus:
-    # closed
-    if issue.issue_closed_at:
-        return IssueStatus.closed
-
-    # pull_request
-    for r in issue.references:
-        if r.pull_request and not r.pull_request.is_draft:
-            return IssueStatus.pull_request
-
-    # building
-    for r in issue.references:
-        if r.pull_request and r.pull_request.is_draft:
-            return IssueStatus.in_progress
-    if issue.references:
-        return IssueStatus.in_progress
-
-    # triaged
-    if issue.assignee or issue.assignees:
-        return IssueStatus.triaged
-
-    # backlog
-    return IssueStatus.backlog

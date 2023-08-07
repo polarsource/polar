@@ -191,7 +191,7 @@ async def update(
 
 
 class IssueResources(Schema):
-    issue: IssueRead
+    issue: IssueSchema
     organization: OrganizationSchema | None
     repository: RepositorySchema | None
 
@@ -220,7 +220,7 @@ async def get_or_sync_external(
             repo_name=repo_name,
             issue_number=number,
         )
-        org, repo, issue = res
+        org, repo, tmp_issue = res
     except ResourceNotFound:
         raise HTTPException(
             status_code=404,
@@ -235,8 +235,16 @@ async def get_or_sync_external(
     if "repository" in includes:
         included_repo = RepositorySchema.from_db(repo)
 
+    # get for return
+    issue = await issue_service.get_loaded(session, tmp_issue.id)
+    if not issue:
+        raise HTTPException(
+            status_code=404,
+            detail="Issue not found",
+        )
+
     return IssueResources(
-        issue=IssueRead.from_orm(issue),
+        issue=IssueSchema.from_db(issue),
         organization=included_org,
         repository=included_repo,
     )
@@ -262,7 +270,7 @@ async def get_repository_issues(
 
 @router.post(
     "/{platform}/{org_name}/{repo_name}/issue/{issue_number}/add_badge",
-    response_model=IssueRead,
+    response_model=IssueSchema,
     tags=[Tags.INTERNAL],
 )
 async def add_polar_badge(
@@ -272,7 +280,7 @@ async def add_polar_badge(
     issue_number: int,
     auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     session: AsyncSession = Depends(get_db_session),
-) -> Issue:
+) -> IssueSchema:
     issue = await issue_service.get_by_number(
         session, platform, auth.organization.id, auth.repository.id, issue_number
     )
@@ -286,12 +294,20 @@ async def add_polar_badge(
         session, auth.organization, auth.repository, issue
     )
 
-    return issue
+    # get for return
+    issue_ret = await issue_service.get_loaded(session, issue.id)
+    if not issue_ret:
+        raise HTTPException(
+            status_code=404,
+            detail="Issue not found",
+        )
+
+    return IssueSchema.from_db(issue_ret)
 
 
 @router.post(
     "/{platform}/{org_name}/{repo_name}/issue/{issue_number}/remove_badge",
-    response_model=IssueRead,
+    response_model=IssueSchema,
 )
 async def remove_polar_badge(
     platform: Platforms,
@@ -300,7 +316,7 @@ async def remove_polar_badge(
     issue_number: int,
     auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     session: AsyncSession = Depends(get_db_session),
-) -> Issue:
+) -> IssueSchema:
     issue = await issue_service.get_by_number(
         session, platform, auth.organization.id, auth.repository.id, issue_number
     )
@@ -314,7 +330,15 @@ async def remove_polar_badge(
         session, auth.organization, auth.repository, issue
     )
 
-    return issue
+    # get for return
+    issue_ret = await issue_service.get_loaded(session, issue.id)
+    if not issue_ret:
+        raise HTTPException(
+            status_code=404,
+            detail="Issue not found",
+        )
+
+    return IssueSchema.from_db(issue_ret)
 
 
 @router.get(

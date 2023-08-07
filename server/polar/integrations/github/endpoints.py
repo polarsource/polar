@@ -20,8 +20,8 @@ from polar.config import settings
 from polar.context import ExecutionContext
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
+from polar.funding.schemas import Funding
 from polar.integrations.github import client as github
-from polar.issue.schemas import Funding
 from polar.kit import jwt
 from polar.models import Organization
 from polar.organization.endpoints import OrganizationPrivateRead

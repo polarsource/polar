@@ -22,7 +22,6 @@ const renderBadge = async (badge: GithubBadgeRead, isDarkmode: boolean) => {
   return await satori(
     <Badge
       showAmountRaised={hasAmount}
-      amountRaised={amountRaised}
       darkmode={isDarkmode}
       funding={badge.funding}
     />,
@@ -50,12 +49,12 @@ export async function GET(request: Request) {
 
   const withFundingGoal = searchParams.get('fundingGoal')
 
-  const funding = withFundingGoal
-    ? {
-        pledges_sum: { currency: 'USD', amount: 25000 },
-        funding_goal: { currency: 'USD', amount: 50000 },
-      }
-    : {}
+  const funding = {
+    funding_goal: withFundingGoal
+      ? { currency: 'USD', amount: 25000 }
+      : undefined,
+    pledges_sum: { currency: 'USD', amount: amount },
+  }
 
   const badge: GithubBadgeRead = {
     badge_type: GithubBadgeRead.badge_type.PLEDGE,

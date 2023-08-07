@@ -7,7 +7,6 @@ const meta: Meta<typeof Badge> = {
   tags: ['autodocs'],
   args: {
     showAmountRaised: false,
-    amountRaised: '3000',
   },
   parameters: {
     themes: ['light'],
@@ -19,9 +18,7 @@ export default meta
 type Story = StoryObj<typeof Badge>
 
 export const Default: Story = {
-  args: {
-    // amount: 123000,
-  },
+  args: {},
 }
 
 export const AmountRaised: Story = {
@@ -29,7 +26,20 @@ export const AmountRaised: Story = {
   args: {
     ...Default.args,
     showAmountRaised: true,
-    amountRaised: '50',
+    funding: {
+      pledges_sum: { currency: 'USD', amount: 5000 },
+    },
+  },
+}
+
+export const LargeAmountRaised: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showAmountRaised: true,
+    funding: {
+      pledges_sum: { currency: 'USD', amount: 800000 },
+    },
   },
 }
 
@@ -38,10 +48,33 @@ export const FundingGoal: Story = {
   args: {
     ...Default.args,
     showAmountRaised: true,
-    amountRaised: '50',
     funding: {
       funding_goal: { currency: 'USD', amount: 12000 },
       pledges_sum: { currency: 'USD', amount: 6000 },
+    },
+  },
+}
+
+export const FundingGoalZero: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showAmountRaised: true,
+    funding: {
+      funding_goal: { currency: 'USD', amount: 12000 },
+      pledges_sum: { currency: 'USD', amount: 0 },
+    },
+  },
+}
+
+export const FundingGoalOver: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showAmountRaised: true,
+    funding: {
+      funding_goal: { currency: 'USD', amount: 12000 },
+      pledges_sum: { currency: 'USD', amount: 3000000 },
     },
   },
 }

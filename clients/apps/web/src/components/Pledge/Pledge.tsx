@@ -1,4 +1,4 @@
-import { IssueRead, Organization, Repository } from 'polarkit/api/client'
+import { Issue, IssueRead, Organization, Repository } from 'polarkit/api/client'
 import { IssueCard } from 'polarkit/components/pledge'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
 import Footer from '../Organization/Footer'
@@ -12,7 +12,7 @@ const Pledge = ({
   asOrg,
   gotoURL,
 }: {
-  issue: IssueRead
+  issue: IssueRead | Issue
   organization: Organization
   repository: Repository
   asOrg?: string

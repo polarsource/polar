@@ -3,7 +3,7 @@ import RepositoryPublicPage from '@/components/Organization/RepositoryPublicPage
 import type { Meta, StoryObj } from '@storybook/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from 'polarkit'
-import { issue, org, repo } from './testdata'
+import { issueRead, org, repo } from './testdata'
 
 const meta: Meta<typeof RepositoryPublicPage> = {
   title: 'Pages/RepositoryPublicPage',
@@ -39,7 +39,7 @@ export const Default: Story = {
   args: {
     organization: orgWithBio,
     repository: repoWithData,
-    issues: [issue, issue, issue, issue, issue, issue],
+    issues: [issueRead, issueRead, issueRead, issueRead, issueRead, issueRead],
   },
   render: (args) => {
     return (
@@ -65,7 +65,7 @@ export const WithoutBio: Story = {
   args: {
     organization: org,
     repository: repo,
-    issues: [issue, issue, issue, issue, issue, issue],
+    issues: [issueRead, issueRead, issueRead, issueRead, issueRead, issueRead],
   },
 }
 
@@ -74,6 +74,6 @@ export const WithoutBioAndLicense: Story = {
   args: {
     organization: org,
     repository: { ...repo, license: undefined, stars: 0 },
-    issues: [issue, issue, issue, issue, issue, issue],
+    issues: [issueRead, issueRead, issueRead, issueRead, issueRead, issueRead],
   },
 }

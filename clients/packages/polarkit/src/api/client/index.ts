@@ -23,6 +23,7 @@ export type { Entry_Any_ } from './models/Entry_Any_';
 export type { Entry_IssueDashboardRead_ } from './models/Entry_IssueDashboardRead_';
 export type { ExternalGitHubCommitReference } from './models/ExternalGitHubCommitReference';
 export type { ExternalGitHubPullRequestReference } from './models/ExternalGitHubPullRequestReference';
+export type { Funding } from './models/Funding';
 export { GithubBadgeRead } from './models/GithubBadgeRead';
 export type { HTTPValidationError } from './models/HTTPValidationError';
 export { InstallationCreate } from './models/InstallationCreate';

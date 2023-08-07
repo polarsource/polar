@@ -4,7 +4,7 @@ import { BadgePromotionModal } from '@/components/Dashboard/IssuePromotionModal'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from 'polarkit'
 import { IssueDashboardRead, Organization } from 'polarkit/api/client'
-import { issue, org, repo, user } from './testdata'
+import { issueRead, org, repo, user } from './testdata'
 
 type Story = StoryObj<typeof BadgePromotionModal>
 
@@ -13,7 +13,7 @@ interface Issue extends IssueDashboardRead {
 }
 
 const dashboardIssue: Issue = {
-  ...issue,
+  ...issueRead,
   organization: org,
 }
 

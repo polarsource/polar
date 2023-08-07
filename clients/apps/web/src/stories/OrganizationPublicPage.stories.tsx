@@ -3,7 +3,7 @@ import OrganizationPublicPage from '@/components/Organization/OrganizationPublic
 import type { Meta, StoryObj } from '@storybook/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from 'polarkit'
-import { issue, org, repo } from './testdata'
+import { issueRead, org, repo } from './testdata'
 
 const meta: Meta<typeof OrganizationPublicPage> = {
   title: 'Pages/OrganizationPublicPage',
@@ -38,20 +38,20 @@ export const Default: Story = {
     repositories: [repo],
     issues: [
       {
-        ...issue,
-        reactions: { ...issue.reactions, plus_one: 1000 },
+        ...issueRead,
+        reactions: { ...issueRead.reactions, plus_one: 1000 },
         comments: 5,
       },
-      issue,
+      issueRead,
       {
-        ...issue,
+        ...issueRead,
         title:
           'SecretStr comparison fails when field is defined with Field SecretStr comparison fails when field is defined with Field SecretStr comparison fails when field is defined with Field',
-        reactions: { ...issue.reactions, plus_one: 0 },
+        reactions: { ...issueRead.reactions, plus_one: 0 },
       },
-      issue,
-      issue,
-      issue,
+      issueRead,
+      issueRead,
+      issueRead,
     ],
   },
   render: (args) => {
@@ -70,7 +70,7 @@ export const WithoutBio: Story = {
   args: {
     organization: org,
     repositories: [repo],
-    issues: [issue, issue, issue, issue, issue, issue],
+    issues: [issueRead, issueRead, issueRead, issueRead, issueRead, issueRead],
   },
 }
 

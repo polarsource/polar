@@ -266,9 +266,11 @@ export const BadgePromotionModal = (props: {
           funding={props.issue.funding}
           onUpdateMessage={props.onBadgeWithComment}
           onUpdateFundingGoal={props.onUpdateFundingGoal}
-          onChange={() => {}}
+          onChangeMessage={() => {}}
+          onChangeFundingGoal={() => {}}
           showUpdateButton={true}
           innerClassNames="shadow"
+          canSetFundingGoal={true}
         />
       </div>
       <div className="grid w-full grid-cols-2 space-x-6 bg-white px-5 pt-3.5 pb-7 dark:bg-gray-800">

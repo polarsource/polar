@@ -257,7 +257,7 @@ const BadgeSetup = ({
               onUpdateFundingGoal={async () => {}}
               showUpdateButton={false}
               showAmountRaised={settings.show_amount}
-              onChange={(value: string) => {
+              onChangeMessage={(value: string) => {
                 setSettings((prev) => {
                   return {
                     ...prev,
@@ -266,8 +266,10 @@ const BadgeSetup = ({
                 })
                 setAnyBadgeSettingChanged(true)
               }}
+              onChangeFundingGoal={() => {}}
               innerClassNames="border"
               funding={{}}
+              canSetFundingGoal={false}
             />
 
             <div className="flex flex-row items-center">

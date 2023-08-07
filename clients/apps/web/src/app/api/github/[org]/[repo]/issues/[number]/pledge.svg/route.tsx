@@ -44,6 +44,7 @@ const renderBadge = async (badge: GithubBadgeRead, isDarkmode: boolean) => {
       showAmountRaised={hasAmount}
       amountRaised={amountRaised}
       darkmode={isDarkmode}
+      funding={badge.funding}
     />,
     {
       height: 60,

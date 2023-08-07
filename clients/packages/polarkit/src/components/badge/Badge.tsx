@@ -11,21 +11,41 @@
  * So it's too early for us to use TailwindCSS in this component.
  */
 
+import { Funding } from '../../api/client'
+import { getCentsInDollarString } from '../../money'
+
 export const Badge = ({
   showAmountRaised = false,
   amountRaised = undefined,
   darkmode = false,
+  funding = undefined,
 }: {
   showAmountRaised?: boolean
   amountRaised?: string
   darkmode: boolean
+  funding?: Funding
 }) => {
+  const showFundingGoal = funding && funding.funding_goal && funding.pledges_sum
+  const showAmount = !showFundingGoal && showAmountRaised && amountRaised
+
+  const progress =
+    showFundingGoal && funding && funding.pledges_sum && funding.funding_goal
+      ? Math.max(
+          Math.min(
+            (funding.pledges_sum.amount / funding.funding_goal.amount) * 100,
+            100, // Max 100
+          ),
+          1, // Min 1
+        )
+      : 0
+
   return (
     <>
       <div
         style={{
           display: 'flex',
           paddingBottom: 2,
+          maxWidth: '400px',
         }}
       >
         <div
@@ -42,6 +62,7 @@ export const Badge = ({
               : '1px solid rgba(0, 0, 0, 0.11)',
             fontFamily: 'Inter',
             overflow: 'hidden',
+            maxWidth: '400px',
           }}
         >
           <div
@@ -57,11 +78,12 @@ export const Badge = ({
               lineHeight: '20px',
               paddingLeft: 11,
               paddingRight: 11,
+              flexShrink: '0',
             }}
           >
             Fund this issue
           </div>
-          {showAmountRaised && amountRaised && (
+          {showAmount && (
             <div
               style={{
                 display: 'flex',
@@ -78,7 +100,7 @@ export const Badge = ({
               <div
                 style={{
                   display: 'flex',
-                  opacity: showAmountRaised && amountRaised ? '100' : '0',
+                  opacity: showAmount ? '100' : '0', // To support animations in non-SVG use cases
                   transitionProperty: 'all',
                   transitionDuration: '200ms',
                 }}
@@ -95,6 +117,68 @@ export const Badge = ({
               </div>
             </div>
           )}
+
+          {showFundingGoal && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                marginRight: 12,
+                marginLeft: 6,
+                //flexGrow: 1,
+                fontSize: 12,
+                // lineHeight: 20,
+                // background: 'purple',
+                flexShrink: '1',
+                gap: '2px',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  color: darkmode ? '#D1D1CC' : '#727374', // gray-500
+                  gap: '2px',
+                }}
+              >
+                <span
+                  style={{
+                    fontWeight: 'medium',
+                    color: darkmode ? '#FDFDFC' : '#3E3F42', // gray-700
+                  }}
+                >
+                  ${getCentsInDollarString(funding.pledges_sum.amount)}&nbsp;
+                </span>
+                <span>
+                  / ${getCentsInDollarString(funding.funding_goal.amount)}{' '}
+                  pledged
+                </span>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  borderRadius: '2px',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    width: `${progress}%`,
+                    height: '4px',
+                    backgroundColor: '#4667CA', // blue-600
+                  }}
+                ></div>
+                <div
+                  style={{
+                    flexGrow: '1',
+                    height: '4px',
+                    backgroundColor: '#E5E5E1', // gray-200
+                  }}
+                ></div>
+              </div>
+            </div>
+          )}
+
           <div
             style={{
               display: 'flex',
@@ -105,6 +189,7 @@ export const Badge = ({
               paddingLeft: 12,
               paddingRight: 12,
               borderLeft: darkmode ? 'none' : '1px solid rgba(0, 0, 0, 0.05)',
+              flexShrink: '0',
             }}
           >
             <svg

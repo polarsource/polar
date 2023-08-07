@@ -10,12 +10,14 @@ import MoneyInput from '../UI/MoneyInput'
 const BadgeMessageForm = (props: {
   orgName: string
   value: string
-  onUpdateMessage: (comment: string) => Promise<void>
-  onUpdateFundingGoal: (amount: CurrencyAmount) => Promise<void>
+  onUpdateMessage: (comment: string) => Promise<void> // when "update" is clicked
+  onUpdateFundingGoal: (amount: CurrencyAmount) => Promise<void> // when "update" is clicked
   showUpdateButton: boolean
-  onChange: (comment: string) => void
+  onChangeMessage: (comment: string) => void // real time updates
+  onChangeFundingGoal: (amount: CurrencyAmount) => void // real time updates
   innerClassNames: string
   showAmountRaised: boolean
+  canSetFundingGoal: boolean
   funding: Funding
 }) => {
   const [message, setMessage] = useState('')
@@ -36,12 +38,14 @@ const BadgeMessageForm = (props: {
   const onChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value)
     setCanSave(e.target.value !== props.value)
-    props.onChange(e.target.value)
+    props.onChangeMessage(e.target.value)
   }
 
   const [isLoading, setIsLoading] = useState(false)
 
-  const [fundingGoal, setFundingGoal] = useState(0)
+  const [fundingGoal, setFundingGoal] = useState<number>(
+    props.funding.funding_goal?.amount || 0,
+  )
 
   const funding = {
     ...props.funding,
@@ -69,6 +73,9 @@ const BadgeMessageForm = (props: {
     const amountInCents = newAmount * 100
     setFundingGoal(amountInCents)
     setCanSave(amountInCents !== props.funding?.funding_goal?.amount)
+    if (props.onChangeFundingGoal) {
+      props.onChangeFundingGoal({ currency: 'USD', amount: amountInCents })
+    }
   }
 
   return (
@@ -114,19 +121,23 @@ const BadgeMessageForm = (props: {
         {/* <div className="text-gray-600">
           Template variables: <code>{'{badge}'}</code>, <code>{'{repo}'}</code>
         </div> */}
-        <div className="flex max-w-[300px] items-center space-x-2">
-          <label htmlFor="fundingGoal" className="flex-shrink-0">
-            Set funding goal:{' '}
-          </label>
-          <MoneyInput
-            id={'fundingGoal'}
-            name={'fundingGoal'}
-            onChange={onFundingGoalChange}
-            onBlur={onFundingGoalChange}
-            placeholder={20000}
-            value={fundingGoal}
-          />
-        </div>
+
+        {props.canSetFundingGoal && (
+          <div className="flex max-w-[300px] items-center space-x-2">
+            <label htmlFor="fundingGoal" className="flex-shrink-0">
+              Set funding goal:{' '}
+            </label>
+            <MoneyInput
+              id={'fundingGoal'}
+              name={'fundingGoal'}
+              onChange={onFundingGoalChange}
+              onBlur={onFundingGoalChange}
+              placeholder={20000}
+              value={fundingGoal}
+            />
+          </div>
+        )}
+
         <div className="flex-1"></div>
         {props.showUpdateButton && (
           <button

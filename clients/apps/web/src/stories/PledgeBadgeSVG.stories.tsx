@@ -1,9 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-const Wrapper = (props: { isDarkmode: boolean; amount: number }) => {
+const Wrapper = (props: {
+  isDarkmode: boolean
+  amount: number
+  fundingGoal: boolean
+}) => {
   let src = `http://localhost:3000/api/github/zegloforko/polarforkotest/issues/4/pledge-injected.svg?amount=${props.amount}`
   if (props.isDarkmode) {
     src += '&darkmode=true'
+  }
+  if (props.fundingGoal) {
+    src += '&fundingGoal=true'
   }
 
   return (
@@ -50,5 +57,18 @@ export const Dark: Story = {
 export const NoAmount: Story = {
   args: {
     amount: 0,
+  },
+}
+
+export const FundingGoal: Story = {
+  args: {
+    fundingGoal: true,
+  },
+}
+
+export const FundingGoalDark: Story = {
+  args: {
+    fundingGoal: true,
+    isDarkmode: true,
   },
 }

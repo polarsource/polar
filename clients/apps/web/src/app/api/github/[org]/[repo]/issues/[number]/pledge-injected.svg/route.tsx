@@ -24,6 +24,7 @@ const renderBadge = async (badge: GithubBadgeRead, isDarkmode: boolean) => {
       showAmountRaised={hasAmount}
       amountRaised={amountRaised}
       darkmode={isDarkmode}
+      funding={badge.funding}
     />,
     {
       height: 60,
@@ -47,9 +48,19 @@ export async function GET(request: Request) {
   const amt = searchParams.get('amount')
   const amount = amt ? parseInt(amt) : 0
 
+  const withFundingGoal = searchParams.get('fundingGoal')
+
+  const funding = withFundingGoal
+    ? {
+        pledges_sum: { currency: 'USD', amount: 25000 },
+        funding_goal: { currency: 'USD', amount: 50000 },
+      }
+    : {}
+
   const badge: GithubBadgeRead = {
     badge_type: GithubBadgeRead.badge_type.PLEDGE,
     amount,
+    funding,
   }
 
   const svg = await renderBadge(badge, isDarkMode)

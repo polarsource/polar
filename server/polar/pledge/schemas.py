@@ -214,7 +214,7 @@ class PledgeRead(Schema):
 
 class PledgeResources(Schema):
     pledge: PledgeRead
-    issue: IssueRead | None
+    issue: Issue | None
     organization: Organization | None
     repository: Repository | None
 

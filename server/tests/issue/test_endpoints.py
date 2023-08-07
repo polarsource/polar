@@ -229,7 +229,7 @@ async def test_update_funding_goal(
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
-    assert response.json()["funding_goal"] is None
+    assert response.json()["funding"]["funding_goal"] is None
 
     # update value
     async with AsyncClient(app=app, base_url="http://test") as ac:
@@ -241,7 +241,10 @@ async def test_update_funding_goal(
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
-    assert response.json()["funding_goal"] == {"currency": "USD", "amount": 12000}
+    assert response.json()["funding"]["funding_goal"] == {
+        "currency": "USD",
+        "amount": 12000,
+    }
 
     # get after post, should be persisted
     async with AsyncClient(app=app, base_url="http://test") as ac:
@@ -252,4 +255,7 @@ async def test_update_funding_goal(
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
-    assert response.json()["funding_goal"] == {"currency": "USD", "amount": 12000}
+    assert response.json()["funding"]["funding_goal"] == {
+        "currency": "USD",
+        "amount": 12000,
+    }

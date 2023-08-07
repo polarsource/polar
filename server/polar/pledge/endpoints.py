@@ -7,7 +7,7 @@ from pydantic import Field
 from polar.auth.dependencies import Auth
 from polar.enums import Platforms
 from polar.exceptions import NotPermitted, ResourceNotFound, StripeError
-from polar.issue.schemas import IssueRead
+from polar.issue.schemas import Issue, IssueRead
 from polar.models import Pledge, Repository
 from polar.organization.schemas import Organization
 from polar.organization.service import organization as organization_service
@@ -234,7 +234,7 @@ async def get_pledge_with_resources(
     if "repository" in includes:
         included_repo = RepositorySchema.from_db(repo)
 
-    included_issue = IssueRead.from_orm(issue) if "issue" in includes else None
+    included_issue = Issue.from_db(issue) if "issue" in includes else None
     return PledgeResources(
         pledge=included_pledge,
         organization=included_org,
@@ -386,7 +386,7 @@ async def list_organization_pledges(
     return [
         PledgeResources(
             pledge=PledgeRead.from_db(p),
-            issue=IssueRead.from_orm(p.issue),
+            issue=Issue.from_db(p.issue),
             repository=RepositorySchema.from_db(p.to_repository),
             organization=Organization.from_db(p.to_organization),
         )

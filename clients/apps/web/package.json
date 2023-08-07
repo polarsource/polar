@@ -47,6 +47,7 @@
     "yayson": "^3.0.0"
   },
   "devDependencies": {
+    "@jest/globals": "^29.6.2",
     "@storybook/addon-essentials": "^7.0.12",
     "@storybook/addon-interactions": "^7.0.12",
     "@storybook/addon-links": "^7.0.12",
@@ -59,6 +60,7 @@
     "@storybook/testing-library": "^0.0.14-next.2",
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^13.0.0",
+    "@types/jest": "^27.0.1",
     "@types/node": "20.1.7",
     "@types/react": "18.2.6",
     "@types/react-dom": "18.2.4",

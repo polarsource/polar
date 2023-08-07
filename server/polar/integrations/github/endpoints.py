@@ -18,8 +18,10 @@ from polar.auth.dependencies import Auth
 from polar.auth.service import AuthService, LoginResponse
 from polar.config import settings
 from polar.context import ExecutionContext
+from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.integrations.github import client as github
+from polar.issue.schemas import Funding
 from polar.kit import jwt
 from polar.models import Organization
 from polar.organization.endpoints import OrganizationPrivateRead
@@ -169,7 +171,16 @@ async def get_badge_settings(
     pledges = await pledge_service.get_by_issue_ids(session, [issue.id])
     amount = sum([p.amount for p in pledges]) or 0
 
-    badge = GithubBadgeRead(badge_type=badge_type, amount=amount)
+    badge = GithubBadgeRead(
+        badge_type=badge_type,
+        amount=amount,
+        funding=Funding(
+            pledges_sum=CurrencyAmount(currency="USD", amount=amount),
+            funding_goal=CurrencyAmount(currency="USD", amount=issue.funding_goal)
+            if issue.funding_goal
+            else None,
+        ),
+    )
     return badge
 
 

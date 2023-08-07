@@ -5,19 +5,16 @@ export const getCentsInDollarString = (
 ): string => {
   const dollars = cents / 100
 
-  let show: Number
-
-  if (cents % 100 === 0 && !showCents) {
-    show = Number(dollars.toFixed(0))
-  } else {
-    show = Number(dollars.toFixed(2))
-  }
+  const precision = cents % 100 === 0 && !showCents ? 0 : 2
 
   if (pretty) {
-    return show.toLocaleString()
+    return dollars.toLocaleString('en-US', {
+      maximumFractionDigits: precision,
+      minimumFractionDigits: precision,
+    })
   }
 
-  return show.toString()
+  return dollars.toFixed(precision)
 }
 
 export const formatCurrencyAndAmount = (

@@ -12,6 +12,7 @@ from pydantic import Field, parse_obj_as
 from polar.currency.schemas import CurrencyAmount
 from polar.dashboard.schemas import IssueStatus
 from polar.enums import Platforms
+from polar.funding.schemas import Funding
 from polar.integrations.github import client as github
 from polar.integrations.github.badge import GithubBadge
 from polar.kit.schemas import Schema
@@ -47,18 +48,10 @@ class Reactions(Schema):
 
 
 # Public API
-class Funding(Schema):
-    funding_goal: CurrencyAmount | None
-    pledges_sum: CurrencyAmount | None = Field(
-        description="Sum of pledges to this isuse (including currently open pledges and pledges that have been paid out). Always in USD."  # noqa: E501
-    )
-
-
-# Public API
 class Issue(Schema):
     id: UUID
     platform: Platforms = Field(description="Issue platform (currently always Github)")
-    external_id: int = Field(description="Github's ID (not the same as the #number)")
+    # external_id: int = Field(description="Github's ID (not the same as the #number)")
     number: int = Field(description="Github #number")
     title: str = Field(description="Github issue title")
     body: str | None = Field(description="Github issue body")
@@ -99,7 +92,7 @@ class Issue(Schema):
         return cls(
             id=i.id,
             platform=i.platform,
-            external_id=i.external_id,
+            # external_id=i.external_id,
             number=i.number,
             title=i.title,
             body=i.body,

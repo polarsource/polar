@@ -32,7 +32,9 @@ const PolarBadge = ({ showAmount }: { showAmount: boolean }) => {
   return (
     <Badge
       showAmountRaised={showAmount}
-      amountRaised="250"
+      funding={{
+        pledges_sum: { currency: 'USD', amount: 2500 },
+      }}
       darkmode={resolvedTheme === 'dark' ? true : false}
     />
   )

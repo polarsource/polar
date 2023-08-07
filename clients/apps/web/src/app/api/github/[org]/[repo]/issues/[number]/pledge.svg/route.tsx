@@ -42,7 +42,6 @@ const renderBadge = async (badge: GithubBadgeRead, isDarkmode: boolean) => {
   return await satori(
     <Badge
       showAmountRaised={hasAmount}
-      amountRaised={amountRaised}
       darkmode={isDarkmode}
       funding={badge.funding}
     />,

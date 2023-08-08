@@ -76,10 +76,6 @@ class Organization(RecordModel):
         default=None,
     )
 
-    default_funding_goal: Mapped[int | None] = mapped_column(
-        BigInteger, nullable=True, default=None
-    )
-
     onboarded_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
     users: "Mapped[User]" = relationship(

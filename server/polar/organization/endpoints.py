@@ -25,7 +25,6 @@ from .schemas import (
     OrganizationSettingsRead,
     OrganizationSettingsUpdate,
     RepositoryBadgeSettingsRead,
-    UpdateOrganization,
 )
 from .service import organization
 
@@ -107,9 +106,9 @@ async def lookup(
     "/organizations/{id}",
     response_model=OrganizationSchema,
     tags=[Tags.PUBLIC],
-    description="Get an organization",
+    description="Get organization",
     status_code=200,
-    summary="Get an organization (Public API)",
+    summary="Get organization (Public API)",
     responses={404: {}},
 )
 async def get(
@@ -124,41 +123,6 @@ async def get(
             status_code=404,
             detail="Organization not found",
         )
-
-    return OrganizationSchema.from_db(org)
-
-
-@router.post(
-    "/organizations/{id}",
-    response_model=OrganizationSchema,
-    tags=[Tags.PUBLIC],
-    description="Get an organization",
-    status_code=200,
-    summary="Get an organization (Public API)",
-    responses={404: {}},
-)
-async def update(
-    id: UUID,
-    update: UpdateOrganization,
-    session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.user_with_org_access_by_id),
-) -> OrganizationSchema:
-    updated = False
-    # TODO:Raise 404 on org not found vs. 403 on forbidden
-    org = auth.organization
-
-    if update.default_funding_goal:
-        if update.default_funding_goal.currency != "USD":
-            raise HTTPException(
-                status_code=400,
-                detail="Unexpected currency. Currency must be USD.",
-            )
-
-        org.default_funding_goal = update.default_funding_goal.amount
-        updated = True
-
-    if updated:
-        await org.save(session)
 
     return OrganizationSchema.from_db(org)
 

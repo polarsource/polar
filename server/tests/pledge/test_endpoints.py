@@ -147,3 +147,38 @@ async def test_search_pledge_no_member(
 
     assert response.status_code == 200
     assert response.json()["items"] == []
+
+
+@pytest.mark.asyncio
+async def test_list_organization_pledges(
+    organization: Organization,
+    repository: Repository,
+    pledge: Pledge,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+) -> None:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            f"/api/v1/github/{organization.name}/pledges",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    assert response.json()[0]["issue"]["id"] == str(pledge.issue_id)
+    assert response.json()[0]["pledge"]["id"] == str(pledge.id)
+
+
+@pytest.mark.asyncio
+async def test_list_organization_pledges_no_member_404(
+    organization: Organization,
+    repository: Repository,
+    pledge: Pledge,
+    auth_jwt: str,
+) -> None:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            f"/api/v1/github/{organization.name}/pledges",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 404

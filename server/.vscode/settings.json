@@ -1,6 +1,6 @@
 {
   "python.analysis.typeCheckingMode": "basic",
-  "python.envFile": "${workspaceFolder}/server/.env",
+  "python.envFile": "${workspaceFolder}/.env.testing",
   "python.defaultInterpreterPath": "${workspaceFolder}/server/.venv/bin/python",
   "python.terminal.activateEnvironment": true,
   "python.terminal.activateEnvInCurrentTerminal": true,
@@ -9,7 +9,7 @@
   "editor.formatOnSave": true,
   "python.linting.enabled": true,
   "python.formatting.provider": "black",
-  "python.testing.pytestArgs": ["tests"],
+  "_python.testing.pytestArgs": ["tests"],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "[python]": {
@@ -28,4 +28,6 @@
   },
   "editor.rulers": [88],
   "mypy.dmypyExecutable": "${workspaceFolder}/.venv/bin/dmypy",
+  "python.testing.pytestPath": "${workspaceFolder}/.venv/bin/pytest",
+  "python.testing.cwd": "${workspaceFolder}",
 }

@@ -2,6 +2,7 @@
     "recommendations": [
         "ms-python.black-formatter",
         "charliermarsh.ruff",
-        "matangover.mypy"
+        "matangover.mypy",
+        "littlefoxteam.vscode-python-test-adapter"
     ]
 }

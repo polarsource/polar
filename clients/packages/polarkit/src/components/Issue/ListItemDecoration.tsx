@@ -1,4 +1,5 @@
 import {
+  Funding,
   IssueReferenceRead,
   PledgeRead,
   PledgeState,
@@ -33,6 +34,7 @@ const IssueListItemDecoration = ({
   onConfirmPledges,
   showConfirmPledgeAction,
   confirmPledgeIsLoading,
+  funding,
 }: {
   orgName: string
   repoName: string
@@ -48,6 +50,7 @@ const IssueListItemDecoration = ({
   ) => Promise<void>
   showConfirmPledgeAction: boolean
   confirmPledgeIsLoading: boolean
+  funding: Funding
 }) => {
   const showPledges = pledges && pledges.length > 0
 
@@ -127,6 +130,7 @@ const IssueListItemDecoration = ({
               onConfirmPledges={onConfirmPledges}
               showConfirmPledgeAction={showConfirmPledgeAction}
               confirmPledgeIsLoading={confirmPledgeIsLoading}
+              funding={funding}
             />
           </div>
         )}

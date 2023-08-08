@@ -1,4 +1,5 @@
 import { getCentsInDollarString } from 'polarkit/money'
+import { classNames } from 'polarkit/utils'
 import { ChangeEvent, FocusEvent } from 'react'
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
   onBlur?: (e: ChangeEvent<HTMLInputElement>) => void
   onFocus?: (e: FocusEvent<HTMLInputElement>) => void
   value?: number
+  className?: string
 }
 
 const MoneyInput = (props: Props) => {
@@ -22,19 +24,22 @@ const MoneyInput = (props: Props) => {
   if (props.value && props.value > 0) {
     other.value = getCentsInDollarString(props.value)
   } else {
-    other.value = ""
+    other.value = ''
   }
   other.onBlur = props.onBlur
   other.onFocus = props.onFocus
 
   return (
     <>
-      <div className="relative">
+      <div className={classNames('relative')}>
         <input
           type="text"
           id={id}
           name={name}
-          className="block w-full rounded-lg border-gray-200 bg-transparent py-2 px-4 pl-7 pr-16 text-lg placeholder-gray-400 shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
+          className={classNames(
+            'block w-full rounded-lg border-gray-200 bg-transparent py-2 px-4 pl-7 pr-16 text-lg placeholder-gray-400 shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40',
+            props.className ?? '',
+          )}
           onChange={onChange}
           placeholder={getCentsInDollarString(props.placeholder)}
           {...other}

@@ -125,3 +125,7 @@ class RepositoryLegacyRead(Schema):
 
     class Config:
         orm_mode = True
+
+
+class RepositorySeeksFundingShield(Schema):
+    count: int

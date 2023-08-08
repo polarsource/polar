@@ -5,7 +5,11 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
+from polar.dashboard.schemas import IssueListType
 from polar.enums import Platforms
+from polar.issue.service import (
+    issue as issue_service,
+)
 from polar.models.repository import Repository as RepositoryModel
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -18,6 +22,9 @@ from polar.visibility import Visibility
 
 from .schemas import (
     Repository as RepositorySchema,
+)
+from .schemas import (
+    RepositorySeeksFundingShield,
 )
 from .service import repository
 
@@ -209,3 +216,25 @@ async def get(
         status_code=404,
         detail="Repository not found",
     )
+
+
+@router.get(
+    "/repositories/{id}/badge-seeks-funding",
+    response_model=RepositorySeeksFundingShield,
+    tags=[Tags.INTERNAL],
+    description="Data for the seeks funding SVG shield",
+    status_code=200,
+    summary="Data for the seeks funding SVG shield",
+    responses={404: {}},
+)
+async def badge_seeks_funding(
+    id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+) -> RepositorySeeksFundingShield:
+    issues = await issue_service.list_by_repository_type_and_status(
+        session=session,
+        repository_ids=[id],
+        issue_list_type=IssueListType.issues,
+        have_polar_badge=True,
+    )
+    return RepositorySeeksFundingShield(count=len(issues))

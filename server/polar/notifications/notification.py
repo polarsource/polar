@@ -42,7 +42,7 @@ class MaintainerPledgeCreatedNotification(NotificationBase):
     issue_repo_name: str
     issue_number: int
     maintainer_has_stripe_account: bool
-    pledge_id: UUID | None  # Added 2022-06-26
+    pledge_id: UUID | None = None  # Added 2022-06-26
 
     def subject(self) -> str:
         return "New ${{pledge_amount}} pledge for {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}"  # noqa: E501
@@ -70,7 +70,7 @@ class MaintainerPledgeConfirmationPendingNotification(NotificationBase):
     issue_repo_name: str
     issue_number: int
     maintainer_has_stripe_account: bool
-    pledge_id: UUID | None  # Added 2022-06-26
+    pledge_id: UUID | None = None  # Added 2022-06-26
 
     def subject(self) -> str:
         return "Please confirm that {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}} is completed"  # noqa: E501

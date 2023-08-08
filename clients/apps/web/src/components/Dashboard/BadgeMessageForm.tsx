@@ -134,6 +134,7 @@ const BadgeMessageForm = (props: {
               onBlur={onFundingGoalChange}
               placeholder={20000}
               value={fundingGoal}
+              className="bg-white dark:bg-gray-800"
             />
           </div>
         )}

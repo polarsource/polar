@@ -78,6 +78,7 @@ const CachedIssueListItemDecoration = ({
                   onConfirmPledges={async () => {}}
                   onDispute={() => {}}
                   confirmPledgeIsLoading={false}
+                  funding={{}}
                 />
               </div>
             )

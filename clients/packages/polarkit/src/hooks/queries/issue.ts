@@ -41,6 +41,7 @@ export const useIssueAddPolarBadge = () =>
                     return {
                       ...issue,
                       attributes: {
+                        ...issue.attributes,
                         ...result,
 
                         // Map Issue (Public API) to IssueDashboardRead
@@ -93,6 +94,7 @@ export const useIssueRemovePolarBadge = () =>
                     return {
                       ...issue,
                       attributes: {
+                        ...issue.attributes,
                         ...result,
 
                         // Map Issue (Public API) to IssueDashboardRead
@@ -163,5 +165,46 @@ export const useUpdateIssue = () =>
           funding_goal: variables.funding_goal,
         },
       })
+    },
+    onSuccess: (result, variables, ctx) => {
+      // update issue in dashboard results
+      queryClient.setQueriesData<InfiniteData<IssueListResponse>>(
+        ['dashboard', 'repo'],
+        (data) => {
+          if (!data) {
+            return data
+          }
+
+          return {
+            ...data,
+            pages: data.pages.map((p) => {
+              return {
+                ...p,
+                data: p.data.map((issue) => {
+                  if (issue.id === result.id) {
+                    return {
+                      ...issue,
+                      attributes: {
+                        ...issue.attributes,
+                        ...result,
+
+                        // Map Issue (Public API) to IssueDashboardRead
+                        organization_id:
+                          result.repository?.organization?.id || '',
+                        repository_id: result?.repository.id || '',
+                        state:
+                          result.state === Issue.state.OPEN
+                            ? State.OPEN
+                            : State.CLOSED,
+                      },
+                    }
+                  }
+                  return { ...issue }
+                }),
+              }
+            }),
+          }
+        },
+      )
     },
   })

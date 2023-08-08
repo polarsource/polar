@@ -297,6 +297,7 @@ const IssueListItem = (props: {
               showConfirmPledgeAction={true}
               onConfirmPledges={onConfirmPledge}
               confirmPledgeIsLoading={markConfirmed.isLoading}
+              funding={'funding' in props.issue ? props.issue.funding : {}}
             />
           </IssueActivityBox>
         )}

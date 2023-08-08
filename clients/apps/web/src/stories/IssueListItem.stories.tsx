@@ -514,3 +514,21 @@ export const StatusPullRequestNameHighlights: Story = {
     ],
   },
 }
+
+export const FundingGoal: Story = {
+  args: {
+    ...Default.args,
+    issue: {
+      ...issueClosed,
+      funding: {
+        funding_goal: { currency: 'USD', amount: 60000 },
+      },
+    },
+    references: referencesMerged,
+    pledges: [
+      {
+        ...pledge,
+      },
+    ],
+  },
+}

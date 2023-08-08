@@ -73,12 +73,14 @@ const PledgeForm = ({
   issue,
   asOrg,
   gotoURL,
+  onAmountChange: onAmountChangeProp,
 }: {
   issue: IssueRead | Issue
   organization: Organization
   repository: Repository
   asOrg?: string
   gotoURL?: string
+  onAmountChange?: (amount: number) => void
 }) => {
   const [pledge, setPledge] = useState<PledgeMutationResponse | null>(null)
   const [amount, setAmount] = useState<number>(
@@ -242,6 +244,10 @@ const PledgeForm = ({
         'Issue ID': issue.id,
         'Issue Number': issue.number,
       })
+    }
+
+    if (onAmountChangeProp) {
+      onAmountChangeProp(amountInCents)
     }
 
     setAmount(amountInCents)

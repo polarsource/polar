@@ -1,6 +1,7 @@
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
 import { PolarTimeAgo } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
+import { useMemo } from 'react'
 import { Issue, Organization, Repository } from '../../api/client'
 import { githubIssueUrl } from '../../github'
 
@@ -9,20 +10,20 @@ const IssueCard = ({
   className,
   organization,
   repository,
+  currentPledgeAmount,
 }: {
   issue: Issue
   className: string
   organization: Organization
   repository: Repository
+  currentPledgeAmount: number
 }) => {
   const url = githubIssueUrl(organization.name, repository.name, issue.number)
 
   const fundingProgress =
     'funding' in issue && 'repository' in issue ? (
-      <FundingGoal issue={issue} />
-    ) : (
-      <>{JSON.stringify(issue)}</>
-    )
+      <FundingGoal issue={issue} currentPledgeAmount={currentPledgeAmount} />
+    ) : null
 
   return (
     <>
@@ -61,7 +62,13 @@ const IssueCard = ({
   )
 }
 
-const FundingGoal = ({ issue }: { issue: Issue }) => {
+const FundingGoal = ({
+  issue,
+  currentPledgeAmount,
+}: {
+  issue: Issue
+  currentPledgeAmount: number
+}) => {
   if (
     !issue.funding ||
     !issue.funding.pledges_sum ||
@@ -70,14 +77,28 @@ const FundingGoal = ({ issue }: { issue: Issue }) => {
     return <></>
   }
 
-  const progress = Math.max(
-    Math.min(
-      (issue.funding.pledges_sum.amount / issue.funding.funding_goal.amount) *
-        100,
-      100, // Max 100
-    ),
-    1, // Min 1
+  const clamp = (value: number, min: number, max: number): number => {
+    return Math.max(Math.min(value, max), min)
+  }
+
+  const progress = clamp(
+    (issue.funding.pledges_sum.amount / issue.funding.funding_goal.amount) *
+      100,
+    1,
+    100,
   )
+
+  const currentPledgeProgress = useMemo(() => {
+    if (!issue?.funding?.funding_goal?.amount) {
+      return 0
+    }
+
+    return clamp(
+      (currentPledgeAmount / issue.funding.funding_goal.amount) * 100,
+      1,
+      100 - progress,
+    )
+  }, [currentPledgeAmount])
 
   return (
     <div className="-mt-4 flex flex-col items-center space-y-2 pb-4">
@@ -90,9 +111,15 @@ const FundingGoal = ({ issue }: { issue: Issue }) => {
 
       <div className="flex w-full overflow-hidden rounded-md">
         <div
-          className="h-2  bg-blue-700"
+          className="h-2 bg-blue-700"
           style={{ width: `${progress}%` }}
         ></div>
+        {currentPledgeProgress > 0 && (
+          <div
+            className="h-2 animate-pulse bg-blue-500"
+            style={{ width: `${currentPledgeProgress}%` }}
+          ></div>
+        )}
         <div className="h-2 flex-1 bg-blue-200 dark:bg-blue-800"></div>
       </div>
     </div>

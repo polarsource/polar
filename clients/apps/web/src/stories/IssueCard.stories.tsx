@@ -61,3 +61,18 @@ export const FundingGoalOver: Story = {
     },
   },
 }
+
+export const FundingGoalPlusCurrent: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    issue: {
+      ...issue,
+      funding: {
+        funding_goal: { currency: 'USD', amount: 15000 },
+        pledges_sum: { currency: 'USD', amount: 5000 },
+      },
+    },
+    currentPledgeAmount: 800,
+  },
+}

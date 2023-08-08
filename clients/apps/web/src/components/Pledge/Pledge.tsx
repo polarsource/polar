@@ -1,6 +1,7 @@
 import { Issue, Organization, Repository } from 'polarkit/api/client'
 import { IssueCard } from 'polarkit/components/pledge'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
+import { useState } from 'react'
 import Footer from '../Organization/Footer'
 import HowItWorks from './HowItWorks'
 import PledgeForm from './PledgeForm'
@@ -18,6 +19,11 @@ const Pledge = ({
   asOrg?: string
   gotoURL?: string
 }) => {
+  const [amount, setAmount] = useState(0)
+  const onAmountChange = (amount: number) => {
+    setAmount(amount)
+  }
+
   return (
     <>
       <div className="flex flex-col items-center ">
@@ -48,6 +54,7 @@ const Pledge = ({
               className="bg-grid-pattern dark:bg-grid-pattern-dark border-blue-100 bg-blue-50 bg-[12px_12px] dark:border-blue-500/20 dark:bg-blue-500/20"
               organization={organization}
               repository={repository}
+              currentPledgeAmount={amount}
             />
           </div>
           <div className="text-left md:w-1/2">
@@ -58,6 +65,7 @@ const Pledge = ({
                 issue={issue}
                 asOrg={asOrg}
                 gotoURL={gotoURL}
+                onAmountChange={onAmountChange}
               />
             </div>
           </div>

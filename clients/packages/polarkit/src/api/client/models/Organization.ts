@@ -2,7 +2,6 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import type { CurrencyAmount } from './CurrencyAmount';
 import type { Platforms } from './Platforms';
 
 export type Organization = {
@@ -18,6 +17,5 @@ export type Organization = {
   email?: string;
   twitter_username?: string;
   pledge_minimum_amount: number;
-  default_funding_goal?: CurrencyAmount;
 };
 

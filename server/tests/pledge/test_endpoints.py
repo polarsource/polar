@@ -182,3 +182,38 @@ async def test_list_organization_pledges_no_member_404(
         )
 
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_list_personal_pledges(
+    pledge: Pledge,
+    user: User,
+    auth_jwt: str,
+    session: AsyncSession,
+) -> None:
+    pledge.by_organization_id = None
+    pledge.by_user_id = user.id
+    await pledge.save(session)
+
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            "/api/v1/me/pledges",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    assert response.json()[0]["id"] == str(pledge.id)
+
+
+@pytest.mark.asyncio
+async def test_list_personal_pledges_empty(
+    auth_jwt: str,
+) -> None:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            "/api/v1/me/pledges",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    assert response.json() == []

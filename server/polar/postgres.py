@@ -1,9 +1,8 @@
 from typing import AsyncGenerator
 
 from polar.config import settings
-from polar.kit.db.postgres import AsyncEngine, AsyncSession
+from polar.kit.db.postgres import AsyncEngine, AsyncSession, create_sessionmaker, sql
 from polar.kit.db.postgres import create_engine as _create_engine
-from polar.kit.db.postgres import create_sessionmaker, sql
 
 
 def create_engine() -> AsyncEngine:
@@ -19,7 +18,13 @@ AsyncSessionLocal = create_sessionmaker(engine=AsyncEngineLocal)
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as db:
-        yield db
+        try:
+            yield db
+        except Exception as e:
+            await db.rollback()
+            raise e
+        finally:
+            await db.close()
 
 
 __all__ = [

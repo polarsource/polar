@@ -11,7 +11,9 @@ from ..extensions.sqlalchemy import sql
 
 
 def create_engine(*, dsn: str, debug: bool = False) -> AsyncEngine:
-    engine_options: dict[str, Any] = dict(echo=debug)
+    engine_options: dict[str, Any] = dict(
+        echo=debug,
+    )
     return create_async_engine(dsn, **engine_options)
 
 

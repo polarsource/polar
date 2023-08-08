@@ -215,6 +215,7 @@ const dashboardIssue: Issue = {
   ...issueRead,
   organization: org,
   funding: {},
+  pledge_badge_currently_embedded: false,
 }
 
 const issueTriaged = {
@@ -250,6 +251,7 @@ const dependents: IssueReadWithRelations = {
   pledges: [],
   dependents: [],
   funding: {},
+  pledge_badge_currently_embedded: false,
 }
 
 const meta: Meta<typeof IssueListItem> = {

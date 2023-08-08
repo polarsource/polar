@@ -27,5 +27,6 @@ export type IssueDashboardRead = {
   progress?: IssueStatus;
   badge_custom_content?: string;
   funding: Funding;
+  pledge_badge_currently_embedded: boolean;
 };
 

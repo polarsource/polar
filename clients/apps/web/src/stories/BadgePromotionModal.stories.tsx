@@ -16,6 +16,7 @@ const dashboardIssue: Issue = {
   ...issueRead,
   funding: {},
   organization: org,
+  pledge_badge_currently_embedded: false,
 }
 
 const meta: Meta<typeof BadgePromotionModal> = {

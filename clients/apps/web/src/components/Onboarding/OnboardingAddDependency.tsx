@@ -51,6 +51,7 @@ const OnboardingAddDependency = () => {
     issue_created_at: 'x',
     state: State.OPEN,
     funding: {},
+    pledge_badge_currently_embedded: false,
   }
 
   const demoDependents: IssueReadWithRelations[] = [

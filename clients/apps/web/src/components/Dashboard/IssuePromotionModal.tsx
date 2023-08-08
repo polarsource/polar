@@ -33,13 +33,15 @@ export const AddBadgeButton = (props: {
       (l) => l.name.toLowerCase() === 'polar',
     )
 
+  const isBadged = hasPolarLabel || props.issue.pledge_badge_currently_embedded
+
   const remove = useIssueRemovePolarBadge()
   const add = useIssueAddPolarBadge()
 
   const { isShown, toggle } = useModal()
 
   const click = async () => {
-    if (!hasPolarLabel) {
+    if (!isBadged) {
       await add.mutateAsync({
         platform: Platforms.GITHUB,
         orgName: props.orgName,
@@ -133,22 +135,22 @@ export const AddBadgeButton = (props: {
       <button
         onClick={click}
         className={classNames(
-          hasPolarLabel ? 'border bg-white dark:bg-gray-800' : '',
-          hasPolarLabel
+          isBadged ? 'border bg-white dark:bg-gray-800' : '',
+          isBadged
             ? ' border-green-200 text-green-600 hover:border-green-300 dark:border-green-600'
             : '',
-          !hasPolarLabel ? 'bg-blue-600 text-white' : '',
+          !isBadged ? 'bg-blue-600 text-white' : '',
           'cursor-pointer items-center justify-center space-x-1 rounded-md px-2 py-1 text-sm',
           'flex overflow-hidden whitespace-nowrap',
         )}
       >
-        {hasPolarLabel && (
+        {isBadged && (
           <>
             <BadgedCheckmarkIcon />
             <span>Badged</span>
           </>
         )}
-        {!hasPolarLabel && <span>Add badge</span>}
+        {!isBadged && <span>Add badge</span>}
       </button>
 
       <ModernModal
@@ -233,6 +235,12 @@ export const BadgePromotionModal = (props: {
     },
   ]
 
+  const hasPolarLabel =
+    props.issue.labels &&
+    (props.issue.labels as Array<LabelSchema>).find(
+      (l) => l.name.toLowerCase() === 'polar',
+    )
+
   const [embed, setEmbed] = useState(embeds[0])
 
   return (
@@ -246,12 +254,14 @@ export const BadgePromotionModal = (props: {
               {props.repoName}#{props.issue.number}
             </a>
           </div>
-          <button
-            onClick={clickRemoveBadge}
-            className="text-gray flex cursor-pointer items-center rounded-full border border-gray-200 px-2 py-0.5 pr-3 text-sm text-gray-500 hover:bg-gray-100 dark:border-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"
-          >
-            <XIcon /> Remove
-          </button>
+          {hasPolarLabel && (
+            <button
+              onClick={clickRemoveBadge}
+              className="text-gray flex cursor-pointer items-center rounded-full border border-gray-200 px-2 py-0.5 pr-3 text-sm text-gray-500 hover:bg-gray-100 dark:border-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"
+            >
+              <XIcon /> Remove
+            </button>
+          )}
         </div>
       </ModalHeader>
       <div className="bg-gray-75 w-full px-5 py-4 dark:bg-gray-700">

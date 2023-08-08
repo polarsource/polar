@@ -99,6 +99,7 @@ class IssueDashboardRead(Schema):
     progress: IssueStatus | None = None
     badge_custom_content: str | None = None
     funding: Funding
+    pledge_badge_currently_embedded: bool
 
     @classmethod
     def from_db(cls, i: Issue) -> Self:
@@ -131,6 +132,7 @@ class IssueDashboardRead(Schema):
             progress=issue_progress(i),
             badge_custom_content=i.badge_custom_content,
             funding=funding,
+            pledge_badge_currently_embedded=i.pledge_badge_currently_embedded,
         )
 
 

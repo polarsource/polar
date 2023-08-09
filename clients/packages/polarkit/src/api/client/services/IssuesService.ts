@@ -5,6 +5,7 @@ import type { Issue } from '../models/Issue';
 import type { IssueRead } from '../models/IssueRead';
 import type { IssueReferenceRead } from '../models/IssueReferenceRead';
 import type { IssueResources } from '../models/IssueResources';
+import type { IssueSortBy } from '../models/IssueSortBy';
 import type { IssueUpdateBadgeMessage } from '../models/IssueUpdateBadgeMessage';
 import type { ListResource_Issue_ } from '../models/ListResource_Issue_';
 import type { OrganizationPublicPageRead } from '../models/OrganizationPublicPageRead';
@@ -29,10 +30,15 @@ export class IssuesService {
     platform,
     organizationName,
     repositoryName,
+    sort,
   }: {
     platform: Platforms,
     organizationName: string,
     repositoryName?: string,
+    /**
+     * Issue sorting method
+     */
+    sort?: IssueSortBy,
   }): CancelablePromise<ListResource_Issue_> {
     return this.httpRequest.request({
       method: 'GET',
@@ -41,6 +47,7 @@ export class IssuesService {
         'platform': platform,
         'organization_name': organizationName,
         'repository_name': repositoryName,
+        'sort': sort,
       },
       errors: {
         404: `Not Found`,

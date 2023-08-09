@@ -35,7 +35,7 @@ const PolarLogo = () => {
   )
 }
 
-export const Shield = ({ count }: { count: number }) => {
+export const SeeksFundingShield = ({ count }: { count: number }) => {
   return (
     <div
       style={{

@@ -1,5 +1,5 @@
-import { Shield } from '@/components/Embed/SeeksFundingShield'
-import { Repository, RepositorySeeksFundingShield } from 'polarkit/api/client'
+import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
+import { ListResource_Issue_ } from 'polarkit/api/client'
 import { getServerURL } from 'polarkit/api/url'
 const { default: satori } = require('satori')
 
@@ -7,23 +7,17 @@ export const runtime = 'edge'
 
 const getData = async (
   org: string,
-  repo: string,
-): Promise<RepositorySeeksFundingShield> => {
-  const repoData: Repository = await fetch(
-    `${getServerURL()}/api/v1/repositories/lookup?platform=github&organization_name=${org}&repository_name=${repo}`,
-  ).then((response) => {
-    if (!response.ok) {
-      throw new Error(`Unexpected ${response.status} status code`)
-    }
-    return response.json()
-  })
+  repo?: string,
+): Promise<ListResource_Issue_> => {
+  let url = `${getServerURL()}/api/v1/issues/search?platform=github&organization_name=${org}&sort=funding_goal_desc_and_most_positive_reactions`
 
-  return await fetch(
-    `${getServerURL()}/api/v1/repositories/${repoData.id}/badge-seeks-funding`,
-    {
-      method: 'GET',
-    },
-  ).then((response) => {
+  if (repo) {
+    url += `&repository_name=${repo}`
+  }
+
+  return await fetch(url, {
+    method: 'GET',
+  }).then((response) => {
     if (!response.ok) {
       throw new Error(`Unexpected ${response.status} status code`)
     }
@@ -36,7 +30,7 @@ const renderBadge = async (count: number) => {
     new URL('../../../assets/fonts/Inter-Regular.ttf', import.meta.url),
   ).then((res) => res.arrayBuffer())
 
-  return await satori(<Shield count={count} />, {
+  return await satori(<SeeksFundingShield count={count} />, {
     fonts: [
       {
         name: 'Inter',
@@ -57,14 +51,11 @@ export async function GET(request: Request) {
   if (!org) {
     return new Response('No org provided', { status: 400 })
   }
-  if (!repo) {
-    return new Response('No repo provided', { status: 400 })
-  }
 
   try {
-    const data = await getData(org, repo)
+    const data = await getData(org, repo || undefined)
 
-    const svg = await renderBadge(data.count)
+    const svg = await renderBadge(data.items?.length || 0)
 
     return new Response(svg, {
       headers: {

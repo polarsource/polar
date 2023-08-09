@@ -12,8 +12,19 @@ const meta: Meta<typeof FundOurBacklog> = {
       {
         ...issue,
         funding: {
-          funding_goal: { amount: 50000, currency: 'USD' },
-          pledges_sum: { amount: 40000, currency: 'USD' },
+          funding_goal: { amount: 500000, currency: 'USD' },
+          pledges_sum: { amount: 450000, currency: 'USD' },
+        },
+        reactions: {
+          total_count: 0,
+          plus_one: 222,
+          minus_one: 0,
+          laugh: 0,
+          hooray: 0,
+          confused: 0,
+          heart: 0,
+          rocket: 0,
+          eyes: 0,
         },
       },
       {

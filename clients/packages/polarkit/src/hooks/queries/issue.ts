@@ -211,22 +211,35 @@ export const useUpdateIssue = () =>
     },
   })
 
-export const useSearchIssues = (
-  organizationName?: string,
-  repositoryName?: string,
-  sort?: IssueSortBy,
-) =>
+export const useSearchIssues = (v: {
+  organizationName?: string
+  repositoryName?: string
+  sort?: IssueSortBy
+  havePledge?: boolean
+  haveBadge?: boolean
+}) =>
   useQuery(
-    ['issues', organizationName, repositoryName, sort],
+    [
+      'issues',
+      v.organizationName,
+      v.repositoryName,
+      JSON.stringify({
+        sort: v.sort,
+        havePledge: v.havePledge,
+        haveBadge: v.haveBadge,
+      }),
+    ],
     () =>
       api.issues.search({
         platform: Platforms.GITHUB,
-        organizationName: organizationName || '',
-        repositoryName,
-        sort,
+        organizationName: v.organizationName || '',
+        repositoryName: v.repositoryName,
+        sort: v.sort,
+        havePledge: v.havePledge,
+        haveBadge: v.haveBadge,
       }),
     {
       retry: defaultRetry,
-      enabled: !!organizationName,
+      enabled: !!v.organizationName,
     },
   )

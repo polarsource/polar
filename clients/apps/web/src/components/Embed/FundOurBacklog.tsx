@@ -58,6 +58,8 @@ const PolarLogo = () => {
 export const FundOurBacklog = ({ issues }: { issues: Issue[] }) => {
   const showIssues = issues.slice(0, 5)
 
+  const showShadow = showIssues.length > 2
+
   return (
     <div
       style={{
@@ -228,16 +230,18 @@ export const FundOurBacklog = ({ issues }: { issues: Issue[] }) => {
         ))}
       </div>
 
-      <div
-        style={{
-          background:
-            'linear-gradient(180deg, rgba(254, 253, 249, 0) 0%, #FEFDF9 100%)',
-          height: '100px',
-          width: '100%',
-          position: 'absolute',
-          bottom: '80px',
-        }}
-      ></div>
+      {showShadow && (
+        <div
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(254, 253, 249, 0) 0%, #FEFDF9 100%)',
+            height: '100px',
+            width: '100%',
+            position: 'absolute',
+            bottom: '80px',
+          }}
+        ></div>
+      )}
 
       <div
         style={{

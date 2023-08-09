@@ -7,14 +7,17 @@ export const runtime = 'edge'
 
 const getData = async (
   org: string,
-  repo: string,
+  repo?: string,
 ): Promise<ListResource_Issue_> => {
-  return await fetch(
-    `${getServerURL()}/api/v1/issues/search?platform=github&organization_name=${org}&repository_name=${repo}&sort=funding_goal_desc_and_most_positive_reactions`,
-    {
-      method: 'GET',
-    },
-  ).then((response) => {
+  let url = `${getServerURL()}/api/v1/issues/search?platform=github&organization_name=${org}&sort=funding_goal_desc_and_most_positive_reactions`
+
+  if (repo) {
+    url += `&repository_name=${repo}`
+  }
+
+  return await fetch(url, {
+    method: 'GET',
+  }).then((response) => {
     if (!response.ok) {
       throw new Error(`Unexpected ${response.status} status code`)
     }
@@ -46,9 +49,6 @@ const renderBadge = async (issues: Issue[]) => {
         style: 'medium',
       },
     ],
-    graphemeImages: {
-      '👍': 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f44d.svg',
-    },
   })
 }
 
@@ -61,12 +61,9 @@ export async function GET(request: Request) {
   if (!org) {
     return new Response('No org provided', { status: 400 })
   }
-  if (!repo) {
-    return new Response('No repo provided', { status: 400 })
-  }
 
   try {
-    const data = await getData(org, repo)
+    const data = await getData(org, repo || undefined)
 
     const svg = await renderBadge(data.items || [])
 

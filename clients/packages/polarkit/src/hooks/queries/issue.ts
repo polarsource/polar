@@ -1,14 +1,16 @@
-import { InfiniteData, useMutation } from '@tanstack/react-query'
+import { InfiniteData, useMutation, useQuery } from '@tanstack/react-query'
 import { api, queryClient } from '../../api'
 import {
   CurrencyAmount,
   Issue,
   IssueListResponse,
+  IssueSortBy,
   IssueUpdateBadgeMessage,
   Platforms,
   PostIssueComment,
   State,
 } from '../../api/client'
+import { defaultRetry } from './retry'
 
 export const useIssueAddPolarBadge = () =>
   useMutation({
@@ -208,3 +210,23 @@ export const useUpdateIssue = () =>
       )
     },
   })
+
+export const useSearchIssues = (
+  organizationName?: string,
+  repositoryName?: string,
+  sort?: IssueSortBy,
+) =>
+  useQuery(
+    ['issues', organizationName, repositoryName, sort],
+    () =>
+      api.issues.search({
+        platform: Platforms.GITHUB,
+        organizationName: organizationName || '',
+        repositoryName,
+        sort,
+      }),
+    {
+      retry: defaultRetry,
+      enabled: !!organizationName,
+    },
+  )

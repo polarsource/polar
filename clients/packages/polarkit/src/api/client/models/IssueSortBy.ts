@@ -15,4 +15,5 @@ export enum IssueSortBy {
   ISSUES_DEFAULT = 'issues_default',
   MOST_ENGAGEMENT = 'most_engagement',
   MOST_POSITIVE_REACTIONS = 'most_positive_reactions',
+  FUNDING_GOAL_DESC_AND_MOST_POSITIVE_REACTIONS = 'funding_goal_desc_and_most_positive_reactions',
 }

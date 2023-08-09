@@ -19,6 +19,7 @@ import { posthog } from 'posthog-js'
 import { ChangeEvent, useState } from 'react'
 import { ModalHeader, Modal as ModernModal } from '../Modal'
 import { useModal } from '../Modal/useModal'
+import CopyToClipboardInput from '../UI/CopyToClipboardInput'
 import BadgeMessageForm from './BadgeMessageForm'
 import { LabelSchema } from './IssueLabel'
 
@@ -194,15 +195,7 @@ export const BadgePromotionModal = (props: {
     toggle()
   }
 
-  const copyToClipboard = (id: string) => {
-    const copyText = document.getElementById(id) as HTMLInputElement
-    if (!copyText) {
-      return
-    }
-    copyText.select()
-    copyText.setSelectionRange(0, 99999)
-    navigator.clipboard.writeText(copyText.value)
-
+  const onCopy = (id: string) => {
     posthog.capture('copy-to-clipboard', {
       value: id,
       organization_name: props.orgName,
@@ -302,24 +295,12 @@ export const BadgePromotionModal = (props: {
           <div className="mt-2 mb-1 text-xs text-gray-500 dark:text-gray-400">
             Share link to the pledge page
           </div>
-          <div className="flex w-full overflow-hidden rounded-lg border">
-            <input
-              id="badge-page-link"
-              className="flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600 dark:text-gray-400"
-              onClick={() => {
-                copyToClipboard('badge-page-link')
-              }}
-              defaultValue={pledgePageLink}
-            />
-            <div
-              className="cursor-pointer bg-blue-50 px-3 py-2 text-sm font-medium  text-blue-600 dark:bg-blue-500/30 dark:text-blue-300"
-              onClick={() => {
-                copyToClipboard('badge-page-link')
-              }}
-            >
-              Copy
-            </div>
-          </div>
+
+          <CopyToClipboardInput
+            id="padge-page-link"
+            value={pledgePageLink}
+            onCopy={() => onCopy('badge-page-link')}
+          />
 
           <div className="my-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
             <span>Embed badge on website</span>
@@ -343,24 +324,12 @@ export const BadgePromotionModal = (props: {
               ))}
             </select>
           </div>
-          <div className="flex w-full overflow-hidden rounded-lg border">
-            <input
-              id="badge-embed-content"
-              className="flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600 dark:text-gray-400"
-              value={embed.embed}
-              onClick={() => {
-                copyToClipboard('badge-embed-content')
-              }}
-            />
-            <div
-              className="cursor-pointer bg-blue-50 px-3 py-2 text-sm font-medium text-blue-600 dark:bg-blue-500/30 dark:text-blue-300"
-              onClick={() => {
-                copyToClipboard('badge-embed-content')
-              }}
-            >
-              Copy
-            </div>
-          </div>
+
+          <CopyToClipboardInput
+            id="badge-embed-content"
+            value={embed.embed}
+            onCopy={() => onCopy('badge-embed-content')}
+          />
         </div>
       </div>
     </>

@@ -51,6 +51,10 @@ const SidebarNavigation = () => {
           link: `/promote/issues/${org?.name}`,
         },
         {
+          title: 'Embeds',
+          link: `/promote/embeds/${org?.name}`,
+        },
+        {
           title: 'Public site',
           link: `/${org?.name}`,
           postIcon: <ArrowUpRightIcon className="h-4 w-4" />,

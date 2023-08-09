@@ -1,9 +1,9 @@
-import { Shield } from '@/components/Embed/SeeksFundingShield'
+import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
 import type { Meta, StoryObj } from '@storybook/react'
 
-const meta: Meta<typeof Shield> = {
+const meta: Meta<typeof SeeksFundingShield> = {
   title: 'Organisms/SeeksFundingShield',
-  component: Shield,
+  component: SeeksFundingShield,
   // tags: ['autodocs'],
   args: {
     count: 10,
@@ -14,7 +14,7 @@ const meta: Meta<typeof Shield> = {
   render: (args) => {
     return (
       <div className="w-fit">
-        <Shield {...args} />
+        <SeeksFundingShield {...args} />
       </div>
     )
   },
@@ -22,7 +22,7 @@ const meta: Meta<typeof Shield> = {
 
 export default meta
 
-type Story = StoryObj<typeof Shield>
+type Story = StoryObj<typeof SeeksFundingShield>
 
 export const Default: Story = {
   args: {},

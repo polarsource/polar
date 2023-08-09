@@ -23,17 +23,27 @@ const getData = async (
 }
 
 const renderBadge = async (issues: Issue[]) => {
-  const inter = await fetch(
+  const inter500 = await fetch(
     new URL('../../../assets/fonts/Inter-Regular.ttf', import.meta.url),
+  ).then((res) => res.arrayBuffer())
+
+  const inter600 = await fetch(
+    new URL('../../../assets/fonts/Inter-Medium.ttf', import.meta.url),
   ).then((res) => res.arrayBuffer())
 
   return await satori(<FundOurBacklog issues={issues} />, {
     fonts: [
       {
         name: 'Inter',
-        data: inter,
+        data: inter500,
         weight: 500,
         style: 'normal',
+      },
+      {
+        name: 'Inter',
+        data: inter600,
+        weight: 600,
+        style: 'medium',
       },
     ],
     graphemeImages: {

@@ -56,7 +56,7 @@ const PolarLogo = () => {
 }
 
 export const FundOurBacklog = ({ issues }: { issues: Issue[] }) => {
-  const showIssues = issues.slice(0, 7)
+  const showIssues = issues.slice(0, 5)
 
   return (
     <div
@@ -123,7 +123,17 @@ export const FundOurBacklog = ({ issues }: { issues: Issue[] }) => {
             key={i.id}
             style={{ display: 'flex', fontSize: '14px', alignItems: 'center' }}
           >
-            <div style={{ flexGrow: '1', fontWeight: '500', display: 'flex' }}>
+            <div
+              style={{
+                fontWeight: '600',
+                display: 'flex',
+                width: '420px',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                padding: '0 10px 0 0 ',
+              }}
+            >
               {i.title}
             </div>
 
@@ -133,6 +143,7 @@ export const FundOurBacklog = ({ issues }: { issues: Issue[] }) => {
                 alignItems: 'center',
                 display: 'flex',
                 gap: '4px',
+                flexGrow: '1',
               }}
             >
               <div
@@ -175,7 +186,6 @@ export const FundOurBacklog = ({ issues }: { issues: Issue[] }) => {
                       ? '#5982D7'
                       : '#727374',
                   display: 'flex',
-                  gap: '2px',
                 }}
               >
                 <div
@@ -198,21 +208,19 @@ export const FundOurBacklog = ({ issues }: { issues: Issue[] }) => {
                 </div>
 
                 {i.funding.funding_goal?.amount && (
-                  <>
-                    <div>/</div>
-                    <div
-                      style={{
-                        display: 'flex',
-                      }}
-                    >
-                      $
-                      {getCentsInDollarString(
-                        i.funding.funding_goal?.amount,
-                        false,
-                        true,
-                      )}
-                    </div>
-                  </>
+                  <div
+                    style={{
+                      display: 'flex',
+                      padding: '0 0 0 4px',
+                    }}
+                  >
+                    / $
+                    {getCentsInDollarString(
+                      i.funding.funding_goal?.amount,
+                      false,
+                      true,
+                    )}
+                  </div>
                 )}
               </div>
             </div>

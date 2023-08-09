@@ -28,7 +28,7 @@
 
   <a href="https://twitter.com/intent/follow?screen_name=polar_sh">
     <img src="https://img.shields.io/twitter/follow/polar_sh.svg?label=Follow%20@polar_sh" alt="Follow @polar_sh" />
-  </a>
+  </a><a href="https://polar.sh/polarsource"><img src="https://polar.sh/embed/seeks-funding-shield.svg?org=polarsource" /></a>
 </p>
 </div>
 <hr />

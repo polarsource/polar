@@ -309,6 +309,12 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 desc(Issue.positive_reactions_count),
                 desc(Issue.issue_modified_at),
             )
+        elif sort_by == IssueSortBy.funding_goal_desc_and_most_positive_reactions:
+            statement = statement.order_by(
+                nullslast(desc(Issue.funding_goal)),
+                desc(Issue.positive_reactions_count),
+                desc(Issue.issue_modified_at),
+            )
         else:
             raise Exception("unknown sort_by")
 

@@ -1,7 +1,8 @@
 from typing import List, Sequence
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import Field
 
 from polar.auth.dependencies import Auth
 from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
@@ -53,6 +54,9 @@ async def search(
     platform: Platforms,
     organization_name: str,
     repository_name: str | None = None,
+    sort: IssueSortBy = Query(
+        default=IssueSortBy.issues_default, description="Issue sorting method"
+    ),
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
 ) -> ListResource[IssueSchema]:
@@ -97,7 +101,7 @@ async def search(
         session=session,
         repository_ids=issues_in_repos_ids,
         issue_list_type=IssueListType.issues,
-        sort_by=IssueSortBy.issues_default,
+        sort_by=sort,
         limit=50,
         include_statuses=[
             IssueStatus.backlog,

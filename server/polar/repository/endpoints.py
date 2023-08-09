@@ -216,25 +216,3 @@ async def get(
         status_code=404,
         detail="Repository not found",
     )
-
-
-@router.get(
-    "/repositories/{id}/badge-seeks-funding",
-    response_model=RepositorySeeksFundingShield,
-    tags=[Tags.INTERNAL],
-    description="Data for the seeks funding SVG shield",
-    status_code=200,
-    summary="Data for the seeks funding SVG shield",
-    responses={404: {}},
-)
-async def badge_seeks_funding(
-    id: UUID,
-    session: AsyncSession = Depends(get_db_session),
-) -> RepositorySeeksFundingShield:
-    issues = await issue_service.list_by_repository_type_and_status(
-        session=session,
-        repository_ids=[id],
-        issue_list_type=IssueListType.issues,
-        have_polar_badge=True,
-    )
-    return RepositorySeeksFundingShield(count=len(issues))

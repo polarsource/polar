@@ -57,6 +57,16 @@ async def search(
     sort: IssueSortBy = Query(
         default=IssueSortBy.issues_default, description="Issue sorting method"
     ),
+    have_pledge: bool
+    | None = Query(
+        default=None,
+        description="Set to true to only return issues that have a pledge behind them",
+    ),
+    have_badge: bool
+    | None = Query(
+        default=None,
+        description="Set to true to only return issues that have the Polar badge in the issue description",  # noqa: E501
+    ),
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
 ) -> ListResource[IssueSchema]:
@@ -110,6 +120,8 @@ async def search(
             IssueStatus.pull_request,
         ],
         load_repository=True,
+        have_pledge=have_pledge,
+        have_polar_badge=have_badge,
     )
 
     return ListResource(items=[IssueSchema.from_db(i) for i in issues])

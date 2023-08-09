@@ -83,7 +83,7 @@ export const SeeksFundingShield = ({ count }: { count: number }) => {
           flexShrink: 0,
         }}
       >
-        {count} issues seek funding
+        {count} {count === 1 ? 'issue' : 'issues'} seek funding
       </div>
     </div>
   )

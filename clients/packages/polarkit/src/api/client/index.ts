@@ -84,7 +84,6 @@ export type { Repository } from './models/Repository';
 export type { RepositoryBadgeSettingsRead } from './models/RepositoryBadgeSettingsRead';
 export type { RepositoryBadgeSettingsUpdate } from './models/RepositoryBadgeSettingsUpdate';
 export type { RepositoryLegacyRead } from './models/RepositoryLegacyRead';
-export type { RepositorySeeksFundingShield } from './models/RepositorySeeksFundingShield';
 export { State } from './models/State';
 export type { UpdateIssue } from './models/UpdateIssue';
 export type { UserRead } from './models/UserRead';

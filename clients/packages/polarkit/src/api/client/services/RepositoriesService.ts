@@ -4,7 +4,6 @@
 import type { ListResource_Repository_ } from '../models/ListResource_Repository_';
 import type { Platforms } from '../models/Platforms';
 import type { Repository } from '../models/Repository';
-import type { RepositorySeeksFundingShield } from '../models/RepositorySeeksFundingShield';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -100,30 +99,6 @@ export class RepositoriesService {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/repositories/{id}',
-      path: {
-        'id': id,
-      },
-      errors: {
-        404: `Not Found`,
-        422: `Validation Error`,
-      },
-    });
-  }
-
-  /**
-   * Data for the seeks funding SVG shield
-   * Data for the seeks funding SVG shield
-   * @returns RepositorySeeksFundingShield Successful Response
-   * @throws ApiError
-   */
-  public badgeSeeksFunding({
-    id,
-  }: {
-    id: string,
-  }): CancelablePromise<RepositorySeeksFundingShield> {
-    return this.httpRequest.request({
-      method: 'GET',
-      url: '/api/v1/repositories/{id}/badge-seeks-funding',
       path: {
         'id': id,
       },

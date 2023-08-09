@@ -16,7 +16,10 @@ const Page: NextLayoutComponentType = () => {
 
   const fundingYAML = `custom: ["https://polar.sh/${org?.name}"]`
 
-  const issues = useSearchIssues(org?.name)
+  const issues = useSearchIssues({
+    organizationName: org?.name,
+    haveBadge: true,
+  })
 
   const [currentEmbedTab, setCurrentEmbedTab] = useState('Issues')
 

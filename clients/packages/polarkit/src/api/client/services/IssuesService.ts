@@ -31,6 +31,8 @@ export class IssuesService {
     organizationName,
     repositoryName,
     sort,
+    havePledge,
+    haveBadge,
   }: {
     platform: Platforms,
     organizationName: string,
@@ -39,6 +41,14 @@ export class IssuesService {
      * Issue sorting method
      */
     sort?: IssueSortBy,
+    /**
+     * Set to true to only return issues that have a pledge behind them
+     */
+    havePledge?: boolean,
+    /**
+     * Set to true to only return issues that have the Polar badge in the issue description
+     */
+    haveBadge?: boolean,
   }): CancelablePromise<ListResource_Issue_> {
     return this.httpRequest.request({
       method: 'GET',
@@ -48,6 +58,8 @@ export class IssuesService {
         'organization_name': organizationName,
         'repository_name': repositoryName,
         'sort': sort,
+        'have_pledge': havePledge,
+        'have_badge': haveBadge,
       },
       errors: {
         404: `Not Found`,

@@ -29,6 +29,7 @@ class IssueStatus(str, Enum):
     building = "building"
 
 
+# Public API
 class IssueSortBy(str, Enum):
     newest = "newest"
     recently_updated = "recently_updated"
@@ -41,6 +42,9 @@ class IssueSortBy(str, Enum):
     issues_default = "issues_default"  # (total pledged amount, thumbs up, updated at)
     most_engagement = "most_engagement"
     most_positive_reactions = "most_positive_reactions"
+    funding_goal_desc_and_most_positive_reactions = (
+        "funding_goal_desc_and_most_positive_reactions"
+    )
 
 
 # JSON:API types below

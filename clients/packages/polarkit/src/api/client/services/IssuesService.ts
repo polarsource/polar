@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { ConfirmIssue } from '../models/ConfirmIssue';
 import type { Issue } from '../models/Issue';
 import type { IssueRead } from '../models/IssueRead';
 import type { IssueReferenceRead } from '../models/IssueReferenceRead';
@@ -107,6 +108,33 @@ export class IssuesService {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/issues/{id}',
+      path: {
+        'id': id,
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Mark an issue as confirmed solved. (Public API)
+   * Mark an issue as confirmed solved, and configure issue reward splits. Enables payouts of pledges. Can only be done once per issue. Requires authentication.
+   * @returns Issue Successful Response
+   * @throws ApiError
+   */
+  public confirm({
+    id,
+    requestBody,
+  }: {
+    id: string,
+    requestBody: ConfirmIssue,
+  }): CancelablePromise<Issue> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/issues/{id}/confirm',
       path: {
         'id': id,
       },

@@ -4,7 +4,7 @@ from httpx import AsyncClient
 
 from polar.app import app
 from polar.config import settings
-from polar.issue.schemas import Reactions
+from polar.issue.schemas import ConfirmIssue, ConfirmIssueSplit, Reactions
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.repository import Repository
@@ -259,3 +259,39 @@ async def test_update_funding_goal(
         "currency": "USD",
         "amount": 12000,
     }
+
+
+@pytest.mark.asyncio
+async def test_confirm(
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+    auth_jwt: str,
+    session: AsyncSession,
+    user_organization: UserOrganization,  # makes User a member of Organization
+) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.post(
+            f"/api/v1/issues/{issue.id}/confirm",
+            json={
+                "splits": [
+                    {
+                        "github_username": "zegl",
+                        "share": 0.3,
+                    },
+                    {
+                        "organization_id": str(organization.id),
+                        "share": 0.7,
+                    },
+                ]
+            },
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    print(response.text)
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(issue.id)

@@ -111,6 +111,18 @@ class UpdateIssue(Schema):
     funding_goal: CurrencyAmount | None = None
 
 
+# Public API
+class ConfirmIssueSplit(Schema):
+    organization_id: UUID | None = None
+    github_username: str | None = None
+    share: float
+
+
+# Public API
+class ConfirmIssue(Schema):
+    splits: list[ConfirmIssueSplit]
+
+
 #
 # Internal API schemas below
 #

@@ -8,6 +8,7 @@ from polar.auth.dependencies import Auth
 from polar.enums import Platforms
 from polar.exceptions import NotPermitted, ResourceNotFound, StripeError
 from polar.issue.schemas import Issue, IssueRead
+from polar.issue.service import issue as issue_service
 from polar.models import Pledge, Repository
 from polar.organization.schemas import Organization
 from polar.organization.service import organization as organization_service
@@ -21,15 +22,14 @@ from polar.user_organization.service import (
 )
 
 from .schemas import (
-    ConfirmPledgesResponse,
+    Pledge as PledgeSchema,
+)
+from .schemas import (
     PledgeCreate,
     PledgeMutationResponse,
     PledgeRead,
     PledgeResources,
     PledgeUpdate,
-)
-from .schemas import (
-    Pledge as PledgeSchema,
 )
 from .service import pledge as pledge_service
 
@@ -417,47 +417,6 @@ async def list_organization_pledges(
         )
         for p in pledges
     ]
-
-
-@router.post(
-    "/{platform}/{org_name}/{repo_name}/issues/{number}/confirm_pledges",
-    response_model=ConfirmPledgesResponse,
-)
-async def confirm_pledges(
-    platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    number: int,
-    auth: Auth = Depends(Auth.current_user),
-    session: AsyncSession = Depends(get_db_session),
-) -> ConfirmPledgesResponse:
-    org, repo, issue = await organization_service.get_with_repo_and_issue(
-        session=session,
-        platform=platform,
-        org_name=org_name,
-        repo_name=repo_name,
-        issue=number,
-    )
-
-    user_memberships = await user_organization_service.list_by_user_id(
-        session,
-        auth.user.id,
-    )
-
-    if not pledge_service.user_can_admin_received_pledge_on_issue(
-        issue, user_memberships
-    ):
-        raise HTTPException(
-            status_code=403,
-            detail="Access denied",
-        )
-
-    await pledge_service.mark_pending_by_issue_id(
-        session,
-        issue_id=issue.id,
-    )
-
-    return ConfirmPledgesResponse()
 
 
 @router.post(

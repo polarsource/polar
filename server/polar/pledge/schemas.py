@@ -7,7 +7,7 @@ from uuid import UUID
 from pydantic import Field
 
 from polar.currency.schemas import CurrencyAmount
-from polar.issue.schemas import Issue, IssueRead
+from polar.issue.schemas import Issue
 from polar.kit.schemas import Schema
 from polar.models.pledge import Pledge as PledgeModel
 from polar.organization.schemas import Organization

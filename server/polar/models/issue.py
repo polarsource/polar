@@ -240,6 +240,16 @@ class Issue(IssueFields, RecordModel):
         Integer, nullable=False, default=0
     )
 
+    confirmed_solved_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+
+    confirmed_solved_by: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("users.id"),
+        nullable=True,
+    )
+
     __mutables__ = issue_fields_mutables | {
         "has_pledge_badge_label",
         "pledge_badge_currently_embedded",

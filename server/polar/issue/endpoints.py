@@ -19,15 +19,19 @@ from polar.kit.schemas import Schema
 from polar.models import Issue
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.organization.service import organization as organization_service
+from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.endpoints import user_can_read, user_can_write
 from polar.repository.schemas import Repository as RepositorySchema
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 from polar.types import ListResource
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 
-from .schemas import Issue as IssueSchema
 from .schemas import (
+    ConfirmIssue,
     IssuePublicRead,
     IssueRead,
     IssueReferenceRead,
@@ -36,6 +40,7 @@ from .schemas import (
     PostIssueComment,
     UpdateIssue,
 )
+from .schemas import Issue as IssueSchema
 from .service import issue as issue_service
 
 router = APIRouter(tags=["issues"])
@@ -197,6 +202,70 @@ async def update(
 
     if updated:
         await issue.save(session)
+
+    return IssueSchema.from_db(issue)
+
+
+@router.post(
+    "/issues/{id}/confirm_solved",
+    response_model=IssueSchema,
+    tags=[Tags.PUBLIC],
+    description="Mark an issue as confirmed solved, and configure issue reward splits. Enables payouts of pledges. Can only be done once per issue. Requires authentication.",  # noqa: E501
+    summary="Mark an issue as confirmed solved. (Public API)",
+)
+async def confirm(
+    id: UUID,
+    body: ConfirmIssue,
+    auth: Auth = Depends(Auth.current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> IssueSchema:
+    issue = await issue_service.get_loaded(session, id)
+    if not issue:
+        raise HTTPException(
+            status_code=404,
+            detail="Issue not found",
+        )
+
+    if not await user_can_write(session, auth, issue.repository):
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+        )
+
+    user_memberships = await user_organization_service.list_by_user_id(
+        session,
+        auth.user.id,
+    )
+
+    if not pledge_service.user_can_admin_received_pledge_on_issue(
+        issue, user_memberships
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Access denied",
+        )
+
+    try:
+        await pledge_service.set_splits(session, issue_id=issue.id, splits=body.splits)
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to set splits, invalid configuration: " + str(e),
+        ) from e
+
+    # mark issue as confirmed
+    await issue_service.mark_confirmed_solved(
+        session, issue_id=issue.id, by_user_id=auth.user.id
+    )
+
+    # get for return
+    issue = await issue_service.get_loaded(session, id)
+
+    if not issue:
+        raise HTTPException(
+            status_code=404,
+            detail="Issue not found",
+        )
 
     return IssueSchema.from_db(issue)
 

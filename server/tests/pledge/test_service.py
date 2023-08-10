@@ -7,6 +7,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.enums import AccountType
+from polar.issue.schemas import ConfirmIssueSplit
 from polar.kit.utils import utc_now
 from polar.models.account import Account
 from polar.models.issue import Issue
@@ -267,3 +268,132 @@ async def test_transfer(
     after_transfer = await pledge_service.get(session, pledge.id)
     assert after_transfer is not None
     assert after_transfer.state is PledgeState.paid
+
+
+@pytest.mark.asyncio
+async def test_validate_splits() -> None:
+    assert (
+        pledge_service.validate_splits(
+            splits=[ConfirmIssueSplit(share=1, organization_id=uuid.uuid4())]
+        )
+        is True
+    )
+
+    assert (
+        pledge_service.validate_splits(
+            splits=[
+                ConfirmIssueSplit(share=0.5, organization_id=uuid.uuid4()),
+                ConfirmIssueSplit(share=0.5, organization_id=uuid.uuid4()),
+            ]
+        )
+        is True
+    )
+
+    assert (
+        pledge_service.validate_splits(
+            splits=[
+                ConfirmIssueSplit(share=0.5, organization_id=uuid.uuid4()),
+                ConfirmIssueSplit(share=0.4, organization_id=uuid.uuid4()),
+            ]
+        )
+        is False
+    )
+
+    assert (
+        pledge_service.validate_splits(
+            splits=[
+                ConfirmIssueSplit(share=1, organization_id=uuid.uuid4()),
+                ConfirmIssueSplit(share=1, organization_id=uuid.uuid4()),
+                ConfirmIssueSplit(share=1, organization_id=uuid.uuid4()),
+            ]
+        )
+        is False
+    )
+
+    assert (
+        pledge_service.validate_splits(
+            splits=[ConfirmIssueSplit(share=1, github_username="zegl")]
+        )
+        is True
+    )
+
+    assert (
+        pledge_service.validate_splits(
+            splits=[
+                ConfirmIssueSplit(
+                    share=1, github_username="zegl", organization_id=uuid.uuid4()
+                )
+            ]
+        )
+        is False
+    )
+
+    assert (
+        pledge_service.validate_splits(
+            splits=[
+                ConfirmIssueSplit(
+                    share=1,
+                )
+            ]
+        )
+        is False
+    )
+
+
+@pytest.mark.asyncio
+async def test_set_split(
+    session: AsyncSession,
+    pledge: Pledge,
+    organization: Organization,
+) -> None:
+    await pledge_service.set_splits(
+        session,
+        pledge.issue_id,
+        splits=[
+            ConfirmIssueSplit(share=0.3, github_username="zegl"),
+            ConfirmIssueSplit(share=0.7, organization_id=organization.id),
+        ],
+    )
+
+
+@pytest.mark.asyncio
+async def test_set_split_invalid(
+    session: AsyncSession,
+    pledge: Pledge,
+    organization: Organization,
+) -> None:
+    with pytest.raises(Exception, match="invalid split configuration"):
+        await pledge_service.set_splits(
+            session,
+            pledge.issue_id,
+            splits=[
+                ConfirmIssueSplit(share=0.7, github_username="zegl"),
+                ConfirmIssueSplit(share=0.7, organization_id=organization.id),
+            ],
+        )
+
+
+@pytest.mark.asyncio
+async def test_set_split_twice_fails(
+    session: AsyncSession,
+    pledge: Pledge,
+    organization: Organization,
+) -> None:
+    await pledge_service.set_splits(
+        session,
+        pledge.issue_id,
+        splits=[
+            ConfirmIssueSplit(share=0.3, github_username="zegl"),
+            ConfirmIssueSplit(share=0.7, organization_id=organization.id),
+        ],
+    )
+
+    with pytest.raises(Exception, match=r"issue already has splits set: .*"):
+        await pledge_service.set_splits(
+            session,
+            pledge.issue_id,
+            splits=[
+                ConfirmIssueSplit(share=0.3, github_username="zegl"),
+                ConfirmIssueSplit(share=0.7, organization_id=organization.id),
+            ],
+        )

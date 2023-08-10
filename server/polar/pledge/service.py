@@ -16,12 +16,14 @@ from polar.account.service import account as account_service
 from polar.enums import Platforms
 from polar.exceptions import NotPermitted, ResourceNotFound, StripeError
 from polar.integrations.stripe.service import stripe
+from polar.issue.schemas import ConfirmIssueSplit
 from polar.kit.hook import Hook
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
+from polar.models.pledge_split import PledgeSplit
 from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
 from polar.models.user import User
@@ -500,7 +502,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
         )
 
     async def mark_pending_by_issue_id(
-        self, session: AsyncSession, issue_id: UUID
+        self,
+        session: AsyncSession,
+        issue_id: UUID,
     ) -> None:
         await self.transition_by_issue_id(
             session,
@@ -537,6 +541,50 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         await pledge_updated.call(PledgeHook(session, pledge))
         await pledge_pending.call(PledgeHook(session, pledge))
+
+    def validate_splits(self, splits: list[ConfirmIssueSplit]) -> bool:
+        sum = 0.0
+        for s in splits:
+            sum += s.share
+
+            if s.github_username and s.organization_id:
+                return False
+
+            if not s.github_username and not s.organization_id:
+                return False
+
+        if sum != 1:
+            return False
+
+        return True
+
+    async def set_splits(
+        self, session: AsyncSession, issue_id: UUID, splits: list[ConfirmIssueSplit]
+    ) -> None:
+        if not self.validate_splits(splits):
+            raise Exception("invalid split configuration")
+
+        nested = await session.begin_nested()
+
+        stmt = sql.select(PledgeSplit).where(PledgeSplit.issue_id == issue_id)
+        res = await session.execute(stmt)
+        existing = res.scalars().unique().all()
+
+        if len(existing) > 0:
+            await nested.commit()
+            raise Exception(f"issue already has splits set: issue_id={issue_id}")
+
+        for split in splits:
+            await PledgeSplit.create(
+                session,
+                autocommit=False,
+                issue_id=issue_id,
+                share=split.share,
+                github_username=split.github_username,
+                organization_id=split.organization_id,
+            )
+
+        await nested.commit()
 
     async def mark_created_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str

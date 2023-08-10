@@ -21,6 +21,7 @@ from sqlalchemy.orm import InstrumentedAttribute, aliased, contains_eager, joine
 from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
 from polar.enums import Platforms
 from polar.kit.services import ResourceService
+from polar.kit.utils import utc_now
 from polar.models.issue import Issue
 from polar.models.issue_dependency import IssueDependency
 from polar.models.issue_reference import IssueReference
@@ -451,6 +452,24 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             .values(
                 issue_has_in_progress_relationship=in_progress,
                 issue_has_pull_request_relationship=pull_request,
+            )
+        )
+
+        await session.execute(stmt)
+        await session.commit()
+
+    async def mark_confirmed_solved(
+        self,
+        session: AsyncSession,
+        issue_id: UUID,
+        by_user_id: UUID,
+    ) -> None:
+        stmt = (
+            sql.update(Issue)
+            .where(Issue.id == issue_id, Issue.confirmed_solved_at.is_(None))
+            .values(
+                confirmed_solved_at=utc_now(),
+                confirmed_solved_by=by_user_id,
             )
         )
 

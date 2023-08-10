@@ -250,7 +250,7 @@ async def confirm(
     except Exception as e:
         raise HTTPException(
             status_code=400,
-            detail="Failed to set splits, invalid configuration: " + str(e),
+            detail="Failed to set splits, invalid configuration, or this issue might already be confirmed.",  # noqa: E501
         ) from e
 
     # mark issue as confirmed

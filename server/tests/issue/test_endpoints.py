@@ -262,7 +262,7 @@ async def test_update_funding_goal(
 
 
 @pytest.mark.asyncio
-async def test_confirm(
+async def test_confirm_solved(
     organization: Organization,
     repository: Repository,
     issue: Issue,
@@ -275,7 +275,7 @@ async def test_confirm(
 
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.post(
-            f"/api/v1/issues/{issue.id}/confirm",
+            f"/api/v1/issues/{issue.id}/confirm_solved",
             json={
                 "splits": [
                     {

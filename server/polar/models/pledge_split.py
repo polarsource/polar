@@ -1,7 +1,7 @@
 from uuid import UUID
 
-from sqlalchemy import BigInteger, ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import BigInteger, ForeignKey, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -10,6 +10,12 @@ from polar.models.pledge import Pledge
 
 class PledgeSplit(RecordModel):
     __tablename__ = "pledge_splits"
+
+    __table_args__ = (
+        UniqueConstraint("issue_id", "github_username"),
+        UniqueConstraint("issue_id", "organization_id"),
+        UniqueConstraint("issue_id", "user_id"),
+    )
 
     issue_id: Mapped[UUID] = mapped_column(
         PostgresUUID, ForeignKey("issues.id"), nullable=False

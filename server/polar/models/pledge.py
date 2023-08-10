@@ -25,6 +25,8 @@ class Pledge(RecordModel):
         PostgresUUID, ForeignKey("organizations.id"), nullable=False
     )
     payment_id: Mapped[str] = mapped_column(String, nullable=True, index=True)
+
+    # Deprecated: Not relevant after introduction of split rewards. Instead see pledge_transactions table.
     transfer_id: Mapped[str] = mapped_column(String, nullable=True)
 
     email: Mapped[str] = mapped_column(String, nullable=True, index=True, default=None)

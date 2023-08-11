@@ -25,7 +25,6 @@ const CopyToClipboardInput = (props: {
         onClick={() => {
           copyToClipboard(props.id)
         }}
-        defaultValue={props.value}
         value={props.value}
         readOnly={true}
       />

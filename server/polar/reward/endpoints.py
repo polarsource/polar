@@ -6,9 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from polar.auth.dependencies import Auth
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
+from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge as PledgeModel
-from polar.models.pledge_split import PledgeSplit as PledgeSplitModel
 from polar.models.pledge_transaction import PledgeTransaction as PledgeTransactionModel
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.organization.service import organization as organization_service
@@ -76,24 +76,24 @@ async def search(
 
     def to_resource(
         pledge: PledgeModel,
-        pledge_split: PledgeSplitModel,
+        reward: IssueReward,
         transaction: PledgeTransactionModel,
     ) -> Reward:
         user = None
-        if pledge_split and pledge_split.user:
-            user = User.from_db(pledge_split.user)
-        elif pledge_split.github_username:
-            user = User(username=pledge_split.github_username, avatar_url="x")
+        if reward and reward.user:
+            user = User.from_db(reward.user)
+        elif reward.github_username:
+            user = User(username=reward.github_username, avatar_url="x")
 
         organization = None
-        if pledge_split.organization:
-            organization = OrganizationSchema.from_db(pledge_split.organization)
+        if reward.organization:
+            organization = OrganizationSchema.from_db(reward.organization)
 
         if transaction and transaction.amount:
             amount = CurrencyAmount(currency="USD", amount=transaction.amount)
         else:
             amount = CurrencyAmount(
-                currency="USD", amount=round(pledge.amount * 0.9 * pledge_split.share)
+                currency="USD", amount=round(pledge.amount * 0.9 * reward.share)
             )
 
         return Reward(
@@ -102,6 +102,7 @@ async def search(
             organization=organization,
             amount=amount,
             state=RewardState.paid if transaction else RewardState.pending,
+            paid_at=transaction.created_at if transaction else None,
         )
 
     return ListResource(

@@ -9,9 +9,8 @@ from polar.models.organization import Organization
 from polar.models.user import User
 
 
-# TODO: rename? issue_splits? issue_rewards?
-class PledgeSplit(RecordModel):
-    __tablename__ = "pledge_splits"
+class IssueReward(RecordModel):
+    __tablename__ = "issue_rewards"
 
     __table_args__ = (
         UniqueConstraint("issue_id", "github_username"),

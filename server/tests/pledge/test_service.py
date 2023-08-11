@@ -11,9 +11,9 @@ from polar.issue.schemas import ConfirmIssueSplit
 from polar.kit.utils import utc_now
 from polar.models.account import Account
 from polar.models.issue import Issue
+from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
-from polar.models.pledge_split import PledgeSplit
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.pledge.schemas import PledgeState
@@ -147,62 +147,13 @@ async def test_mark_pending_by_issue_id(
     paid_notif.assert_not_called()
 
 
-# @pytest.mark.asyncio
-# async def test_mark_paid_by_payment_id(
-#     session: AsyncSession,
-#     pledge: Pledge,
-#     mocker: MockerFixture,
-# ) -> None:
-#     m = mocker.patch("polar.receivers.pledges.pledge_paid_notification")
-
-#     # created -> pending
-#     await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
-
-#     # Create fake payment
-#     pledge.payment_id = "payment-id"
-#     await pledge.save(session)
-#     await session.commit()
-
-#     await pledge_service.mark_paid_by_payment_id(session, "payment-id", 100, "trx-id")
-
-#     # get
-#     got = await pledge_service.get(session, pledge.id)
-#     assert got is not None
-#     assert got.state == PledgeState.paid
-
-#     m.assert_called_once()
-
-
-# @pytest.mark.asyncio
-# async def test_mark_paid_by_payment_id_fails_unexpected_state(
-#     session: AsyncSession,
-#     pledge: Pledge,
-#     mocker: MockerFixture,
-# ) -> None:
-#     m = mocker.patch("polar.receivers.pledges.pledge_paid_notification")
-
-#     # Create fake payment
-#     pledge.payment_id = "payment-id-2"
-#     await pledge.save(session)
-#     await session.commit()
-
-#     with pytest.raises(
-#         Exception, match="pledge is in unexpected state: PledgeState.created"
-#     ) as excinfo:
-#         await pledge_service.mark_paid_by_payment_id(
-#             session, "payment-id-2", 100, "trx-id"
-#         )
-
-#     m.assert_not_called()
-
-
 @pytest.mark.asyncio
 async def test_transfer_unexpected_state(
     session: AsyncSession,
     pledge: Pledge,
     mocker: MockerFixture,
 ) -> None:
-    split = await PledgeSplit.create(
+    reward = await IssueReward.create(
         session,
         issue_id=pledge.issue_id,
         organization_id=pledge.organization_id,
@@ -210,7 +161,7 @@ async def test_transfer_unexpected_state(
     )
 
     with pytest.raises(Exception, match="Pledge is not in pending state") as excinfo:
-        await pledge_service.transfer(session, pledge.id, split_id=split.id)
+        await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
 
 
 @pytest.mark.asyncio
@@ -221,7 +172,7 @@ async def test_transfer_early(
 ) -> None:
     await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
 
-    split = await PledgeSplit.create(
+    reward = await IssueReward.create(
         session,
         issue_id=pledge.issue_id,
         organization_id=pledge.organization_id,
@@ -232,7 +183,7 @@ async def test_transfer_early(
         Exception,
         match=re.escape("Pledge is not ready for payput (still in dispute window)"),
     ) as excinfo:
-        await pledge_service.transfer(session, pledge.id, split_id=split.id)
+        await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
 
 
 @pytest.mark.asyncio
@@ -262,12 +213,11 @@ async def test_transfer(
         is_payouts_enabled=True,
         business_type="company",
     )
-    # session.expire_all()
     await session.flush()
     organization.account = account
     await organization.save(session)
 
-    split = await PledgeSplit.create(
+    reward = await IssueReward.create(
         session,
         issue_id=pledge.issue_id,
         organization_id=pledge.organization_id,
@@ -283,13 +233,12 @@ async def test_transfer(
     transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")
     transfer.return_value = Trans()
 
-    await pledge_service.transfer(session, pledge.id, split_id=split.id)
+    await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
 
     transfer.assert_called_once()
 
     after_transfer = await pledge_service.get(session, pledge.id)
     assert after_transfer is not None
-    # assert after_transfer.state is PledgeState.paid
 
 
 @pytest.mark.asyncio
@@ -363,12 +312,12 @@ async def test_validate_splits() -> None:
 
 
 @pytest.mark.asyncio
-async def test_set_split(
+async def test_create_issue_rewards(
     session: AsyncSession,
     pledge: Pledge,
     organization: Organization,
 ) -> None:
-    await pledge_service.set_splits(
+    await pledge_service.create_issue_rewards(
         session,
         pledge.issue_id,
         splits=[
@@ -379,13 +328,13 @@ async def test_set_split(
 
 
 @pytest.mark.asyncio
-async def test_set_split_invalid(
+async def test_create_issue_rewards_invalid(
     session: AsyncSession,
     pledge: Pledge,
     organization: Organization,
 ) -> None:
     with pytest.raises(Exception, match="invalid split configuration"):
-        await pledge_service.set_splits(
+        await pledge_service.create_issue_rewards(
             session,
             pledge.issue_id,
             splits=[
@@ -396,12 +345,12 @@ async def test_set_split_invalid(
 
 
 @pytest.mark.asyncio
-async def test_set_split_twice_fails(
+async def test_create_issue_rewards_twice_fails(
     session: AsyncSession,
     pledge: Pledge,
     organization: Organization,
 ) -> None:
-    await pledge_service.set_splits(
+    await pledge_service.create_issue_rewards(
         session,
         pledge.issue_id,
         splits=[
@@ -411,7 +360,7 @@ async def test_set_split_twice_fails(
     )
 
     with pytest.raises(Exception, match=r"issue already has splits set: .*"):
-        await pledge_service.set_splits(
+        await pledge_service.create_issue_rewards(
             session,
             pledge.issue_id,
             splits=[

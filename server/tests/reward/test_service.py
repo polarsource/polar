@@ -1,5 +1,3 @@
-import re
-import uuid
 from dataclasses import dataclass
 from datetime import timedelta
 
@@ -10,13 +8,9 @@ from polar.enums import AccountType
 from polar.issue.schemas import ConfirmIssueSplit
 from polar.kit.utils import utc_now
 from polar.models.account import Account
-from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
-from polar.models.pledge_split import PledgeSplit
-from polar.models.repository import Repository
 from polar.models.user import User
-from polar.pledge.schemas import PledgeState
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.reward.service import reward_service
@@ -53,7 +47,7 @@ async def test_list_rewards(
     organization.account = account
     await organization.save(session)
 
-    splits = await pledge_service.set_splits(
+    splits = await pledge_service.create_issue_rewards(
         session,
         pledge.issue_id,
         splits=[
@@ -93,7 +87,7 @@ async def test_list_rewards(
     transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")
     transfer.return_value = Trans()
 
-    await pledge_service.transfer(session, pledge.id, split_id=org_tuple[1].id)
+    await pledge_service.transfer(session, pledge.id, issue_reward_id=org_tuple[1].id)
 
     transfer.assert_called_once()
 
@@ -107,5 +101,3 @@ async def test_list_rewards(
     assert org_tuple[1].organization_id is organization.id
     assert org_tuple[1].share == 0.7
     assert org_tuple[2].amount == round(pledge.amount * 0.9 * 0.7)  # hmmm
-
-    # assert False

@@ -22,11 +22,9 @@ class PledgeState(str, Enum):
     created = "created"
     # The issue has been closed, awaiting maintainer to confirm the issue is fixed.
     confirmation_pending = "confirmation_pending"
-    # The fix was confirmed, but the pledge has not been paid.
+    # The fix was confirmed, and rewards have been created.
+    # See issue rewards to track payment status.
     pending = "pending"
-    # The pledge has been paid out to the maintainer.
-    # TODO: what does this mean now when splits exist?
-    paid = "paid"
     # The pledge was refunded in full before being paid out.
     refunded = "refunded"
     # The pledge was disputed by the customer (via Polar)
@@ -41,12 +39,11 @@ class PledgeState(str, Enum):
             cls.created,
             cls.confirmation_pending,
             cls.pending,
-            cls.paid,
             cls.disputed,
         ]
 
     # Happy path:
-    # initiated -> created -> confirmation_pending -> pending -> paid
+    # initiated -> created -> confirmation_pending -> pending
 
     @classmethod
     def to_created_states(cls) -> list[PledgeState]:
@@ -109,7 +106,7 @@ class Pledge(Schema):
     state: PledgeState = Field(description="Current state of the pledge")
 
     paid_at: datetime | None = Field(
-        description="If and when the pledge was paid to the maintainer."
+        description="Deprecated. Use the Rewards API instead. If and when the pledge was paid to the maintainer."  # noqa: E501
     )
 
     refunded_at: datetime | None = Field(

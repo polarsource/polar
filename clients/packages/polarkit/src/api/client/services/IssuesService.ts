@@ -134,7 +134,7 @@ export class IssuesService {
   }): CancelablePromise<Issue> {
     return this.httpRequest.request({
       method: 'POST',
-      url: '/api/v1/issues/{id}/confirm',
+      url: '/api/v1/issues/{id}/confirm_solved',
       path: {
         'id': id,
       },

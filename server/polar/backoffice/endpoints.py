@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
 from polar.enums import Platforms
+from polar.integrations.github.service.issue import github_issue
 from polar.integrations.github.service.organization import (
     github_organization as github_organization_service,
 )
@@ -15,13 +16,12 @@ from polar.invite.schemas import InviteCreate, InviteRead
 from polar.invite.service import invite as invite_service
 from polar.models.organization import Organization
 from polar.organization.endpoints import OrganizationPrivateRead
-from polar.pledge.service import pledge as pledge_service
-from polar.integrations.github.service.issue import github_issue
 from polar.organization.service import organization as organization_service
+from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 
 from .pledge_service import bo_pledges_service
-from .schemas import BackofficePledgeRead, BackofficeBadge, BackofficeBadgeResponse
+from .schemas import BackofficeBadge, BackofficeBadgeResponse, BackofficePledgeRead
 
 router = APIRouter(tags=["backoffice"], prefix="/backoffice")
 
@@ -60,7 +60,8 @@ async def pledge_approve(
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> BackofficePledgeRead:
-    await pledge_service.transfer(session, pledge_id)
+    raise Exception("TODO")
+    # await pledge_service.transfer(session, pledge_id)
     return await get_pledge(session, pledge_id)
 
 

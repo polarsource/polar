@@ -92,15 +92,16 @@ class GithubBadge:
             number=self.issue.number,
         )
 
-    def badge_markdown(self, message: str) -> str:
+    def badge_markdown(self, message: str | None) -> str:
         funding_url = self.generate_funding_url()
 
         darkmode_url = self.generate_svg_url(darkmode=True)
         lightmode_url = self.generate_svg_url(darkmode=False)
 
-        message = message.rstrip()
         if message:
-            message += "\n\n"
+            message = message.rstrip() + "\n\n"
+        else:
+            message = ""
 
         # Note: the newline between <a> and <picture> is important. GitHubs markdown
         # parser freaks out if it isn't there!
@@ -120,26 +121,21 @@ class GithubBadge:
         svg_markdown = f"![Fund with Polar]({svg_url})"
         return f"{PLEDGE_BADGE_COMMENT_LEGACY}\n[{svg_markdown}]({funding_url})"
 
-    @classmethod
-    def generate_default_promotion_message(cls, organization: Organization) -> str:
-        return template.render(
-            template.path(__file__, "templates/badge/promotion.md"),
-            polar_site_url=organization.polar_site_url,
-        )
-
-    def promotion_message(self) -> str:
+    def promotion_message(self) -> str | None:
         if self.issue.badge_custom_content:
             return self.issue.badge_custom_content
         if self.organization.default_badge_custom_content:
             return self.organization.default_badge_custom_content
-        return self.generate_default_promotion_message(self.organization)
+        return None
 
     def generate_body_with_badge(self, body: str) -> str:
-        promotion = self.promotion_message().rstrip()
-
         # Remove badge from message if already embedded
         if self.badge_is_embedded(body):
             body = self.generate_body_without_badge(body)
+
+        promotion = self.promotion_message()
+        if promotion:
+            promotion = promotion.rstrip()
 
         return f"{body}\n\n{self.badge_markdown(promotion)}"
 

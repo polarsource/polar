@@ -105,10 +105,6 @@ class Pledge(Schema):
     amount: CurrencyAmount = Field(description="Amount pledged towards the issue")
     state: PledgeState = Field(description="Current state of the pledge")
 
-    paid_at: datetime | None = Field(
-        description="Deprecated. Use the Rewards API instead. If and when the pledge was paid to the maintainer."  # noqa: E501
-    )
-
     refunded_at: datetime | None = Field(
         description="If and when the pledge was refunded to the pledger"
     )  # noqa: E501
@@ -146,7 +142,6 @@ class Pledge(Schema):
             created_at=o.created_at,
             amount=CurrencyAmount(currency="USD", amount=o.amount),
             state=PledgeState.from_str(o.state),
-            paid_at=o.paid_at,
             refunded_at=o.refunded_at,
             scheduled_payout_at=o.scheduled_payout_at,
             issue=Issue.from_db(o.issue),

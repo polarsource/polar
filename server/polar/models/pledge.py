@@ -58,9 +58,6 @@ class Pledge(RecordModel):
     refunded_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
-    paid_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
-    )
 
     by_user_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,

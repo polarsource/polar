@@ -4,8 +4,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from polar.auth.dependencies import Auth
+from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.models.organization import Organization
+from polar.models.pledge import Pledge as PledgeModel
+from polar.models.pledge_split import PledgeSplit as PledgeSplitModel
+from polar.models.pledge_transaction import PledgeTransaction as PledgeTransactionModel
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.organization.service import organization as organization_service
 from polar.pledge.schemas import Pledge
@@ -70,29 +74,39 @@ async def search(
         org_id=org.id,
     )
 
-    # raise HTTPException(
-    #     status_code=401,
-    #     detail=f"lol: {len(rewards)}",
-    # )
+    def to_resource(
+        pledge: PledgeModel,
+        pledge_split: PledgeSplitModel,
+        transaction: PledgeTransactionModel,
+    ) -> Reward:
+        user = None
+        if pledge_split and pledge_split.user:
+            user = User.from_db(pledge_split.user)
+        elif pledge_split.github_username:
+            user = User(username=pledge_split.github_username, avatar_url="x")
+
+        organization = None
+        if pledge_split.organization:
+            organization = OrganizationSchema.from_db(pledge_split.organization)
+
+        if transaction and transaction.amount:
+            amount = CurrencyAmount(currency="USD", amount=transaction.amount)
+        else:
+            amount = CurrencyAmount(
+                currency="USD", amount=round(pledge.amount * 0.9 * pledge_split.share)
+            )
+
+        return Reward(
+            pledge=Pledge.from_db(pledge),
+            user=user,
+            organization=organization,
+            amount=amount,
+            state=RewardState.paid if transaction else RewardState.pending,
+        )
 
     return ListResource(
         items=[
-            Reward(
-                pledge=Pledge.from_db(pledge),
-                user=User.from_db(reward.user)
-                if reward and reward.user
-                else User(username=reward.github_username, avatar_url="x")
-                if reward and reward.github_username
-                else None,
-                organization=OrganizationSchema.from_db(reward.organization)
-                if reward and reward.organization
-                else None,
-                # Using real amount from transaction, or preliminary amount if no transaction has been made yet.  # noqa: E501
-                amount=transaction.amount
-                if transaction
-                else round(pledge.amount * 0.9 * reward.share),
-                state=RewardState.paid if transaction else RewardState.pending,
-            )
+            to_resource(pledge, reward, transaction)
             for pledge, reward, transaction in rewards
         ]
     )

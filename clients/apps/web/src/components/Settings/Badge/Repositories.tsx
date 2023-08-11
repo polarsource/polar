@@ -42,7 +42,7 @@ export const BadgeRepositories = ({
         <div className="w-1/2 py-3 px-6">
           <strong className="font-medium">All</strong>
           <p className="text-gray-500 dark:text-gray-400">
-            All new issues will get the Polar badge automatically.
+            All new issues will get the Polar badge.
           </p>
         </div>
       </div>

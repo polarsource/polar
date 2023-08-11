@@ -17,6 +17,7 @@ export * from './dashboard'
 export * from './invite'
 export * from './issue'
 export * from './pledges'
+export * from './rewards'
 export * from './settings'
 export * from './user'
 

@@ -39,8 +39,8 @@ const List = (props: {
     )
   }
 
-  const issueLink = (pr: Pledge): string => {
-    return `https://github.com/${pr.organization?.name}/${pr.repository?.name}/issues/${pr.issue?.number}`
+  const issueLink = (pledge: Pledge): string => {
+    return `https://github.com/${pledge.issue.repository.organization?.name}/${pledge.issue.repository.name}/issues/${pledge.issue.number}`
   }
 
   const showEstimatedPayoutDate = columns.some(

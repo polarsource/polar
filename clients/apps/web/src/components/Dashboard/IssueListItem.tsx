@@ -9,7 +9,6 @@ import {
   IssueReferenceRead,
   IssueStatus,
   Organization,
-  Platforms,
   Repository,
   type PledgeRead,
 } from 'polarkit/api/client'
@@ -148,16 +147,10 @@ const IssueListItem = (props: {
 
   const markConfirmed = useIssueMarkConfirmed()
 
-  const onConfirmPledge = async (
-    orgName: string,
-    repoName: string,
-    issueNumber: number,
-  ) => {
+  const onConfirmPledge = async (issue_id: string) => {
     await markConfirmed.mutateAsync({
-      platform: Platforms.GITHUB,
-      orgName,
-      repoName,
-      issueNumber,
+      id: issue_id,
+      splits: [], // TODO!
     })
   }
 

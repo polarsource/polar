@@ -4,12 +4,11 @@ import Finance from '@/components/Finance/Finance'
 import {
   AccountType,
   Pledge,
-  PledgeResources,
   PledgeState,
   Reward,
   RewardState,
 } from 'polarkit/api/client'
-import { issue, issueRead, org, orgPrivate, repo } from './testdata'
+import { issue, org, orgPrivate } from './testdata'
 
 type Story = StoryObj<typeof Finance>
 
@@ -22,45 +21,6 @@ const meta: Meta<typeof Finance> = {
 }
 
 export default meta
-
-const pr: PledgeResources = {
-  pledge: {
-    id: 'xx',
-    created_at: '2023-06-29',
-    issue_id: 'xx',
-    amount: 12300,
-    repository_id: 'xx',
-    organization_id: 'xx',
-    state: PledgeState.CREATED,
-    pledger_name: 'Google',
-    pledger_avatar: 'https://avatars.githubusercontent.com/u/1342004?s=200&v=4',
-    authed_user_can_admin: false,
-    scheduled_payout_at: '2023-08-02',
-    paid_at: '2023-06-28',
-    refunded_at: '2023-06-28',
-    authed_user_can_admin_sender: false,
-    authed_user_can_admin_received: false,
-  },
-  issue: issue,
-  repository: repo,
-  organization: org,
-}
-
-let all_pledge_states: PledgeResources[] = Object.values(PledgeState).map(
-  (s) => {
-    return {
-      ...pr,
-      pledge: {
-        ...pr.pledge,
-        state: s,
-      },
-      issue: {
-        ...issue,
-        title: `${issueRead.title} (${s})`,
-      },
-    }
-  },
-)
 
 const pledge: Pledge = {
   id: 'xx',
@@ -76,16 +36,29 @@ const pledge: Pledge = {
   scheduled_payout_at: '2023-08-02',
   paid_at: '2023-06-28',
   refunded_at: '2023-06-28',
-  issue: issue,
   // authed_user_can_admin_sender: false,
   // authed_user_can_admin_received: false,
+  issue: issue,
 }
+
+let all_pledge_states: Pledge[] = Object.values(PledgeState).map(
+  (s): Pledge => {
+    return {
+      ...pledge,
+      state: s,
+      issue: {
+        ...pledge.issue,
+        title: `${pledge.issue.title} (${s})`,
+      },
+    }
+  },
+)
 
 const paidRewardUser: Reward = {
   pledge: pledge,
   user: { username: 'foobar', avatar_url: 'xxx' },
   organization: undefined,
-  amount: 4000, // TODO: SHOULD BE CURRENCY AMOUNT
+  amount: { currency: 'USD', amount: 4000 },
   state: RewardState.PAID,
 }
 
@@ -93,7 +66,7 @@ const paidRewardOrg: Reward = {
   pledge: pledge,
   user: { username: 'foobar', avatar_url: 'xxx' },
   organization: org,
-  amount: 4000, // TODO: SHOULD BE CURRENCY AMOUNT
+  amount: { currency: 'USD', amount: 4000 },
   state: RewardState.PAID,
 }
 
@@ -101,7 +74,7 @@ const pendingRewardOrg: Reward = {
   pledge: pledge,
   user: { username: 'foobar', avatar_url: 'xxx' },
   organization: org,
-  amount: 4000, // TODO: SHOULD BE CURRENCY AMOUNT
+  amount: { currency: 'USD', amount: 4000 },
   state: RewardState.PENDING,
 }
 
@@ -131,7 +104,7 @@ export const Contributors: Story = {
   args: {
     ...Default.args,
     tab: 'contributors',
-    pledges: [pr],
+    pledges: [pledge],
     rewards: rewards,
   },
 }

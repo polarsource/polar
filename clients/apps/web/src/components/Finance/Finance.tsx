@@ -51,11 +51,11 @@ const Finance = (props: {
   const rewardsToContributors = rewards.filter((r) => r.user !== undefined)
 
   const rewardedToSelfAmount = rewardsToSelfOrg
-    .map((r) => r.amount)
+    .map((r) => r.amount.amount)
     .reduce((a, b) => a + b, 0)
 
   const rewardedToContributorsAmount = rewardsToContributors
-    .map((r) => r.amount)
+    .map((r) => r.amount.amount)
     .reduce((a, b) => a + b, 0)
 
   const tabContents: Record<string, React.ReactElement> = {

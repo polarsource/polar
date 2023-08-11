@@ -10,7 +10,6 @@ export enum PledgeState {
   CREATED = 'created',
   CONFIRMATION_PENDING = 'confirmation_pending',
   PENDING = 'pending',
-  PAID = 'paid',
   REFUNDED = 'refunded',
   DISPUTED = 'disputed',
   CHARGE_DISPUTED = 'charge_disputed',

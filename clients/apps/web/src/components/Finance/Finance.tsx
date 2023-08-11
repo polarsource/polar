@@ -25,7 +25,7 @@ import ListRewards, { Column } from './ListRewards'
 
 const refundedStates = [PledgeState.REFUNDED, PledgeState.CHARGE_DISPUTED]
 const inReviewStates = [PledgeState.CONFIRMATION_PENDING, PledgeState.DISPUTED]
-const paidStates = [PledgeState.PENDING, PledgeState.PAID]
+const paidStates = [PledgeState.PENDING]
 
 const Finance = (props: {
   org: Organization
@@ -37,7 +37,7 @@ const Finance = (props: {
   const { org, tab, pledges, accounts, rewards } = props
 
   const currentPledges =
-    pledges.filter((pr) => pr.state !== PledgeState.PAID) || []
+    pledges.filter((pr) => pr.state !== PledgeState.PENDING) || []
 
   const currentPledgesAmount = currentPledges
     .filter((pr) => !refundedStates.includes(pr.state))
@@ -48,7 +48,7 @@ const Finance = (props: {
     (r) => r.organization && r.organization.id === org.id,
   )
 
-  const rewardsToContributors = rewards.filter((r) => r.user !== undefined)
+  const rewardsToContributors = rewards.filter((r) => r.user)
 
   const rewardedToSelfAmount = rewardsToSelfOrg
     .map((r) => r.amount.amount)

@@ -76,21 +76,6 @@ export const InReview: Story = {
   },
 }
 
-export const PaidOut: Story = {
-  args: {
-    ...Default.args,
-    pledges: [
-      {
-        ...pledge,
-
-        state: PledgeState.PAID,
-        scheduled_payout_at: '2023-07-14',
-      },
-    ],
-    columns: ['PAID_OUT_DATE'],
-  },
-}
-
 export const Refunded: Story = {
   args: {
     ...Default.args,

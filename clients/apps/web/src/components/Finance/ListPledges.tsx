@@ -1,4 +1,3 @@
-import CheckIcon from '@/components/Icons/CheckIcon'
 import DollarSignIcon from '@/components/Icons/DollarSignIcon'
 import EyeIcon from '@/components/Icons/EyeIcon'
 import Icon from '@/components/Icons/Icon'
@@ -6,7 +5,7 @@ import RefundIcon from '@/components/Icons/RefundIcon'
 import { Pledge, PledgeState } from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/money'
 
-export type Column = 'ESTIMATED_PAYOUT_DATE' | 'PAID_OUT_DATE' | 'REFUNDED_DATE'
+export type Column = 'ESTIMATED_PAYOUT_DATE' | 'REFUNDED_DATE'
 
 const List = (props: {
   pledges: Pledge[]
@@ -23,9 +22,6 @@ const List = (props: {
       pledge.state === PledgeState.DISPUTED
     ) {
       return <Icon classes="bg-gray-200 text-gray-600" icon={<EyeIcon />} />
-    }
-    if (pledge.state === PledgeState.PAID) {
-      return <Icon classes="bg-green-200 text-green-600" icon={<CheckIcon />} />
     }
     if (
       pledge.state === PledgeState.REFUNDED ||
@@ -46,8 +42,6 @@ const List = (props: {
   const showEstimatedPayoutDate = columns.some(
     (c) => c === 'ESTIMATED_PAYOUT_DATE',
   )
-
-  const showPaidOutDate = columns.some((c) => c === 'PAID_OUT_DATE')
 
   const showRefundedDate = columns.some((c) => c === 'REFUNDED_DATE')
 
@@ -83,14 +77,6 @@ const List = (props: {
                 className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-left text-sm font-medium"
               >
                 Est. payout date
-              </th>
-            )}
-            {showPaidOutDate && (
-              <th
-                scope="col"
-                className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-left text-sm font-medium"
-              >
-                Paid out date
               </th>
             )}
             {showRefundedDate && (
@@ -152,12 +138,6 @@ const List = (props: {
                     {(t.scheduled_payout_at &&
                       formatDate(t.scheduled_payout_at)) ||
                       'Unknown'}
-                  </td>
-                )}
-
-                {showPaidOutDate && (
-                  <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500 ">
-                    {(t.paid_at && formatDate(t.paid_at)) || 'Unknown'}
                   </td>
                 )}
 

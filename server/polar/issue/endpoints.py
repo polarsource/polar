@@ -246,7 +246,9 @@ async def confirm(
         )
 
     try:
-        await pledge_service.set_splits(session, issue_id=issue.id, splits=body.splits)
+        await pledge_service.create_issue_rewards(
+            session, issue_id=issue.id, splits=body.splits
+        )
     except Exception as e:
         raise HTTPException(
             status_code=400,

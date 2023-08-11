@@ -21,9 +21,9 @@ from polar.kit.hook import Hook
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
 from polar.models.issue import Issue
+from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
-from polar.models.pledge_split import PledgeSplit
 from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
 from polar.models.user import User
@@ -558,15 +558,15 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         return True
 
-    async def set_splits(
+    async def create_issue_rewards(
         self, session: AsyncSession, issue_id: UUID, splits: list[ConfirmIssueSplit]
-    ) -> list[PledgeSplit]:
+    ) -> list[IssueReward]:
         if not self.validate_splits(splits):
             raise Exception("invalid split configuration")
 
         nested = await session.begin_nested()
 
-        stmt = sql.select(PledgeSplit).where(PledgeSplit.issue_id == issue_id)
+        stmt = sql.select(IssueReward).where(IssueReward.issue_id == issue_id)
         res = await session.execute(stmt)
         existing = res.scalars().unique().all()
 
@@ -574,10 +574,10 @@ class PledgeService(ResourceServiceReader[Pledge]):
             await nested.commit()
             raise Exception(f"issue already has splits set: issue_id={issue_id}")
 
-        created_splits: list[PledgeSplit] = []
+        created_splits: list[IssueReward] = []
 
         for split in splits:
-            s = await PledgeSplit.create(
+            s = await IssueReward.create(
                 session,
                 autocommit=False,
                 issue_id=issue_id,
@@ -614,35 +614,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
         )
         await session.commit()
         await pledge_created.call(PledgeHook(session, pledge))
-
-    async def mark_paid_by_payment_id(
-        self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
-    ) -> None:
-        pledge = await self.get_by_payment_id(session, payment_id)
-
-        if not pledge:
-            raise ResourceNotFound(f"Pledge not found with payment_id: {payment_id}")
-
-        if pledge.state not in PledgeState.to_paid_states():
-            raise Exception(f"pledge is in unexpected state: {pledge.state}")
-
-        pledge.state = PledgeState.paid
-        # pledge.transfer_id = transaction_id
-        pledge.paid_at = utc_now()
-
-        # transaction = PledgeTransaction(
-        #     pledge_id=pledge.id,
-        #     type=PledgeTransactionType.transfer,
-        #     amount=amount,
-        #     transaction_id=transaction_id,
-        # )
-
-        session.add(pledge)
-        # session.add(transaction)
-        await session.commit()
-
-        await pledge_updated.call(PledgeHook(session, pledge))
-        # await pledge_paid.call(PledgePaidHook(session, pledge, transaction))
 
     async def refund_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str
@@ -696,10 +667,10 @@ class PledgeService(ResourceServiceReader[Pledge]):
         await session.commit()
         await pledge_updated.call(PledgeHook(session, pledge))
 
-    async def get_split(
+    async def get_reward(
         self, session: AsyncSession, split_id: UUID
-    ) -> PledgeSplit | None:
-        stmt = sql.select(PledgeSplit).where(PledgeSplit.id == split_id)
+    ) -> IssueReward | None:
+        stmt = sql.select(IssueReward).where(IssueReward.id == split_id)
         res = await session.execute(stmt)
         return res.scalars().unique().one_or_none()
 
@@ -708,7 +679,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         session: AsyncSession,
         type: PledgeTransactionType | None = None,
         pledge_id: UUID | None = None,
-        pledge_split_id: UUID | None = None,
+        issue_reward_id: UUID | None = None,
     ) -> PledgeTransaction | None:
         stmt = sql.select(PledgeTransaction)
 
@@ -716,14 +687,14 @@ class PledgeService(ResourceServiceReader[Pledge]):
             stmt = stmt.where(PledgeTransaction.type == type)
         if pledge_id:
             stmt = stmt.where(PledgeTransaction.pledge_id == pledge_id)
-        if pledge_split_id:
-            stmt = stmt.where(PledgeTransaction.pledge_split_id == pledge_split_id)
+        if issue_reward_id:
+            stmt = stmt.where(PledgeTransaction.issue_reward_id == issue_reward_id)
 
         res = await session.execute(stmt)
         return res.scalars().unique().one_or_none()
 
     async def transfer(
-        self, session: AsyncSession, pledge_id: UUID, split_id: UUID
+        self, session: AsyncSession, pledge_id: UUID, issue_reward_id: UUID
     ) -> None:
         pledge = await self.get(session, id=pledge_id)
         if not pledge:
@@ -736,13 +707,13 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
 
         # get receiver
-        split = await self.get_split(session, split_id)
+        split = await self.get_reward(session, issue_reward_id)
         if not split:
-            raise ResourceNotFound(f"PledgeSplit not found with id: {split_id}")
+            raise ResourceNotFound(f"IssueReward not found with id: {issue_reward_id}")
 
         # check that this split is for the same issue as the pledge
         if split.issue_id != pledge.issue_id:
-            raise ResourceNotFound("PledgeSplit is not valid for this pledge_id")
+            raise ResourceNotFound("IssueReward is not valid for this pledge_id")
 
         if split.user_id:
             raise NotPermitted("TODO! transfers to users is not yet supported")
@@ -753,11 +724,11 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         # check that this transfer hasn't already been made!
         existing_trx = await self.get_transaction(
-            session, pledge_id=pledge.id, pledge_split_id=split.id
+            session, pledge_id=pledge.id, issue_reward_id=split.id
         )
         if existing_trx:
             raise NotPermitted(
-                "A transfer for this pledge_id and pledge_split_id already exists, refusing to make another one"  # noqa: E501
+                "A transfer for this pledge_id and issue_reward_id already exists, refusing to make another one"  # noqa: E501
             )
 
         # pledge amount - 10% (polars cut) * the users share
@@ -785,17 +756,11 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 type=PledgeTransactionType.transfer,
                 amount=payout_amount,
                 transaction_id=transfer_id,
-                pledge_split_id=split.id,
+                issue_reward_id=split.id,
             )
 
             session.add(transaction)
             await session.commit()
-
-        # TODO: mark the pledge as paid? partially paid?
-
-        # await self.mark_paid_by_payment_id(
-        #     session, pledge.payment_id, organization_share, transfer_id
-        # )
 
     async def get_by_payment_id(
         self, session: AsyncSession, payment_id: str

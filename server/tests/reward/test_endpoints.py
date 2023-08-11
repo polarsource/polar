@@ -56,7 +56,7 @@ async def test_search(
     organization.account = account
     await organization.save(session)
 
-    splits = await pledge_service.set_splits(
+    splits = await pledge_service.create_issue_rewards(
         session,
         pledge.issue_id,
         splits=[
@@ -100,46 +100,3 @@ async def test_search(
 
     assert response.json()["items"][0]["state"] == "pending"
     assert response.json()["items"][1]["state"] == "pending"
-
-    # assert rewards
-    # rewards = await reward_service.list(session, org_id=organization.id)
-    # assert len(rewards) == 2
-
-    # user_tuple = [r for r in rewards if r[1].github_username == "zegl"][0]
-    # assert user_tuple[0].id == pledge.id
-    # assert user_tuple[1].github_username == "zegl"
-    # assert user_tuple[1].organization_id is None
-    # assert user_tuple[1].share == 0.3
-    # assert user_tuple[2] is None  # no transfer
-
-    # org_tuple = [r for r in rewards if r[1].organization_id == organization.id][0]
-    # assert org_tuple[0].id == pledge.id
-    # assert org_tuple[1].github_username is None
-    # assert org_tuple[1].organization_id is organization.id
-    # assert org_tuple[1].share == 0.7
-    # assert org_tuple[2] is None  # no transfer
-
-    # # Create transfer to organization
-    # @dataclass
-    # class Trans:
-    #     @property
-    #     def stripe_id(self) -> str:
-    #         return "transfer_id"
-
-    # transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")
-    # transfer.return_value = Trans()
-
-    # await pledge_service.transfer(session, pledge.id, split_id=org_tuple[1].id)
-
-    # transfer.assert_called_once()
-
-    # # assert rewards after transfer
-    # rewards = await reward_service.list(session, org_id=organization.id)
-    # assert len(rewards) == 2
-
-    # org_tuple = [r for r in rewards if r[1].organization_id == organization.id][0]
-    # assert org_tuple[0].id == pledge.id
-    # assert org_tuple[1].github_username is None
-    # assert org_tuple[1].organization_id is organization.id
-    # assert org_tuple[1].share == 0.7
-    # assert org_tuple[2].amount == round(pledge.amount * 0.9 * 0.7)  # hmmm

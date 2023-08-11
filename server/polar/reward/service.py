@@ -8,8 +8,8 @@ from sqlalchemy.orm import (
 )
 
 from polar.models.issue import Issue
+from polar.models.issue_reward import IssueReward
 from polar.models.pledge import Pledge
-from polar.models.pledge_split import PledgeSplit
 from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
 from polar.pledge.schemas import PledgeTransactionType
@@ -22,42 +22,34 @@ class RewardService:
     async def list(
         self,
         session: AsyncSession,
-        # pledge_id: UUID,
         org_id: UUID,
-    ) -> Sequence[Tuple[Pledge, PledgeSplit, PledgeTransaction]]:
+    ) -> Sequence[Tuple[Pledge, IssueReward, PledgeTransaction]]:
         statement = (
-            sql.select(Pledge, PledgeSplit, PledgeTransaction)
+            sql.select(Pledge, IssueReward, PledgeTransaction)
             .join(Pledge.issue)
-            .join(PledgeSplit, Issue.id == PledgeSplit.issue_id)
+            .join(IssueReward, Issue.id == IssueReward.issue_id)
             .join(
                 PledgeTransaction,
                 and_(
                     PledgeTransaction.pledge_id == Pledge.id,
-                    PledgeTransaction.pledge_split_id == PledgeSplit.id,
+                    PledgeTransaction.issue_reward_id == IssueReward.id,
                     PledgeTransaction.type == PledgeTransactionType.transfer,
                 ),
                 isouter=True,
             )
             .where(Pledge.organization_id == org_id)
             .options(
-                # joinedload(Pledge.user),
-                # joinedload(Pledge.by_organization),
-                # joinedload(Pledge.issue).joinedload(Issue.organization),
-                joinedload(PledgeSplit.user),
-                joinedload(PledgeSplit.organization),
+                joinedload(IssueReward.user),
+                joinedload(IssueReward.organization),
                 joinedload(Pledge.issue)
                 .joinedload(Issue.repository)
                 .joinedload(Repository.organization),
             )
-            #     .filter(Pledge.id == pledge_id)
         )
         res = await session.execute(statement)
         rows = res.unique().all()
 
-        # for r in rows:
-
         return [r._tuple() for r in rows]
-        # return res.scalars().all()
 
 
 reward_service = RewardService()

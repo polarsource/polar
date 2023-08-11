@@ -157,7 +157,7 @@ export const AddBadgeButton = (props: {
           isBadged ? 'bg-white dark:bg-gray-800' : '',
           isBadged
             ? 'border-green-200 text-green-600 hover:border-green-300 dark:border-green-600'
-            : 'border-blue-200 bg-white text-blue-600 transition ease-in-out hover:border-blue-600 hover:bg-blue-600 hover:text-white dark:border-gray-400 dark:bg-transparent dark:text-gray-400 dark:hover:border-blue-600 dark:hover:bg-blue-600 dark:hover:text-white',
+            : 'border-blue-200 bg-white text-blue-600 transition ease-in-out hover:border-blue-600 hover:bg-blue-600 hover:text-white dark:border-gray-600 dark:bg-transparent dark:text-gray-400 dark:hover:border-blue-600 dark:hover:bg-blue-600 dark:hover:text-white',
           'cursor-pointer items-center justify-center space-x-1 rounded-md border px-2 py-1 text-sm',
           'flex overflow-hidden whitespace-nowrap',
         )}

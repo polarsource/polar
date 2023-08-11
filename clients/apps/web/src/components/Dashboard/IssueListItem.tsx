@@ -1,6 +1,5 @@
 import Modal, { ModalBox } from '@/components/Shared/Modal'
 import { useToastLatestPledged } from '@/hooks/stripe'
-import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
@@ -164,15 +163,7 @@ const IssueListItem = (props: {
 
   return (
     <>
-      <motion.div
-        className="group/issue"
-        initial="rest"
-        whileHover="hover"
-        animate="rest"
-        variants={rowMotion}
-        onMouseOver={() => setIsHovered(true)}
-        onMouseOut={() => setIsHovered(false)}
-      >
+      <div className="group/issue">
         <div className="hover:bg-gray-75 group flex items-center justify-between gap-4 overflow-hidden py-4 px-2 pb-5 dark:hover:bg-gray-900">
           <div className="flex flex-row items-center">
             {isDependency && (
@@ -246,16 +237,8 @@ const IssueListItem = (props: {
               )}
             </div>
           </div>
-          <motion.div
-            className="flex items-center gap-6"
-            variants={rightSideMotion}
-            transition={{
-              type: 'spring',
-              damping: 25,
-              stiffness: 250,
-            }}
-          >
-            <>
+          <>
+            <div className="flex items-center gap-6">
               <div className="flex items-center gap-6">
                 {showCommentsCount && (
                   <IconCounter icon="comments" count={comments} />
@@ -280,8 +263,8 @@ const IssueListItem = (props: {
               )}
 
               {props.right}
-            </>
-          </motion.div>
+            </div>
+          </>
         </div>
 
         {havePledgeOrReference && (
@@ -301,7 +284,7 @@ const IssueListItem = (props: {
             />
           </IssueActivityBox>
         )}
-      </motion.div>
+      </div>
 
       {showDisputeModalForPledge && (
         <Modal onClose={onDisputeModalClose}>

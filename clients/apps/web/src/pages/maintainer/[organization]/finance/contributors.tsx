@@ -38,7 +38,7 @@ const Page: NextLayoutComponentType = () => {
           pledges={pledges.data.items}
           rewards={rewards.data.items}
           org={org}
-          tab="rewarded"
+          tab="contributors"
           accounts={accounts.data}
         />
       )}

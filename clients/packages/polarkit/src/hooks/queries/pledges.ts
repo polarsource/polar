@@ -61,9 +61,9 @@ export const useListPledgesForOrganization = (
   useQuery(
     ['pledge', 'list', platform, orgName],
     () =>
-      api.pledges.listOrganizationPledges({
+      api.pledges.search({
         platform: platform || Platforms.GITHUB,
-        orgName: orgName || '',
+        organizationName: orgName || '',
       }),
     {
       retry: defaultRetry,

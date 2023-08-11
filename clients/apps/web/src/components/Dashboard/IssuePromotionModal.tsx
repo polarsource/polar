@@ -334,8 +334,8 @@ export const BadgePromotionModal = (props: {
                 )
               }}
             >
-              {embeds.map((e) => (
-                <option value={e.name} selected={embed.name === e.name}>
+              {embeds.map((e, i) => (
+                <option key={i} value={e.name} selected={embed.name === e.name}>
                   {e.name}
                 </option>
               ))}

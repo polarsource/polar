@@ -214,11 +214,12 @@ const MaintainerPledgeConfirmationPendingWrapper = ({
   const markSolved = useIssueMarkConfirmed()
 
   const onMarkSolved = async () => {
+    if (!pledge.data?.issue_id) {
+      return
+    }
     await markSolved.mutateAsync({
-      platform: Platforms.GITHUB,
-      orgName: payload.issue_org_name,
-      repoName: payload.issue_repo_name,
-      issueNumber: payload.issue_number,
+      id: pledge.data?.issue_id,
+      splits: [], // TODO!
     })
   }
 

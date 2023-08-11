@@ -1,6 +1,7 @@
 import { InfiniteData, useMutation, useQuery } from '@tanstack/react-query'
 import { api, queryClient } from '../../api'
 import {
+  ConfirmIssueSplit,
   CurrencyAmount,
   Issue,
   IssueListResponse,
@@ -243,3 +244,20 @@ export const useSearchIssues = (v: {
       enabled: !!v.organizationName,
     },
   )
+
+export const useIssueMarkConfirmed = () =>
+  useMutation({
+    mutationFn: (variables: { id: string; splits: ConfirmIssueSplit[] }) => {
+      return api.issues.confirm({
+        id: variables.id,
+        requestBody: {
+          splits: variables.splits,
+        },
+      })
+    },
+    onSuccess: async (result, variables, ctx) => {
+      await queryClient.invalidateQueries(['dashboard'])
+      await queryClient.invalidateQueries(['pledge'])
+      await queryClient.invalidateQueries(['listPersonalPledges'])
+    },
+  })

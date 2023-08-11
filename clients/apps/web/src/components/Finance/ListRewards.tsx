@@ -28,7 +28,7 @@ const List = (props: {
   }
 
   const issueLink = (reward: Reward): string => {
-    return `https://github.com/${reward.pledge?.issue?.repository?.organization?.name}/${reward.pledge.issue.repository?.name}/issues/${reward.pledge.issue?.number}`
+    return `https://github.com/${reward.pledge.issue.repository.organization?.name}/${reward.pledge.issue.repository.name}/issues/${reward.pledge.issue?.number}`
   }
 
   const showEstimatedPayoutDate = columns.some(
@@ -147,7 +147,7 @@ const List = (props: {
                 )}
 
                 <td className="whitespace-nowrap py-3 pr-3 text-right text-sm text-gray-500">
-                  ${getCentsInDollarString(t.amount, true, true)}
+                  ${getCentsInDollarString(t.amount.amount, true, true)}
                   <br />
                   <span className="text-gray-400">
                     (of $

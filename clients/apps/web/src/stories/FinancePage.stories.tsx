@@ -56,29 +56,38 @@ let all_pledge_states: Pledge[] = Object.values(PledgeState).map(
 
 const paidRewardUser: Reward = {
   pledge: pledge,
-  user: { username: 'foobar', avatar_url: 'xxx' },
+  user: {
+    username: 'petterheterjag',
+    avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+  },
   organization: undefined,
   amount: { currency: 'USD', amount: 4000 },
   state: RewardState.PAID,
 }
 
+const pendingRewardUser: Reward = {
+  ...paidRewardUser,
+  state: RewardState.PENDING,
+}
+
 const paidRewardOrg: Reward = {
-  pledge: pledge,
-  user: { username: 'foobar', avatar_url: 'xxx' },
+  ...paidRewardUser,
+  user: undefined,
   organization: org,
-  amount: { currency: 'USD', amount: 4000 },
   state: RewardState.PAID,
 }
 
 const pendingRewardOrg: Reward = {
-  pledge: pledge,
-  user: { username: 'foobar', avatar_url: 'xxx' },
-  organization: org,
-  amount: { currency: 'USD', amount: 4000 },
+  ...paidRewardOrg,
   state: RewardState.PENDING,
 }
 
-const rewards = [paidRewardUser, paidRewardOrg, pendingRewardOrg]
+const rewards = [
+  paidRewardUser,
+  pendingRewardUser,
+  paidRewardOrg,
+  pendingRewardOrg,
+]
 
 export const Default: Story = {
   args: {

@@ -67,7 +67,7 @@ const List = (props: {
               scope="col"
               className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-left text-sm font-medium"
             >
-              Date
+              Pledge Date
             </th>
 
             {showEstimatedPayoutDate && (
@@ -118,12 +118,20 @@ const List = (props: {
 
                 {showReceiver && (
                   <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
-                    <a
-                      href={`https://github.com/${t.user?.username}`}
-                      className="text-blue-500"
-                    >
-                      @{t.user?.username || 'Unknown'}
-                    </a>
+                    <div className="flex items-center gap-1 ">
+                      {t.user?.avatar_url && (
+                        <img
+                          src={t.user?.avatar_url}
+                          className="h-6 w-6 rounded-full"
+                        />
+                      )}
+                      <a
+                        href={`https://github.com/${t.user?.username}`}
+                        className="text-blue-500"
+                      >
+                        @{t.user?.username || 'Unknown'}
+                      </a>
+                    </div>
                   </td>
                 )}
 
@@ -141,8 +149,7 @@ const List = (props: {
 
                 {showPaidOutDate && (
                   <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500 ">
-                    {(t.pledge.paid_at && formatDate(t.pledge.paid_at)) ||
-                      'Unknown'}
+                    {(t.paid_at && formatDate(t.paid_at)) || 'Unknown'}
                   </td>
                 )}
 

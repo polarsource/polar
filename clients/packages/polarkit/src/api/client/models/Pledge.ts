@@ -25,10 +25,6 @@ export type Pledge = {
    */
   state: PledgeState;
   /**
-   * If and when the pledge was paid to the maintainer.
-   */
-  paid_at?: string;
-  /**
    * If and when the pledge was refunded to the pledger
    */
   refunded_at?: string;

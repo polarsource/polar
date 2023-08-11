@@ -560,7 +560,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
     async def set_splits(
         self, session: AsyncSession, issue_id: UUID, splits: list[ConfirmIssueSplit]
-    ) -> None:
+    ) -> list[PledgeSplit]:
         if not self.validate_splits(splits):
             raise Exception("invalid split configuration")
 
@@ -574,8 +574,10 @@ class PledgeService(ResourceServiceReader[Pledge]):
             await nested.commit()
             raise Exception(f"issue already has splits set: issue_id={issue_id}")
 
+        created_splits: list[PledgeSplit] = []
+
         for split in splits:
-            await PledgeSplit.create(
+            s = await PledgeSplit.create(
                 session,
                 autocommit=False,
                 issue_id=issue_id,
@@ -583,8 +585,12 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 github_username=split.github_username,
                 organization_id=split.organization_id,
             )
+            created_splits.append(s)
 
         await nested.commit()
+        await session.commit()
+
+        return created_splits
 
     async def mark_created_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str

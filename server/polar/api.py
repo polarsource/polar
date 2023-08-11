@@ -14,6 +14,7 @@ from polar.organization.endpoints import router as organization_router
 from polar.pledge.endpoints import router as pledge_router
 from polar.pull_request.endpoints import router as pull_request_router
 from polar.repository.endpoints import router as repository_router
+from polar.reward.endpoints import router as rewards_router
 from polar.user.endpoints.user_organization import router as user_organization_router
 from polar.user.endpoints.users import router as user_router
 
@@ -39,6 +40,8 @@ router.include_router(invite_router)
 router.include_router(notifications_router)
 # /repositories
 router.include_router(repository_router)
+# /rewards
+router.include_router(rewards_router)
 # /{platform}/{org_name}/{repo_name}/pulls
 router.include_router(pull_request_router)
 # /{platform}/{org_name}/{repo_name}/issues

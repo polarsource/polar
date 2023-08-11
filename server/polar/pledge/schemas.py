@@ -25,6 +25,7 @@ class PledgeState(str, Enum):
     # The fix was confirmed, but the pledge has not been paid.
     pending = "pending"
     # The pledge has been paid out to the maintainer.
+    # TODO: what does this mean now when splits exist?
     paid = "paid"
     # The pledge was refunded in full before being paid out.
     refunded = "refunded"
@@ -110,9 +111,11 @@ class Pledge(Schema):
     paid_at: datetime | None = Field(
         description="If and when the pledge was paid to the maintainer."
     )
+
     refunded_at: datetime | None = Field(
         description="If and when the pledge was refunded to the pledger"
     )  # noqa: E501
+
     scheduled_payout_at: datetime | None = Field(
         description="When the payout is scheduled to be made to the maintainers behind the issue. Disputes must be made before this date."  # noqa: E501
     )

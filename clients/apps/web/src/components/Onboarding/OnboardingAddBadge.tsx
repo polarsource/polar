@@ -8,8 +8,7 @@ const OnboardingAddBadge = () => {
     <div className="grid overflow-hidden rounded-xl bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-gray-700 lg:grid-cols-2">
       <div className="py-3 px-6">
         <h2 className="font-medium text-gray-900 dark:text-gray-400">
-          Hover an issue and press &ldquo;Add badge&rdquo; to start accepting
-          pledges.
+          Add the Polar badge to an issue to promote funding.
         </h2>
         <p className="mt-4 flex flex-wrap items-center text-sm text-gray-500">
           <span className="">Or add the </span>

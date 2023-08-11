@@ -23,18 +23,26 @@ import CopyToClipboardInput from '../UI/CopyToClipboardInput'
 import BadgeMessageForm from './BadgeMessageForm'
 import { LabelSchema } from './IssueLabel'
 
+const isIssueBadged = (issue: IssueDashboardRead): boolean => {
+  if (issue.pledge_badge_currently_embedded) {
+    return true
+  }
+
+  const hasPolarLabel =
+    issue.labels &&
+    (issue.labels as Array<LabelSchema>).find(
+      (l) => l.name.toLowerCase() === 'polar',
+    )
+
+  return hasPolarLabel
+}
+
 export const AddBadgeButton = (props: {
   orgName: string
   repoName: string
   issue: IssueDashboardRead
 }) => {
-  const hasPolarLabel =
-    props.issue.labels &&
-    (props.issue.labels as Array<LabelSchema>).find(
-      (l) => l.name.toLowerCase() === 'polar',
-    )
-
-  const isBadged = hasPolarLabel || props.issue.pledge_badge_currently_embedded
+  const [isBadged, setBadged] = useState<boolean>(isIssueBadged(props.issue))
 
   const remove = useIssueRemovePolarBadge()
   const add = useIssueAddPolarBadge()
@@ -42,31 +50,41 @@ export const AddBadgeButton = (props: {
   const { isShown, toggle } = useModal()
 
   const click = async () => {
-    if (!isBadged) {
-      await add.mutateAsync({
+    if (isBadged) {
+      toggle()
+      return
+    }
+
+    await add
+      .mutateAsync({
         platform: Platforms.GITHUB,
         orgName: props.orgName,
         repoName: props.repoName,
         issueNumber: props.issue.number,
       })
-
-      posthog.capture('add-issue-badge', {
-        organization_name: props.orgName,
-        repository_name: props.repoName,
-        issue_number: props.issue.number,
+      .then(() => {
+        setBadged(true)
+        toggle()
       })
-    }
 
-    toggle()
+    posthog.capture('add-issue-badge', {
+      organization_name: props.orgName,
+      repository_name: props.repoName,
+      issue_number: props.issue.number,
+    })
   }
 
   const onRemoveBadge = async () => {
-    await remove.mutateAsync({
-      platform: Platforms.GITHUB,
-      orgName: props.orgName,
-      repoName: props.repoName,
-      issueNumber: props.issue.number,
-    })
+    await remove
+      .mutateAsync({
+        platform: Platforms.GITHUB,
+        orgName: props.orgName,
+        repoName: props.repoName,
+        issueNumber: props.issue.number,
+      })
+      .then(() => {
+        setBadged(false)
+      })
 
     posthog.capture('remove-issue-badge', {
       organization_name: props.orgName,
@@ -136,12 +154,11 @@ export const AddBadgeButton = (props: {
       <button
         onClick={click}
         className={classNames(
-          isBadged ? 'border bg-white dark:bg-gray-800' : '',
+          isBadged ? 'bg-white dark:bg-gray-800' : '',
           isBadged
-            ? ' border-green-200 text-green-600 hover:border-green-300 dark:border-green-600'
-            : '',
-          !isBadged ? 'bg-blue-600 text-white' : '',
-          'cursor-pointer items-center justify-center space-x-1 rounded-md px-2 py-1 text-sm',
+            ? 'border-green-200 text-green-600 hover:border-green-300 dark:border-green-600'
+            : 'border-blue-200 bg-white text-blue-600 transition ease-in-out hover:border-blue-600 hover:bg-blue-600 hover:text-white',
+          'cursor-pointer items-center justify-center space-x-1 rounded-md border px-2 py-1 text-sm',
           'flex overflow-hidden whitespace-nowrap',
         )}
       >
@@ -151,7 +168,11 @@ export const AddBadgeButton = (props: {
             <span>Badged</span>
           </>
         )}
-        {!isBadged && <span>Add badge</span>}
+        {!isBadged && (
+          <>
+            <span>Add badge</span>
+          </>
+        )}
       </button>
 
       <ModernModal
@@ -210,6 +231,8 @@ export const BadgePromotionModal = (props: {
 
   const badgeSettings = useBadgeSettings(Platforms.GITHUB, props.orgName)
 
+  const isBadged = isIssueBadged(props.issue)
+
   const embeds = [
     {
       name: 'Light theme',
@@ -228,12 +251,6 @@ export const BadgePromotionModal = (props: {
     },
   ]
 
-  const hasPolarLabel =
-    props.issue.labels &&
-    (props.issue.labels as Array<LabelSchema>).find(
-      (l) => l.name.toLowerCase() === 'polar',
-    )
-
   const [embed, setEmbed] = useState(embeds[0])
 
   return (
@@ -247,7 +264,7 @@ export const BadgePromotionModal = (props: {
               {props.repoName}#{props.issue.number}
             </a>
           </div>
-          {hasPolarLabel && (
+          {isBadged && (
             <button
               onClick={clickRemoveBadge}
               className="text-gray flex cursor-pointer items-center rounded-full border border-gray-200 px-2 py-0.5 pr-3 text-sm text-gray-500 hover:bg-gray-100 dark:border-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"

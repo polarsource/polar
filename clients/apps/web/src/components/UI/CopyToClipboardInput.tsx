@@ -27,6 +27,7 @@ const CopyToClipboardInput = (props: {
         }}
         defaultValue={props.value}
         value={props.value}
+        readOnly={true}
       />
       <div
         className="cursor-pointer bg-blue-50 px-3 py-2 text-sm font-medium  text-blue-600 dark:bg-blue-500/30 dark:text-blue-300"

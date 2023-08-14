@@ -413,9 +413,12 @@ class PledgeService(ResourceServiceReader[Pledge]):
     def calculate_fee(self, amount: int) -> int:
         # 2.9% + potentially 1.5% for international cards plus a fixed fee of 30 cents
         # See https://support.stripe.com/questions/passing-the-stripe-fee-on-to-customers
-        fee_percentage = 0.029 + 0.015
-        fee_fixed = 30
-        return math.ceil((amount + fee_fixed) / (1 - fee_percentage)) - amount
+        # fee_percentage = 0.029 + 0.015
+        # fee_fixed = 30
+        # return math.ceil((amount + fee_fixed) / (1 - fee_percentage)) - amount
+
+        # Running free service fees for a bit
+        return 0
 
     async def connect_backer(
         self,

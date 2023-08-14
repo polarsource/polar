@@ -186,20 +186,32 @@ const PaymentForm = ({
           ${getCentsInDollarString(amount, true)}
         </div>
       </div>
+
       <div className="mb-1 flex w-full text-sm text-gray-500 dark:text-gray-400">
-        <div className="w-1/2">
-          Service fee <span className="text-xs">(Non-refundable)</span>
-        </div>
+        <div className="w-1/2 text-sm">Service fee</div>
         <div className="w-1/2 text-right">
           ${getCentsInDollarString(fee, true)}
         </div>
       </div>
-      <div className="mb-6 flex w-full text-sm font-medium">
+      {fee === 0 && (
+        <p className="mb-1 flex w-full text-xs text-gray-500 dark:text-gray-400">
+          Service fee (4.5%) covered by Polar.
+        </p>
+      )}
+      {fee > 0 && (
+        <p className="mb-1 flex w-full text-xs text-gray-500 dark:text-gray-400">
+          <span className="underline">Note</span>: Service fee is
+          non-refundable.
+        </p>
+      )}
+
+      <div className="mt-4 mb-6 flex w-full text-sm font-medium">
         <div className="w-1/2">Total</div>
         <div className="w-1/2 text-right">
           ${getCentsInDollarString(amountIncludingFee, true)}
         </div>
       </div>
+
       <div className="mt-6">
         <PrimaryButton
           disabled={!canSubmit}

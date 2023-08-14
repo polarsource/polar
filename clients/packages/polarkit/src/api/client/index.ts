@@ -25,6 +25,7 @@ export type { ExternalGitHubCommitReference } from './models/ExternalGitHubCommi
 export type { ExternalGitHubPullRequestReference } from './models/ExternalGitHubPullRequestReference';
 export type { Funding } from './models/Funding';
 export { GithubBadgeRead } from './models/GithubBadgeRead';
+export type { GithubUser } from './models/GithubUser';
 export type { HTTPValidationError } from './models/HTTPValidationError';
 export { InstallationCreate } from './models/InstallationCreate';
 export type { InviteCreate } from './models/InviteCreate';
@@ -48,6 +49,7 @@ export type { ListResource_Pledge_ } from './models/ListResource_Pledge_';
 export type { ListResource_Repository_ } from './models/ListResource_Repository_';
 export type { LoginResponse } from './models/LoginResponse';
 export type { LogoutResponse } from './models/LogoutResponse';
+export type { LookupUserRequest } from './models/LookupUserRequest';
 export type { MaintainerPledgeConfirmationPendingNotification } from './models/MaintainerPledgeConfirmationPendingNotification';
 export type { MaintainerPledgeCreatedNotification } from './models/MaintainerPledgeCreatedNotification';
 export type { MaintainerPledgePaidNotification } from './models/MaintainerPledgePaidNotification';

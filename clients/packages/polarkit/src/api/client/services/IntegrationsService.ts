@@ -3,8 +3,10 @@
 /* eslint-disable */
 import type { AuthorizationResponse } from '../models/AuthorizationResponse';
 import type { GithubBadgeRead } from '../models/GithubBadgeRead';
+import type { GithubUser } from '../models/GithubUser';
 import type { InstallationCreate } from '../models/InstallationCreate';
 import type { LoginResponse } from '../models/LoginResponse';
+import type { LookupUserRequest } from '../models/LookupUserRequest';
 import type { OrganizationPrivateRead } from '../models/OrganizationPrivateRead';
 import type { Platforms } from '../models/Platforms';
 import type { polar__integrations__github__endpoints__WebhookResponse } from '../models/polar__integrations__github__endpoints__WebhookResponse';
@@ -98,6 +100,27 @@ export class IntegrationsService {
         'number': number,
         'badge_type': badgeType,
       },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Lookup User
+   * @returns GithubUser Successful Response
+   * @throws ApiError
+   */
+  public lookupUser({
+    requestBody,
+  }: {
+    requestBody: LookupUserRequest,
+  }): CancelablePromise<GithubUser> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/integrations/github/lookup_user',
+      body: requestBody,
+      mediaType: 'application/json',
       errors: {
         422: `Validation Error`,
       },

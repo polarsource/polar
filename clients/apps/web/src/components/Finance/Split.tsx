@@ -1,10 +1,11 @@
 import { InformationCircleIcon, PlusIcon } from '@heroicons/react/24/outline'
 import { XMarkIcon } from '@heroicons/react/24/solid'
-import { PledgeRead, UserRead } from 'polarkit/api/client'
+import { api } from 'polarkit/api'
+import { PledgeRead } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
-import { useMemo, useState } from 'react'
+import { FormEvent, useMemo, useState } from 'react'
 import Banner from '../Banner/Banner'
 import { ModalHeader } from '../Modal'
 
@@ -21,12 +22,20 @@ const zeroIfNanOrInfinite = (value: number): number => {
   return value
 }
 
+export interface Contributor {
+  username: string
+  avatar_url?: string
+}
+
 const Split = (props: {
   pledges: PledgeRead[]
-  contributors: UserRead[]
+  contributors: Contributor[]
   shares: Share[]
+  onConfirm: (shares: Share[]) => void
+  onCancel: () => void
 }) => {
   const [shares, setShares] = useState(props.shares)
+  const [contributors, setContributors] = useState(props.contributors)
 
   const pledgeSum = props.pledges
     .map((p) => p.amount)
@@ -60,7 +69,7 @@ const Split = (props: {
         const share =
           s.share !== undefined && s.raw_value !== '' ? s.share : deducedShare()
 
-        const user = props.contributors.find((c) => c.username === s.username)
+        const user = contributors.find((c) => c.username === s.username)
 
         let percent = zeroIfNanOrInfinite(share * 100)
         if (percent < 0) {
@@ -138,7 +147,41 @@ const Split = (props: {
         share: s.share,
       }
     })
-    alert(JSON.stringify(res))
+    props.onConfirm(res)
+  }
+
+  const [searchGithubUsername, setSearchGithubUsername] = useState('')
+  const [showAddUserError, setShowAddUserError] = useState(false)
+
+  const onSearchGithubUsernameSubmit = async (e: FormEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+
+    setShowAddUserError(false)
+
+    try {
+      const lookup = await api.integrations.lookupUser({
+        requestBody: { username: searchGithubUsername },
+      })
+
+      // Add to shares if not exists
+      if (!shares.find((s) => s.username === lookup.username)) {
+        let s = shares
+        s.push({
+          username: lookup.username,
+        })
+        setShares(s)
+      }
+
+      // Add to contributors if not exists
+      if (!contributors.find((c) => c.username === lookup.username)) {
+        let c = contributors
+        c.push(lookup)
+        setContributors(c)
+      }
+    } catch {
+      setShowAddUserError(true)
+    }
   }
 
   return (
@@ -190,13 +233,20 @@ const Split = (props: {
           ))}
 
           <div className="flex">
-            <div className="flex flex-1 items-center space-x-2">
-              <PlusIcon className="h-6 w-6" />
+            <form
+              className="flex flex-1 items-center space-x-2"
+              onSubmit={onSearchGithubUsernameSubmit}
+            >
+              <button type="submit">
+                <PlusIcon className="h-6 w-6" />
+              </button>
               <input
                 placeholder="Add a Github user..."
                 className="dark:bg-gray-900"
+                value={searchGithubUsername}
+                onChange={(e) => setSearchGithubUsername(e.target.value)}
               />
-            </div>
+            </form>
             <div>
               Total:{' '}
               <strong>${getCentsInDollarString(pledgeSumToSplit, true)}</strong>
@@ -215,6 +265,12 @@ const Split = (props: {
               percentage points allocated
             </Banner>
           )}
+          {showAddUserError && (
+            <Banner color="red">
+              Failed to find a GitHub user with username: {searchGithubUsername}
+              , please check your spelling and try again.
+            </Banner>
+          )}
         </div>
         <div className="bg-gray-75 flex items-center px-4 py-2 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
           <InformationCircleIcon className="mr-2 h-6 w-6" />
@@ -223,7 +279,9 @@ const Split = (props: {
             been subtracted from the total
           </div>
           <div>
-            <button className="mr-4 text-blue-600">Cancel</button>
+            <button className="mr-4 text-blue-600" onClick={props.onCancel}>
+              Cancel
+            </button>
           </div>
           <div>
             <PrimaryButton disabled={!canSubmit} onClick={onConfirm}>

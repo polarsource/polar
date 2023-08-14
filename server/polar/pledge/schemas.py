@@ -94,6 +94,12 @@ class PledgeState(str, Enum):
         return PledgeState.__members__[s]
 
 
+class Pledger(Schema):
+    name: str
+    github_username: str | None
+    avatar_url: str | None
+
+
 # Public API
 class Pledge(Schema):
     id: UUID = Field(description="Pledge ID")
@@ -113,8 +119,28 @@ class Pledge(Schema):
 
     issue: Issue = Field(description="The issue that the pledge was made towards")
 
+    pledger: Pledger | None = Field(
+        description="The user or organization that made this pledge"
+    )
+
     @classmethod
     def from_db(cls, o: PledgeModel) -> Pledge:
+        pledger: Pledger | None = None
+
+        if o.by_organization_id:
+            pledger = Pledger(
+                name=o.by_organization.pretty_name or o.by_organization.name,
+                github_username=o.by_organization.name,
+                avatar_url=o.by_organization.avatar_url,
+            )
+
+        if o.by_user_id:
+            pledger = Pledger(
+                name=o.user.username,
+                github_username=o.user.username,
+                avatar_url=o.user.avatar_url,
+            )
+
         return Pledge(
             id=o.id,
             created_at=o.created_at,
@@ -124,6 +150,7 @@ class Pledge(Schema):
             refunded_at=o.refunded_at,
             scheduled_payout_at=o.scheduled_payout_at,
             issue=Issue.from_db(o.issue),
+            pledger=pledger,
         )
 
 

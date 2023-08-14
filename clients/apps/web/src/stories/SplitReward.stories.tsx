@@ -1,4 +1,4 @@
-import Split from '@/components/Finance/Split'
+import Split, { Contributor } from '@/components/Finance/Split'
 import type { Meta, StoryObj } from '@storybook/react'
 import { pledge, user } from './testdata'
 
@@ -12,7 +12,7 @@ export default meta
 
 type Story = StoryObj<typeof Split>
 
-const contributors = [
+const contributors: Array<Contributor> = [
   { ...user, username: 'zegl' },
   {
     ...user,
@@ -35,6 +35,8 @@ export const Default: Story = {
         username: 'zegl',
       },
     ],
+    onConfirm: () => {},
+    onCancel: () => {},
   },
 }
 

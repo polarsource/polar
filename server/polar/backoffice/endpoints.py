@@ -15,72 +15,104 @@ from polar.integrations.github.service.repository import (
 from polar.invite.schemas import InviteCreate, InviteRead
 from polar.invite.service import invite as invite_service
 from polar.models.organization import Organization
+from polar.models.pledge_transaction import PledgeTransaction
 from polar.organization.endpoints import OrganizationPrivateRead
 from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
+from polar.reward.endpoints import to_resource as reward_to_resource
+from polar.reward.schemas import Reward
+from polar.reward.service import reward_service
+from polar.types import ListResource
 
 from .pledge_service import bo_pledges_service
-from .schemas import BackofficeBadge, BackofficeBadgeResponse, BackofficePledgeRead
+from .schemas import (
+    BackofficeBadge,
+    BackofficeBadgeResponse,
+    BackofficePledge,
+    BackofficeReward,
+)
 
 router = APIRouter(tags=["backoffice"], prefix="/backoffice")
 
 log = structlog.get_logger()
 
 
-@router.get("/pledges", response_model=list[BackofficePledgeRead])
+@router.get("/pledges", response_model=list[BackofficePledge])
 async def pledges(
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
-) -> list[BackofficePledgeRead]:
-    return await bo_pledges_service.list_pledges(session, customers=True)
+) -> list[BackofficePledge]:
+    return await bo_pledges_service.list_pledges(session)
 
 
-@router.get("/pledges/non_customers", response_model=list[BackofficePledgeRead])
-async def pledges_non_customers(
+@router.get("/rewards", response_model=ListResource[BackofficeReward])
+async def rewards(
+    issue_id: UUID | None = None,
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
-) -> list[BackofficePledgeRead]:
-    return await bo_pledges_service.list_pledges(session, customers=False)
+) -> ListResource[BackofficeReward]:
+    rewards = await reward_service.list(session, issue_id=issue_id)
+
+    def r(r: Reward, trx: PledgeTransaction) -> BackofficeReward:
+        return BackofficeReward(
+            pledge=r.pledge,
+            user=r.user,
+            organization=r.organization,
+            amount=r.amount,
+            state=r.state,
+            paid_at=r.paid_at,
+            transfer_id=trx.transaction_id if trx else None,
+        )
+
+    return ListResource(
+        items=[
+            r(
+                reward_to_resource(pledge, reward, transaction),
+                transaction,
+            )
+            for pledge, reward, transaction in rewards
+        ]
+    )
 
 
-async def get_pledge(session: AsyncSession, pledge_id: UUID) -> BackofficePledgeRead:
+async def get_pledge(session: AsyncSession, pledge_id: UUID) -> BackofficePledge:
     pledge = await pledge_service.get_with_loaded(session, pledge_id)
     if not pledge:
         raise HTTPException(
             status_code=404,
             detail="Pledge not found",
         )
-    return BackofficePledgeRead.from_db(pledge)
+    return BackofficePledge.from_db(pledge)
 
 
-@router.post("/pledges/approve/{pledge_id}", response_model=BackofficePledgeRead)
+@router.post("/pledges/approve/{pledge_id}", response_model=BackofficePledge)
 async def pledge_approve(
     pledge_id: UUID,
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
-) -> BackofficePledgeRead:
+) -> BackofficePledge:
     raise Exception("TODO")
     # await pledge_service.transfer(session, pledge_id)
     return await get_pledge(session, pledge_id)
 
 
-@router.post("/pledges/mark_pending/{pledge_id}", response_model=BackofficePledgeRead)
+@router.post("/pledges/mark_pending/{pledge_id}", response_model=BackofficePledge)
 async def pledge_mark_pending(
     pledge_id: UUID,
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
-) -> BackofficePledgeRead:
+) -> BackofficePledge:
     await pledge_service.mark_pending_by_pledge_id(session, pledge_id)
     return await get_pledge(session, pledge_id)
 
 
-@router.post("/pledges/mark_disputed/{pledge_id}", response_model=BackofficePledgeRead)
+@router.post("/pledges/mark_disputed/{pledge_id}", response_model=BackofficePledge)
 async def pledge_mark_disputed(
     pledge_id: UUID,
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
-) -> BackofficePledgeRead:
+) -> BackofficePledge:
     await pledge_service.mark_disputed(
         session, pledge_id, by_user_id=auth.user.id, reason="Disputed via Backoffice"
     )

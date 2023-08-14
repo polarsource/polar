@@ -3,9 +3,10 @@
 /* eslint-disable */
 import type { BackofficeBadge } from '../models/BackofficeBadge';
 import type { BackofficeBadgeResponse } from '../models/BackofficeBadgeResponse';
-import type { BackofficePledgeRead } from '../models/BackofficePledgeRead';
+import type { BackofficePledge } from '../models/BackofficePledge';
 import type { InviteCreate } from '../models/InviteCreate';
 import type { InviteRead } from '../models/InviteRead';
+import type { ListResource_BackofficeReward_ } from '../models/ListResource_BackofficeReward_';
 import type { OrganizationPrivateRead } from '../models/OrganizationPrivateRead';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
@@ -17,10 +18,10 @@ export class BackofficeService {
 
   /**
    * Pledges
-   * @returns BackofficePledgeRead Successful Response
+   * @returns BackofficePledge Successful Response
    * @throws ApiError
    */
-  public pledges(): CancelablePromise<Array<BackofficePledgeRead>> {
+  public pledges(): CancelablePromise<Array<BackofficePledge>> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/backoffice/pledges',
@@ -28,27 +29,37 @@ export class BackofficeService {
   }
 
   /**
-   * Pledges Non Customers
-   * @returns BackofficePledgeRead Successful Response
+   * Rewards
+   * @returns ListResource_BackofficeReward_ Successful Response
    * @throws ApiError
    */
-  public pledgesNonCustomers(): CancelablePromise<Array<BackofficePledgeRead>> {
+  public rewards({
+    issueId,
+  }: {
+    issueId?: string,
+  }): CancelablePromise<ListResource_BackofficeReward_> {
     return this.httpRequest.request({
       method: 'GET',
-      url: '/api/v1/backoffice/pledges/non_customers',
+      url: '/api/v1/backoffice/rewards',
+      query: {
+        'issue_id': issueId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
     });
   }
 
   /**
    * Pledge Approve
-   * @returns BackofficePledgeRead Successful Response
+   * @returns BackofficePledge Successful Response
    * @throws ApiError
    */
   public pledgeApprove({
     pledgeId,
   }: {
     pledgeId: string,
-  }): CancelablePromise<BackofficePledgeRead> {
+  }): CancelablePromise<BackofficePledge> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/backoffice/pledges/approve/{pledge_id}',
@@ -63,14 +74,14 @@ export class BackofficeService {
 
   /**
    * Pledge Mark Pending
-   * @returns BackofficePledgeRead Successful Response
+   * @returns BackofficePledge Successful Response
    * @throws ApiError
    */
   public pledgeMarkPending({
     pledgeId,
   }: {
     pledgeId: string,
-  }): CancelablePromise<BackofficePledgeRead> {
+  }): CancelablePromise<BackofficePledge> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/backoffice/pledges/mark_pending/{pledge_id}',
@@ -85,14 +96,14 @@ export class BackofficeService {
 
   /**
    * Pledge Mark Disputed
-   * @returns BackofficePledgeRead Successful Response
+   * @returns BackofficePledge Successful Response
    * @throws ApiError
    */
   public pledgeMarkDisputed({
     pledgeId,
   }: {
     pledgeId: string,
-  }): CancelablePromise<BackofficePledgeRead> {
+  }): CancelablePromise<BackofficePledge> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/backoffice/pledges/mark_disputed/{pledge_id}',

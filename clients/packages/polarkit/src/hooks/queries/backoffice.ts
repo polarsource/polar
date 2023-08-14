@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { api, queryClient } from '../../api'
-import { PledgeRead } from '../../api/client'
 import { BackofficeBadge } from '../../api/client'
 import { defaultRetry } from './retry'
 
@@ -9,12 +8,16 @@ export const useBackofficeAllPledges = () =>
     retry: defaultRetry,
   })
 
-export const useBackofficeAllNonCustomerPledges = () =>
+export const useBackofficeRewards = (issueId?: string) =>
   useQuery(
-    ['backofficeAllNonCustomerPledges'],
-    () => api.backoffice.pledgesNonCustomers(),
+    ['useBackofficeRewards', issueId],
+    () =>
+      api.backoffice.rewards({
+        issueId,
+      }),
     {
       retry: defaultRetry,
+      enabled: !!issueId,
     },
   )
 
@@ -26,13 +29,8 @@ export const useBackofficePledgeApprove = () =>
       })
     },
     onSuccess: (result, variables, ctx) => {
-      queryClient.setQueryData<Array<PledgeRead> | undefined>(
-        ['backofficeAllPledges'],
-        (oldData) =>
-          oldData
-            ? oldData.map((p) => (p.id === result.id ? result : p))
-            : oldData,
-      )
+      queryClient.invalidateQueries(['backofficeAllPledges'])
+      queryClient.invalidateQueries(['useBackofficeRewards'])
     },
   })
 
@@ -44,13 +42,8 @@ export const useBackofficePledgeMarkPending = () =>
       })
     },
     onSuccess: (result, variables, ctx) => {
-      queryClient.setQueryData<Array<PledgeRead> | undefined>(
-        ['backofficeAllPledges'],
-        (oldData) =>
-          oldData
-            ? oldData.map((p) => (p.id === result.id ? result : p))
-            : oldData,
-      )
+      queryClient.invalidateQueries(['backofficeAllPledges'])
+      queryClient.invalidateQueries(['useBackofficeRewards'])
     },
   })
 
@@ -62,13 +55,8 @@ export const useBackofficePledgeMarkDisputed = () =>
       })
     },
     onSuccess: (result, variables, ctx) => {
-      queryClient.setQueryData<Array<PledgeRead> | undefined>(
-        ['backofficeAllPledges'],
-        (oldData) =>
-          oldData
-            ? oldData.map((p) => (p.id === result.id ? result : p))
-            : oldData,
-      )
+      queryClient.invalidateQueries(['backofficeAllPledges'])
+      queryClient.invalidateQueries(['useBackofficeRewards'])
     },
   })
 
@@ -91,12 +79,11 @@ export const useBackofficeCreateInviteCode = () =>
     },
   })
 
-
 export const useBackofficeBadgeAction = () =>
   useMutation({
     mutationFn: (badgeAction: BackofficeBadge) => {
       return api.backoffice.manageBadge({
-        requestBody: badgeAction
+        requestBody: badgeAction,
       })
-    }
+    },
   })

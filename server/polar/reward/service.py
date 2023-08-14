@@ -22,7 +22,8 @@ class RewardService:
     async def list(
         self,
         session: AsyncSession,
-        org_id: UUID,
+        org_id: UUID | None = None,
+        issue_id: UUID | None = None,
     ) -> Sequence[Tuple[Pledge, IssueReward, PledgeTransaction]]:
         statement = (
             sql.select(Pledge, IssueReward, PledgeTransaction)
@@ -37,15 +38,24 @@ class RewardService:
                 ),
                 isouter=True,
             )
-            .where(Pledge.organization_id == org_id)
-            .options(
-                joinedload(IssueReward.user),
-                joinedload(IssueReward.organization),
-                joinedload(Pledge.issue)
-                .joinedload(Issue.repository)
-                .joinedload(Repository.organization),
-            )
         )
+
+        if org_id:
+            statement = statement.where(Pledge.organization_id == org_id)
+
+        if issue_id:
+            statement = statement.where(Pledge.issue_id == issue_id)
+
+        statement = statement.options(
+            joinedload(IssueReward.user),
+            joinedload(IssueReward.organization),
+            joinedload(Pledge.issue)
+            .joinedload(Issue.repository)
+            .joinedload(Repository.organization),
+            joinedload(Pledge.by_organization),
+            joinedload(Pledge.user),
+        )
+
         res = await session.execute(statement)
         rows = res.unique().all()
 

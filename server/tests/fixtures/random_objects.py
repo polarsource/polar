@@ -38,7 +38,7 @@ async def create_organization(session: AsyncSession) -> Organization:
         platform=Platforms.github,
         name=rstr("testorg"),
         external_id=secrets.randbelow(100000),
-        avatar_url="http://avatar_url",
+        avatar_url="https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
         is_personal=False,
         installation_id=secrets.randbelow(100000),
         installation_created_at=datetime.now(),
@@ -58,7 +58,7 @@ async def pledging_organization(session: AsyncSession) -> Organization:
         platform=Platforms.github,
         name=rstr("pledging_org"),
         external_id=secrets.randbelow(100000),
-        avatar_url="http://avatar_url",
+        avatar_url="https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
         is_personal=False,
         installation_id=secrets.randbelow(100000),
         installation_created_at=datetime.now(),
@@ -137,6 +137,7 @@ async def user(
         id=uuid.uuid4(),
         username=rstr("testuser"),
         email=rstr("test") + "@example.com",
+        avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
         invite_only_approved=True,
     )
 
@@ -153,6 +154,7 @@ async def user_second(
         id=uuid.uuid4(),
         username=rstr("testuser"),
         email=rstr("test") + "@example.com",
+        avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
         invite_only_approved=True,
     )
 

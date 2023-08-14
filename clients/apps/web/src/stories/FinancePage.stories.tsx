@@ -34,7 +34,6 @@ const pledge: Pledge = {
   // pledger_avatar: 'https://avatars.githubusercontent.com/u/1342004?s=200&v=4',
   // authed_user_can_admin: false,
   scheduled_payout_at: '2023-08-02',
-  paid_at: '2023-06-28',
   refunded_at: '2023-06-28',
   // authed_user_can_admin_sender: false,
   // authed_user_can_admin_received: false,

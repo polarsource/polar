@@ -22,7 +22,8 @@ class IssueReward(RecordModel):
         PostgresUUID, ForeignKey("issues.id"), nullable=False
     )
 
-    share: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    # 10% == 100
+    share_thousands: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
     github_username: Mapped[str] = mapped_column(String, nullable=True)
 

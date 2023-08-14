@@ -14,11 +14,17 @@ from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
+from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
 from polar.models.user import User
-from polar.pledge.schemas import PledgeState
+from polar.pledge.schemas import PledgeState, PledgeTransactionType
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
+from tests.fixtures.random_objects import (
+    create_issue,
+    create_organization,
+    create_repository,
+)
 
 
 @pytest.mark.asyncio
@@ -368,3 +374,134 @@ async def test_create_issue_rewards_twice_fails(
                 ConfirmIssueSplit(share=0.7, organization_id=organization.id),
             ],
         )
+
+
+@pytest.mark.asyncio
+async def test_generate_pledge_testdata(
+    session: AsyncSession,
+    # pledge: Pledge,
+    # organization: Organization,
+) -> None:
+    org = await create_organization(session)
+    repo = await create_repository(session, organization=org)
+    issues = [
+        await create_issue(
+            session,
+            organization=org,
+            repository=repo,
+        )
+        for _ in range(1, 5)
+    ]
+
+    pledging_org = await create_organization(session)
+
+    # create pledges to each issue
+    # for issue in issues:
+    # for amount in [2000, 2500]:
+    # amount = secrets.randbelow(100000) + 1
+    # fee = round(amount * 0.05)
+    pledges = [
+        [
+            await Pledge.create(
+                session=session,
+                id=uuid.uuid4(),
+                # by_organization_id=pledging_organization.id,
+                issue_id=issue.id,
+                repository_id=issue.repository_id,
+                organization_id=issue.organization_id,
+                amount=2000,
+                fee=0,
+                state=PledgeState.created,
+                email="pledger@example.com",
+            ),
+            await Pledge.create(
+                session=session,
+                id=uuid.uuid4(),
+                by_organization_id=pledging_org.id,
+                issue_id=issue.id,
+                repository_id=issue.repository_id,
+                organization_id=issue.organization_id,
+                amount=2500,
+                fee=500,
+                state=PledgeState.created,
+                # email="pledger@example.com",
+            ),
+        ]
+        for issue in issues
+    ]
+
+    for p in pledges[0]:
+        p.state = PledgeState.pending
+    await IssueReward.create(
+        session,
+        issue_id=pledges[0][0].issue_id,
+        organization_id=org.id,
+        share_thousands=800,
+    )
+    await IssueReward.create(
+        session,
+        issue_id=pledges[0][0].issue_id,
+        github_username="zegl",
+        share_thousands=200,
+    )
+
+    for p in pledges[1]:
+        p.state = PledgeState.pending
+    await IssueReward.create(
+        session,
+        issue_id=pledges[1][0].issue_id,
+        organization_id=org.id,
+        share_thousands=800,
+    )
+    reward = await IssueReward.create(
+        session,
+        issue_id=pledges[1][0].issue_id,
+        github_username="zegl",
+        share_thousands=200,  # 20%
+    )
+
+    # pledge_id: Mapped[UUID] = mapped_column(
+    #     PostgresUUID, ForeignKey("pledges.id"), nullable=False
+    # )
+    # type: Mapped[str] = mapped_column(String, nullable=False)
+    # amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    # transaction_id: Mapped[str] = mapped_column(String, nullable=True)
+    # issue_reward_id: Mapped[UUID] = mapped_column(
+    #     PostgresUUID, ForeignKey("issue_rewards.id"), nullable=True
+    # )
+
+    await PledgeTransaction.create(
+        session,
+        pledge_id=pledges[1][0].id,
+        type=PledgeTransactionType.transfer,
+        amount=5000,  # ?
+        transaction_id="text_123",
+        issue_reward_id=reward.id,
+    )
+
+    for p in pledges[2]:
+        p.state = PledgeState.confirmation_pending
+
+    await session.commit()
+    # return pledge
+
+    # Create splits for the first issue
+
+    # await pledge_service.create_issue_rewards(
+    #     session,
+    #     pledge.issue_id,
+    #     splits=[
+    #         ConfirmIssueSplit(share=0.3, github_username="zegl"),
+    #         ConfirmIssueSplit(share=0.7, organization_id=organization.id),
+    #     ],
+    # )
+
+    # with pytest.raises(Exception, match=r"issue already has splits set: .*"):
+    #     await pledge_service.create_issue_rewards(
+    #         session,
+    #         pledge.issue_id,
+    #         splits=[
+    #             ConfirmIssueSplit(share=0.3, github_username="zegl"),
+    #             ConfirmIssueSplit(share=0.7, organization_id=organization.id),
+    #         ],
+    #     )

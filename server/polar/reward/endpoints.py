@@ -74,42 +74,45 @@ async def search(
         org_id=org.id,
     )
 
-    def to_resource(
-        pledge: PledgeModel,
-        reward: IssueReward,
-        transaction: PledgeTransactionModel,
-    ) -> Reward:
-        user = None
-        if reward and reward.user:
-            user = User.from_db(reward.user)
-        elif reward.github_username:
-            user = User(username=reward.github_username, avatar_url="x")
-
-        organization = None
-        if reward.organization:
-            organization = OrganizationSchema.from_db(reward.organization)
-
-        if transaction and transaction.amount:
-            amount = CurrencyAmount(currency="USD", amount=transaction.amount)
-        else:
-            amount = CurrencyAmount(
-                currency="USD", amount=round(pledge.amount * 0.9 * reward.share)
-            )
-
-        return Reward(
-            pledge=Pledge.from_db(pledge),
-            user=user,
-            organization=organization,
-            amount=amount,
-            state=RewardState.paid if transaction else RewardState.pending,
-            paid_at=transaction.created_at if transaction else None,
-        )
-
     return ListResource(
         items=[
             to_resource(pledge, reward, transaction)
             for pledge, reward, transaction in rewards
         ]
+    )
+
+
+def to_resource(
+    pledge: PledgeModel,
+    reward: IssueReward,
+    transaction: PledgeTransactionModel,
+) -> Reward:
+    user = None
+    if reward and reward.user:
+        user = User.from_db(reward.user)
+    elif reward.github_username:
+        user = User(username=reward.github_username, avatar_url="x")
+
+    organization = None
+    if reward.organization:
+        organization = OrganizationSchema.from_db(reward.organization)
+
+    amount = CurrencyAmount(currency="USD", amount=0)
+    if transaction and transaction.amount:
+        amount = CurrencyAmount(currency="USD", amount=transaction.amount)
+    else:
+        amount = CurrencyAmount(
+            currency="USD", amount=round(pledge.amount * 0.9 * reward.share)
+        )
+        print(amount, pledge.amount, reward.share)
+
+    return Reward(
+        pledge=Pledge.from_db(pledge),
+        user=user,
+        organization=organization,
+        amount=amount,
+        state=RewardState.paid if transaction else RewardState.pending,
+        paid_at=transaction.created_at if transaction else None,
     )
 
 

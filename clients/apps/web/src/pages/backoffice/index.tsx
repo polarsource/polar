@@ -8,9 +8,6 @@ const Page: NextLayoutComponentType & { theme?: string } = () => {
     <div className="flex flex-col">
       <h1 className="text-2xl font-bold">Pick-a-feature</h1>
       <Link href="/backoffice/pledges">Pledges</Link>
-      <Link href="/backoffice/pledges_non_customers">
-        Pledges to non customers
-      </Link>
       <Link href="/backoffice/badge">Issue Badge Admin</Link>
       <Link href="/backoffice/invites">Invites</Link>
     </div>

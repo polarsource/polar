@@ -5,15 +5,21 @@ from uuid import UUID
 from polar.enums import AccountType
 from polar.kit.schemas import Schema
 from polar.models.pledge import Pledge
-from polar.pledge.schemas import PledgeRead, PledgeState
+from polar.pledge.schemas import Pledge as PledgeSchema
+from polar.reward.schemas import Reward
 
 
-class BackofficePledgeRead(PledgeRead):
-    payment_id: str | None
+class BackofficeReward(Reward):
     transfer_id: str | None
-    receiver_org_name: str
-    issue_title: str
-    issue_url: str
+
+
+class BackofficePledge(PledgeSchema):
+    payment_id: str | None
+
+    # transfer_id: str | None
+    # receiver_org_name: str
+    # issue_title: str
+    # issue_url: str
 
     dispute_reason: str | None
     disputed_by_user_id: UUID | None
@@ -25,39 +31,71 @@ class BackofficePledgeRead(PledgeRead):
 
     @classmethod
     def from_db(cls, o: Pledge) -> Self:
-        pledger_name = None
-        pledger_avatar = None
-        if o.user:
-            pledger_name = o.user.username
-            pledger_avatar = o.user.avatar_url
-        if o.by_organization:
-            pledger_name = o.by_organization.name
-            pledger_avatar = o.by_organization.avatar_url
+        # pledger_name = None
+        # pledger_avatar = None
+        # if o.user:
+        #     pledger_name = o.user.username
+        #     pledger_avatar = o.user.avatar_url
+        # if o.by_organization:
+        #     pledger_name = o.by_organization.name
+        #     pledger_avatar = o.by_organization.avatar_url
 
         to_organization_account_type = None
         if o.to_organization.account is not None:
             to_organization_account_type = o.to_organization.account.account_type
 
+        p = PledgeSchema.from_db(o)
+
+        #  id: UUID = Field(description="Pledge ID")
+        #     created_at: datetime = Field(description="When the pledge was created")
+        #     amount: CurrencyAmount = Field(description="Amount pledged towards the issue")
+        #     state: PledgeState = Field(description="Current state of the pledge")
+
+        #     refunded_at: datetime | None = Field(
+        #         description="If and when the pledge was refunded to the pledger"
+        #     )  # noqa: E501
+
+        #     scheduled_payout_at: datetime | None = Field(
+        #         description="When the payout is scheduled to be made to the maintainers behind the issue. Disputes must be made before this date."  # noqa: E501
+        #     )
+
+        #     issue: Issue = Field(description="The issue that the pledge was made towards")
+
+        #     pledger: Pledger | None = Field(
+        #         description="The user or organization that made this pledge"
+        #     )
+
+        # return
+
         return cls(
-            id=o.id,
-            created_at=o.created_at,
-            issue_id=o.issue_id,
-            repository_id=o.repository_id,
-            organization_id=o.organization_id,
-            amount=o.amount,
-            state=PledgeState.from_str(o.state),
-            pledger_name=pledger_name,
-            pledger_avatar=pledger_avatar,
+            id=p.id,
+            created_at=p.created_at,
+            amount=p.amount,
+            state=p.state,
+            refunded_at=p.refunded_at,
+            scheduled_payout_at=p.scheduled_payout_at,
+            issue=p.issue,
+            pledger=p.pledger,
             pledger_email=o.email,
+            # id=o.id,
+            # created_at=o.created_at,
+            # issue_id=o.issue_id,
+            # repository_id=o.repository_id,
+            # organization_id=o.organization_id,
+            # amount=o.amount,
+            # state=PledgeState.from_str(o.state),
+            # pledger_name=pledger_name,
+            # pledger_avatar=pledger_avatar,
+            # pledger_email=o.email,
             payment_id=o.payment_id,
-            transfer_id=o.transfer_id,
-            issue_title=o.issue.title,
-            issue_url=f"https://github.com/{o.issue.organization.name}/{o.issue.repository.name}/issues/{o.issue.number}",
-            receiver_org_name=o.issue.organization.name,
+            # transfer_id=o.transfer_id,
+            # issue_title=o.issue.title,
+            # issue_url=f"https://github.com/{o.issue.organization.name}/{o.issue.repository.name}/issues/{o.issue.number}",
+            # receiver_org_name=o.issue.organization.name,
             dispute_reason=o.dispute_reason,
             disputed_at=o.disputed_at,
             disputed_by_user_id=o.disputed_by_user_id,
-            scheduled_payout_at=o.scheduled_payout_at,
+            # scheduled_payout_at=o.scheduled_payout_at,
             to_organization_account_type=to_organization_account_type,
         )
 

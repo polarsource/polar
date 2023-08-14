@@ -116,14 +116,6 @@ const PledgesContent = (props: { pledges: Pledge[] }) => {
 
   return (
     <>
-      {paid.length > 0 && (
-        <ListPledges
-          pledges={paid}
-          columns={['PAID_OUT_DATE']}
-          title="Paid out"
-          subtitle="Issue solved"
-        />
-      )}
       {inReview.length > 0 && (
         <ListPledges
           pledges={inReview}

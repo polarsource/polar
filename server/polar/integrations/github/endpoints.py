@@ -33,6 +33,7 @@ from polar.worker import enqueue_job
 from .schemas import (
     AuthorizationResponse,
     GithubBadgeRead,
+    GithubUser,
     OAuthAccessToken,
 )
 from .service.issue import github_issue
@@ -182,6 +183,28 @@ async def get_badge_settings(
         ),
     )
     return badge
+
+
+class LookupUserRequest(BaseModel):
+    username: str
+
+
+@router.post("/lookup_user", response_model=GithubUser)
+async def lookup_user(
+    body: LookupUserRequest,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.current_user),
+) -> GithubUser:
+    try:
+        client = await github.get_user_client(session, auth.user)
+        github_user = client.rest.users.get_by_username(username=body.username)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="user not found")
+
+    return GithubUser(
+        username=github_user.parsed_data.login,
+        avatar_url=github_user.parsed_data.avatar_url,
+    )
 
 
 ###############################################################################

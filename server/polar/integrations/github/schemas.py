@@ -39,3 +39,8 @@ class GitHubIssue(Schema):
             return f"{self.owner.lower()}/{self.repo.lower()}#{self.number}"
         else:
             return f"#{self.number}"
+
+
+class GithubUser(Schema):
+    username: str
+    avatar_url: str

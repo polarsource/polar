@@ -67,6 +67,7 @@ export { Platforms } from './models/Platforms';
 export type { Pledge } from './models/Pledge';
 export type { PledgeCreate } from './models/PledgeCreate';
 export type { PledgeMutationResponse } from './models/PledgeMutationResponse';
+export type { Pledger } from './models/Pledger';
 export type { PledgeRead } from './models/PledgeRead';
 export type { PledgeResources } from './models/PledgeResources';
 export type { PledgerPledgePendingNotification } from './models/PledgerPledgePendingNotification';

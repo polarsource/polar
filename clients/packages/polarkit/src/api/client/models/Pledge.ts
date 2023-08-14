@@ -4,6 +4,7 @@
 
 import type { CurrencyAmount } from './CurrencyAmount';
 import type { Issue } from './Issue';
+import type { Pledger } from './Pledger';
 import type { PledgeState } from './PledgeState';
 
 export type Pledge = {
@@ -39,5 +40,9 @@ export type Pledge = {
    * The issue that the pledge was made towards
    */
   issue: Issue;
+  /**
+   * The user or organization that made this pledge
+   */
+  pledger?: Pledger;
 };
 

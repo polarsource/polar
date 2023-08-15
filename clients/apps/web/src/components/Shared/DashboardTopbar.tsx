@@ -10,12 +10,14 @@ export const path = (
   repo?: string,
 ): string => {
   const withRepoRoutes: Record<string, string> = {
-    '/issues/[organization]': '/issues/[organization]/[repo]',
+    '/maintainer/[organization]/issues':
+      '/maintainer/[organization]/issues?repo=[repo]',
     '/dependencies/[organization]': '/dependencies/[organization]/[repo]',
   }
 
   const removeRepoRoutes: Record<string, string> = {
-    '/issues/[organization]/[repo]': '/issues/[organization]',
+    '/maintainer/[organization]/issues?repo=[repo]':
+      '/maintainer/[organization]/issues',
     '/dependencies/[organization]/[repo]': '/dependencies/[organization]',
   }
 
@@ -36,9 +38,9 @@ export const path = (
     (!nextPathName.includes('[repo]') && repo)
   ) {
     if (repo) {
-      return `/issues/${org}/${repo}`
+      return `/maintainer/${org}/issues?repo=${repo}`
     } else {
-      return `/issues/${org}`
+      return `/maintainer/${org}/issues`
     }
   }
 

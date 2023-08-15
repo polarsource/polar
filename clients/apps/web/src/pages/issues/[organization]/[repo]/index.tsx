@@ -1,7 +1,6 @@
-import Dashboard from '@/components/Dashboard'
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
+import LoadingScreen from '@/components/Dashboard/LoadingScreen'
 import type { NextLayoutComponentType } from 'next'
-import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { ReactElement, useEffect } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
@@ -13,32 +12,27 @@ const Page: NextLayoutComponentType = () => {
   const { org, repo, isLoaded } = useCurrentOrgAndRepoFromURL()
 
   useEffect(() => {
-    if (isLoaded && !org && !repo) {
-      router.push('/issues')
-      return
-    }
-    if (isLoaded && org && !repo) {
-      router.push(`/issues/${org.name}`)
-      return
-    }
-  }, [isLoaded, org, repo, router])
+    if (!isLoaded) return
 
-  if (!isLoaded) {
-    return <></>
-  }
+    if (org && repo) {
+      router.push(`/maintainer/${org.name}/issues?repo=${repo.name}`)
+      return
+    }
+
+    if (org) {
+      router.push(`/maintainer/${org.name}/issues`)
+      return
+    }
+
+    // TODO: Redirect to backer view
+    router.push('/dependencies/personal')
+  }, [isLoaded, org, repo, router])
 
   return (
     <>
-      <Head>
-        <title>Polar{org && repo ? ` ${org.name}/${repo.name}` : ''}</title>
-      </Head>
-      <Dashboard
-        key={key}
-        org={org}
-        repo={repo}
-        isPersonal={false}
-        isDependencies={false}
-      />
+      <LoadingScreen>
+        <>Redirecting...</>
+      </LoadingScreen>
     </>
   )
 }

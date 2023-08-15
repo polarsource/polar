@@ -24,8 +24,7 @@ const Page: NextLayoutComponentType = () => {
       return
     }
 
-    // TODO: Redirect to backer view
-    router.push('/dependencies/personal')
+    router.push('/maintainer')
   }, [isLoaded, org, repo, router])
 
   return (

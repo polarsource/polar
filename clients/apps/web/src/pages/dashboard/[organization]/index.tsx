@@ -30,7 +30,7 @@ const Page: NextLayoutComponentType = () => {
       listOrganizationsQuery.data.items.length > 0
     ) {
       const gotoOrg = listOrganizationsQuery.data.items[0]
-      router.push(`/issues/${gotoOrg.name}`)
+      router.push(`/maintainer/${gotoOrg.name}/issues`)
       return
     }
   })

@@ -10,6 +10,7 @@ import {
   Organization,
   OrganizationPrivateRead,
   Platforms,
+  Pledge,
   PledgeRead,
   PledgeState,
   PledgerPledgePendingNotification,
@@ -118,6 +119,22 @@ export const pledge: PledgeRead = {
   amount: 3000,
   repository_id: repo.id,
   organization_id: org.id,
+  state: PledgeState.CREATED,
+  // pledger_name?: string;
+  // pledger_avatar?: string;
+  // authed_user_can_admin?: boolean;
+  //scheduled_payout_at?: string;
+}
+
+// PublicAPI
+export const pledgePublicAPI: Pledge = {
+  id: 'pppp',
+  created_at: addDays(new Date(), -7).toISOString(),
+  // issue_id: issueRead.id,
+  issue: issue,
+  amount: { currency: 'USD', amount: 3000 },
+  // repository_id: repo.id,
+  // organization_id: org.id,
   state: PledgeState.CREATED,
   // pledger_name?: string;
   // pledger_avatar?: string;

@@ -1,7 +1,7 @@
 import { InformationCircleIcon, PlusIcon } from '@heroicons/react/24/outline'
 import { XMarkIcon } from '@heroicons/react/24/solid'
 import { api } from 'polarkit/api'
-import { PledgeRead } from 'polarkit/api/client'
+import { Pledge } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
@@ -11,7 +11,7 @@ import { ModalHeader } from '../Modal'
 
 export type Share = {
   username: string
-  share?: number
+  share_thousands?: number
   raw_value?: string
 }
 
@@ -28,7 +28,7 @@ export interface Contributor {
 }
 
 const Split = (props: {
-  pledges: PledgeRead[]
+  pledges: Pledge[]
   contributors: Contributor[]
   shares: Share[]
   onConfirm: (shares: Share[]) => void
@@ -38,7 +38,7 @@ const Split = (props: {
   const [contributors, setContributors] = useState(props.contributors)
 
   const pledgeSum = props.pledges
-    .map((p) => p.amount)
+    .map((p) => p.amount.amount)
     .reduce((a, b) => a + b, 0)
 
   const polarShare = pledgeSum * 0.1
@@ -49,45 +49,45 @@ const Split = (props: {
   }
 
   const computedShares = useMemo(() => {
-    const fixedShares = shares.filter((s) => isFixed(s.share))
+    const fixedShares = shares.filter((s) => isFixed(s.share_thousands))
 
     const fixedSharesSum = fixedShares
-      .map((s) => s.share || 0)
+      .map((s) => s.share_thousands || 0)
       .reduce((a, b) => a + b, 0)
 
     const remainingUsersCount = shares.length - fixedShares.length
 
     const deducedShare = (): number => {
-      if (fixedSharesSum >= 1) {
+      if (fixedSharesSum >= 1000) {
         return 0
       }
-      return (1 - fixedSharesSum) / remainingUsersCount
+      return Math.floor((1000 - fixedSharesSum) / remainingUsersCount)
     }
 
     return shares
       .map((s) => {
-        const share =
-          s.share !== undefined && s.raw_value !== '' ? s.share : deducedShare()
+        const share_thousands =
+          s.share_thousands !== undefined && s.raw_value !== ''
+            ? s.share_thousands
+            : deducedShare()
 
         const user = contributors.find((c) => c.username === s.username)
 
-        let percent = zeroIfNanOrInfinite(share * 100)
+        let percent = zeroIfNanOrInfinite(share_thousands) / 1000
         if (percent < 0) {
           percent = 0
         }
 
-        const est_amount = zeroIfNanOrInfinite(
-          (pledgeSumToSplit * percent) / 100,
-        )
+        const est_amount = zeroIfNanOrInfinite(pledgeSumToSplit * percent)
 
         return {
           username: user?.username,
           avatar_url: user?.avatar_url,
-          is_fixed: isFixed(s.share),
-          placeholder_percent: percent,
+          is_fixed: isFixed(s.share_thousands),
+          placeholder_percent: percent * 100,
           est_amount,
           raw_value: s.raw_value,
-          share,
+          share_thousands,
         }
       })
       .filter((s) => s.username) as Array<{
@@ -97,21 +97,19 @@ const Split = (props: {
       placeholder_percent: number
       est_amount: number
       raw_value: string | undefined
-      share: number
+      share_thousands: number
     }>
   }, [shares])
 
-  const sumShares = useMemo(
+  const sumSharesThousands = useMemo(
     () =>
-      Math.round(
-        computedShares.map((s) => s.share).reduce((a, b) => a + b, 0) * 1000,
-      ) / 1000,
+      computedShares.map((s) => s.share_thousands).reduce((a, b) => a + b, 0),
     [computedShares],
   )
 
   const canSubmit = useMemo(() => {
-    return sumShares === 1
-  }, [sumShares])
+    return sumSharesThousands === 1000
+  }, [sumSharesThousands])
 
   const prettifyNumber = (value: string): string => {
     const num = parseFloat(value)
@@ -124,14 +122,14 @@ const Split = (props: {
   }
 
   const onUpdate = (username: string, value: string) => {
-    const share = parseFloat(value) / 100
+    const share_thousands = Math.round(parseFloat(value) * 10)
 
     setShares((prev) =>
       prev.map((s) => {
         if (s.username === username) {
           return {
             ...s,
-            share,
+            share_thousands,
             raw_value: value,
           }
         }
@@ -144,7 +142,7 @@ const Split = (props: {
     const res = computedShares.map((s) => {
       return {
         username: s.username,
-        share: s.share,
+        share_thousands: s.share_thousands,
       }
     })
     props.onConfirm(res)
@@ -253,18 +251,21 @@ const Split = (props: {
             </div>
           </div>
 
-          {sumShares < 1 && (
+          {sumSharesThousands < 1000 && (
             <Banner color="red">
-              Missing {prettifyNumber(((1 - sumShares) * 100).toString())}{' '}
+              Missing{' '}
+              {prettifyNumber(((1000 - sumSharesThousands) / 10).toString())}{' '}
               percentage points
             </Banner>
           )}
-          {sumShares > 1 && (
+
+          {sumSharesThousands > 1000 && (
             <Banner color="red">
-              {prettifyNumber(((sumShares - 1) * 100).toString())} too many
-              percentage points allocated
+              {prettifyNumber(((sumSharesThousands - 1000) / 10).toString())}{' '}
+              too many percentage points allocated
             </Banner>
           )}
+
           {showAddUserError && (
             <Banner color="red">
               Failed to find a GitHub user with username: {searchGithubUsername}

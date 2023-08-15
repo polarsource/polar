@@ -1,6 +1,6 @@
 import Split, { Contributor } from '@/components/Finance/Split'
 import type { Meta, StoryObj } from '@storybook/react'
-import { pledge, user } from './testdata'
+import { pledgePublicAPI, user } from './testdata'
 
 const meta: Meta<typeof Split> = {
   title: 'Organisms/SplitReward',
@@ -28,7 +28,7 @@ const contributors: Array<Contributor> = [
 
 export const Default: Story = {
   args: {
-    pledges: [pledge, pledge, pledge],
+    pledges: [pledgePublicAPI, pledgePublicAPI, pledgePublicAPI],
     contributors: contributors,
     shares: [
       {
@@ -77,7 +77,7 @@ export const AdjustedSplit: Story = {
     shares: [
       {
         username: 'zegl',
-        share: 0.4,
+        share_thousands: 400,
         raw_value: '40',
       },
       {
@@ -96,12 +96,12 @@ export const MissingPercentages: Story = {
     shares: [
       {
         username: 'zegl',
-        share: 0.1,
+        share_thousands: 100,
         raw_value: '10',
       },
       {
         username: 'birkjernstrom',
-        share: 0.1,
+        share_thousands: 100,
         raw_value: '10',
       },
     ],
@@ -114,12 +114,12 @@ export const TooManyPercentages: Story = {
     shares: [
       {
         username: 'zegl',
-        share: 0.8,
+        share_thousands: 800,
         raw_value: '80',
       },
       {
         username: 'birkjernstrom',
-        share: 0.805,
+        share_thousands: 805,
         raw_value: '80.5',
       },
     ],

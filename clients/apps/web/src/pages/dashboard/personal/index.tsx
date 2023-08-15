@@ -7,7 +7,7 @@ const Page: NextLayoutComponentType = () => {
   const router = useRouter()
 
   useEffect(() => {
-    router.push(`/dependencies/personal`)
+    router.push(`/feed`)
   })
 
   return <></>

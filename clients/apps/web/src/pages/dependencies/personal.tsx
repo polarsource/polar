@@ -1,28 +1,31 @@
-import Dashboard from '@/components/Dashboard'
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
-import type { NextLayoutComponentType } from 'next'
-import Head from 'next/head'
-import { ReactElement } from 'react'
+import LoadingScreen from '@/components/Dashboard/LoadingScreen'
+import Layout from '@/components/Layout/EmptyLayout'
+import type { NextPageWithLayout } from '@/utils/next'
+import { useRouter } from 'next/router'
+import { ReactElement, useEffect } from 'react'
 
-const Page: NextLayoutComponentType = () => {
+const Page: NextPageWithLayout = () => {
+  const router = useRouter()
+  useEffect(() => {
+    router.push(`/feed`)
+  })
+
   return (
     <>
-      <Head>
-        <title>Polar</title>
-      </Head>
-      <Dashboard
-        key={'dependencies-personal'}
-        org={undefined}
-        repo={undefined}
-        isPersonal={true}
-        isDependencies={true}
-      />
+      <LoadingScreen>
+        <>Redirecting...</>
+      </LoadingScreen>
     </>
   )
 }
 
 Page.getLayout = (page: ReactElement) => {
-  return <Gatekeeper>{page}</Gatekeeper>
+  return (
+    <Gatekeeper>
+      <Layout>{page}</Layout>
+    </Gatekeeper>
+  )
 }
 
 export default Page

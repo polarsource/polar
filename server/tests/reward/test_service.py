@@ -51,8 +51,8 @@ async def test_list_rewards(
         session,
         pledge.issue_id,
         splits=[
-            ConfirmIssueSplit(share=0.3, github_username="zegl"),
-            ConfirmIssueSplit(share=0.7, organization_id=organization.id),
+            ConfirmIssueSplit(share_thousands=300, github_username="zegl"),
+            ConfirmIssueSplit(share_thousands=700, organization_id=organization.id),
         ],
     )
 
@@ -67,14 +67,14 @@ async def test_list_rewards(
     assert user_tuple[0].id == pledge.id
     assert user_tuple[1].github_username == "zegl"
     assert user_tuple[1].organization_id is None
-    assert user_tuple[1].share == 0.3
+    assert user_tuple[1].share_thousands == 300
     assert user_tuple[2] is None  # no transfer
 
     org_tuple = [r for r in rewards if r[1].organization_id == organization.id][0]
     assert org_tuple[0].id == pledge.id
     assert org_tuple[1].github_username is None
     assert org_tuple[1].organization_id is organization.id
-    assert org_tuple[1].share == 0.7
+    assert org_tuple[1].share_thousands == 700
     assert org_tuple[2] is None  # no transfer
 
     # Create transfer to organization
@@ -99,5 +99,5 @@ async def test_list_rewards(
     assert org_tuple[0].id == pledge.id
     assert org_tuple[1].github_username is None
     assert org_tuple[1].organization_id is organization.id
-    assert org_tuple[1].share == 0.7
+    assert org_tuple[1].share_thousands == 700
     assert org_tuple[2].amount == round(pledge.amount * 0.9 * 0.7)  # hmmm

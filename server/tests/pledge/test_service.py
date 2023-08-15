@@ -163,7 +163,7 @@ async def test_transfer_unexpected_state(
         session,
         issue_id=pledge.issue_id,
         organization_id=pledge.organization_id,
-        share=1,
+        share_thousands=1000,
     )
 
     with pytest.raises(Exception, match="Pledge is not in pending state") as excinfo:
@@ -182,7 +182,7 @@ async def test_transfer_early(
         session,
         issue_id=pledge.issue_id,
         organization_id=pledge.organization_id,
-        share=1,
+        share_thousands=1000,
     )
 
     with pytest.raises(
@@ -227,7 +227,7 @@ async def test_transfer(
         session,
         issue_id=pledge.issue_id,
         organization_id=pledge.organization_id,
-        share=1,
+        share_thousands=1000,
     )
 
     @dataclass
@@ -251,16 +251,8 @@ async def test_transfer(
 async def test_validate_splits() -> None:
     assert (
         pledge_service.validate_splits(
-            splits=[ConfirmIssueSplit(share=1, organization_id=uuid.uuid4())]
-        )
-        is True
-    )
-
-    assert (
-        pledge_service.validate_splits(
             splits=[
-                ConfirmIssueSplit(share=0.5, organization_id=uuid.uuid4()),
-                ConfirmIssueSplit(share=0.5, organization_id=uuid.uuid4()),
+                ConfirmIssueSplit(share_thousands=1000, organization_id=uuid.uuid4())
             ]
         )
         is True
@@ -269,8 +261,18 @@ async def test_validate_splits() -> None:
     assert (
         pledge_service.validate_splits(
             splits=[
-                ConfirmIssueSplit(share=0.5, organization_id=uuid.uuid4()),
-                ConfirmIssueSplit(share=0.4, organization_id=uuid.uuid4()),
+                ConfirmIssueSplit(share_thousands=500, organization_id=uuid.uuid4()),
+                ConfirmIssueSplit(share_thousands=500, organization_id=uuid.uuid4()),
+            ]
+        )
+        is True
+    )
+
+    assert (
+        pledge_service.validate_splits(
+            splits=[
+                ConfirmIssueSplit(share_thousands=500, organization_id=uuid.uuid4()),
+                ConfirmIssueSplit(share_thousands=400, organization_id=uuid.uuid4()),
             ]
         )
         is False
@@ -279,9 +281,9 @@ async def test_validate_splits() -> None:
     assert (
         pledge_service.validate_splits(
             splits=[
-                ConfirmIssueSplit(share=1, organization_id=uuid.uuid4()),
-                ConfirmIssueSplit(share=1, organization_id=uuid.uuid4()),
-                ConfirmIssueSplit(share=1, organization_id=uuid.uuid4()),
+                ConfirmIssueSplit(share_thousands=1000, organization_id=uuid.uuid4()),
+                ConfirmIssueSplit(share_thousands=1000, organization_id=uuid.uuid4()),
+                ConfirmIssueSplit(share_thousands=1000, organization_id=uuid.uuid4()),
             ]
         )
         is False
@@ -289,7 +291,7 @@ async def test_validate_splits() -> None:
 
     assert (
         pledge_service.validate_splits(
-            splits=[ConfirmIssueSplit(share=1, github_username="zegl")]
+            splits=[ConfirmIssueSplit(share_thousands=1000, github_username="zegl")]
         )
         is True
     )
@@ -298,7 +300,9 @@ async def test_validate_splits() -> None:
         pledge_service.validate_splits(
             splits=[
                 ConfirmIssueSplit(
-                    share=1, github_username="zegl", organization_id=uuid.uuid4()
+                    share_thousands=1000,
+                    github_username="zegl",
+                    organization_id=uuid.uuid4(),
                 )
             ]
         )
@@ -309,7 +313,7 @@ async def test_validate_splits() -> None:
         pledge_service.validate_splits(
             splits=[
                 ConfirmIssueSplit(
-                    share=1,
+                    share_thousands=1000,
                 )
             ]
         )
@@ -327,8 +331,8 @@ async def test_create_issue_rewards(
         session,
         pledge.issue_id,
         splits=[
-            ConfirmIssueSplit(share=0.3, github_username="zegl"),
-            ConfirmIssueSplit(share=0.7, organization_id=organization.id),
+            ConfirmIssueSplit(share_thousands=300, github_username="zegl"),
+            ConfirmIssueSplit(share_thousands=700, organization_id=organization.id),
         ],
     )
 
@@ -344,8 +348,8 @@ async def test_create_issue_rewards_invalid(
             session,
             pledge.issue_id,
             splits=[
-                ConfirmIssueSplit(share=0.7, github_username="zegl"),
-                ConfirmIssueSplit(share=0.7, organization_id=organization.id),
+                ConfirmIssueSplit(share_thousands=700, github_username="zegl"),
+                ConfirmIssueSplit(share_thousands=700, organization_id=organization.id),
             ],
         )
 
@@ -360,8 +364,8 @@ async def test_create_issue_rewards_twice_fails(
         session,
         pledge.issue_id,
         splits=[
-            ConfirmIssueSplit(share=0.3, github_username="zegl"),
-            ConfirmIssueSplit(share=0.7, organization_id=organization.id),
+            ConfirmIssueSplit(share_thousands=300, github_username="zegl"),
+            ConfirmIssueSplit(share_thousands=700, organization_id=organization.id),
         ],
     )
 
@@ -370,8 +374,8 @@ async def test_create_issue_rewards_twice_fails(
             session,
             pledge.issue_id,
             splits=[
-                ConfirmIssueSplit(share=0.3, github_username="zegl"),
-                ConfirmIssueSplit(share=0.7, organization_id=organization.id),
+                ConfirmIssueSplit(share_thousands=300, github_username="zegl"),
+                ConfirmIssueSplit(share_thousands=700, organization_id=organization.id),
             ],
         )
 
@@ -379,6 +383,7 @@ async def test_create_issue_rewards_twice_fails(
 @pytest.mark.asyncio
 async def test_generate_pledge_testdata(
     session: AsyncSession,
+    user: User,
     # pledge: Pledge,
     # organization: Organization,
 ) -> None:
@@ -460,16 +465,6 @@ async def test_generate_pledge_testdata(
         share_thousands=200,  # 20%
     )
 
-    # pledge_id: Mapped[UUID] = mapped_column(
-    #     PostgresUUID, ForeignKey("pledges.id"), nullable=False
-    # )
-    # type: Mapped[str] = mapped_column(String, nullable=False)
-    # amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    # transaction_id: Mapped[str] = mapped_column(String, nullable=True)
-    # issue_reward_id: Mapped[UUID] = mapped_column(
-    #     PostgresUUID, ForeignKey("issue_rewards.id"), nullable=True
-    # )
-
     await PledgeTransaction.create(
         session,
         pledge_id=pledges[1][0].id,
@@ -482,26 +477,10 @@ async def test_generate_pledge_testdata(
     for p in pledges[2]:
         p.state = PledgeState.confirmation_pending
 
+    pledges[3][0].state = PledgeState.disputed
+    pledges[3][0].dispute_reason = "I've been fooled."
+    pledges[3][0].disputed_at = utc_now()
+    pledges[3][0].disputed_by_user_id = user.id
+    pledges[3][1].state = PledgeState.charge_disputed
+
     await session.commit()
-    # return pledge
-
-    # Create splits for the first issue
-
-    # await pledge_service.create_issue_rewards(
-    #     session,
-    #     pledge.issue_id,
-    #     splits=[
-    #         ConfirmIssueSplit(share=0.3, github_username="zegl"),
-    #         ConfirmIssueSplit(share=0.7, organization_id=organization.id),
-    #     ],
-    # )
-
-    # with pytest.raises(Exception, match=r"issue already has splits set: .*"):
-    #     await pledge_service.create_issue_rewards(
-    #         session,
-    #         pledge.issue_id,
-    #         splits=[
-    #             ConfirmIssueSplit(share=0.3, github_username="zegl"),
-    #             ConfirmIssueSplit(share=0.7, organization_id=organization.id),
-    #         ],
-    #     )

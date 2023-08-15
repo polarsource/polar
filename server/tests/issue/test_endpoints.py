@@ -280,11 +280,11 @@ async def test_confirm_solved(
                 "splits": [
                     {
                         "github_username": "zegl",
-                        "share": 0.3,
+                        "share_thousands": 300,
                     },
                     {
                         "organization_id": str(organization.id),
-                        "share": 0.7,
+                        "share_thousands": 700,
                     },
                 ]
             },

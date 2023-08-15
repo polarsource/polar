@@ -102,9 +102,10 @@ def to_resource(
         amount = CurrencyAmount(currency="USD", amount=transaction.amount)
     else:
         amount = CurrencyAmount(
-            currency="USD", amount=round(pledge.amount * 0.9 * reward.share)
+            currency="USD",
+            amount=round(pledge.amount * 0.9 * reward.share_thousands / 1000),
         )
-        print(amount, pledge.amount, reward.share)
+        # print(amount, pledge.amount, reward.share_thousands)
 
     return Reward(
         pledge=Pledge.from_db(pledge),

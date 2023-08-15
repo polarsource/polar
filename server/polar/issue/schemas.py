@@ -115,7 +115,7 @@ class UpdateIssue(Schema):
 class ConfirmIssueSplit(Schema):
     organization_id: UUID | None = None
     github_username: str | None = None
-    share: float
+    share_thousands: int
 
 
 # Public API

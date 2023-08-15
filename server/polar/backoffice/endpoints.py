@@ -14,6 +14,7 @@ from polar.integrations.github.service.repository import (
 )
 from polar.invite.schemas import InviteCreate, InviteRead
 from polar.invite.service import invite as invite_service
+from polar.kit.schemas import Schema
 from polar.models.organization import Organization
 from polar.models.pledge_transaction import PledgeTransaction
 from polar.organization.endpoints import OrganizationPrivateRead
@@ -86,15 +87,20 @@ async def get_pledge(session: AsyncSession, pledge_id: UUID) -> BackofficePledge
     return BackofficePledge.from_db(pledge)
 
 
-@router.post("/pledges/approve/{pledge_id}", response_model=BackofficePledge)
-async def pledge_approve(
-    pledge_id: UUID,
+class PledgeRewardTransfer(Schema):
+    pledge_id: UUID
+    issue_reward_id: UUID
+
+
+@router.post("/pledges/approve", response_model=BackofficeReward)
+async def pledge_reward_transfer(
+    body: PledgeRewardTransfer,
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
-) -> BackofficePledge:
-    raise Exception("TODO")
-    # await pledge_service.transfer(session, pledge_id)
-    return await get_pledge(session, pledge_id)
+) -> BackofficeReward:
+    # raise Exception("TODO")
+    await pledge_service.transfer(session, body.pledge_id, body.issue_reward_id)
+    # return await get_pledge(session, pledge_id)
 
 
 @router.post("/pledges/mark_pending/{pledge_id}", response_model=BackofficePledge)

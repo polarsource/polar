@@ -545,7 +545,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
     def validate_splits(self, splits: list[ConfirmIssueSplit]) -> bool:
         sum = 0.0
         for s in splits:
-            sum += s.share
+            sum += s.share_thousands
 
             if s.github_username and s.organization_id:
                 return False
@@ -553,7 +553,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             if not s.github_username and not s.organization_id:
                 return False
 
-        if sum != 1:
+        if sum != 1000:
             return False
 
         return True
@@ -581,7 +581,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 session,
                 autocommit=False,
                 issue_id=issue_id,
-                share=split.share,
+                share_thousands=split.share_thousands,
                 github_username=split.github_username,
                 organization_id=split.organization_id,
             )
@@ -719,7 +719,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             raise NotPermitted("TODO! transfers to users is not yet supported")
 
         # sanity check
-        if split.share < 0 or split.share > 1:
+        if split.share_thousands < 0 or split.share_thousands > 1000:
             raise NotPermitted("unexpected split share")
 
         # check that this transfer hasn't already been made!
@@ -732,7 +732,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
 
         # pledge amount - 10% (polars cut) * the users share
-        payout_amount = round(pledge.amount * 0.9 * split.share)
+        payout_amount = round(pledge.amount * 0.9 * split.share_thousands / 1000)
 
         if split.organization_id:
             pay_to_org = await organization_service.get_with_loaded(

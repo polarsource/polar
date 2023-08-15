@@ -60,8 +60,8 @@ async def test_search(
         session,
         pledge.issue_id,
         splits=[
-            ConfirmIssueSplit(share=0.3, github_username="zegl"),
-            ConfirmIssueSplit(share=0.7, organization_id=organization.id),
+            ConfirmIssueSplit(share_thousands=300, github_username="zegl"),
+            ConfirmIssueSplit(share_thousands=700, organization_id=organization.id),
         ],
     )
 

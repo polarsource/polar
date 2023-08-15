@@ -126,7 +126,7 @@ const SidebarNavigation = () => {
     })
 
   return (
-    <div className="flex flex-col gap-6 py-8 pl-8 pr-2 ">
+    <div className="flex flex-col gap-6 py-8 pl-6 pr-2 ">
       {filteredNavs.map((n) => (
         <>
           <Link

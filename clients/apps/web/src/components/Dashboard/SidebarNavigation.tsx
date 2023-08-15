@@ -48,11 +48,11 @@ const SidebarNavigation = () => {
       subs: [
         {
           title: 'Issues',
-          link: `/promote/issues/${org?.name}`,
+          link: `/maintainer/${org?.name}/promote/issues`,
         },
         {
           title: 'Embeds',
-          link: `/promote/embeds/${org?.name}`,
+          link: `/maintainer/${org?.name}/promote/embeds`,
         },
         {
           title: 'Public site',

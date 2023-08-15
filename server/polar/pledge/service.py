@@ -76,6 +76,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         session: AsyncSession,
         organization_ids: list[UUID] | None = None,
         repository_ids: list[UUID] | None = None,
+        issue_ids: list[UUID] | None = None,
         pledging_user: UUID | None = None,
         load_issue: bool = False,
     ) -> Sequence[Pledge]:
@@ -98,6 +99,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         if pledging_user:
             statement = statement.where(Pledge.by_user_id == pledging_user)
+
+        if issue_ids:
+            statement = statement.where(Pledge.issue_id.in_(issue_ids))
 
         if load_issue:
             statement = statement.options(

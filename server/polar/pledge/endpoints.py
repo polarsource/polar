@@ -60,39 +60,58 @@ async def search(
         example="my-repo",
         description="Search pledges in the repository with this name. Can only be used if organization_name is set.",  # noqa: E501
     ),
+    issue_id: UUID
+    | None = Query(default=None, description="Search pledges to this issue"),
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.current_user),
 ) -> ListResource[PledgeSchema]:
-    if not platform:
-        raise HTTPException(
-            status_code=400,
-            detail="platform is not set",
+    list_by_orgs: list[UUID] = []
+    list_by_repos: list[UUID] = []
+    list_by_issues: list[UUID] = []
+
+    if organization_name:
+        if not platform:
+            raise HTTPException(
+                status_code=400,
+                detail="platform is not set",
+            )
+
+        if not platform:
+            raise HTTPException(
+                status_code=400,
+                detail="platform is not set",
+            )
+
+        if not organization_name:
+            raise HTTPException(
+                status_code=400,
+                detail="organization_name is not set",
+            )
+
+        # get org
+        org = await organization_service.get_by_name(
+            session,
+            platform=Platforms.github,
+            name=organization_name,
         )
 
-    if not organization_name:
-        raise HTTPException(
-            status_code=400,
-            detail="organization_name is not set",
-        )
+        if not org:
+            raise HTTPException(
+                status_code=404,
+                detail="organization not found",
+            )
 
-    # get org
-    org = await organization_service.get_by_name(
-        session,
-        platform=Platforms.github,
-        name=organization_name,
-    )
-
-    if not org:
-        raise HTTPException(
-            status_code=404,
-            detail="organization not found",
-        )
-
-    repository_ids = []
+        list_by_orgs = [org.id]
 
     if repository_name:
+        if len(list_by_orgs) != 1:
+            raise HTTPException(
+                status_code=404,
+                detail="organization not set",
+            )
+
         repo = await repository_service.get_by_org_and_name(
-            session, organization_id=org.id, name=repository_name
+            session, organization_id=list_by_orgs[0], name=repository_name
         )
 
         if not repo:
@@ -101,16 +120,22 @@ async def search(
                 detail="repository not found",
             )
 
-        repository_ids = [repo.id]
+        list_by_repos = [repo.id]
 
-    else:
-        repos = await repository_service.list_by(session, org_ids=[org.id])
-        repository_ids = [r.id for r in repos]
+    if issue_id:
+        list_by_issues = [issue_id]
+
+    if len(list_by_orgs) == 0 and len(list_by_repos) == 0 and len(list_by_issues) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="No search criteria specified",
+        )
 
     pledges = await pledge_service.list_by(
         session=session,
-        organization_ids=[org.id],
-        repository_ids=repository_ids,
+        organization_ids=list_by_orgs,
+        repository_ids=list_by_repos,
+        issue_ids=list_by_issues,
         load_issue=True,
     )
 

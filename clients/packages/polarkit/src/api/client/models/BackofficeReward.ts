@@ -28,5 +28,6 @@ export type BackofficeReward = {
    */
   paid_at?: string;
   transfer_id?: string;
+  issue_reward_id: string;
 };
 

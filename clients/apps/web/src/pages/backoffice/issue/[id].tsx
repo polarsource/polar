@@ -3,7 +3,10 @@ import type { NextLayoutComponentType } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ThinButton } from 'polarkit/components/ui'
-import { useBackofficeRewards } from 'polarkit/hooks'
+import {
+  useBackofficePledgeRewardTransfer,
+  useBackofficeRewards,
+} from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
 import { ReactElement } from 'react'
@@ -15,10 +18,23 @@ const Page: NextLayoutComponentType & { theme?: string } = () => {
   const rewards = useBackofficeRewards(typeof id === 'string' ? id : undefined)
   const rewardsData = rewards.data?.items || []
 
+  const pledgeRewardCreateTransfer = useBackofficePledgeRewardTransfer()
+
+  const createTransfer = async (pledgeId: string, issueRewardId: string) => {
+    try {
+      await pledgeRewardCreateTransfer.mutateAsync({
+        pledgeId,
+        issueRewardId,
+      })
+    } catch (e) {
+      alert(JSON.stringify(e, null, 2))
+    }
+  }
+
   return (
     <div>
       <h2 className="text-2xl">Issue</h2>
-      {id}
+
       <h3 className="text-xl">Rewards</h3>
 
       <div className="flex flex-col gap-2">
@@ -66,11 +82,17 @@ const Page: NextLayoutComponentType & { theme?: string } = () => {
                 <ArrowTopRightOnSquareIcon />
               </ThinButton>
             )}
+            {!r.transfer_id && (
+              <ThinButton
+                color="green"
+                onClick={() => createTransfer(r.pledge.id, r.issue_reward_id)}
+              >
+                <span>Create Transfer</span>
+              </ThinButton>
+            )}
           </div>
         ))}
       </div>
-
-      <pre>{JSON.stringify(rewards.data, null, 2)}</pre>
     </div>
   )
 }

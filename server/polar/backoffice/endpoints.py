@@ -15,8 +15,10 @@ from polar.integrations.github.service.repository import (
 from polar.invite.schemas import InviteCreate, InviteRead
 from polar.invite.service import invite as invite_service
 from polar.kit.schemas import Schema
+from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
-from polar.models.pledge_transaction import PledgeTransaction
+from polar.models.pledge import Pledge as PledgeModel
+from polar.models.pledge_transaction import PledgeTransaction as PledgeTransactionModel
 from polar.organization.endpoints import OrganizationPrivateRead
 from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
@@ -47,6 +49,22 @@ async def pledges(
     return await bo_pledges_service.list_pledges(session)
 
 
+def r(
+    pledge: PledgeModel, reward: IssueReward, transaction: PledgeTransactionModel
+) -> BackofficeReward:
+    r = reward_to_resource(pledge, reward, transaction)
+    return BackofficeReward(
+        pledge=r.pledge,
+        user=r.user,
+        organization=r.organization,
+        amount=r.amount,
+        state=r.state,
+        paid_at=r.paid_at,
+        transfer_id=transaction.transaction_id if transaction else None,
+        issue_reward_id=reward.id,
+    )
+
+
 @router.get("/rewards", response_model=ListResource[BackofficeReward])
 async def rewards(
     issue_id: UUID | None = None,
@@ -55,24 +73,9 @@ async def rewards(
 ) -> ListResource[BackofficeReward]:
     rewards = await reward_service.list(session, issue_id=issue_id)
 
-    def r(r: Reward, trx: PledgeTransaction) -> BackofficeReward:
-        return BackofficeReward(
-            pledge=r.pledge,
-            user=r.user,
-            organization=r.organization,
-            amount=r.amount,
-            state=r.state,
-            paid_at=r.paid_at,
-            transfer_id=trx.transaction_id if trx else None,
-        )
-
     return ListResource(
         items=[
-            r(
-                reward_to_resource(pledge, reward, transaction),
-                transaction,
-            )
-            for pledge, reward, transaction in rewards
+            r(pledge, reward, transaction) for pledge, reward, transaction in rewards
         ]
     )
 
@@ -98,9 +101,21 @@ async def pledge_reward_transfer(
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> BackofficeReward:
-    # raise Exception("TODO")
     await pledge_service.transfer(session, body.pledge_id, body.issue_reward_id)
-    # return await get_pledge(session, pledge_id)
+
+    reward_tuple = await reward_service.get(
+        session, pledge_id=body.pledge_id, issue_reward_id=body.issue_reward_id
+    )
+
+    if not reward_tuple:
+        raise HTTPException(
+            status_code=404,
+            detail="Reward not found",
+        )
+
+    (pledge, reward, transaction) = reward_tuple
+
+    return r(pledge, reward, transaction)
 
 
 @router.post("/pledges/mark_pending/{pledge_id}", response_model=BackofficePledge)

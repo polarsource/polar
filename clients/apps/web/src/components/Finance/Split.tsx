@@ -64,6 +64,8 @@ const Split = (props: {
       return Math.floor((1000 - fixedSharesSum) / remainingUsersCount)
     }
 
+    console.log('calculate computed shares', { shares })
+
     return shares
       .map((s) => {
         const share_thousands =
@@ -99,7 +101,7 @@ const Split = (props: {
       raw_value: string | undefined
       share_thousands: number
     }>
-  }, [shares])
+  }, [shares, contributors])
 
   const sumSharesThousands = useMemo(
     () =>
@@ -150,6 +152,7 @@ const Split = (props: {
 
   const [searchGithubUsername, setSearchGithubUsername] = useState('')
   const [showAddUserError, setShowAddUserError] = useState(false)
+  const [showAddUserErrorUsername, setShowAddUserErrorUsername] = useState('')
 
   const onSearchGithubUsernameSubmit = async (e: FormEvent) => {
     e.stopPropagation()
@@ -164,21 +167,18 @@ const Split = (props: {
 
       // Add to shares if not exists
       if (!shares.find((s) => s.username === lookup.username)) {
-        let s = shares
-        s.push({
-          username: lookup.username,
-        })
-        setShares(s)
+        setShares((prev) => [...prev, { username: lookup.username }])
       }
 
       // Add to contributors if not exists
       if (!contributors.find((c) => c.username === lookup.username)) {
-        let c = contributors
-        c.push(lookup)
-        setContributors(c)
+        setContributors((prev) => [...prev, lookup])
       }
+
+      setSearchGithubUsername('')
     } catch {
       setShowAddUserError(true)
+      setShowAddUserErrorUsername(searchGithubUsername)
     }
   }
 
@@ -268,8 +268,9 @@ const Split = (props: {
 
           {showAddUserError && (
             <Banner color="red">
-              Failed to find a GitHub user with username: {searchGithubUsername}
-              , please check your spelling and try again.
+              Failed to find a GitHub user with username:{' '}
+              {showAddUserErrorUsername}, please check your spelling and try
+              again.
             </Banner>
           )}
         </div>

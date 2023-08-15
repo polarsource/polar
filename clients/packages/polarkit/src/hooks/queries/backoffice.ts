@@ -21,11 +21,14 @@ export const useBackofficeRewards = (issueId?: string) =>
     },
   )
 
-export const useBackofficePledgeApprove = () =>
+export const useBackofficePledgeRewardTransfer = () =>
   useMutation({
-    mutationFn: (variables: { pledgeId: string }) => {
-      return api.backoffice.pledgeApprove({
-        pledgeId: variables.pledgeId,
+    mutationFn: (variables: { pledgeId: string; issueRewardId: string }) => {
+      return api.backoffice.pledgeRewardTransfer({
+        requestBody: {
+          pledge_id: variables.pledgeId,
+          issue_reward_id: variables.issueRewardId,
+        },
       })
     },
     onSuccess: (result, variables, ctx) => {

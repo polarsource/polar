@@ -61,5 +61,49 @@ class RewardService:
 
         return [r._tuple() for r in rows]
 
+    async def get(
+        self,
+        session: AsyncSession,
+        pledge_id: UUID,
+        issue_reward_id: UUID,
+    ) -> Tuple[Pledge, IssueReward, PledgeTransaction] | None:
+        statement = (
+            sql.select(Pledge, IssueReward, PledgeTransaction)
+            .join(Pledge.issue)
+            .join(IssueReward, Issue.id == IssueReward.issue_id)
+            .join(
+                PledgeTransaction,
+                and_(
+                    PledgeTransaction.pledge_id == Pledge.id,
+                    PledgeTransaction.issue_reward_id == IssueReward.id,
+                    PledgeTransaction.type == PledgeTransactionType.transfer,
+                ),
+                isouter=True,
+            )
+        )
+
+        statement = statement.where(
+            Pledge.id == pledge_id, IssueReward.id == issue_reward_id
+        )
+
+        statement = statement.options(
+            joinedload(IssueReward.user),
+            joinedload(IssueReward.organization),
+            joinedload(Pledge.issue)
+            .joinedload(Issue.repository)
+            .joinedload(Repository.organization),
+            joinedload(Pledge.by_organization),
+            joinedload(Pledge.user),
+        )
+
+        res = await session.execute(statement)
+
+        r = res.unique().one_or_none()
+
+        if r:
+            return r._tuple()
+
+        return None
+
 
 reward_service = RewardService()

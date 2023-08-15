@@ -2,7 +2,7 @@ import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import LoadingScreen from '@/components/Dashboard/LoadingScreen'
 import type { NextLayoutComponentType } from 'next'
 import { useRouter } from 'next/router'
-import { useListOrganizations, useListPersonalPledges } from 'polarkit/hooks'
+import { useListOrganizations } from 'polarkit/hooks'
 import { ReactElement, useEffect } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../hooks'
 
@@ -10,14 +10,12 @@ const Page: NextLayoutComponentType = () => {
   const { isLoaded, haveOrgs } = useCurrentOrgAndRepoFromURL()
 
   const listOrganizationsQuery = useListOrganizations()
-  const personalPledges = useListPersonalPledges()
 
   const router = useRouter()
 
   useEffect(() => {
     if (!isLoaded) return
 
-    // redirect to first org
     // TODO: Get org fallback from `useCurrentOrgAndRepoFromURL` vs. have this logic scattered?
     if (
       haveOrgs &&

@@ -36,7 +36,7 @@ const SidebarNavigation = () => {
       id: 'org-finance',
       title: 'Finance',
       icon: <CurrencyDollarIcon className="h-6 w-6" />,
-      link: `/finance/${org?.name}`,
+      link: `/maintainer/${org?.name}/finance`,
       if: org && isLoaded,
     },
     {

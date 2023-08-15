@@ -79,7 +79,7 @@ const DashboardNav = () => {
         onSelectRepo={(org, repo) =>
           router.push(path(router.pathname, org, repo))
         }
-        onSelectUser={() => router.push('/dependencies/personal')}
+        onSelectUser={() => router.push('/feed')}
         currentOrg={currentOrg}
         currentRepo={currentRepo}
         showUserInDropdown={true}

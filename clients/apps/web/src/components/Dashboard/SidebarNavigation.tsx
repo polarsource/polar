@@ -26,13 +26,6 @@ const SidebarNavigation = () => {
       if: org && isLoaded,
     },
     {
-      id: 'org-dependencies',
-      title: 'Dependencies',
-      icon: <CubeIcon className="h-6 w-6" />,
-      link: `/dependencies/${org?.name}`,
-      if: org && isLoaded,
-    },
-    {
       id: 'org-finance',
       title: 'Finance',
       icon: <CurrencyDollarIcon className="h-6 w-6" />,
@@ -67,7 +60,7 @@ const SidebarNavigation = () => {
       id: 'personal-dependencies',
       title: 'Dependencies',
       icon: <CubeIcon className="h-6 w-6" />,
-      link: `/dependencies/personal`,
+      link: `/feed`,
       if: !org && isLoaded,
     },
 

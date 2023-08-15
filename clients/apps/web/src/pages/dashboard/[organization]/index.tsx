@@ -19,7 +19,7 @@ const Page: NextLayoutComponentType = () => {
 
     // Redirect to personal
     if (!haveOrgs && havePersonalPledges) {
-      router.push(`/dependencies/personal`)
+      router.push(`/feed`)
       return
     }
 

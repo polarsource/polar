@@ -26,7 +26,7 @@ const Page: NextLayoutComponentType = () => {
       router.push(`/maintainer/${gotoOrg.name}/issues`)
       return
     }
-    router.push(`/dependencies/personal`)
+    router.push(`/maintainer`)
   })
 
   return (

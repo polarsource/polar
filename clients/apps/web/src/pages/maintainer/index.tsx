@@ -1,16 +1,14 @@
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
-import LoadingScreen from '@/components/Dashboard/LoadingScreen'
+import OnboardingConnectReposToGetStarted from '@/components/Onboarding/OnboardingConnectReposToGetStarted'
 import type { NextLayoutComponentType } from 'next'
 import { useRouter } from 'next/router'
-import { useListOrganizations, useListPersonalPledges } from 'polarkit/hooks'
+import { useListOrganizations } from 'polarkit/hooks'
 import { ReactElement, useEffect } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../hooks'
 
 const Page: NextLayoutComponentType = () => {
   const { isLoaded, haveOrgs } = useCurrentOrgAndRepoFromURL()
-
   const listOrganizationsQuery = useListOrganizations()
-  const personalPledges = useListPersonalPledges()
 
   const router = useRouter()
 
@@ -18,7 +16,6 @@ const Page: NextLayoutComponentType = () => {
     if (!isLoaded) return
 
     // redirect to first org
-    // TODO: Get org fallback from `useCurrentOrgAndRepoFromURL` vs. have this logic scattered?
     if (
       haveOrgs &&
       listOrganizationsQuery?.data?.items &&
@@ -28,16 +25,13 @@ const Page: NextLayoutComponentType = () => {
       router.push(`/maintainer/${gotoOrg.name}/issues`)
       return
     }
-    router.push(`/dependencies/personal`)
   })
 
-  return (
-    <>
-      <LoadingScreen>
-        <>Redirecting...</>
-      </LoadingScreen>
-    </>
-  )
+  if (!isLoaded) {
+    return <></>
+  }
+
+  return <OnboardingConnectReposToGetStarted />
 }
 
 Page.getLayout = (page: ReactElement) => {

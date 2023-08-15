@@ -79,20 +79,20 @@ const Finance = (props: {
           title="Current pledges"
           amount={currentPledgesAmount}
           active={props.tab === 'current'}
-          href={`/finance/${org.name}`}
+          href={`/maintainer/${org.name}/finance`}
         />
         <HeaderPill
           title={`Rewarded to ${org.name}`}
           amount={rewardedPledgesAmount}
           active={props.tab === 'rewarded'}
-          href={`/finance/${org.name}/rewarded`}
+          href={`/maintainer/${org.name}/finance/rewarded`}
         />
         {false && (
           <HeaderPill
             title="Rewarded to contributors"
             amount={0}
             active={false}
-            href={`/finance/${org.name}/contributors`}
+            href={`/maintainer/${org.name}/finance/contributors`}
           />
         )}
       </div>

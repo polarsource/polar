@@ -22,7 +22,7 @@ const SidebarNavigation = () => {
       id: 'org-issues',
       title: 'Issues',
       icon: <ExclamationCircleIcon className="h-6 w-6" />,
-      link: `/issues/${org?.name}`,
+      link: `/maintainer/${org?.name}/issues`,
       if: org && isLoaded,
     },
     {

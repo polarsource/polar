@@ -13,11 +13,12 @@ import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
 
 const Page: NextLayoutComponentType = () => {
   const router = useRouter()
+
   const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
 
   useEffect(() => {
     if (isLoaded && !org) {
-      router.push('/dashboard')
+      router.push('/maintainer')
       return
     }
   }, [isLoaded, org, router])

@@ -17,7 +17,7 @@ const Page: NextLayoutComponentType = () => {
 
   useEffect(() => {
     if (isLoaded && !org) {
-      router.push('/issues')
+      router.push('/maintainer')
       return
     }
   }, [isLoaded, org, router])

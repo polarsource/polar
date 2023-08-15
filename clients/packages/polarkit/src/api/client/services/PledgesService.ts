@@ -27,6 +27,7 @@ export class PledgesService {
     platform,
     organizationName,
     repositoryName,
+    issueId,
   }: {
     platform?: Platforms,
     /**
@@ -37,6 +38,10 @@ export class PledgesService {
      * Search pledges in the repository with this name. Can only be used if organization_name is set.
      */
     repositoryName?: string,
+    /**
+     * Search pledges to this issue
+     */
+    issueId?: string,
   }): CancelablePromise<ListResource_Pledge_> {
     return this.httpRequest.request({
       method: 'GET',
@@ -45,6 +50,7 @@ export class PledgesService {
         'platform': platform,
         'organization_name': organizationName,
         'repository_name': repositoryName,
+        'issue_id': issueId,
       },
       errors: {
         422: `Validation Error`,

@@ -4,10 +4,12 @@
 import type { BackofficeBadge } from '../models/BackofficeBadge';
 import type { BackofficeBadgeResponse } from '../models/BackofficeBadgeResponse';
 import type { BackofficePledge } from '../models/BackofficePledge';
+import type { BackofficeReward } from '../models/BackofficeReward';
 import type { InviteCreate } from '../models/InviteCreate';
 import type { InviteRead } from '../models/InviteRead';
 import type { ListResource_BackofficeReward_ } from '../models/ListResource_BackofficeReward_';
 import type { OrganizationPrivateRead } from '../models/OrganizationPrivateRead';
+import type { PledgeRewardTransfer } from '../models/PledgeRewardTransfer';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -51,21 +53,20 @@ export class BackofficeService {
   }
 
   /**
-   * Pledge Approve
-   * @returns BackofficePledge Successful Response
+   * Pledge Reward Transfer
+   * @returns BackofficeReward Successful Response
    * @throws ApiError
    */
-  public pledgeApprove({
-    pledgeId,
+  public pledgeRewardTransfer({
+    requestBody,
   }: {
-    pledgeId: string,
-  }): CancelablePromise<BackofficePledge> {
+    requestBody: PledgeRewardTransfer,
+  }): CancelablePromise<BackofficeReward> {
     return this.httpRequest.request({
       method: 'POST',
-      url: '/api/v1/backoffice/pledges/approve/{pledge_id}',
-      path: {
-        'pledge_id': pledgeId,
-      },
+      url: '/api/v1/backoffice/pledges/approve',
+      body: requestBody,
+      mediaType: 'application/json',
       errors: {
         422: `Validation Error`,
       },

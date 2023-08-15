@@ -5,6 +5,6 @@
 export type ConfirmIssueSplit = {
   organization_id?: string;
   github_username?: string;
-  share: number;
+  share_thousands: number;
 };
 

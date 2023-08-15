@@ -76,6 +76,7 @@ export type { PledgeMutationResponse } from './models/PledgeMutationResponse';
 export type { Pledger } from './models/Pledger';
 export type { PledgeRead } from './models/PledgeRead';
 export type { PledgeResources } from './models/PledgeResources';
+export type { PledgeRewardTransfer } from './models/PledgeRewardTransfer';
 export type { PledgerPledgePendingNotification } from './models/PledgerPledgePendingNotification';
 export { PledgeState } from './models/PledgeState';
 export type { PledgeUpdate } from './models/PledgeUpdate';

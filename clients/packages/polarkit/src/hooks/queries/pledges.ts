@@ -8,25 +8,28 @@ export const useListPersonalPledges = () =>
     retry: defaultRetry,
   })
 
-export const useGetPledge = (
-  platform: Platforms,
-  orgName: string,
-  repoName: string,
-  number: number,
-  pledgeId: string | undefined,
-) =>
+export const useGetPledge = (pledgeId?: string) =>
   useQuery(
     ['pledge', pledgeId],
     () =>
-      api.pledges.getPledge({
-        platform,
-        orgName,
-        repoName,
-        number,
-        pledgeId: pledgeId || '',
+      api.pledges.get({
+        id: pledgeId || '',
       }),
     {
       enabled: !!pledgeId,
+      retry: defaultRetry,
+    },
+  )
+
+export const useListPledesForIssue = (issueId?: string) =>
+  useQuery(
+    ['pledge', 'byIssue', issueId],
+    () =>
+      api.pledges.search({
+        issueId: issueId || '',
+      }),
+    {
+      enabled: !!issueId,
       retry: defaultRetry,
     },
   )

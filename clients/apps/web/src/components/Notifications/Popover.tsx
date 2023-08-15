@@ -1,12 +1,12 @@
 import { BellIcon } from '@heroicons/react/24/outline'
 import {
+  ConfirmIssueSplit,
   MaintainerPledgeConfirmationPendingNotification,
   MaintainerPledgeCreatedNotification,
   MaintainerPledgePaidNotification,
   MaintainerPledgePendingNotification,
   NotificationRead,
   NotificationType,
-  Platforms,
   PledgeState,
   PledgerPledgePendingNotification,
 } from 'polarkit/api/client'
@@ -15,13 +15,17 @@ import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
 import {
   useGetPledge,
   useIssueMarkConfirmed,
+  useListPledesForIssue,
   useNotifications,
   useNotificationsMarkRead,
 } from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Split, { Contributor, Share } from '../Finance/Split'
 import DollarSignIcon from '../Icons/DollarSignIcon'
 import Icon from '../Icons/Icon'
+import { Modal } from '../Modal'
+import { useModal } from '../Modal/useModal'
 
 const Popover = () => {
   const [show, setShow] = useState(false)
@@ -54,9 +58,14 @@ const Popover = () => {
     }
   }
 
+  const [inNestedModal, setIsInNestedModal] = useState(false)
+
   const ref = useRef(null)
 
   useOutsideClick([ref], () => {
+    if (inNestedModal) {
+      return
+    }
     setShow(false)
   })
 
@@ -100,7 +109,10 @@ const Popover = () => {
             e.stopPropagation()
           }}
         >
-          <List notifications={notifs.data.notifications} />
+          <List
+            notifications={notifs.data.notifications}
+            setIsInNestedModal={setIsInNestedModal}
+          />
         </div>
       )}
     </>
@@ -111,8 +123,10 @@ export default Popover
 
 export const List = ({
   notifications,
+  setIsInNestedModal,
 }: {
   notifications: NotificationRead[]
+  setIsInNestedModal: (_: boolean) => void
 }) => {
   return (
     <div className="flex w-full flex-col items-center space-y-4 sm:items-end">
@@ -127,7 +141,13 @@ export const List = ({
                 </div>
               )}
               {notifications.map((n) => {
-                return <Notification n={n} key={n.id} />
+                return (
+                  <Notification
+                    n={n}
+                    key={n.id}
+                    setIsInNestedModal={setIsInNestedModal}
+                  />
+                )
               })}
             </div>
           </div>
@@ -192,17 +212,17 @@ const MaintainerPledgeCreated = ({
 const MaintainerPledgeConfirmationPendingWrapper = ({
   n,
   payload,
+  setIsInNestedModal,
 }: {
   n: NotificationRead
   payload: MaintainerPledgeConfirmationPendingNotification
+  setIsInNestedModal: (_: boolean) => void
 }) => {
-  const pledge = useGetPledge(
-    Platforms.GITHUB,
-    payload.issue_org_name,
-    payload.issue_repo_name,
-    payload.issue_number,
-    payload.pledge_id,
-  )
+  const pledge = useGetPledge(payload.pledge_id)
+
+  const pledges = useListPledesForIssue(pledge.data?.issue.id || undefined)
+
+  const { isShown, toggle } = useModal()
 
   const canMarkSolved = useMemo(() => {
     return pledge.data?.state === PledgeState.CONFIRMATION_PENDING
@@ -214,24 +234,85 @@ const MaintainerPledgeConfirmationPendingWrapper = ({
   const markSolved = useIssueMarkConfirmed()
 
   const onMarkSolved = async () => {
-    if (!pledge.data?.issue_id) {
+    setIsInNestedModal(true)
+    toggle()
+  }
+
+  const onSplitConfirm = async (shares: Share[]) => {
+    if (!pledge.data?.issue.id) {
       return
     }
+
+    const splits: ConfirmIssueSplit[] = shares
+      .filter((s) => s.share_thousands !== undefined && s.share_thousands > 0)
+      .map((s) => {
+        // reward to self org
+        if (s.username === pledge.data.issue.repository.organization?.name) {
+          return {
+            organization_id: pledge.data.issue.repository.organization?.id,
+            share_thousands: s.share_thousands || 0,
+          }
+        }
+
+        // reward to other
+        return {
+          github_username: s.username,
+          share_thousands: s.share_thousands || 0,
+        }
+      })
+
     await markSolved.mutateAsync({
-      id: pledge.data?.issue_id,
-      splits: [], // TODO!
+      id: pledge.data?.issue.id,
+      splits,
     })
   }
 
+  const close = () => {
+    if (!isShown) {
+      return
+    }
+
+    setIsInNestedModal(false)
+    toggle()
+  }
+
+  const shares: Share[] = pledge.data?.issue.repository.organization
+    ? [{ username: pledge.data.issue.repository.organization.name }]
+    : []
+
+  const contributors: Contributor[] = pledge.data?.issue.repository.organization
+    ? [
+        {
+          username: pledge.data.issue.repository.organization.name,
+          avatar_url: pledge.data.issue.repository.organization.avatar_url,
+        },
+      ]
+    : []
+
   return (
-    <MaintainerPledgeConfirmationPending
-      n={n}
-      payload={payload}
-      canMarkSolved={canMarkSolved}
-      isMarkedSolved={isMarkedSolved}
-      isLoading={markSolved.isLoading}
-      onMarkSoved={onMarkSolved}
-    />
+    <>
+      <MaintainerPledgeConfirmationPending
+        n={n}
+        payload={payload}
+        canMarkSolved={canMarkSolved}
+        isMarkedSolved={isMarkedSolved}
+        isLoading={markSolved.isLoading}
+        onMarkSoved={onMarkSolved}
+      />
+      <Modal
+        isShown={isShown}
+        hide={close}
+        modalContent={
+          <Split
+            pledges={pledges.data?.items || []}
+            shares={shares}
+            contributors={contributors}
+            onConfirm={onSplitConfirm}
+            onCancel={close}
+          />
+        }
+      />
+    </>
   )
 }
 
@@ -382,7 +463,13 @@ const PledgerPledgePending = ({
   )
 }
 
-export const Notification = ({ n }: { n: NotificationRead }) => {
+export const Notification = ({
+  n,
+  setIsInNestedModal,
+}: {
+  n: NotificationRead
+  setIsInNestedModal: (_: boolean) => void
+}) => {
   switch (n.type) {
     case NotificationType.MAINTAINER_PLEDGE_CREATED_NOTIFICATION:
       return (
@@ -397,6 +484,7 @@ export const Notification = ({ n }: { n: NotificationRead }) => {
         <MaintainerPledgeConfirmationPendingWrapper
           n={n}
           payload={n.payload as MaintainerPledgeConfirmationPendingNotification}
+          setIsInNestedModal={setIsInNestedModal}
         />
       )
     case NotificationType.MAINTAINER_PLEDGE_PENDING_NOTIFICATION:

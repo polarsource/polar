@@ -116,17 +116,17 @@ const List = (props: {
                   </div>
                 </td>
                 <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
-                  TODO!
-                  {/*}
-                  <div className="flex items-center gap-1 ">
-                    {t.pledge.pledger_avatar && (
-                      <img
-                        src={t.pledge.pledger_avatar}
-                        className="h-6 w-6 rounded-full"
-                      />
-                    )}
-                    <span>{t.pledge.pledger_name || 'Anonymous'}</span>
-                    </div>*/}
+                  {
+                    <div className="flex items-center gap-1">
+                      {t.pledger?.avatar_url && (
+                        <img
+                          src={t.pledger.avatar_url}
+                          className="h-6 w-6 rounded-full"
+                        />
+                      )}
+                      <span>{t.pledger?.name || 'Anonymous'}</span>
+                    </div>
+                  }
                 </td>
 
                 <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">

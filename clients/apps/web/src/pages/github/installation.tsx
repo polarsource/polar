@@ -81,7 +81,7 @@ const GithubInstallationPage: NextPageWithLayout = () => {
   }, [])
 
   if (installed) {
-    router.replace(`/dashboard/initialize/${installed.name}`)
+    router.replace(`/maintainer/${installed.name}/initialize`)
     return <></>
   }
 

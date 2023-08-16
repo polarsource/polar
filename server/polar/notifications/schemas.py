@@ -10,6 +10,7 @@ from polar.notifications.notification import (
     MaintainerPledgePaidNotification,
     MaintainerPledgePendingNotification,
     PledgerPledgePendingNotification,
+    RewardPaidNotification,
 )
 
 
@@ -21,6 +22,7 @@ class NotificationType(str, Enum):
     MaintainerPledgePendingNotification = "MaintainerPledgePendingNotification"
     MaintainerPledgeCreatedNotification = "MaintainerPledgeCreatedNotification"
     PledgerPledgePendingNotification = "PledgerPledgePendingNotification"
+    RewardPaidNotification = "RewardPaidNotification"
 
     @classmethod
     def from_str(cls, s: str) -> Self:
@@ -37,6 +39,7 @@ class NotificationRead(Schema):
         MaintainerPledgePendingNotification,
         MaintainerPledgeCreatedNotification,
         PledgerPledgePendingNotification,
+        RewardPaidNotification,
     ]
 
 

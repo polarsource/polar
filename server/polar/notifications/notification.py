@@ -117,6 +117,7 @@ Create a Stripe account with Polar today to ensure we can transfer the funds dir
 """  # noqa: E501
 
 
+# No longer sent as of 2023-08-16
 class MaintainerPledgePaidNotification(NotificationBase):
     paid_out_amount: str
     issue_url: str
@@ -133,6 +134,32 @@ class MaintainerPledgePaidNotification(NotificationBase):
         return """Hi,<br><br>
 
 We&apos;ve now transferred ${{paid_out_amount}} in approved pledges for your efforts on <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}</a>. It will arrive to your Stripe account that you have connected with Polar.<br><br>
+
+Don&apos;t hesitate to reply here with any questions you might have.<br><br>
+
+Best,<br>
+Polar
+
+"""  # noqa: E501
+
+
+class RewardPaidNotification(NotificationBase):
+    paid_out_amount: str
+    issue_url: str
+    issue_title: str
+    issue_org_name: str
+    issue_repo_name: str
+    issue_number: int
+    issue_id: UUID
+    pledge_id: UUID
+
+    def subject(self) -> str:
+        return "${{paid_out_amount}} transferred for {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}"  # noqa: E501
+
+    def body(self) -> str:
+        return """Hi,<br><br>
+
+We&apos;ve now transferred ${{paid_out_amount}} in approved pledges for your efforts on <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}</a>. It will arrive to the account that you'be connected to Polar.<br><br>
 
 Don&apos;t hesitate to reply here with any questions you might have.<br><br>
 

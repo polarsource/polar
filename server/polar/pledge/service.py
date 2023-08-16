@@ -13,10 +13,10 @@ from sqlalchemy.orm import (
 )
 
 from polar.account.service import account as account_service
-from polar.enums import Platforms
 from polar.exceptions import NotPermitted, ResourceNotFound, StripeError
 from polar.integrations.stripe.service import stripe
 from polar.issue.schemas import ConfirmIssueSplit
+from polar.issue.service import issue as issue_service
 from polar.kit.hook import Hook
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
@@ -33,11 +33,9 @@ from polar.postgres import AsyncSession, sql
 
 from .hooks import (
     PledgeHook,
-    PledgePaidHook,
     pledge_confirmation_pending,
     pledge_created,
     pledge_disputed,
-    pledge_paid,
     pledge_pending,
     pledge_updated,
 )

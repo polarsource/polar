@@ -21,6 +21,7 @@ import React, {
 import yayson from 'yayson'
 import Spinner from '../Shared/Spinner'
 import IssueListItem from './IssueListItem'
+import RepoSelection from './RepoSelection'
 
 const IssueList = (props: {
   dashboard?: InfiniteData<IssueListResponse>
@@ -245,6 +246,7 @@ export const Header = (props: {
         onSubmit={onSubmit}
       >
         <div className="flex w-full items-center space-x-4 ">
+          <RepoSelection />
           <div className="relative w-full lg:max-w-[500px] ">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 ">
               {props.spinner && <Spinner />}

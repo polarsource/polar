@@ -62,6 +62,7 @@ module.exports = {
       boxShadow: {
         DEFAULT: '0 1px 8px rgb(0 0 0 / 0.07), 0 0.5px 2.5px rgb(0 0 0 / 0.16)',
         lg: '0 5px 17px rgba(0 0 0 / 0.15), 0 0px 3px rgba(0 0 0 / 0.12)',
+        hidden: '0 1px 8px rgb(0 0 0 / 0), 0 0.5px 2.5px rgb(0 0 0 / 0)',
       },
       fontFamily: {
         sans: ['Inter var', ...defaultTheme.fontFamily.sans],

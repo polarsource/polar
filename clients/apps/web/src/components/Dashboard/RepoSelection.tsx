@@ -1,485 +1,91 @@
-import {
-  CodeBracketIcon as CodeBracketIconSmall,
-  PlusIcon,
-} from '@heroicons/react/20/solid'
-import { Command } from 'cmdk'
-import Image from 'next/image'
-import { Organization, Repository, UserRead } from 'polarkit/api/client'
-import { CONFIG } from 'polarkit/config'
-import { useOutsideClick } from 'polarkit/utils'
-import { posthog } from 'posthog-js'
-import React, { KeyboardEvent, useEffect, useRef, useState } from 'react'
-import {
-  Avatar,
-  Badge,
-  Icon,
-  Item,
-  Left,
-  Loading,
-  SelectedBox,
-  Text,
-} from '../Dropdown'
+import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { useRouter } from 'next/router'
+import { useListRepositories } from 'polarkit/hooks'
 
-const plural = (num: number, singular: string, plural: string): string => {
-  if (num === 1) {
-    return singular
-  }
-  return plural
-}
+const RepoSelection = (props: {}) => {
+  // Get current org & repo from URL
+  const { org: currentOrg, repo: currentRepo } = useCurrentOrgAndRepoFromURL()
+  const router = useRouter()
 
-export function RepoSelection(props: {
-  showRepositories?: boolean
-  showConnectMore?: boolean
-  onSelectRepo?: (org: string, repo: string) => void
-  onSelectOrg?: (org: string) => void
-  onSelectUser?: () => void
-  currentOrg?: Organization
-  currentRepo?: Repository
-  fullWidth?: boolean
-  showUserInDropdown?: boolean
-  defaultToUser?: boolean
-  showOrganizationRepositoryCount?: boolean
-  organizations: Organization[]
-  repositories?: Repository[]
-  currentUser: UserRead
-  initOpen?: boolean
-}) {
-  const [value, setValue] = React.useState('')
-  const inputRef = React.useRef<HTMLInputElement | null>(null)
-  const listRef = React.useRef(null)
+  const currentFilter = currentRepo?.name || 'All repositories'
 
-  const [open, setOpen] = React.useState(!!props.initOpen)
-
-  useEffect(() => {
-    inputRef?.current?.focus()
-  }, [])
-
-  const { organizations, currentUser, repositories } = props
-
-  const [dropdownSelectedOrg, setDropdowndropdownSelectedOrg] = useState<
-    Organization | undefined
-  >()
-
-  const resetDropdown = () => {
-    setOpen(false)
-    setDropdowndropdownSelectedOrg(undefined)
-    setInputValue('')
+  // Get all repositories
+  const listRepositoriesQuery = useListRepositories()
+  const allRepositories = listRepositoriesQuery?.data?.items
+  if (!currentOrg || !allRepositories) {
+    return <></>
   }
 
-  const onSelectOrg = (org: Organization) => {
-    // If show repositories, open selection to show repositories
-    if (props.showRepositories) {
-      // Select org again, go to it!
-      if (dropdownSelectedOrg && dropdownSelectedOrg.id === org.id) {
-        resetDropdown()
-        if (props.onSelectOrg) {
-          props.onSelectOrg(org.name)
-        }
-        return
+  // Filter repos by current org & normalize for our select
+  const filterRepos = allRepositories.reduce(
+    (filtered, repo) => {
+      if (repo?.organization?.id === currentOrg.id) {
+        filtered.push(repo.name)
       }
+      return filtered
+    },
+    ['All repositories'],
+  )
 
-      setDropdowndropdownSelectedOrg(org)
-      setInputValue('')
+  const onRepoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const chosen = e.target.value
+    if (chosen === currentFilter) {
       return
     }
 
-    // If not show repositories, navigate straight away
-    resetDropdown()
-    if (props.onSelectOrg) {
-      props.onSelectOrg(org.name)
-    }
-  }
-
-  const onSelectRepo = (org: Organization, repo: Repository) => {
-    if (org && repo) {
-      resetDropdown()
-      if (props.onSelectRepo) {
-        props.onSelectRepo(org.name, repo.name)
-      }
-    }
-  }
-
-  const onSelectUser = () => {
-    if (props.onSelectUser) {
-      props.onSelectUser()
-    }
-  }
-
-  const onValueChange = (search: string) => {
-    setValue(search)
-  }
-
-  const [orgIsBackspaceHighlighted, setOrgIsBackspaceHighlighted] =
-    useState(false)
-
-  const onInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    // Backspace once to select, backspace again to delete
-    if (e.code === 'Backspace' && inputValue === '') {
-      if (orgIsBackspaceHighlighted) {
-        setDropdowndropdownSelectedOrg(undefined)
-        setOrgIsBackspaceHighlighted(false)
-      } else {
-        setOrgIsBackspaceHighlighted(true)
-      }
-    } else if (e.code === 'Escape') {
-      setOpen(false)
+    const currentURL = new URL(window.location.href)
+    if (chosen === 'All repositories') {
+      currentURL.searchParams.delete('repo')
     } else {
-      // If was selected and not backspace, undo selection
-      setOrgIsBackspaceHighlighted(false)
-    }
-  }
-
-  type ListOrg = Organization & {
-    unfilteredRepositoryCount: number
-    repositories: Repository[]
-  }
-
-  const [listOrgs, setListOrgs] = useState<ListOrg[]>([])
-
-  // Value in <input>
-  const [inputValue, setInputValue] = useState('')
-
-  useEffect(() => {
-    const reposInOrg = (orgID: string): Repository[] => {
-      if (!repositories) {
-        return []
-      }
-      return repositories.filter((r) => r.organization?.id === orgID)
+      currentURL.searchParams.set('repo', chosen)
     }
 
-    let orgs: ListOrg[] = []
-
-    // No selected org, and no search: show only orgs
-    if (dropdownSelectedOrg === undefined && inputValue === '') {
-      orgs =
-        organizations?.map((o) => {
-          return {
-            ...o,
-            repositories: [],
-            unfilteredRepositoryCount: reposInOrg(o.id).length,
-          }
-        }) || []
-    } else if (dropdownSelectedOrg === undefined && organizations) {
-      orgs = organizations.map((o) => {
-        return {
-          ...o,
-          repositories: reposInOrg(o.id),
-          unfilteredRepositoryCount: reposInOrg(o.id).length,
-        }
-      })
-    } else if (dropdownSelectedOrg) {
-      // selected org
-      orgs =
-        organizations
-          ?.filter((o) => o.id === dropdownSelectedOrg.id)
-          .map((o) => {
-            return {
-              ...o,
-              repositories: reposInOrg(o.id),
-              unfilteredRepositoryCount: reposInOrg(o.id).length,
-            }
-          }) || []
-    } else {
-      orgs = []
-    }
-
-    if (!props.showRepositories) {
-      orgs = orgs.map((o) => {
-        return {
-          ...o,
-          repositories: [],
-        }
-      })
-    }
-
-    setListOrgs(orgs)
-  }, [
-    dropdownSelectedOrg,
-    organizations,
-    inputValue,
-    props.showRepositories,
-    repositories,
-  ])
-
-  const onInputValueChange = (e: string) => {
-    setValue(e)
-    setInputValue(e)
-  }
-
-  const ref = useRef(null)
-
-  useOutsideClick([ref], () => {
-    setOpen(false)
-  })
-
-  const [showUserInDropdown, setShowUserInDropdown] = useState(false)
-
-  useEffect(() => {
-    const haveSelfOrg = organizations?.find(
-      (o) => o.name === currentUser?.username,
-    )
-    setShowUserInDropdown(
-      !haveSelfOrg &&
-        !!props.showUserInDropdown &&
-        dropdownSelectedOrg === undefined,
-    )
-  }, [
-    props.showUserInDropdown,
-    organizations,
-    currentUser,
-    dropdownSelectedOrg,
-  ])
-
-  const width = props.fullWidth
-    ? 'min-w-full max-w-full w-full'
-    : 'min-w-[320px] max-w-[500px]'
-  const placeholder = props.showRepositories
-    ? 'Search orgs and repos...'
-    : 'Search orgs...'
-
-  if (!currentUser) {
-    return <Loading />
-  }
-  if (!organizations) {
-    return <Loading />
+    router.push(currentURL.toString())
   }
 
   return (
-    <div
-      ref={ref}
-      onClick={(e) => {
-        e.stopPropagation()
-      }}
-    >
-      {props.currentOrg && (
-        <SelectedOrgRepo
-          org={props.currentOrg}
-          repo={props.currentRepo}
-          onClick={() => setOpen(true)}
-        />
-      )}
-
-      {!props.currentOrg && !props.defaultToUser && (
-        <SelectedEmpty onClick={() => setOpen(true)} />
-      )}
-
-      {!props.currentOrg && props.defaultToUser && (
-        <SelectedEmptySelfUserPlaceholder
-          onClick={() => setOpen(true)}
-          user={currentUser}
-        />
-      )}
-
-      {open && (
-        <>
-          <div className={`relative bg-red-200`}>
-            <Command
-              value={value}
-              onValueChange={onValueChange}
-              className={`${width} !absolute -top-10 z-10 w-max rounded-lg bg-white shadow-lg dark:border dark:border-gray-600 dark:bg-gray-700`}
-            >
-              <div className="flex items-center px-2">
-                {dropdownSelectedOrg && (
-                  <>
-                    <div
-                      className={`flex-shrink-0 cursor-pointer rounded-md px-2 py-1 text-sm font-medium	transition-colors duration-100 hover:bg-gray-100 dark:hover:bg-gray-600    ${
-                        orgIsBackspaceHighlighted ? ' bg-neutral-100' : ''
-                      }`}
-                      onClick={() => {
-                        setOrgIsBackspaceHighlighted(true)
-                      }}
-                    >
-                      {dropdownSelectedOrg.name}
-                    </div>
-                    <div className="flex-shrink-0 text-gray-400">/</div>
-                  </>
-                )}
-                <Command.Input
-                  ref={inputRef}
-                  autoFocus
-                  placeholder={placeholder}
-                  className="m-0 px-2 py-3 !text-sm !text-gray-900 focus:border-0 focus:ring-0 dark:!text-gray-200"
-                  onKeyDown={onInputKeyDown}
-                  value={inputValue}
-                  onValueChange={onInputValueChange}
-                />
-              </div>
-              <hr className="dark:border-gray-600" />
-              <Command.List
-                ref={listRef}
-                className="max-h-[500px] overflow-auto overscroll-contain px-2 pb-2"
-              >
-                <Command.Empty className="p !h-auto !justify-start !p-2 !pt-3">
-                  No results found.
-                </Command.Empty>
-
-                {listOrgs.map((org) => (
-                  <React.Fragment key={org.id}>
-                    <Item
-                      value={`${org.name}`}
-                      onSelect={() => onSelectOrg(org)}
-                    >
-                      <Left>
-                        <Avatar url={org.avatar_url} />
-                        <Text>{org.name}</Text>
-                      </Left>
-
-                      {!dropdownSelectedOrg &&
-                        props.showOrganizationRepositoryCount && (
-                          <Badge>
-                            {org.unfilteredRepositoryCount}{' '}
-                            {plural(
-                              org.unfilteredRepositoryCount,
-                              'repo',
-                              'repos',
-                            )}
-                          </Badge>
-                        )}
-                    </Item>
-                    {org.repositories &&
-                      org.repositories.map((r) => (
-                        <Item
-                          value={`${org.name}/${r.name}`}
-                          key={r.id}
-                          onSelect={() => onSelectRepo(org, r)}
-                        >
-                          <Left>
-                            <Icon>
-                              <CodeBracketIconSmall className="block h-5 w-5 text-[#B2B2B2]" />
-                            </Icon>
-
-                            {dropdownSelectedOrg && <Text>{r.name}</Text>}
-
-                            {!dropdownSelectedOrg && (
-                              <Text>
-                                {org.name} / {r.name}
-                              </Text>
-                            )}
-                          </Left>
-                        </Item>
-                      ))}
-                  </React.Fragment>
-                ))}
-
-                {showUserInDropdown && (
-                  <Item
-                    value={`${currentUser.username}`}
-                    key={currentUser.id}
-                    onSelect={onSelectUser}
-                  >
-                    <Left>
-                      {currentUser.avatar_url && (
-                        <Avatar url={currentUser.avatar_url} />
-                      )}
-                      <Text>{currentUser.username}</Text>
-                    </Left>
-                  </Item>
-                )}
-
-                {props.showConnectMore && (
-                  <Item
-                    value="Connect a repository"
-                    onSelect={() => {
-                      posthog.capture(
-                        'Connect Repository Clicked',
-                        {
-                          view: 'Repo Selection',
-                        },
-                        { send_instantly: true },
-                      )
-                      window.open(CONFIG.GITHUB_INSTALLATION_URL, '_blank')
-                    }}
-                  >
-                    <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-500">
-                      <Icon>
-                        <PlusIcon className="block h-6 w-6" />
-                      </Icon>
-                      <Text>Connect a repository</Text>
-                    </div>
-                  </Item>
-                )}
-              </Command.List>
-            </Command>
-          </div>
-        </>
-      )}
+    <div className="flex shrink-0 items-center gap-2">
+      <RepoIcon />
+      <select
+        id="sort-by"
+        className="m-0 w-48 border-0 bg-transparent bg-right p-0 text-sm font-medium ring-0 focus:border-0 focus:ring-0"
+        value={currentFilter}
+        onChange={onRepoChange}
+      >
+        {filterRepos.map((r) => (
+          <option key={r} value={r}>
+            {r}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }
 
+const RepoIcon = () => {
+  return (
+    <svg
+      width="17"
+      height="18"
+      viewBox="0 0 17 18"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M2.75 14.5208C2.75 14.0512 2.93931 13.6008 3.27629 13.2687C3.61327 12.9366 4.07031 12.75 4.54688 12.75H14.25"
+        stroke="#727374"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M4.54688 1.75H14.25V16.25H4.54688C4.07031 16.25 3.61327 16.059 3.27629 15.7191C2.93931 15.3792 2.75 14.9182 2.75 14.4375V3.5625C2.75 3.0818 2.93931 2.62078 3.27629 2.28087C3.61327 1.94096 4.07031 1.75 4.54688 1.75Z"
+        stroke="#727374"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
 export default RepoSelection
-
-const SelectedOrgRepo = ({
-  org,
-  repo,
-  onClick,
-}: {
-  org: Organization
-  repo: Repository | undefined
-  onClick: () => void
-}) => {
-  return (
-    <SelectedBox onClick={onClick}>
-      <div className="flex items-center justify-between space-x-2 ">
-        <Image
-          src={org.avatar_url}
-          alt="Avatar"
-          className="h-6 w-6 flex-shrink-0 rounded-full bg-white"
-          height={200}
-          width={200}
-        />
-        <div className="flex items-center space-x-1 overflow-hidden ">
-          <span className="flex-shrink-0 font-medium text-gray-900 dark:text-gray-200">
-            {org.name}
-          </span>
-
-          {repo && (
-            <>
-              <span className="text-gray-400">/</span>
-              <span className="overflow-hidden text-ellipsis whitespace-nowrap text-gray-900 dark:text-gray-200">
-                {repo.name}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-    </SelectedBox>
-  )
-}
-
-const SelectedEmpty = ({ onClick }: { onClick: () => void }) => {
-  return (
-    <SelectedBox onClick={onClick}>
-      <div className="text-gray-500">Select an organization</div>
-    </SelectedBox>
-  )
-}
-
-const SelectedEmptySelfUserPlaceholder = ({
-  onClick,
-  user,
-}: {
-  onClick: () => void
-  user: UserRead
-}) => {
-  return (
-    <SelectedBox onClick={onClick}>
-      <div className="flex items-center justify-between space-x-2 ">
-        {user.avatar_url && (
-          <Image
-            src={user.avatar_url}
-            width={200}
-            height={200}
-            alt="Avatar"
-            className="h-6 w-6 flex-shrink-0 rounded-full"
-          />
-        )}
-        <div className="flex items-center space-x-1 overflow-hidden ">
-          <span className="flex-shrink-0 font-medium text-gray-900 dark:text-gray-200">
-            {user.username}
-          </span>
-        </div>
-      </div>
-    </SelectedBox>
-  )
-}

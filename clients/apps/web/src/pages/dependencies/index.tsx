@@ -15,6 +15,7 @@ const Page: NextLayoutComponentType = () => {
   useEffect(() => {
     router.push(`/feed`)
   })
+  return <></>
 }
 
 Page.getLayout = (page: ReactElement) => {

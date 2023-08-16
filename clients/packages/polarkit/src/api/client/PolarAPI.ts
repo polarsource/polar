@@ -20,7 +20,6 @@ import { PullRequestsService } from './services/PullRequestsService';
 import { RepositoriesService } from './services/RepositoriesService';
 import { RewardsService } from './services/RewardsService';
 import { StreamService } from './services/StreamService';
-import { UserOrganizationsService } from './services/UserOrganizationsService';
 import { UsersService } from './services/UsersService';
 
 type HttpRequestConstructor = new (config: OpenAPIConfig) => BaseHttpRequest;
@@ -42,7 +41,6 @@ export class PolarAPI {
   public readonly repositories: RepositoriesService;
   public readonly rewards: RewardsService;
   public readonly stream: StreamService;
-  public readonly userOrganizations: UserOrganizationsService;
   public readonly users: UsersService;
 
   public readonly request: BaseHttpRequest;
@@ -75,7 +73,6 @@ export class PolarAPI {
     this.repositories = new RepositoriesService(this.request);
     this.rewards = new RewardsService(this.request);
     this.stream = new StreamService(this.request);
-    this.userOrganizations = new UserOrganizationsService(this.request);
     this.users = new UsersService(this.request);
   }
 }

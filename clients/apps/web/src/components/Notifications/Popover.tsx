@@ -8,6 +8,7 @@ import {
   NotificationType,
   PledgeState,
   PledgerPledgePendingNotification,
+  RewardPaidNotification,
 } from 'polarkit/api/client'
 import { GitMergeIcon } from 'polarkit/components/icons'
 import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
@@ -441,6 +442,37 @@ const MaintainerPledgePaid = ({
   )
 }
 
+const RewardPaid = ({
+  n,
+  payload,
+}: {
+  n: NotificationRead
+  payload: RewardPaidNotification
+}) => {
+  return (
+    <Item
+      n={n}
+      iconClasses="bg-blue-200 text-blue-600 dark:bg-blue-600/80 dark:text-blue-200"
+    >
+      {{
+        text: (
+          <>
+            ${payload.paid_out_amount} for{' '}
+            <Link href={payload.issue_url}>
+              <>
+                {payload.issue_org_name}/{payload.issue_repo_name}#
+                {payload.issue_number}
+              </>
+            </Link>{' '}
+            has paid out
+          </>
+        ),
+        icon: <DollarSignIcon />,
+      }}
+    </Item>
+  )
+}
+
 const PledgerPledgePending = ({
   n,
   payload,
@@ -506,6 +538,8 @@ export const Notification = ({
           payload={n.payload as MaintainerPledgePaidNotification}
         />
       )
+    case NotificationType.REWARD_PAID_NOTIFICATION:
+      return <RewardPaid n={n} payload={n.payload as RewardPaidNotification} />
     case NotificationType.PLEDGER_PLEDGE_PENDING_NOTIFICATION:
       return (
         <PledgerPledgePending

@@ -15,6 +15,7 @@ import {
   PledgeState,
   PledgerPledgePendingNotification,
   Repository,
+  RewardPaidNotification,
   State,
   UserRead,
   Visibility,
@@ -208,6 +209,17 @@ const pledgerPledgePendingNotification: PledgerPledgePendingNotification = {
   pledge_date: addDays(new Date(), -2).toISOString(),
 }
 
+const rewardPaidNotification: RewardPaidNotification = {
+  paid_out_amount: '123.50',
+  issue_url: '#',
+  issue_title: 'Hello World',
+  issue_org_name: 'polarsource',
+  issue_repo_name: 'polar',
+  issue_number: 123,
+  issue_id: 'xx',
+  pledge_id: 'yyy',
+}
+
 export const notification_maintainerPledgeCreatedNotification: NotificationRead =
   {
     id: 'x',
@@ -238,4 +250,10 @@ export const notification_pledgerPledgePendingNotification = {
   ...notification_maintainerPledgeCreatedNotification,
   type: NotificationType.PLEDGER_PLEDGE_PENDING_NOTIFICATION,
   payload: pledgerPledgePendingNotification,
+}
+
+export const notification_rewardPaidNotification = {
+  ...notification_maintainerPledgeCreatedNotification,
+  type: NotificationType.REWARD_PAID_NOTIFICATION,
+  payload: rewardPaidNotification,
 }

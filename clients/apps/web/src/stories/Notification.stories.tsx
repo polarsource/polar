@@ -12,6 +12,7 @@ import {
   notification_maintainerPledgePaidNotification,
   notification_maintainerPledgePendingNotification,
   notification_pledgerPledgePendingNotification,
+  notification_rewardPaidNotification,
 } from './testdata'
 
 const meta: Meta<typeof Notification> = {
@@ -89,11 +90,8 @@ export const MaintainerPledgeConfirmationPendingNotificationItemLoading: StoryCo
     },
   }
 
-export const MaintainerPledgeConfirmationPendingNotificationItemIsSolved: StoryConfirmationPending =
-  {
-    ...MaintainerPledgeConfirmationPendingNotificationItem,
-    args: {
-      ...MaintainerPledgeConfirmationPendingNotificationItem.args,
-      isMarkedSolved: true,
-    },
-  }
+export const RewardPaidNotificationItem: Story = {
+  args: {
+    n: notification_rewardPaidNotification,
+  },
+}

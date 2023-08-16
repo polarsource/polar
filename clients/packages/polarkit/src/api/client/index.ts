@@ -93,6 +93,7 @@ export type { RepositoryBadgeSettingsRead } from './models/RepositoryBadgeSettin
 export type { RepositoryBadgeSettingsUpdate } from './models/RepositoryBadgeSettingsUpdate';
 export type { RepositoryLegacyRead } from './models/RepositoryLegacyRead';
 export type { Reward } from './models/Reward';
+export type { RewardPaidNotification } from './models/RewardPaidNotification';
 export { RewardState } from './models/RewardState';
 export { State } from './models/State';
 export type { UpdateIssue } from './models/UpdateIssue';

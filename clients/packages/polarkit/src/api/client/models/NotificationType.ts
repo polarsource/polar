@@ -11,4 +11,5 @@ export enum NotificationType {
   MAINTAINER_PLEDGE_PENDING_NOTIFICATION = 'MaintainerPledgePendingNotification',
   MAINTAINER_PLEDGE_CREATED_NOTIFICATION = 'MaintainerPledgeCreatedNotification',
   PLEDGER_PLEDGE_PENDING_NOTIFICATION = 'PledgerPledgePendingNotification',
+  REWARD_PAID_NOTIFICATION = 'RewardPaidNotification',
 }

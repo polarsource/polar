@@ -56,8 +56,8 @@ const PledgeStatusPage: NextLayoutComponentType = ({
     return <></>
   }
 
-  const redirectToDashboard = () => {
-    if (!query?.goto_url || !query.goto_url.startsWith('/dashboard')) {
+  const redirectToFeed = () => {
+    if (!query?.goto_url || !query.goto_url.startsWith('/feed')) {
       throw new Error('Invalid goto_url')
     }
 
@@ -72,12 +72,8 @@ const PledgeStatusPage: NextLayoutComponentType = ({
     router.replace(redirectURL.toString())
   }
 
-  if (
-    currentUser &&
-    query?.goto_url &&
-    query.goto_url.startsWith('/dashboard')
-  ) {
-    redirectToDashboard()
+  if (currentUser && query?.goto_url && query.goto_url.startsWith('/feed')) {
+    redirectToFeed()
     return <></>
   }
 

@@ -106,7 +106,7 @@ const PledgeForm = ({
 
   // Redirect to personal dashboard if authenticated unless gotoURL is set
   if (!gotoURL && currentUser) {
-    gotoURL = '/dashboard/personal?tab=dependencies'
+    gotoURL = '/feed'
   }
 
   useEffect(() => {

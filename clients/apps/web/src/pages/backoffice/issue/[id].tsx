@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ThinButton } from 'polarkit/components/ui'
 import {
+  useBackofficeIssue,
   useBackofficePledgeRewardTransfer,
   useBackofficeRewards,
 } from 'polarkit/hooks'
@@ -15,6 +16,9 @@ import Topbar from '../../../components/Shared/Topbar'
 const Page: NextLayoutComponentType & { theme?: string } = () => {
   const router = useRouter()
   const { id } = router.query
+
+  const issue = useBackofficeIssue(typeof id === 'string' ? id : undefined)
+
   const rewards = useBackofficeRewards(typeof id === 'string' ? id : undefined)
   const rewardsData = rewards.data?.items || []
 
@@ -35,7 +39,33 @@ const Page: NextLayoutComponentType & { theme?: string } = () => {
     <div>
       <h2 className="text-2xl">Issue</h2>
 
-      <h3 className="text-xl">Rewards</h3>
+      <table>
+        <tbody>
+          <tr>
+            <td className="font-bold">Issue</td>
+            <td>
+              <a
+                className="text-blue-600"
+                href={`https://github.com/${issue.data?.repository.organization?.name}/${issue.data?.repository.name}/issues/${issue.data?.number}`}
+              >
+                {issue.data?.title}
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td className="font-bold">State</td>
+            <td>{issue.data?.state}</td>
+          </tr>
+          <tr>
+            <td className="font-bold">Funding</td>
+            <td>
+              <pre>{JSON.stringify(issue.data?.funding, null, 0)}</pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 className="mt-9 text-xl">Rewards</h3>
 
       <div className="flex flex-col gap-2">
         {rewardsData.map((r) => (

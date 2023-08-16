@@ -14,6 +14,8 @@ from polar.integrations.github.service.repository import (
 )
 from polar.invite.schemas import InviteCreate, InviteRead
 from polar.invite.service import invite as invite_service
+from polar.issue.schemas import Issue
+from polar.issue.service import issue as issue_service
 from polar.kit.schemas import Schema
 from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
@@ -24,7 +26,6 @@ from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.reward.endpoints import to_resource as reward_to_resource
-from polar.reward.schemas import Reward
 from polar.reward.service import reward_service
 from polar.types import ListResource
 
@@ -78,6 +79,22 @@ async def rewards(
             r(pledge, reward, transaction) for pledge, reward, transaction in rewards
         ]
     )
+
+
+@router.get("/issue/{id}", response_model=Issue)
+async def issue(
+    id: UUID,
+    auth: Auth = Depends(Auth.backoffice_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> Issue:
+    i = await issue_service.get_loaded(session, id)
+    if not i:
+        raise HTTPException(
+            status_code=404,
+            detail="Issue not found",
+        )
+
+    return Issue.from_db(i)
 
 
 async def get_pledge(session: AsyncSession, pledge_id: UUID) -> BackofficePledge:

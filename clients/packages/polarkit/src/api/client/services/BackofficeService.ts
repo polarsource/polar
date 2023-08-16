@@ -7,6 +7,7 @@ import type { BackofficePledge } from '../models/BackofficePledge';
 import type { BackofficeReward } from '../models/BackofficeReward';
 import type { InviteCreate } from '../models/InviteCreate';
 import type { InviteRead } from '../models/InviteRead';
+import type { Issue } from '../models/Issue';
 import type { ListResource_BackofficeReward_ } from '../models/ListResource_BackofficeReward_';
 import type { OrganizationPrivateRead } from '../models/OrganizationPrivateRead';
 import type { PledgeRewardTransfer } from '../models/PledgeRewardTransfer';
@@ -45,6 +46,28 @@ export class BackofficeService {
       url: '/api/v1/backoffice/rewards',
       query: {
         'issue_id': issueId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Issue
+   * @returns Issue Successful Response
+   * @throws ApiError
+   */
+  public issue({
+    id,
+  }: {
+    id: string,
+  }): CancelablePromise<Issue> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/backoffice/issue/{id}',
+      path: {
+        'id': id,
       },
       errors: {
         422: `Validation Error`,

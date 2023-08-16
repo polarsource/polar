@@ -118,5 +118,4 @@ export { PullRequestsService } from './services/PullRequestsService';
 export { RepositoriesService } from './services/RepositoriesService';
 export { RewardsService } from './services/RewardsService';
 export { StreamService } from './services/StreamService';
-export { UserOrganizationsService } from './services/UserOrganizationsService';
 export { UsersService } from './services/UsersService';

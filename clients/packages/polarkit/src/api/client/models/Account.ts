@@ -4,14 +4,12 @@
 
 import type { AccountType } from './AccountType';
 
-export type AccountCreate = {
-  user_id?: string;
-  organization_id?: string;
+export type Account = {
+  id: string;
   account_type: AccountType;
+  stripe_id?: string;
   open_collective_slug?: string;
-  /**
-   * Two letter uppercase country code
-   */
+  is_details_submitted?: boolean;
   country: string;
 };
 

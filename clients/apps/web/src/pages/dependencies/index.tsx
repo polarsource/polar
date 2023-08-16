@@ -1,5 +1,4 @@
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
-import LoadingScreen from '@/components/Dashboard/LoadingScreen'
 import type { NextLayoutComponentType } from 'next'
 import { useRouter } from 'next/router'
 import { ReactElement, useEffect } from 'react'
@@ -10,14 +9,6 @@ const Page: NextLayoutComponentType = () => {
   useEffect(() => {
     router.push(`/feed`)
   })
-
-  return (
-    <>
-      <LoadingScreen>
-        <>Redirecting...</>
-      </LoadingScreen>
-    </>
-  )
 }
 
 Page.getLayout = (page: ReactElement) => {

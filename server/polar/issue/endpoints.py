@@ -260,6 +260,9 @@ async def confirm(
         session, issue_id=issue.id, by_user_id=auth.user.id
     )
 
+    # mark pledges as PENDING
+    await pledge_service.mark_pending_by_issue_id(session, issue_id=issue.id)
+
     # get for return
     issue = await issue_service.get_loaded(session, id)
 

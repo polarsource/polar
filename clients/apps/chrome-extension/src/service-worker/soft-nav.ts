@@ -45,6 +45,6 @@ if (!chrome.webNavigation.onHistoryStateUpdated.hasListener(contentListener)) {
 
 if (!chrome.webNavigation.onHistoryStateUpdated.hasListener(authListener)) {
   chrome.webNavigation.onHistoryStateUpdated.addListener(authListener, {
-    url: [{ pathEquals: '/dashboard/settings/extension' }],
+    url: [{ pathEquals: '/settings/extension' }],
   })
 }

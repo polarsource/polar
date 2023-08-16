@@ -1,6 +1,6 @@
 import { useAuth } from '../../hooks'
 import GithubLoginButton from './GithubLoginButton'
-import Logout from './Logout'
+import ProfileSelection from './ProfileSelection'
 
 const Profile = () => {
   const { authenticated } = useAuth()
@@ -9,11 +9,6 @@ const Profile = () => {
     return <GithubLoginButton />
   }
 
-  return (
-    <>
-      <Logout />
-    </>
-  )
+  return <ProfileSelection />
 }
-
 export default Profile

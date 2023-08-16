@@ -15,7 +15,7 @@ const Page: NextPageWithLayout = () => {
   const router = useRouter()
   useEffect(() => {
     router.push(`/feed`)
-  })
+  }, [router])
 
   return (
     <>

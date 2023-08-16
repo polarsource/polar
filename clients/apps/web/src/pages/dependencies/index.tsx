@@ -14,7 +14,7 @@ const Page: NextLayoutComponentType = () => {
 
   useEffect(() => {
     router.push(`/feed`)
-  })
+  }, [router])
   return <></>
 }
 

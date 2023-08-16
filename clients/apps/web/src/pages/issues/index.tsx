@@ -19,21 +19,19 @@ const Page: NextLayoutComponentType = () => {
 
   const router = useRouter()
 
+  const orgs = listOrganizationsQuery?.data?.items
+
   useEffect(() => {
     if (!isLoaded) return
 
     // TODO: Get org fallback from `useCurrentOrgAndRepoFromURL` vs. have this logic scattered?
-    if (
-      haveOrgs &&
-      listOrganizationsQuery?.data?.items &&
-      listOrganizationsQuery.data.items.length > 0
-    ) {
-      const gotoOrg = listOrganizationsQuery.data.items[0]
+    if (haveOrgs && orgs && orgs.length > 0) {
+      const gotoOrg = orgs[0]
       router.push(`/maintainer/${gotoOrg.name}/issues`)
       return
     }
     router.push(`/maintainer`)
-  })
+  }, [isLoaded, haveOrgs, orgs, router])
 
   return (
     <>

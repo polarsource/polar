@@ -1,7 +1,7 @@
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import type { NextLayoutComponentType } from 'next'
 import { useRouter } from 'next/router'
-import { useListOrganizations, useListPersonalPledges } from 'polarkit/hooks'
+import { useListOrganizations } from 'polarkit/hooks'
 import { ReactElement, useEffect } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../hooks'
 
@@ -12,34 +12,26 @@ import { useCurrentOrgAndRepoFromURL } from '../../hooks'
  * You can remove me ~1 month from now to clean up the codebase.
  */
 const Page: NextLayoutComponentType = () => {
-  const { haveOrgs } = useCurrentOrgAndRepoFromURL()
+  const { haveOrgs, isLoaded } = useCurrentOrgAndRepoFromURL()
 
   const listOrganizationsQuery = useListOrganizations()
-  const personalPledges = useListPersonalPledges()
 
   const router = useRouter()
 
-  useEffect(() => {
-    const havePersonalPledges =
-      (personalPledges?.data && personalPledges?.data.length > 0) || false
+  const orgs = listOrganizationsQuery?.data?.items
 
-    // Redirect to personal
-    if (!haveOrgs && havePersonalPledges) {
-      router.push(`/feed`)
-      return
-    }
+  useEffect(() => {
+    if (!isLoaded) return
 
     // Redirect to first org
-    if (
-      haveOrgs &&
-      listOrganizationsQuery?.data?.items &&
-      listOrganizationsQuery.data.items.length > 0
-    ) {
-      const gotoOrg = listOrganizationsQuery.data.items[0]
+    if (haveOrgs && orgs && orgs.length > 0) {
+      const gotoOrg = orgs[0]
       router.push(`/maintainer/${gotoOrg.name}/issues`)
       return
     }
-  })
+
+    router.push('/feed')
+  }, [haveOrgs, isLoaded, router, orgs])
 
   return <></>
 }

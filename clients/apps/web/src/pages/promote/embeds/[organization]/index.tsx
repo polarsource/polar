@@ -23,7 +23,7 @@ const Page: NextLayoutComponentType = () => {
       return
     }
     router.push(`/maintainer`)
-  })
+  }, [isLoaded, org, router])
 
   return (
     <>

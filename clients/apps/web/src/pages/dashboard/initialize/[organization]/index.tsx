@@ -24,7 +24,7 @@ const Page: NextLayoutComponentType = () => {
     }
 
     router.push('/feed')
-  })
+  }, [isLoaded, org, router])
 
   return (
     <>

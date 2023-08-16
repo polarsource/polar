@@ -9,7 +9,7 @@ const Page: NextPageWithLayout = () => {
   const router = useRouter()
   useEffect(() => {
     router.push(`/maintainer`)
-  })
+  }, [router])
 
   return (
     <>

@@ -150,7 +150,8 @@ const IssueListItem = (props: {
   const onConfirmPledge = async (issue_id: string) => {
     await markConfirmed.mutateAsync({
       id: issue_id,
-      splits: [], // TODO!
+      // Give 100% of the rewards to the org
+      splits: [{ organization_id: props.org.id, share_thousands: 1000 }],
     })
   }
 

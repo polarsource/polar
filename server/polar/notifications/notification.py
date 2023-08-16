@@ -56,7 +56,7 @@ You&apos;ll receive the funds once {{issue_org_name}}/{{issue_repo_name}}#{{issu
 
 {% if not maintainer_has_stripe_account -%}
 <br><br>Create a Stripe account with Polar today to avoid any delay with future transfers.<br>
-<a href="https://polar.sh/dashboard/{{issue_org_name}}">polar.sh/dashboard/{{issue_org_name}}</a>
+<a href="https://polar.sh/maintainer/{{issue_org_name}}/finance">polar.sh/maintainer/{{issue_org_name}}/finance</a>
 {% endif -%}
 """  # noqa: E501
 
@@ -80,11 +80,11 @@ class MaintainerPledgeConfirmationPendingNotification(NotificationBase):
 
 Your backers have pledged ${{pledge_amount}} behind <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}</a> which which has now been closed.<br><br>
 
-Before you can receive the money, please verify that the issue is completed on <a href="https://polar.sh/dashboard/{{issue_org_name}}?statuses=backlog%2Ctriaged%2Cin_progress%2Cpull_request%2Cclosed&tab=issues&onlyPledged=1">your Polar dashboard</a>.<br><br>
+Before you can receive the money, please verify that the issue is completed on <a href="https://polar.sh/maintainer/{{issue_org_name}}/issues">your Polar dashboard</a>.<br><br>
 
 {% if not maintainer_has_stripe_account %}
 Create a Stripe account with Polar today to ensure we can transfer the funds directly once the review period is completed.<br>
-<a href="https://polar.sh/dashboard/{{issue_org_name}}">polar.sh/dashboard/{{issue_org_name}}</a>
+<a href="https://polar.sh/maintainer/{{issue_org_name}}/finance">polar.sh/maintainer/{{issue_org_name}}/finance</a>
 {% endif %}
 """  # noqa: E501
 
@@ -112,7 +112,7 @@ We&apos;ve notified the backers and unless we receive any disputes within the ne
 
 {% if not maintainer_has_stripe_account %}
 Create a Stripe account with Polar today to ensure we can transfer the funds directly once the review period is completed.<br>
-<a href="https://polar.sh/dashboard/{{issue_org_name}}">polar.sh/dashboard/{{issue_org_name}}</a>
+<a href="https://polar.sh/maintainer/{{issue_org_name}}/finance">polar.sh/maintainer/{{issue_org_name}}/finance</a>
 {% endif %}
 """  # noqa: E501
 

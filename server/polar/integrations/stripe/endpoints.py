@@ -83,7 +83,7 @@ async def stripe_connect_return(
     )
     return RedirectResponse(
         url=settings.generate_frontend_url(
-            f"/dashboard/{auth.organization.name}?status=stripe-connected"
+            f"/maintainer/{auth.organization.name}/finance?status=stripe-connected"
         )
     )
 

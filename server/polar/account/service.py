@@ -1,25 +1,24 @@
 from __future__ import annotations
+
 from typing import Tuple
 from uuid import UUID
 
 import stripe.error as stripe_lib_error
 import structlog
 
-from polar.models.user import User
-from .schemas import AccountCreate, AccountLink, AccountUpdate
-
-
+from polar.enums import AccountType
+from polar.integrations.open_collective.service import (
+    CollectiveNotFoundError,
+    OpenCollectiveAPIError,
+    open_collective,
+)
+from polar.integrations.stripe.service import stripe
 from polar.kit.services import ResourceService
 from polar.models.account import Account
+from polar.models.user import User
 from polar.postgres import AsyncSession
-from polar.enums import AccountType
-from polar.integrations.stripe.service import stripe
-from polar.integrations.open_collective.service import (
-    open_collective,
-    OpenCollectiveAPIError,
-    CollectiveNotFoundError,
-)
 
+from .schemas import AccountCreate, AccountLink, AccountUpdate
 
 log = structlog.get_logger()
 
@@ -36,6 +35,11 @@ class AccountAlreadyExistsError(AccountServiceError):
 
 
 class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
+    async def get_by_org(
+        self, session: AsyncSession, organization_id: UUID
+    ) -> Account | None:
+        return await self.get_by(session=session, organization_id=organization_id)
+
     async def create_account(
         self,
         session: AsyncSession,

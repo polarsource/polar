@@ -53,7 +53,6 @@ async def test_search(
         business_type="company",
     )
     await session.flush()
-    organization.account = account
     await organization.save(session)
 
     splits = await pledge_service.create_issue_rewards(

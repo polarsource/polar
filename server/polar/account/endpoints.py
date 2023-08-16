@@ -3,6 +3,7 @@ from pydantic import UUID4
 
 from polar.account.schemas import AccountCreate, AccountLink, AccountRead
 from polar.auth.dependencies import Auth
+from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -87,20 +88,25 @@ async def get_accounts(
     org_name: str,
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
 ) -> list[AccountRead | None]:
     # get loaded
-    org = await organization_service.get_with_loaded(
-        session=session, id=auth.organization.id
-    )
-
-    if org and org.account is not None:
-        ret = AccountRead.from_orm(org.account)
-        balance = account_service.get_balance(org.account)
-        if balance is not None:
-            currency, amount = balance
-            ret.balance_currency = currency
-            ret.balance = amount
-        ret.is_admin = org.account.admin_id == auth.user.id
-        return [ret]
-    else:
+    org = await organization_service.get(session=session, id=auth.organization.id)
+    if not org:
         return []
+
+    if not await authz.can(auth.user, AccessType.read, org):
+        return []
+
+    acc = await account_service.get_by_org(session, org.id)
+    if not acc:
+        return []
+
+    ret = AccountRead.from_orm(acc)
+    balance = account_service.get_balance(acc)
+    if balance is not None:
+        currency, amount = balance
+        ret.balance_currency = currency
+        ret.balance = amount
+    ret.is_admin = acc.admin_id == auth.user.id
+    return [ret]

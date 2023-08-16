@@ -742,15 +742,15 @@ class PledgeService(ResourceServiceReader[Pledge]):
         payout_amount = round(pledge.amount * 0.9 * split.share_thousands / 1000)
 
         if split.organization_id:
-            pay_to_org = await organization_service.get_with_loaded(
-                session, id=split.organization_id
+            pay_to_account = await account_service.get_by_org(
+                session, split.organization_id
             )
-            if pay_to_org is None or pay_to_org.account is None:
-                raise NotPermitted("Organization has no account")
+            if pay_to_account is None:
+                raise NotPermitted("Receiving organization has no account")
 
             transfer_id = account_service.transfer(
                 session=session,
-                account=pay_to_org.account,
+                account=pay_to_account,
                 amount=payout_amount,
                 transfer_group=f"{pledge.id}",
             )

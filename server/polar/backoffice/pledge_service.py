@@ -23,9 +23,8 @@ class BackofficePledgeService:
     async def list_pledges(self, session: AsyncSession) -> list[BackofficePledge]:
         stmt = sql.select(Pledge).options(
             joinedload(Pledge.by_organization),
-            joinedload(Pledge.to_organization).joinedload(Organization.account),
+            joinedload(Pledge.to_organization),
             joinedload(Pledge.user),
-            # joinedload(Pledge.issue).joinedload(Issue.organization),
             joinedload(Pledge.issue)
             .joinedload(Issue.repository)
             .joinedload(Repository.organization),
@@ -36,14 +35,6 @@ class BackofficePledgeService:
         )
 
         stmt = stmt.where(Pledge.state != PledgeState.initiated)
-
-        # Pledges to customers
-        # if customers is True:
-        #     stmt = stmt.where(Account.id.is_not(None))
-
-        # # Pledges to non customers
-        # if customers is False:
-        #     stmt = stmt.where(Account.id.is_(None))
 
         stmt = stmt.order_by(desc(Pledge.created_at))
 

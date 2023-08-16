@@ -32,22 +32,6 @@ class OrganizationService(
     def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
         return [self.model.external_id]
 
-    async def get_with_loaded(
-        self, session: AsyncSession, id: UUID
-    ) -> Organization | None:
-        stmt = (
-            sql.select(Organization)
-            .where(
-                Organization.id == id,
-                Organization.deleted_at.is_(None),
-                Organization.installation_id.is_not(None),
-            )
-            .options(joinedload(Organization.account))
-        )
-
-        res = await session.execute(stmt)
-        return res.scalars().one_or_none()
-
     async def list_installed(self, session: AsyncSession) -> Sequence[Organization]:
         stmt = sql.select(Organization).where(
             Organization.deleted_at.is_(None),

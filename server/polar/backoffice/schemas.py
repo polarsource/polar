@@ -23,14 +23,8 @@ class BackofficePledge(PledgeSchema):
 
     pledger_email: str | None
 
-    to_organization_account_type: AccountType | None
-
     @classmethod
     def from_db(cls, o: Pledge) -> Self:
-        to_organization_account_type = None
-        if o.to_organization.account is not None:
-            to_organization_account_type = o.to_organization.account.account_type
-
         p = PledgeSchema.from_db(o)
 
         return cls(
@@ -47,7 +41,6 @@ class BackofficePledge(PledgeSchema):
             dispute_reason=o.dispute_reason,
             disputed_at=o.disputed_at,
             disputed_by_user_id=o.disputed_by_user_id,
-            to_organization_account_type=to_organization_account_type,
         )
 
 

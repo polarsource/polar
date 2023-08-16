@@ -2,7 +2,6 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import type { AccountType } from './AccountType';
 import type { CurrencyAmount } from './CurrencyAmount';
 import type { Issue } from './Issue';
 import type { Pledger } from './Pledger';
@@ -46,6 +45,5 @@ export type BackofficePledge = {
   disputed_by_user_id?: string;
   disputed_at?: string;
   pledger_email?: string;
-  to_organization_account_type?: AccountType;
 };
 

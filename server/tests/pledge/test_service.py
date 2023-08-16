@@ -220,7 +220,6 @@ async def test_transfer(
         business_type="company",
     )
     await session.flush()
-    organization.account = account
     await organization.save(session)
 
     reward = await IssueReward.create(

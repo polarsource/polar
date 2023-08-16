@@ -1,18 +1,18 @@
 import structlog
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 
+from polar.account.service import account as account_service
 from polar.config import settings
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.issue.service import issue as issue_service
 from polar.models import Issue
+from polar.models.account import Account
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
-from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
 from polar.notifications.notification import (
     MaintainerPledgeConfirmationPendingNotification,
     MaintainerPledgeCreatedNotification,
-    MaintainerPledgePaidNotification,
     MaintainerPledgePendingNotification,
     PledgerPledgePendingNotification,
 )
@@ -26,16 +26,12 @@ from polar.notifications.service import (
 from polar.organization.service import organization as organization_service
 from polar.pledge.hooks import (
     PledgeHook,
-    PledgePaidHook,
 )
 from polar.pledge.hooks import (
     pledge_confirmation_pending as pledge_confirmation_pending_hook,
 )
 from polar.pledge.hooks import (
     pledge_created as pledge_created_hook,
-)
-from polar.pledge.hooks import (
-    pledge_paid as pledge_paid_hook,
 )
 from polar.pledge.hooks import (
     pledge_pending as pledge_pending_hook,
@@ -127,12 +123,14 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
         log.error("pledge_created_notification.no_issue_found")
         return
 
-    org: Organization | None = await organization_service.get_with_loaded(
+    org: Organization | None = await organization_service.get(
         session, issue.organization_id
     )
     if not org:
         log.error("pledge_created_notification.no_org_found")
         return
+
+    org_account: Account | None = await account_service.get_by_org(session, org.id)
 
     repo: Repository | None = await repository_service.get(session, issue.repository_id)
     if not repo:
@@ -147,7 +145,7 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
         issue_org_name=org.name,
         issue_repo_name=repo.name,
         issue_number=issue.number,
-        maintainer_has_stripe_account=bool(org.account),
+        maintainer_has_stripe_account=True if org_account else False,
         pledge_id=pledge.id,
     )
 
@@ -168,7 +166,7 @@ async def pledge_confirmation_pending_notification(
         log.error("pledge_confirmation_pending_notification.no_issue_found")
         return
 
-    org = await organization_service.get_with_loaded(session, issue.organization_id)
+    org = await organization_service.get(session, issue.organization_id)
     if not org:
         log.error("pledge_confirmation_pending_notification.no_org_found")
         return
@@ -178,6 +176,8 @@ async def pledge_confirmation_pending_notification(
         log.error("pledge_confirmation_pending_notification.no_repo_found")
         return
 
+    org_account: Account | None = await account_service.get_by_org(session, org.id)
+
     n = MaintainerPledgeConfirmationPendingNotification(
         pledger_name=pledger_name(pledge),
         pledge_amount=get_cents_in_dollar_string(pledge.amount),
@@ -186,7 +186,7 @@ async def pledge_confirmation_pending_notification(
         issue_org_name=org.name,
         issue_repo_name=repo.name,
         issue_number=issue.number,
-        maintainer_has_stripe_account=bool(org.account),
+        maintainer_has_stripe_account=True if org_account else False,
         pledge_id=pledge.id,
     )
 
@@ -205,7 +205,7 @@ async def pledge_pending_notification(pledge: Pledge, session: AsyncSession) -> 
         log.error("pledge_pending_notification.no_issue_found")
         return
 
-    org = await organization_service.get_with_loaded(session, issue.organization_id)
+    org = await organization_service.get(session, issue.organization_id)
     if not org:
         log.error("pledge_pending_notification.no_org_found")
         return
@@ -215,6 +215,8 @@ async def pledge_pending_notification(pledge: Pledge, session: AsyncSession) -> 
         log.error("pledge_pending_notification.no_repo_found")
         return
 
+    org_account: Account | None = await account_service.get_by_org(session, org.id)
+
     n = MaintainerPledgePendingNotification(
         pledger_name=pledger_name(pledge),
         pledge_amount=get_cents_in_dollar_string(pledge.amount),
@@ -223,7 +225,7 @@ async def pledge_pending_notification(pledge: Pledge, session: AsyncSession) -> 
         issue_org_name=org.name,
         issue_repo_name=repo.name,
         issue_number=issue.number,
-        maintainer_has_stripe_account=bool(org.account),
+        maintainer_has_stripe_account=True if org_account else False,
         pledge_id=pledge.id,
     )
 

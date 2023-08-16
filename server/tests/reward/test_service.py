@@ -44,7 +44,6 @@ async def test_list_rewards(
         business_type="company",
     )
     await session.flush()
-    organization.account = account
     await organization.save(session)
 
     splits = await pledge_service.create_issue_rewards(

@@ -77,13 +77,6 @@ class Organization(RecordModel):
 
     onboarded_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
-    account: "Mapped[Account | None]" = relationship(
-        "Account",
-        back_populates="organization",
-        uselist=False,
-        lazy="raise",
-    )
-
     stripe_customer_id: Mapped[str | None] = mapped_column(
         String(length=50), nullable=True, unique=True, default=None
     )

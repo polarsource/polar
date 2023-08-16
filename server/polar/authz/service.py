@@ -106,8 +106,8 @@ class Authz:
 
     async def _can_user_read_account(self, subject: User, object: Account) -> bool:
         # Can read if owned by self
-        # if object.user_id and subject.id == object.user_id:
-        #     return True
+        if object.user_id and subject.id == object.user_id:
+            return True
 
         # Can read if owned by member org
         if object.organization_id and await self._is_member(
@@ -119,8 +119,8 @@ class Authz:
 
     def _can_user_write_account(self, subject: User, object: Account) -> bool:
         # Can write if owned by self
-        # if object.user_id and subject.id == object.user_id:
-        #     return True
+        if object.user_id and subject.id == object.user_id:
+            return True
 
         # Can write if marked as admin
         if subject.id == object.admin_id:

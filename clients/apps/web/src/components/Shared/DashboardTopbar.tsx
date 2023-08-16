@@ -12,13 +12,11 @@ export const path = (
   const withRepoRoutes: Record<string, string> = {
     '/maintainer/[organization]/issues':
       '/maintainer/[organization]/issues?repo=[repo]',
-    '/dependencies/[organization]': '/dependencies/[organization]/[repo]',
   }
 
   const removeRepoRoutes: Record<string, string> = {
     '/maintainer/[organization]/issues?repo=[repo]':
       '/maintainer/[organization]/issues',
-    '/dependencies/[organization]/[repo]': '/dependencies/[organization]',
   }
 
   let nextPathName = currentPathname

@@ -34,7 +34,6 @@ async def test_mark_pending_by_pledge_id(
     mocker: MockerFixture,
 ) -> None:
     pending_notif = mocker.patch("polar.receivers.pledges.pledge_pending_notification")
-    paid_notif = mocker.patch("polar.receivers.pledges.pledge_paid_notification")
 
     await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
 
@@ -44,7 +43,6 @@ async def test_mark_pending_by_pledge_id(
     assert got.state == PledgeState.pending
 
     pending_notif.assert_called_once()
-    paid_notif.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -111,7 +109,6 @@ async def test_mark_pending_by_issue_id(
     mocker: MockerFixture,
 ) -> None:
     pending_notif = mocker.patch("polar.receivers.pledges.pledge_pending_notification")
-    paid_notif = mocker.patch("polar.receivers.pledges.pledge_paid_notification")
 
     amount = 2000
     fee = 200
@@ -150,7 +147,6 @@ async def test_mark_pending_by_issue_id(
     ]
 
     assert pending_notif.call_count == 3
-    paid_notif.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -200,6 +196,10 @@ async def test_transfer(
     user: User,
     mocker: MockerFixture,
 ) -> None:
+    paid_notification = mocker.patch(
+        "polar.pledge.service.PledgeService.transfer_created_notification"
+    )
+
     await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
 
     got = await pledge_service.get(session, pledge.id)
@@ -245,6 +245,8 @@ async def test_transfer(
 
     after_transfer = await pledge_service.get(session, pledge.id)
     assert after_transfer is not None
+
+    paid_notification.assert_called_once()
 
 
 @pytest.mark.asyncio

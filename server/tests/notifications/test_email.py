@@ -1,5 +1,6 @@
 import inspect
 import os
+import uuid
 from typing import Any, Tuple
 
 import pytest
@@ -11,6 +12,7 @@ from polar.notifications.notification import (
     MaintainerPledgePaidNotification,
     MaintainerPledgePendingNotification,
     PledgerPledgePendingNotification,
+    RewardPaidNotification,
 )
 
 
@@ -118,6 +120,7 @@ async def test_MaintainerPledgePendingdNotification_no_stripe(
         issue_org_name="testorg",
         issue_repo_name="testrepo",
         maintainer_has_stripe_account=False,
+        pledge_id=None,
     )
 
     await check_diff(n.render(predictable_user))
@@ -136,6 +139,7 @@ async def test_MaintainerPledgePendingdNotification_with_stripe(
         issue_org_name="testorg",
         issue_repo_name="testrepo",
         maintainer_has_stripe_account=True,
+        pledge_id=None,
     )
 
     await check_diff(n.render(predictable_user))
@@ -153,6 +157,7 @@ async def test_PledgerPledgePendingNotification(
         issue_org_name="testorg",
         issue_repo_name="testrepo",
         pledge_date="2023-02-02",
+        pledge_id=None,
     )
 
     await check_diff(n.render(predictable_user))
@@ -169,6 +174,25 @@ async def test_MaintainerPledgePaidNotification(
         paid_out_amount="123.45",
         issue_org_name="testorg",
         issue_repo_name="testrepo",
+        pledge_id=None,
+    )
+
+    await check_diff(n.render(predictable_user))
+
+
+@pytest.mark.asyncio
+async def test_RewardPaidNotification(
+    predictable_user: User,
+) -> None:
+    n = RewardPaidNotification(
+        issue_url="https://github.com/testorg/testrepo/issues/123",
+        issue_title="issue title",
+        issue_number=123,
+        paid_out_amount="123.45",
+        issue_org_name="testorg",
+        issue_repo_name="testrepo",
+        pledge_id=uuid.uuid4(),
+        issue_id=uuid.uuid4(),
     )
 
     await check_diff(n.render(predictable_user))

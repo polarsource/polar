@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -18,16 +18,17 @@ class Account(RecordModel):
         ONBOARDING_STARTED = "onboarding_started"
 
     __tablename__ = "accounts"
-    __table_args__ = (
-        UniqueConstraint("organization_id"),
-        UniqueConstraint("stripe_id"),
-    )
 
     account_type: Mapped[AccountType] = mapped_column(String(255), nullable=False)
 
-    organization_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("organizations.id"), unique=True
+    organization_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID, ForeignKey("organizations.id"), unique=True, nullable=True
     )
+
+    user_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID, ForeignKey("organizations.id"), unique=True, nullable=True
+    )
+
     admin_id: Mapped[UUID] = mapped_column(PostgresUUID, ForeignKey("users.id"))
 
     stripe_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -50,7 +51,7 @@ class Account(RecordModel):
 
     data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
-    organization: Mapped[Organization] = relationship(
+    organization: Mapped[Organization | None] = relationship(
         "Organization", foreign_keys=[organization_id]
     )
 

@@ -31,8 +31,8 @@ export const path = (
   }
 
   // Currently on a path that does not have [organization] or [repo]
-  // Fallback to navigate to /issues
-  // For example if the user is on "/finance/ORG" and selects a repository, this routes to "/issues/ORG/REPO".
+  // Fallback to navigate to /maintainer/ORG/issues
+  // For example if the user is on "/maintainer/ORG/finance" and selects a repository, this routes to "/maintainer/ORG/issues?repo=REPO".
   if (
     !nextPathName.includes('[organization]') ||
     (!nextPathName.includes('[repo]') && repo)

@@ -26,7 +26,7 @@ const GithubInstallationPage: NextPageWithLayout = () => {
   const [showLogin, setShowLogin] = useState(false)
 
   const redirectToDashboard = () => {
-    router.push('/issues')
+    router.push('/maintainer')
     return
   }
 

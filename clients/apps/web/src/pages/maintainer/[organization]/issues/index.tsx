@@ -15,9 +15,8 @@ const Page: NextLayoutComponentType = () => {
   const key = `org-${orgSlug}-repo-${repoSlug}` // use key to force reload of state
 
   useEffect(() => {
-    // TODO: Redirect to backer view
     if (isLoaded && !org) {
-      router.push('/issues')
+      router.push('/maintainer')
       return
     }
   }, [isLoaded, org, router])

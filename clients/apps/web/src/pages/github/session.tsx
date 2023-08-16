@@ -42,7 +42,7 @@ const GithubAuthPage: NextPageWithLayout = () => {
             posthog.identify(`user:${user.id}`)
           })
 
-        router.push(response.goto_url || '/issues')
+        router.push(response.goto_url || '/maintainer')
         return
       } else {
         setError('Invalid response')

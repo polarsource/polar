@@ -8,7 +8,6 @@ import {
   AccountRead,
   AccountType,
   Organization,
-  Platforms,
   Pledge,
   PledgeState,
   Reward,
@@ -236,18 +235,14 @@ const AccountBanner = (props: {
 
   const goToDashboard = async (account: AccountRead) => {
     const link = await api.accounts.dashboardLink({
-      platform: Platforms.GITHUB,
-      orgName: org.name,
-      accountId: account.id,
+      id: account.id,
     })
     window.location.href = link.url
   }
 
   const goToOnboarding = async (account: AccountRead) => {
     const link = await api.accounts.onboardingLink({
-      platform: Platforms.GITHUB,
-      orgName: org.name,
-      accountId: account.id,
+      id: account.id,
     })
     window.location.href = link.url
   }

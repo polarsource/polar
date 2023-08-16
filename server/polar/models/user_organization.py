@@ -1,5 +1,5 @@
-from uuid import UUID
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -29,12 +29,10 @@ class UserOrganization(TimestampedModel):
         primary_key=True,
     )
 
-    user: "Mapped[User]" = relationship(
-        "User", back_populates="organization_associations", lazy="joined"
-    )
+    user: "Mapped[User]" = relationship("User", lazy="joined")  # TODO: lazy="raise"!
 
     organization: "Mapped[Organization]" = relationship(
-        "Organization", back_populates="users", lazy="joined"
-    )
+        "Organization", lazy="joined"
+    )  # TODO: lazy="raise"!
 
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

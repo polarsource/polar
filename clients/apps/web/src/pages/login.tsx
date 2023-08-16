@@ -11,7 +11,8 @@ const Page: NextLayoutComponentType = (props: { gotoUrl?: string }) => {
 
   useEffect(() => {
     if (currentUser) {
-      router.push('/dashboard')
+      // TODO: Check if maintainer. Otherwise, redirect to feed directly here?
+      router.push('/maintainer')
       return
     }
   }, [currentUser, router])

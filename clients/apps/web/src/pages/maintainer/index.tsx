@@ -11,21 +11,20 @@ const Page: NextLayoutComponentType = () => {
   const listOrganizationsQuery = useListOrganizations()
 
   const router = useRouter()
+  const orgs = listOrganizationsQuery?.data?.items
 
   useEffect(() => {
     if (!isLoaded) return
 
     // redirect to first org
-    if (
-      haveOrgs &&
-      listOrganizationsQuery?.data?.items &&
-      listOrganizationsQuery.data.items.length > 0
-    ) {
-      const gotoOrg = listOrganizationsQuery.data.items[0]
+    if (haveOrgs && orgs && orgs.length > 0) {
+      const gotoOrg = orgs[0]
       router.push(`/maintainer/${gotoOrg.name}/issues`)
       return
     }
-  })
+
+    router.push('/feed')
+  }, [isLoaded, haveOrgs, orgs, router])
 
   if (!isLoaded) {
     return <></>

@@ -20,7 +20,9 @@ const Page: NextLayoutComponentType = () => {
 
     if (org) {
       router.push(`/maintainer/${org.name}/initialize`)
+      return
     }
+
     router.push('/feed')
   })
 

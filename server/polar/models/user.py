@@ -1,6 +1,6 @@
 from datetime import datetime
-from uuid import UUID
 from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
@@ -8,9 +8,9 @@ from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import UniqueConstraint
 
+from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
-from polar.enums import Platforms
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.organization import Organization
@@ -54,16 +54,6 @@ class User(RecordModel):
 
     oauth_accounts: Mapped[list[OAuthAccount]] = relationship(
         OAuthAccount, lazy="joined", back_populates="user"
-    )
-
-    organization_associations: "Mapped[list[UserOrganization]]" = relationship(
-        "UserOrganization",
-        back_populates="user",
-        lazy="raise_on_sql",
-    )
-
-    organizations: AssociationProxy[list["Organization"]] = association_proxy(
-        "organization_associations", "organization"
     )
 
     invite_only_approved: Mapped[bool] = mapped_column(Boolean, nullable=False)

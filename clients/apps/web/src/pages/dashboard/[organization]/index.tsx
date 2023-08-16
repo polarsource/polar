@@ -5,6 +5,12 @@ import { useListOrganizations, useListPersonalPledges } from 'polarkit/hooks'
 import { ReactElement, useEffect } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../../hooks'
 
+/**
+ * TODO: Delete me in October, 2023
+ *
+ * I used to be a route, now I'm a mere redirect.
+ * You can remove me ~1 month from now to clean up the codebase.
+ */
 const Page: NextLayoutComponentType = () => {
   const { haveOrgs } = useCurrentOrgAndRepoFromURL()
 

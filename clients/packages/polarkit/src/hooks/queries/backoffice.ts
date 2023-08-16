@@ -21,6 +21,19 @@ export const useBackofficeRewards = (issueId?: string) =>
     },
   )
 
+export const useBackofficeIssue = (issueId?: string) =>
+  useQuery(
+    ['useBackofficeIssue', issueId],
+    () =>
+      api.backoffice.issue({
+        id: issueId || '',
+      }),
+    {
+      retry: defaultRetry,
+      enabled: !!issueId,
+    },
+  )
+
 export const useBackofficePledgeRewardTransfer = () =>
   useMutation({
     mutationFn: (variables: { pledgeId: string; issueRewardId: string }) => {

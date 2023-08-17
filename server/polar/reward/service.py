@@ -13,7 +13,7 @@ from polar.models.pledge import Pledge
 from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
 from polar.models.user import User
-from polar.pledge.schemas import PledgeTransactionType
+from polar.pledge.schemas import PledgeState, PledgeTransactionType
 from polar.postgres import AsyncSession, sql
 
 log = structlog.get_logger()
@@ -41,7 +41,7 @@ class RewardService:
                 ),
                 isouter=True,
             )
-        )
+        ).where(Pledge.state.in_(PledgeState.active_states()))
 
         if pledge_org_id:
             statement = statement.where(Pledge.organization_id == pledge_org_id)

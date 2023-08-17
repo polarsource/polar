@@ -1,3 +1,4 @@
+import uuid
 from dataclasses import dataclass
 from datetime import timedelta
 
@@ -8,9 +9,12 @@ from polar.enums import AccountType
 from polar.issue.schemas import ConfirmIssueSplit
 from polar.kit.utils import utc_now
 from polar.models.account import Account
+from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
-from polar.models.user import User
+from polar.models.repository import Repository
+from polar.models.user import OAuthAccount, User
+from polar.pledge.schemas import PledgeState
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.reward.service import reward_service
@@ -96,3 +100,88 @@ async def test_list_rewards(
     assert org_tuple[1].organization_id is organization.id
     assert org_tuple[1].share_thousands == 700
     assert org_tuple[2].amount == round(pledge.amount * 0.9 * 0.7)  # hmmm
+
+
+@pytest.mark.asyncio
+async def test_list_rewards_to_user(
+    session: AsyncSession,
+    organization: Organization,
+    pledging_organization: Organization,
+    issue: Issue,
+    repository: Repository,
+    user: User,
+) -> None:
+    user.username = "test_gh_user"
+    await user.save(session)
+
+    oauth = await OAuthAccount.create(
+        session=session,
+        platform="github",
+        user_id=user.id,
+        access_token="access_token",
+        account_id="1337",
+        account_email="test_gh_user@polar.sh",
+    )
+
+    # create two pledges
+    pledge_1 = await Pledge.create(
+        session=session,
+        id=uuid.uuid4(),
+        by_organization_id=pledging_organization.id,
+        issue_id=issue.id,
+        repository_id=repository.id,
+        organization_id=organization.id,
+        amount=1000,
+        fee=0,
+        state=PledgeState.confirmation_pending,
+        scheduled_payout_at=utc_now() - timedelta(days=2),
+        payment_id="test_transfer_payment_id",
+    )
+
+    pledge_2 = await Pledge.create(
+        session=session,
+        id=uuid.uuid4(),
+        by_organization_id=pledging_organization.id,
+        issue_id=issue.id,
+        repository_id=repository.id,
+        organization_id=organization.id,
+        amount=2000,
+        fee=0,
+        state=PledgeState.confirmation_pending,
+        scheduled_payout_at=utc_now() - timedelta(days=2),
+        payment_id="test_transfer_payment_id",
+    )
+
+    account = await Account.create(
+        session=session,
+        user_id=user.id,
+        account_type=AccountType.stripe,
+        admin_id=user.id,
+        stripe_id="testing_account_1",
+        is_details_submitted=True,
+        is_charges_enabled=True,
+        is_payouts_enabled=True,
+        business_type="individual",
+    )
+    await session.flush()
+    await organization.save(session)
+
+    splits = await pledge_service.create_issue_rewards(
+        session,
+        issue.id,
+        splits=[
+            ConfirmIssueSplit(share_thousands=300, github_username="test_gh_user"),
+            ConfirmIssueSplit(share_thousands=300, github_username="other_gh_user"),
+            ConfirmIssueSplit(share_thousands=400, organization_id=organization.id),
+        ],
+    )
+
+    # assert rewards after transfer
+    rewards = await reward_service.list(session, reward_user_id=user.id)
+    assert len(rewards) == 2
+
+    assert rewards[0][0].amount == 2000
+    assert rewards[0][1].user_id == user.id
+
+    assert rewards[1][0].amount == 1000
+    assert rewards[1][1].user_id == user.id

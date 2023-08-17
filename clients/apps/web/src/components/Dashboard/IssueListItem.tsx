@@ -1,3 +1,4 @@
+import { Modal as ModernModal } from '@/components/Modal'
 import Modal, { ModalBox } from '@/components/Shared/Modal'
 import { useToastLatestPledged } from '@/hooks/stripe'
 import Image from 'next/image'
@@ -23,6 +24,8 @@ import { githubIssueUrl } from 'polarkit/github'
 import { useIssueMarkConfirmed } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import { ChangeEvent, useState } from 'react'
+import SplitRewardModal from '../Finance/SplitRewardModal'
+import { useModal } from '../Modal/useModal'
 import PledgeNow from '../Pledge/PledgeNow'
 import IconCounter from './IconCounter'
 import IssueLabel, { LabelSchema } from './IssueLabel'
@@ -129,22 +132,6 @@ const IssueListItem = (props: {
     router.push(url.toString())
   }
 
-  const rowMotion = {
-    rest: {},
-    hover: {},
-  }
-
-  const rightSideMotion = {
-    rest: {
-      x: props.canAddRemovePolarLabel ? 115 : 0,
-    },
-    hover: {
-      x: 0,
-    },
-  }
-
-  const [isHovered, setIsHovered] = useState(false)
-
   const markConfirmed = useIssueMarkConfirmed()
 
   const onConfirmPledge = async (issue_id: string) => {
@@ -154,6 +141,9 @@ const IssueListItem = (props: {
       splits: [{ organization_id: props.org.id, share_thousands: 1000 }],
     })
   }
+
+  const { isShown: isSplitRewardsModalShown, hide: closeSplitRewardModal } =
+    useModal()
 
   return (
     <>
@@ -285,6 +275,19 @@ const IssueListItem = (props: {
           <DisputeModal pledge={showDisputeModalForPledge} />
         </Modal>
       )}
+
+      <ModernModal
+        isShown={isSplitRewardsModalShown}
+        hide={closeSplitRewardModal}
+        modalContent={
+          <>
+            <SplitRewardModal
+              issueId={props.issue.id}
+              onCancel={closeSplitRewardModal}
+            />
+          </>
+        }
+      />
     </>
   )
 }

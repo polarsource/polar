@@ -1,1 +1,1 @@
-module.exports = require('polarkit/postcss.config')
+../../packages/polarkit/postcss.config.js

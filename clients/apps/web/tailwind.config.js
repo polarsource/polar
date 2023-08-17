@@ -1,1 +1,1 @@
-module.exports = require('polarkit/tailwind.config')
+../../packages/polarkit/tailwind.config.js

@@ -62,15 +62,11 @@ async def search(
             detail="One of pledges_to_organization, rewards_to_user or rewards_to_org must be set",  # noqa: E501
         )
 
-    list_pledge_org_id: UUID | None = None
-    list_reward_org_id: UUID | None = None
-    list_reward_user_id: UUID | None = None
-
     rewards = await reward_service.list(
         session,
-        pledge_org_id=list_pledge_org_id,
-        reward_org_id=list_reward_org_id,
-        reward_user_id=list_reward_user_id,
+        pledge_org_id=pledges_to_organization,
+        reward_user_id=rewards_to_user,
+        reward_org_id=rewards_to_org,
     )
 
     return ListResource(

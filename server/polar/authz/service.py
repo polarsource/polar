@@ -4,10 +4,14 @@ from uuid import UUID
 
 from fastapi import Depends
 
+from polar.issue.service import issue as issue_service
 from polar.models.account import Account
+from polar.models.issue import Issue
+from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.models.user import User
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -26,7 +30,7 @@ class AccessType(str, Enum):
     write = "write"
 
 
-Object = User | Organization | Repository | Account
+Object = User | Organization | Repository | Account | IssueReward
 
 
 class Authz:
@@ -77,7 +81,14 @@ class Authz:
         ):
             return self._can_user_write_account(subject, object)
 
-        return False
+        if (
+            isinstance(subject, User)
+            and accessType == AccessType.read
+            and isinstance(object, IssueReward)
+        ):
+            return await self._can_read_issue_reward(subject, object)
+
+        raise Exception("Unknown subject action or object.")
 
     def _can_user_read_repository(self, subject: User, object: Repository) -> bool:
         if object.is_private is False:
@@ -124,6 +135,35 @@ class Authz:
 
         # Can write if marked as admin
         if subject.id == object.admin_id:
+            return True
+
+        return False
+
+    async def _can_user_write_issue(self, subject: User, object: Issue) -> bool:
+        org = await organization_service.get(self.session, object.organization_id)
+        if not org:
+            return False
+        if await self._can_user_write_organization(
+            subject,
+            org,
+        ):
+            return True
+        return False
+
+    async def _can_read_issue_reward(self, subject: User, object: IssueReward) -> bool:
+        # If rewarded to this user
+        if object.user_id and object.user_id == subject.id:
+            return True
+
+        # If member of rewarded org
+        if object.organization_id and await self._is_member(
+            subject.id, object.organization_id
+        ):
+            return True
+
+        # Can read reward if can write issue
+        issue = await issue_service.get(self.session, object.issue_id)
+        if issue and await self._can_user_write_issue(subject, issue):
             return True
 
         return False

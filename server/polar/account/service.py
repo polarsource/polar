@@ -163,12 +163,10 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             data={},
         )
 
-    async def onboarding_link(
-        self, account: Account, appendix: str | None = None
-    ) -> AccountLink | None:
+    async def onboarding_link(self, account: Account) -> AccountLink | None:
         if account.account_type == AccountType.stripe:
             assert account.stripe_id is not None
-            account_link = stripe.create_account_link(account.stripe_id, appendix)
+            account_link = stripe.create_account_link(account.stripe_id)
             return AccountLink(url=account_link.url)
 
         return None

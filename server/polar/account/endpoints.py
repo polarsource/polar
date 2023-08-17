@@ -104,9 +104,7 @@ async def onboarding_link(
             status_code=404, detail="Open collective have no onboarding links"
         )
 
-    link = await account_service.onboarding_link(
-        acc,
-    )
+    link = await account_service.onboarding_link(acc)
     if not link:
         raise HTTPException(status_code=500, detail="Failed to create link")
 

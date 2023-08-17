@@ -2,7 +2,11 @@ import Banner from '@/components/Banner/Banner'
 import Icon from '@/components/Icons/Icon'
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
-import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from 'polarkit/account'
+import {
+  ACCOUNT_TYPE_DISPLAY_NAMES,
+  ACCOUNT_TYPE_ICON,
+  ALL_ACCOUNT_TYPES,
+} from 'polarkit/account'
 import { api } from 'polarkit/api'
 import {
   Account,
@@ -69,7 +73,7 @@ const Finance = (props: {
 
   return (
     <div className="flex flex-col space-y-8">
-      <AccountBanner accounts={accounts} />
+      <AccountBanner accounts={accounts} org={org} />
 
       <div className="flex space-x-8">
         <HeaderPill
@@ -143,7 +147,7 @@ const PledgesContent = (props: { pledges: Pledge[] }) => {
   )
 }
 
-const RewardsContent = (props: {
+export const RewardsContent = (props: {
   rewards: Reward[]
   showReceiver: boolean
 }) => {
@@ -179,7 +183,7 @@ const RewardsContent = (props: {
   )
 }
 
-const HeaderPill = (props: {
+export const HeaderPill = (props: {
   title: string
   amount: number
   active: boolean
@@ -201,7 +205,7 @@ const HeaderPill = (props: {
       <div className="text-3xl font-medium text-gray-900 dark:text-gray-200">
         ${getCentsInDollarString(props.amount, true, true)}
       </div>
-      {props.active && (
+      {props.active && props.amount > 0 && (
         <>
           <Triangle />
           <div className="absolute left-1/2 bottom-0 -ml-6 h-2 w-12  bg-white dark:bg-gray-800"></div>
@@ -227,7 +231,7 @@ const Triangle = () => (
   </svg>
 )
 
-const AccountBanner = (props: { accounts: Account[] }) => {
+const AccountBanner = (props: { org: Organization; accounts: Account[] }) => {
   const { accounts } = props
 
   const goToDashboard = async (account: Account) => {
@@ -277,7 +281,11 @@ const AccountBanner = (props: { accounts: Account[] }) => {
           isShown={showSetupModal}
           hide={toggle}
           modalContent={
-            <SetupAccount onClose={() => setShowSetupModal(false)} />
+            <SetupAccount
+              onClose={() => setShowSetupModal(false)}
+              accountTypes={ALL_ACCOUNT_TYPES}
+              forOrganizationId={props.org.id}
+            />
           }
         />
       </>

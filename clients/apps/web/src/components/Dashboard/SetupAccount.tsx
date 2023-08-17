@@ -2,18 +2,25 @@ import Modal, { ModalBox } from '@/components/Shared/Modal'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit'
-import { ACCOUNT_TYPES, ACCOUNT_TYPE_DISPLAY_NAMES } from 'polarkit/account'
+import { ACCOUNT_TYPE_DISPLAY_NAMES } from 'polarkit/account'
 import { Account, AccountType, ApiError } from 'polarkit/api/client'
 import { getValidationErrorsMap, isValidationError } from 'polarkit/api/errors'
 import { CountryPicker } from 'polarkit/components'
 import { PrimaryButton } from 'polarkit/components/ui'
-import { useStore } from 'polarkit/store'
 import { ChangeEvent, useState } from 'react'
 
-const SetupAccount = ({ onClose }: { onClose: () => void }) => {
+const SetupAccount = ({
+  onClose,
+  forOrganizationId,
+  forUserId,
+  accountTypes,
+}: {
+  onClose: () => void
+  forOrganizationId?: string
+  forUserId?: string
+  accountTypes: AccountType[]
+}) => {
   const router = useRouter()
-
-  const currentOrg = useStore((store) => store.currentOrg)
 
   const [accountType, setAccountType] = useState<AccountType>(
     AccountType.STRIPE,
@@ -52,14 +59,11 @@ const SetupAccount = ({ onClose }: { onClose: () => void }) => {
   const onConfirm = async () => {
     setLoading(true)
 
-    if (!currentOrg) {
-      throw Error('no org set')
-    }
-
     try {
       const account = await api.accounts.create({
         requestBody: {
-          organization_id: currentOrg.id,
+          organization_id: forOrganizationId,
+          user_id: forUserId,
           account_type: accountType,
           country,
           ...(openCollectiveSlug
@@ -83,10 +87,6 @@ const SetupAccount = ({ onClose }: { onClose: () => void }) => {
   }
 
   const goToOnboarding = async (account: Account) => {
-    if (!currentOrg) {
-      throw Error('no org set')
-    }
-
     setLoading(true)
 
     try {
@@ -122,7 +122,7 @@ const SetupAccount = ({ onClose }: { onClose: () => void }) => {
                   onChange={onChangeAccountType}
                   className="font-display block w-full rounded-lg border-gray-200 bg-transparent py-2 px-4 pr-12 shadow-sm transition-colors focus:z-10 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-500"
                 >
-                  {ACCOUNT_TYPES.map((v: AccountType) => (
+                  {accountTypes.map((v: AccountType) => (
                     <option key={v} value={v} selected={v === accountType}>
                       {ACCOUNT_TYPE_DISPLAY_NAMES[v]}
                     </option>

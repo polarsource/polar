@@ -15,7 +15,7 @@ const Banner = ({
   return (
     <div
       className={classNames(
-        'flex items-center justify-between rounded-lg px-3 py-2',
+        'flex items-center justify-between gap-2 rounded-lg px-3 py-2',
         color === 'default'
           ? 'bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-gray-700'
           : '',

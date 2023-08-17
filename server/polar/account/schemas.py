@@ -60,10 +60,8 @@ class Account(Schema):
     account_type: AccountType
     stripe_id: str | None
     open_collective_slug: str | None
-    # balance: int | None
-    # balance_currency: str | None
     is_details_submitted: bool | None
-    country: str
+    country: str = Field(min_length=2, max_length=2)
 
     @classmethod
     def from_db(cls, o: AccountModel) -> Self:
@@ -72,16 +70,9 @@ class Account(Schema):
             account_type=o.account_type,
             stripe_id=o.stripe_id,
             open_collective_slug=o.open_collective_slug,
-            # balance=o.balance,
-            # balance_currency=o.balance_currency,
             is_details_submitted=o.is_details_submitted,
-            country=o.country or "se",  # ?
+            country=o.country or "SE",
         )
-
-    # is_admin: bool | None
-
-    # class Config:
-    #     orm_mode = True
 
 
 class AccountUpdate(Schema):
@@ -109,8 +100,6 @@ class AccountRead(AccountCreate):
 
 
 class AccountLink(Schema):
-    # type: str = "account_link"
-    # created: int
     url: str
 
 

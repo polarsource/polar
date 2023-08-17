@@ -26,7 +26,7 @@ class Account(RecordModel):
     )
 
     user_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID, ForeignKey("organizations.id"), unique=True, nullable=True
+        PostgresUUID, ForeignKey("users.id"), unique=True, nullable=True
     )
 
     admin_id: Mapped[UUID] = mapped_column(PostgresUUID, ForeignKey("users.id"))

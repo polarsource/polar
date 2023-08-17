@@ -1,27 +1,29 @@
 import uuid
-from unittest.mock import AsyncMock
+from typing import Any
 
-from httpx import AsyncClient
 import pytest
 import pytest_asyncio
+import stripe as stripe_lib
+from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.account.service import account as account_service
+from polar.app import app
+from polar.config import settings
+from polar.enums import AccountType
+from polar.integrations.open_collective.service import (
+    CollectiveNotFoundError,
+    OpenCollectiveAPIError,
+    OpenCollectiveCollective,
+    OpenCollectiveServiceError,
+    open_collective,
+)
+from polar.kit.schemas import Schema
 from polar.models.account import Account
 from polar.models.organization import Organization
 from polar.models.user import User
-from polar.app import app
-from polar.config import settings
 from polar.models.user_organization import UserOrganization
-from polar.enums import AccountType
 from polar.postgres import AsyncSession
-from polar.account.service import account as account_service
-from polar.integrations.open_collective.service import (
-    open_collective,
-    OpenCollectiveServiceError,
-    OpenCollectiveAPIError,
-    OpenCollectiveCollective,
-    CollectiveNotFoundError,
-)
 
 
 @pytest_asyncio.fixture
@@ -29,7 +31,7 @@ async def open_collective_account(
     session: AsyncSession,
     user: User,
     organization: Organization,
-    user_organization: UserOrganization,
+    # user_organization: UserOrganization,
 ) -> Account:
     account = Account(
         account_type=AccountType.open_collective,
@@ -57,8 +59,9 @@ async def test_create_invalid_account_type(
 ) -> None:
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.post(
-            f"/api/v1/github/{organization.name}/accounts",
+            "/api/v1/accounts",
             json={
+                "organization_id": str(organization),
                 "account_type": "unknown",
                 "country": "US",
             },
@@ -79,8 +82,9 @@ async def test_create_open_collective_missing_slug(
 ) -> None:
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.post(
-            f"/api/v1/github/{organization.name}/accounts",
+            "/api/v1/accounts",
             json={
+                "organization_id": str(organization.id),
                 "account_type": "open_collective",
                 "country": "US",
                 **({"open_collective_slug": slug} if slug is not None else {}),
@@ -106,20 +110,27 @@ async def test_create_open_collective_get_collective_error(
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
     mocker: MockerFixture,
+    session: AsyncSession,
 ) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
     open_collective_mock = mocker.patch.object(open_collective, "get_collective")
     open_collective_mock.side_effect = error
 
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.post(
-            f"/api/v1/github/{organization.name}/accounts",
+            "/api/v1/accounts",
             json={
+                "organization_id": str(organization.id),
                 "account_type": "open_collective",
                 "open_collective_slug": "polar",
                 "country": "US",
             },
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
+
+    print(response.text)
 
     assert response.status_code == 400
 
@@ -142,14 +153,19 @@ async def test_create_open_collective_not_eligible(
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
     mocker: MockerFixture,
+    session: AsyncSession,
 ) -> None:
     open_collective_mock = mocker.patch.object(open_collective, "get_collective")
     open_collective_mock.return_value = collective
 
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.post(
-            f"/api/v1/github/{organization.name}/accounts",
+            "/api/v1/accounts",
             json={
+                "organization_id": str(organization.id),
                 "account_type": "open_collective",
                 "open_collective_slug": "polar",
                 "country": "US",
@@ -177,10 +193,14 @@ async def test_create_open_collective(
         "polar", "opensource", True, True, False, False
     )
 
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.post(
-            f"/api/v1/github/{organization.name}/accounts",
+            "/api/v1/accounts",
             json={
+                "organization_id": str(organization.id),
                 "account_type": "open_collective",
                 "open_collective_slug": "polar",
                 "country": "US",
@@ -205,6 +225,86 @@ async def test_create_open_collective(
 
 
 @pytest.mark.asyncio
+async def test_create_open_collective_not_org_admin(
+    user: User,
+    organization: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+    mocker: MockerFixture,
+) -> None:
+    open_collective_mock = mocker.patch.object(open_collective, "get_collective")
+    open_collective_mock.return_value = OpenCollectiveCollective(
+        "polar", "opensource", True, True, False, False
+    )
+
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.post(
+            "/api/v1/accounts",
+            json={
+                "organization_id": str(organization.id),
+                "account_type": "open_collective",
+                "open_collective_slug": "polar",
+                "country": "US",
+            },
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_create_personal_stripe(
+    user: User,
+    auth_jwt: str,
+    mocker: MockerFixture,
+) -> None:
+    stripe_mock = mocker.patch.object(stripe_lib.Account, "create")
+
+    class FakeStripeAccount:
+        stripe_id = "fake_stripe_id"
+        email = "foo@example.com"
+        country = "SE"
+        default_currency = "USD"
+        details_submitted = False
+        charges_enabled = False
+        payouts_enabled = False
+        business_type = "company"
+
+        def to_dict(self) -> dict[str, Any]:
+            return {"lol": "wut"}
+
+    stripe_mock.return_value = FakeStripeAccount()
+
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        create_response = await ac.post(
+            "/api/v1/accounts",
+            json={
+                "user_id": str(user.id),
+                "account_type": "stripe",
+                "country": "US",
+            },
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    print(create_response.text)
+    assert create_response.status_code == 200
+    assert create_response.json()["account_type"] == "stripe"
+    assert create_response.json()["stripe_id"] == "fake_stripe_id"
+
+    # search
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        search = await ac.get(
+            f"/api/v1/accounts/search?user_id={user.id}",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert search.status_code == 200
+    search_json = search.json()
+    assert len(search_json["items"]) == 1
+    assert search_json["items"][0]["id"] == str(create_response.json()["id"])
+
+
+@pytest.mark.asyncio
 async def test_onboarding_link_not_existing_account(
     user: User,
     organization: Organization,
@@ -213,25 +313,25 @@ async def test_onboarding_link_not_existing_account(
     session: AsyncSession,
 ) -> None:
     async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
+        response = await ac.post(
             f"/api/v1/github/{organization.name}/accounts/3794dd38-54d1-4a64-bd68-fa22e1659e7b/onboarding_link",
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 
-        assert response.status_code == 404
+    assert response.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_onboarding_link_open_collective(
-    organization: Organization, open_collective_account: Account, auth_jwt: str
+    open_collective_account: Account, auth_jwt: str
 ) -> None:
     async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/github/{organization.name}/accounts/{open_collective_account.id}/onboarding_link",
+        response = await ac.post(
+            f"/api/v1/accounts/{open_collective_account.id}/onboarding_link",
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 
-        assert response.status_code == 400
+    assert response.status_code == 404
 
 
 @pytest.mark.asyncio
@@ -240,32 +340,65 @@ async def test_dashboard_link_not_existing_account(
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
-    session: AsyncSession,
 ) -> None:
     async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/github/{organization.name}/accounts/3794dd38-54d1-4a64-bd68-fa22e1659e7b/dashboard_link",
+        response = await ac.post(
+            "/api/v1/accounts/3794dd38-54d1-4a64-bd68-fa22e1659e7b/dashboard_link",
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 
-        assert response.status_code == 404
+    assert response.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_dashboard_link_open_collective(
-    organization: Organization, open_collective_account: Account, auth_jwt: str
+    open_collective_account: Account, auth_jwt: str
 ) -> None:
     async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/github/{organization.name}/accounts/{open_collective_account.id}/dashboard_link",
+        response = await ac.post(
+            f"/api/v1/accounts/{open_collective_account.id}/dashboard_link",
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 
-        assert response.status_code == 200
+    assert response.status_code == 200
 
-        json = response.json()
-        assert json == {
-            "type": "account_link",
-            "created": 1,
-            "url": "https://opencollective.com/polar",
-        }
+    json = response.json()
+    assert json == {
+        "url": "https://opencollective.com/polar",
+    }
+
+
+@pytest.mark.asyncio
+async def test_search(
+    open_collective_account: Account,
+    auth_jwt: str,
+    user_organization: UserOrganization,  # makes User a member of Organization
+) -> None:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            f"/api/v1/accounts/search?organization_id={open_collective_account.organization_id}",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+
+    json = response.json()
+
+    assert len(json["items"]) == 1
+    assert json["items"][0]["id"] == str(open_collective_account.id)
+
+
+@pytest.mark.asyncio
+async def test_search_no_member(
+    open_collective_account: Account,
+    auth_jwt: str,
+) -> None:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            f"/api/v1/accounts/search?organization_id={open_collective_account.organization_id}",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    json = response.json()
+    assert len(json["items"]) == 0

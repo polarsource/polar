@@ -15,7 +15,7 @@ from polar.pledge.endpoints import router as pledge_router
 from polar.pull_request.endpoints import router as pull_request_router
 from polar.repository.endpoints import router as repository_router
 from polar.reward.endpoints import router as rewards_router
-from polar.user.endpoints.users import router as user_router
+from polar.user.endpoints import router as user_router
 
 router = APIRouter(prefix="/api/v1")
 

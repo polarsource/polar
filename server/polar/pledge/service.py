@@ -14,6 +14,7 @@ from sqlalchemy.orm import (
 
 from polar.account.service import account as account_service
 from polar.exceptions import NotPermitted, ResourceNotFound, StripeError
+from polar.integrations.github.service.user import github_user as github_user_service
 from polar.integrations.stripe.service import stripe
 from polar.issue.schemas import ConfirmIssueSplit
 from polar.issue.service import issue as issue_service
@@ -584,6 +585,15 @@ class PledgeService(ResourceServiceReader[Pledge]):
         created_splits: list[IssueReward] = []
 
         for split in splits:
+            # Associate github usernames with a user if a user with this username exists
+            user_id: UUID | None = None
+            if split.github_username:
+                user = await github_user_service.get_user_by_github_username(
+                    session, split.github_username
+                )
+                if user:
+                    user_id = user.id
+
             s = await IssueReward.create(
                 session,
                 autocommit=False,
@@ -591,6 +601,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 share_thousands=split.share_thousands,
                 github_username=split.github_username,
                 organization_id=split.organization_id,
+                user_id=user_id,
             )
             created_splits.append(s)
 

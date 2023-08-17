@@ -55,12 +55,8 @@ async def test_list_rewards(
         ],
     )
 
-    # assert rewards
-    rewards = await reward_service.list(session, org_id=organization.id)
+    rewards = await reward_service.list(session, pledge_org_id=organization.id)
     assert len(rewards) == 2
-
-    for p, r, t in rewards:
-        print(p, r, t)
 
     user_tuple = [r for r in rewards if r[1].github_username == "zegl"][0]
     assert user_tuple[0].id == pledge.id
@@ -91,7 +87,7 @@ async def test_list_rewards(
     transfer.assert_called_once()
 
     # assert rewards after transfer
-    rewards = await reward_service.list(session, org_id=organization.id)
+    rewards = await reward_service.list(session, pledge_org_id=organization.id)
     assert len(rewards) == 2
 
     org_tuple = [r for r in rewards if r[1].organization_id == organization.id][0]

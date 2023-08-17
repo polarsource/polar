@@ -64,15 +64,8 @@ async def test_search(
         ],
     )
 
-    # await session.flush()
-    # await session.commit()
-
-    # assert rewards????
-    rewards = await reward_service.list(session, org_id=organization.id)
+    rewards = await reward_service.list(session, pledge_org_id=organization.id)
     assert len(rewards) == 2
-
-    for p, r, t in rewards:
-        print(p, r, t)
 
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.get(

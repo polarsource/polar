@@ -1,14 +1,14 @@
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
-import Transactions from '@/components/Finance/Finance'
+import Finance from '@/components/Finance/Finance'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useToast } from '@/components/UI/Toast/use-toast'
 import type { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import {
+  useListAccountsByOrganization,
   useListPledgesForOrganization,
   useListRewards,
-  useOrganizationAccounts,
 } from 'polarkit/hooks'
 import { ReactElement, useEffect } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
@@ -37,21 +37,20 @@ const Page: NextLayoutComponentType = () => {
 
   const pledges = useListPledgesForOrganization(org?.platform, org?.name)
   const rewards = useListRewards(org?.id)
-
-  const accounts = useOrganizationAccounts(org?.name)
+  const accounts = useListAccountsByOrganization(org?.id)
 
   return (
     <>
       <Head>
         <title>Polar{org ? ` ${org.name}` : ''}</title>
       </Head>
-      {org && pledges.data?.items && rewards.data?.items && accounts.data && (
-        <Transactions
+      {org && pledges.data?.items && rewards.data?.items && (
+        <Finance
           pledges={pledges.data.items}
           rewards={rewards.data.items}
           org={org}
           tab="current"
-          accounts={accounts.data}
+          accounts={accounts.data?.items || []}
         />
       )}
     </>

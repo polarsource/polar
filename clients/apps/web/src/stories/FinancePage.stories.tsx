@@ -140,7 +140,6 @@ export const StripeHalfSetup: Story = {
         country: 'SE',
         stripe_id: '',
         is_details_submitted: false,
-        is_admin: true,
       },
     ],
   },
@@ -158,29 +157,28 @@ export const StripeSetup: Story = {
         country: 'SE',
         stripe_id: 'xxx',
         is_details_submitted: true,
-        is_admin: true,
       },
     ],
   },
 }
 
-export const StripeSetupNotAdmin: Story = {
-  ...Default,
-  args: {
-    ...Default.args,
-    tab: 'rewarded',
-    accounts: [
-      {
-        id: 'xx',
-        account_type: AccountType.STRIPE,
-        country: 'SE',
-        stripe_id: 'xxx',
-        is_details_submitted: true,
-        is_admin: false,
-      },
-    ],
-  },
-}
+// export const StripeSetupNotAdmin: Story = {
+//   ...Default,
+//   args: {
+//     ...Default.args,
+//     tab: 'rewarded',
+//     accounts: [
+//       {
+//         id: 'xx',
+//         account_type: AccountType.STRIPE,
+//         country: 'SE',
+//         stripe_id: 'xxx',
+//         is_details_submitted: true,
+//         is_admin: false,
+//       },
+//     ],
+//   },
+// }
 
 export const StripeSetupDark: Story = {
   ...Default,
@@ -194,7 +192,6 @@ export const StripeSetupDark: Story = {
         country: 'SE',
         stripe_id: 'xxx',
         is_details_submitted: true,
-        is_admin: true,
       },
     ],
   },
@@ -216,7 +213,6 @@ export const OpenCollectiveSetup: Story = {
         country: 'SE',
         open_collective_slug: 'polar',
         is_details_submitted: true,
-        is_admin: true,
       },
     ],
   },
@@ -234,7 +230,6 @@ export const OpenCollectiveSetupDark: Story = {
         country: 'SE',
         open_collective_slug: 'polar',
         is_details_submitted: true,
-        is_admin: true,
       },
     ],
   },

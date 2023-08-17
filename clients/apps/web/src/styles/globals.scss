@@ -1,18 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @import './commandk.scss';
-
-@layer base {
-  html {
-    @apply text-gray-900
-  }
-
-  html.dark {
-    @apply text-gray-200
-  }
-}
 
 #polar-bg-gradient {
   font-size: 12px;
@@ -44,11 +30,10 @@
   z-index: 10;
 }
 
-@media(max-width:420px){
-  #polar-bg-gradient{
+@media (max-width: 420px) {
+  #polar-bg-gradient {
     left: calc(22.883597883597908% - 500px);
     height: 140vh;
-    width:200vw;
+    width: 200vw;
   }
 }
-

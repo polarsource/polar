@@ -25,7 +25,10 @@
     "./components/ui/Cards": "./src/components/ui/Cards/index.ts",
     "./components/icons": "./src/components/icons/index.ts",
     "./components/Issue": "./src/components/Issue/index.ts",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./tailwind.config": "./tailwind.config.js",
+    "./postcss.config": "./postcss.config.js",
+    "./globals.css": "./src/globals.css"
   },
   "scripts": {
     "lint": "TIMING=1 eslint \"**/*.ts*\"",

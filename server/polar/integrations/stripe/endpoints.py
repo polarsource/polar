@@ -1,21 +1,20 @@
-import structlog
 import stripe
 import stripe.error
-
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request
-from starlette.responses import RedirectResponse
 from pydantic import BaseModel
+from starlette.responses import RedirectResponse
 
+from polar.account.schemas import AccountUpdate
+from polar.account.service import account as account_service
 from polar.auth.dependencies import Auth
-from polar.postgres import AsyncSession, get_db_session
-
 from polar.config import settings
+from polar.enums import AccountType
+from polar.organization.service import organization as organization_service
+from polar.postgres import AsyncSession, get_db_session
 from polar.worker import enqueue_job
 
 from .service import stripe as stripe_service
-from polar.account.schemas import AccountUpdate
-from polar.account.service import account as account_service
-from polar.enums import AccountType
 
 log = structlog.get_logger()
 
@@ -58,15 +57,15 @@ async def enqueue(event: stripe.Event) -> WebhookResponse:
 
 @router.get("/return")
 async def stripe_connect_return(
-    auth: Auth = Depends(Auth.user_with_org_access),
+    stripe_id: str,
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
-    account = await account_service.get_by(
-        session, organization_id=auth.organization.id
-    )
+    account = await account_service.get_by(session, stripe_id=stripe_id)
     if not account or account.account_type != AccountType.stripe:
-        raise HTTPException(status_code=400, detail="Error while getting account")
-    assert account.stripe_id is not None
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    assert account.stripe_id
+
     stripe_account = stripe_service.retrieve_account(account.stripe_id)
     await account_service.update(
         session,
@@ -81,10 +80,20 @@ async def stripe_connect_return(
             data=stripe_account.to_dict(),
         ),
     )
-    return RedirectResponse(
-        url=settings.generate_frontend_url(
-            f"/maintainer/{auth.organization.name}/finance?status=stripe-connected"
+
+    if account.organization_id:
+        org = await organization_service.get(session, account.organization_id)
+        if not org:
+            raise HTTPException(status_code=404, detail="Organization not found")
+
+        return RedirectResponse(
+            url=settings.generate_frontend_url(
+                f"/maintainer/{org.name}/finance?status=stripe-return"
+            )
         )
+
+    return RedirectResponse(
+        url=settings.generate_frontend_url("/rewards?status=stripe-return")
     )
 
 

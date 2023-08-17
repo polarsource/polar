@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from polar.auth.dependencies import Auth
+from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.models.issue_reward import IssueReward
@@ -36,48 +37,47 @@ router = APIRouter(tags=["rewards"])
     status_code=200,
 )
 async def search(
-    # pledges_to_organization_platform: Platforms | None = None,
     pledges_to_organization: UUID
     | None = Query(
         default=None,
         description="Search rewards for pledges in this organization.",  # noqa: E501
     ),
+    rewards_to_user: UUID
+    | None = Query(
+        default=None,
+        description="Search rewards to user.",
+    ),
+    rewards_to_org: UUID
+    | None = Query(
+        default=None,
+        description="Search rewards to organization.",
+    ),
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.current_user),
+    authz: Authz = Depends(Authz.authz),
 ) -> ListResource[Reward]:
-    if not pledges_to_organization:
+    if not pledges_to_organization and not rewards_to_user and not rewards_to_org:
         raise HTTPException(
             status_code=401,
-            detail="pledges_to_organization is not set",
+            detail="One of pledges_to_organization, rewards_to_user or rewards_to_org must be set",  # noqa: E501
         )
 
-    org = await organization_service.get(
-        session,
-        # platform=Platforms.github,
-        id=pledges_to_organization,
-    )
-
-    if not org:
-        raise HTTPException(
-            status_code=404,
-            detail="pledges_to_organization organization not found",
-        )
-
-    if not await user_can_read(session, auth, org):
-        raise HTTPException(
-            status_code=401,
-            detail="Access denied",
-        )
+    list_pledge_org_id: UUID | None = None
+    list_reward_org_id: UUID | None = None
+    list_reward_user_id: UUID | None = None
 
     rewards = await reward_service.list(
         session,
-        org_id=org.id,
+        pledge_org_id=list_pledge_org_id,
+        reward_org_id=list_reward_org_id,
+        reward_user_id=list_reward_user_id,
     )
 
     return ListResource(
         items=[
             to_resource(pledge, reward, transaction)
             for pledge, reward, transaction in rewards
+            if await authz.can(auth.user, AccessType.read, reward)
         ]
     )
 

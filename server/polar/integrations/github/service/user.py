@@ -35,6 +35,22 @@ class GithubUserService(UserService):
         res = await session.execute(stmt)
         return res.scalars().first()
 
+    async def get_user_by_github_username(
+        self,
+        session: AsyncSession,
+        username: str,
+    ) -> User | None:
+        stmt = (
+            sql.select(User)
+            .join(OAuthAccount, User.id == OAuthAccount.user_id)
+            .where(
+                OAuthAccount.platform == Platforms.github,
+                User.username == username,
+            )
+        )
+        res = await session.execute(stmt)
+        return res.scalars().first()
+
     def generate_profile_json(
         self,
         *,

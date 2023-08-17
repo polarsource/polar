@@ -16,7 +16,7 @@ from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
-from polar.models.user import User
+from polar.models.user import OAuthAccount, User
 from polar.pledge.schemas import PledgeState, PledgeTransactionType
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
@@ -336,6 +336,47 @@ async def test_create_issue_rewards(
             ConfirmIssueSplit(share_thousands=700, organization_id=organization.id),
         ],
     )
+
+
+@pytest.mark.asyncio
+async def test_create_issue_rewards_associate_username(
+    session: AsyncSession,
+    pledge: Pledge,
+    organization: Organization,
+) -> None:
+    # create user and github auth
+    user = await User.create(
+        session=session,
+        username="test_gh_user",
+        email="test_gh_user@polar.sh",
+        invite_only_approved=True,
+    )
+    oauth = await OAuthAccount.create(
+        session=session,
+        platform="github",
+        user_id=user.id,
+        access_token="access_token",
+        account_id="1337",
+        account_email="test_gh_user@polar.sh",
+    )
+
+    rewards = await pledge_service.create_issue_rewards(
+        session,
+        pledge.issue_id,
+        splits=[
+            ConfirmIssueSplit(share_thousands=300, github_username="test_gh_user"),
+            ConfirmIssueSplit(share_thousands=100, github_username="unknown_user"),
+            ConfirmIssueSplit(share_thousands=600, organization_id=organization.id),
+        ],
+    )
+
+    assert rewards[0].user_id == user.id
+    assert rewards[0].github_username == "test_gh_user"
+
+    assert rewards[1].user_id is None
+    assert rewards[1].github_username == "unknown_user"
+
+    assert rewards[2].organization_id == organization.id
 
 
 @pytest.mark.asyncio

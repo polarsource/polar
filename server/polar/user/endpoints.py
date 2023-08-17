@@ -6,7 +6,7 @@ from polar.models import User
 from polar.postgres import AsyncSession, get_db_session
 from polar.user.service import user as user_service
 
-from ..schemas import UserRead, UserUpdateSettings
+from .schemas import UserRead, UserUpdateSettings
 
 router = APIRouter(prefix="/users", tags=["users"])
 

@@ -47,16 +47,28 @@ export const useSearchRepositories = (
     },
   )
 
-export const useOrganizationAccounts = (repoOwner: string | undefined) =>
+export const useListAccountsByOrganization = (organization_id?: string) =>
   useQuery(
-    ['organization', repoOwner, 'account'],
+    ['accounts', organization_id],
     () =>
-      api.accounts.getAccounts({
-        platform: Platforms.GITHUB,
-        orgName: repoOwner || '',
+      api.accounts.search({
+        organizationId: organization_id,
       }),
     {
-      enabled: !!repoOwner,
+      enabled: !!organization_id,
+      retry: defaultRetry,
+    },
+  )
+
+export const useListAccountsByUser = (user_id?: string) =>
+  useQuery(
+    ['accounts', user_id],
+    () =>
+      api.accounts.search({
+        userId: user_id,
+      }),
+    {
+      enabled: !!user_id,
       retry: defaultRetry,
     },
   )

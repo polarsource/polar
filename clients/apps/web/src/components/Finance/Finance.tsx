@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from 'polarkit/account'
 import { api } from 'polarkit/api'
 import {
-  AccountRead,
+  Account,
   AccountType,
   Organization,
   Pledge,
@@ -30,7 +30,7 @@ const Finance = (props: {
   org: Organization
   tab: 'current' | 'rewarded' | 'contributors'
   pledges: Pledge[]
-  accounts: AccountRead[]
+  accounts: Account[]
   rewards: Reward[]
 }) => {
   const { org, tab, pledges, accounts, rewards } = props
@@ -69,7 +69,7 @@ const Finance = (props: {
 
   return (
     <div className="flex flex-col space-y-8">
-      <AccountBanner org={org} accounts={accounts} />
+      <AccountBanner accounts={accounts} />
 
       <div className="flex space-x-8">
         <HeaderPill
@@ -227,20 +227,17 @@ const Triangle = () => (
   </svg>
 )
 
-const AccountBanner = (props: {
-  org: Organization
-  accounts: AccountRead[]
-}) => {
-  const { org, accounts } = props
+const AccountBanner = (props: { accounts: Account[] }) => {
+  const { accounts } = props
 
-  const goToDashboard = async (account: AccountRead) => {
+  const goToDashboard = async (account: Account) => {
     const link = await api.accounts.dashboardLink({
       id: account.id,
     })
     window.location.href = link.url
   }
 
-  const goToOnboarding = async (account: AccountRead) => {
+  const goToOnboarding = async (account: Account) => {
     const link = await api.accounts.onboardingLink({
       id: account.id,
     })
@@ -325,7 +322,7 @@ const AccountBanner = (props: {
           color="muted"
           right={
             <>
-              {accounts[0].is_admin && (
+              {true && (
                 <button
                   className="font-medium text-blue-500 dark:text-blue-400"
                   onClick={(e) => {
@@ -336,7 +333,7 @@ const AccountBanner = (props: {
                   Go to {ACCOUNT_TYPE_DISPLAY_NAMES[accountType]}
                 </button>
               )}
-              {!accounts[0].is_admin && (
+              {false && (
                 <span className="text-gray-400">
                   Ask the admin to make changes
                 </span>

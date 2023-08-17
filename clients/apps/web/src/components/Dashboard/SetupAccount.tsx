@@ -3,12 +3,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit'
 import { ACCOUNT_TYPES, ACCOUNT_TYPE_DISPLAY_NAMES } from 'polarkit/account'
-import {
-  AccountRead,
-  AccountType,
-  ApiError,
-  Platforms,
-} from 'polarkit/api/client'
+import { Account, AccountType, ApiError } from 'polarkit/api/client'
 import { getValidationErrorsMap, isValidationError } from 'polarkit/api/errors'
 import { CountryPicker } from 'polarkit/components'
 import { PrimaryButton } from 'polarkit/components/ui'
@@ -62,10 +57,9 @@ const SetupAccount = ({ onClose }: { onClose: () => void }) => {
     }
 
     try {
-      const account = await api.accounts.createAccount({
-        platform: Platforms.GITHUB,
-        orgName: currentOrg.name,
+      const account = await api.accounts.create({
         requestBody: {
+          organization_id: currentOrg.id,
           account_type: accountType,
           country,
           ...(openCollectiveSlug
@@ -88,7 +82,7 @@ const SetupAccount = ({ onClose }: { onClose: () => void }) => {
     }
   }
 
-  const goToOnboarding = async (account: AccountRead) => {
+  const goToOnboarding = async (account: Account) => {
     if (!currentOrg) {
       throw Error('no org set')
     }

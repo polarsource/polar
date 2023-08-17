@@ -39,6 +39,9 @@ router.include_router(notifications_router)
 router.include_router(repository_router)
 # /rewards
 router.include_router(rewards_router)
+# /{platform}/{org_name}/{repo_name}/accounts
+# /accounts
+router.include_router(accounts_router)
 # /{platform}/{org_name}/{repo_name}/pulls
 router.include_router(pull_request_router)
 # /{platform}/{org_name}/{repo_name}/issues
@@ -50,5 +53,3 @@ router.include_router(pledge_router)
 router.include_router(stream_router)
 # /{platform}/{org_name}/
 router.include_router(organization_router)
-# /{platform}/{org_name}/{repo_name}/accounts
-router.include_router(accounts_router)

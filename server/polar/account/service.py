@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Sequence, Tuple
 from uuid import UUID
 
 import stripe.error as stripe_lib_error
@@ -13,6 +13,7 @@ from polar.integrations.open_collective.service import (
     open_collective,
 )
 from polar.integrations.stripe.service import stripe
+from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.services import ResourceService
 from polar.models.account import Account
 from polar.models.user import User
@@ -39,6 +40,24 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         self, session: AsyncSession, organization_id: UUID
     ) -> Account | None:
         return await self.get_by(session=session, organization_id=organization_id)
+
+    async def list_by(
+        self,
+        session: AsyncSession,
+        *,
+        org_id: UUID | None,
+        user_id: UUID | None,
+    ) -> Sequence[Account]:
+        statement = sql.select(Account).where(Account.deleted_at.is_(None))
+
+        if org_id:
+            statement = statement.where(Account.organization_id == org_id)
+
+        if user_id:
+            statement = statement.where(Account.user_id == user_id)
+
+        res = await session.execute(statement)
+        return res.scalars().unique().all()
 
     async def create_account(
         self,

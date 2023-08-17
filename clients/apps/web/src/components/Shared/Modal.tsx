@@ -1,3 +1,5 @@
+// Deprecated!
+// Use @/components/Modal instead
 const Modal = ({
   onClose,
   children,

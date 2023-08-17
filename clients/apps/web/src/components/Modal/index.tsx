@@ -31,7 +31,6 @@ export const Modal: FunctionComponent<ModalProps> = ({
   }, [isShown, hide])
 
   const onInnerClick = (e: MouseEvent) => {
-    // alert('inner')
     e.stopPropagation()
   }
 
@@ -43,16 +42,12 @@ export const Modal: FunctionComponent<ModalProps> = ({
           aria-modal
           tabIndex={-1}
           role="dialog"
-          onClick={(e) => {
-            // alert('outer')
-          }}
         >
           <div
-            className="flex h-full w-full items-center justify-center bg-red-800/50"
+            className="flex h-full w-full items-center justify-center bg-black/50"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              // alert('modal mid')
               hide()
             }}
           >

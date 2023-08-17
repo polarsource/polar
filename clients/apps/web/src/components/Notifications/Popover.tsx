@@ -20,8 +20,11 @@ import {
 } from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import SplitRewardModal from '../Finance/SplitRewardModal'
 import DollarSignIcon from '../Icons/DollarSignIcon'
 import Icon from '../Icons/Icon'
+import { Modal } from '../Modal'
+import { useModal } from '../Modal/useModal'
 
 const Popover = () => {
   const [show, setShow] = useState(false)
@@ -216,8 +219,7 @@ const MaintainerPledgeConfirmationPendingWrapper = ({
 }) => {
   const pledge = useGetPledge(payload.pledge_id)
 
-  // const pledges = useListPledesForIssue(pledge.data?.issue.id || undefined)
-  // const { isShown, toggle } = useModal()
+  const { isShown, hide: hideModal, show: showModal } = useModal()
 
   const canMarkSolved = useMemo(() => {
     return pledge.data?.state === PledgeState.CONFIRMATION_PENDING
@@ -228,72 +230,15 @@ const MaintainerPledgeConfirmationPendingWrapper = ({
 
   const markSolved = useIssueMarkConfirmed()
 
-  const onMarkSolved = async () => {
-    if (!pledge.data?.issue.id) {
-      return
-    }
-
-    // Give 100% of the rewards to the organization
-    // Once we fully support it: open up to user configured splits
-    await markSolved.mutateAsync({
-      id: pledge.data?.issue.id,
-      splits: [
-        {
-          organization_id: pledge.data.issue.repository.organization?.id,
-          share_thousands: 1000,
-        },
-      ],
-    })
-
-    // setIsInNestedModal(true)
-    // toggle()
+  const close = () => {
+    setIsInNestedModal(false)
+    hideModal()
   }
 
-  // const onSplitConfirm = async (shares: Share[]) => {
-  //   if (!pledge.data?.issue.id) {
-  //     return
-  //   }
-
-  //   const splits: ConfirmIssueSplit[] = shares
-  //     .filter((s) => s.share_thousands !== undefined && s.share_thousands > 0)
-  //     .map((s) => {
-  //       // reward to self org
-  //       if (s.username === pledge.data.issue.repository.organization?.name) {
-  //         return {
-  //           organization_id: pledge.data.issue.repository.organization?.id,
-  //           share_thousands: s.share_thousands || 0,
-  //         }
-  //       }
-
-  //       // reward to other
-  //       return {
-  //         github_username: s.username,
-  //         share_thousands: s.share_thousands || 0,
-  //       }
-  //     })
-  // }
-
-  // const close = () => {
-  //   if (!isShown) {
-  //     return
-  //   }
-
-  //   setIsInNestedModal(false)
-  //   toggle()
-  // }
-
-  // const shares: Share[] = pledge.data?.issue.repository.organization
-  //   ? [{ username: pledge.data.issue.repository.organization.name }]
-  //   : []
-
-  // const contributors: Contributor[] = pledge.data?.issue.repository.organization
-  //   ? [
-  //       {
-  //         username: pledge.data.issue.repository.organization.name,
-  //         avatar_url: pledge.data.issue.repository.organization.avatar_url,
-  //       },
-  //     ]
-  //   : []
+  const onMarkSolved = async () => {
+    setIsInNestedModal(true)
+    showModal()
+  }
 
   return (
     <>
@@ -305,19 +250,20 @@ const MaintainerPledgeConfirmationPendingWrapper = ({
         isLoading={markSolved.isLoading}
         onMarkSoved={onMarkSolved}
       />
-      {/* <Modal
+      <Modal
         isShown={isShown}
         hide={close}
         modalContent={
-          <Split
-            pledges={pledges.data?.items || []}
-            shares={shares}
-            contributors={contributors}
-            onConfirm={onSplitConfirm}
-            onCancel={close}
-          />
+          <>
+            {pledge.data?.issue.id && (
+              <SplitRewardModal
+                issueId={pledge.data.issue.id}
+                onCancel={close}
+              />
+            )}
+          </>
         }
-      /> */}
+      />
     </>
   )
 }

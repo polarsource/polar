@@ -28,6 +28,7 @@ from polar.organization.endpoints import OrganizationPrivateRead
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
+from polar.reward.service import reward_service
 from polar.worker import enqueue_job
 
 from .schemas import (
@@ -116,6 +117,9 @@ async def github_callback(
     pledge_id = state_data.get("pledge_id")
     if pledge_id:
         await pledge_service.connect_backer(session, pledge_id=pledge_id, backer=user)
+
+    # connect dangling rewards
+    await reward_service.connect_by_username(session, user)
 
     posthog.identify(user)
     goto_url = state_data.get("goto_url", None)

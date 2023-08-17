@@ -12,6 +12,7 @@ from polar.models.issue_reward import IssueReward
 from polar.models.pledge import Pledge
 from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
+from polar.models.user import User
 from polar.pledge.schemas import PledgeTransactionType
 from polar.postgres import AsyncSession, sql
 
@@ -112,6 +113,21 @@ class RewardService:
             return r._tuple()
 
         return None
+
+    async def connect_by_username(
+        self,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        stmt = (
+            sql.update(IssueReward)
+            .where(
+                IssueReward.github_username == user.username,
+                IssueReward.user_id.is_(None),
+            )
+            .values(user_id=user.id)
+        )
+        await session.execute(stmt)
 
 
 reward_service = RewardService()

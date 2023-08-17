@@ -1,7 +1,7 @@
-import { OpenCollective, Stripe } from 'polarkit/components/icons'
 import { AccountType } from 'polarkit/api/client'
+import { OpenCollective, Stripe } from 'polarkit/components/icons'
 
-export const ACCOUNT_TYPES: AccountType[] = Object.values(AccountType)
+export const ALL_ACCOUNT_TYPES: AccountType[] = Object.values(AccountType)
 
 export const ACCOUNT_TYPE_DISPLAY_NAMES: Record<AccountType, string> = {
   [AccountType.STRIPE]: 'Stripe',

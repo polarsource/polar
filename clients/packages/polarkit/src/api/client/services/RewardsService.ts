@@ -18,17 +18,29 @@ export class RewardsService {
    */
   public search({
     pledgesToOrganization,
+    rewardsToUser,
+    rewardsToOrg,
   }: {
     /**
      * Search rewards for pledges in this organization.
      */
     pledgesToOrganization?: string,
+    /**
+     * Search rewards to user.
+     */
+    rewardsToUser?: string,
+    /**
+     * Search rewards to organization.
+     */
+    rewardsToOrg?: string,
   }): CancelablePromise<ListResource_Reward_> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/rewards/search',
       query: {
         'pledges_to_organization': pledgesToOrganization,
+        'rewards_to_user': rewardsToUser,
+        'rewards_to_org': rewardsToOrg,
       },
       errors: {
         422: `Validation Error`,

@@ -8,7 +8,6 @@ import type { InstallationCreate } from '../models/InstallationCreate';
 import type { LoginResponse } from '../models/LoginResponse';
 import type { LookupUserRequest } from '../models/LookupUserRequest';
 import type { OrganizationPrivateRead } from '../models/OrganizationPrivateRead';
-import type { Platforms } from '../models/Platforms';
 import type { polar__integrations__github__endpoints__WebhookResponse } from '../models/polar__integrations__github__endpoints__WebhookResponse';
 import type { polar__integrations__stripe__endpoints__WebhookResponse } from '../models/polar__integrations__stripe__endpoints__WebhookResponse';
 
@@ -166,18 +165,15 @@ export class IntegrationsService {
    * @throws ApiError
    */
   public stripeConnectReturn({
-    platform,
-    orgName,
+    stripeId,
   }: {
-    platform: Platforms,
-    orgName: string,
+    stripeId: string,
   }): CancelablePromise<any> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/integrations/stripe/return',
       query: {
-        'platform': platform,
-        'org_name': orgName,
+        'stripe_id': stripeId,
       },
       errors: {
         422: `Validation Error`,

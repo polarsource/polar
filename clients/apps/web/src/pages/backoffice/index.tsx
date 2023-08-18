@@ -17,7 +17,11 @@ const Page: NextLayoutComponentType & { theme?: string } = () => {
 Page.getLayout = (page: ReactElement) => {
   return (
     <>
-      <Topbar customLogoTitle="Backoffice"></Topbar>
+      <Topbar
+        customLogoTitle="Backoffice"
+        logoPosition="center"
+        isFixed={false}
+      ></Topbar>
       <div className="mx-auto max-w-7xl p-4">{page}</div>
     </>
   )

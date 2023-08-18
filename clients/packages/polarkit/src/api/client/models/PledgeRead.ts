@@ -11,6 +11,7 @@ export type PledgeRead = {
   amount: number;
   repository_id: string;
   organization_id: string;
+  pledger_user_id?: string;
   state: PledgeState;
   pledger_name?: string;
   pledger_avatar?: string;

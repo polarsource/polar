@@ -3,6 +3,7 @@ import {
   IssueReferenceRead,
   PledgeRead,
   PledgeState,
+  UserRead,
 } from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
@@ -35,6 +36,7 @@ const IssueListItemDecoration = ({
   showConfirmPledgeAction,
   confirmPledgeIsLoading,
   funding,
+  showSelfPledgesFor,
 }: {
   orgName: string
   repoName: string
@@ -51,6 +53,7 @@ const IssueListItemDecoration = ({
   showConfirmPledgeAction: boolean
   confirmPledgeIsLoading: boolean
   funding: Funding
+  showSelfPledgesFor?: UserRead
 }) => {
   const showPledges = pledges && pledges.length > 0
 
@@ -131,6 +134,7 @@ const IssueListItemDecoration = ({
               showConfirmPledgeAction={showConfirmPledgeAction}
               confirmPledgeIsLoading={confirmPledgeIsLoading}
               funding={funding}
+              showSelfPledgesFor={showSelfPledgesFor}
             />
           </div>
         )}

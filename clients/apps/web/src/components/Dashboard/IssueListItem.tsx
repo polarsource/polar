@@ -10,6 +10,7 @@ import {
   IssueStatus,
   Organization,
   Repository,
+  UserRead,
   type PledgeRead,
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
@@ -41,6 +42,7 @@ const IssueListItem = (props: {
   showIssueProgress: boolean
   showPledgeAction: boolean
   right?: React.ReactElement
+  showSelfPledgesFor?: UserRead
 }) => {
   const { title, number, state, issue_created_at, reactions, comments } =
     props.issue
@@ -275,6 +277,7 @@ const IssueListItem = (props: {
               onConfirmPledges={onConfirmPledge}
               confirmPledgeIsLoading={markConfirmed.isLoading}
               funding={'funding' in props.issue ? props.issue.funding : {}}
+              showSelfPledgesFor={props.showSelfPledgesFor}
             />
           </IssueActivityBox>
         )}

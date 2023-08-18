@@ -15,7 +15,15 @@ import {
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
 import IssueListItem from '../components/Dashboard/IssueListItem'
-import { addDays, addHours, issueRead, org, pledge, repo } from './testdata'
+import {
+  addDays,
+  addHours,
+  issueRead,
+  org,
+  pledge,
+  repo,
+  user,
+} from './testdata'
 
 type Story = StoryObj<typeof IssueListItem>
 
@@ -532,5 +540,58 @@ export const FundingGoal: Story = {
         ...pledge,
       },
     ],
+  },
+}
+
+export const SelfSummaryFundingGoal: Story = {
+  args: {
+    ...Default.args,
+    issue: {
+      ...issueClosed,
+      funding: {
+        funding_goal: { currency: 'USD', amount: 60000 },
+      },
+    },
+    references: referencesMerged,
+    pledges: [
+      {
+        ...pledge,
+        pledger_user_id: user.id,
+      },
+      {
+        ...pledge,
+        pledger_user_id: user.id,
+      },
+
+      {
+        ...pledge,
+      },
+    ],
+    showSelfPledgesFor: user,
+  },
+}
+
+export const SelfSummaryNoGoal: Story = {
+  args: {
+    ...Default.args,
+    issue: {
+      ...issueClosed,
+    },
+    references: referencesMerged,
+    pledges: [
+      {
+        ...pledge,
+        pledger_user_id: user.id,
+      },
+      {
+        ...pledge,
+        pledger_user_id: user.id,
+      },
+
+      {
+        ...pledge,
+      },
+    ],
+    showSelfPledgesFor: user,
   },
 }

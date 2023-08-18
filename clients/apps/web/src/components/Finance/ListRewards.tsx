@@ -65,7 +65,7 @@ const List = (props: {
 
             <th
               scope="col"
-              className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-left text-sm font-medium"
+              className="relative isolate hidden whitespace-nowrap py-3.5 pr-2 text-left text-sm font-medium md:table-cell"
             >
               Pledge Date
             </th>
@@ -135,7 +135,7 @@ const List = (props: {
                   </td>
                 )}
 
-                <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
+                <td className="hidden whitespace-nowrap py-3 pr-3 text-sm text-gray-500 md:table-cell">
                   {formatDate(t.pledge.created_at)}
                 </td>
 

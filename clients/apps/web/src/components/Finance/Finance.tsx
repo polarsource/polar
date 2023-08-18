@@ -332,7 +332,7 @@ const AccountBanner = (props: { org: Organization; accounts: Account[] }) => {
             <>
               {true && (
                 <button
-                  className="font-medium text-blue-500 dark:text-blue-400"
+                  className="whitespace-nowrap font-medium text-blue-500 dark:text-blue-400"
                   onClick={(e) => {
                     e.preventDefault()
                     goToDashboard(accounts[0])

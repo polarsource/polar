@@ -39,6 +39,7 @@ export const Default: Story = {
   args: {
     organization: orgWithBio,
     repository: repoWithData,
+    repositories: [repo],
     issues: [issueRead, issueRead, issueRead, issueRead, issueRead, issueRead],
   },
   render: (args) => {
@@ -63,17 +64,38 @@ export const Dark: Story = {
 export const WithoutBio: Story = {
   ...Default,
   args: {
+    ...Default.args,
     organization: org,
-    repository: repo,
-    issues: [issueRead, issueRead, issueRead, issueRead, issueRead, issueRead],
+    repository: {
+      ...repo,
+      description: undefined,
+    },
   },
 }
 
 export const WithoutBioAndLicense: Story = {
   ...Default,
   args: {
-    organization: org,
-    repository: { ...repo, license: undefined, stars: 0 },
-    issues: [issueRead, issueRead, issueRead, issueRead, issueRead, issueRead],
+    ...Default.args,
+    repository: {
+      ...repo,
+      description: undefined,
+      license: undefined,
+      stars: 0,
+    },
+  },
+}
+
+export const WithoutBioAndLicenseAndLink: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    repository: {
+      ...repo,
+      description: undefined,
+      license: undefined,
+      stars: 0,
+      homepage: undefined,
+    },
   },
 }

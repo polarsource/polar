@@ -14,11 +14,13 @@ const Navigation = ({
   const router = useRouter()
 
   return (
-    <div className="flex items-center text-black text-gray-900 dark:text-gray-200">
+    <div className="relative flex items-center text-black text-gray-900 dark:text-gray-200">
       <img src={organization.avatar_url} className="h-8 w-8 rounded-full" />
       <div className="ml-4 text-sm ">{organization.name}</div>
       <div className="ml-3 mr-1">/</div>
       <RepoSelection
+        selectedClassNames="rounded-lg"
+        openClassNames="top-0"
         organization={organization}
         repositories={repositories}
         value={repository}

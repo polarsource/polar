@@ -1,6 +1,7 @@
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { Command } from 'cmdk'
 import Image from 'next/image'
+import { clsx } from 'polarkit/utils'
 import React from 'react'
 
 export const Item = ({
@@ -75,15 +76,18 @@ export const Icon = ({ children }: { children: React.ReactNode }) => {
 export const SelectedBox = ({
   onClick,
   children,
+  classNames,
 }: {
   onClick: () => void
   children: React.ReactElement
+  classNames: string
 }) => {
   return (
     <div
-      className="flex max-w-[360px] cursor-pointer items-center justify-between space-x-2 
-      rounded-lg p-2
-      text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+      className={clsx(
+        'flex h-full max-w-[360px] cursor-pointer items-center justify-between space-x-2  p-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700',
+        classNames,
+      )}
       onClick={onClick}
     >
       {children}

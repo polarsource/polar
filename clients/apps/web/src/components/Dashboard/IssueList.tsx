@@ -21,7 +21,7 @@ import React, {
 import yayson from 'yayson'
 import Spinner from '../Shared/Spinner'
 import IssueListItem from './IssueListItem'
-import RepoSelection from './RepoSelection'
+import MaintainerRepoSelection from './MaintainerRepoSelection'
 
 const IssueList = (props: {
   dashboard?: InfiniteData<IssueListResponse>
@@ -242,12 +242,12 @@ export const Header = (props: {
   return (
     <>
       <form
-        className="flex flex-col justify-between space-y-2 border-b bg-gray-100/50 px-2 py-2 backdrop-blur dark:bg-gray-700/50 lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0"
+        className="flex flex-col justify-between space-y-2 border-b bg-gray-100/50 pr-2  backdrop-blur dark:bg-gray-700/50 lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0"
         onSubmit={onSubmit}
       >
-        <div className="flex w-full items-center space-x-4 ">
-          <RepoSelection />
-          <div className="relative w-full lg:max-w-[500px] ">
+        <div className="flex h-full w-full items-center space-x-4">
+          <MaintainerRepoSelection />
+          <div className="relative w-full py-2 lg:max-w-[500px]">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 ">
               {props.spinner && <Spinner />}
               {!props.spinner && (
@@ -267,16 +267,6 @@ export const Header = (props: {
               value={props.filters.q || ''}
             />
           </div>
-
-          {/*
-          <div className="flex-shrink-0 text-sm">
-            {props.totalCount !== undefined && (
-              <>
-                <strong className="font-medium">{props.totalCount}</strong>{' '}
-                <span className="text-gray-500">issues</span>
-              </>
-            )}
-            </div>*/}
         </div>
 
         <div className="flex flex-shrink-0 space-x-4">

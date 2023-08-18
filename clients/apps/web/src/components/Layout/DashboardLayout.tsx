@@ -1,5 +1,5 @@
 import { classNames } from 'polarkit/utils'
-import SidebarNavigation from '../Dashboard/SidebarNavigation'
+import SidebarNavigation from '../Dashboard/MaintainerNavigation'
 import Topbar from '../Shared/Topbar'
 
 const DashboardLayout = (props: {
@@ -8,7 +8,7 @@ const DashboardLayout = (props: {
   header?: React.ReactElement
 }) => {
   return (
-    <div id="xx" className="relative flex flex-col">
+    <div className="relative flex flex-col">
       <Topbar />
 
       <div className="dark:bg-gray-950 flex flex-row bg-gray-50">

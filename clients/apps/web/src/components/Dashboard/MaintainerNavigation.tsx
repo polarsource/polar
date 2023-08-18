@@ -12,7 +12,7 @@ import { useRouter } from 'next/router'
 import { classNames } from 'polarkit/utils'
 import { useState } from 'react'
 
-const SidebarNavigation = () => {
+const MaintainerNavigation = () => {
   const router = useRouter()
   const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
 
@@ -63,15 +63,6 @@ const SidebarNavigation = () => {
       link: `/feed`,
       if: !org && isLoaded,
     },
-
-    // Always visible
-    // {
-    //   id: 'settings',
-    //   title: 'Settings',
-    //   icon: <Cog8ToothIcon className="h-6 w-6" />,
-    //   link: `/settings`,
-    //   if: true,
-    // },
   ]
 
   const [clickedFirstLevelLink, setClickedFirstLevelLink] = useState('')
@@ -160,4 +151,4 @@ const SidebarNavigation = () => {
   )
 }
 
-export default SidebarNavigation
+export default MaintainerNavigation

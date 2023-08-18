@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { LogoType } from 'polarkit/components/brand'
+import { LogoIcon, LogoType } from 'polarkit/components/brand'
 import { classNames } from 'polarkit/utils'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../hooks'
@@ -47,15 +47,26 @@ const Topbar = (props: {
     <>
       <div className={className}>
         <div className="flex items-center space-x-4 md:flex-1">
-          {logoPosition !== 'center' && logo}
-          {props.customLogoTitle && (
-            <span className="font-display text-xl">
-              {props.customLogoTitle}
-            </span>
+          {logoPosition === 'left' && !props.customLogoTitle && logo}
+          {logoPosition === 'left' && props.customLogoTitle && (
+            <>
+              <LogoIcon />
+              <span className="font-display text-xl">
+                {props.customLogoTitle}
+              </span>
+            </>
           )}
         </div>
 
-        {logoPosition == 'center' && logo}
+        {logoPosition == 'center' && !props.customLogoTitle && logo}
+        {logoPosition == 'center' && props.customLogoTitle && (
+          <>
+            <LogoIcon />
+            <span className="font-display text-xl">
+              {props.customLogoTitle}
+            </span>
+          </>
+        )}
 
         <div className="flex flex-shrink-0 items-center justify-end space-x-4 md:flex-1">
           {showProfile && !hideProfile && (

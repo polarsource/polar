@@ -45,6 +45,9 @@ const ProfileSelection = (props: Props) => {
         avatar_url: loggedUser.avatar_url,
       } as const)
 
+  const showConnectUsell = orgs && orgs.length === 0
+  const showAddOrganization = !showConnectUsell
+
   return (
     <>
       <div className="flex flex-col">
@@ -91,12 +94,27 @@ const ProfileSelection = (props: Props) => {
                   </ListItem>
                 ))}
 
-              <LinkItem
-                href={CONFIG.GITHUB_INSTALLATION_URL}
-                icon={<PlusSmallIcon className="h-5 w-5 text-blue-600" />}
-              >
-                <span className="mx-1.5 text-blue-600">Add organization</span>
-              </LinkItem>
+              {showConnectUsell && (
+                <div className="my-2 mx-4 rounded-md border border-blue-100 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900 dark:text-gray-300">
+                  Get funding for your public repositories.
+                  <br />
+                  <Link
+                    href={CONFIG.GITHUB_INSTALLATION_URL}
+                    className="font-medium text-blue-600 dark:text-blue-500"
+                  >
+                    Connect repositories.
+                  </Link>
+                </div>
+              )}
+
+              {showAddOrganization && (
+                <LinkItem
+                  href={CONFIG.GITHUB_INSTALLATION_URL}
+                  icon={<PlusSmallIcon className="h-5 w-5 text-blue-600" />}
+                >
+                  <span className="mx-1.5 text-blue-600">Add organization</span>
+                </LinkItem>
+              )}
 
               <hr className="mx-2" />
 

@@ -3,7 +3,7 @@ import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import SetupAccount from '@/components/Dashboard/SetupAccount'
 import { HeaderPill, RewardsContent } from '@/components/Finance/Finance'
 import Icon from '@/components/Icons/Icon'
-import DashboardLayout from '@/components/Layout/DashboardLayout'
+import BackerLayout from '@/components/Layout/BackerLayout'
 import { Modal as ModernModal } from '@/components/Modal'
 import { useRequireAuth } from '@/hooks'
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
@@ -53,7 +53,7 @@ const Page: NextLayoutComponentType = () => {
 Page.getLayout = (page: ReactElement) => {
   return (
     <Gatekeeper>
-      <DashboardLayout showSidebar={false}>{page}</DashboardLayout>
+      <BackerLayout>{page}</BackerLayout>
     </Gatekeeper>
   )
 }

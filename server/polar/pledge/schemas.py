@@ -193,6 +193,8 @@ class PledgeRead(Schema):
     repository_id: UUID
     organization_id: UUID
 
+    pledger_user_id: UUID | None = None
+
     state: PledgeState
 
     pledger_name: str | None
@@ -231,6 +233,7 @@ class PledgeRead(Schema):
             pledger_name=pledger_name,
             pledger_avatar=pledger_avatar,
             scheduled_payout_at=o.scheduled_payout_at,
+            pledger_user_id=o.by_user_id,
         )
 
 

@@ -49,7 +49,7 @@ const ProfileSelection = (props: Props) => {
     <>
       <div className="flex flex-col">
         {!isOpen && (
-          <div className="shadow-hidden relative cursor-pointer rounded-lg border border-transparent px-4 py-2 hover:border-blue-100 hover:shadow">
+          <div className="shadow-hidden dark:hover:shadow-hidden relative cursor-pointer rounded-lg border border-transparent px-4 py-2 hover:border-blue-100 hover:shadow hover:dark:border-gray-800 dark:hover:bg-gray-900">
             <div onClick={() => setOpen(true)}>
               <Profile
                 name={current.name}
@@ -64,7 +64,7 @@ const ProfileSelection = (props: Props) => {
           <div
             ref={ref}
             className={clsx(
-              'absolute top-4 right-4 min-w-[300px] rounded-lg border border-transparent bg-white shadow hover:border-blue-100',
+              'absolute top-4 right-4 min-w-[300px] overflow-hidden rounded-lg border border-transparent bg-white shadow hover:border-blue-100 dark:bg-gray-900 hover:dark:border-gray-800',
             )}
           >
             <ul>
@@ -103,19 +103,23 @@ const ProfileSelection = (props: Props) => {
               <LinkItem
                 href={'https://polar.sh/faq'}
                 icon={
-                  <QuestionMarkCircleIcon className="h-5 w-5 text-gray-600" />
+                  <QuestionMarkCircleIcon className="h-5 w-5  text-gray-600 dark:text-gray-400" />
                 }
               >
-                <span className="mx-1.5 text-gray-600">Support</span>
+                <span className="mx-1.5  text-gray-600 dark:text-gray-400">
+                  Support
+                </span>
               </LinkItem>
 
               <TextItem
                 onClick={logout}
                 icon={
-                  <ArrowRightOnRectangleIcon className="h-5 w-5 text-gray-600" />
+                  <ArrowRightOnRectangleIcon className="h-5 w-5  text-gray-600 dark:text-gray-400" />
                 }
               >
-                <span className="mx-1.5 text-gray-600">Log out</span>
+                <span className="mx-1.5  text-gray-600 dark:text-gray-400">
+                  Log out
+                </span>
               </TextItem>
             </ul>
           </div>
@@ -129,7 +133,7 @@ export default ProfileSelection
 
 const ListItem = (props: { children: React.ReactElement }) => {
   return (
-    <li className="animate-background px-4 py-2 duration-100 hover:bg-gray-100/50">
+    <li className="animate-background px-4 py-2 duration-100 hover:bg-gray-100/50 dark:hover:bg-gray-800">
       {props.children}
     </li>
   )
@@ -144,7 +148,7 @@ const Profile = (props: {
     <>
       <div className="flex items-center text-sm">
         <img src={props.avatar_url} className="h-5 w-5 rounded-full" />
-        <p className="mx-1.5 text-gray-600">{props.name}</p>
+        <p className="mx-1.5 text-gray-600 dark:text-gray-400">{props.name}</p>
         <ProfileBadge type={props.type} />
       </div>
     </>
@@ -159,7 +163,7 @@ const LinkItem = (props: {
   return (
     <ListItem>
       <Link href={props.href}>
-        <div className="flex items-center text-sm">
+        <div className="flex items-center text-sm ">
           {props.icon}
           {props.children}
         </div>
@@ -187,18 +191,18 @@ const TextItem = (props: {
 }
 
 const ProfileBadge = (props: { type: 'backer' | 'maintainer' }) => {
-  const isBacker = props.type === 'backer'
-
   return (
     <span
       className={clsx(
-        isBacker && 'border-green-200 bg-green-100 text-green-600',
-        !isBacker && 'border-blue-200 bg-blue-100 text-blue-600',
+        props.type === 'backer' &&
+          'border-green-200 bg-green-100 text-green-600 dark:border-green-600 dark:bg-green-700 dark:text-green-300',
+        props.type === 'maintainer' &&
+          'border-blue-200 bg-blue-100 text-blue-600 dark:border-blue-600 dark:bg-blue-700 dark:text-blue-300',
         'rounded-lg border px-1.5 text-xs',
       )}
     >
-      {isBacker && 'Backer'}
-      {!isBacker && 'Maintainer'}
+      {props.type === 'backer' && 'Backer'}
+      {props.type === 'maintainer' && 'Maintainer'}
     </span>
   )
 }

@@ -42,11 +42,10 @@ const OnboardingConnectPersonalDashboard = () => {
             <div className="flex-1 text-sm text-gray-500 dark:text-gray-400">
               <p>
                 Interested in getting backers behind your open source efforts?
-                Or looking to track issues you&apos;re dependent on and pledge
-                behind them? Connect your repositories to get started.
+                Connect your repositories to get started.
               </p>
             </div>
-            <div className="flex items-center justify-between gap-4 pt-2 lg:justify-start">
+            <div className="flex items-center justify-between gap-4 pt-2 xl:justify-start">
               <PrimaryButton
                 color="blue"
                 classNames="pl-3.5"
@@ -75,7 +74,7 @@ const OnboardingConnectPersonalDashboard = () => {
             </div>
           </div>
         </div>
-        <div className="relative hidden flex-1 lg:block">
+        <div className="relative hidden flex-1 xl:block">
           <Image
             src={screenshot}
             alt="Polar dashboard screenshot"

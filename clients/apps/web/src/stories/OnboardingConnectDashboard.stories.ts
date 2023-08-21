@@ -1,15 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import OnboardingConnectDashboard from '../components/Onboarding/OnboardingConnectDashboard'
+import OnboardingConnectPersonalDashboard from '@/components/Onboarding/OnboardingConnectPersonalDashboard'
 
-const meta: Meta<typeof OnboardingConnectDashboard> = {
-  title: 'Organisms/OnboardingConnectDashboard',
-  component: OnboardingConnectDashboard,
+const meta: Meta<typeof OnboardingConnectPersonalDashboard> = {
+  title: 'Organisms/OnboardingConnectPersonalDashboard',
+  component: OnboardingConnectPersonalDashboard,
   tags: ['autodocs'],
 }
 
 export default meta
 
-type Story = StoryObj<typeof OnboardingConnectDashboard>
+type Story = StoryObj<typeof OnboardingConnectPersonalDashboard>
 
 export const Default: Story = {}

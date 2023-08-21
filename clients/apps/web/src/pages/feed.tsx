@@ -3,6 +3,7 @@ import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import IssueList from '@/components/Dashboard/IssueList'
 import { DashboardFilters } from '@/components/Dashboard/filters'
 import BackerLayout from '@/components/Layout/BackerLayout'
+import OnboardingConnectReposToGetStarted from '@/components/Onboarding/OnboardingConnectReposToGetStarted'
 import { useAuth } from '@/hooks'
 import type { NextLayoutComponentType } from 'next'
 import { IssueListType, IssueStatus } from 'polarkit/api/client'
@@ -35,6 +36,15 @@ const Page: NextLayoutComponentType = () => {
   )
   const dashboard = dashboardQuery.data
   const totalCount = dashboard?.pages[0].pagination.total_count || undefined
+
+  // Onboarding splashscreen
+  if (!dashboardQuery.isLoading && totalCount === 0) {
+    return (
+      <BackerLayout>
+        <OnboardingConnectReposToGetStarted />
+      </BackerLayout>
+    )
+  }
 
   return (
     <BackerLayout>

@@ -541,9 +541,10 @@ async def test_list_by_repository_type_and_status_dependencies_pledge_state(
     third_party_repo = await random_objects.create_repository(session, third_party_org)
 
     for state in [
-        PledgeState.initiated,
+        PledgeState.initiated,  # does not appear in result
         PledgeState.created,
         PledgeState.disputed,
+        PledgeState.refunded,  # does not appear in result
     ]:
         third_party_issue = await random_objects.create_issue(
             session, third_party_org, third_party_repo
@@ -579,7 +580,6 @@ async def test_list_by_repository_type_and_status_dependencies_pledge_state(
     assert names == [
         "pledged_towards_PledgeState.disputed",
         "pledged_towards_PledgeState.created",
-        "pledged_towards_PledgeState.initiated",  # TODO: can we find a way to support filtering out this value from the query?  # noqa: E501
     ]
 
 

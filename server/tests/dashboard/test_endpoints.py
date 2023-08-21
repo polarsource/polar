@@ -9,6 +9,7 @@ from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
+from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession
 
 
@@ -93,6 +94,40 @@ async def test_get_with_pledge(
     assert len(pledges) == 1
     assert pledges[0]["id"] == rel_pledged["id"]
     assert pledges[0]["attributes"]["pledger_name"] == pledging_organization.name
+
+
+@pytest.mark.asyncio
+async def test_get_with_pledge_initiated(
+    user: User,
+    organization: Organization,
+    repository: Repository,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    pledging_organization: Organization,
+    pledge: Pledge,
+    issue: Issue,
+    auth_jwt: str,
+    session: AsyncSession,
+) -> None:
+    # assert that initiated pledges does not appear in the result
+    pledge.state = PledgeState.initiated
+    await pledge.save(session)
+
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            f"/api/v1/dashboard/github/{organization.name}",
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    res = response.json()
+
+    assert len(res["data"]) == 1
+    assert res["data"][0]["id"] == str(issue.id)
+
+    assert "pledges" not in res["data"][0]["relationships"]
+
+    pledges = [x for x in res["included"] if x["type"] == "pledge"]
+    assert len(pledges) == 0
 
 
 @pytest.mark.asyncio

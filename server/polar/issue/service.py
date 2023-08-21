@@ -29,6 +29,7 @@ from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.models.user import User
+from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession, sql
 
 from .schemas import IssueCreate, IssueUpdate
@@ -129,7 +130,11 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 sql.func.count().over().label("total_count"),
             )
             .join(
-                Issue.pledges,
+                Pledge,
+                and_(
+                    Pledge.issue_id == Issue.id,
+                    Pledge.state.in_(PledgeState.active_states()),
+                ),
                 isouter=True,
             )
             .join(

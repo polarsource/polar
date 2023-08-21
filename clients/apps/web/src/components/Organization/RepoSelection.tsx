@@ -58,7 +58,7 @@ export function RepoSelection(props: {
     setOpen(false)
   })
 
-  const width = 'min-w-[320px] max-w-[500px]'
+  const width = 'lg:min-w-[320px] lg:max-w-[500px]'
 
   const sortedRepositories = repositories.sort((a, b) =>
     a.name < b.name ? -1 : 1,
@@ -70,7 +70,7 @@ export function RepoSelection(props: {
       onClick={(e) => {
         e.stopPropagation()
       }}
-      className="h-full"
+      className="h-full w-full lg:w-fit"
     >
       {props.value && (
         <SelectedRepository
@@ -156,7 +156,7 @@ const SelectedRepository = ({
 }) => {
   return (
     <SelectedBox onClick={onClick} classNames={classNames}>
-      <div className="flex items-center justify-between space-x-2 ">
+      <div className="flex items-center justify-between space-x-2">
         <RepoIcon />
         <div className="flex items-center space-x-1 overflow-hidden ">
           <span className="overflow-hidden text-ellipsis whitespace-nowrap text-gray-900 dark:text-gray-200">

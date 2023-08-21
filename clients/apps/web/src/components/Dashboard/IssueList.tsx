@@ -247,10 +247,10 @@ export const Header = (props: {
   return (
     <>
       <form
-        className="flex flex-col justify-between space-y-2 border-b bg-gray-100/50 pr-2  backdrop-blur dark:bg-gray-700/50 lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0"
+        className="flex flex-col justify-between space-y-2 border-b bg-gray-100/50 bg-white p-2 !pr-2 backdrop-blur-none dark:bg-gray-700/50	lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0 lg:bg-transparent lg:p-0 lg:backdrop-blur"
         onSubmit={onSubmit}
       >
-        <div className="flex h-full w-full items-center space-x-4">
+        <div className="flex h-full w-full flex-col items-stretch space-y-2 lg:flex-row lg:items-center lg:space-x-4">
           <MaintainerRepoSelection />
           <div className="relative w-full py-2 lg:max-w-[500px]">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 ">

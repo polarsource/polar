@@ -8,11 +8,13 @@ from uuid import UUID
 
 import stripe.error as stripe_lib_error
 import structlog
+from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 from sqlalchemy.orm import (
     joinedload,
 )
 
 from polar.account.service import account as account_service
+from polar.config import settings
 from polar.exceptions import NotPermitted, ResourceNotFound, StripeError
 from polar.integrations.github.service.user import github_user as github_user_service
 from polar.integrations.stripe.service import stripe
@@ -521,6 +523,28 @@ class PledgeService(ResourceServiceReader[Pledge]):
             to_state=PledgeState.pending,
             hook=pledge_pending,
         )
+
+    async def issue_confirmed_discord_alert(self, issue: Issue) -> None:
+        if not settings.DISCORD_WEBHOOK_URL:
+            return
+
+        webhook = AsyncDiscordWebhook(
+            url=settings.DISCORD_WEBHOOK_URL, content="Confirmed issue"
+        )
+
+        embed = DiscordEmbed(
+            title="Confirmed issue",
+            description=f'"{issue.title}" has been confirmed solved',  # noqa: E501
+            color="5763719",
+        )
+
+        embed.add_embed_field(
+            name="Backoffice",
+            value=f"[Open](https://polar.sh/backoffice/issue/{str(issue.id)}",
+        )
+
+        webhook.add_embed(embed)
+        await webhook.execute()
 
     async def mark_pending_by_pledge_id(
         self, session: AsyncSession, pledge_id: UUID

@@ -263,6 +263,8 @@ async def confirm(
     # mark pledges as PENDING
     await pledge_service.mark_pending_by_issue_id(session, issue_id=issue.id)
 
+    await pledge_service.issue_confirmed_discord_alert(issue=issue)
+
     # get for return
     issue = await issue_service.get_loaded(session, id)
 

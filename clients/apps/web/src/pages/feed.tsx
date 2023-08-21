@@ -1,7 +1,9 @@
-import { DefaultFilters } from '@/components/Dashboard'
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import IssueList from '@/components/Dashboard/IssueList'
-import { DashboardFilters } from '@/components/Dashboard/filters'
+import {
+  DashboardFilters,
+  DefaultFilters,
+} from '@/components/Dashboard/filters'
 import BackerLayout from '@/components/Layout/BackerLayout'
 import OnboardingConnectReposToGetStarted from '@/components/Onboarding/OnboardingConnectReposToGetStarted'
 import { useAuth } from '@/hooks'

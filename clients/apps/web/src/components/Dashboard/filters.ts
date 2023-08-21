@@ -14,6 +14,19 @@ export type DashboardFilters = {
   sort?: IssueSortBy
 }
 
+export const DefaultFilters: DashboardFilters = {
+  tab: IssueListType.ISSUES,
+  q: '',
+  statusBacklog: true,
+  statusTriaged: true,
+  statusInProgress: true,
+  statusPullRequest: true,
+  statusClosed: false,
+  sort: undefined,
+  onlyPledged: false,
+  onlyBadged: false,
+}
+
 export const navigate = (router: NextRouter, filters: DashboardFilters) => {
   const params = new URLSearchParams()
 

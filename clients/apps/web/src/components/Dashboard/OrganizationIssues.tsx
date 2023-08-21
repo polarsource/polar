@@ -4,12 +4,11 @@ import { useDashboard } from 'polarkit/hooks'
 import { Dispatch, SetStateAction, useMemo } from 'react'
 import DashboardLayout from '../Layout/DashboardLayout'
 import OnboardingAddBadge from '../Onboarding/OnboardingAddBadge'
-import OnboardingAddDependency from '../Onboarding/OnboardingAddDependency'
 import { LabelSchema } from './IssueLabel'
 import IssueList, { Header } from './IssueList'
 import { DashboardFilters } from './filters'
 
-const OrganizationDashboard = ({
+const OrganizationIssues = ({
   orgName,
   repoName,
   filters,
@@ -39,22 +38,6 @@ const OrganizationDashboard = ({
     return totalCount !== undefined && totalCount > 0
   }, [totalCount])
 
-  const showDependenciesOnboarding = useMemo(() => {
-    return (
-      filters.tab === IssueListType.DEPENDENCIES &&
-      dashboardQuery.isLoading === false &&
-      haveIssues === false
-    )
-  }, [filters, totalCount, dashboardQuery])
-
-  const showChromeOnboarding = useMemo(() => {
-    return !showDependenciesOnboarding
-  }, [showDependenciesOnboarding])
-
-  const showList = useMemo(() => {
-    return !showDependenciesOnboarding
-  }, [showDependenciesOnboarding])
-
   const anyIssueHasPledgeOrBadge = useMemo(() => {
     return dashboardQuery.data?.pages.some((p) =>
       p.data.some(
@@ -77,7 +60,6 @@ const OrganizationDashboard = ({
 
   const showAddBadgeBanner = useMemo(() => {
     return (
-      showList &&
       filters.tab === IssueListType.ISSUES &&
       dashboardQuery.isLoading === false &&
       haveIssues &&
@@ -85,7 +67,6 @@ const OrganizationDashboard = ({
       isDefaultFilters
     )
   }, [
-    showList,
     filters,
     dashboardQuery,
     anyIssueHasPledgeOrBadge,
@@ -106,26 +87,23 @@ const OrganizationDashboard = ({
       }
     >
       <div className="space-y-4">
-        {showChromeOnboarding && <OnboardingInstallChromeExtension />}
-        {showDependenciesOnboarding && <OnboardingAddDependency />}
+        <OnboardingInstallChromeExtension />
         {showAddBadgeBanner && <OnboardingAddBadge />}
 
-        {showList && (
-          <IssueList
-            totalCount={totalCount}
-            loading={dashboardQuery.isLoading}
-            dashboard={dashboard}
-            filters={filters}
-            onSetFilters={onSetFilters}
-            isInitialLoading={dashboardQuery.isInitialLoading}
-            isFetchingNextPage={dashboardQuery.isFetchingNextPage}
-            hasNextPage={dashboardQuery.hasNextPage || false}
-            fetchNextPage={dashboardQuery.fetchNextPage}
-          />
-        )}
+        <IssueList
+          totalCount={totalCount}
+          loading={dashboardQuery.isLoading}
+          dashboard={dashboard}
+          filters={filters}
+          onSetFilters={onSetFilters}
+          isInitialLoading={dashboardQuery.isInitialLoading}
+          isFetchingNextPage={dashboardQuery.isFetchingNextPage}
+          hasNextPage={dashboardQuery.hasNextPage || false}
+          fetchNextPage={dashboardQuery.fetchNextPage}
+        />
       </div>
     </DashboardLayout>
   )
 }
 
-export default OrganizationDashboard
+export default OrganizationIssues

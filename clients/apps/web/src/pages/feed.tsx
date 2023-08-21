@@ -5,6 +5,7 @@ import {
   DefaultFilters,
 } from '@/components/Dashboard/filters'
 import BackerLayout from '@/components/Layout/BackerLayout'
+import FundAGithubIssue from '@/components/Onboarding/FundAGithubIssue'
 import OnboardingConnectReposToGetStarted from '@/components/Onboarding/OnboardingConnectReposToGetStarted'
 import { useAuth } from '@/hooks'
 import type { NextLayoutComponentType } from 'next'
@@ -50,18 +51,23 @@ const Page: NextLayoutComponentType = () => {
 
   return (
     <BackerLayout>
-      <IssueList
-        totalCount={totalCount}
-        loading={dashboardQuery.isLoading}
-        dashboard={dashboard}
-        filters={filters}
-        onSetFilters={() => {}}
-        isInitialLoading={dashboardQuery.isInitialLoading}
-        isFetchingNextPage={dashboardQuery.isFetchingNextPage}
-        hasNextPage={dashboardQuery.hasNextPage || false}
-        fetchNextPage={dashboardQuery.fetchNextPage}
-        showSelfPledgesFor={currentUser}
-      />
+      <>
+        <div className="mt-2 space-y-5">
+          <FundAGithubIssue />
+          <IssueList
+            totalCount={totalCount}
+            loading={dashboardQuery.isLoading}
+            dashboard={dashboard}
+            filters={filters}
+            onSetFilters={() => {}}
+            isInitialLoading={dashboardQuery.isInitialLoading}
+            isFetchingNextPage={dashboardQuery.isFetchingNextPage}
+            hasNextPage={dashboardQuery.hasNextPage || false}
+            fetchNextPage={dashboardQuery.fetchNextPage}
+            showSelfPledgesFor={currentUser}
+          />
+        </div>
+      </>
     </BackerLayout>
   )
 }

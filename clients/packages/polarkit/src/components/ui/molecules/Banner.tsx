@@ -1,4 +1,4 @@
-import { classNames } from 'polarkit/utils'
+import clsx from 'clsx'
 import React from 'react'
 
 type Color = 'default' | 'muted' | 'red'
@@ -14,7 +14,7 @@ const Banner = ({
 }) => {
   return (
     <div
-      className={classNames(
+      className={clsx(
         'flex items-center justify-between gap-2 rounded-lg px-3 py-2',
         color === 'default'
           ? 'bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-gray-700'

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import { PrimaryButton } from 'polarkit/components/ui'
+import { PrimaryButton } from './PrimaryButton'
 
 const meta: Meta<typeof PrimaryButton> = {
   title: 'Atoms/PrimaryButton',

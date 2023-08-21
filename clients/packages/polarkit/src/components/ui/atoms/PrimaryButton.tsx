@@ -1,5 +1,5 @@
 import React from 'react'
-import { classNames } from '../../utils/dom'
+import { classNames } from '../../../utils/dom'
 
 const LargeLoadingSpinner = (props: { disabled: boolean }) => {
   const classes = classNames(
@@ -140,7 +140,7 @@ const size = (size: Size) => {
   return 'px-5 py-2 min-h-6 text-sm font-medium '
 }
 
-const PrimaryButton = (props: ButtonProps) => {
+export const PrimaryButton = (props: ButtonProps) => {
   const disabled = props.disabled ? props.disabled : false
   let classes = classNames(
     bg(props.color, props.loading, disabled),
@@ -181,8 +181,6 @@ const PrimaryButton = (props: ButtonProps) => {
 }
 
 PrimaryButton.defaultProps = defaultProps
-
-export default PrimaryButton
 
 export const ThinButton = (props: ButtonProps) => {
   const disabled = props.disabled ? props.disabled : false

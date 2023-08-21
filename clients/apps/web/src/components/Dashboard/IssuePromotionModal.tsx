@@ -17,9 +17,9 @@ import {
 import { classNames } from 'polarkit/utils'
 import { posthog } from 'posthog-js'
 import { ChangeEvent, useState } from 'react'
+import CopyToClipboardInput from '../../../../../packages/polarkit/src/components/ui/atoms/CopyToClipboardInput'
 import { ModalHeader, Modal as ModernModal } from '../Modal'
 import { useModal } from '../Modal/useModal'
-import CopyToClipboardInput from '../UI/CopyToClipboardInput'
 import BadgeMessageForm from './BadgeMessageForm'
 import { LabelSchema } from './IssueLabel'
 

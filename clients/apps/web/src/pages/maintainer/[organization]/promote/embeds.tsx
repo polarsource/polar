@@ -2,12 +2,14 @@ import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import { FundOurBacklog } from '@/components/Embed/FundOurBacklog'
 import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
-import CopyToClipboardInput from '@/components/UI/CopyToClipboardInput'
-import LabeledRadioButton from '@/components/UI/LabeledRadioButton'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
-import { ShadowBox } from 'polarkit/components/ui'
+import {
+  CopyToClipboardInput,
+  LabeledRadioButton,
+  ShadowBox,
+} from 'polarkit/components/ui'
 import { useSearchIssues } from 'polarkit/hooks'
 import { ReactElement, useState } from 'react'
 

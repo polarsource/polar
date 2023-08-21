@@ -1,6 +1,6 @@
-import Banner from '@/components/Banner/Banner'
 import type { Meta, StoryObj } from '@storybook/react'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { PrimaryButton } from '../atoms'
+import Banner from './Banner'
 
 const meta: Meta<typeof Banner> = {
   title: 'Atoms/Banner',
@@ -23,6 +23,13 @@ export const ColorMuted: Story = {
   args: {
     children: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
     color: 'muted',
+  },
+}
+
+export const ColorRed: Story = {
+  args: {
+    children: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+    color: 'red',
   },
 }
 

@@ -2,10 +2,9 @@ import { Marked } from '@ts-stack/markdown'
 import { useTheme } from 'next-themes'
 import { CurrencyAmount, Funding } from 'polarkit/api/client'
 import { Badge } from 'polarkit/components/badge'
+import { LabeledRadioButton, MoneyInput } from 'polarkit/components/ui'
 import { classNames } from 'polarkit/utils'
 import { ChangeEvent, MouseEvent, useEffect, useRef, useState } from 'react'
-import LabeledRadioButton from '../UI/LabeledRadioButton'
-import MoneyInput from '../UI/MoneyInput'
 
 const BadgeMessageForm = (props: {
   orgName: string

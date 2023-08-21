@@ -278,10 +278,32 @@ class GithubIssueService(IssueService):
         if res.status_code == 200:
             log.info("github.sync_issue.etag_cache_miss", issue_id=issue.id)
 
-            # Upsert issue
-            await self.store(
-                session, data=res.parsed_data, organization=org, repository=repo
-            )
+            do_upset = True
+
+            # This happens when a repository has been moved from one repository to
+            # another repo. The old URL and ID will redirect to issue in the new
+            # repository, but with the response changed. A real-life example of this is
+            # https://www.github.com/litestar-org/litestar/issues/2027 which has been
+            # moved to https://github.com/litestar-org/litestar.dev/issues/8. To avoid
+            # confusion between litestar.dev#8 and litestar#8, abort here and do not
+            # save the new version.
+            #
+            # A potential improvement here is to mark the issue as deleted?
+            if (
+                res.parsed_data.repository
+                and res.parsed_data.repository.id != repo.external_id
+            ):
+                log.info(
+                    "github.sync_issue.repository_changed_skipping",
+                    expected_repo_id=repo.external_id,
+                    got_repo_id=res.parsed_data.repository.id,
+                )
+                do_upset = False
+
+            if do_upset:
+                await self.store(
+                    session, data=res.parsed_data, organization=org, repository=repo
+                )
 
             # Save etag
             issue.github_issue_fetched_at = datetime.datetime.utcnow()

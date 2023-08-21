@@ -35,7 +35,7 @@ const DashboardLayout = (props: {
           )}
           <div
             className={classNames(
-              props.header ? 'pt-48 lg:pt-36' : 'pt-24',
+              props.header ? 'pt-64 lg:pt-36' : 'pt-24',
               'relative mx-auto max-w-screen-2xl px-4 pt-24 pb-6 sm:px-6 md:px-8',
             )}
           >

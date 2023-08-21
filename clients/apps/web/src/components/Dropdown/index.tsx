@@ -85,7 +85,7 @@ export const SelectedBox = ({
   return (
     <div
       className={clsx(
-        'flex h-full max-w-[360px] cursor-pointer items-center justify-between space-x-2  p-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700',
+        'flex h-full cursor-pointer items-center justify-between space-x-2 p-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700',
         classNames,
       )}
       onClick={onClick}

@@ -4,14 +4,16 @@ import EmptyLayout from './EmptyLayout'
 const TopbarLayout = ({
   children,
   logoPosition,
+  isFixed,
 }: {
   children: React.ReactElement
   logoPosition?: LogoPosition
+  isFixed?: boolean
 }) => {
   return (
     <EmptyLayout>
       <>
-        <Topbar logoPosition={logoPosition} />
+        <Topbar logoPosition={logoPosition} isFixed={isFixed} />
         {children}
       </>
     </EmptyLayout>

@@ -278,7 +278,7 @@ class GithubIssueService(IssueService):
         if res.status_code == 200:
             log.info("github.sync_issue.etag_cache_miss", issue_id=issue.id)
 
-            do_upset = True
+            do_upsert = True
 
             # This happens when a repository has been moved from one repository to
             # another repo. The old URL and ID will redirect to issue in the new
@@ -298,9 +298,18 @@ class GithubIssueService(IssueService):
                     expected_repo_id=repo.external_id,
                     got_repo_id=res.parsed_data.repository.id,
                 )
-                do_upset = False
+                do_upsert = False
 
-            if do_upset:
+            # Same as above, but checking for issue number changes
+            if res.parsed_data.number != issue.number:
+                log.info(
+                    "github.sync_issue.number_changed_skipping",
+                    expected_issue_number=issue.number,
+                    got_issue_number=res.parsed_data.number,
+                )
+                do_upsert = False
+
+            if do_upsert:
                 await self.store(
                     session, data=res.parsed_data, organization=org, repository=repo
                 )

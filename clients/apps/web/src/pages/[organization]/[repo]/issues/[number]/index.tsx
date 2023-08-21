@@ -91,7 +91,7 @@ const PledgePage: NextLayoutComponentType = ({
 
 PledgePage.getLayout = (page: ReactElement) => {
   return (
-    <TopbarLayout logoPosition="left">
+    <TopbarLayout logoPosition="center" isFixed={false}>
       <PublicLayout>{page}</PublicLayout>
     </TopbarLayout>
   )

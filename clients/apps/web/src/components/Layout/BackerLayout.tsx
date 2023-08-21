@@ -15,7 +15,7 @@ const BackerLayout = (props: { children: React.ReactElement }) => {
         <main className={classNames('relative w-full')}>
           <div
             className={classNames(
-              'relative mx-auto max-w-screen-2xl px-4 pt-14 pb-6 sm:px-6 md:px-8',
+              'relative mx-auto max-w-screen-2xl px-4 pt-14 pb-6 md:px-16',
             )}
           >
             {props.children}

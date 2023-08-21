@@ -1,4 +1,3 @@
-import Banner from '@/components/Banner/Banner'
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import SetupAccount from '@/components/Dashboard/SetupAccount'
 import { HeaderPill, RewardsContent } from '@/components/Finance/Finance'
@@ -12,7 +11,7 @@ import Head from 'next/head'
 import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from 'polarkit/account'
 import { api } from 'polarkit/api'
 import { Account, AccountType, UserRead } from 'polarkit/api/client'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { Banner, PrimaryButton } from 'polarkit/components/ui'
 import { useListAccountsByUser, useListRewardsToUser } from 'polarkit/hooks'
 import { ReactElement, useState } from 'react'
 

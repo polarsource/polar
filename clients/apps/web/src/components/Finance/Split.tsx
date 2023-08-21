@@ -2,11 +2,10 @@ import { InformationCircleIcon, PlusIcon } from '@heroicons/react/24/outline'
 import { XMarkIcon } from '@heroicons/react/24/solid'
 import { api } from 'polarkit/api'
 import { Pledge } from 'polarkit/api/client'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { Banner, PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
 import { FormEvent, useMemo, useState } from 'react'
-import Banner from '../Banner/Banner'
 import { ModalHeader } from '../Modal'
 
 export type Share = {

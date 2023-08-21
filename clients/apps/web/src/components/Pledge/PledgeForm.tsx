@@ -1,4 +1,3 @@
-import MoneyInput from '@/components/UI/MoneyInput'
 import { useAuth } from '@/hooks/auth'
 import { EnvelopeIcon } from '@heroicons/react/24/outline'
 import { Elements } from '@stripe/react-stripe-js'
@@ -16,7 +15,7 @@ import {
   PledgeMutationResponse,
   Repository,
 } from 'polarkit/api/client'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { MoneyInput, PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
 import posthog from 'posthog-js'

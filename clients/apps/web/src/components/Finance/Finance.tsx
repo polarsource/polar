@@ -1,4 +1,3 @@
-import Banner from '@/components/Banner/Banner'
 import Icon from '@/components/Icons/Icon'
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
@@ -17,7 +16,7 @@ import {
   Reward,
   RewardState,
 } from 'polarkit/api/client'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { Banner, PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
 import { useState } from 'react'

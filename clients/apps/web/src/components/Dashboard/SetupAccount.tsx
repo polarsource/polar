@@ -5,8 +5,7 @@ import { api } from 'polarkit'
 import { ACCOUNT_TYPE_DISPLAY_NAMES } from 'polarkit/account'
 import { Account, AccountType, ApiError } from 'polarkit/api/client'
 import { getValidationErrorsMap, isValidationError } from 'polarkit/api/errors'
-import { CountryPicker } from 'polarkit/components'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { CountryPicker, PrimaryButton } from 'polarkit/components/ui'
 import { ChangeEvent, useState } from 'react'
 
 const SetupAccount = ({

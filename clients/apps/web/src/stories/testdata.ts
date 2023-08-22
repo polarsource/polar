@@ -5,6 +5,8 @@ import {
   MaintainerPledgeCreatedNotification,
   MaintainerPledgePaidNotification,
   MaintainerPledgePendingNotification,
+  MaintainerPledgedIssueConfirmationPendingNotification,
+  MaintainerPledgedIssuePendingNotification,
   NotificationRead,
   NotificationType,
   Organization,
@@ -219,6 +221,29 @@ const rewardPaidNotification: RewardPaidNotification = {
   issue_id: 'xx',
   pledge_id: 'yyy',
 }
+const maintainerPledgedIssuePendingNotification: MaintainerPledgedIssuePendingNotification =
+  {
+    pledge_amount_sum: '123.50',
+    issue_url: '#',
+    issue_title: 'Hello World',
+    issue_org_name: 'polarsource',
+    issue_repo_name: 'polar',
+    issue_number: 123,
+    issue_id: 'xx',
+    maintainer_has_account: false,
+  }
+
+const maintainerPledgedIssueConfirmationPendingNotification: MaintainerPledgedIssueConfirmationPendingNotification =
+  {
+    pledge_amount_sum: '123.50',
+    issue_url: '#',
+    issue_title: 'Hello World',
+    issue_org_name: 'polarsource',
+    issue_repo_name: 'polar',
+    issue_number: 123,
+    issue_id: 'xx',
+    maintainer_has_account: false,
+  }
 
 export const notification_maintainerPledgeCreatedNotification: NotificationRead =
   {
@@ -257,3 +282,16 @@ export const notification_rewardPaidNotification = {
   type: NotificationType.REWARD_PAID_NOTIFICATION,
   payload: rewardPaidNotification,
 }
+
+export const notification_maintainerPledgedIssuePendingNotification = {
+  ...notification_maintainerPledgeCreatedNotification,
+  type: NotificationType.MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION,
+  payload: maintainerPledgedIssuePendingNotification,
+}
+
+export const notification_maintainerPledgedIssueConfirmationPendingNotification =
+  {
+    ...notification_maintainerPledgeCreatedNotification,
+    type: NotificationType.MAINTAINER_PLEDGED_ISSUE_CONFIRMATION_PENDING_NOTIFICATION,
+    payload: maintainerPledgedIssueConfirmationPendingNotification,
+  }

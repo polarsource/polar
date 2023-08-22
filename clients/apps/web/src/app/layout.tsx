@@ -1,7 +1,7 @@
 import '../styles/globals.scss'
 
 import { Metadata } from 'next'
-import Providers from './providers'
+import { PolarPostHogProvider, PolarThemeProvider } from './providers'
 
 export const metadata: Metadata = {
   title: {
@@ -52,10 +52,13 @@ export default function RootLayout({
         ></link>
         <link href="/favicon.png" rel="icon"></link>
       </head>
+
       <body className="dark:bg-gray-950 h-full bg-gray-50">
-        <Providers>
-          <>{children}</>
-        </Providers>
+        <PolarPostHogProvider>
+          <PolarThemeProvider>
+            <>{children}</>
+          </PolarThemeProvider>
+        </PolarPostHogProvider>
       </body>
     </html>
   )

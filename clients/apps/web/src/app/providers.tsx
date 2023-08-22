@@ -1,6 +1,7 @@
 'use client'
 
 import * as Sentry from '@sentry/nextjs'
+import { ThemeProvider } from 'next-themes'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { CONFIG } from 'polarkit/config'
 import posthog from 'posthog-js'
@@ -24,7 +25,7 @@ if (CONFIG.SENTRY_ENABLED) {
   })
 }
 
-export default function PolarPostHogProvider({
+export function PolarPostHogProvider({
   children,
 }: {
   children: React.ReactElement
@@ -45,4 +46,12 @@ export default function PolarPostHogProvider({
   }, [pathname, searchParams])
 
   return <PostHogProvider client={posthog}>{children}</PostHogProvider>
+}
+
+export function PolarThemeProvider({
+  children,
+}: {
+  children: React.ReactElement
+}) {
+  return <ThemeProvider attribute="class">{children}</ThemeProvider>
 }

@@ -41,6 +41,9 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
     ) -> Account | None:
         return await self.get_by(session=session, organization_id=organization_id)
 
+    async def get_by_user(self, session: AsyncSession, user_id: UUID) -> Account | None:
+        return await self.get_by(session=session, user_id=user_id)
+
     async def list_by(
         self,
         session: AsyncSession,

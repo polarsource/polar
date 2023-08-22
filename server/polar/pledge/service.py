@@ -875,8 +875,10 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if split.issue_id != pledge.issue_id:
             raise ResourceNotFound("IssueReward is not valid for this pledge_id")
 
-        if split.user_id:
-            raise NotPermitted("TODO! transfers to users is not yet supported")
+        if not split.user_id and not split.organization_id:
+            raise NotPermitted(
+                "Either user_id or organization_id must be set on the split to create a transfer"  # noqa: E501
+            )
 
         # sanity check
         if split.share_thousands < 0 or split.share_thousands > 1000:
@@ -894,39 +896,50 @@ class PledgeService(ResourceServiceReader[Pledge]):
         # pledge amount - 10% (polars cut) * the users share
         payout_amount = round(pledge.amount * 0.9 * split.share_thousands / 1000)
 
-        if split.organization_id:
+        if split.user_id:
+            pay_to_account = await account_service.get_by_user(session, split.user_id)
+            if pay_to_account is None:
+                raise NotPermitted("Receiving user has no account")
+
+        elif split.organization_id:
             pay_to_account = await account_service.get_by_org(
                 session, split.organization_id
             )
             if pay_to_account is None:
                 raise NotPermitted("Receiving organization has no account")
+        else:
+            raise NotPermitted("Unexpected split receiver")
 
-            transfer_id = account_service.transfer(
-                session=session,
-                account=pay_to_account,
-                amount=payout_amount,
-                transfer_group=f"{pledge.id}",
-            )
+        transfer_id = account_service.transfer(
+            session=session,
+            account=pay_to_account,
+            amount=payout_amount,
+            transfer_group=f"{pledge.id}",
+        )
 
-            if transfer_id is None:
-                raise NotPermitted("Transfer failed")  # TODO: Better error
+        if transfer_id is None:
+            raise NotPermitted("Transfer failed")  # TODO: Better error
 
-            transaction = PledgeTransaction(
-                pledge_id=pledge.id,
-                type=PledgeTransactionType.transfer,
-                amount=payout_amount,
-                transaction_id=transfer_id,
-                issue_reward_id=split.id,
-            )
+        transaction = PledgeTransaction(
+            pledge_id=pledge.id,
+            type=PledgeTransactionType.transfer,
+            amount=payout_amount,
+            transaction_id=transfer_id,
+            issue_reward_id=split.id,
+        )
 
-            session.add(transaction)
-            await session.commit()
+        session.add(transaction)
+        await session.commit()
 
-            # send notification to org
-            await self.transfer_created_notification(session, pledge, transaction)
+        # send notification
+        await self.transfer_created_notification(session, pledge, transaction, split)
 
     async def transfer_created_notification(
-        self, session: AsyncSession, pledge: Pledge, transaction: PledgeTransaction
+        self,
+        session: AsyncSession,
+        pledge: Pledge,
+        transaction: PledgeTransaction,
+        split: IssueReward,
     ) -> None:
         issue = await issue_service.get(session, pledge.issue_id)
         if not issue:
@@ -954,13 +967,22 @@ class PledgeService(ResourceServiceReader[Pledge]):
             issue_id=issue.id,
         )
 
-        await notification_service.send_to_org(
-            session=session,
-            org_id=org.id,
-            notif=PartialNotification(
-                issue_id=pledge.issue_id, pledge_id=pledge.id, payload=n
-            ),
-        )
+        if split.organization_id:
+            await notification_service.send_to_org(
+                session=session,
+                org_id=split.organization_id,
+                notif=PartialNotification(
+                    issue_id=pledge.issue_id, pledge_id=pledge.id, payload=n
+                ),
+            )
+        elif split.user_id:
+            await notification_service.send_to_user(
+                session=session,
+                user_id=split.user_id,
+                notif=PartialNotification(
+                    issue_id=pledge.issue_id, pledge_id=pledge.id, payload=n
+                ),
+            )
 
     async def get_by_payment_id(
         self, session: AsyncSession, payment_id: str

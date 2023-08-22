@@ -7,6 +7,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.enums import AccountType
+from polar.exceptions import NotPermitted
 from polar.issue.schemas import ConfirmIssueSplit
 from polar.kit.utils import utc_now
 from polar.models.account import Account
@@ -193,7 +194,7 @@ async def test_transfer_early(
 
 
 @pytest.mark.asyncio
-async def test_transfer(
+async def test_transfer_org(
     session: AsyncSession,
     pledge: Pledge,
     organization: Organization,
@@ -224,12 +225,11 @@ async def test_transfer(
         business_type="company",
     )
     await session.flush()
-    await organization.save(session)
 
     reward = await IssueReward.create(
         session,
         issue_id=pledge.issue_id,
-        organization_id=pledge.organization_id,
+        organization_id=organization.id,
         share_thousands=1000,
     )
 
@@ -250,6 +250,150 @@ async def test_transfer(
     assert after_transfer is not None
 
     paid_notification.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_transfer_org_no_account(
+    session: AsyncSession,
+    pledge: Pledge,
+    organization: Organization,
+    mocker: MockerFixture,
+) -> None:
+    paid_notification = mocker.patch(
+        "polar.pledge.service.PledgeService.transfer_created_notification"
+    )
+
+    await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
+
+    got = await pledge_service.get(session, pledge.id)
+    assert got is not None
+    got.scheduled_payout_at = utc_now() - timedelta(days=2)
+    got.payment_id = "test_transfer_payment_id"
+    await got.save(session)
+    await session.flush()
+
+    reward = await IssueReward.create(
+        session,
+        issue_id=pledge.issue_id,
+        organization_id=organization.id,
+        share_thousands=1000,
+    )
+
+    @dataclass
+    class Trans:
+        @property
+        def stripe_id(self) -> str:
+            return "transfer_id"
+
+    transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")
+    transfer.return_value = Trans()
+
+    with pytest.raises(NotPermitted, match="Receiving organization has no account"):
+        await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
+
+    transfer.assert_not_called()
+    paid_notification.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_transfer_user(
+    session: AsyncSession,
+    pledge: Pledge,
+    user: User,
+    mocker: MockerFixture,
+) -> None:
+    paid_notification = mocker.patch(
+        "polar.pledge.service.PledgeService.transfer_created_notification"
+    )
+
+    await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
+
+    got = await pledge_service.get(session, pledge.id)
+    assert got is not None
+    got.scheduled_payout_at = utc_now() - timedelta(days=2)
+    got.payment_id = "test_transfer_payment_id"
+    await got.save(session)
+
+    account = await Account.create(
+        session=session,
+        user_id=user.id,
+        account_type=AccountType.stripe,
+        admin_id=user.id,
+        stripe_id="testing_account_1",
+        is_details_submitted=True,
+        is_charges_enabled=True,
+        is_payouts_enabled=True,
+        business_type="individual",
+    )
+    await session.flush()
+
+    reward = await IssueReward.create(
+        session,
+        issue_id=pledge.issue_id,
+        user_id=user.id,
+        share_thousands=1000,
+    )
+
+    @dataclass
+    class Trans:
+        @property
+        def stripe_id(self) -> str:
+            return "transfer_id"
+
+    transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")
+    transfer.return_value = Trans()
+
+    await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
+
+    transfer.assert_called_once()
+
+    after_transfer = await pledge_service.get(session, pledge.id)
+    assert after_transfer is not None
+
+    paid_notification.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_transfer_user_no_account(
+    session: AsyncSession,
+    pledge: Pledge,
+    user: User,
+    mocker: MockerFixture,
+) -> None:
+    paid_notification = mocker.patch(
+        "polar.pledge.service.PledgeService.transfer_created_notification"
+    )
+
+    await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
+
+    got = await pledge_service.get(session, pledge.id)
+    assert got is not None
+    got.scheduled_payout_at = utc_now() - timedelta(days=2)
+    got.payment_id = "test_transfer_payment_id"
+    await got.save(session)
+    await session.flush()
+
+    reward = await IssueReward.create(
+        session,
+        issue_id=pledge.issue_id,
+        user_id=user.id,
+        share_thousands=1000,
+    )
+
+    @dataclass
+    class Trans:
+        @property
+        def stripe_id(self) -> str:
+            return "transfer_id"
+
+    transfer = mocker.patch("polar.integrations.stripe.service.StripeService.transfer")
+    transfer.return_value = Trans()
+
+    with pytest.raises(NotPermitted, match="Receiving user has no account"):
+        await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
+
+    transfer.assert_not_called()
+    paid_notification.assert_not_called()
 
 
 @pytest.mark.asyncio

@@ -24,17 +24,13 @@ const MaintainerSignup = () => {
   ]
 
   return (
-    <div className="dark:bg-gray-950 flex h-screen w-full grow items-center justify-center bg-[#FEFDF9]">
-      <div className="flex flex-col items-center">
+    <div className="dark:bg-gray-950 flex w-full grow items-center justify-center bg-[#FEFDF9] px-4 md:h-screen">
+      <div className="my-16 flex flex-col items-center md:my-0">
         <LogoType70 className="mb-16 h-10" />
 
-        <div className="flex flex-row gap-8 overflow-hidden rounded-lg bg-white shadow dark:bg-gray-900  dark:ring-1 dark:ring-gray-800">
-          <div className="flex flex-col gap-8 p-8">
-            <h1 className="text-4xl font-light">
-              Get a funded
-              <br />
-              backlog
-            </h1>
+        <div className="flex flex-col gap-8 overflow-hidden rounded-lg bg-white shadow dark:bg-gray-900 dark:ring-1  dark:ring-gray-800 md:flex-row">
+          <div className="flex flex-col gap-8 p-8 md:max-w-[320px]">
+            <h1 className="text-4xl font-light">Get a funded backlog</h1>
 
             <div className="flex flex-1 flex-col gap-4">
               {steps.map((s) => (

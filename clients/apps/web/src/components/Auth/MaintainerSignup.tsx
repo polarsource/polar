@@ -28,7 +28,7 @@ const MaintainerSignup = () => {
       <div className="flex flex-col items-center">
         <LogoType70 className="mb-16 h-10" />
 
-        <div className="flex flex-row gap-8 rounded-lg bg-white shadow">
+        <div className="flex flex-row gap-8 overflow-hidden rounded-lg bg-white shadow dark:bg-gray-900  dark:ring-1 dark:ring-gray-800">
           <div className="flex flex-col gap-8 p-8">
             <h1 className="text-4xl font-light">
               Get a funded
@@ -42,7 +42,9 @@ const MaintainerSignup = () => {
                   <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-blue-600 font-semibold text-blue-600">
                     <span>{s.num}</span>
                   </div>
-                  <div className="text-gray-600">{s.text}</div>
+                  <div className="text-gray-600 dark:text-gray-400">
+                    {s.text}
+                  </div>
                 </div>
               ))}
             </div>
@@ -57,7 +59,7 @@ const MaintainerSignup = () => {
             />
           </div>
 
-          <div className="overflow-hidden border-l border-l-[#C9DAF4]/60 bg-[#F2F5FC]">
+          <div className="overflow-hidden border-l border-l-[#C9DAF4]/60 bg-[#F2F5FC] ">
             <div className="grid grid-cols-2">
               <div className="flex flex-col space-y-2 border-b border-r border-[#C9DAF4]/60 p-4">
                 <h2 className="font-medium text-blue-600">Funding goals</h2>
@@ -113,15 +115,15 @@ const MaintainerSignup = () => {
                 </div>
               </div>
             </div>
-            <div className="bg-grid-pattern h-full w-full overflow-hidden">
+            <div className="bg-grid-pattern dark:grid-pattern-dark h-full w-full overflow-hidden">
               <div
-                className="mt-8 ml-8 -mb-2 -mr-12  "
+                className="mt-8 ml-8 -mb-2 -mr-12"
                 style={{ width: 'inherit' }}
               >
                 <FakePullRequest
                   showAmount={false}
                   large={false}
-                  classNames="border border-[#3D54AB]/20 shadow-up"
+                  classNames="border border-[#3D54AB]/20 shadow-up dark:bg-gray-800"
                 />
               </div>
             </div>

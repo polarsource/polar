@@ -57,6 +57,8 @@ export type { LogoutResponse } from './models/LogoutResponse';
 export type { LookupUserRequest } from './models/LookupUserRequest';
 export type { MaintainerPledgeConfirmationPendingNotification } from './models/MaintainerPledgeConfirmationPendingNotification';
 export type { MaintainerPledgeCreatedNotification } from './models/MaintainerPledgeCreatedNotification';
+export type { MaintainerPledgedIssueConfirmationPendingNotification } from './models/MaintainerPledgedIssueConfirmationPendingNotification';
+export type { MaintainerPledgedIssuePendingNotification } from './models/MaintainerPledgedIssuePendingNotification';
 export type { MaintainerPledgePaidNotification } from './models/MaintainerPledgePaidNotification';
 export type { MaintainerPledgePendingNotification } from './models/MaintainerPledgePendingNotification';
 export type { NotificationRead } from './models/NotificationRead';

@@ -8,6 +8,7 @@ const Login = ({ gotoUrl }: { gotoUrl?: string }) => {
       <div className="flex flex-col items-center">
         <LogoType70 className="mb-6 h-10" />
         <GithubLoginButton
+          text="Continue with Github"
           size="large"
           gotoUrl={gotoUrl}
           posthogProps={{

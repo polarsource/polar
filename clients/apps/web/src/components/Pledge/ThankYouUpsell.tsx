@@ -20,6 +20,7 @@ const ThankYouUpsell = (props: { pledge: PledgeRead }) => {
         <div className="flex w-full flex-col space-y-4 p-5 md:w-2/5 md:p-6">
           <h2 className="text-xl">Sign up to Polar</h2>
           <GithubLoginButton
+            text="Continue with Github"
             pledgeId={pledge.id}
             size="large"
             posthogProps={{

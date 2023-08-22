@@ -7,6 +7,7 @@ const GithubLoginButton = (props: {
   gotoUrl?: string
   size?: 'large' | 'small'
   posthogProps?: object
+  text: string
 }) => {
   const signin = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
@@ -43,7 +44,7 @@ const GithubLoginButton = (props: {
           props.size === 'large' ? largeStyle : smallStyle
         }`}
       >
-        <span>Continue with GitHub</span>
+        <span>{props.text}</span>
         <svg
           className={`mr-3 ${props.size === 'large' ? 'h-5 w-5' : 'h-4 w-4'}`}
           aria-hidden="true"

@@ -6,7 +6,7 @@ const Profile = () => {
   const { authenticated } = useAuth()
 
   if (!authenticated) {
-    return <GithubLoginButton />
+    return <GithubLoginButton text="Continue with Github" />
   }
 
   return <ProfileSelection />

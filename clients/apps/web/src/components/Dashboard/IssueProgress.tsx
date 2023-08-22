@@ -42,7 +42,7 @@ const Progress25 = () => (
   </svg>
 )
 
-const Progress50 = () => (
+export const Progress50 = () => (
   <svg
     width="30"
     height="30"

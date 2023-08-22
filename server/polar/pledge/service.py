@@ -509,6 +509,12 @@ class PledgeService(ResourceServiceReader[Pledge]):
     async def pledge_confirmation_pending_notifications(
         self, session: AsyncSession, issue_id: UUID
     ) -> None:
+        pledges = await self.list_by(session, issue_ids=[issue_id])
+
+        # This issue doesn't have any pledges, don't send any notifications
+        if len(pledges) == 0:
+            return
+
         issue = await issue_service.get(session, issue_id)
         if not issue:
             raise Exception("issue not found")
@@ -522,8 +528,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
             raise Exception("repo not found")
 
         org_account: Account | None = await account_service.get_by_org(session, org.id)
-
-        pledges = await self.list_by(session, issue_ids=[issue_id])
 
         pledge_amount_sum = sum([p.amount for p in pledges])
 
@@ -579,7 +583,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         embed = DiscordEmbed(
             title="Confirmed issue",
             description=f'"{issue.title}" has been confirmed solved',  # noqa: E501
-            color="5763719",
+            color="65280",
         )
 
         embed.add_embed_field(
@@ -622,6 +626,12 @@ class PledgeService(ResourceServiceReader[Pledge]):
     async def pledge_pending_notification(
         self, session: AsyncSession, issue_id: UUID
     ) -> None:
+        pledges = await self.list_by(session, issue_ids=[issue_id])
+
+        # This issue doesn't have any pledges, don't send any notifications
+        if len(pledges) == 0:
+            return
+
         issue = await issue_service.get(session, issue_id)
         if not issue:
             raise Exception("issue not found")
@@ -635,8 +645,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
             raise Exception("repo not found")
 
         org_account: Account | None = await account_service.get_by_org(session, org.id)
-
-        pledges = await self.list_by(session, issue_ids=[issue_id])
 
         pledge_amount_sum = sum([p.amount for p in pledges])
 

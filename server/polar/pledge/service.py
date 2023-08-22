@@ -23,6 +23,7 @@ from polar.issue.service import issue as issue_service
 from polar.kit.hook import Hook
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
+from polar.models.account import Account
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
@@ -31,7 +32,12 @@ from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
-from polar.notifications.notification import RewardPaidNotification
+from polar.notifications.notification import (
+    MaintainerPledgedIssueConfirmationPendingNotification,
+    MaintainerPledgedIssuePendingNotification,
+    PledgerPledgePendingNotification,
+    RewardPaidNotification,
+)
 from polar.notifications.service import (
     PartialNotification,
     get_cents_in_dollar_string,
@@ -45,10 +51,8 @@ from polar.repository.service import repository as repository_service
 
 from .hooks import (
     PledgeHook,
-    pledge_confirmation_pending,
     pledge_created,
     pledge_disputed,
-    pledge_pending,
     pledge_updated,
 )
 from .schemas import (
@@ -498,7 +502,46 @@ class PledgeService(ResourceServiceReader[Pledge]):
             issue_id,
             from_states=PledgeState.to_confirmation_pending_states(),
             to_state=PledgeState.confirmation_pending,
-            hook=pledge_confirmation_pending,
+        )
+
+        await self.pledge_confirmation_pending_notifications(session, issue_id)
+
+    async def pledge_confirmation_pending_notifications(
+        self, session: AsyncSession, issue_id: UUID
+    ) -> None:
+        issue = await issue_service.get(session, issue_id)
+        if not issue:
+            raise Exception("issue not found")
+
+        org = await organization_service.get(session, issue.organization_id)
+        if not org:
+            raise Exception("org not found")
+
+        repo = await repository_service.get(session, issue.repository_id)
+        if not repo:
+            raise Exception("repo not found")
+
+        org_account: Account | None = await account_service.get_by_org(session, org.id)
+
+        pledges = await self.list_by(session, issue_ids=[issue_id])
+
+        pledge_amount_sum = sum([p.amount for p in pledges])
+
+        n = MaintainerPledgedIssueConfirmationPendingNotification(
+            pledge_amount_sum=get_cents_in_dollar_string(pledge_amount_sum),
+            issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
+            issue_title=issue.title,
+            issue_org_name=org.name,
+            issue_repo_name=repo.name,
+            issue_number=issue.number,
+            maintainer_has_account=True if org_account else False,
+            issue_id=issue.id,
+        )
+
+        await notification_service.send_to_org(
+            session=session,
+            org_id=org.id,
+            notif=PartialNotification(issue_id=issue.id, payload=n),
         )
 
     async def mark_confirmation_pending_as_created_by_issue_id(
@@ -521,8 +564,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
             issue_id,
             from_states=PledgeState.to_pending_states(),
             to_state=PledgeState.pending,
-            hook=pledge_pending,
         )
+
+        await self.pledge_pending_notification(session, issue_id)
 
     async def issue_confirmed_discord_alert(self, issue: Issue) -> None:
         if not settings.DISCORD_WEBHOOK_URL:
@@ -572,7 +616,67 @@ class PledgeService(ResourceServiceReader[Pledge]):
         await session.commit()
 
         await pledge_updated.call(PledgeHook(session, pledge))
-        await pledge_pending.call(PledgeHook(session, pledge))
+
+        await self.pledge_pending_notification(session, pledge.issue_id)
+
+    async def pledge_pending_notification(
+        self, session: AsyncSession, issue_id: UUID
+    ) -> None:
+        issue = await issue_service.get(session, issue_id)
+        if not issue:
+            raise Exception("issue not found")
+
+        org = await organization_service.get(session, issue.organization_id)
+        if not org:
+            raise Exception("org not found")
+
+        repo = await repository_service.get(session, issue.repository_id)
+        if not repo:
+            raise Exception("repo not found")
+
+        org_account: Account | None = await account_service.get_by_org(session, org.id)
+
+        pledges = await self.list_by(session, issue_ids=[issue_id])
+
+        pledge_amount_sum = sum([p.amount for p in pledges])
+
+        n = MaintainerPledgedIssuePendingNotification(
+            pledge_amount_sum=get_cents_in_dollar_string(pledge_amount_sum),
+            issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
+            issue_title=issue.title,
+            issue_org_name=org.name,
+            issue_repo_name=repo.name,
+            issue_number=issue.number,
+            maintainer_has_account=True if org_account else False,
+            issue_id=issue_id,
+        )
+
+        await notification_service.send_to_org(
+            session=session,
+            org_id=org.id,
+            notif=PartialNotification(issue_id=issue_id, payload=n),
+        )
+
+        # Send to pledgers
+        for pledge in pledges:
+            pledger_notif = PledgerPledgePendingNotification(
+                pledge_amount=get_cents_in_dollar_string(pledge.amount),
+                pledge_date=pledge.created_at.strftime("%Y-%m-%d"),
+                issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
+                issue_title=issue.title,
+                issue_org_name=org.name,
+                issue_repo_name=repo.name,
+                issue_number=issue.number,
+                pledge_id=pledge.id,
+            )
+
+            await notification_service.send_to_pledger(
+                session,
+                pledge,
+                notif=PartialNotification(
+                    issue_id=pledge.issue_id, pledge_id=pledge.id, payload=pledger_notif
+                ),
+            )
 
     def validate_splits(self, splits: list[ConfirmIssueSplit]) -> bool:
         sum = 0.0

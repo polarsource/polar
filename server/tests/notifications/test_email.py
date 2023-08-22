@@ -9,6 +9,8 @@ from polar.models.user import User
 from polar.notifications.notification import (
     MaintainerPledgeConfirmationPendingNotification,
     MaintainerPledgeCreatedNotification,
+    MaintainerPledgedIssueConfirmationPendingNotification,
+    MaintainerPledgedIssuePendingNotification,
     MaintainerPledgePaidNotification,
     MaintainerPledgePendingNotification,
     PledgerPledgePendingNotification,
@@ -193,6 +195,78 @@ async def test_RewardPaidNotification(
         issue_repo_name="testrepo",
         pledge_id=uuid.uuid4(),
         issue_id=uuid.uuid4(),
+    )
+
+    await check_diff(n.render(predictable_user))
+
+
+@pytest.mark.asyncio
+async def test_MaintainerPledgedIssueConfirmationPendingNotification(
+    predictable_user: User,
+) -> None:
+    n = MaintainerPledgedIssueConfirmationPendingNotification(
+        issue_id=uuid.uuid4(),
+        issue_url="https://github.com/testorg/testrepo/issues/123",
+        issue_title="issue title",
+        issue_number=123,
+        pledge_amount_sum="543.21",
+        issue_org_name="testorg",
+        issue_repo_name="testrepo",
+        maintainer_has_account=False,
+    )
+
+    await check_diff(n.render(predictable_user))
+
+
+@pytest.mark.asyncio
+async def test_MaintainerPledgedIssueConfirmationPendingNotification_with_account(
+    predictable_user: User,
+) -> None:
+    n = MaintainerPledgedIssueConfirmationPendingNotification(
+        issue_id=uuid.uuid4(),
+        issue_url="https://github.com/testorg/testrepo/issues/123",
+        issue_title="issue title",
+        issue_number=123,
+        pledge_amount_sum="543.21",
+        issue_org_name="testorg",
+        issue_repo_name="testrepo",
+        maintainer_has_account=True,
+    )
+
+    await check_diff(n.render(predictable_user))
+
+
+@pytest.mark.asyncio
+async def test_MaintainerPledgedIssuePendingNotification(
+    predictable_user: User,
+) -> None:
+    n = MaintainerPledgedIssuePendingNotification(
+        issue_id=uuid.uuid4(),
+        issue_url="https://github.com/testorg/testrepo/issues/123",
+        issue_title="issue title",
+        issue_number=123,
+        pledge_amount_sum="543.21",
+        issue_org_name="testorg",
+        issue_repo_name="testrepo",
+        maintainer_has_account=False,
+    )
+
+    await check_diff(n.render(predictable_user))
+
+
+@pytest.mark.asyncio
+async def test_MaintainerPledgedIssuePendingNotification_with_account(
+    predictable_user: User,
+) -> None:
+    n = MaintainerPledgedIssuePendingNotification(
+        issue_id=uuid.uuid4(),
+        issue_url="https://github.com/testorg/testrepo/issues/123",
+        issue_title="issue title",
+        issue_number=123,
+        pledge_amount_sum="543.21",
+        issue_org_name="testorg",
+        issue_repo_name="testrepo",
+        maintainer_has_account=True,
     )
 
     await check_diff(n.render(predictable_user))

@@ -33,7 +33,9 @@ async def test_mark_pending_by_pledge_id(
     pledge: Pledge,
     mocker: MockerFixture,
 ) -> None:
-    pending_notif = mocker.patch("polar.receivers.pledges.pledge_pending_notification")
+    pending_notif = mocker.patch(
+        "polar.pledge.service.PledgeService.pledge_pending_notification"
+    )
 
     await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
 
@@ -56,7 +58,7 @@ async def test_mark_confirmation_pending_by_issue_id(
     mocker: MockerFixture,
 ) -> None:
     confirmation_pending_notif = mocker.patch(
-        "polar.receivers.pledges.pledge_confirmation_pending_notification"
+        "polar.pledge.service.PledgeService.pledge_confirmation_pending_notifications"
     )
 
     amount = 2000
@@ -95,7 +97,7 @@ async def test_mark_confirmation_pending_by_issue_id(
         PledgeState.confirmation_pending,
     ]
 
-    assert confirmation_pending_notif.call_count == 3
+    assert confirmation_pending_notif.call_count == 1
 
 
 @pytest.mark.asyncio
@@ -108,7 +110,9 @@ async def test_mark_pending_by_issue_id(
     pledging_organization: Organization,
     mocker: MockerFixture,
 ) -> None:
-    pending_notif = mocker.patch("polar.receivers.pledges.pledge_pending_notification")
+    pending_notif = mocker.patch(
+        "polar.pledge.service.PledgeService.pledge_pending_notification"
+    )
 
     amount = 2000
     fee = 200
@@ -146,7 +150,7 @@ async def test_mark_pending_by_issue_id(
         PledgeState.pending,
     ]
 
-    assert pending_notif.call_count == 3
+    assert pending_notif.call_count == 1
 
 
 @pytest.mark.asyncio

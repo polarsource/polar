@@ -61,6 +61,8 @@ You&apos;ll receive the funds once {{issue_org_name}}/{{issue_repo_name}}#{{issu
 """  # noqa: E501
 
 
+# No longer sent as of 2022-08-22.
+# Replaced by MaintainerPledgedIssueConfirmationPendingNotification
 class MaintainerPledgeConfirmationPendingNotification(NotificationBase):
     pledger_name: str
     pledge_amount: str
@@ -89,6 +91,35 @@ Create a Stripe account with Polar today to ensure we can transfer the funds dir
 """  # noqa: E501
 
 
+class MaintainerPledgedIssueConfirmationPendingNotification(NotificationBase):
+    pledge_amount_sum: str
+    issue_id: UUID
+    issue_url: str
+    issue_title: str
+    issue_org_name: str
+    issue_repo_name: str
+    issue_number: int
+    maintainer_has_account: bool
+
+    def subject(self) -> str:
+        return "Please confirm that {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}} is completed"  # noqa: E501
+
+    def body(self) -> str:
+        return """Hi,<br><br>
+
+Your backers have pledged ${{pledge_amount_sum}} behind <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}</a> which which has now been closed.<br><br>
+
+Before you can receive the money, please verify that the issue is completed on <a href="https://polar.sh/maintainer/{{issue_org_name}}/issues">your Polar dashboard</a>.<br><br>
+
+{% if not maintainer_has_account %}
+Create a Stripe account with Polar today to ensure we can transfer the funds directly once the review period is completed.<br>
+<a href="https://polar.sh/maintainer/{{issue_org_name}}/finance">polar.sh/maintainer/{{issue_org_name}}/finance</a>
+{% endif %}
+"""  # noqa: E501
+
+
+# No longer sent as of 2022-08-22.
+# Replaced by MaintainerPledgedIssuePendingNotification
 class MaintainerPledgePendingNotification(NotificationBase):
     pledger_name: str
     pledge_amount: str
@@ -111,6 +142,33 @@ Your backers had pledged ${{pledge_amount}} behind <a href="{{issue_url}}">{{iss
 We&apos;ve notified the backers and unless we receive any disputes within the next 14 days it will be transferred to your Stripe account.<br><br>
 
 {% if not maintainer_has_stripe_account %}
+Create a Stripe account with Polar today to ensure we can transfer the funds directly once the review period is completed.<br>
+<a href="https://polar.sh/maintainer/{{issue_org_name}}/finance">polar.sh/maintainer/{{issue_org_name}}/finance</a>
+{% endif %}
+"""  # noqa: E501
+
+
+class MaintainerPledgedIssuePendingNotification(NotificationBase):
+    pledge_amount_sum: str
+    issue_id: UUID
+    issue_url: str
+    issue_title: str
+    issue_org_name: str
+    issue_repo_name: str
+    issue_number: int
+    maintainer_has_account: bool
+
+    def subject(self) -> str:
+        return "You have ${{pledge_amount_sum}} in pending pledges for {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}!"  # noqa: E501
+
+    def body(self) -> str:
+        return """Hi,<br><br>
+
+Your backers had pledged ${{pledge_amount_sum}} behind <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}</a> which has now been completed - awesome work!<br><br>
+
+We&apos;ve notified the backers and unless we receive any disputes within the next 14 days it will be transferred to your Stripe account.<br><br>
+
+{% if not maintainer_has_account %}
 Create a Stripe account with Polar today to ensure we can transfer the funds directly once the review period is completed.<br>
 <a href="https://polar.sh/maintainer/{{issue_org_name}}/finance">polar.sh/maintainer/{{issue_org_name}}/finance</a>
 {% endif %}

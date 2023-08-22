@@ -28,13 +28,7 @@ from polar.pledge.hooks import (
     PledgeHook,
 )
 from polar.pledge.hooks import (
-    pledge_confirmation_pending as pledge_confirmation_pending_hook,
-)
-from polar.pledge.hooks import (
     pledge_created as pledge_created_hook,
-)
-from polar.pledge.hooks import (
-    pledge_pending as pledge_pending_hook,
 )
 from polar.pledge.hooks import (
     pledge_updated as pledge_updated_hook,
@@ -158,106 +152,6 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
     )
 
 
-async def pledge_confirmation_pending_notification(
-    pledge: Pledge, session: AsyncSession
-) -> None:
-    issue = await issue_service.get(session, pledge.issue_id)
-    if not issue:
-        log.error("pledge_confirmation_pending_notification.no_issue_found")
-        return
-
-    org = await organization_service.get(session, issue.organization_id)
-    if not org:
-        log.error("pledge_confirmation_pending_notification.no_org_found")
-        return
-
-    repo = await repository_service.get(session, issue.repository_id)
-    if not repo:
-        log.error("pledge_confirmation_pending_notification.no_repo_found")
-        return
-
-    org_account: Account | None = await account_service.get_by_org(session, org.id)
-
-    n = MaintainerPledgeConfirmationPendingNotification(
-        pledger_name=pledger_name(pledge),
-        pledge_amount=get_cents_in_dollar_string(pledge.amount),
-        issue_url=issue_url(org, repo, issue),
-        issue_title=issue.title,
-        issue_org_name=org.name,
-        issue_repo_name=repo.name,
-        issue_number=issue.number,
-        maintainer_has_stripe_account=True if org_account else False,
-        pledge_id=pledge.id,
-    )
-
-    await notification_service.send_to_org(
-        session=session,
-        org_id=org.id,
-        notif=PartialNotification(
-            issue_id=pledge.issue_id, pledge_id=pledge.id, payload=n
-        ),
-    )
-
-
-async def pledge_pending_notification(pledge: Pledge, session: AsyncSession) -> None:
-    issue = await issue_service.get(session, pledge.issue_id)
-    if not issue:
-        log.error("pledge_pending_notification.no_issue_found")
-        return
-
-    org = await organization_service.get(session, issue.organization_id)
-    if not org:
-        log.error("pledge_pending_notification.no_org_found")
-        return
-
-    repo = await repository_service.get(session, issue.repository_id)
-    if not repo:
-        log.error("pledge_pending_notification.no_repo_found")
-        return
-
-    org_account: Account | None = await account_service.get_by_org(session, org.id)
-
-    n = MaintainerPledgePendingNotification(
-        pledger_name=pledger_name(pledge),
-        pledge_amount=get_cents_in_dollar_string(pledge.amount),
-        issue_url=issue_url(org, repo, issue),
-        issue_title=issue.title,
-        issue_org_name=org.name,
-        issue_repo_name=repo.name,
-        issue_number=issue.number,
-        maintainer_has_stripe_account=True if org_account else False,
-        pledge_id=pledge.id,
-    )
-
-    await notification_service.send_to_org(
-        session=session,
-        org_id=org.id,
-        notif=PartialNotification(
-            issue_id=pledge.issue_id, pledge_id=pledge.id, payload=n
-        ),
-    )
-
-    # Send to pledger
-    pledger_notif = PledgerPledgePendingNotification(
-        pledge_amount=get_cents_in_dollar_string(pledge.amount),
-        pledge_date=pledge.created_at.strftime("%Y-%m-%d"),
-        issue_url=issue_url(org, repo, issue),
-        issue_title=issue.title,
-        issue_org_name=org.name,
-        issue_repo_name=repo.name,
-        issue_number=issue.number,
-        pledge_id=pledge.id,
-    )
-
-    await notification_service.send_to_pledger(
-        session,
-        pledge,
-        notif=PartialNotification(
-            issue_id=pledge.issue_id, pledge_id=pledge.id, payload=pledger_notif
-        ),
-    )
-
-
 async def hook_pledge_created_notifications(hook: PledgeHook) -> None:
     session = hook.session
     pledge = hook.pledge
@@ -265,21 +159,3 @@ async def hook_pledge_created_notifications(hook: PledgeHook) -> None:
 
 
 pledge_created_hook.add(hook_pledge_created_notifications)
-
-
-async def hook_pledge_confirmation_pending_notifications(hook: PledgeHook) -> None:
-    session = hook.session
-    pledge = hook.pledge
-    await pledge_confirmation_pending_notification(pledge, session)
-
-
-pledge_confirmation_pending_hook.add(hook_pledge_confirmation_pending_notifications)
-
-
-async def hook_pledge_pending_notifications(hook: PledgeHook) -> None:
-    session = hook.session
-    pledge = hook.pledge
-    await pledge_pending_notification(pledge, session)
-
-
-pledge_pending_hook.add(hook_pledge_pending_notifications)

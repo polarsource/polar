@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from polar.kit.hook import Hook
 from polar.models.pledge import Pledge
 from polar.models.pledge_transaction import PledgeTransaction
@@ -22,7 +23,4 @@ class PledgePaidHook:
 # (not the same as created in the initiated state)
 pledge_created: Hook[PledgeHook] = Hook()
 pledge_disputed: Hook[PledgeHook] = Hook()
-pledge_confirmation_pending: Hook[PledgeHook] = Hook()
-pledge_pending: Hook[PledgeHook] = Hook()
-pledge_paid: Hook[PledgePaidHook] = Hook()
 pledge_updated: Hook[PledgeHook] = Hook()

@@ -104,7 +104,7 @@ const Popover = () => {
       {show && notifs.data && (
         <div
           aria-live="assertive"
-          className="pointer-events-none fixed top-12 right-6 flex items-end"
+          className="pointer-events-none fixed top-12 right-6 z-40 flex items-end"
           ref={ref}
           onClick={(e) => {
             e.preventDefault()
@@ -133,7 +133,7 @@ export const List = ({
   return (
     <div className="flex w-full flex-col items-center space-y-4 sm:items-end">
       <>
-        <div className="z-10 mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white dark:bg-gray-700"></div>
+        {/*<div className="z-10 mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white dark:bg-gray-700"></div>*/}
         <div className="z-20 h-full w-full max-w-md ">
           <div className="pointer-events-auto w-full rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-700 dark:ring-gray-600">
             <div className="h-full max-h-[800px] space-y-5 overflow-x-scroll p-5">

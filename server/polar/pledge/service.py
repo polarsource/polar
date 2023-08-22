@@ -464,7 +464,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         from_states: list[PledgeState],
         to_state: PledgeState,
         hook: Hook[PledgeHook] | None = None,
-    ) -> None:
+    ) -> bool:
         get = sql.select(Pledge).where(
             Pledge.issue_id == issue_id,
             Pledge.state.in_(from_states),
@@ -494,17 +494,22 @@ class PledgeService(ResourceServiceReader[Pledge]):
             if hook:
                 await hook.call(PledgeHook(session, pledge))
 
+        if len(pledges) > 0:
+            return True
+        return False
+
     async def mark_confirmation_pending_by_issue_id(
         self, session: AsyncSession, issue_id: UUID
     ) -> None:
-        await self.transition_by_issue_id(
+        any_changed = await self.transition_by_issue_id(
             session,
             issue_id,
             from_states=PledgeState.to_confirmation_pending_states(),
             to_state=PledgeState.confirmation_pending,
         )
 
-        await self.pledge_confirmation_pending_notifications(session, issue_id)
+        if any_changed:
+            await self.pledge_confirmation_pending_notifications(session, issue_id)
 
     async def pledge_confirmation_pending_notifications(
         self, session: AsyncSession, issue_id: UUID
@@ -563,14 +568,15 @@ class PledgeService(ResourceServiceReader[Pledge]):
         session: AsyncSession,
         issue_id: UUID,
     ) -> None:
-        await self.transition_by_issue_id(
+        any_changed = await self.transition_by_issue_id(
             session,
             issue_id,
             from_states=PledgeState.to_pending_states(),
             to_state=PledgeState.pending,
         )
 
-        await self.pledge_pending_notification(session, issue_id)
+        if any_changed:
+            await self.pledge_pending_notification(session, issue_id)
 
     async def issue_confirmed_discord_alert(self, issue: Issue) -> None:
         if not settings.DISCORD_WEBHOOK_URL:

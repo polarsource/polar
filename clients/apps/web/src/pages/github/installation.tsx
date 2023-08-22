@@ -96,6 +96,7 @@ const GithubInstallationPage: NextPageWithLayout = () => {
               posthogProps={{
                 view: 'Github Installation Page',
               }}
+              text="Continue with Github"
             />
           )}
         </div>

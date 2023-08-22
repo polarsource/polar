@@ -44,6 +44,7 @@
     "sass": "^1.59.3",
     "satori": "^0.10.1",
     "tailwindcss-radix": "^2.8.0",
+    "clsx": "^1.2.1",
     "yayson": "^3.0.0"
   },
   "devDependencies": {

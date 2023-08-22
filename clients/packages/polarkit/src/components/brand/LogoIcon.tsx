@@ -1,4 +1,4 @@
-import { classNames } from '../../utils'
+import clsx from 'clsx'
 
 const LogoIcon = ({
   className,
@@ -14,7 +14,7 @@ const LogoIcon = ({
       viewBox="0 0 29 29"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={classNames(className ? className : '')}
+      className={clsx(className ? className : '')}
     >
       <path
         fillRule="evenodd"

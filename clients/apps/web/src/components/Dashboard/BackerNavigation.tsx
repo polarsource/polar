@@ -1,8 +1,9 @@
+import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { classNames } from 'polarkit/utils'
 
-const BackerNavigation = () => {
+const BackerNavigation = (props: { classNames: string }) => {
   const router = useRouter()
 
   // All routes and conditions
@@ -29,21 +30,25 @@ const BackerNavigation = () => {
   })
 
   return (
-    <div className="flex flex-row items-center justify-center gap-8 text-sm">
-      {filteredNavs.map((n) => (
-        <>
-          <Link
-            className={classNames(
-              'hover:text-blue-700 dark:hover:text-blue-800',
-              n.isActive ? 'text-blue-600' : 'text-gray-600 dark:text-gray-400',
-            )}
-            key={n.title}
-            href={n.link}
-          >
-            <span className="font-medium ">{n.title}</span>
-          </Link>
-        </>
-      ))}
+    <div className={clsx('bg-gray-50 py-3 dark:bg-gray-800', props.classNames)}>
+      <div className="flex flex-row items-center justify-center gap-8 text-sm">
+        {filteredNavs.map((n) => (
+          <>
+            <Link
+              className={classNames(
+                'hover:text-blue-700 dark:hover:text-blue-800',
+                n.isActive
+                  ? 'text-blue-600'
+                  : 'text-gray-600 dark:text-gray-400',
+              )}
+              key={n.title}
+              href={n.link}
+            >
+              <span className="font-medium ">{n.title}</span>
+            </Link>
+          </>
+        ))}
+      </div>
     </div>
   )
 }

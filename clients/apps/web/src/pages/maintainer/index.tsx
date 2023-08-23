@@ -1,36 +1,32 @@
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
-import OnboardingConnectReposToGetStarted from '@/components/Onboarding/OnboardingConnectReposToGetStarted'
+import LoadingScreen from '@/components/Dashboard/LoadingScreen'
 import type { NextLayoutComponentType } from 'next'
 import { useRouter } from 'next/router'
+import { CONFIG } from 'polarkit/config'
 import { useListOrganizations } from 'polarkit/hooks'
 import { ReactElement, useEffect } from 'react'
-import { useCurrentOrgAndRepoFromURL } from '../../hooks'
 
 const Page: NextLayoutComponentType = () => {
-  const { isLoaded, haveOrgs } = useCurrentOrgAndRepoFromURL()
   const listOrganizationsQuery = useListOrganizations()
 
   const router = useRouter()
   const orgs = listOrganizationsQuery?.data?.items
 
   useEffect(() => {
-    if (!isLoaded) return
+    if (!listOrganizationsQuery.isFetched) return
 
     // redirect to first org
-    if (haveOrgs && orgs && orgs.length > 0) {
+    if (orgs && orgs.length > 0) {
       const gotoOrg = orgs[0]
       router.push(`/maintainer/${gotoOrg.name}/issues`)
       return
     }
 
-    router.push('/feed')
-  }, [isLoaded, haveOrgs, orgs, router])
+    // This user have no orgs, send to GitHub for installation
+    router.push(CONFIG.GITHUB_INSTALLATION_URL)
+  }, [listOrganizationsQuery, orgs, router])
 
-  if (!isLoaded) {
-    return <></>
-  }
-
-  return <OnboardingConnectReposToGetStarted />
+  return <LoadingScreen animate={true}>Setting you up...</LoadingScreen>
 }
 
 Page.getLayout = (page: ReactElement) => {

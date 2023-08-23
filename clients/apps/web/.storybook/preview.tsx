@@ -3,6 +3,7 @@ import '../src/styles/globals.scss'
 
 const preview: Preview = {
   parameters: {
+    layout: 'fullscreen',
     actions: { argTypesRegex: '^on[A-Z].*' },
     controls: {
       matchers: {
@@ -23,6 +24,7 @@ export const decorators = [
 
     const themeLayout = parameters?.layout || 'stacked'
     const themes = parameters?.themes || ['light-striped', 'dark-striped']
+    const padding = parameters?.padding || 'p-4'
 
     const themeConfigs = {
       'light-striped': {
@@ -62,7 +64,7 @@ export const decorators = [
       >
         {renderThemes.map((t) => (
           <div className={t.outer}>
-            <div className={classNames('bg-stripes p-4', t.stripes)}>
+            <div className={classNames('bg-stripes', padding, t.stripes)}>
               <div className={t.inner}>
                 <StoryFn />
               </div>

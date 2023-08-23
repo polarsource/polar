@@ -151,7 +151,7 @@ export default ProfileSelection
 
 const ListItem = (props: { children: React.ReactElement }) => {
   return (
-    <li className="animate-background px-4 py-2 duration-100 hover:bg-gray-100/50 dark:hover:bg-gray-800">
+    <li className="animate-background duration-10 dark:hover:bg-gray-950/50 px-4 py-2 hover:bg-gray-200/50">
       {props.children}
     </li>
   )

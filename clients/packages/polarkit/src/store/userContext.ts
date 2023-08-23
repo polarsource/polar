@@ -24,6 +24,9 @@ export interface OnboardingState {
 
   onboardingDashboardInstallChromeExtensionSkip: boolean
   setOnboardingDashboardInstallChromeExtensionSkip: (skip: boolean) => void
+
+  onboardingMaintainerConnectRepositoriesSkip: boolean
+  setOnboardingMaintainerConnectRepositories: (skip: boolean) => void
 }
 
 export interface ContextState {
@@ -74,6 +77,7 @@ const emptyState = {
   currentUser: undefined,
   onboardingDashboardSkip: false,
   onboardingDashboardInstallChromeExtensionSkip: false,
+  onboardingMaintainerConnectRepositoriesSkip: false,
   userHaveOrgs: false,
   currentOrg: undefined,
   currentRepo: undefined,
@@ -134,6 +138,11 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
   setOnboardingDashboardInstallChromeExtensionSkip: (skip: boolean) => {
     set({
       onboardingDashboardInstallChromeExtensionSkip: skip,
+    })
+  },
+  setOnboardingMaintainerConnectRepositories: (skip: boolean) => {
+    set({
+      onboardingMaintainerConnectRepositoriesSkip: skip,
     })
   },
   setLatestPledge: (

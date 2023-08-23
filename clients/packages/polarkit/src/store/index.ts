@@ -24,6 +24,8 @@ const useStore = create<UserContextState>()(
           onboardingDashboardSkip: state.onboardingDashboardSkip,
           onboardingDashboardInstallChromeExtensionSkip:
             state.onboardingDashboardInstallChromeExtensionSkip,
+          onboardingMaintainerConnectRepositoriesSkip:
+            state.onboardingMaintainerConnectRepositoriesSkip,
         }),
       },
     ),

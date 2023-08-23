@@ -1,7 +1,6 @@
+'use client'
+
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
-import type { NextLayoutComponentType } from 'next'
-import Link from 'next/link'
-import { useRouter } from 'next/router'
 import { ThinButton } from 'polarkit/components/ui'
 import {
   useBackofficeIssue,
@@ -10,12 +9,9 @@ import {
 } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
-import { ReactElement } from 'react'
-import Topbar from '../../../components/Shared/Topbar'
 
-const Page: NextLayoutComponentType & { theme?: string } = () => {
-  const router = useRouter()
-  const { id } = router.query
+export default function Page({ params }: { params: { id: string } }) {
+  const id = params.id
 
   const issue = useBackofficeIssue(typeof id === 'string' ? id : undefined)
 
@@ -38,7 +34,6 @@ const Page: NextLayoutComponentType & { theme?: string } = () => {
   return (
     <div>
       <h2 className="text-2xl">Issue</h2>
-
       <table>
         <tbody>
           <tr>
@@ -64,9 +59,7 @@ const Page: NextLayoutComponentType & { theme?: string } = () => {
           </tr>
         </tbody>
       </table>
-
       <h3 className="mt-9 text-xl">Rewards</h3>
-
       <div className="flex flex-col gap-2">
         {rewardsData.map((r) => (
           <div className="flex gap-2">
@@ -126,25 +119,3 @@ const Page: NextLayoutComponentType & { theme?: string } = () => {
     </div>
   )
 }
-
-Page.getLayout = (page: ReactElement) => {
-  return (
-    <>
-      <Topbar
-        customLogoTitle="Backoffice"
-        logoPosition="center"
-        isFixed={false}
-      ></Topbar>
-      <div className="mx-auto max-w-7xl p-4">
-        <Link href="/backoffice" className="text-black underline">
-          &lArr; Back
-        </Link>
-        {page}
-      </div>
-    </>
-  )
-}
-
-Page.theme = 'light'
-
-export default Page

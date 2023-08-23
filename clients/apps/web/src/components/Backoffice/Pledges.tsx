@@ -1,3 +1,5 @@
+'use client'
+
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
 import Link from 'next/link'
 import { BackofficePledge } from 'polarkit/api/client'

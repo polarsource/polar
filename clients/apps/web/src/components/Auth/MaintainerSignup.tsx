@@ -25,11 +25,11 @@ const MaintainerSignup = () => {
 
   return (
     <div className="dark:bg-gray-950 flex w-full grow items-center justify-center bg-[#FEFDF9] px-4 md:h-screen">
-      <div className="my-16 flex flex-col items-center md:my-0">
+      <div className="my-16 flex flex-col items-center  md:my-0">
         <LogoType70 className="mb-16 h-10" />
 
-        <div className="flex flex-col gap-8 overflow-hidden rounded-lg bg-white shadow dark:bg-gray-900 dark:ring-1  dark:ring-gray-800 md:flex-row">
-          <div className="flex flex-col gap-8 p-8 md:max-w-[320px]">
+        <div className="flex flex-col gap-8 overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800 dark:ring-1  dark:ring-gray-800 md:flex-row ">
+          <div className="flex flex-col gap-8 p-8 md:max-w-[320px] ">
             <h1 className="text-4xl font-light">Get a funded backlog</h1>
 
             <div className="flex flex-1 flex-col gap-4">
@@ -55,23 +55,25 @@ const MaintainerSignup = () => {
             />
           </div>
 
-          <div className="overflow-hidden border-l border-l-[#C9DAF4]/60 bg-[#F2F5FC] ">
+          <div className="overflow-hidden border-l border-l-[#C9DAF4]/60 bg-[#F2F5FC]  dark:border-blue-600/50 dark:bg-blue-500/20">
             <div className="grid grid-cols-2">
-              <div className="flex flex-col space-y-2 border-b border-r border-[#C9DAF4]/60 p-4">
-                <h2 className="font-medium text-blue-600">Funding goals</h2>
+              <div className="flex flex-col space-y-2 border-b border-r border-[#C9DAF4]/60 p-4 dark:border-blue-600/50">
+                <h2 className="font-medium text-blue-600 dark:text-blue-400">
+                  Funding goals
+                </h2>
                 <div className="flex flex-1 flex-col justify-center">
                   <div className="flex overflow-hidden rounded-full">
                     <div
                       className="h-2 bg-blue-500"
                       style={{ width: '60%' }}
                     ></div>
-                    <div className="h-2 flex-1 bg-[#D6E3F7]"></div>
+                    <div className="h-2 flex-1 bg-[#D6E3F7] dark:bg-[#D6E3F7]/20"></div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col space-y-2 border-b border-[#C9DAF4]/60 p-4">
-                <h2 className="font-medium text-blue-600">
+              <div className="flex flex-col space-y-2 border-b border-[#C9DAF4]/60 p-4 dark:border-blue-600/50">
+                <h2 className="font-medium text-blue-600 dark:text-blue-400">
                   Reward contributors
                 </h2>
                 <div className="flex flex-1 flex-col justify-center">
@@ -92,26 +94,33 @@ const MaintainerSignup = () => {
                 </div>
               </div>
 
-              <div className="flex flex-col space-y-2 border-b border-r border-[#C9DAF4]/60 p-4">
-                <h2 className="font-medium text-blue-600">Better backlog</h2>
+              <div className="flex flex-col space-y-2 border-b border-r border-[#C9DAF4]/60 p-4 dark:border-blue-600/50">
+                <h2 className="font-medium text-blue-600 dark:text-blue-400">
+                  Better backlog
+                </h2>
                 <div className="flex flex-1 flex-col justify-center">
                   <div className="flex items-center gap-2">
                     <Progress50 />
-                    <span className="text-blue-400">In progress</span>
+                    <span className="text-blue-400 dark:text-blue-600">
+                      In progress
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col space-y-2 border-b border-[#C9DAF4]/60 p-4">
-                <h2 className="font-medium text-blue-600">Funded milestones</h2>
+              <div className="flex flex-col space-y-2 border-b border-[#C9DAF4]/60 p-4 dark:border-blue-600/50">
+                <h2 className="font-medium text-blue-600 dark:text-blue-400">
+                  Funded milestones
+                </h2>
                 <div className="flex flex-1 flex-col justify-center">
-                  <span className="font-mono text-blue-400">
+                  <span className="font-mono text-blue-400 dark:text-blue-600">
                     &#47;&#47; coming soon
                   </span>
                 </div>
               </div>
             </div>
-            <div className="bg-grid-pattern dark:grid-pattern-dark h-full w-full overflow-hidden">
+
+            <div className="bg-grid-pattern dark:bg-grid-pattern-dark h-full w-full overflow-hidden">
               <div
                 className="mt-8 ml-8 -mb-2 -mr-12"
                 style={{ width: 'inherit' }}

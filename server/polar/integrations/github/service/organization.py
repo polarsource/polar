@@ -216,6 +216,8 @@ class GithubOrganizationService(OrganizationService):
             except RequestFailed as e:
                 if e.response.status_code == 404:
                     raise ResourceNotFound()
+                if e.response.status_code == 401:
+                    raise ResourceNotFound()
                 # re-raise other status codes
                 raise e
 

@@ -40,10 +40,8 @@ const GithubAuthPage: NextPageWithLayout = () => {
           })
           .then((user) => {
             posthog.identify(`user:${user.id}`)
+            router.push(response.goto_url || '/login/init')
           })
-
-        router.push(response.goto_url || '/maintainer')
-        return
       } else {
         setError('Invalid response')
       }
@@ -56,18 +54,17 @@ const GithubAuthPage: NextPageWithLayout = () => {
   useEffect(() => {
     if (query.code && query.state) {
       exchange(query.code, query.state)
+    } else {
+      setError('Cannot authenticate without an OAuth code and state')
     }
   }, [])
 
-  if (!query.code || !query.state) {
-    return (
-      <LoadingScreen animate={false}>
-        <LoadingScreenError
-          error={'Cannot authenticate without an OAuth code and state'}
-        />
-      </LoadingScreen>
-    )
-  }
+  useEffect(() => {
+    // This user is already authenticated
+    if (session.authenticated) {
+      router.push('/login/init')
+    }
+  }, [session.authenticated])
 
   if (error) {
     return (

@@ -1,7 +1,12 @@
+'use client'
+
 import { LogoType70 } from 'polarkit/components/brand'
 import GithubLoginButton from '../Shared/GithubLoginButton'
+import { useLoginRedirect } from './Redirector'
 
 const Login = ({ gotoUrl }: { gotoUrl?: string }) => {
+  useLoginRedirect()
+
   return (
     <div className="dark:bg-gray-950 flex h-screen w-full grow items-center justify-center bg-[#FEFDF9]">
       <div id="polar-bg-gradient"></div>

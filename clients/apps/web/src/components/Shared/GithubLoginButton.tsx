@@ -1,3 +1,5 @@
+'use client'
+
 import { api } from 'polarkit'
 import posthog from 'posthog-js'
 import { MouseEvent } from 'react'

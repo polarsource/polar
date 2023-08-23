@@ -1,3 +1,5 @@
+'use client'
+
 import { InviteRead } from 'polarkit/api/client'
 import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
 import {

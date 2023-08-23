@@ -1,3 +1,5 @@
+'use client'
+
 import { BackofficeBadge, BackofficeBadgeResponse } from 'polarkit/api/client'
 import { useBackofficeBadgeAction } from 'polarkit/hooks'
 import { useState } from 'react'

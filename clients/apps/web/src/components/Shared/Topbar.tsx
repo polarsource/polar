@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 import { LogoIcon, LogoType } from 'polarkit/components/brand'
 import { classNames } from 'polarkit/utils'

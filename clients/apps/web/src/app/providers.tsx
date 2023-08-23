@@ -1,8 +1,10 @@
 'use client'
 
 import * as Sentry from '@sentry/nextjs'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from 'next-themes'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { queryClient } from 'polarkit/api'
 import { CONFIG } from 'polarkit/config'
 import posthog from 'posthog-js'
 import { PostHogProvider } from 'posthog-js/react'
@@ -54,4 +56,14 @@ export function PolarThemeProvider({
   children: React.ReactElement
 }) {
   return <ThemeProvider attribute="class">{children}</ThemeProvider>
+}
+
+export function PolarQueryClientProvider({
+  children,
+}: {
+  children: React.ReactElement
+}) {
+  return (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  )
 }

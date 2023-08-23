@@ -1,7 +1,11 @@
 import '../styles/globals.scss'
 
 import { Metadata } from 'next'
-import { PolarPostHogProvider, PolarThemeProvider } from './providers'
+import {
+  PolarPostHogProvider,
+  PolarQueryClientProvider,
+  PolarThemeProvider,
+} from './providers'
 
 export const metadata: Metadata = {
   title: {
@@ -56,7 +60,9 @@ export default function RootLayout({
       <body className="dark:bg-gray-950 h-full bg-gray-50">
         <PolarPostHogProvider>
           <PolarThemeProvider>
-            <>{children}</>
+            <PolarQueryClientProvider>
+              <>{children}</>
+            </PolarQueryClientProvider>
           </PolarThemeProvider>
         </PolarPostHogProvider>
       </body>

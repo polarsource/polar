@@ -1,3 +1,5 @@
+'use client'
+
 import { motion, Transition } from 'framer-motion'
 
 interface Props {
@@ -129,8 +131,16 @@ export default LoadingScreen
 
 export const LoadingScreenError = (props: { error: string }) => {
   return (
-    <>
-      <strong>Oh no!</strong> {props.error}
-    </>
+    <div className="space-y-4">
+      <div>
+        <strong>Oh no!</strong> {props.error}
+      </div>
+      <div>
+        Go back to{' '}
+        <a href="/" className="text-blue-500">
+          polar.sh
+        </a>
+      </div>
+    </div>
   )
 }

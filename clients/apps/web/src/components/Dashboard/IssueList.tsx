@@ -297,7 +297,7 @@ export const Header = (props: {
             </label>
             <select
               id="sort-by"
-              className="m-0 w-48 border-0 bg-transparent bg-right p-0 text-sm font-medium ring-0 focus:border-0 focus:ring-0"
+              className="m-0 w-48 border-0 bg-transparent bg-right p-0 text-sm font-medium ring-0 focus:border-0 focus:ring-0 dark:bg-gray-900 dark:text-gray-300"
               onChange={onSelect}
               style={{ width: `${width}px` }}
               value={props.filters?.sort}

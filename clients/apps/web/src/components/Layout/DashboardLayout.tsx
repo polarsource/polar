@@ -9,7 +9,7 @@ const DashboardLayout = (props: {
 }) => {
   return (
     <div className="relative flex flex-col">
-      <Topbar />
+      <Topbar isFixed={true} />
 
       <div className="dark:bg-gray-950 flex flex-row bg-gray-50">
         {props.showSidebar && (

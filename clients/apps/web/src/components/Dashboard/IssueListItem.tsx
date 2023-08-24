@@ -194,12 +194,12 @@ const IssueListItem = (props: {
                 <div className="text-xs text-gray-500">
                   <p>
                     #{number}{' '}
-                    {state == 'open' && (
+                    {(state == 'open' || state === Issue.state.OPEN) && (
                       <>
                         opened <PolarTimeAgo date={new Date(createdAt)} />
                       </>
                     )}
-                    {state == 'closed' && (
+                    {(state == 'closed' || state === Issue.state.CLOSED) && (
                       <>
                         closed <PolarTimeAgo date={new Date(closedAt)} />
                       </>

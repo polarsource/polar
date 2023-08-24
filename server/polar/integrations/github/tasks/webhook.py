@@ -606,10 +606,7 @@ async def handle_pull_request(
         github.webhooks.PullRequestSynchronize,
     ],
 ) -> None:
-    pr = await upsert_pull_request(session, event)
-    if not pr:
-        log.error("github.webhook.handle_pull_request.failed")
-        return
+    await upsert_pull_request(session, event)
 
 
 @task("github.webhook.pull_request.opened")

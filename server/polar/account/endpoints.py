@@ -8,7 +8,7 @@ from polar.enums import AccountType
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
-from polar.types import ListResource
+from polar.types import ListResource, Pagination
 
 from .schemas import Account, AccountCreate, AccountLink
 from .service import AccountServiceError
@@ -44,13 +44,12 @@ async def search(
         session, org_id=organization_id, user_id=user_id
     )
 
-    return ListResource(
-        items=[
-            Account.from_db(a)
-            for a in accs
-            if await authz.can(auth.subject, AccessType.read, a)
-        ]
-    )
+    items = [
+        Account.from_db(a)
+        for a in accs
+        if await authz.can(auth.subject, AccessType.read, a)
+    ]
+    return ListResource(items=items, pagination=Pagination(total_count=len(items)))
 
 
 @router.get("/accounts/{id}", tags=[Tags.PUBLIC], response_model=Account)

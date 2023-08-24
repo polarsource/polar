@@ -47,22 +47,26 @@ class Reactions(Schema):
     eyes: int
 
 
+class Label(Schema):
+    name: str
+    color: str
+
+
 # Public API
 class Issue(Schema):
     id: UUID
     platform: Platforms = Field(description="Issue platform (currently always Github)")
-    # external_id: int = Field(description="Github's ID (not the same as the #number)")
     number: int = Field(description="Github #number")
     title: str = Field(description="Github issue title")
     body: str | None = Field(description="Github issue body")
     comments: int | None = Field(
         description="Number of Github comments made on the issue"
     )
+    labels: list[Label] = []
 
     # TODO: Add if needed
     # author: JSONAny
     # author_association: str | None
-    # labels: JSONAny
     # assignee: JSONAny
     # assignees: JSONAny
     # milestone: JSONAny
@@ -89,10 +93,19 @@ class Issue(Schema):
             pledges_sum=CurrencyAmount(currency="USD", amount=i.pledged_amount_sum),
         )
 
+        labels = (
+            [
+                Label(name=label["name"], color=label["color"])
+                for label in i.labels
+                if "name" in label and "color" in label
+            ]
+            if i.labels
+            else []
+        )
+
         return cls(
             id=i.id,
             platform=i.platform,
-            # external_id=i.external_id,
             number=i.number,
             title=i.title,
             body=i.body,
@@ -104,6 +117,7 @@ class Issue(Schema):
             reactions=parse_obj_as(Reactions, i.reactions) if i.reactions else None,
             funding=funding,
             repository=Repository.from_db(i.repository),
+            labels=labels,
         )
 
 

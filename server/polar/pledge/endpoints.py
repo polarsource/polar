@@ -14,7 +14,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.repository.schemas import Repository as RepositorySchema
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
-from polar.types import ListResource
+from polar.types import ListResource, Pagination
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -138,13 +138,13 @@ async def search(
         load_issue=True,
     )
 
-    return ListResource(
-        items=[
-            PledgeSchema.from_db(p)
-            for p in pledges
-            if await authz.can(auth.subject, AccessType.read, p)
-        ]
-    )
+    items = [
+        PledgeSchema.from_db(p)
+        for p in pledges
+        if await authz.can(auth.subject, AccessType.read, p)
+    ]
+
+    return ListResource(items=items, pagination=Pagination(total_count=len(items)))
 
 
 @router.get(

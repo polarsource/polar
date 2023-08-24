@@ -9,7 +9,7 @@ from polar.enums import Platforms
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
-from polar.types import ListResource
+from polar.types import ListResource, Pagination
 
 from .schemas import (
     Repository as RepositorySchema,
@@ -40,7 +40,10 @@ async def list(
     repos = await repository.list_by(
         session, org_ids=[o.id for o in orgs], load_organization=True
     )
-    return ListResource(items=[RepositorySchema.from_db(r) for r in repos])
+    return ListResource(
+        items=[RepositorySchema.from_db(r) for r in repos],
+        pagination=Pagination(total_count=len(repos)),
+    )
 
 
 @router.get(
@@ -66,8 +69,8 @@ async def search(
         name=organization_name,
     )
     if not org:
-        return (
-            ListResource()
+        return ListResource(
+            items=[], pagination=Pagination(total_count=0)
         )  # search endpoints returns empty lists in case of no matches
 
     repos = await repository.list_by(
@@ -82,7 +85,10 @@ async def search(
     # member of
     repos = [r for r in repos if await authz.can(auth.subject, AccessType.read, r)]
 
-    return ListResource(items=[RepositorySchema.from_db(r) for r in repos])
+    return ListResource(
+        items=[RepositorySchema.from_db(r) for r in repos],
+        pagination=Pagination(total_count=len(repos)),
+    )
 
 
 @router.get(

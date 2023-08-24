@@ -1,7 +1,7 @@
 from typing import List, Sequence
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from polar.auth.dependencies import Auth
 from polar.authz.service import AccessType, Authz
@@ -24,7 +24,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.repository.schemas import Repository as RepositorySchema
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
-from polar.types import ListResource
+from polar.types import ListResource, Pagination
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -134,7 +134,8 @@ async def search(
             IssueSchema.from_db(i)
             for i in issues
             if await authz.can(auth.subject, AccessType.read, i)
-        ]
+        ],
+        pagination=Pagination(total_count=count),
     )
 
 

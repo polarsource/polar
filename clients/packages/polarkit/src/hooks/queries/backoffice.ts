@@ -21,6 +21,15 @@ export const useBackofficeRewards = (issueId?: string) =>
     },
   )
 
+export const useBackofficeRewardsPending = () =>
+  useQuery(
+    ['useBackofficeRewardsPending'],
+    () => api.backoffice.rewardsPending(),
+    {
+      retry: defaultRetry,
+    },
+  )
+
 export const useBackofficeIssue = (issueId?: string) =>
   useQuery(
     ['useBackofficeIssue', issueId],

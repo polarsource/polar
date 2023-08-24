@@ -1,4 +1,4 @@
-from typing import List, Sequence, Tuple
+from typing import Sequence, Tuple
 from uuid import UUID
 
 import structlog
@@ -27,6 +27,7 @@ class RewardService:
         issue_id: UUID | None = None,
         reward_org_id: UUID | None = None,
         reward_user_id: UUID | None = None,
+        is_transfered: bool | None = None,
     ) -> Sequence[Tuple[Pledge, IssueReward, PledgeTransaction]]:
         statement = (
             sql.select(Pledge, IssueReward, PledgeTransaction)
@@ -54,6 +55,12 @@ class RewardService:
 
         if reward_user_id:
             statement = statement.where(IssueReward.user_id == reward_user_id)
+
+        if is_transfered is not None:
+            if is_transfered:
+                statement = statement.where(PledgeTransaction.id.is_not(None))
+            else:
+                statement = statement.where(PledgeTransaction.id.is_(None))
 
         statement = statement.options(
             joinedload(IssueReward.user),

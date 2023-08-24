@@ -42,7 +42,7 @@ const Pledges = () => {
 
             <ThinButton
               color="gray"
-              href={`https://github.com/${i[0].issue.repository.organization?.name}/${i[0].issue.repository.name}/issues/${i[0].issue.number}`}
+              href={`https://github.com/${i[0].issue.repository.organization.name}/${i[0].issue.repository.name}/issues/${i[0].issue.number}`}
             >
               <span>GitHub</span>
               <ArrowTopRightOnSquareIcon />

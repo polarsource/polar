@@ -16,11 +16,13 @@ const nextConfig = {
   },
 
   async rewrites() {
+    const framerSite = 'https://splendid-help-401117-c8eb03c29.framer.app'
+
     return [
       // Framer site rewrites
       {
         source: '/',
-        destination: 'https://splendid-help-401117.framer.app/',
+        destination: `${framerSite}/`,
         missing: [
           {
             type: 'host',
@@ -30,27 +32,27 @@ const nextConfig = {
       },
       {
         source: '/faq',
-        destination: 'https://splendid-help-401117.framer.app/faq',
+        destination: `${framerSite}/faq`,
       },
       {
         source: '/careers',
-        destination: 'https://splendid-help-401117.framer.app/careers',
+        destination: `${framerSite}/careers`,
       },
       {
         source: '/404',
-        destination: 'https://splendid-help-401117.framer.app/404',
+        destination: `${framerSite}/404`,
       },
       {
         source: '/request',
-        destination: 'https://splendid-help-401117.framer.app/request',
+        destination: `${framerSite}/request`,
       },
       {
         source: '/legal/privacy',
-        destination: 'https://splendid-help-401117.framer.app/legal/privacy',
+        destination: `${framerSite}/legal/privacy`,
       },
       {
         source: '/legal/terms',
-        destination: 'https://splendid-help-401117.framer.app/legal/terms',
+        destination: `${framerSite}/legal/terms`,
       },
 
       // polar.new rewrite

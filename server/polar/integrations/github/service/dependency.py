@@ -1,24 +1,15 @@
 from __future__ import annotations
 
 import structlog
-import re
 from polar.exceptions import IntegrityError, ResourceNotFound
-from githubkit.exception import RequestFailed
 from polar.integrations.github.client import (
     get_app_installation_client,
-    GitHub,
-    AppInstallationAuthStrategy,
 )
-from polar.integrations.github import service
 from polar.integrations.github.service.organization import github_organization
-from polar.issue.schemas import IssueCreate
 from polar.models.issue_dependency import IssueDependency
-from polar.organization.schemas import OrganizationCreate
-from polar.enums import Platforms
 
 from polar.models import Organization, Repository, Issue
 from polar.postgres import AsyncSession, sql
-from polar.repository.schemas import RepositoryCreate
 
 from .url import github_url
 
@@ -74,7 +65,7 @@ class GitHubIssueDependenciesService:
                     repo_name=dependency.repo,
                     issue_number=dependency.number,
                 )
-            except ResourceNotFound as e:
+            except ResourceNotFound:
                 continue
 
             issue_dependency = IssueDependency(

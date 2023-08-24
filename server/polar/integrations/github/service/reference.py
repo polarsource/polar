@@ -6,7 +6,6 @@ from githubkit.exception import RequestFailed
 from pydantic import ValidationError, parse_obj_as
 
 import structlog
-from polar.context import PolarContext
 from polar.exceptions import IntegrityError
 import polar.integrations.github.client as github
 from polar.integrations.github.service.pull_request import github_pull_request

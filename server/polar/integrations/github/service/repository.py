@@ -1,4 +1,4 @@
-from typing import List, Literal, Callable, Any, Coroutine, Sequence
+from typing import Literal, Callable, Any, Coroutine, Sequence
 
 import structlog
 from githubkit import Paginator, Response

@@ -1,15 +1,12 @@
-from typing import Sequence
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import Field
 
 from polar.auth.dependencies import Auth
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.exceptions import NotPermitted, ResourceNotFound, StripeError
-from polar.issue.schemas import Issue, IssueRead
-from polar.issue.service import issue as issue_service
+from polar.issue.schemas import Issue
 from polar.models import Pledge, Repository
 from polar.organization.schemas import Organization
 from polar.organization.service import organization as organization_service

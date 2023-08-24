@@ -9,7 +9,6 @@ from githubkit import (
     GitHub,
     Response,
     TokenAuthStrategy,
-    UnauthAuthStrategy,
     rest,
     utils,
     webhooks,

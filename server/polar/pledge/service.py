@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-import math
 from datetime import timedelta
 from typing import List, Sequence
 from uuid import UUID

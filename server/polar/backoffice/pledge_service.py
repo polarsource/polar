@@ -10,7 +10,6 @@ from polar.backoffice.schemas import BackofficePledge
 from polar.kit.extensions.sqlalchemy import sql
 from polar.models.account import Account
 from polar.models.issue import Issue
-from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.pledge.schemas import PledgeState

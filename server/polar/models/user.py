@@ -4,17 +4,12 @@ from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import UniqueConstraint
 
 from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
-
-if TYPE_CHECKING:  # pragma: no cover
-    from polar.models.organization import Organization
-    from polar.models.user_organization import UserOrganization
 
 
 class OAuthAccount(RecordModel):

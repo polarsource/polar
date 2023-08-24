@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime
 from typing import Any, Sequence, Union
-from uuid import UUID
 
 import structlog
 from githubkit import GitHub, Response

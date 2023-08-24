@@ -12,7 +12,6 @@ from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.models.user import User
-from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
 from polar.user_organization.service import (

@@ -49,7 +49,7 @@ async def search(
         items=[
             Account.from_db(a)
             for a in accs
-            if await authz.can(auth.user, AccessType.read, a)
+            if await authz.can(auth.subject, AccessType.read, a)
         ]
     )
 
@@ -68,7 +68,7 @@ async def get(
             detail="Not found",
         )
 
-    if not await authz.can(auth.user, AccessType.read, acc):
+    if not await authz.can(auth.subject, AccessType.read, acc):
         raise HTTPException(
             status_code=401,
             detail="Unauthorized",
@@ -93,7 +93,7 @@ async def onboarding_link(
             detail="Not found",
         )
 
-    if not await authz.can(auth.user, AccessType.write, acc):
+    if not await authz.can(auth.subject, AccessType.write, acc):
         raise HTTPException(
             status_code=401,
             detail="Unauthorized",
@@ -127,7 +127,7 @@ async def dashboard_link(
             detail="Not found",
         )
 
-    if not await authz.can(auth.user, AccessType.write, acc):
+    if not await authz.can(auth.subject, AccessType.write, acc):
         raise HTTPException(
             status_code=401,
             detail="Unauthorized",
@@ -149,11 +149,15 @@ async def create(
 ) -> Account:
     if account.organization_id:
         org = await organization_service.get(session, account.organization_id)
-        if not org or not await authz.can(auth.user, AccessType.write, org):
+        if not org or not await authz.can(auth.subject, AccessType.write, org):
             raise HTTPException(
                 status_code=401,
                 detail="Unauthorized",
             )
+
+    # Accounts can only be created by users, for themselves
+    if not auth.user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
 
     if account.user_id and str(account.user_id) != str(auth.user.id):
         raise HTTPException(

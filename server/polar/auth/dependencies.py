@@ -1,12 +1,14 @@
+from typing import Self
 from uuid import UUID
 
-from fastapi import Request, HTTPException, Depends
+from fastapi import Depends, HTTPException, Request
 
-from polar.models import User, Organization, Repository
-from polar.exceptions import ResourceNotFound
-from polar.postgres import AsyncSession, get_db_session
+from polar.authz.service import Anonymous, Subject
 from polar.enums import Platforms
+from polar.exceptions import ResourceNotFound
+from polar.models import Organization, Repository, User
 from polar.organization.service import organization as organization_service
+from polar.postgres import AsyncSession, get_db_session
 
 from .service import AuthService
 
@@ -35,10 +37,12 @@ class Auth:
     def __init__(
         self,
         *,
-        user: User,
+        subject: Subject,
+        user: User | None = None,
         organization: Organization | None = None,
         repository: Repository | None = None,
     ):
+        self.subject = subject
         self.user = user
         self._organization = organization
         self._repository = repository
@@ -66,12 +70,17 @@ class Auth:
     ###############################################################################
 
     @classmethod
-    async def current_user(cls, user: User = Depends(current_user_required)) -> "Auth":
-        return Auth(user=user)
+    async def current_user(cls, user: User = Depends(current_user_required)) -> Self:
+        return cls(subject=user, user=user)
 
     @classmethod
-    async def optional_user(cls, user: User = Depends(current_user_optional)) -> "Auth":
-        return Auth(user=user)
+    async def optional_user(
+        cls, user: User | None = Depends(current_user_optional)
+    ) -> Self:
+        if user:
+            return cls(subject=user, user=user)
+        else:
+            return cls(subject=Anonymous())
 
     @classmethod
     async def user_with_org_access(
@@ -81,7 +90,7 @@ class Auth:
         org_name: str,
         session: AsyncSession = Depends(get_db_session),
         user: User = Depends(current_user_required),
-    ) -> "Auth":
+    ) -> Self:
         organization = await organization_service.get_for_user(
             session,
             platform=platform,
@@ -92,7 +101,7 @@ class Auth:
             raise HTTPException(
                 status_code=404, detail="Organization not found for user"
             )
-        return Auth(user=user, organization=organization)
+        return cls(subject=user, user=user, organization=organization)
 
     @classmethod
     async def user_with_org_access_by_id(
@@ -101,7 +110,7 @@ class Auth:
         id: UUID,
         session: AsyncSession = Depends(get_db_session),
         user: User = Depends(current_user_required),
-    ) -> "Auth":
+    ) -> Self:
         organization = await organization_service.get_by_id_for_user(
             session,
             org_id=id,
@@ -111,7 +120,7 @@ class Auth:
             raise HTTPException(
                 status_code=404, detail="Organization not found for user"
             )
-        return Auth(user=user, organization=organization)
+        return cls(subject=user, user=user, organization=organization)
 
     @classmethod
     async def user_with_org_and_repo_access(
@@ -122,7 +131,7 @@ class Auth:
         repo_name: str,
         session: AsyncSession = Depends(get_db_session),
         user: User = Depends(current_user_required),
-    ) -> "Auth":
+    ) -> Self:
         try:
             org, repo = await organization_service.get_with_repo_for_user(
                 session,
@@ -131,7 +140,7 @@ class Auth:
                 repo_name=repo_name,
                 user_id=user.id,
             )
-            return Auth(user=user, organization=org, repository=repo)
+            return cls(subject=user, user=user, organization=org, repository=repo)
         except ResourceNotFound:
             raise HTTPException(
                 status_code=404,
@@ -143,7 +152,7 @@ class Auth:
         cls,
         *,
         user: User = Depends(current_user_required),
-    ) -> "Auth":
+    ) -> Self:
         allowed = ["zegl", "birkjernstrom", "hult", "petterheterjag"]
 
         if user.username not in allowed:
@@ -152,4 +161,4 @@ class Auth:
                 detail="Not Found",
             )
 
-        return Auth(user=user)
+        return cls(subject=user, user=user)

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import Field
 
 from polar.auth.dependencies import Auth
+from polar.authz.service import AccessType, Authz
 from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
@@ -14,14 +15,12 @@ from polar.integrations.github.service.issue import github_issue as github_issue
 from polar.integrations.github.service.organization import (
     github_organization as github_organization_service,
 )
-from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.schemas import Schema
 from polar.models import Issue
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
-from polar.repository.endpoints import user_can_read, user_can_write
 from polar.repository.schemas import Repository as RepositorySchema
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
@@ -74,6 +73,7 @@ async def search(
     ),
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
+    authz: Authz = Depends(Authz.authz),
 ) -> ListResource[IssueSchema]:
     org = await organization_service.get_by_name(session, platform, organization_name)
     if not org:
@@ -129,7 +129,13 @@ async def search(
         have_polar_badge=have_badge,
     )
 
-    return ListResource(items=[IssueSchema.from_db(i) for i in issues])
+    return ListResource(
+        items=[
+            IssueSchema.from_db(i)
+            for i in issues
+            if await authz.can(auth.subject, AccessType.read, i)
+        ]
+    )
 
 
 @router.get(
@@ -143,6 +149,7 @@ async def get(
     id: UUID,
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
+    authz: Authz = Depends(Authz.authz),
 ) -> IssueSchema:
     issue = await issue_service.get_loaded(session, id)
 
@@ -152,7 +159,7 @@ async def get(
             detail="Issue not found",
         )
 
-    if not await user_can_read(session, auth, issue.repository):
+    if not await authz.can(auth.subject, AccessType.read, issue):
         raise HTTPException(
             status_code=404,
             detail="Issue not found",
@@ -173,6 +180,7 @@ async def update(
     update: UpdateIssue,
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.current_user),
+    authz: Authz = Depends(Authz.authz),
 ) -> IssueSchema:
     issue = await issue_service.get_loaded(session, id)
 
@@ -182,7 +190,7 @@ async def update(
             detail="Issue not found",
         )
 
-    if not await user_can_write(session, auth, issue.repository):
+    if not await authz.can(auth.subject, AccessType.write, issue):
         raise HTTPException(
             status_code=401,
             detail="Unauthorized",
@@ -218,6 +226,7 @@ async def confirm(
     body: ConfirmIssue,
     auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
 ) -> IssueSchema:
     issue = await issue_service.get_loaded(session, id)
     if not issue:
@@ -226,7 +235,13 @@ async def confirm(
             detail="Issue not found",
         )
 
-    if not await user_can_write(session, auth, issue.repository):
+    if not await authz.can(auth.subject, AccessType.write, issue):
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+        )
+
+    if not auth.user:
         raise HTTPException(
             status_code=401,
             detail="Unauthorized",
@@ -492,6 +507,12 @@ async def add_issue_comment(
         raise HTTPException(
             status_code=404,
             detail="Issue not found",
+        )
+
+    if not auth.user:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
         )
 
     message = comment.message

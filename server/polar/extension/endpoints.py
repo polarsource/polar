@@ -1,20 +1,19 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from polar.auth.dependencies import Auth
-from polar.kit import utils
+from polar.enums import Platforms
 from polar.extension.schemas import IssueExtensionRead
 from polar.issue.schemas import IssueReferenceRead
-from polar.enums import Platforms
+from polar.issue.service import issue as issue_service
+from polar.kit import utils
 from polar.models.issue_reference import IssueReference
 from polar.models.pledge import Pledge
 from polar.pledge.schemas import PledgeRead
+from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
-
-from polar.issue.service import issue as issue_service
-from polar.pledge.service import pledge as pledge_service
 
 router = APIRouter(tags=["extension"])
 
@@ -32,6 +31,9 @@ async def list_issues_for_extension(
     auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> list[IssueExtensionRead]:
+    if not auth.user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
     # Update when we last saw this user and on which extension version
     version = "unknown"
     auth.user.last_seen_at_extension = utils.utc_now()

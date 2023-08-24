@@ -12,6 +12,8 @@ from polar.reward.schemas import Reward
 class BackofficeReward(Reward):
     transfer_id: str | None
     issue_reward_id: UUID
+    pledge_payment_id: str | None
+    pledger_email: str | None
 
 
 class BackofficePledge(PledgeSchema):

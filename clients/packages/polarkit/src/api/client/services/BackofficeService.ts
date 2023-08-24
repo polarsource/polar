@@ -43,13 +43,25 @@ export class BackofficeService {
   }): CancelablePromise<ListResource_BackofficeReward_> {
     return this.httpRequest.request({
       method: 'GET',
-      url: '/api/v1/backoffice/rewards',
+      url: '/api/v1/backoffice/rewards/by_issue',
       query: {
         'issue_id': issueId,
       },
       errors: {
         422: `Validation Error`,
       },
+    });
+  }
+
+  /**
+   * Rewards Pending
+   * @returns ListResource_BackofficeReward_ Successful Response
+   * @throws ApiError
+   */
+  public rewardsPending(): CancelablePromise<ListResource_BackofficeReward_> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/backoffice/rewards/pending',
     });
   }
 

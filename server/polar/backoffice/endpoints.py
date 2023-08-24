@@ -27,6 +27,7 @@ from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.reward.endpoints import to_resource as reward_to_resource
 from polar.reward.service import reward_service
+from polar.tags.api import Tags
 from polar.types import ListResource
 
 from .pledge_service import bo_pledges_service
@@ -42,7 +43,7 @@ router = APIRouter(tags=["backoffice"], prefix="/backoffice")
 log = structlog.get_logger()
 
 
-@router.get("/pledges", response_model=list[BackofficePledge])
+@router.get("/pledges", response_model=list[BackofficePledge], tags=[Tags.INTERNAL])
 async def pledges(
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
@@ -63,10 +64,16 @@ def r(
         paid_at=r.paid_at,
         transfer_id=transaction.transaction_id if transaction else None,
         issue_reward_id=reward.id,
+        pledge_payment_id=pledge.payment_id,
+        pledger_email=pledge.email,
     )
 
 
-@router.get("/rewards", response_model=ListResource[BackofficeReward])
+@router.get(
+    "/rewards/by_issue",
+    response_model=ListResource[BackofficeReward],
+    tags=[Tags.INTERNAL],
+)
 async def rewards(
     issue_id: UUID | None = None,
     auth: Auth = Depends(Auth.backoffice_user),
@@ -81,7 +88,25 @@ async def rewards(
     )
 
 
-@router.get("/issue/{id}", response_model=Issue)
+@router.get(
+    "/rewards/pending",
+    response_model=ListResource[BackofficeReward],
+    tags=[Tags.INTERNAL],
+)
+async def rewards_pending(
+    auth: Auth = Depends(Auth.backoffice_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[BackofficeReward]:
+    rewards = await reward_service.list(session, is_transfered=False)
+
+    return ListResource(
+        items=[
+            r(pledge, reward, transaction) for pledge, reward, transaction in rewards
+        ]
+    )
+
+
+@router.get("/issue/{id}", response_model=Issue, tags=[Tags.INTERNAL])
 async def issue(
     id: UUID,
     auth: Auth = Depends(Auth.backoffice_user),
@@ -112,7 +137,7 @@ class PledgeRewardTransfer(Schema):
     issue_reward_id: UUID
 
 
-@router.post("/pledges/approve", response_model=BackofficeReward)
+@router.post("/pledges/approve", response_model=BackofficeReward, tags=[Tags.INTERNAL])
 async def pledge_reward_transfer(
     body: PledgeRewardTransfer,
     auth: Auth = Depends(Auth.backoffice_user),
@@ -135,7 +160,11 @@ async def pledge_reward_transfer(
     return r(pledge, reward, transaction)
 
 
-@router.post("/pledges/mark_pending/{pledge_id}", response_model=BackofficePledge)
+@router.post(
+    "/pledges/mark_pending/{pledge_id}",
+    response_model=BackofficePledge,
+    tags=[Tags.INTERNAL],
+)
 async def pledge_mark_pending(
     pledge_id: UUID,
     auth: Auth = Depends(Auth.backoffice_user),
@@ -145,7 +174,11 @@ async def pledge_mark_pending(
     return await get_pledge(session, pledge_id)
 
 
-@router.post("/pledges/mark_disputed/{pledge_id}", response_model=BackofficePledge)
+@router.post(
+    "/pledges/mark_disputed/{pledge_id}",
+    response_model=BackofficePledge,
+    tags=[Tags.INTERNAL],
+)
 async def pledge_mark_disputed(
     pledge_id: UUID,
     auth: Auth = Depends(Auth.backoffice_user),
@@ -157,7 +190,7 @@ async def pledge_mark_disputed(
     return await get_pledge(session, pledge_id)
 
 
-@router.post("/invites/create_code", response_model=InviteRead)
+@router.post("/invites/create_code", response_model=InviteRead, tags=[Tags.INTERNAL])
 async def invites_create_code(
     invite: InviteCreate,
     auth: Auth = Depends(Auth.backoffice_user),
@@ -172,7 +205,7 @@ async def invites_create_code(
     return InviteRead.from_db(res)
 
 
-@router.post("/invites/list", response_model=list[InviteRead])
+@router.post("/invites/list", response_model=list[InviteRead], tags=[Tags.INTERNAL])
 async def invites_list(
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
@@ -181,7 +214,11 @@ async def invites_list(
     return [InviteRead.from_db(i) for i in res]
 
 
-@router.post("/organization/sync/{name}", response_model=OrganizationPrivateRead)
+@router.post(
+    "/organization/sync/{name}",
+    response_model=OrganizationPrivateRead,
+    tags=[Tags.INTERNAL],
+)
 async def organization_sync(
     name: str,
     auth: Auth = Depends(Auth.backoffice_user),
@@ -201,7 +238,7 @@ async def organization_sync(
     return org
 
 
-@router.post("/badge", response_model=BackofficeBadgeResponse)
+@router.post("/badge", response_model=BackofficeBadgeResponse, tags=[Tags.INTERNAL])
 async def manage_badge(
     badge: BackofficeBadge,
     auth: Auth = Depends(Auth.backoffice_user),

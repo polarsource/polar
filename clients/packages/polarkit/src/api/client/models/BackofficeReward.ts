@@ -29,5 +29,7 @@ export type BackofficeReward = {
   paid_at?: string;
   transfer_id?: string;
   issue_reward_id: string;
+  pledge_payment_id?: string;
+  pledger_email?: string;
 };
 

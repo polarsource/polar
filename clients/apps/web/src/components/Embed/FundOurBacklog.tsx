@@ -55,7 +55,13 @@ const PolarLogo = () => {
   )
 }
 
-export const FundOurBacklog = ({ issues }: { issues: Issue[] }) => {
+export const FundOurBacklog = ({
+  issues,
+  issueCount,
+}: {
+  issues: Issue[]
+  issueCount: number
+}) => {
   const showIssues = issues.slice(0, 5)
 
   const showShadow = showIssues.length > 2
@@ -100,7 +106,7 @@ export const FundOurBacklog = ({ issues }: { issues: Issue[] }) => {
               color: '#181a1f',
             }}
           >
-            {issues.length}
+            {issueCount}
           </div>
           <div
             style={{

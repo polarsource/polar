@@ -59,6 +59,7 @@ const meta: Meta<typeof FundOurBacklog> = {
         },
       },
     ],
+    issueCount: 70,
   },
   parameters: {
     themes: ['light'],
@@ -83,5 +84,20 @@ export const Default: Story = {
 export const TwoIssues: Story = {
   args: {
     issues: [issue, issue],
+    issueCount: 2,
+  },
+}
+
+export const OneIssue: Story = {
+  args: {
+    issues: [issue],
+    issueCount: 1,
+  },
+}
+
+export const NoIssue: Story = {
+  args: {
+    issues: [],
+    issueCount: 0,
   },
 }

@@ -37,7 +37,12 @@ const Page: NextLayoutComponentType = () => {
   }
 
   const previews: Record<string, ReactElement> = {
-    Issues: <FundOurBacklog issues={issues.data?.items || []} />,
+    Issues: (
+      <FundOurBacklog
+        issues={issues.data?.items || []}
+        issueCount={issues.data?.items?.length || 0}
+      />
+    ),
     Shield: (
       <div className="w-fit">
         <SeeksFundingShield count={issues.data?.items?.length || 0} />

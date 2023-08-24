@@ -25,7 +25,7 @@ const getData = async (
   })
 }
 
-const renderBadge = async (issues: Issue[]) => {
+const renderBadge = async (issues: Issue[], issueCount: number) => {
   const inter500 = await fetch(
     new URL('../../../assets/fonts/Inter-Regular.ttf', import.meta.url),
   ).then((res) => res.arrayBuffer())
@@ -34,22 +34,25 @@ const renderBadge = async (issues: Issue[]) => {
     new URL('../../../assets/fonts/Inter-Medium.ttf', import.meta.url),
   ).then((res) => res.arrayBuffer())
 
-  return await satori(<FundOurBacklog issues={issues} />, {
-    fonts: [
-      {
-        name: 'Inter',
-        data: inter500,
-        weight: 500,
-        style: 'normal',
-      },
-      {
-        name: 'Inter',
-        data: inter600,
-        weight: 600,
-        style: 'medium',
-      },
-    ],
-  })
+  return await satori(
+    <FundOurBacklog issues={issues} issueCount={issueCount} />,
+    {
+      fonts: [
+        {
+          name: 'Inter',
+          data: inter500,
+          weight: 500,
+          style: 'normal',
+        },
+        {
+          name: 'Inter',
+          data: inter600,
+          weight: 600,
+          style: 'medium',
+        },
+      ],
+    },
+  )
 }
 
 export async function GET(request: Request) {
@@ -65,7 +68,7 @@ export async function GET(request: Request) {
   try {
     const data = await getData(org, repo || undefined)
 
-    const svg = await renderBadge(data.items || [])
+    const svg = await renderBadge(data.items || [], data.pagination.total_count)
 
     return new Response(svg, {
       headers: {

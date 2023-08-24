@@ -54,8 +54,7 @@ export async function GET(request: Request) {
 
   try {
     const data = await getData(org, repo || undefined)
-
-    const svg = await renderBadge(data.items?.length || 0)
+    const svg = await renderBadge(data.pagination.total_count)
 
     return new Response(svg, {
       headers: {

@@ -25,7 +25,7 @@ class Repository(Schema):
     license: str | None = None
     homepage: str | None = None
 
-    organization: OrganizationSchema | None = None
+    organization: OrganizationSchema
 
     @classmethod
     def from_db(cls, r: RepositoryModel) -> Self:

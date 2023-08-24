@@ -41,7 +41,7 @@ export default function Page({ params }: { params: { id: string } }) {
             <td>
               <a
                 className="text-blue-600"
-                href={`https://github.com/${issue.data?.repository.organization?.name}/${issue.data?.repository.name}/issues/${issue.data?.number}`}
+                href={`https://github.com/${issue.data?.repository.organization.name}/${issue.data?.repository.name}/issues/${issue.data?.number}`}
               >
                 {issue.data?.title}
               </a>

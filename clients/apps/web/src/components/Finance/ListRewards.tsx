@@ -28,7 +28,7 @@ const List = (props: {
   }
 
   const issueLink = (reward: Reward): string => {
-    return `https://github.com/${reward.pledge.issue.repository.organization?.name}/${reward.pledge.issue.repository.name}/issues/${reward.pledge.issue?.number}`
+    return `https://github.com/${reward.pledge.issue.repository.organization.name}/${reward.pledge.issue.repository.name}/issues/${reward.pledge.issue?.number}`
   }
 
   const showEstimatedPayoutDate = columns.some(
@@ -107,11 +107,10 @@ const List = (props: {
                         href={issueLink(t)}
                         className="text-blue-600 dark:text-blue-500"
                       >
-                        {t.pledge.issue.repository.organization?.name}/
-                        {t.pledge.issue.repository?.name}#
-                        {t.pledge.issue?.number}
+                        {t.pledge.issue.repository.organization.name}/
+                        {t.pledge.issue.repository.name}#{t.pledge.issue.number}
                       </a>
-                      {t.pledge.issue?.title}
+                      {t.pledge.issue.title}
                     </span>
                   </div>
                 </td>

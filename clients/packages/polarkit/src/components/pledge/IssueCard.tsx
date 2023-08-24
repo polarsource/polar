@@ -14,10 +14,6 @@ const IssueCard = ({
   className: string
   currentPledgeAmount: number
 }) => {
-  if (!issue.repository.organization) {
-    return <></>
-  }
-
   const url = githubIssueUrl(
     issue.repository.organization.name,
     issue.repository.name,

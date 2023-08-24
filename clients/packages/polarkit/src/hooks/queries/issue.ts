@@ -48,9 +48,8 @@ export const useIssueAddPolarBadge = () =>
                         ...result,
 
                         // Map Issue (Public API) to IssueDashboardRead
-                        organization_id:
-                          result.repository?.organization?.id || '',
-                        repository_id: result?.repository.id || '',
+                        organization_id: result.repository.organization.id,
+                        repository_id: result.repository.id,
                         state:
                           result.state === Issue.state.OPEN
                             ? State.OPEN
@@ -101,9 +100,8 @@ export const useIssueRemovePolarBadge = () =>
                         ...result,
 
                         // Map Issue (Public API) to IssueDashboardRead
-                        organization_id:
-                          result.repository?.organization?.id || '',
-                        repository_id: result?.repository.id || '',
+                        organization_id: result.repository.organization.id,
+                        repository_id: result.repository.id,
                         state:
                           result.state === Issue.state.OPEN
                             ? State.OPEN
@@ -192,9 +190,8 @@ export const useUpdateIssue = () =>
                         ...result,
 
                         // Map Issue (Public API) to IssueDashboardRead
-                        organization_id:
-                          result.repository?.organization?.id || '',
-                        repository_id: result?.repository.id || '',
+                        organization_id: result.repository.organization.id,
+                        repository_id: result.repository.id,
                         state:
                           result.state === Issue.state.OPEN
                             ? State.OPEN

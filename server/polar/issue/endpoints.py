@@ -14,6 +14,7 @@ from polar.integrations.github.service.issue import github_issue as github_issue
 from polar.integrations.github.service.organization import (
     github_organization as github_organization_service,
 )
+from polar.integrations.github.service.url import github_url
 from polar.kit.schemas import Schema
 from polar.models import Issue
 from polar.organization.schemas import Organization as OrganizationSchema
@@ -134,6 +135,77 @@ async def search(
             for i in issues
             if await authz.can(auth.subject, AccessType.read, i)
         ]
+    )
+
+
+@router.get(
+    "/issues/lookup",
+    response_model=IssueSchema,
+    tags=[Tags.INTERNAL],
+)
+async def lookup(
+    external_url: str
+    | None = Query(
+        default=None,
+        description="URL to issue on external source",
+        example="https://github.com/polarsource/polar/issues/897",
+    ),
+    session: AsyncSession = Depends(get_db_session),
+) -> IssueSchema:
+    if not external_url:
+        raise HTTPException(
+            status_code=400,
+            detail="No search parameter specified",
+        )
+
+    if external_url:
+        urls = github_url.parse_urls(external_url)
+        if len(urls) != 1:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid external_url",
+            )
+
+        url = urls[0]
+
+        if not url.owner or not url.repo:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid external_url",
+            )
+
+        client = get_polar_client()
+
+        try:
+            res = (
+                await github_organization_service.sync_external_org_with_repo_and_issue(
+                    session,
+                    client=client,
+                    org_name=url.owner,
+                    repo_name=url.repo,
+                    issue_number=url.number,
+                )
+            )
+            org, repo, tmp_issue = res
+        except ResourceNotFound:
+            raise HTTPException(
+                status_code=404,
+                detail="Issue by external_url not found",
+            )
+
+        # get for return
+        issue = await issue_service.get_loaded(session, tmp_issue.id)
+        if not issue:
+            raise HTTPException(
+                status_code=404,
+                detail="Issue not found",
+            )
+
+        return IssueSchema.from_db(issue)
+
+    raise HTTPException(
+        status_code=404,
+        detail="Issue not found",
     )
 
 
@@ -294,66 +366,6 @@ async def confirm(
 #
 # Internal APIs below
 #
-
-
-class IssueResources(Schema):
-    issue: IssueSchema
-    organization: OrganizationSchema | None
-    repository: RepositorySchema | None
-
-
-@router.get(
-    "/{platform}/{org_name}/{repo_name}/issues/{number}",
-    response_model=IssueResources,
-    tags=[Tags.INTERNAL],
-)
-async def get_or_sync_external(
-    platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    number: int,
-    include: str = "organization,repository",
-    session: AsyncSession = Depends(get_db_session),
-) -> IssueResources:
-    includes = include.split(",")
-    client = get_polar_client()
-
-    try:
-        res = await github_organization_service.sync_external_org_with_repo_and_issue(
-            session,
-            client=client,
-            org_name=org_name,
-            repo_name=repo_name,
-            issue_number=number,
-        )
-        org, repo, tmp_issue = res
-    except ResourceNotFound:
-        raise HTTPException(
-            status_code=404,
-            detail="Organization, repo and issue combination not found",
-        )
-
-    included_org = None
-    if "organization" in includes:
-        included_org = OrganizationSchema.from_db(org)
-
-    included_repo = None
-    if "repository" in includes:
-        included_repo = RepositorySchema.from_db(repo)
-
-    # get for return
-    issue = await issue_service.get_loaded(session, tmp_issue.id)
-    if not issue:
-        raise HTTPException(
-            status_code=404,
-            detail="Issue not found",
-        )
-
-    return IssueResources(
-        issue=IssueSchema.from_db(issue),
-        organization=included_org,
-        repository=included_repo,
-    )
 
 
 @router.get(

@@ -9,7 +9,6 @@ from githubkit.exception import RequestFailed
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
 from polar.issue.schemas import IssueCreate
-from polar.kit.utils import utc_now
 from polar.models import Organization, User
 from polar.models.issue import Issue
 from polar.models.repository import Repository

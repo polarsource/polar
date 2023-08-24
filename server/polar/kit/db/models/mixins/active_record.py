@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import cache
-from typing import Any, ClassVar, Generic, Self, Sequence, TypeVar
+from typing import Any, ClassVar, Self, Sequence, TypeVar
 from sqlalchemy import Column, ColumnClause, column
 from sqlalchemy.orm import (
     InstrumentedAttribute,

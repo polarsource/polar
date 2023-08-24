@@ -13,7 +13,6 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 
 if TYPE_CHECKING:  # pragma: no cover
-    from polar.models.account import Account
     from polar.models.repository import Repository
 
 

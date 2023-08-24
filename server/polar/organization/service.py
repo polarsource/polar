@@ -5,7 +5,7 @@ from uuid import UUID
 import structlog
 from sqlalchemy import ColumnElement, and_
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import InstrumentedAttribute, contains_eager, joinedload
+from sqlalchemy.orm import InstrumentedAttribute, contains_eager
 
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound

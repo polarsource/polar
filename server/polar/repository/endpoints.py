@@ -1,4 +1,3 @@
-from typing import Sequence
 from uuid import UUID
 
 import structlog

@@ -7,7 +7,6 @@ from polar.config import settings
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.user import User
-from polar.postgres import AsyncSession, sql
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 

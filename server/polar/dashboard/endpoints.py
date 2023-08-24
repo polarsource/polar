@@ -20,7 +20,6 @@ from polar.dashboard.schemas import (
 from polar.enums import Platforms
 from polar.issue.schemas import IssueRead, IssueReferenceRead
 from polar.issue.service import issue
-from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.models.user import User

@@ -7,7 +7,6 @@ from starlette.responses import RedirectResponse
 
 from polar.account.schemas import AccountUpdate
 from polar.account.service import account as account_service
-from polar.auth.dependencies import Auth
 from polar.config import settings
 from polar.enums import AccountType
 from polar.organization.service import organization as organization_service

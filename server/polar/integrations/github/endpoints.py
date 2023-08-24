@@ -1,4 +1,4 @@
-from typing import Any, Literal, Optional, Tuple
+from typing import Literal, Optional, Tuple
 from uuid import UUID
 
 import structlog
@@ -205,7 +205,7 @@ async def lookup_user(
     try:
         client = await github.get_user_client(session, auth.user)
         github_user = client.rest.users.get_by_username(username=body.username)
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=404, detail="user not found")
 
     return GithubUser(

@@ -16,7 +16,6 @@ from polar.integrations.stripe.service import stripe
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.services import ResourceService
 from polar.models.account import Account
-from polar.models.user import User
 from polar.postgres import AsyncSession
 
 from .schemas import AccountCreate, AccountLink, AccountUpdate

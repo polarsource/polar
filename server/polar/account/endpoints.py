@@ -1,7 +1,6 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import Field
 
 from polar.auth.dependencies import Auth
 from polar.authz.service import AccessType, Authz

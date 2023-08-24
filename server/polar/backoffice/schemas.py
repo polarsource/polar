@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Literal, Self
 from uuid import UUID
 
-from polar.enums import AccountType
 from polar.kit.schemas import Schema
 from polar.models.pledge import Pledge
 from polar.pledge.schemas import Pledge as PledgeSchema

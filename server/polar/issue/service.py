@@ -6,8 +6,6 @@ from uuid import UUID
 import structlog
 from sqlalchemy import (
     ColumnElement,
-    Integer,
-    alias,
     and_,
     asc,
     desc,

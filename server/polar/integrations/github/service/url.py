@@ -27,10 +27,6 @@ class GitHubUrlService:
             self.href_re,
         ]
 
-        for pattern in patterns:
-            for m in pattern.finditer(body):
-                print(m)
-
         dependencies = [
             GitHubIssue(
                 raw=m.group(0),

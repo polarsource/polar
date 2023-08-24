@@ -28,7 +28,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.reward.endpoints import to_resource as reward_to_resource
 from polar.reward.service import reward_service
 from polar.tags.api import Tags
-from polar.types import ListResource
+from polar.types import ListResource, Pagination
 
 from .pledge_service import bo_pledges_service
 from .schemas import (
@@ -84,7 +84,8 @@ async def rewards(
     return ListResource(
         items=[
             r(pledge, reward, transaction) for pledge, reward, transaction in rewards
-        ]
+        ],
+        pagination=Pagination(total_count=len(rewards)),
     )
 
 
@@ -102,7 +103,8 @@ async def rewards_pending(
     return ListResource(
         items=[
             r(pledge, reward, transaction) for pledge, reward, transaction in rewards
-        ]
+        ],
+        pagination=Pagination(total_count=len(rewards)),
     )
 
 

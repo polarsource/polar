@@ -12,7 +12,7 @@ from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.schemas import Pledge
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
-from polar.types import ListResource
+from polar.types import ListResource, Pagination
 from polar.user.schemas import User
 
 from .schemas import Reward, RewardState
@@ -62,13 +62,13 @@ async def search(
         reward_org_id=rewards_to_org,
     )
 
-    return ListResource(
-        items=[
-            to_resource(pledge, reward, transaction)
-            for pledge, reward, transaction in rewards
-            if await authz.can(auth.subject, AccessType.read, reward)
-        ]
-    )
+    items = [
+        to_resource(pledge, reward, transaction)
+        for pledge, reward, transaction in rewards
+        if await authz.can(auth.subject, AccessType.read, reward)
+    ]
+
+    return ListResource(items=items, pagination=Pagination(total_count=len(items)))
 
 
 def to_resource(

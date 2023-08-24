@@ -5,43 +5,36 @@ import PageNotFound from '@/components/Shared/PageNotFound'
 import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { api } from 'polarkit'
-import { Issue, Organization, Platforms, Repository } from 'polarkit/api/client'
+import { Issue } from 'polarkit/api/client'
 import { posthog } from 'posthog-js'
 import { ReactElement, useEffect } from 'react'
 
 type Params = {
   issue?: Issue
-  organization?: Organization
-  repository?: Repository
   query?: {
     as_org?: string
     goto_url?: string
   }
 }
 
-const PledgePage: NextLayoutComponentType = ({
-  organization,
-  repository,
-  issue,
-  query,
-}: Params) => {
+const PledgePage: NextLayoutComponentType = ({ issue, query }: Params) => {
   useEffect(() => {
-    if (organization && repository && issue) {
+    if (issue?.repository.organization && issue.repository && issue) {
       posthog.capture('Pledge page shown', {
-        'Organization ID': organization.id,
-        'Organization Name': organization.name,
-        'Repository ID': repository.id,
-        'Repository Name': repository.name,
+        'Organization ID': issue.repository.organization.id,
+        'Organization Name': issue.repository.organization.name,
+        'Repository ID': issue.repository.id,
+        'Repository Name': issue.repository.name,
         'Issue ID': issue.id,
         'Issue Number': issue.number,
       })
     }
-  }, [organization, repository, issue])
+  }, [issue])
 
   if (!issue) {
     return <PageNotFound />
   }
-  if (!organization || !repository) {
+  if (!issue.repository || !issue.repository.organization) {
     return <></>
   }
 
@@ -52,39 +45,33 @@ const PledgePage: NextLayoutComponentType = ({
         <meta property="og:title" content={`Fund: ${issue.title}`} />
         <meta
           property="og:description"
-          content={`${organization.name} seeks funding for ${issue.title} Polar`}
+          content={`${issue.repository.organization.name} seeks funding for ${issue.title} Polar`}
         />
         <meta name="og:site_name" content="Polar"></meta>
         <meta
           property="og:image"
-          content={`https://polar.sh/og?org=${organization.name}&repo=${repository.name}&number=${issue.number}`}
+          content={`https://polar.sh/og?org=${issue.repository.organization.name}&repo=${issue.repository.name}&number=${issue.number}`}
         />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
 
         <meta
           property="twitter:image"
-          content={`https://polar.sh/og?org=${organization.name}&repo=${repository.name}&number=${issue.number}`}
+          content={`https://polar.sh/og?org=${issue.repository.organization.name}&repo=${issue.repository.name}&number=${issue.number}`}
         />
         <meta name="twitter:card" content="summary_large_image" />
         <meta
           name="twitter:image:alt"
-          content={`${organization.name} seeks funding for ${issue.title} Polar`}
+          content={`${issue.repository.organization.name} seeks funding for ${issue.title} Polar`}
         />
         <meta name="twitter:title" content={`Back ${issue.title}`} />
         <meta
           name="twitter:description"
-          content={`${organization.name} seeks funding for ${issue.title} Polar`}
+          content={`${issue.repository.organization.name} seeks funding for ${issue.title} Polar`}
         ></meta>
       </Head>
 
-      <Pledge
-        organization={organization}
-        repository={repository}
-        issue={issue}
-        asOrg={query?.as_org}
-        gotoURL={query?.goto_url}
-      />
+      <Pledge issue={issue} asOrg={query?.as_org} gotoURL={query?.goto_url} />
     </>
   )
 }
@@ -107,15 +94,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       return { props: {} }
     }
 
-    const res = await api.issues.getOrSyncExternal({
-      platform: Platforms.GITHUB,
-      orgName: context.params.organization,
-      repoName: context.params.repo,
-      number: parseInt(context.params.number),
-      include: 'organization,repository',
+    const res = await api.issues.lookup({
+      externalUrl: `https://github.com/${context.params.organization}/${context.params.repo}/issues/${context.params.number}`,
     })
-    const { organization, repository, issue } = res
-    return { props: { organization, repository, issue, query: context.query } }
+    return { props: { issue: res, query: context.query } }
   } catch (Error) {
     return { props: {} }
   }

@@ -41,7 +41,6 @@ export type { IssuePublicRead } from './models/IssuePublicRead';
 export type { IssueRead } from './models/IssueRead';
 export type { IssueReferenceRead } from './models/IssueReferenceRead';
 export { IssueReferenceType } from './models/IssueReferenceType';
-export type { IssueResources } from './models/IssueResources';
 export { IssueSortBy } from './models/IssueSortBy';
 export { IssueStatus } from './models/IssueStatus';
 export type { IssueUpdateBadgeMessage } from './models/IssueUpdateBadgeMessage';

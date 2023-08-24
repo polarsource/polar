@@ -1,10 +1,9 @@
 import OnboardingInstallChromeExtension from '@/components/Onboarding/OnboardingInstallChromeExtension'
-import { IssueListType, IssueStatus } from 'polarkit/api/client'
+import { IssueListType, IssueStatus, Label } from 'polarkit/api/client'
 import { useDashboard } from 'polarkit/hooks'
 import { Dispatch, SetStateAction, useMemo } from 'react'
 import DashboardLayout from '../Layout/DashboardLayout'
 import OnboardingAddBadge from '../Onboarding/OnboardingAddBadge'
-import { LabelSchema } from './IssueLabel'
 import IssueList, { Header } from './IssueList'
 import { DashboardFilters } from './filters'
 
@@ -43,7 +42,7 @@ const OrganizationIssues = ({
       p.data.some(
         (issue) =>
           issue.attributes.labels &&
-          issue.attributes.labels.some((l: LabelSchema) => l.name === 'polar'),
+          issue.attributes.labels.some((l: Label) => l.name === 'polar'),
       ),
     )
   }, [dashboardQuery])

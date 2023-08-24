@@ -3,6 +3,7 @@
 /* eslint-disable */
 
 import type { Funding } from './Funding';
+import type { Label } from './Label';
 import type { Platforms } from './Platforms';
 import type { Reactions } from './Reactions';
 import type { Repository } from './Repository';
@@ -29,6 +30,7 @@ export type Issue = {
    * Number of Github comments made on the issue
    */
   comments?: number;
+  labels?: Array<Label>;
   /**
    * Github reactions
    */

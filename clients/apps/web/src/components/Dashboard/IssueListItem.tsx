@@ -5,10 +5,12 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit/api'
 import {
+  Issue,
   IssueDashboardRead,
   IssuePublicRead,
   IssueReferenceRead,
   IssueStatus,
+  Label,
   Organization,
   Repository,
   UserRead,
@@ -29,14 +31,14 @@ import SplitRewardModal from '../Finance/SplitRewardModal'
 import { useModal } from '../Modal/useModal'
 import PledgeNow from '../Pledge/PledgeNow'
 import IconCounter from './IconCounter'
-import IssueLabel, { LabelSchema } from './IssueLabel'
+import IssueLabel from './IssueLabel'
 import IssueProgress, { Progress } from './IssueProgress'
 import { AddBadgeButton } from './IssuePromotionModal'
 
 const IssueListItem = (props: {
   org: Organization
   repo: Repository
-  issue: IssueDashboardRead | IssuePublicRead
+  issue: IssueDashboardRead | IssuePublicRead | Issue
   references: IssueReferenceRead[]
   dependents?: IssueReadWithRelations[]
   pledges: PledgeRead[]
@@ -77,20 +79,24 @@ const IssueListItem = (props: {
   const showReactionsThumbs = !!(reactions.plus_one > 0)
 
   const getissueProgress = (): Progress => {
-    switch (props.issue.progress) {
-      case IssueStatus.BUILDING:
-        return 'building'
-      case IssueStatus.PULL_REQUEST:
-        return 'pull_request'
-      case IssueStatus.CLOSED:
-        return 'closed'
-      case IssueStatus.IN_PROGRESS:
-        return 'in_progress'
-      case IssueStatus.TRIAGED:
-        return 'triaged'
-      default:
-        return 'backlog'
+    if ('progress' in props.issue) {
+      switch (props.issue.progress) {
+        case IssueStatus.BUILDING:
+          return 'building'
+        case IssueStatus.PULL_REQUEST:
+          return 'pull_request'
+        case IssueStatus.CLOSED:
+          return 'closed'
+        case IssueStatus.IN_PROGRESS:
+          return 'in_progress'
+        case IssueStatus.TRIAGED:
+          return 'triaged'
+        default:
+          return 'backlog'
+      }
     }
+
+    return 'backlog'
   }
   const issueProgress = getissueProgress()
 
@@ -118,6 +124,7 @@ const IssueListItem = (props: {
   const dependentOrg = props.dependents && props.dependents[0].organization
   const showPledgeAction =
     isDependency &&
+    'progress' in props.issue &&
     props.issue.progress !== IssueStatus.CLOSED &&
     props.showPledgeAction
 
@@ -179,8 +186,8 @@ const IssueListItem = (props: {
                 </a>
 
                 {props.issue.labels &&
-                  props.issue.labels.map((label: LabelSchema) => {
-                    return <IssueLabel label={label} key={label.id} />
+                  props.issue.labels.map((label: Label) => {
+                    return <IssueLabel label={label} key={label.name} />
                   })}
               </div>
               {!isDependency && (
@@ -240,13 +247,15 @@ const IssueListItem = (props: {
 
               {showPledgeAction && <PledgeNow onClick={redirectToPledge} />}
 
-              {props.canAddRemovePolarLabel && 'funding' in props.issue && (
-                <AddBadgeButton
-                  orgName={props.org.name}
-                  repoName={props.repo.name}
-                  issue={props.issue}
-                />
-              )}
+              {props.canAddRemovePolarLabel &&
+                'funding' in props.issue &&
+                'pledge_badge_currently_embedded' in props.issue && (
+                  <AddBadgeButton
+                    orgName={props.org.name}
+                    repoName={props.repo.name}
+                    issue={props.issue}
+                  />
+                )}
 
               {props.right}
             </div>

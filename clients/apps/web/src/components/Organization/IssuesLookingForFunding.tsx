@@ -1,4 +1,4 @@
-import { IssuePublicRead, Organization, Repository } from 'polarkit/api/client'
+import { Issue, Organization, Repository } from 'polarkit/api/client'
 import { PolarTimeAgo } from 'polarkit/components/ui'
 import IconCounter from '../Dashboard/IconCounter'
 import IssueListItem from '../Dashboard/IssueListItem'
@@ -10,14 +10,14 @@ const IssuesLookingForFunding = ({
 }: {
   organization: Organization
   repositories: Repository[]
-  issues: IssuePublicRead[]
+  issues: Issue[]
 }) => {
   const showIssues = []
 
   if (issues) {
     for (const i of issues) {
       const repo = repositories?.find(
-        (r: Repository) => r.id === i.repository_id,
+        (r: Repository) => r.id === i.repository.id,
       )
       if (!repo) {
         continue
@@ -65,7 +65,8 @@ const IssuesLookingForFunding = ({
                 )) ||
                   null}
 
-                {(i.issue.reactions.plus_one &&
+                {(i.issue.reactions &&
+                  i.issue.reactions.plus_one &&
                   i.issue.reactions.plus_one > 0 && (
                     <IconCounter
                       icon="thumbs_up"

@@ -13,7 +13,7 @@ const OnboardingAddBadge = () => {
         <p className="mt-4 flex flex-wrap items-center text-sm text-gray-500">
           <span className="">Or add the </span>
           <div className="px-1">
-            <IssueLabel label={{ id: 'x', name: 'polar', color: '000088' }} />
+            <IssueLabel label={{ name: 'polar', color: '000088' }} />
           </div>
           <span> to the issue on Github.</span>
         </p>

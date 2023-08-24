@@ -44,6 +44,7 @@ export { IssueReferenceType } from './models/IssueReferenceType';
 export { IssueSortBy } from './models/IssueSortBy';
 export { IssueStatus } from './models/IssueStatus';
 export type { IssueUpdateBadgeMessage } from './models/IssueUpdateBadgeMessage';
+export type { Label } from './models/Label';
 export type { ListResource_Account_ } from './models/ListResource_Account_';
 export type { ListResource_BackofficeReward_ } from './models/ListResource_BackofficeReward_';
 export type { ListResource_Issue_ } from './models/ListResource_Issue_';
@@ -70,6 +71,7 @@ export type { OrganizationBadgeSettingsUpdate } from './models/OrganizationBadge
 export type { OrganizationPrivateRead } from './models/OrganizationPrivateRead';
 export type { OrganizationPublicPageRead } from './models/OrganizationPublicPageRead';
 export type { OrganizationSettingsUpdate } from './models/OrganizationSettingsUpdate';
+export type { Pagination } from './models/Pagination';
 export type { PaginationResponse } from './models/PaginationResponse';
 export { Platforms } from './models/Platforms';
 export type { Pledge } from './models/Pledge';

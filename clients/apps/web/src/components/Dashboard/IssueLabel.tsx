@@ -1,10 +1,5 @@
 import { useTheme } from 'next-themes'
-
-export type LabelSchema = {
-  id: string
-  name: string
-  color: string // Hex code without the #
-}
+import { Label } from 'polarkit/api/client'
 
 const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
   var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
@@ -87,7 +82,7 @@ function RGBtoHSV(
   return h && s && v ? { h: h, s: s, v: v } : null
 }
 
-const IssueLabel = (props: { label: LabelSchema }) => {
+const IssueLabel = (props: { label: Label }) => {
   const { name, color } = props.label
 
   const { resolvedTheme } = useTheme()

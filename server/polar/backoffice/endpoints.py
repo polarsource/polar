@@ -184,6 +184,9 @@ async def pledge_mark_disputed(
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> BackofficePledge:
+    if not auth.user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
     await pledge_service.mark_disputed(
         session, pledge_id, by_user_id=auth.user.id, reason="Disputed via Backoffice"
     )
@@ -196,6 +199,9 @@ async def invites_create_code(
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> InviteRead:
+    if not auth.user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
     res = await invite_service.create_code(session, invite, auth.user)
     if not res:
         raise HTTPException(
@@ -224,6 +230,9 @@ async def organization_sync(
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
+    if not auth.user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
     org = await github_organization_service.get_by_name(session, Platforms.github, name)
     if not org:
         raise HTTPException(
@@ -244,6 +253,9 @@ async def manage_badge(
     auth: Auth = Depends(Auth.backoffice_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> BackofficeBadgeResponse:
+    if not auth.user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
     log.info("backoffice.badge", badge=badge.dict(), admin=auth.user.username)
 
     org, repo, issue = await organization_service.get_with_repo_and_issue(

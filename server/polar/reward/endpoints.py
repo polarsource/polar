@@ -73,7 +73,7 @@ async def search(
         items=[
             to_resource(pledge, reward, transaction)
             for pledge, reward, transaction in rewards
-            if await authz.can(auth.user, AccessType.read, reward)
+            if await authz.can(auth.subject, AccessType.read, reward)
         ]
     )
 
@@ -111,20 +111,3 @@ def to_resource(
         state=RewardState.paid if transaction else RewardState.pending,
         paid_at=transaction.created_at if transaction else None,
     )
-
-
-async def user_can_read(session: AsyncSession, auth: Auth, org: Organization) -> bool:
-    if not auth.user:
-        return False
-
-    user_memberships = await user_organization_service.list_by_user_id(
-        session,
-        auth.user.id,
-    )
-
-    ids = [m.organization_id for m in user_memberships if m.is_admin is True]
-
-    if org.id in ids:
-        return True
-
-    return False

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from polar.auth.dependencies import Auth
 from polar.auth.service import AuthService, LoginResponse, LogoutResponse
@@ -13,11 +13,15 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("/me", response_model=UserRead)
 async def get_authenticated(auth: Auth = Depends(Auth.current_user)) -> User:
+    if not auth.user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     return auth.user
 
 
 @router.post("/me/token")
 async def create_token(auth: Auth = Depends(Auth.current_user)) -> LoginResponse:
+    if not auth.user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     return AuthService.generate_login_json_response(user=auth.user)
 
 
@@ -26,6 +30,8 @@ async def accept_terms(
     auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> User:
+    if not auth.user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     auth.user.accepted_terms_of_service = True
     await auth.user.save(session)
     return auth.user
@@ -37,6 +43,8 @@ async def update_preferences(
     auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> User:
+    if not auth.user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     user = await user_service.update_preferences(session, auth.user, settings)
     return user
 

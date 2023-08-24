@@ -199,6 +199,9 @@ async def lookup_user(
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.current_user),
 ) -> GithubUser:
+    if not auth.user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
     try:
         client = await github.get_user_client(session, auth.user)
         github_user = client.rest.users.get_by_username(username=body.username)
@@ -227,6 +230,9 @@ async def install(
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.current_user),
 ) -> Organization | None:
+    if not auth.user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
     with ExecutionContext(is_during_installation=True):
         organization = await github_organization.install(
             session, auth.user, installation_id=installation.external_id

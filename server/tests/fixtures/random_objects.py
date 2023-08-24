@@ -132,6 +132,12 @@ async def create_issue(
 async def user(
     session: AsyncSession,
 ) -> User:
+    return await create_user(session)
+
+
+async def create_user(
+    session: AsyncSession,
+) -> User:
     user = await User.create(
         session=session,
         id=uuid.uuid4(),

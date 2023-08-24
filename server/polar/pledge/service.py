@@ -1038,13 +1038,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
         await pledge_disputed.call(PledgeHook(session, pledge))
         await pledge_updated.call(PledgeHook(session, pledge))
 
-    def user_can_read_pledge(
-        self, user: User, pledge: Pledge, memberships: Sequence[UserOrganization]
-    ) -> bool:
-        return self.user_can_admin_sender_pledge(
-            user, pledge, memberships
-        ) or self.user_can_admin_received_pledge(pledge, memberships)
-
     def user_can_admin_sender_pledge(
         self, user: User, pledge: Pledge, memberships: Sequence[UserOrganization]
     ) -> bool:

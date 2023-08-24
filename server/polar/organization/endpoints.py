@@ -45,6 +45,9 @@ async def list(
     auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[OrganizationSchema]:
+    if not auth.user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
     orgs = await organization.list_all_orgs_by_user_id(session, auth.user.id)
     return ListResource(
         items=[OrganizationSchema.from_db(o) for o in orgs],

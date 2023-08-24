@@ -2,17 +2,13 @@ import asyncio
 from typing import Any, AsyncGenerator
 
 import structlog
-from fastapi import APIRouter, Depends
-from sse_starlette.sse import EventSourceResponse
-from fastapi import Request
-
-
-from polar.enums import Platforms
-from polar.auth.dependencies import Auth
-from polar.redis import get_redis
-from polar.redis import Redis
+from fastapi import APIRouter, Depends, HTTPException, Request
 from redis.exceptions import ConnectionError
+from sse_starlette.sse import EventSourceResponse
 
+from polar.auth.dependencies import Auth
+from polar.enums import Platforms
+from polar.redis import Redis, get_redis
 
 from .service import Receivers
 
@@ -56,6 +52,9 @@ async def user_stream(
     auth: Auth = Depends(Auth.current_user),
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:
+    if not auth.user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
     receivers = Receivers(user_id=auth.user.id)
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))
 
@@ -68,6 +67,9 @@ async def user_org_stream(
     auth: Auth = Depends(Auth.user_with_org_access),
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:
+    if not auth.user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
     receivers = Receivers(user_id=auth.user.id, organization_id=auth.organization.id)
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))
 
@@ -81,6 +83,9 @@ async def user_org_repo_stream(
     auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:
+    if not auth.user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
     receivers = Receivers(
         user_id=auth.user.id,
         organization_id=auth.organization.id,

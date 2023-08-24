@@ -5,12 +5,7 @@ import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { api } from 'polarkit'
-import {
-  IssuePublicRead,
-  Organization,
-  Platforms,
-  Repository,
-} from 'polarkit/api/client'
+import { Issue, Organization, Platforms, Repository } from 'polarkit/api/client'
 import { ReactElement } from 'react'
 
 const Page: NextLayoutComponentType = ({
@@ -21,7 +16,7 @@ const Page: NextLayoutComponentType = ({
 }: {
   organization?: Organization
   repositories?: Repository[]
-  issues?: IssuePublicRead[]
+  issues?: Issue[]
   totalIssueCount?: number
 }) => {
   const router = useRouter()
@@ -106,18 +101,31 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       return { props: {} }
     }
 
-    const res = await api.issues.getPublicIssues({
+    const organization = await api.organizations.lookup({
       platform: Platforms.GITHUB,
-      orgName: context.params.organization,
-      repoName: context.params.repo,
+      organizationName: context.params.organization,
     })
-    const {
-      organization,
-      repositories,
-      issues,
-      total_issue_count: totalIssueCount,
-    } = res
-    return { props: { organization, repositories, issues, totalIssueCount } }
+
+    const repositories = await api.repositories.search({
+      platform: Platforms.GITHUB,
+      organizationName: context.params.organization,
+    })
+
+    const issues = await api.issues.search({
+      platform: Platforms.GITHUB,
+      organizationName: context.params.organization,
+      repositoryName: context.params.repo,
+      haveBadge: true,
+    })
+
+    return {
+      props: {
+        organization,
+        repositories: repositories.items || [],
+        issues: issues.items || [],
+        totalIssueCount: issues.pagination.total_count,
+      },
+    }
   } catch (Error) {
     return { props: {} }
   }

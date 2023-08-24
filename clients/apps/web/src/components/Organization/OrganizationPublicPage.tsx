@@ -1,4 +1,4 @@
-import { IssuePublicRead, Organization, Repository } from 'polarkit/api/client'
+import { Issue, Organization, Repository } from 'polarkit/api/client'
 import { prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
 import Footer from './Footer'
@@ -13,7 +13,7 @@ const OrganizationPublicPage = ({
 }: {
   organization: Organization
   repositories: Repository[]
-  issues?: IssuePublicRead[]
+  issues?: Issue[]
   totalIssueCount: number
 }) => {
   const showMeta =

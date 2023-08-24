@@ -3,6 +3,7 @@ import Image from 'next/image'
 import {
   CurrencyAmount,
   IssueDashboardRead,
+  Label,
   Platforms,
   UserRead,
 } from 'polarkit/api/client'
@@ -21,7 +22,6 @@ import CopyToClipboardInput from '../../../../../packages/polarkit/src/component
 import { ModalHeader, Modal as ModernModal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import BadgeMessageForm from './BadgeMessageForm'
-import { LabelSchema } from './IssueLabel'
 
 const isIssueBadged = (issue: IssueDashboardRead): boolean => {
   if (issue.pledge_badge_currently_embedded) {
@@ -30,9 +30,7 @@ const isIssueBadged = (issue: IssueDashboardRead): boolean => {
 
   const hasPolarLabel =
     issue.labels &&
-    (issue.labels as Array<LabelSchema>).find(
-      (l) => l.name.toLowerCase() === 'polar',
-    )
+    (issue.labels as Array<Label>).find((l) => l.name.toLowerCase() === 'polar')
 
   return hasPolarLabel
 }

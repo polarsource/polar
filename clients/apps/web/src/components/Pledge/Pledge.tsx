@@ -1,4 +1,4 @@
-import { Issue, Organization, Repository } from 'polarkit/api/client'
+import { Issue } from 'polarkit/api/client'
 import { IssueCard } from 'polarkit/components/pledge'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
 import { useState } from 'react'
@@ -7,15 +7,11 @@ import HowItWorks from './HowItWorks'
 import PledgeForm from './PledgeForm'
 
 const Pledge = ({
-  organization,
-  repository,
   issue,
   asOrg,
   gotoURL,
 }: {
   issue: Issue
-  organization: Organization
-  repository: Repository
   asOrg?: string
   gotoURL?: string
 }) => {
@@ -24,22 +20,29 @@ const Pledge = ({
     setAmount(amount)
   }
 
+  if (!issue.repository.organization) {
+    return <></>
+  }
+
   return (
     <>
       <div className="flex flex-col items-center ">
         <img
-          src={organization.avatar_url}
+          src={issue.repository.organization.avatar_url}
           className="h-16 w-16 rounded-full border-2 border-white shadow"
         />
         <div className="text-center text-lg font-medium text-gray-900 dark:text-gray-300">
-          {organization.pretty_name || organization.name}
+          {issue.repository.organization.pretty_name ||
+            issue.repository.organization.name}
         </div>
         <div className="text-center text-gray-500 dark:text-gray-400">
-          {repository.description}
+          {issue.repository.description}
         </div>
         <h1 className="pt-4 text-center text-3xl text-gray-900 dark:text-gray-300 md:text-4xl">
-          Fund {organization.pretty_name || organization.name}&apos;s work on
-          this issue
+          Fund{' '}
+          {issue.repository.organization.pretty_name ||
+            issue.repository.organization.name}
+          &apos;s work on this issue
         </h1>
       </div>
 
@@ -52,16 +55,12 @@ const Pledge = ({
             <IssueCard
               issue={issue}
               className="bg-grid-pattern dark:bg-grid-pattern-dark border-blue-100 bg-blue-50 bg-[12px_12px] dark:border-blue-500/20 dark:bg-blue-500/20"
-              organization={organization}
-              repository={repository}
               currentPledgeAmount={amount}
             />
           </div>
           <div className="text-left md:w-1/2">
             <div className="py-5 px-3 md:px-6 ">
               <PledgeForm
-                organization={organization}
-                repository={repository}
                 issue={issue}
                 asOrg={asOrg}
                 gotoURL={gotoURL}

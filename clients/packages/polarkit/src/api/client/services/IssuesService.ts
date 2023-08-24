@@ -5,7 +5,6 @@ import type { ConfirmIssue } from '../models/ConfirmIssue';
 import type { Issue } from '../models/Issue';
 import type { IssueRead } from '../models/IssueRead';
 import type { IssueReferenceRead } from '../models/IssueReferenceRead';
-import type { IssueResources } from '../models/IssueResources';
 import type { IssueSortBy } from '../models/IssueSortBy';
 import type { IssueUpdateBadgeMessage } from '../models/IssueUpdateBadgeMessage';
 import type { ListResource_Issue_ } from '../models/ListResource_Issue_';
@@ -64,6 +63,31 @@ export class IssuesService {
       },
       errors: {
         404: `Not Found`,
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Lookup
+   * @returns Issue Successful Response
+   * @throws ApiError
+   */
+  public lookup({
+    externalUrl,
+  }: {
+    /**
+     * URL to issue on external source
+     */
+    externalUrl?: string,
+  }): CancelablePromise<Issue> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/issues/lookup',
+      query: {
+        'external_url': externalUrl,
+      },
+      errors: {
         422: `Validation Error`,
       },
     });
@@ -140,42 +164,6 @@ export class IssuesService {
       },
       body: requestBody,
       mediaType: 'application/json',
-      errors: {
-        422: `Validation Error`,
-      },
-    });
-  }
-
-  /**
-   * Get Or Sync External
-   * @returns IssueResources Successful Response
-   * @throws ApiError
-   */
-  public getOrSyncExternal({
-    platform,
-    orgName,
-    repoName,
-    number,
-    include = 'organization,repository',
-  }: {
-    platform: Platforms,
-    orgName: string,
-    repoName: string,
-    number: number,
-    include?: string,
-  }): CancelablePromise<IssueResources> {
-    return this.httpRequest.request({
-      method: 'GET',
-      url: '/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}',
-      path: {
-        'platform': platform,
-        'org_name': orgName,
-        'repo_name': repoName,
-        'number': number,
-      },
-      query: {
-        'include': include,
-      },
       errors: {
         422: `Validation Error`,
       },

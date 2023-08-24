@@ -2,14 +2,12 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import PublicLayout from '@/components/Layout/PublicLayout'
 import Pledge from '../components/Pledge/Pledge'
-import { issue, org, repo } from './testdata'
+import { issue } from './testdata'
 
 const meta: Meta<typeof Pledge> = {
   title: 'Pages/Pledge',
   component: Pledge,
   args: {
-    organization: org,
-    repository: repo,
     issue: issue,
   },
 }
@@ -36,13 +34,16 @@ export const NoNameDescription: Story = {
   ...Default,
   args: {
     ...Default.args,
-    organization: {
-      ...org,
-      pretty_name: undefined,
-    },
-    repository: {
-      ...repo,
-      description: undefined,
+    issue: {
+      ...issue,
+      repository: {
+        ...issue.repository,
+        description: undefined,
+        organization: {
+          ...issue.repository.organization,
+          pretty_name: undefined,
+        },
+      },
     },
   },
 }

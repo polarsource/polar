@@ -2,23 +2,27 @@ import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
 import { PolarTimeAgo } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useMemo } from 'react'
-import { Issue, Organization, Repository } from '../../api/client'
+import { Issue } from '../../api/client'
 import { githubIssueUrl } from '../../github'
 
 const IssueCard = ({
   issue,
   className,
-  organization,
-  repository,
   currentPledgeAmount,
 }: {
   issue: Issue
   className: string
-  organization: Organization
-  repository: Repository
   currentPledgeAmount: number
 }) => {
-  const url = githubIssueUrl(organization.name, repository.name, issue.number)
+  if (!issue.repository.organization) {
+    return <></>
+  }
+
+  const url = githubIssueUrl(
+    issue.repository.organization.name,
+    issue.repository.name,
+    issue.number,
+  )
 
   const fundingProgress =
     'funding' in issue && 'repository' in issue ? (

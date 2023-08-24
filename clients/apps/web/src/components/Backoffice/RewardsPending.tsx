@@ -71,7 +71,7 @@ const Pledges = () => {
               className="text-blue-600"
               href={`/backoffice/issue/${i[0][0].pledge.issue.id}`}
             >
-              {i[0][0].pledge.issue.repository.organization?.name}/
+              {i[0][0].pledge.issue.repository.organization.name}/
               {i[0][0].pledge.issue.repository.name}#
               {i[0][0].pledge.issue.number}
             </Link>
@@ -80,7 +80,7 @@ const Pledges = () => {
 
             <ThinButton
               color="gray"
-              href={`https://github.com/${i[0][0].pledge.issue.repository.organization?.name}/${i[0][0].pledge.issue.repository.name}/issues/${i[0][0].pledge.issue.number}`}
+              href={`https://github.com/${i[0][0].pledge.issue.repository.organization.name}/${i[0][0].pledge.issue.repository.name}/issues/${i[0][0].pledge.issue.number}`}
             >
               <span>GitHub</span>
               <ArrowTopRightOnSquareIcon />

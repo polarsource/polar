@@ -15,6 +15,6 @@ export type Repository = {
   stars?: number;
   license?: string;
   homepage?: string;
-  organization?: Organization;
+  organization: Organization;
 };
 

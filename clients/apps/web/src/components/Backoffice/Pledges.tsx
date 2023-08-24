@@ -34,7 +34,7 @@ const Pledges = () => {
               className="text-blue-600"
               href={`/backoffice/issue/${i[0].issue.id}`}
             >
-              {i[0].issue.repository.organization?.name}/
+              {i[0].issue.repository.organization.name}/
               {i[0].issue.repository.name}#{i[0].issue.number}
             </Link>
 

@@ -19,7 +19,7 @@ type Params = {
 
 const PledgePage: NextLayoutComponentType = ({ issue, query }: Params) => {
   useEffect(() => {
-    if (issue?.repository.organization && issue.repository && issue) {
+    if (issue) {
       posthog.capture('Pledge page shown', {
         'Organization ID': issue.repository.organization.id,
         'Organization Name': issue.repository.organization.name,
@@ -33,9 +33,6 @@ const PledgePage: NextLayoutComponentType = ({ issue, query }: Params) => {
 
   if (!issue) {
     return <PageNotFound />
-  }
-  if (!issue.repository || !issue.repository.organization) {
-    return <></>
   }
 
   return (

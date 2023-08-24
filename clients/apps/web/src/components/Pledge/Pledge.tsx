@@ -20,10 +20,6 @@ const Pledge = ({
     setAmount(amount)
   }
 
-  if (!issue.repository.organization) {
-    return <></>
-  }
-
   return (
     <>
       <div className="flex flex-col items-center ">

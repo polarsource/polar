@@ -72,7 +72,7 @@ const PledgeForm = ({
 }) => {
   const [pledge, setPledge] = useState<PledgeMutationResponse | null>(null)
   const [amount, setAmount] = useState<number>(
-    issue.repository?.organization?.pledge_minimum_amount || 20,
+    issue.repository.organization.pledge_minimum_amount,
   )
   const [email, setEmail] = useState('')
   const [errorMessage, setErrorMessage] = useState<string>('')
@@ -87,10 +87,6 @@ const PledgeForm = ({
   const hasValidDetails = () => {
     let isValidEmail = validateEmail(email)
     if (!isValidEmail) {
-      return false
-    }
-
-    if (!issue.repository.organization) {
       return false
     }
 
@@ -122,13 +118,9 @@ const PledgeForm = ({
   }
 
   const createPledge = async (pledgeSync: PledgeSync) => {
-    if (!issue.repository.organization) {
-      return
-    }
-
     return await api.pledges.createPledge({
       platform: issue.repository.organization.platform,
-      orgName: issue.repository.organization?.name,
+      orgName: issue.repository.organization.name,
       repoName: issue.repository.name,
       number: issue.number,
       requestBody: {
@@ -143,10 +135,6 @@ const PledgeForm = ({
   const updatePledge = async (pledgeSync: PledgeSync) => {
     if (!pledge) {
       throw new Error('no pledge to update')
-    }
-
-    if (!issue.repository.organization) {
-      return
     }
 
     return await api.pledges.updatePledge({
@@ -164,10 +152,6 @@ const PledgeForm = ({
   }
 
   const shouldSynchronizePledge = (pledgeSync: PledgeSync) => {
-    if (!issue.repository.organization) {
-      return false
-    }
-
     if (
       pledgeSync.amount < issue.repository.organization.pledge_minimum_amount
     ) {
@@ -241,10 +225,6 @@ const PledgeForm = ({
     }
     const amountInCents = newAmount * 100
 
-    if (!issue.repository.organization) {
-      return
-    }
-
     if (amount === issue.repository.organization.pledge_minimum_amount) {
       posthog.capture('Pledge amount changed', {
         Amount: newAmount,
@@ -275,10 +255,6 @@ const PledgeForm = ({
 
   const onEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
     const newEmail = event.target.value
-
-    if (!issue.repository.organization) {
-      return
-    }
 
     if (email === '') {
       posthog.capture('Pledge email entered', {
@@ -313,10 +289,6 @@ const PledgeForm = ({
   }
 
   const showStripeForm = pledge
-
-  if (!issue.repository.organization) {
-    return <></>
-  }
 
   const organization = issue.repository.organization
   const repository = issue.repository

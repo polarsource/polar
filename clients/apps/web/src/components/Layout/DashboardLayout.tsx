@@ -29,7 +29,7 @@ const DashboardLayout = (props: {
             <div
               className={classNames(
                 props.showSidebar ? 'left-[300px]' : 'left-0',
-                'fixed top-16 right-0 z-10',
+                'sticky top-16 right-0 z-10',
               )}
             >
               {props.header}
@@ -37,7 +37,6 @@ const DashboardLayout = (props: {
           )}
           <div
             className={classNames(
-              props.header ? 'pt-64 lg:pt-36' : 'pt-24',
               'relative mx-auto max-w-screen-2xl px-4 pt-24 pb-6 sm:px-6 md:px-8',
             )}
           >
@@ -64,13 +63,11 @@ export const RepoPickerHeader = (props: {
         className="flex flex-col justify-between space-y-2 border-b bg-gray-100/50 bg-white p-2 !pr-2 backdrop-blur-none dark:bg-gray-700/50 lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0 lg:bg-transparent lg:p-0 lg:backdrop-blur"
         onSubmit={onSubmit}
       >
-        {/* <div className="flex h-full w-full flex-col items-stretch space-y-2 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-4"> */}
         <MaintainerRepoSelection
           current={props.currentRepository}
           repositories={props.repositories}
         />
         {props.children}
-        {/* </div> */}
       </form>
     </>
   )

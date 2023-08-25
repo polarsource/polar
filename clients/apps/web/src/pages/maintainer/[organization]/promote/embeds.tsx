@@ -1,7 +1,9 @@
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import { FundOurBacklog } from '@/components/Embed/FundOurBacklog'
 import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
-import DashboardLayout from '@/components/Layout/DashboardLayout'
+import DashboardLayout, {
+  RepoPickerHeader,
+} from '@/components/Layout/DashboardLayout'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
@@ -10,20 +12,37 @@ import {
   LabeledRadioButton,
   ShadowBox,
 } from 'polarkit/components/ui'
-import { useSearchIssues } from 'polarkit/hooks'
+import { useListRepositories, useSearchIssues } from 'polarkit/hooks'
 import { ReactElement, useState } from 'react'
 
 const Page: NextLayoutComponentType = () => {
-  const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
+  const { org, isLoaded, repo: currentRepo } = useCurrentOrgAndRepoFromURL()
 
-  const fundingYAML = `custom: ["https://polar.sh/${org?.name}"]`
+  const orgSlashRepo = currentRepo
+    ? `${org?.name}/${currentRepo.name}`
+    : `${org?.name}`
+
+  const orgRepoParams = currentRepo
+    ? `org=${org?.name}&repo=${currentRepo.name}`
+    : `org=${org?.name}`
+
+  const fundingYAML = `custom: ["https://polar.sh/${orgSlashRepo}"]`
 
   const issues = useSearchIssues({
     organizationName: org?.name,
     haveBadge: true,
+    repositoryName: currentRepo?.name,
   })
 
   const [currentEmbedTab, setCurrentEmbedTab] = useState('Issues')
+
+  // Get all repositories
+  const listRepositoriesQuery = useListRepositories()
+  const allRepositories = listRepositoriesQuery?.data?.items
+
+  // Filter repos by current org & normalize for our select
+  const allOrgRepositories =
+    allRepositories?.filter((r) => r?.organization?.id === org?.id) || []
 
   if (!org && isLoaded) {
     return (
@@ -51,8 +70,8 @@ const Page: NextLayoutComponentType = () => {
   }
 
   const embedCodes: Record<string, string> = {
-    Issues: `<a href="https://polar.sh/${org?.name}"><img src="https://polar.sh/embed/fund-our-backlog.svg?org=${org?.name}" /></a>`,
-    Shield: `<a href="https://polar.sh/${org?.name}"><img src="https://polar.sh/embed/seeks-funding-shield.svg?org=${org?.name}" /></a>`,
+    Issues: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/fund-our-backlog.svg?${orgRepoParams}" /></a>`,
+    Shield: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/seeks-funding-shield.svg?${orgRepoParams}" /></a>`,
   }
 
   return (
@@ -61,7 +80,15 @@ const Page: NextLayoutComponentType = () => {
         <title>Polar | Promote {org?.name} repository</title>
       </Head>
 
-      <DashboardLayout showSidebar={true}>
+      <DashboardLayout
+        showSidebar={true}
+        header={
+          <RepoPickerHeader
+            currentRepository={currentRepo}
+            repositories={allOrgRepositories}
+          />
+        }
+      >
         <div className="space-y-4">
           <h2 className="text-lg text-gray-900 dark:text-gray-400">
             Github Sponsors

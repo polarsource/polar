@@ -1,5 +1,7 @@
+import { Repository } from 'polarkit/api/client'
 import { classNames } from 'polarkit/utils'
 import SidebarNavigation from '../Dashboard/MaintainerNavigation'
+import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import Topbar from '../Shared/Topbar'
 
 const DashboardLayout = (props: {
@@ -48,3 +50,28 @@ const DashboardLayout = (props: {
 }
 
 export default DashboardLayout
+
+export const RepoPickerHeader = (props: {
+  currentRepository?: Repository
+  repositories: Repository[]
+  children?: React.ReactElement
+}) => {
+  const onSubmit = () => {}
+
+  return (
+    <>
+      <form
+        className="flex flex-col justify-between space-y-2 border-b bg-gray-100/50 bg-white p-2 !pr-2 backdrop-blur-none dark:bg-gray-700/50 lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0 lg:bg-transparent lg:p-0 lg:backdrop-blur"
+        onSubmit={onSubmit}
+      >
+        {/* <div className="flex h-full w-full flex-col items-stretch space-y-2 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-4"> */}
+        <MaintainerRepoSelection
+          current={props.currentRepository}
+          repositories={props.repositories}
+        />
+        {props.children}
+        {/* </div> */}
+      </form>
+    </>
+  )
+}

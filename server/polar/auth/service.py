@@ -1,11 +1,13 @@
-import structlog
-from fastapi import Response, Request
-from pydantic import validator
 from datetime import datetime
+from uuid import UUID
 
+import structlog
+from fastapi import Request, Response
+from pydantic import validator
+
+from polar.config import settings
 from polar.kit import jwt
 from polar.kit.schemas import Schema
-from polar.config import settings
 from polar.models import User
 from polar.postgres import AsyncSession
 from polar.user.service import user as user_service
@@ -62,6 +64,16 @@ class AuthService:
                 expires_at=expires_at,
             ),
             expires_at,
+        )
+
+    @classmethod
+    def generate_pat_token(cls, pat_id: UUID, expires_at: datetime) -> str:
+        return jwt.encode(
+            data={
+                "pat_id": str(pat_id),
+            },
+            secret=settings.SECRET,
+            expires_at=expires_at,
         )
 
     @classmethod

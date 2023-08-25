@@ -13,7 +13,7 @@ class PersonalAccessToken(RecordModel):
     __tablename__ = "personal_access_tokens"
 
     user_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("users.id"), unique=True, nullable=True
+        PostgresUUID, ForeignKey("users.id"), nullable=False
     )
 
     user: Mapped[User] = relationship("User", foreign_keys=[user_id])

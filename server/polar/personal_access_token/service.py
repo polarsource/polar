@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Sequence
 from uuid import UUID
 
@@ -35,6 +36,7 @@ class PersonalAccessTokenService:
             session=session,
             user_id=user_id,
             comment=comment,
+            expires_at=utc_now() + timedelta(days=356),
         )
         return pat
 
@@ -46,6 +48,7 @@ class PersonalAccessTokenService:
         )
 
         await session.execute(stmt)
+        await session.commit()
 
 
 personal_access_token_service = PersonalAccessTokenService()

@@ -22,7 +22,6 @@ import React, {
 import yayson from 'yayson'
 import Spinner from '../Shared/Spinner'
 import IssueListItem from './IssueListItem'
-import MaintainerRepoSelection from './MaintainerRepoSelection'
 
 const IssueList = (props: {
   dashboard?: InfiniteData<IssueListResponse>
@@ -245,72 +244,64 @@ export const Header = (props: {
   const canFilterByBadged = props.filters.tab === IssueListType.ISSUES
 
   return (
-    <>
-      <form
-        className="flex flex-col justify-between space-y-2 border-b bg-gray-100/50 bg-white p-2 !pr-2 backdrop-blur-none dark:bg-gray-700/50	lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0 lg:bg-transparent lg:p-0 lg:backdrop-blur"
-        onSubmit={onSubmit}
-      >
-        <div className="flex h-full w-full flex-col items-stretch space-y-2 lg:flex-row lg:items-center lg:space-x-4">
-          <MaintainerRepoSelection />
-          <div className="relative w-full py-2 lg:max-w-[500px]">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 ">
-              {props.spinner && <Spinner />}
-              {!props.spinner && (
-                <MagnifyingGlassIcon
-                  className="h-5 w-5 text-gray-500"
-                  aria-hidden="true"
-                />
-              )}
-            </div>
-            <input
-              type="text"
-              name="query"
-              id="query"
-              className="block w-full rounded-md border-0 bg-transparent py-2 pl-10 text-gray-900  placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700 sm:text-sm sm:leading-6"
-              placeholder="Search issues"
-              onChange={onQueryChange}
-              value={props.filters.q || ''}
+    <div className="justify-normal flex w-full flex-col items-center lg:flex-row lg:justify-between	">
+      <div className="relative w-full py-2 lg:max-w-[500px]">
+        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 ">
+          {props.spinner && <Spinner />}
+          {!props.spinner && (
+            <MagnifyingGlassIcon
+              className="h-5 w-5 text-gray-500"
+              aria-hidden="true"
             />
-          </div>
-        </div>
-
-        <div className="flex flex-shrink-0 space-x-4">
-          {canFilterByBadged && (
-            <div className="inline-flex flex-shrink-0 items-center space-x-2 rounded-lg border bg-white py-2 pl-3 text-sm text-gray-500 shadow-sm  dark:bg-gray-900 dark:text-gray-400">
-              <label htmlFor="only-badged">Only badged</label>
-              <Checkbox
-                id="only-badged"
-                value={props.filters.onlyBadged}
-                onChange={onOnlyBadgedChanged}
-              >
-                <></>
-              </Checkbox>
-            </div>
           )}
-
-          <div className="flex-shrink-0 rounded-lg border bg-white py-2 px-3 shadow-sm dark:bg-gray-900">
-            <label
-              htmlFor="sort-by"
-              className="mr-2 text-sm text-gray-500 dark:text-gray-400"
-            >
-              Sort by
-            </label>
-            <select
-              id="sort-by"
-              className="m-0 w-48 border-0 bg-transparent bg-right p-0 text-sm font-medium ring-0 focus:border-0 focus:ring-0 dark:bg-gray-900 dark:text-gray-300"
-              onChange={onSelect}
-              style={{ width: `${width}px` }}
-              value={props.filters?.sort}
-            >
-              {options.map((v) => (
-                <option key={v} value={v}>
-                  {getTitle(v)}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
-      </form>
-    </>
+        <input
+          type="text"
+          name="query"
+          id="query"
+          className="block w-full rounded-md border-0 bg-transparent py-2 pl-10 text-gray-900  placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700 sm:text-sm sm:leading-6"
+          placeholder="Search issues"
+          onChange={onQueryChange}
+          value={props.filters.q || ''}
+        />
+      </div>
+
+      <div className="flex w-full flex-shrink-0 space-x-4 space-y-2 lg:w-fit lg:space-y-0">
+        {canFilterByBadged && (
+          <div className="inline-flex flex-shrink-0 items-center space-x-2 rounded-lg border bg-white py-2 pl-3 text-sm text-gray-500 shadow-sm  dark:bg-gray-900 dark:text-gray-400">
+            <label htmlFor="only-badged">Only badged</label>
+            <Checkbox
+              id="only-badged"
+              value={props.filters.onlyBadged}
+              onChange={onOnlyBadgedChanged}
+            >
+              <></>
+            </Checkbox>
+          </div>
+        )}
+
+        <div className="flex-shrink-0 rounded-lg border bg-white py-2 px-3 shadow-sm dark:bg-gray-900">
+          <label
+            htmlFor="sort-by"
+            className="mr-2 text-sm text-gray-500 dark:text-gray-400"
+          >
+            Sort by
+          </label>
+          <select
+            id="sort-by"
+            className="m-0 w-48 border-0 bg-transparent bg-right p-0 text-sm font-medium ring-0 focus:border-0 focus:ring-0 dark:bg-gray-900 dark:text-gray-300"
+            onChange={onSelect}
+            style={{ width: `${width}px` }}
+            value={props.filters?.sort}
+          >
+            {options.map((v) => (
+              <option key={v} value={v}>
+                {getTitle(v)}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </div>
   )
 }

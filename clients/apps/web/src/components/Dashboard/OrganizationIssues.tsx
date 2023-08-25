@@ -1,8 +1,9 @@
 import OnboardingInstallChromeExtension from '@/components/Onboarding/OnboardingInstallChromeExtension'
+import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { IssueListType, IssueStatus, Label } from 'polarkit/api/client'
-import { useDashboard } from 'polarkit/hooks'
+import { useDashboard, useListRepositories } from 'polarkit/hooks'
 import { Dispatch, SetStateAction, useMemo } from 'react'
-import DashboardLayout from '../Layout/DashboardLayout'
+import DashboardLayout, { RepoPickerHeader } from '../Layout/DashboardLayout'
 import OnboardingAddBadge from '../Onboarding/OnboardingAddBadge'
 import IssueList, { Header } from './IssueList'
 import { DashboardFilters } from './filters'
@@ -73,16 +74,36 @@ const OrganizationIssues = ({
     isDefaultFilters,
   ])
 
+  // Get current org & repo from URL
+  const { org: currentOrg, repo: currentRepo } = useCurrentOrgAndRepoFromURL()
+
+  // Get all repositories
+  const listRepositoriesQuery = useListRepositories()
+  const allRepositories = listRepositoriesQuery?.data?.items
+  if (!currentOrg || !allRepositories) {
+    return <></>
+  }
+
+  // Filter repos by current org & normalize for our select
+  const allOrgRepositories = allRepositories.filter(
+    (r) => r?.organization?.id === currentOrg.id,
+  )
+
   return (
     <DashboardLayout
       showSidebar={true}
       header={
-        <Header
-          totalCount={totalCount}
-          filters={filters}
-          onSetFilters={onSetFilters}
-          spinner={dashboardQuery.isInitialLoading}
-        />
+        <RepoPickerHeader
+          currentRepository={currentRepo}
+          repositories={allOrgRepositories}
+        >
+          <Header
+            totalCount={totalCount}
+            filters={filters}
+            onSetFilters={onSetFilters}
+            spinner={dashboardQuery.isInitialLoading}
+          />
+        </RepoPickerHeader>
       }
     >
       <div className="space-y-4">

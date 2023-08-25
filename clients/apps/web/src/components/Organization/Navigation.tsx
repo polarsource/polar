@@ -21,7 +21,6 @@ const Navigation = ({
       <RepoSelection
         selectedClassNames="rounded-lg"
         openClassNames="top-0"
-        organization={organization}
         repositories={repositories}
         value={repository}
         onSelectRepo={(repo) => {

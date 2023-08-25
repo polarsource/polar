@@ -1,10 +1,14 @@
-from datetime import datetime
 import random
 import uuid
+from datetime import datetime
 
 import pytest_asyncio
-from polar.enums import Platforms
 
+from polar.enums import Platforms
+from polar.integrations.github.service import (
+    github_organization,
+    github_repository,
+)
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
@@ -14,11 +18,6 @@ from polar.models.user import User
 from polar.organization.schemas import OrganizationCreate
 from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession
-
-from polar.integrations.github.service import (
-    github_organization,
-    github_repository,
-)
 from polar.repository.schemas import RepositoryCreate
 
 
@@ -112,7 +111,6 @@ async def predictable_user(
         id=uuid.uuid4(),
         username="foobar",
         email="test@example.com",
-        invite_only_approved=True,
     )
 
     await session.commit()

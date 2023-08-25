@@ -144,7 +144,6 @@ async def create_user(
         username=rstr("testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
-        invite_only_approved=True,
     )
 
     await session.commit()
@@ -161,7 +160,6 @@ async def user_second(
         username=rstr("testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
-        invite_only_approved=True,
     )
 
     await session.commit()

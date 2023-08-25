@@ -1,10 +1,15 @@
-from datetime import datetime
 import json
 import os
 import time
+from datetime import datetime
 from typing import Any
-from arq import ArqRedis
+
 import pytest
+from arq import ArqRedis
+from pytest_mock import MockerFixture
+
+from polar.integrations.github import tasks
+from polar.integrations.github.tasks import webhook as webhook_tasks
 from polar.models.organization import Organization
 from polar.models.user import OAuthAccount, User
 from polar.models.user_organization import UserOrganization
@@ -12,11 +17,7 @@ from polar.notifications.service import (
     notifications,
 )
 from polar.postgres import AsyncSession, AsyncSessionLocal
-from pytest_mock import MockerFixture
-from polar.integrations.github.tasks import webhook as webhook_tasks
-from polar.integrations.github import tasks
 from polar.worker import JobContext, PolarWorkerContext
-
 
 FAKE_CTX: JobContext = {
     "redis": ArqRedis(),
@@ -77,7 +78,6 @@ async def test_installation_no_notifications(
             session=session,
             username=cassette["sender"]["login"],
             email="test_installation_no_notifications@test.polar.se",
-            invite_only_approved=True,
             accepted_terms_of_service=True,
         )
 

@@ -56,7 +56,6 @@ export const user: UserRead = {
   username: 'zegl',
   email: 'test@example.com',
   avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
-  invite_only_approved: true,
   accepted_terms_of_service: true,
   id: 'xxxabc-123',
   profile: {},

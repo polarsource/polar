@@ -296,11 +296,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
         ret = PledgeMutationResponse.from_orm(db_pledge)
         ret.client_secret = payment_intent.client_secret
 
-        # User pledged, allow into the beta!
-        if not user.invite_only_approved:
-            user.invite_only_approved = True
-            await user.save(session)
-
         return ret
 
     async def create_pledge_as_org(
@@ -451,10 +446,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         pledge.by_user_id = backer.id
         await pledge.save(session)
-
-        # Approve the user for the alpha!
-        backer.invite_only_approved = True
-        await backer.save(session)
 
     async def transition_by_issue_id(
         self,

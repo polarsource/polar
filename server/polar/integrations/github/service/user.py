@@ -96,7 +96,6 @@ class GithubUserService(UserService):
                     account_email=github_user.email,
                 )
             ],
-            invite_only_approved=False,
         )
         session.add(new_user)
         await session.commit()

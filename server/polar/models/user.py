@@ -51,7 +51,9 @@ class User(RecordModel):
         OAuthAccount, lazy="joined", back_populates="user"
     )
 
-    invite_only_approved: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    invite_only_approved: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
 
     accepted_terms_of_service: Mapped[bool] = mapped_column(
         Boolean,

@@ -5,8 +5,6 @@ import type { BackofficeBadge } from '../models/BackofficeBadge';
 import type { BackofficeBadgeResponse } from '../models/BackofficeBadgeResponse';
 import type { BackofficePledge } from '../models/BackofficePledge';
 import type { BackofficeReward } from '../models/BackofficeReward';
-import type { InviteCreate } from '../models/InviteCreate';
-import type { InviteRead } from '../models/InviteRead';
 import type { Issue } from '../models/Issue';
 import type { ListResource_BackofficeReward_ } from '../models/ListResource_BackofficeReward_';
 import type { OrganizationPrivateRead } from '../models/OrganizationPrivateRead';
@@ -149,39 +147,6 @@ export class BackofficeService {
       errors: {
         422: `Validation Error`,
       },
-    });
-  }
-
-  /**
-   * Invites Create Code
-   * @returns InviteRead Successful Response
-   * @throws ApiError
-   */
-  public invitesCreateCode({
-    requestBody,
-  }: {
-    requestBody: InviteCreate,
-  }): CancelablePromise<InviteRead> {
-    return this.httpRequest.request({
-      method: 'POST',
-      url: '/api/v1/backoffice/invites/create_code',
-      body: requestBody,
-      mediaType: 'application/json',
-      errors: {
-        422: `Validation Error`,
-      },
-    });
-  }
-
-  /**
-   * Invites List
-   * @returns InviteRead Successful Response
-   * @throws ApiError
-   */
-  public invitesList(): CancelablePromise<Array<InviteRead>> {
-    return this.httpRequest.request({
-      method: 'POST',
-      url: '/api/v1/backoffice/invites/list',
     });
   }
 

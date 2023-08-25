@@ -34,7 +34,6 @@ class UserBase(Schema):
 
 class UserRead(UserBase):
     id: uuid.UUID
-    invite_only_approved: bool
     accepted_terms_of_service: bool
     email_newsletters_and_changelogs: bool
     email_promotions_and_events: bool

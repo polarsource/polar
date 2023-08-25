@@ -13,7 +13,6 @@ export default function Page() {
       <Link href="/backoffice/pledges">Pledges</Link>
       <Link href="/backoffice/rewards_pending">Rewards Pending</Link>
       <Link href="/backoffice/badge">Issue Badge Admin</Link>
-      <Link href="/backoffice/invites">Invites</Link>
     </div>
   )
 }

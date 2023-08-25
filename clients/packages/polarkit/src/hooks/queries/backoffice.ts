@@ -85,25 +85,6 @@ export const useBackofficePledgeMarkDisputed = () =>
     },
   })
 
-export const useBackofficeListInvites = () =>
-  useQuery(['useBackofficeListInvites'], () => api.backoffice.invitesList(), {
-    retry: defaultRetry,
-  })
-
-export const useBackofficeCreateInviteCode = () =>
-  useMutation({
-    mutationFn: (note?: string | undefined) => {
-      return api.backoffice.invitesCreateCode({
-        requestBody: {
-          note,
-        },
-      })
-    },
-    onSuccess: (result, variables, ctx) => {
-      queryClient.invalidateQueries(['useBackofficeListInvites'])
-    },
-  })
-
 export const useBackofficeBadgeAction = () =>
   useMutation({
     mutationFn: (badgeAction: BackofficeBadge) => {

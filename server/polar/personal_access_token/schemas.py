@@ -21,6 +21,7 @@ class PersonalAccessToken(Schema):
             id=p.id,
             created_at=p.created_at,
             last_used_at=p.last_used_at,
+            expires_at=p.expires_at,
             comment=p.comment,
         )
 

@@ -1,5 +1,3 @@
-from datetime import datetime
-from typing import List
 from uuid import UUID
 
 import structlog
@@ -7,11 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
 from polar.auth.service import AuthService
-from polar.enums import Platforms
-from polar.integrations.github.badge import GithubBadge
 from polar.postgres import AsyncSession, get_db_session
-from polar.repository.schemas import RepositoryLegacyRead
-from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 from polar.types import ListResource, Pagination
 

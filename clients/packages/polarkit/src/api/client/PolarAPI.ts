@@ -11,7 +11,6 @@ import { DashboardService } from './services/DashboardService';
 import { ExtensionService } from './services/ExtensionService';
 import { HealthService } from './services/HealthService';
 import { IntegrationsService } from './services/IntegrationsService';
-import { InviteService } from './services/InviteService';
 import { IssuesService } from './services/IssuesService';
 import { NotificationsService } from './services/NotificationsService';
 import { OrganizationsService } from './services/OrganizationsService';
@@ -32,7 +31,6 @@ export class PolarAPI {
   public readonly extension: ExtensionService;
   public readonly health: HealthService;
   public readonly integrations: IntegrationsService;
-  public readonly invite: InviteService;
   public readonly issues: IssuesService;
   public readonly notifications: NotificationsService;
   public readonly organizations: OrganizationsService;
@@ -64,7 +62,6 @@ export class PolarAPI {
     this.extension = new ExtensionService(this.request);
     this.health = new HealthService(this.request);
     this.integrations = new IntegrationsService(this.request);
-    this.invite = new InviteService(this.request);
     this.issues = new IssuesService(this.request);
     this.notifications = new NotificationsService(this.request);
     this.organizations = new OrganizationsService(this.request);

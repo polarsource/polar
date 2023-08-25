@@ -497,7 +497,6 @@ async def test_create_issue_rewards_associate_username(
         session=session,
         username="test_gh_user",
         email="test_gh_user@polar.sh",
-        invite_only_approved=True,
     )
     oauth = await OAuthAccount.create(
         session=session,

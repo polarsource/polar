@@ -86,3 +86,27 @@ async def test_delete(
     ids = [t["id"] for t in response.json()["items"]]
     assert t1.json()["id"] not in ids
     assert t2.json()["id"] in ids
+
+
+@pytest.mark.asyncio
+async def test_auth(
+    auth_jwt: str,
+) -> None:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.post(
+            "/api/v1/personal_access_tokens",
+            json={"comment": "hello world"},
+            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        )
+
+    assert response.status_code == 200
+    token = response.json()["token"]
+
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get(
+            "/api/v1/users/me",
+            headers={"Authorization": "Bearer " + token},
+        )
+
+    assert response.status_code == 200
+    assert len(response.json()["username"]) > 3

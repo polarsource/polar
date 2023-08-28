@@ -13,12 +13,12 @@ jobs:
 
       - uses: pnpm/action-setup@v2.2.4
         with:
-          version: 8.2.0
+          version: 8.7.0
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v3
         with:
-          node-version: v18.16.0
+          node-version: v18
           cache: "pnpm"
           cache-dependency-path: "clients/pnpm-lock.yaml"
 
@@ -52,7 +52,7 @@ jobs:
     steps:
       - uses: actions/setup-node@v3
         with:
-          node-version: v18.16.0
+          node-version: v18
 
       - name: Download bundle artifact
         uses: actions/download-artifact@v3

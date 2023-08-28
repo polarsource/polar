@@ -19,3 +19,34 @@ export const useUserPreferencesMutation = () =>
       queryClient.invalidateQueries(['user'])
     },
   })
+
+export const useListPersonalAccessTokens = () =>
+  useQuery(['personalAccessTokens'], () => api.personalAccessToken.list(), {
+    retry: defaultRetry,
+  })
+
+export const useCreatePersonalAccessToken = () =>
+  useMutation({
+    mutationFn: (variables: { comment: string }) => {
+      return api.personalAccessToken.create({
+        requestBody: {
+          comment: variables.comment,
+        },
+      })
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.invalidateQueries(['personalAccessTokens'])
+    },
+  })
+
+export const useDeletePersonalAccessToken = () =>
+  useMutation({
+    mutationFn: (variables: { id: string }) => {
+      return api.personalAccessToken.delete({
+        id: variables.id,
+      })
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.invalidateQueries(['personalAccessTokens'])
+    },
+  })

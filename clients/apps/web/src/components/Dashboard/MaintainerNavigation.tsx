@@ -112,13 +112,12 @@ const MaintainerNavigation = () => {
   return (
     <div className="flex flex-col gap-6 py-8 pl-6 pr-2">
       {filteredNavs.map((n) => (
-        <>
+        <div key={n.link} className="flex flex-col gap-4">
           <Link
             className={classNames(
               'flex items-center gap-2 hover:text-blue-700 dark:hover:text-blue-800',
               n.isActive ? 'text-blue-600' : 'text-gray-900 dark:text-gray-400',
             )}
-            key={n.title}
             href={n.link}
             onClick={(e) => {
               onFirstLevelLinkClick(e, n.id)
@@ -132,6 +131,7 @@ const MaintainerNavigation = () => {
             n.expandSubs &&
             n.subs.map((s) => (
               <Link
+                key={s.link}
                 className={classNames(
                   'ml-8',
                   'flex items-center gap-1 hover:text-blue-700 dark:hover:text-blue-800',
@@ -145,7 +145,7 @@ const MaintainerNavigation = () => {
                 {s.postIcon}
               </Link>
             ))}
-        </>
+        </div>
       ))}
     </div>
   )

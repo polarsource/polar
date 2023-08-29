@@ -83,7 +83,7 @@ The Public API is currently a [work in progress](https://github.com/polarsource/
 
 #### Authentication
 
-Use a personal cookie auth (steal it from your browser). A better authentication method for scripting is coming soon.
+Use a [Personal Access Token](https://polar.sh/settings/tokens) and send it in the `Authorization` header on the format `Bearer [YOUR_TOKEN]`.
 
 #### Feedback
 

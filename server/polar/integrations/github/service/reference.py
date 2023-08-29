@@ -1,23 +1,51 @@
 from __future__ import annotations
+
+from datetime import datetime
 from typing import Any, List, Set, Union
 from uuid import UUID
-from githubkit import GitHub, Response
-from githubkit.exception import RequestFailed
-from pydantic import ValidationError, parse_obj_as
 
 import structlog
-from polar.exceptions import IntegrityError
+from fastapi.encoders import jsonable_encoder
+from githubkit import GitHub, Response
+from githubkit.exception import RequestFailed
+from githubkit.rest.models import (
+    AddedToProjectIssueEvent,
+    ConvertedNoteToIssueIssueEvent,
+    DemilestonedIssueEvent,
+    LabeledIssueEvent,
+    LockedIssueEvent,
+    MilestonedIssueEvent,
+    MovedColumnInProjectIssueEvent,
+    RemovedFromProjectIssueEvent,
+    RenamedIssueEvent,
+    ReviewDismissedIssueEvent,
+    ReviewRequestedIssueEvent,
+    ReviewRequestRemovedIssueEvent,
+    StateChangeIssueEvent,
+    TimelineAssignedIssueEvent,
+    TimelineCommentEvent,
+    TimelineCommitCommentedEvent,
+    TimelineCommittedEvent,
+    TimelineCrossReferencedEvent,
+    TimelineLineCommentedEvent,
+    TimelineReviewedEvent,
+    TimelineUnassignedIssueEvent,
+    UnlabeledIssueEvent,
+)
+from githubkit.utils import exclude_unset
+from pydantic import ValidationError, parse_obj_as
+
 import polar.integrations.github.client as github
-from polar.integrations.github.service.pull_request import github_pull_request
-from polar.integrations.github.service.issue import github_issue
+from polar.exceptions import IntegrityError
 from polar.integrations.github.service.api import github_api
+from polar.integrations.github.service.issue import github_issue
+from polar.integrations.github.service.pull_request import github_pull_request
 from polar.issue.hooks import (
     IssueReferenceHook,
     issue_reference_created,
     issue_reference_updated,
 )
 from polar.kit import utils
-
 from polar.models import Organization, Repository
 from polar.models.issue import Issue
 from polar.models.issue_reference import (
@@ -28,36 +56,6 @@ from polar.models.issue_reference import (
 )
 from polar.postgres import AsyncSession, sql
 from polar.worker import enqueue_job
-from fastapi.encoders import jsonable_encoder
-
-from datetime import datetime
-
-from githubkit.utils import exclude_unset
-
-from githubkit.rest.models import (
-    LockedIssueEvent,
-    LabeledIssueEvent,
-    RenamedIssueEvent,
-    UnlabeledIssueEvent,
-    MilestonedIssueEvent,
-    TimelineCommentEvent,
-    StateChangeIssueEvent,
-    TimelineReviewedEvent,
-    DemilestonedIssueEvent,
-    TimelineCommittedEvent,
-    AddedToProjectIssueEvent,
-    ReviewDismissedIssueEvent,
-    ReviewRequestedIssueEvent,
-    TimelineAssignedIssueEvent,
-    TimelineLineCommentedEvent,
-    RemovedFromProjectIssueEvent,
-    TimelineCommitCommentedEvent,
-    TimelineCrossReferencedEvent,
-    TimelineUnassignedIssueEvent,
-    ConvertedNoteToIssueIssueEvent,
-    MovedColumnInProjectIssueEvent,
-    ReviewRequestRemovedIssueEvent,
-)
 
 log = structlog.get_logger()
 
@@ -202,7 +200,6 @@ class GitHubIssueReferencesService:
 
         return res
 
-    # client.rest.issues.async_list_events_for_timeline,
     async def async_list_events_for_timeline_with_headers(
         self,
         client: GitHub[Any],
@@ -348,16 +345,24 @@ class GitHubIssueReferencesService:
                 issue.github_timeline_etag = res.headers.get("etag", None)
                 await issue.save(session)
 
-            for event in res.parsed_data:
-                ref = await self.parse_issue_timeline_event(
-                    session, org, repo, issue, event, client=client
-                )
-                if ref:
-                    # add data missing from github api
-                    ref = await self.annotate(session, org, ref, client=client)
+            try:
+                for event in res.parsed_data:
+                    ref = await self.parse_issue_timeline_event(
+                        session, org, repo, issue, event, client=client
+                    )
+                    if ref:
+                        # add data missing from github api
+                        ref = await self.annotate(session, org, ref, client=client)
 
-                    # persist
-                    await self.create_reference(session, ref)
+                        # persist
+                        await self.create_reference(session, ref)
+            except ValidationError as e:
+                log.error(
+                    "github.sync_issue_references.parsing_failed",
+                    data=e.json(),
+                    issue_id=issue.id,
+                )
+                raise e
 
             # No more pages
             if len(res.parsed_data) < 100:

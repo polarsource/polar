@@ -8,32 +8,8 @@ import structlog
 from fastapi.encoders import jsonable_encoder
 from githubkit import GitHub, Response
 from githubkit.exception import RequestFailed
-from githubkit.rest.models import (
-    AddedToProjectIssueEvent,
-    ConvertedNoteToIssueIssueEvent,
-    DemilestonedIssueEvent,
-    LabeledIssueEvent,
-    LockedIssueEvent,
-    MilestonedIssueEvent,
-    MovedColumnInProjectIssueEvent,
-    RemovedFromProjectIssueEvent,
-    RenamedIssueEvent,
-    ReviewDismissedIssueEvent,
-    ReviewRequestedIssueEvent,
-    ReviewRequestRemovedIssueEvent,
-    StateChangeIssueEvent,
-    TimelineAssignedIssueEvent,
-    TimelineCommentEvent,
-    TimelineCommitCommentedEvent,
-    TimelineCommittedEvent,
-    TimelineCrossReferencedEvent,
-    TimelineLineCommentedEvent,
-    TimelineReviewedEvent,
-    TimelineUnassignedIssueEvent,
-    UnlabeledIssueEvent,
-)
 from githubkit.utils import exclude_unset
-from pydantic import ValidationError, parse_obj_as
+from pydantic import Field, ValidationError, parse_obj_as
 
 import polar.integrations.github.client as github
 from polar.exceptions import IntegrityError
@@ -60,6 +36,18 @@ from polar.worker import enqueue_job
 log = structlog.get_logger()
 
 
+class UnknownIssueEvent(github.rest.GitHubRestModel):
+    """
+    The timeline API is not fully specced out in the github schema.
+    This is a catch-all event for events that we're unable to parse.
+    """
+
+    id: int = Field(default=...)
+    node_id: str = Field(default=...)
+    url: str = Field(default=...)
+    event: str = Field(default=...)
+
+
 TimelineEventType = Union[
     github.rest.LabeledIssueEvent,
     github.rest.UnlabeledIssueEvent,
@@ -83,6 +71,7 @@ TimelineEventType = Union[
     github.rest.TimelineAssignedIssueEvent,
     github.rest.TimelineUnassignedIssueEvent,
     github.rest.StateChangeIssueEvent,
+    UnknownIssueEvent,
 ]
 
 
@@ -209,34 +198,7 @@ class GitHubIssueReferencesService:
         per_page: int = 30,
         page: int = 1,
         etag: str | None = None,
-    ) -> Response[
-        List[
-            Union[
-                LabeledIssueEvent,
-                UnlabeledIssueEvent,
-                MilestonedIssueEvent,
-                DemilestonedIssueEvent,
-                RenamedIssueEvent,
-                ReviewRequestedIssueEvent,
-                ReviewRequestRemovedIssueEvent,
-                ReviewDismissedIssueEvent,
-                LockedIssueEvent,
-                AddedToProjectIssueEvent,
-                MovedColumnInProjectIssueEvent,
-                RemovedFromProjectIssueEvent,
-                ConvertedNoteToIssueIssueEvent,
-                TimelineCommentEvent,
-                TimelineCrossReferencedEvent,
-                TimelineCommittedEvent,
-                TimelineReviewedEvent,
-                TimelineLineCommentedEvent,
-                TimelineCommitCommentedEvent,
-                TimelineAssignedIssueEvent,
-                TimelineUnassignedIssueEvent,
-                StateChangeIssueEvent,
-            ]
-        ]
-    ]:
+    ) -> Response[List[TimelineEventType]]:
         url = f"/repos/{owner}/{repo}/issues/{issue_number}/timeline"
 
         params = {
@@ -249,32 +211,7 @@ class GitHubIssueReferencesService:
             url=url,
             params=exclude_unset(params),
             etag=etag,
-            response_model=List[
-                Union[
-                    LabeledIssueEvent,
-                    UnlabeledIssueEvent,
-                    MilestonedIssueEvent,
-                    DemilestonedIssueEvent,
-                    RenamedIssueEvent,
-                    ReviewRequestedIssueEvent,
-                    ReviewRequestRemovedIssueEvent,
-                    ReviewDismissedIssueEvent,
-                    LockedIssueEvent,
-                    AddedToProjectIssueEvent,
-                    MovedColumnInProjectIssueEvent,
-                    RemovedFromProjectIssueEvent,
-                    ConvertedNoteToIssueIssueEvent,
-                    TimelineCommentEvent,
-                    TimelineCrossReferencedEvent,
-                    TimelineCommittedEvent,
-                    TimelineReviewedEvent,
-                    TimelineLineCommentedEvent,
-                    TimelineCommitCommentedEvent,
-                    TimelineAssignedIssueEvent,
-                    TimelineUnassignedIssueEvent,
-                    StateChangeIssueEvent,
-                ]
-            ],
+            response_model=List[TimelineEventType],
         )
 
     async def sync_issue_references(
@@ -359,7 +296,6 @@ class GitHubIssueReferencesService:
             except ValidationError as e:
                 log.error(
                     "github.sync_issue_references.parsing_failed",
-                    data=e.json(),
                     issue_id=issue.id,
                 )
                 raise e

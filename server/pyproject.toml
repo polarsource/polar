@@ -15,7 +15,8 @@ alembic = "^1.9.2"
 sqlalchemy = {extras = ["asyncio"], version = "^2.0.20"}
 greenlet = "^2.0.2"  # Need to be explicit, M1 Mac issue (https://github.com/python-poetry/poetry/issues/5429)
 structlog = "^22.3.0"
-githubkit = {extras = ["auth-app"], version = "^0.10.6"}
+# githubkit = {extras = ["auth-app"], version = "^0.10.6"}
+githubkit = {extras = ["auth-app"], git = "https://github.com/polarsource/githubkit.git", rev = "198345c0cab3159347a1f984f9e73b0597808df8"}
 redis = "4.5.5"
 sse-starlette = "^1.4.0"
 arq = "^0.25.0"

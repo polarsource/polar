@@ -42,9 +42,6 @@ class UnknownIssueEvent(github.rest.GitHubRestModel):
     This is a catch-all event for events that we're unable to parse.
     """
 
-    id: int = Field(default=...)
-    node_id: str = Field(default=...)
-    url: str = Field(default=...)
     event: str = Field(default=...)
 
 

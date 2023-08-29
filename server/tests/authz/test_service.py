@@ -114,10 +114,8 @@ async def test_can_write_repository(
     repository.is_private = False
     await repository.save(session)
 
-    authz = Authz(session)
-
     assert (
-        await authz.can(
+        await Authz(session).can(
             Anonymous(),
             AccessType.write,
             repository,
@@ -128,7 +126,7 @@ async def test_can_write_repository(
     user_organization.is_admin = False
     await user_organization.save(session)
     assert (
-        await authz.can(
+        await Authz(session).can(
             user,
             AccessType.write,
             repository,
@@ -139,7 +137,7 @@ async def test_can_write_repository(
     user_organization.is_admin = True
     await user_organization.save(session)
     assert (
-        await authz.can(
+        await Authz(session).can(
             user,
             AccessType.write,
             repository,
@@ -148,7 +146,7 @@ async def test_can_write_repository(
     )
 
     assert (
-        await authz.can(
+        await Authz(session).can(
             user_second,
             AccessType.write,
             repository,
@@ -165,10 +163,8 @@ async def test_can_write_organization(
     user_second: User,
     user_organization: UserOrganization,
 ) -> None:
-    authz = Authz(session)
-
     assert (
-        await authz.can(
+        await Authz(session).can(
             Anonymous(),
             AccessType.write,
             organization,
@@ -179,7 +175,7 @@ async def test_can_write_organization(
     user_organization.is_admin = False
     await user_organization.save(session)
     assert (
-        await authz.can(
+        await Authz(session).can(
             user,
             AccessType.write,
             organization,
@@ -190,7 +186,7 @@ async def test_can_write_organization(
     user_organization.is_admin = True
     await user_organization.save(session)
     assert (
-        await authz.can(
+        await Authz(session).can(
             user,
             AccessType.write,
             organization,
@@ -199,7 +195,7 @@ async def test_can_write_organization(
     )
 
     assert (
-        await authz.can(
+        await Authz(session).can(
             user_second,
             AccessType.write,
             organization,
@@ -326,10 +322,8 @@ async def test_can_write_issue(
     user_second: User,
     user_organization: UserOrganization,
 ) -> None:
-    authz = Authz(session)
-
     assert (
-        await authz.can(
+        await Authz(session).can(
             Anonymous(),
             AccessType.write,
             issue,
@@ -340,7 +334,7 @@ async def test_can_write_issue(
     user_organization.is_admin = False
     await user_organization.save(session)
     assert (
-        await authz.can(
+        await Authz(session).can(
             user,
             AccessType.write,
             issue,
@@ -351,7 +345,7 @@ async def test_can_write_issue(
     user_organization.is_admin = True
     await user_organization.save(session)
     assert (
-        await authz.can(
+        await Authz(session).can(
             user,
             AccessType.write,
             issue,
@@ -360,7 +354,7 @@ async def test_can_write_issue(
     )
 
     assert (
-        await authz.can(
+        await Authz(session).can(
             user_second,
             AccessType.write,
             issue,

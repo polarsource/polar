@@ -37,8 +37,16 @@ Object = User | Organization | Repository | Account | IssueReward | Issue | Pled
 class Authz:
     session: AsyncSession
 
+    # request scoped caches
+    _cache_can_user_read_repository_id: dict[tuple[UUID, UUID], bool]
+    _cache_is_member: dict[tuple[UUID, UUID], bool]
+    _cache_is_member_and_admin: dict[tuple[UUID, UUID], bool]
+
     def __init__(self, session: AsyncSession):
         self.session = session
+        self._cache_can_user_read_repository_id = {}
+        self._cache_is_member = {}
+        self._cache_is_member_and_admin = {}
 
     @classmethod
     async def authz(cls, session: AsyncSession = Depends(get_db_session)) -> Self:
@@ -184,6 +192,23 @@ class Authz:
 
         return False
 
+    async def _can_user_read_repository_id(
+        self, subject: User, repository_id: UUID
+    ) -> bool:
+        key = (subject.id, repository_id)
+
+        if key in self._cache_can_user_read_repository_id:
+            return self._cache_can_user_read_repository_id[key]
+
+        repo = await repository_service.get(self.session, repository_id)
+        if not repo:
+            self._cache_can_user_read_repository_id[key] = False
+            return False
+
+        res = await self._can_user_read_repository(subject, repo)
+        self._cache_can_user_read_repository_id[key] = res
+        return res
+
     async def _can_user_write_repository(
         self, subject: User, object: Repository
     ) -> bool:
@@ -218,25 +243,37 @@ class Authz:
         return False
 
     async def _is_member(self, user_id: UUID, organization_id: UUID) -> bool:
+        key = (user_id, organization_id)
+        if key in self._cache_is_member:
+            return self._cache_is_member[key]
+
         memberships = await user_organization_service.list_by_user_id(
             self.session, user_id
         )
 
         for m in memberships:
             if m.organization_id == organization_id:
+                self._cache_is_member[key] = True
                 return True
 
+        self._cache_is_member[key] = False
         return False
 
     async def _is_member_and_admin(self, user_id: UUID, organization_id: UUID) -> bool:
+        key = (user_id, organization_id)
+        if key in self._cache_is_member_and_admin:
+            return self._cache_is_member_and_admin[key]
+
         memberships = await user_organization_service.list_by_user_id(
             self.session, user_id
         )
 
         for m in memberships:
             if m.organization_id == organization_id and m.is_admin:
+                self._cache_is_member_and_admin[key] = True
                 return True
 
+        self._cache_is_member_and_admin[key] = False
         return False
 
     #
@@ -268,13 +305,9 @@ class Authz:
         return False
 
     async def _can_user_read_issue(self, subject: User, object: Issue) -> bool:
-        repo = await repository_service.get(self.session, object.repository_id)
-        if not repo:
-            return False
-
-        if await self._can_user_read_repository(
+        if await self._can_user_read_repository_id(
             subject,
-            repo,
+            object.repository_id,
         ):
             return True
 

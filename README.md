@@ -12,9 +12,12 @@
   
 <a href="https://polar.sh">Website</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<span>Public Alpha - <a href="https://polar.sh/login">Get started</a></span>
+<span>Public Alpha - <a href="https://polar.sh/signup/maintainer">Get started</a></span>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://polar.sh/faq">FAQ</a>
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+<a href="https://docs.polar.sh/api/">API</a>
+
 
 
 <p align="center">

@@ -1,5 +1,5 @@
 import TopbarLayout from '@/components/Layout/TopbarLayout'
-import { Toaster } from '@/components/UI/Toast/Toaster'
+import { Toaster } from '@/components/Toast/Toaster'
 import type { NextPageWithLayout } from '@/utils/next'
 import * as Sentry from '@sentry/nextjs'
 import { ThemeProvider } from 'next-themes'

@@ -4,7 +4,7 @@ import {
   DashboardFilters,
   DefaultFilters,
 } from '@/components/Dashboard/filters'
-import { useToast } from '@/components/UI/Toast/use-toast'
+import { useToast } from '@/components/Toast/use-toast'
 import type { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'

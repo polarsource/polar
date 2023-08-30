@@ -1,7 +1,7 @@
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import Finance from '@/components/Finance/Finance'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
-import { useToast } from '@/components/UI/Toast/use-toast'
+import { useToast } from '@/components/Toast/use-toast'
 import type { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'

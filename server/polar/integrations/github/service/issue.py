@@ -442,9 +442,7 @@ class GithubIssueService(IssueService):
         ],
     ) -> Issue:
         labels = github.jsonify(github_labels)
-        # TODO: Improve typing here
-        issue.labels = labels  # type: ignore
-        # issue.issue_modified_at = event.issue.updated_at
+        issue.labels = labels
         issue.has_pledge_badge_label = Issue.contains_pledge_badge_label(labels)
         session.add(issue)
         await session.commit()

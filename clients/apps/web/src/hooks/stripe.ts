@@ -1,4 +1,4 @@
-import { useToast } from '@/components/UI/Toast/use-toast'
+import { useToast } from '@/components/Toast/use-toast'
 import { api } from 'polarkit/api'
 import { Platforms, PledgeRead } from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/money'

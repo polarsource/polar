@@ -5,8 +5,8 @@
   "dependencies": {
     "@types/jest": "^27.0.1",
     "@types/node": "^16.7.13",
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0",
+    "@types/react": "^18.2.21",
+    "@types/react-dom": "^18.2.7",
     "polarkit": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

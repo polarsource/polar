@@ -1,9 +1,9 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import {
   ArrowRightOnRectangleIcon,
+  PlusSmallIcon,
   QuestionMarkCircleIcon,
 } from '@heroicons/react/24/outline'
-import { PlusSmallIcon } from '@heroicons/react/24/solid'
 import Link from 'next/link'
 import { CONFIG } from 'polarkit/config'
 import { useListOrganizations } from 'polarkit/hooks'
@@ -71,7 +71,7 @@ const ProfileSelection = (props: Props) => {
             )}
           >
             <ul>
-              <ListItem>
+              <ListItem current={currentOrg === undefined}>
                 <Link href="/feed">
                   <Profile
                     name={loggedUser.username}
@@ -83,7 +83,7 @@ const ProfileSelection = (props: Props) => {
 
               {orgs &&
                 orgs.map((org) => (
-                  <ListItem key={org.id}>
+                  <ListItem key={org.id} current={currentOrg?.id === org.id}>
                     <Link href={`/maintainer/${org.name}/issues`}>
                       <Profile
                         name={org.name}
@@ -116,7 +116,7 @@ const ProfileSelection = (props: Props) => {
                 </LinkItem>
               )}
 
-              <hr className="mx-2" />
+              <hr className="ml-6 mr-6" />
 
               <LinkItem
                 href={'https://polar.sh/faq'}
@@ -149,9 +149,16 @@ const ProfileSelection = (props: Props) => {
 
 export default ProfileSelection
 
-const ListItem = (props: { children: React.ReactElement }) => {
+const ListItem = (props: {
+  children: React.ReactElement
+  current: boolean
+}) => {
   return (
-    <li className="animate-background duration-10 dark:hover:bg-gray-950/50 px-4 py-2 hover:bg-gray-200/50">
+    <li className="animate-background duration-10 dark:hover:bg-gray-950/50 flex items-center gap-2 py-2 pl-3 pr-4 hover:bg-gray-200/50">
+      {props.current && (
+        <div className="h-2 w-2 rounded-full bg-blue-600"></div>
+      )}
+      {!props.current && <div className="h-2 w-2"></div>}
       {props.children}
     </li>
   )
@@ -179,7 +186,7 @@ const LinkItem = (props: {
   children: React.ReactElement
 }) => {
   return (
-    <ListItem>
+    <ListItem current={false}>
       <Link href={props.href}>
         <div className="flex items-center text-sm ">
           {props.icon}
@@ -196,7 +203,7 @@ const TextItem = (props: {
   children: React.ReactElement
 }) => {
   return (
-    <ListItem>
+    <ListItem current={false}>
       <div
         className="flex cursor-pointer items-center text-sm"
         onClick={props.onClick}

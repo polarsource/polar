@@ -71,6 +71,11 @@ async def search(
         default=None,
         description="Set to true to only return issues that have the Polar badge in the issue description",  # noqa: E501
     ),
+    github_milestone_number: int
+    | None = Query(
+        default=None,
+        description="Filter to only return issues connected to this GitHub milestone.",
+    ),
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
     authz: Authz = Depends(Authz.authz),

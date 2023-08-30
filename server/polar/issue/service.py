@@ -6,6 +6,7 @@ from uuid import UUID
 import structlog
 from sqlalchemy import (
     ColumnElement,
+    Integer,
     and_,
     asc,
     desc,
@@ -117,6 +118,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         limit: int | None = None,
         include_statuses: list[IssueStatus] | None = None,
         have_polar_badge: bool | None = None,  # If issue has the polar badge or not
+        github_milestone_number: int | None = None,
     ) -> Tuple[Sequence[Issue], int]:  # (issues, total_issue_count)
         pledge_by_organization = aliased(Organization)
         issue_repository = aliased(Repository)
@@ -186,6 +188,11 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         if have_polar_badge is not None:
             statement = statement.where(
                 Issue.pledge_badge_currently_embedded == have_polar_badge
+            )
+
+        if github_milestone_number is not None:
+            statement = statement.where(
+                Issue.milestone["number"].cast(Integer) == github_milestone_number
             )
 
         if include_statuses:

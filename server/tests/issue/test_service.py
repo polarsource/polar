@@ -8,6 +8,7 @@ from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
 from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.issue.service import issue as issue_service
+from polar.kit.utils import utc_now
 from polar.models.issue import Issue
 from polar.models.issue_dependency import IssueDependency
 from polar.models.organization import Organization
@@ -626,3 +627,63 @@ async def test_list_by_repository_type_and_status_dependencies_dependency(
 
     # only the pledges by pledged_by_org/pledged_by_user should be included
     # assert len(issues[0].issue.pledges_zegl) == 1
+
+
+@pytest.mark.asyncio
+async def test_list_by_github_milestone_number(
+    session: AsyncSession,
+    repository: Repository,
+    organization: Organization,
+    # issue: Issue,
+    user: User,
+) -> None:
+    async def issue_with_milestone(number: int) -> Issue:
+        issue = await random_objects.create_issue(
+            session,
+            organization,
+            repository,
+        )
+
+        ms = github.rest.Milestone(
+            url="http://example.com/",
+            html_url="http://example.com/",
+            labels_url="http://example.com/",
+            id=1233333,
+            node_id="xxxyyyyzzz",
+            number=number,
+            state="open",
+            title="foo",
+            description=None,
+            creator=None,
+            open_issues=4,
+            closed_issues=8,
+            created_at=utc_now(),
+            updated_at=utc_now(),
+            closed_at=None,
+            due_on=None,
+        )
+
+        issue.title = f"issue_in_{number}"
+        issue.milestone = github.jsonify(ms)
+        await issue.save(session)
+        return issue
+
+    issue_1 = await issue_with_milestone(14)
+    issue_2 = await issue_with_milestone(14)
+    issue_3 = await issue_with_milestone(30)
+
+    for milestone, expected in [
+        (14, ["issue_in_14", "issue_in_14"]),
+        (30, ["issue_in_30"]),
+        (555, []),
+    ]:
+        (issues, count) = await issue_service.list_by_repository_type_and_status(
+            session,
+            repository_ids=[repository.id],
+            issue_list_type=IssueListType.issues,
+            sort_by=IssueSortBy.newest,
+            github_milestone_number=milestone,
+        )
+
+        names = [i.title for i in issues]
+        assert names == expected

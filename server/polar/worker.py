@@ -112,10 +112,12 @@ async def enqueue_job(name: str, *args: Any, **kwargs: Any) -> Job | None:
     kwargs["polar_context"] = PolarWorkerContext(
         is_during_installation=ctx.is_during_installation,
     )
+    return await _enqueue_job(name, *args, **kwargs)
 
+
+async def _enqueue_job(name: str, *args: Any, **kwargs: Any) -> Job | None:
     if not arq_pool:
         raise Exception("arq_pool is not initialized")
-
     return await arq_pool.enqueue_job(name, *args, **kwargs)
 
 

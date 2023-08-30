@@ -30,6 +30,8 @@ async def test_search(
     mocker: MockerFixture,
     auth_jwt: str,
 ) -> None:
+    mocker.patch("polar.worker._enqueue_job")
+
     user_organization.is_admin = True
     await user_organization.save(session)
 

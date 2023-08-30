@@ -29,7 +29,7 @@ from polar.models.issue_reference import (
 )
 from polar.organization.schemas import Organization
 from polar.repository.schemas import Repository
-from polar.types import JSONAny
+from polar.types import JSONAny, JSONDict
 
 log = structlog.get_logger()
 
@@ -99,7 +99,7 @@ class Issue(Schema):
                 for label in i.labels
                 if "name" in label and "color" in label
             ]
-            if i.labels
+            if i.labels and isinstance(i.labels, list)
             else []
         )
 
@@ -392,13 +392,21 @@ class IssueReferenceRead(Schema):
         match m.reference_type:
             case ReferenceType.PULL_REQUEST:
                 if pr := m.pull_request:
-                    avatar = pr.author.get("avatar_url", None) if pr.author else None
+                    avatar = (
+                        pr.author.get("avatar_url", None)
+                        if pr.author and isinstance(pr.author, dict)
+                        else None
+                    )
                     if not avatar:
                         raise Exception(
                             "unable to convert IssueReference to IssueReferenceRead"
                         )
 
-                    login = pr.author.get("login", None) if pr.author else None
+                    login = (
+                        pr.author.get("login", None)
+                        if pr.author and isinstance(pr.author, dict)
+                        else None
+                    )
                     if not login:
                         raise Exception(
                             "unable to convert IssueReference to IssueReferenceRead"

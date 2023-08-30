@@ -20,6 +20,7 @@ from polar.enums import Platforms
 from polar.integrations.github.cache import RedisCache
 from polar.models.user import User
 from polar.postgres import AsyncSession
+from polar.types import JSONAny
 
 log = structlog.get_logger()
 
@@ -64,7 +65,7 @@ def is_set(obj: object, name: str) -> bool:
     return not isinstance(attr, utils.Unset)
 
 
-def jsonify(obj: Any) -> list[dict[str, Any]] | dict[str, Any] | None:
+def jsonify(obj: Any) -> JSONAny:
     if not obj:
         return None
 

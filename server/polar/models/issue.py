@@ -30,7 +30,7 @@ from polar.config import settings
 from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
-from polar.types import JSONDict, JSONList
+from polar.types import JSONAny
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.issue_reference import IssueReference
@@ -79,28 +79,14 @@ class IssueFields:
     body: Mapped[str | None] = mapped_column(Text, nullable=True)
     comments: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    author: Mapped[JSONDict | None] = mapped_column(
-        JSONB(none_as_null=True), nullable=True
-    )
+    author: Mapped[JSONAny] = mapped_column(JSONB(none_as_null=True), nullable=True)
     author_association: Mapped[str | None] = mapped_column(String, nullable=True)
-    labels: Mapped[JSONList | None] = mapped_column(
-        JSONB(none_as_null=True), nullable=True
-    )
-    assignee: Mapped[JSONDict | None] = mapped_column(
-        JSONB(none_as_null=True), nullable=True
-    )
-    assignees: Mapped[JSONList | None] = mapped_column(
-        JSONB(none_as_null=True), nullable=True
-    )
-    milestone: Mapped[JSONDict | None] = mapped_column(
-        JSONB(none_as_null=True), nullable=True
-    )
-    closed_by: Mapped[JSONDict | None] = mapped_column(
-        JSONB(none_as_null=True), nullable=True
-    )
-    reactions: Mapped[JSONDict | None] = mapped_column(
-        JSONB(none_as_null=True), nullable=True
-    )
+    labels: Mapped[JSONAny] = mapped_column(JSONB(none_as_null=True), nullable=True)
+    assignee: Mapped[JSONAny] = mapped_column(JSONB(none_as_null=True), nullable=True)
+    assignees: Mapped[JSONAny] = mapped_column(JSONB(none_as_null=True), nullable=True)
+    milestone: Mapped[JSONAny] = mapped_column(JSONB(none_as_null=True), nullable=True)
+    closed_by: Mapped[JSONAny] = mapped_column(JSONB(none_as_null=True), nullable=True)
+    reactions: Mapped[JSONAny] = mapped_column(JSONB(none_as_null=True), nullable=True)
 
     state: Mapped[str] = mapped_column(StringEnum(State), nullable=False)
     state_reason: Mapped[str | None] = mapped_column(String, nullable=True)

@@ -564,6 +564,7 @@ async def test_webhook_issues_labeled(
         issue = await service.github_issue.get_by_external_id(session, issue_id)
         assert issue is not None
         assert issue.labels is not None
+        assert isinstance(issue.labels, list)
         assert issue.labels[0]["name"] == hook["issue"]["labels"][0]["name"]
 
 
@@ -746,6 +747,7 @@ async def test_webhook_opened_with_label(
     assert issue is not None
 
     assert issue.labels is not None
+    assert isinstance(issue.labels, list)
     assert issue.labels[0]["name"] == "polar"
 
     assert issue.contains_pledge_badge_label(issue.labels) is True
@@ -807,6 +809,7 @@ async def test_webhook_labeled_remove_badge_body(
     assert issue is not None
 
     assert issue.labels is not None
+    assert isinstance(issue.labels, list)
     assert issue.labels[0]["name"] == "polar"
 
     assert issue.contains_pledge_badge_label(issue.labels) is True
@@ -838,6 +841,7 @@ async def test_webhook_labeled_remove_badge_body(
     issue = await service.github_issue.get_by_external_id(session, issue_id)
     assert issue is not None
     assert issue.labels is not None
+    assert isinstance(issue.labels, list)
     assert issue.labels[0]["name"] == "polar"
     assert issue.contains_pledge_badge_label(issue.labels) is True
 

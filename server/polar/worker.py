@@ -21,7 +21,6 @@ from arq.cron import CronJob
 from arq.jobs import Job
 from arq.typing import OptionType, SecondsTimedelta
 from arq.worker import Function
-from fastapi import FastAPI
 from pydantic import BaseModel
 
 from polar.config import settings
@@ -38,9 +37,11 @@ glob_arq_pool: ArqRedis | None = None
 
 @asynccontextmanager
 async def lifespan() -> AsyncGenerator[None, Any]:
+    global arq_pool
     arq_pool = await create_pool()
     yield
     await arq_pool.close(True)
+    arq_pool = None
 
 
 log = structlog.get_logger()
@@ -86,6 +87,7 @@ class WorkerSettings:
         global arq_pool
         if arq_pool:
             await arq_pool.close(True)
+            arq_pool = None
         else:
             raise Exception("arq_pool not set in shutdown")
 
@@ -117,11 +119,7 @@ async def enqueue_job(name: str, *args: Any, **kwargs: Any) -> Job | None:
 
 async def _enqueue_job(name: str, *args: Any, **kwargs: Any) -> Job | None:
     if not arq_pool:
-        # TODO: This should fail
-        # raise Exception("arq_pool is not initialized")
-        # Temporary workaround
-        pool = await create_pool()
-        return await pool.enqueue_job(name, *args, **kwargs)
+        raise Exception("arq_pool is not initialized")
 
     return await arq_pool.enqueue_job(name, *args, **kwargs)
 

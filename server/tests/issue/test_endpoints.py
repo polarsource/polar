@@ -1,6 +1,7 @@
 import pytest
 from fastapi.encoders import jsonable_encoder
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
 from polar.app import app
 from polar.config import settings
@@ -273,7 +274,10 @@ async def test_confirm_solved(
     pledge: Pledge,
     session: AsyncSession,
     user_organization: UserOrganization,  # makes User a member of Organization
+    mocker: MockerFixture,
 ) -> None:
+    mocker.patch("polar.worker._enqueue_job")
+
     user_organization.is_admin = True
     await user_organization.save(session)
 

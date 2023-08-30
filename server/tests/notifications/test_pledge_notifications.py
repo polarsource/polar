@@ -80,6 +80,7 @@ async def test_deduplicate(
     mocker: MockerFixture,
 ) -> None:
     spy = mocker.spy(NotificationsService, "send_to_org")
+    mocker.patch("polar.worker._enqueue_job")
 
     pledge = await Pledge.create(
         session=session,

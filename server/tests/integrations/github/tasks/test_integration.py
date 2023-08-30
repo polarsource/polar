@@ -42,7 +42,7 @@ async def test_installation_no_notifications(
         pytest -k test_installation_no_notifications --record-mode=rewrite
     """
 
-    async def in_process_enqueue_job(pool, name, *args, **kwargs) -> None:  # type: ignore  # noqa: E501
+    async def in_process_enqueue_job(name, *args, **kwargs) -> None:  # type: ignore  # noqa: E501
         if name == "github.repo.sync.issues":
             return await tasks.repo.sync_repository_issues(
                 kwargs["polar_context"], *args, **kwargs
@@ -70,7 +70,7 @@ async def test_installation_no_notifications(
     ) as fp:
         cassette: dict[str, Any] = json.loads(fp.read())
 
-    mocker.patch("arq.connections.ArqRedis.enqueue_job", new=in_process_enqueue_job)
+    mocker.patch("polar.worker._enqueue_job", new=in_process_enqueue_job)
 
     async with AsyncSessionLocal() as session:
         # Create user to match requesting user

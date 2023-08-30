@@ -117,7 +117,12 @@ async def enqueue_job(name: str, *args: Any, **kwargs: Any) -> Job | None:
 
 async def _enqueue_job(name: str, *args: Any, **kwargs: Any) -> Job | None:
     if not arq_pool:
-        raise Exception("arq_pool is not initialized")
+        # TODO: This should fail
+        # raise Exception("arq_pool is not initialized")
+        # Temporary workaround
+        pool = await create_pool()
+        return await pool.enqueue_job(name, *args, **kwargs)
+
     return await arq_pool.enqueue_job(name, *args, **kwargs)
 
 

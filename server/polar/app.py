@@ -1,3 +1,6 @@
+from contextlib import asynccontextmanager
+from typing import Any, AsyncGenerator
+
 import structlog
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
@@ -5,7 +8,7 @@ from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
 from starlette.routing import BaseRoute
 
-from polar import receivers  # noqa
+from polar import receivers, worker  # noqa
 from polar.api import router
 from polar.config import settings
 from polar.health.endpoints import router as health_router
@@ -33,8 +36,18 @@ def generate_unique_openapi_id(route: APIRoute) -> str:
     return f"{route.tags[0]}:{route.name}"
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
+    # Nested lifespans
+    async with worker.lifespan() as w:
+        yield
+
+
 def create_app() -> FastAPI:
-    app = FastAPI(generate_unique_id_function=generate_unique_openapi_id)
+    app = FastAPI(
+        generate_unique_id_function=generate_unique_openapi_id,
+        lifespan=lifespan,
+    )
     configure_cors(app)
 
     # /healthz and /readyz

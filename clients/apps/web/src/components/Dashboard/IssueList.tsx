@@ -1,5 +1,9 @@
 import { DashboardFilters, navigate } from '@/components/Dashboard/filters'
-import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
+import {
+  ArrowsUpDownIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/react/24/outline'
 import { InfiniteData } from '@tanstack/react-query'
 import { useRouter } from 'next/router'
 import {
@@ -9,7 +13,7 @@ import {
   UserRead,
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
-import { Checkbox, PrimaryButton } from 'polarkit/components/ui'
+import { PrimaryButton } from 'polarkit/components/ui'
 import React, {
   ChangeEvent,
   Dispatch,
@@ -21,6 +25,16 @@ import React, {
 } from 'react'
 import yayson from 'yayson'
 import Spinner from '../Shared/Spinner'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu'
 import IssueListItem from './IssueListItem'
 
 const IssueList = (props: {
@@ -231,10 +245,30 @@ export const Header = (props: {
     navigate(router, props.filters)
   }
 
-  const onOnlyBadgedChanged = (e: ChangeEvent<HTMLInputElement>) => {
+  const onOnlyBadgedChanged = (value: boolean) => {
     const f: DashboardFilters = {
       ...props.filters,
-      onlyBadged: e.target.checked,
+      onlyBadged: value,
+    }
+
+    props.onSetFilters(f)
+    navigate(router, f)
+  }
+
+  const onShowClosedChanged = (value: boolean) => {
+    const f: DashboardFilters = {
+      ...props.filters,
+      statusClosed: value,
+    }
+
+    props.onSetFilters(f)
+    navigate(router, f)
+  }
+
+  const onSortingChanged = (value: string) => {
+    const f: DashboardFilters = {
+      ...props.filters,
+      sort: value as IssueSortBy,
     }
 
     props.onSetFilters(f)
@@ -244,8 +278,8 @@ export const Header = (props: {
   const canFilterByBadged = props.filters.tab === IssueListType.ISSUES
 
   return (
-    <div className="justify-normal flex w-full flex-col items-center lg:flex-row lg:justify-between	">
-      <div className="relative w-full py-2 lg:max-w-[500px]">
+    <div className="flex w-full flex-col items-center justify-normal pr-4 lg:flex-row lg:justify-between">
+      <div className="relative w-fit w-full py-2 lg:max-w-[500px]">
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 ">
           {props.spinner && <Spinner />}
           {!props.spinner && (
@@ -266,41 +300,62 @@ export const Header = (props: {
         />
       </div>
 
-      <div className="flex w-full flex-shrink-0 space-x-4 space-y-2 lg:w-fit lg:space-y-0">
+      <div className="flex w-full flex-shrink-0 items-center justify-center space-x-12 lg:w-fit lg:justify-start lg:space-x-6 lg:space-y-0 lg:space-y-0 ">
         {canFilterByBadged && (
-          <div className="inline-flex flex-shrink-0 items-center space-x-2 rounded-lg border bg-white py-2 pl-3 text-sm text-gray-500 shadow-sm  dark:bg-gray-900 dark:text-gray-400">
-            <label htmlFor="only-badged">Only badged</label>
-            <Checkbox
-              id="only-badged"
-              value={props.filters.onlyBadged}
-              onChange={onOnlyBadgedChanged}
-            >
-              <></>
-            </Checkbox>
-          </div>
+          <>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="inline-flex flex-shrink-0 items-center space-x-2 text-sm text-gray-900 dark:text-gray-100">
+                <FunnelIcon className="h-4 w-4 text-black dark:text-white" />
+                <span className="font-medium">Filter</span>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent>
+                <DropdownMenuLabel>Filter</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+
+                <DropdownMenuCheckboxItem
+                  checked={props.filters.onlyBadged}
+                  onCheckedChange={onOnlyBadgedChanged}
+                >
+                  Only badged
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={props.filters.statusClosed}
+                  onCheckedChange={onShowClosedChanged}
+                >
+                  Show closed
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
         )}
 
-        <div className="flex-shrink-0 rounded-lg border bg-white py-2 px-3 shadow-sm dark:bg-gray-900">
-          <label
-            htmlFor="sort-by"
-            className="mr-2 text-sm text-gray-500 dark:text-gray-400"
-          >
-            Sort by
-          </label>
-          <select
-            id="sort-by"
-            className="m-0 w-48 border-0 bg-transparent bg-right p-0 text-sm font-medium ring-0 focus:border-0 focus:ring-0 dark:bg-gray-900 dark:text-gray-300"
-            onChange={onSelect}
-            style={{ width: `${width}px` }}
-            value={props.filters?.sort}
-          >
-            {options.map((v) => (
-              <option key={v} value={v}>
-                {getTitle(v)}
-              </option>
-            ))}
-          </select>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="inline-flex flex-shrink-0 items-center space-x-2 text-sm text-gray-900 dark:text-gray-100">
+            <ArrowsUpDownIcon className="h-4 w-4 text-black dark:text-white" />
+            <span className="font-medium">
+              {props.filters?.sort
+                ? getTitle(props.filters?.sort)
+                : 'Most wanted'}
+            </span>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent>
+            <DropdownMenuLabel>Sort issues by</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+
+            <DropdownMenuRadioGroup
+              value={props.filters?.sort}
+              onValueChange={onSortingChanged}
+            >
+              {options.map((v) => (
+                <DropdownMenuRadioItem key={v} value={v}>
+                  {getTitle(v)}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   )

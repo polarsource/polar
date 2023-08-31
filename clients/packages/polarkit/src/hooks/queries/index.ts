@@ -1,5 +1,12 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
 import {
+  UseMutationResult,
+  UseQueryResult,
+  useMutation,
+  useQuery,
+} from '@tanstack/react-query'
+import {
+  ApiError,
+  ListResource_Organization_,
   OrganizationPrivateRead,
   OrganizationSettingsUpdate,
   Repository,
@@ -21,13 +28,20 @@ export * from './rewards'
 export * from './settings'
 export * from './user'
 
-export const useListOrganizations = () =>
-  useQuery(['user', 'organizations'], () => api.organizations.list(), {
+export const useListOrganizations: () => UseQueryResult<
+  ListResource_Organization_,
+  ApiError
+> = () =>
+  useQuery({
+    queryKey: ['user', 'organizations'],
+    queryFn: () => api.organizations.list(),
     retry: defaultRetry,
   })
 
 export const useListRepositories = () =>
-  useQuery(['user', 'repositories'], () => api.repositories.list(), {
+  useQuery({
+    queryKey: ['user', 'repositories'],
+    queryFn: () => api.repositories.list(),
     retry: defaultRetry,
   })
 
@@ -35,74 +49,76 @@ export const useSearchRepositories = (
   platform: Platforms,
   organizationName: string,
 ) =>
-  useQuery(
-    ['user', 'repositories', platform, organizationName],
-    () =>
+  useQuery({
+    queryKey: ['user', 'repositories', platform, organizationName],
+    queryFn: () =>
       api.repositories.search({
         platform: platform,
         organizationName: organizationName,
       }),
-    {
-      retry: defaultRetry,
-    },
-  )
+
+    retry: defaultRetry,
+  })
 
 export const useListAccountsByOrganization = (organization_id?: string) =>
-  useQuery(
-    ['accounts', organization_id],
-    () =>
+  useQuery({
+    queryKey: ['accounts', organization_id],
+    queryFn: () =>
       api.accounts.search({
         organizationId: organization_id,
       }),
-    {
-      enabled: !!organization_id,
-      retry: defaultRetry,
-    },
-  )
+
+    enabled: !!organization_id,
+    retry: defaultRetry,
+  })
 
 export const useListAccountsByUser = (user_id?: string) =>
-  useQuery(
-    ['accounts', user_id],
-    () =>
+  useQuery({
+    queryKey: ['accounts', user_id],
+    queryFn: () =>
       api.accounts.search({
         userId: user_id,
       }),
-    {
-      enabled: !!user_id,
-      retry: defaultRetry,
-    },
-  )
+
+    enabled: !!user_id,
+    retry: defaultRetry,
+  })
 
 export const useRepositoryIssues = (repoOwner: string, repoName: string) =>
-  useQuery(
-    ['issues', 'repo', repoOwner, repoName],
-    () =>
+  useQuery({
+    queryKey: ['issues', 'repo', repoOwner, repoName],
+    queryFn: () =>
       api.issues.getRepositoryIssues({
         platform: Platforms.GITHUB,
         orgName: repoOwner,
         repoName: repoName,
       }),
-    {
-      enabled: !!repoOwner && !!repoName,
-      retry: defaultRetry,
-    },
-  )
+    enabled: !!repoOwner && !!repoName,
+    retry: defaultRetry,
+  })
 
 export const useOrganization = (orgName: string) =>
-  useQuery(
-    ['organization', orgName],
-    () =>
+  useQuery({
+    queryKey: ['organization', orgName],
+    queryFn: () =>
       api.organizations.getInternal({
         platform: Platforms.GITHUB,
         orgName: orgName,
       }),
-    {
-      enabled: !!orgName,
-      retry: defaultRetry,
-    },
-  )
 
-export const useOrganizationSettingsMutation = () =>
+    enabled: !!orgName,
+    retry: defaultRetry,
+  })
+
+export const useOrganizationSettingsMutation: () => UseMutationResult<
+  OrganizationPrivateRead,
+  Error,
+  {
+    orgName: string
+    body: OrganizationSettingsUpdate
+  },
+  unknown
+> = () =>
   useMutation({
     mutationFn: (variables: {
       orgName: string
@@ -120,7 +136,9 @@ export const useOrganizationSettingsMutation = () =>
   })
 
 export const useNotifications = () =>
-  useQuery(['notifications'], () => api.notifications.get(), {
+  useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => api.notifications.get(),
     retry: defaultRetry,
   })
 
@@ -134,6 +152,6 @@ export const useNotificationsMarkRead = () =>
       })
     },
     onSuccess: (result, variables, ctx) => {
-      queryClient.invalidateQueries(['notifications'])
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
     },
   })

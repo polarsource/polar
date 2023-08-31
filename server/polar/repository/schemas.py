@@ -32,7 +32,7 @@ class Repository(Schema):
         return cls(
             id=r.id,
             platform=r.platform,
-            visibility=r.visibility,
+            visibility=Visibility.PRIVATE if r.is_private else Visibility.PUBLIC,
             name=r.name,
             description=r.description,
             stars=r.stars,
@@ -78,7 +78,7 @@ class RepositoryCreate(Schema):
     def from_github(
         cls, organization: OrganizationModel, repo: github.rest.Repository
     ) -> Self:
-        topics = repo.topics or None
+        topics = repo.topics if repo.topics else None
         license = repo.license_.name if repo.license_ and repo.license_.name else None
         return cls(
             platform=Platforms.github,

@@ -22,10 +22,6 @@ log = structlog.get_logger()
 class RepositoryService(
     ResourceService[Repository, RepositoryCreate, RepositoryUpdate]
 ):
-    @property
-    def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
-        return [self.model.external_id]
-
     async def get(
         self,
         session: AsyncSession,
@@ -214,6 +210,48 @@ class RepositoryService(
                 repo["auto_embedded_issues"] += mapped["issue_count"]
 
         return ret
+
+    async def create_or_update(
+        self, session: AsyncSession, r: RepositoryCreate
+    ) -> Repository:
+        update_keys = {
+            "name",
+            "description",
+            "open_issues",
+            "forks",
+            "stars",
+            "watchers",
+            "main_branch",
+            "topics",
+            "license",
+            "homepage",
+            "repository_pushed_at",
+            "repository_modified_at",
+            "is_private",
+            "is_fork",
+            "is_issues_enabled",
+            "is_wiki_enabled",
+            "is_pages_enabled",
+            "is_downloads_enabled",
+            "is_archived",
+            "is_disabled",
+            "deleted_at",
+        }
+
+        insert_stmt = sql.insert(Repository).values(**r.dict())
+
+        stmt = (
+            insert_stmt.on_conflict_do_update(
+                index_elements=[Repository.external_id],
+                set_={k: getattr(insert_stmt.excluded, k) for k in update_keys},
+            )
+            .returning(Repository)
+            .execution_options(populate_existing=True)
+        )
+
+        res = await session.execute(stmt)
+        await session.commit()
+        return res.scalars().one()
 
 
 repository = RepositoryService(Repository)

@@ -52,6 +52,7 @@ class UserOrganizationSettings(TimestampedModel):
         Boolean, nullable=False, default=True
     )
 
+    # TODO: This is never used. Remove once active_record.upsert() is gone
     __mutables__ = {
         "email_notification_maintainer_issue_receives_backing",
         "email_notification_maintainer_issue_branch_created",

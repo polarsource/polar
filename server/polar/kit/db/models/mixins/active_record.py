@@ -111,6 +111,12 @@ class ActiveRecordMixin:
         mutable_keys: set[str] | None = None,
         autocommit: bool = True,
     ) -> Self:
+        """
+        Usage of upsert is deprecated.
+        If you need an upsert, add the functionality in the service instead of relying
+        active record.
+        """
+
         upserted: Sequence[Self] = await cls.upsert_many(
             session,
             [obj],

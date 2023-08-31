@@ -1,10 +1,9 @@
 import asyncio
 from functools import wraps
 from typing import Callable, Sequence
+
 import githubkit
-
 import typer
-
 from sqlalchemy.orm import joinedload
 
 from polar.config import settings
@@ -22,8 +21,8 @@ from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import OrganizationCreate
 from polar.postgres import AsyncSession, AsyncSessionLocal, sql
 from polar.repository.schemas import RepositoryCreate
-from polar.worker import enqueue_job
 from polar.user.service import user as user_service
+from polar.worker import enqueue_job
 
 cli = typer.Typer()
 
@@ -245,7 +244,9 @@ async def add_external_repo(
             name=github_repo.name,
             is_private=github_repo.private,
         )
-        repository = await service.github_repository.upsert(session, repo_schema)
+        repository = await service.github_repository.create_or_update(
+            session, repo_schema
+        )
 
         user = await user_service.get_by(session, username=invite_username)
         if not user:

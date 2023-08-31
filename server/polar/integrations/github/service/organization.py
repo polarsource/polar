@@ -71,7 +71,7 @@ class GithubOrganizationService(OrganizationService):
             return None
 
         to_create = filtered.pop()
-        organization = await self.upsert(session, to_create)
+        organization = await self.create_or_update(session, to_create)
         if not organization:
             return None
 
@@ -172,7 +172,7 @@ class GithubOrganizationService(OrganizationService):
                 installation_updated_at=installation.updated_at,
                 installation_suspended_at=installation.suspended_at,
             )
-            organization = await self.upsert(session, create_schema)
+            organization = await self.create_or_update(session, create_schema)
             return organization
 
         # update

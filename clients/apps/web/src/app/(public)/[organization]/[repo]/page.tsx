@@ -1,25 +1,32 @@
-import PublicLayout from '@/components/Layout/PublicLayout'
 import RepositoryPublicPage from '@/components/Organization/RepositoryPublicPage'
 import PageNotFound from '@/components/Shared/PageNotFound'
-import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import Head from 'next/head'
-import { useRouter } from 'next/router'
 import { api } from 'polarkit'
-import { Issue, Organization, Platforms, Repository } from 'polarkit/api/client'
-import { ReactElement } from 'react'
+import { Platforms } from 'polarkit/api/client'
 
-const Page: NextLayoutComponentType = ({
-  organization,
-  repositories,
-  issues,
-  totalIssueCount,
+export default async function Page({
+  params,
 }: {
-  organization?: Organization
-  repositories?: Repository[]
-  issues?: Issue[]
-  totalIssueCount?: number
-}) => {
-  const router = useRouter()
+  params: { organization: string; repo: string }
+}) {
+  const organization = await api.organizations.lookup({
+    platform: Platforms.GITHUB,
+    organizationName: params.organization,
+  })
+
+  const repositories = await api.repositories.search({
+    platform: Platforms.GITHUB,
+    organizationName: params.organization,
+  })
+
+  const issues = await api.issues.search({
+    platform: Platforms.GITHUB,
+    organizationName: params.organization,
+    repositoryName: params.repo,
+    haveBadge: true,
+  })
+
+  const totalIssueCount = issues.pagination.total_count
 
   if (
     organization === undefined ||
@@ -29,8 +36,7 @@ const Page: NextLayoutComponentType = ({
     return <PageNotFound />
   }
 
-  const repoName = router.query.repo
-  const repo = repositories.find((r) => r.name === repoName)
+  const repo = repositories.items?.find((r) => r.name === params.repo)
 
   if (!repo) {
     return <PageNotFound />
@@ -79,56 +85,11 @@ const Page: NextLayoutComponentType = ({
 
       <RepositoryPublicPage
         organization={organization}
-        repositories={repositories}
+        repositories={repositories.items || []}
         repository={repo}
-        issues={issues}
+        issues={issues.items || []}
         totalIssueCount={totalIssueCount}
       />
     </>
   )
 }
-
-Page.getLayout = (page: ReactElement) => {
-  return <PublicLayout>{page}</PublicLayout>
-}
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  try {
-    if (
-      typeof context?.params?.organization !== 'string' ||
-      typeof context?.params?.repo !== 'string'
-    ) {
-      return { props: {} }
-    }
-
-    const organization = await api.organizations.lookup({
-      platform: Platforms.GITHUB,
-      organizationName: context.params.organization,
-    })
-
-    const repositories = await api.repositories.search({
-      platform: Platforms.GITHUB,
-      organizationName: context.params.organization,
-    })
-
-    const issues = await api.issues.search({
-      platform: Platforms.GITHUB,
-      organizationName: context.params.organization,
-      repositoryName: context.params.repo,
-      haveBadge: true,
-    })
-
-    return {
-      props: {
-        organization,
-        repositories: repositories.items || [],
-        issues: issues.items || [],
-        totalIssueCount: issues.pagination.total_count,
-      },
-    }
-  } catch (Error) {
-    return { props: {} }
-  }
-}
-
-export default Page

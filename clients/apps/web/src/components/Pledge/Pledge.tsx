@@ -1,7 +1,10 @@
+'use client'
+
 import { Issue } from 'polarkit/api/client'
 import { IssueCard } from 'polarkit/components/pledge'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
-import { useState } from 'react'
+import posthog from 'posthog-js'
+import { useEffect, useState } from 'react'
 import Footer from '../Organization/Footer'
 import HowItWorks from './HowItWorks'
 import PledgeForm from './PledgeForm'
@@ -19,6 +22,19 @@ const Pledge = ({
   const onAmountChange = (amount: number) => {
     setAmount(amount)
   }
+
+  useEffect(() => {
+    if (issue) {
+      posthog.capture('Pledge page shown', {
+        'Organization ID': issue.repository.organization.id,
+        'Organization Name': issue.repository.organization.name,
+        'Repository ID': issue.repository.id,
+        'Repository Name': issue.repository.name,
+        'Issue ID': issue.id,
+        'Issue Number': issue.number,
+      })
+    }
+  }, [issue])
 
   return (
     <>
@@ -55,7 +71,7 @@ const Pledge = ({
             />
           </div>
           <div className="text-left md:w-1/2">
-            <div className="py-5 px-3 md:px-6 ">
+            <div className="px-3 py-5 md:px-6 ">
               <PledgeForm
                 issue={issue}
                 asOrg={asOrg}

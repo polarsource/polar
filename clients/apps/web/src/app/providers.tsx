@@ -2,6 +2,7 @@
 
 import * as Sentry from '@sentry/nextjs'
 import { QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryStreamedHydration } from '@tanstack/react-query-next-experimental'
 import { ThemeProvider } from 'next-themes'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { queryClient } from 'polarkit/api'
@@ -64,6 +65,8 @@ export function PolarQueryClientProvider({
   children: React.ReactElement
 }) {
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <ReactQueryStreamedHydration>{children}</ReactQueryStreamedHydration>
+    </QueryClientProvider>
   )
 }

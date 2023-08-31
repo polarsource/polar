@@ -102,7 +102,7 @@ const Issues = ({
   org: Organization | undefined
   repo: Repository | undefined
 }) => {
-  const router = useRouter()
+  const search = useSearchParams()
 
   const initFilters = {
     ...DefaultFilters,
@@ -120,14 +120,15 @@ const Issues = ({
     // TODO: can we do this on the initial load instead to avoid the effect / and ref
     if (!didSetFiltersFromURL.current) {
       didSetFiltersFromURL.current = true
-      const s = new URLSearchParams(window.location.search)
+
+      const s = search
 
       const f: DashboardFilters = {
         ...DefaultFilters,
-        q: s.get('q') || '',
+        q: s?.get('q') || '',
         tab: IssueListType.ISSUES,
       }
-      if (s.has('statuses')) {
+      if (s?.has('statuses')) {
         const stat = s.get('statuses')
         if (stat) {
           const statuses = stat.split(',')
@@ -138,19 +139,19 @@ const Issues = ({
           f.statusClosed = statuses.includes('closed')
         }
       }
-      if (s.has('sort')) {
+      if (s?.has('sort')) {
         f.sort = getSort(s.get('sort'))
       }
-      if (s.has('onlyPledged')) {
+      if (s?.has('onlyPledged')) {
         f.onlyPledged = true
       }
-      if (s.has('onlyBadged')) {
+      if (s?.has('onlyBadged')) {
         f.onlyBadged = true
       }
 
       setFilters(f)
     }
-  }, [router.query])
+  }, [search])
 
   let [statuses, setStatuses] = useState<Array<IssueStatus>>(
     buildStatusesFilter(filters),

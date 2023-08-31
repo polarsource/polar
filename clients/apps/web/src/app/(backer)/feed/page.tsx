@@ -1,4 +1,5 @@
-import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
+'use client'
+
 import IssueList from '@/components/Dashboard/IssueList'
 import {
   DashboardFilters,
@@ -8,12 +9,10 @@ import BackerLayout from '@/components/Layout/BackerLayout'
 import FundAGithubIssue from '@/components/Onboarding/FundAGithubIssue'
 import OnboardingConnectReposToGetStarted from '@/components/Onboarding/OnboardingConnectReposToGetStarted'
 import { useAuth } from '@/hooks'
-import type { NextLayoutComponentType } from 'next'
 import { IssueListType, IssueStatus } from 'polarkit/api/client'
 import { usePersonalDashboard } from 'polarkit/hooks'
-import { ReactElement } from 'react'
 
-const Page: NextLayoutComponentType = () => {
+export default function Page() {
   const { currentUser } = useAuth()
 
   const filters: DashboardFilters = {
@@ -71,9 +70,3 @@ const Page: NextLayoutComponentType = () => {
     </BackerLayout>
   )
 }
-
-Page.getLayout = (page: ReactElement) => {
-  return <Gatekeeper>{page}</Gatekeeper>
-}
-
-export default Page

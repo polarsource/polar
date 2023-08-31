@@ -8,7 +8,7 @@ import {
 } from '@heroicons/react/24/outline'
 
 import Link from 'next/link'
-import { useRouter } from 'next/router'
+import { usePathname, useRouter } from 'next/navigation'
 import { classNames } from 'polarkit/utils'
 import { useState } from 'react'
 
@@ -84,17 +84,19 @@ const MaintainerNavigation = () => {
     }
   }
 
+  const pathname = usePathname()
+
   // Filter routes, set isActive, and if subs should be expanded
   const filteredNavs = navs
     .filter((n) => !!n.if)
     .map((n) => {
-      const isActive = router.asPath.startsWith(n.link)
+      const isActive = pathname && pathname.startsWith(n.link)
 
       const subs =
         n.subs?.map((s) => {
           return {
             ...s,
-            isActive: router.asPath.startsWith(s.link),
+            isActive: pathname && pathname.startsWith(s.link),
           }
         }) || []
 

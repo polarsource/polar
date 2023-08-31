@@ -1,4 +1,4 @@
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 import { CancelablePromise, type UserRead } from 'polarkit/api/client'
 import { CONFIG } from 'polarkit/config'
 import { UserState, useStore } from 'polarkit/store'

@@ -1,3 +1,5 @@
+'use client'
+
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import BadgeSetup from '@/components/Settings/Badge'

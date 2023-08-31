@@ -1,3 +1,5 @@
+'use client'
+
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import { FundOurBacklog } from '@/components/Embed/FundOurBacklog'
 import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
@@ -105,7 +107,7 @@ const Page: NextLayoutComponentType = () => {
               <div className="max-w-[600px]">
                 <CopyToClipboardInput id="github-funding" value={fundingYAML} />
               </div>
-              <div className="rounded-md border border-blue-100 bg-blue-50 py-2 px-4 text-gray-700 dark:border-blue-700/50 dark:bg-blue-800/50 dark:text-gray-400">
+              <div className="rounded-md border border-blue-100 bg-blue-50 px-4 py-2 text-gray-700 dark:border-blue-700/50 dark:bg-blue-800/50 dark:text-gray-400">
                 Follow the instructions{' '}
                 <a
                   className="font-bold text-blue-500"

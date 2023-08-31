@@ -1,12 +1,12 @@
-import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
+'use client'
+
 import LoadingScreen from '@/components/Dashboard/LoadingScreen'
-import type { NextLayoutComponentType } from 'next'
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 import { CONFIG } from 'polarkit/config'
 import { useListOrganizations } from 'polarkit/hooks'
-import { ReactElement, useEffect } from 'react'
+import { useEffect } from 'react'
 
-const Page: NextLayoutComponentType = () => {
+export default function Page() {
   const listOrganizationsQuery = useListOrganizations()
 
   const router = useRouter()
@@ -29,8 +29,8 @@ const Page: NextLayoutComponentType = () => {
   return <LoadingScreen animate={true}>Setting you up...</LoadingScreen>
 }
 
-Page.getLayout = (page: ReactElement) => {
-  return <Gatekeeper>{page}</Gatekeeper>
-}
+// Page.getLayout = (page: ReactElement) => {
+//   return <Gatekeeper>{page}</Gatekeeper>
+// }
 
-export default Page
+// export default Page

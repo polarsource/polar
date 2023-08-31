@@ -1,3 +1,5 @@
+'use client'
+
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import Finance from '@/components/Finance/Finance'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
@@ -10,7 +12,7 @@ import {
   useListRewards,
 } from 'polarkit/hooks'
 import { ReactElement, useEffect } from 'react'
-import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
+import { useCurrentOrgAndRepoFromURL } from '../../../../../hooks'
 
 const Page: NextLayoutComponentType = () => {
   const router = useRouter()
@@ -37,7 +39,7 @@ const Page: NextLayoutComponentType = () => {
           pledges={pledges.data.items}
           rewards={rewards.data.items}
           org={org}
-          tab="rewarded"
+          tab="contributors"
           accounts={accounts.data?.items || []}
         />
       )}

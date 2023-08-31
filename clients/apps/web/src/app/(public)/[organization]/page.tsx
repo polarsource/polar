@@ -1,23 +1,32 @@
-import PublicLayout from '@/components/Layout/PublicLayout'
 import OrganizationPublicPage from '@/components/Organization/OrganizationPublicPage'
 import PageNotFound from '@/components/Shared/PageNotFound'
-import type { GetServerSideProps, NextLayoutComponentType } from 'next'
 import Head from 'next/head'
-import { api } from 'polarkit'
-import { Issue, Organization, Platforms, Repository } from 'polarkit/api/client'
-import { ReactElement } from 'react'
+import { api } from 'polarkit/api'
+import { Platforms } from 'polarkit/api/client'
 
-const Page: NextLayoutComponentType = ({
-  organization,
-  repositories,
-  issues,
-  totalIssueCount,
+export default async function Page({
+  params,
 }: {
-  organization?: Organization
-  repositories?: Repository[]
-  issues?: Issue[]
-  totalIssueCount?: number
-}) => {
+  params: { organization: string }
+}) {
+  const organization = await api.organizations.lookup({
+    platform: Platforms.GITHUB,
+    organizationName: params.organization,
+  })
+
+  const repositories = await api.repositories.search({
+    platform: Platforms.GITHUB,
+    organizationName: params.organization,
+  })
+
+  const issues = await api.issues.search({
+    platform: Platforms.GITHUB,
+    organizationName: params.organization,
+    haveBadge: true,
+  })
+
+  const totalIssueCount = issues.pagination.total_count
+
   if (
     organization === undefined ||
     repositories === undefined ||
@@ -67,51 +76,10 @@ const Page: NextLayoutComponentType = ({
 
       <OrganizationPublicPage
         organization={organization}
-        repositories={repositories}
-        issues={issues}
+        repositories={repositories.items || []}
+        issues={issues.items || []}
         totalIssueCount={totalIssueCount}
       />
     </>
   )
 }
-
-Page.getLayout = (page: ReactElement) => {
-  return <PublicLayout>{page}</PublicLayout>
-}
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  try {
-    if (typeof context?.params?.organization !== 'string') {
-      return { props: {} }
-    }
-
-    const organization = await api.organizations.lookup({
-      platform: Platforms.GITHUB,
-      organizationName: context.params.organization,
-    })
-
-    const repositories = await api.repositories.search({
-      platform: Platforms.GITHUB,
-      organizationName: context.params.organization,
-    })
-
-    const issues = await api.issues.search({
-      platform: Platforms.GITHUB,
-      organizationName: context.params.organization,
-      haveBadge: true,
-    })
-
-    return {
-      props: {
-        organization,
-        repositories: repositories.items || [],
-        issues: issues.items || [],
-        totalIssueCount: issues.pagination.total_count,
-      },
-    }
-  } catch (Error) {
-    return { props: {} }
-  }
-}
-
-export default Page

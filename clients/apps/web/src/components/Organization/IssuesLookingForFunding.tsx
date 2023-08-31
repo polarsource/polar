@@ -41,7 +41,7 @@ const IssuesLookingForFunding = ({
 
   return (
     <>
-      <div className="flex flex-col justify-between space-y-4 md:flex-row md:space-y-0 md:space-x-6">
+      <div className="flex flex-col justify-between space-y-4 md:flex-row md:space-x-6 md:space-y-0">
         {top3.map((i) => (
           <div
             className="flex flex-1 flex-col rounded-lg px-6 py-4 text-gray-500 shadow dark:bg-gray-900 dark:ring-1 dark:ring-gray-800"
@@ -78,7 +78,7 @@ const IssuesLookingForFunding = ({
 
               <a
                 href={i.pledge_href}
-                className="rounded-md bg-blue-600 py-0.5 px-2 text-sm text-white hover:bg-blue-500"
+                className="rounded-md bg-blue-600 px-2 py-0.5 text-sm text-white hover:bg-blue-500"
               >
                 Pledge
               </a>
@@ -87,7 +87,7 @@ const IssuesLookingForFunding = ({
         ))}
       </div>
 
-      <div className="divide-black/7 border-black/7 divide-y border-t border-b">
+      <div className="divide-black/7 border-black/7 divide-y border-b border-t">
         {rest.map((i) => (
           <IssueListItem
             key={i.issue.id}

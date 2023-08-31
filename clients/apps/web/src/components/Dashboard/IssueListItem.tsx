@@ -1,3 +1,5 @@
+'use client'
+
 import { Modal as ModernModal } from '@/components/Modal'
 import Modal, { ModalBox } from '@/components/Shared/Modal'
 import { useToastLatestPledged } from '@/hooks/stripe'

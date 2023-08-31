@@ -2,8 +2,8 @@ import { StateCreator } from 'zustand'
 import { api } from '../api'
 import {
   CancelablePromise,
+  Issue,
   Repository,
-  type IssueRead,
   type Organization,
   type PledgeRead,
   type UserRead,
@@ -57,7 +57,7 @@ export interface LastPledgeState {
   setLatestPledge: (
     org: Organization,
     repo: Repository,
-    issue: IssueRead,
+    issue: Issue,
     pledge: PledgeRead,
     redirectStatus: string,
   ) => void
@@ -148,7 +148,7 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
   setLatestPledge: (
     org: Organization,
     repo: Repository,
-    issue: IssueRead,
+    issue: Issue,
     pledge: PledgeRead,
     redirectStatus: string,
   ) => {

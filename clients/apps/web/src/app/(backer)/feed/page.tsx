@@ -49,24 +49,20 @@ export default function Page() {
   }
 
   return (
-    <BackerLayout>
-      <>
-        <div className="mt-2 space-y-5">
-          <FundAGithubIssue />
-          <IssueList
-            totalCount={totalCount}
-            loading={dashboardQuery.isLoading}
-            dashboard={dashboard}
-            filters={filters}
-            onSetFilters={() => {}}
-            isInitialLoading={dashboardQuery.isInitialLoading}
-            isFetchingNextPage={dashboardQuery.isFetchingNextPage}
-            hasNextPage={dashboardQuery.hasNextPage || false}
-            fetchNextPage={dashboardQuery.fetchNextPage}
-            showSelfPledgesFor={currentUser}
-          />
-        </div>
-      </>
-    </BackerLayout>
+    <div className="mt-2 space-y-5">
+      <FundAGithubIssue />
+      <IssueList
+        totalCount={totalCount}
+        loading={dashboardQuery.isLoading}
+        dashboard={dashboard}
+        filters={filters}
+        onSetFilters={() => {}}
+        isInitialLoading={dashboardQuery.isInitialLoading}
+        isFetchingNextPage={dashboardQuery.isFetchingNextPage}
+        hasNextPage={dashboardQuery.hasNextPage || false}
+        fetchNextPage={dashboardQuery.fetchNextPage}
+        showSelfPledgesFor={currentUser}
+      />
+    </div>
   )
 }

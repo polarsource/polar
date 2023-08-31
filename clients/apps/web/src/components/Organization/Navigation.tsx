@@ -1,4 +1,4 @@
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 import { Organization, Repository } from 'polarkit/api/client'
 import RepoSelection from './RepoSelection'
 

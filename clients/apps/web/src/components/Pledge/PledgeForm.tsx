@@ -5,7 +5,7 @@ import { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
 import { ApiError, Issue, PledgeMutationResponse } from 'polarkit/api/client'
 import { MoneyInput, PrimaryButton } from 'polarkit/components/ui'
@@ -327,7 +327,7 @@ const PledgeForm = ({
 
         <label
           htmlFor="email"
-          className="mt-4 mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+          className="mb-2 mt-4 text-sm font-medium text-gray-500 dark:text-gray-400"
         >
           Contact details
         </label>
@@ -338,7 +338,7 @@ const PledgeForm = ({
             onChange={onEmailChange}
             onBlur={onEmailChange}
             value={email}
-            className="block w-full rounded-lg border-gray-200 bg-transparent py-2.5 px-3 pl-10 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
+            className="block w-full rounded-lg border-gray-200 bg-transparent px-3 py-2.5 pl-10 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
             onFocus={(event) => {
               event.target.select()
             }}

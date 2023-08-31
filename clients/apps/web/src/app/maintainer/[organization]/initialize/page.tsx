@@ -41,6 +41,7 @@ export default function Page() {
       <Head>
         <title>Polar | Setup {org.name}</title>
       </Head>
+
       <div className="flex min-h-screen px-2 py-8 md:px-0">
         <div className="mx-auto space-y-8 md:my-auto md:w-[700px]">
           {!showControls && (
@@ -77,16 +78,3 @@ export default function Page() {
     </>
   )
 }
-
-// Page.getLayout = (page: ReactElement) => {
-//   return (
-//     <Gatekeeper>
-//       <>
-//         <Topbar hideProfile={true} />
-//         {page}
-//       </>
-//     </Gatekeeper>
-//   )
-// }
-
-// export default Page

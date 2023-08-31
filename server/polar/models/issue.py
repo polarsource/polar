@@ -236,6 +236,7 @@ class Issue(IssueFields, RecordModel):
         nullable=True,
     )
 
+    # TODO: This is never used. Remove once active_record.upsert() is gone
     __mutables__ = issue_fields_mutables | {
         "has_pledge_badge_label",
         "pledge_badge_currently_embedded",

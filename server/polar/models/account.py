@@ -55,6 +55,7 @@ class Account(RecordModel):
         "Organization", foreign_keys=[organization_id]
     )
 
+    # TODO: This is never used. Remove once active_record.upsert() is gone
     __mutables__ = {
         "is_details_submitted",
         "is_charges_enabled",

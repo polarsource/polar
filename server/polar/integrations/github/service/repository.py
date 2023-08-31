@@ -1,29 +1,32 @@
-from typing import Literal, Callable, Any, Coroutine, Sequence
+from typing import Any, Callable, Coroutine, Literal, Sequence
 
 import structlog
 from githubkit import Paginator, Response
 from githubkit.rest import (
     InstallationRepositoriesGetResponse200,
+)
+from githubkit.rest import (
     Repository as GitHubKitRepository,
 )
-from polar.kit.hook import Hook
 
-from polar.models import Organization, Repository, Issue, PullRequest
 from polar.enums import Platforms
+from polar.kit.extensions.sqlalchemy import sql
+from polar.kit.hook import Hook
+from polar.models import Issue, Organization, PullRequest, Repository
 from polar.postgres import AsyncSession
-from polar.repository.hooks import SyncCompletedHook, SyncedHook
-from polar.worker import enqueue_job
-from polar.repository.schemas import RepositoryCreate
-from polar.repository.service import RepositoryService
 from polar.repository.hooks import (
+    SyncCompletedHook,
+    SyncedHook,
     repository_issue_synced,
     repository_issues_sync_completed,
 )
+from polar.repository.schemas import RepositoryCreate
+from polar.repository.service import RepositoryService
+from polar.worker import enqueue_job
 
 from .. import client as github
 from .issue import github_issue
 from .pull_request import github_pull_request
-
 
 log = structlog.get_logger()
 
@@ -250,7 +253,7 @@ class GithubRepositoryService(RepositoryService):
             map_func=mapper,
         ):
             create = RepositoryCreate.from_github(organization, repo)
-            inst = await self.upsert(session, create, autocommit=False)
+            inst = await self.create_or_update(session, create)
 
             # un-delete if previously deleted
             if inst.deleted_at is not None:

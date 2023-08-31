@@ -13,13 +13,11 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
-from polar.visibility import Visibility
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.organization import Organization
@@ -90,10 +88,7 @@ class Repository(RecordModel):
     is_archived: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     is_disabled: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
-    @hybrid_property
-    def visibility(self) -> Visibility:
-        return Visibility.PRIVATE if self.is_private else Visibility.PUBLIC
-
+    # TODO: This is never used. Remove once active_record.upsert() is gone
     __mutables__ = {
         "name",
         "description",

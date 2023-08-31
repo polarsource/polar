@@ -1,14 +1,14 @@
-from uuid import UUID
 from typing import Sequence
+from uuid import UUID
 
 import structlog
 from sqlalchemy.orm import InstrumentedAttribute
 
+from polar.enums import Platforms
 from polar.kit.services import ResourceService
 from polar.models.issue import Issue
 from polar.models.issue_reference import IssueReference
 from polar.models.pull_request import PullRequest
-from polar.enums import Platforms
 from polar.postgres import AsyncSession, sql
 
 from .schemas import FullPullRequestCreate, MinimalPullRequestCreate, PullRequestUpdate

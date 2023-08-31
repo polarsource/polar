@@ -235,7 +235,9 @@ async def add_external_repo(
             avatar_url=owner.avatar_url,
             is_personal=is_personal,
         )
-        organization = await service.github_organization.upsert(session, org_schema)
+        organization = await service.github_organization.create_or_update(
+            session, org_schema
+        )
 
         repo_schema = RepositoryCreate(
             platform=Platforms.github,

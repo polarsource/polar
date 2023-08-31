@@ -1,3 +1,5 @@
+'use client'
+
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {

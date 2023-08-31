@@ -1,3 +1,5 @@
+'use client'
+
 import { Command } from 'cmdk'
 import { Repository } from 'polarkit/api/client'
 import { clsx, useOutsideClick } from 'polarkit/utils'

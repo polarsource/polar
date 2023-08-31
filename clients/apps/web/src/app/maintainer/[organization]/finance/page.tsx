@@ -1,24 +1,24 @@
 'use client'
 
-import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import Finance from '@/components/Finance/Finance'
-import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { useToast } from '@/components/Toast/use-toast'
-import type { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
-import { useRouter } from 'next/router'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   useListAccountsByOrganization,
   useListPledgesForOrganization,
   useListRewards,
 } from 'polarkit/hooks'
-import { ReactElement, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
 
-const Page: NextLayoutComponentType = () => {
+export default function Page() {
   const router = useRouter()
   const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
-  const { status } = router.query
+
+  const params = useSearchParams()
+  const status = params?.get('status')
+
   const { toast } = useToast()
 
   useEffect(() => {
@@ -58,13 +58,3 @@ const Page: NextLayoutComponentType = () => {
     </>
   )
 }
-
-Page.getLayout = (page: ReactElement) => {
-  return (
-    <Gatekeeper>
-      <DashboardLayout showSidebar={true}>{page}</DashboardLayout>
-    </Gatekeeper>
-  )
-}
-
-export default Page

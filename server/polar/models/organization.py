@@ -107,6 +107,7 @@ class Organization(RecordModel):
             slug=self.name,
         )
 
+    # TODO: this is unused, remove
     __mutables__ = {
         "name",
         "avatar_url",

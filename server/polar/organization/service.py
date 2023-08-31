@@ -28,6 +28,7 @@ log = structlog.get_logger()
 class OrganizationService(
     ResourceService[Organization, OrganizationCreate, OrganizationUpdate]
 ):
+    # TODO: this is unused, remove when we get rid of upsert
     @property
     def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
         return [self.model.external_id]
@@ -366,6 +367,38 @@ class OrganizationService(
         # update the in memory version as well
         org.default_badge_custom_content = message
         return org
+
+    async def create_or_update(
+        self, session: AsyncSession, r: OrganizationCreate
+    ) -> Organization:
+        update_keys = {
+            "name",
+            "avatar_url",
+            "is_personal",
+            "installation_id",
+            "installation_created_at",
+            "installation_updated_at",
+            "installation_suspended_at",
+            "status",
+            "pledge_badge_show_amount",
+            "pledge_minimum_amount",
+            "deleted_at",
+        }
+
+        insert_stmt = sql.insert(Organization).values(**r.dict())
+
+        stmt = (
+            insert_stmt.on_conflict_do_update(
+                index_elements=[Organization.external_id],
+                set_={k: getattr(insert_stmt.excluded, k) for k in update_keys},
+            )
+            .returning(Organization)
+            .execution_options(populate_existing=True)
+        )
+
+        res = await session.execute(stmt)
+        await session.commit()
+        return res.scalars().one()
 
 
 organization = OrganizationService(Organization)

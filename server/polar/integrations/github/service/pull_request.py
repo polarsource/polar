@@ -97,7 +97,10 @@ class GithubPullRequestService(PullRequestService):
         data: Sequence[
             Union[
                 github.rest.PullRequest,
+                github.webhooks.PullRequest,
                 github.webhooks.PullRequestOpenedPropPullRequest,
+                github.webhooks.PullRequestClosedPropPullRequest,
+                github.webhooks.PullRequestReopenedPropPullRequest,
             ],
         ],
         organization: Organization,
@@ -106,7 +109,10 @@ class GithubPullRequestService(PullRequestService):
         def parse(
             pr: Union[
                 github.rest.PullRequest,
+                github.webhooks.PullRequest,
                 github.webhooks.PullRequestOpenedPropPullRequest,
+                github.webhooks.PullRequestClosedPropPullRequest,
+                github.webhooks.PullRequestReopenedPropPullRequest,
             ],
         ) -> FullPullRequestCreate:
             return FullPullRequestCreate.full_pull_request_from_github(

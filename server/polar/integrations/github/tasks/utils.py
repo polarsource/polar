@@ -159,5 +159,7 @@ async def upsert_pull_request(
         repository_id=repo.id,
     )
 
-    record = await service.github_pull_request.upsert(session, create_schema)
-    return record
+    records = await service.github_pull_request.store_many_full(
+        session, [event.pull_request], organization=org, repository=repo
+    )
+    return records[0] if len(records) == 1 else None

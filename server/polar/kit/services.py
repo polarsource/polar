@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from uuid import UUID
 from typing import Any, Generic, Sequence, TypeVar
+from uuid import UUID
 
 from sqlalchemy.orm import InstrumentedAttribute
 

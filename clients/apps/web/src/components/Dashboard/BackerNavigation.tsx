@@ -1,10 +1,10 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
+import { usePathname } from 'next/navigation'
 import { classNames } from 'polarkit/utils'
 
 const BackerNavigation = (props: { classNames: string }) => {
-  const router = useRouter()
+  const path = usePathname()
 
   // All routes and conditions
   const navs = [
@@ -22,7 +22,7 @@ const BackerNavigation = (props: { classNames: string }) => {
 
   // Filter routes, set isActive, and if subs should be expanded
   const filteredNavs = navs.map((n) => {
-    const isActive = router.asPath.startsWith(n.link)
+    const isActive = path && path.startsWith(n.link)
     return {
       ...n,
       isActive,

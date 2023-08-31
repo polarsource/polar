@@ -1,21 +1,20 @@
-import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
+'use client'
+
 import SetupAccount from '@/components/Dashboard/SetupAccount'
 import { HeaderPill, RewardsContent } from '@/components/Finance/Finance'
 import Icon from '@/components/Icons/Icon'
-import BackerLayout from '@/components/Layout/BackerLayout'
 import { Modal as ModernModal } from '@/components/Modal'
 import { useRequireAuth } from '@/hooks'
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
-import type { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from 'polarkit/account'
 import { api } from 'polarkit/api'
 import { Account, AccountType, UserRead } from 'polarkit/api/client'
 import { Banner, PrimaryButton } from 'polarkit/components/ui'
 import { useListAccountsByUser, useListRewardsToUser } from 'polarkit/hooks'
-import { ReactElement, useState } from 'react'
+import { useState } from 'react'
 
-const Page: NextLayoutComponentType = () => {
+export default function Page() {
   const { currentUser } = useRequireAuth()
   const rewards = useListRewardsToUser(currentUser?.id)
   const accounts = useListAccountsByUser(currentUser?.id)
@@ -48,16 +47,6 @@ const Page: NextLayoutComponentType = () => {
     </>
   )
 }
-
-Page.getLayout = (page: ReactElement) => {
-  return (
-    <Gatekeeper>
-      <BackerLayout>{page}</BackerLayout>
-    </Gatekeeper>
-  )
-}
-
-export default Page
 
 const AccountBanner = (props: { user: UserRead; accounts: Account[] }) => {
   const { accounts } = props

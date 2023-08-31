@@ -7,7 +7,7 @@ import Topbar from '../Shared/Topbar'
 const DashboardLayout = (props: {
   children: React.ReactNode
   showSidebar: boolean
-  header: React.ReactNode
+  header?: React.ReactNode
 }) => {
   return (
     <div className="relative flex flex-col">
@@ -53,7 +53,7 @@ export default DashboardLayout
 export const RepoPickerHeader = (props: {
   currentRepository?: Repository
   repositories: Repository[]
-  children: React.ReactNode
+  children?: React.ReactNode
 }) => {
   const onSubmit = () => {}
 

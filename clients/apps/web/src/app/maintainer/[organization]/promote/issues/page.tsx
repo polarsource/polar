@@ -1,19 +1,14 @@
 'use client'
 
-import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import BadgeSetup from '@/components/Settings/Badge'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
-import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
-import { useRouter } from 'next/router'
 import { useStore } from 'polarkit/store'
 import { ReactElement, useEffect, useRef } from 'react'
 
-const Page: NextLayoutComponentType = () => {
-  const router = useRouter()
+export default function Page() {
   const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
-
   const didFirstSetForOrg = useRef<string>('')
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
 
@@ -76,14 +71,6 @@ const Page: NextLayoutComponentType = () => {
   )
 }
 
-Page.getLayout = (page: ReactElement) => {
-  return (
-    <Gatekeeper>
-      <>{page}</>
-    </Gatekeeper>
-  )
-}
-
 const Section = ({ children }: { children: ReactElement }) => {
   return <div className="mb-4 flex flex-col space-y-4 pt-4">{children}</div>
 }
@@ -91,5 +78,3 @@ const Section = ({ children }: { children: ReactElement }) => {
 const SectionDescription = ({ title }: { title: string }) => {
   return <h2 className="text-lg text-gray-500 dark:text-gray-400">{title}</h2>
 }
-
-export default Page

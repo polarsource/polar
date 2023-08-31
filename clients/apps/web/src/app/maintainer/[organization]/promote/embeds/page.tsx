@@ -1,13 +1,11 @@
 'use client'
 
-import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
 import { FundOurBacklog } from '@/components/Embed/FundOurBacklog'
 import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
 import DashboardLayout, {
   RepoPickerHeader,
 } from '@/components/Layout/DashboardLayout'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
-import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import {
   CopyToClipboardInput,
@@ -17,7 +15,7 @@ import {
 import { useListRepositories, useSearchIssues } from 'polarkit/hooks'
 import { ReactElement, useState } from 'react'
 
-const Page: NextLayoutComponentType = () => {
+export default function Page() {
   const { org, isLoaded, repo: currentRepo } = useCurrentOrgAndRepoFromURL()
 
   const orgSlashRepo = currentRepo
@@ -156,13 +154,3 @@ const Page: NextLayoutComponentType = () => {
     </>
   )
 }
-
-Page.getLayout = (page: ReactElement) => {
-  return (
-    <Gatekeeper>
-      <>{page}</>
-    </Gatekeeper>
-  )
-}
-
-export default Page

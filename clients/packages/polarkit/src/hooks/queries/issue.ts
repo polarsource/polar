@@ -1,4 +1,10 @@
-import { InfiniteData, useMutation, useQuery } from '@tanstack/react-query'
+import {
+  InfiniteData,
+  UseMutationResult,
+  UseQueryResult,
+  useMutation,
+  useQuery,
+} from '@tanstack/react-query'
 import { api, queryClient } from '../../api'
 import {
   ConfirmIssueSplit,
@@ -13,7 +19,17 @@ import {
 } from '../../api/client'
 import { defaultRetry } from './retry'
 
-export const useIssueAddPolarBadge = () =>
+export const useIssueAddPolarBadge: () => UseMutationResult<
+  Issue,
+  Error,
+  {
+    platform: Platforms
+    orgName: string
+    repoName: string
+    issueNumber: number
+  },
+  unknown
+> = () =>
   useMutation({
     mutationFn: (variables: {
       platform: Platforms
@@ -209,15 +225,21 @@ export const useUpdateIssue = () =>
     },
   })
 
-export const useSearchIssues = (v: {
+export const useSearchIssues: (v: {
+  organizationName?: string
+  repositoryName?: string
+  sort?: IssueSortBy
+  havePledge?: boolean
+  haveBadge?: boolean
+}) => UseQueryResult<unknown, Error> = (v: {
   organizationName?: string
   repositoryName?: string
   sort?: IssueSortBy
   havePledge?: boolean
   haveBadge?: boolean
 }) =>
-  useQuery(
-    [
+  useQuery({
+    queryKey: [
       'issues',
       v.organizationName,
       v.repositoryName,
@@ -227,7 +249,7 @@ export const useSearchIssues = (v: {
         haveBadge: v.haveBadge,
       }),
     ],
-    () =>
+    queryFn: () =>
       api.issues.search({
         platform: Platforms.GITHUB,
         organizationName: v.organizationName || '',
@@ -236,11 +258,9 @@ export const useSearchIssues = (v: {
         havePledge: v.havePledge,
         haveBadge: v.haveBadge,
       }),
-    {
-      retry: defaultRetry,
-      enabled: !!v.organizationName,
-    },
-  )
+    retry: defaultRetry,
+    enabled: !!v.organizationName,
+  })
 
 export const useIssueMarkConfirmed = () =>
   useMutation({
@@ -253,8 +273,8 @@ export const useIssueMarkConfirmed = () =>
       })
     },
     onSuccess: async (result, variables, ctx) => {
-      await queryClient.invalidateQueries(['dashboard'])
-      await queryClient.invalidateQueries(['pledge'])
-      await queryClient.invalidateQueries(['listPersonalPledges'])
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      await queryClient.invalidateQueries({ queryKey: ['pledge'] })
+      await queryClient.invalidateQueries({ queryKey: ['listPersonalPledges'] })
     },
   })

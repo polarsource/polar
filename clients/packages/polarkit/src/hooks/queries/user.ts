@@ -1,14 +1,28 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import {
+  UseMutationResult,
+  UseQueryResult,
+  useMutation,
+  useQuery,
+} from '@tanstack/react-query'
 import { api, queryClient } from '../../api'
-import { UserUpdateSettings } from '../../api/client'
+import { ApiError, UserRead, UserUpdateSettings } from '../../api/client'
 import { defaultRetry } from './retry'
 
-export const useUser = () =>
-  useQuery(['user'], () => api.users.getAuthenticated(), {
+export const useUser: () => UseQueryResult<UserRead, ApiError> = () =>
+  useQuery({
+    queryKey: ['user'],
+    queryFn: () => api.users.getAuthenticated(),
     retry: defaultRetry,
   })
 
-export const useUserPreferencesMutation = () =>
+export const useUserPreferencesMutation: () => UseMutationResult<
+  UserRead,
+  Error,
+  {
+    userUpdateSettings: UserUpdateSettings
+  },
+  unknown
+> = () =>
   useMutation({
     mutationFn: (variables: { userUpdateSettings: UserUpdateSettings }) => {
       return api.users.updatePreferences({
@@ -16,12 +30,14 @@ export const useUserPreferencesMutation = () =>
       })
     },
     onSuccess: (result, variables, ctx) => {
-      queryClient.invalidateQueries(['user'])
+      queryClient.invalidateQueries({ queryKey: ['user'] })
     },
   })
 
 export const useListPersonalAccessTokens = () =>
-  useQuery(['personalAccessTokens'], () => api.personalAccessToken.list(), {
+  useQuery({
+    queryKey: ['personalAccessTokens'],
+    queryFn: () => api.personalAccessToken.list(),
     retry: defaultRetry,
   })
 
@@ -35,7 +51,7 @@ export const useCreatePersonalAccessToken = () =>
       })
     },
     onSuccess: (result, variables, ctx) => {
-      queryClient.invalidateQueries(['personalAccessTokens'])
+      queryClient.invalidateQueries({ queryKey: ['personalAccessTokens'] })
     },
   })
 
@@ -47,6 +63,6 @@ export const useDeletePersonalAccessToken = () =>
       })
     },
     onSuccess: (result, variables, ctx) => {
-      queryClient.invalidateQueries(['personalAccessTokens'])
+      queryClient.invalidateQueries({ queryKey: ['personalAccessTokens'] })
     },
   })

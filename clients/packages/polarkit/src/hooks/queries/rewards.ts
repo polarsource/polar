@@ -1,29 +1,31 @@
-import { useQuery } from '@tanstack/react-query'
+import { UseQueryResult, useQuery } from '@tanstack/react-query'
+import { ListResource_Reward_ } from 'api/client'
 import { api } from '../../..'
 import { defaultRetry } from './retry'
 
-export const useListRewards = (pledgesToOrganization?: string) =>
-  useQuery(
-    ['rewards', 'list', pledgesToOrganization],
-    () =>
+export const useListRewards: (
+  pledgesToOrganization?: string,
+) => UseQueryResult<ListResource_Reward_, Error> = (
+  pledgesToOrganization?: string,
+) =>
+  useQuery({
+    queryKey: ['rewards', 'list', pledgesToOrganization],
+    queryFn: () =>
       api.rewards.search({
         pledgesToOrganization: pledgesToOrganization,
       }),
-    {
-      retry: defaultRetry,
-      enabled: !!pledgesToOrganization,
-    },
-  )
+
+    retry: defaultRetry,
+    enabled: !!pledgesToOrganization,
+  })
 
 export const useListRewardsToUser = (userId?: string) =>
-  useQuery(
-    ['rewards', 'list', userId],
-    () =>
+  useQuery({
+    queryKey: ['rewards', 'list', userId],
+    queryFn: () =>
       api.rewards.search({
         rewardsToUser: userId,
       }),
-    {
-      retry: defaultRetry,
-      enabled: !!userId,
-    },
-  )
+    retry: defaultRetry,
+    enabled: !!userId,
+  })

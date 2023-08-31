@@ -4,7 +4,7 @@ import {
   QuestionMarkCircleIcon,
 } from '@heroicons/react/24/outline'
 import { motion } from 'framer-motion'
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
 import {
   Organization,

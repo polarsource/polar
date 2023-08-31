@@ -6,19 +6,17 @@ from unittest.mock import ANY, patch
 
 import httpx
 import pytest
-import respx
 from arq.connections import ArqRedis
 from pytest_mock import MockerFixture
 
 from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.integrations.github import service
-from polar.integrations.github.service.repository import (
-    github_repository as github_repository_service,
-)
 from polar.integrations.github.tasks import webhook as webhook_tasks
 from polar.kit import utils
+from polar.kit.extensions.sqlalchemy import sql
 from polar.models.organization import Organization
+from polar.models.repository import Repository
 from polar.organization.schemas import OrganizationCreate
 from polar.postgres import AsyncSession, AsyncSessionLocal
 from polar.repository.schemas import RepositoryCreate
@@ -78,7 +76,18 @@ async def create_org(
         installation_suspended_at=event.installation.suspended_at,
     )
     async with AsyncSessionLocal() as session:
-        org = await service.github_organization.upsert(session, create_schema)
+        stmt = (
+            sql.insert(Organization)
+            .values(**create_schema.dict())
+            .on_conflict_do_update(
+                index_elements=[Organization.external_id], set_={**create_schema.dict()}
+            )
+            .returning(Organization)
+            .execution_options(populate_existing=True)
+        )
+        res = await session.execute(stmt)
+        org = res.scalars().one()
+
         org.status = status
         session.add(org)
         await session.commit()
@@ -95,17 +104,21 @@ async def create_repositories(github_webhook: TestWebhookFactory) -> Organizatio
 
     async with AsyncSessionLocal() as session:
         for repo in parsed.repositories_added:
-            await github_repository_service.upsert(
-                session,
-                RepositoryCreate(
-                    platform=Platforms.github,
-                    external_id=repo.id,
-                    organization_id=org.id,
-                    name=repo.name,
-                    is_private=repo.private,
-                ),
+            create_schema = RepositoryCreate(
+                platform=Platforms.github,
+                external_id=repo.id,
+                organization_id=org.id,
+                name=repo.name,
+                is_private=repo.private,
             )
 
+            stmt = (
+                sql.insert(Repository)
+                .values(**create_schema.dict())
+                .on_conflict_do_nothing()
+            )
+            await session.execute(stmt)
+            await session.commit()
     return org
 
 

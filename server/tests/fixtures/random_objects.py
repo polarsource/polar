@@ -46,7 +46,7 @@ async def create_organization(session: AsyncSession) -> Organization:
         installation_suspended_at=None,
     )
 
-    org = await github_organization.upsert(session, create_schema)
+    org = await github_organization.create(session, create_schema)
     session.add(org)
     await session.commit()
     return org
@@ -66,7 +66,7 @@ async def pledging_organization(session: AsyncSession) -> Organization:
         installation_suspended_at=None,
     )
 
-    org = await github_organization.upsert(session, create_schema)
+    org = await github_organization.create(session, create_schema)
     session.add(org)
     await session.commit()
     return org
@@ -94,7 +94,7 @@ async def create_repository(
         external_id=secrets.randbelow(100000),
         is_private=is_private,
     )
-    repo = await github_repository.upsert(session, create_schema)
+    repo = await github_repository.create(session, create_schema)
     session.add(repo)
     await session.commit()
     return repo

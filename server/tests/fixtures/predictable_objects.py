@@ -35,7 +35,7 @@ async def predictable_organization(session: AsyncSession) -> Organization:
         installation_suspended_at=None,
     )
 
-    org = await github_organization.upsert(session, create_schema)
+    org = await github_organization.create(session, create_schema)
     session.add(org)
     await session.commit()
     return org
@@ -55,7 +55,7 @@ async def predictable_pledging_organization(session: AsyncSession) -> Organizati
         installation_suspended_at=None,
     )
 
-    org = await github_organization.upsert(session, create_schema)
+    org = await github_organization.create(session, create_schema)
     session.add(org)
     await session.commit()
     return org
@@ -72,7 +72,7 @@ async def predictable_repository(
         external_id=random.randrange(5000),
         is_private=True,
     )
-    repo = await github_repository.upsert(session, create_schema)
+    repo = await github_repository.create(session, create_schema)
     session.add(repo)
     await session.commit()
     return repo

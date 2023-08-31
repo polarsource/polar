@@ -1,13 +1,13 @@
-import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
+'use client'
+
 import OrganizationIssues from '@/components/Dashboard/OrganizationIssues'
 import {
   DashboardFilters,
   DefaultFilters,
 } from '@/components/Dashboard/filters'
 import { useToast } from '@/components/Toast/use-toast'
-import type { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
-import { useRouter } from 'next/router'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   IssueListType,
   IssueSortBy,
@@ -16,12 +16,19 @@ import {
   Repository,
 } from 'polarkit/api/client'
 import { useSSE } from 'polarkit/hooks'
-import { ReactElement, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
 
-const Page: NextLayoutComponentType = () => {
+export default function Page() {
   const router = useRouter()
-  const { organization: orgSlug, repo: repoSlug, status } = router.query
+  const searchParams = useSearchParams()
+
+  // const { organization: orgSlug, repo: repoSlug, status } = searchParams
+
+  const orgSlug = searchParams?.get('organization')
+  const repoSlug = searchParams?.get('repo')
+  const status = searchParams?.get('status')
+
   const { toast } = useToast()
   const { org, repo, isLoaded } = useCurrentOrgAndRepoFromURL()
   const key = `org-${orgSlug}-repo-${repoSlug}` // use key to force reload of state
@@ -55,12 +62,6 @@ const Page: NextLayoutComponentType = () => {
     </>
   )
 }
-
-Page.getLayout = (page: ReactElement) => {
-  return <Gatekeeper>{page}</Gatekeeper>
-}
-
-export default Page
 
 const buildStatusesFilter = (filters: DashboardFilters): Array<IssueStatus> => {
   const next = []

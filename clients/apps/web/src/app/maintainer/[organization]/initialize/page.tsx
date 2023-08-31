@@ -1,14 +1,13 @@
-import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
+'use client'
+
 import BadgeSetup from '@/components/Settings/Badge'
 import Spinner from '@/components/Shared/Spinner'
-import Topbar from '@/components/Shared/Topbar'
-import { NextLayoutComponentType } from 'next'
 import Head from 'next/head'
 import { useSSE } from 'polarkit/hooks'
-import { ReactElement, useState } from 'react'
-import { useCurrentOrgAndRepoFromURL } from '../../../hooks'
+import { useState } from 'react'
+import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
 
-const Page: NextLayoutComponentType = () => {
+export default function Page() {
   const [showControls, setShowControls] = useState<boolean>(false)
   const [syncedIssuesCount, setSyncIssuesCount] = useState<number>(0)
   const { org } = useCurrentOrgAndRepoFromURL()
@@ -21,7 +20,7 @@ const Page: NextLayoutComponentType = () => {
         <Head>
           <title>Polar | Setup</title>
         </Head>
-        <div className="flex min-h-screen py-8 px-2 md:px-0">
+        <div className="flex min-h-screen px-2 py-8 md:px-0">
           <div className="mx-auto space-y-8 md:my-auto md:w-[700px]">
             {!showControls && (
               <h1 className="flex-column mb-11 flex items-center justify-center text-center text-xl font-normal text-gray-500">
@@ -42,7 +41,7 @@ const Page: NextLayoutComponentType = () => {
       <Head>
         <title>Polar | Setup {org.name}</title>
       </Head>
-      <div className="flex min-h-screen py-8 px-2 md:px-0">
+      <div className="flex min-h-screen px-2 py-8 md:px-0">
         <div className="mx-auto space-y-8 md:my-auto md:w-[700px]">
           {!showControls && (
             <h1 className="flex-column mb-11 flex items-center justify-center text-center text-xl font-normal text-gray-500">
@@ -56,7 +55,7 @@ const Page: NextLayoutComponentType = () => {
           {showControls && (
             <>
               <div className="text-center">
-                <span className="rounded-2xl border border-gray-200 py-1 px-3 text-sm font-medium text-gray-500 dark:border-gray-700">
+                <span className="rounded-2xl border border-gray-200 px-3 py-1 text-sm font-medium text-gray-500 dark:border-gray-700">
                   {syncedIssuesCount} issues fetched
                 </span>
                 <h1 className="mt-8 text-xl font-normal">
@@ -79,15 +78,15 @@ const Page: NextLayoutComponentType = () => {
   )
 }
 
-Page.getLayout = (page: ReactElement) => {
-  return (
-    <Gatekeeper>
-      <>
-        <Topbar hideProfile={true} />
-        {page}
-      </>
-    </Gatekeeper>
-  )
-}
+// Page.getLayout = (page: ReactElement) => {
+//   return (
+//     <Gatekeeper>
+//       <>
+//         <Topbar hideProfile={true} />
+//         {page}
+//       </>
+//     </Gatekeeper>
+//   )
+// }
 
-export default Page
+// export default Page

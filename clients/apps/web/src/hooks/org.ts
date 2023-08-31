@@ -1,4 +1,6 @@
-import { useRouter } from 'next/router'
+'use client'
+
+import { useParams, useSearchParams } from 'next/navigation'
 import type { Organization, Repository } from 'polarkit/api/client'
 import { useListOrganizations, useListRepositories } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
@@ -10,8 +12,15 @@ export const useCurrentOrgAndRepoFromURL = (): {
   isLoaded: boolean
   haveOrgs: boolean
 } => {
-  const router = useRouter()
-  const { organization: queryOrg, repo: queryRepo } = router.query
+  // org and repo from router params "/foo/[organization]/bar"
+  const params = useParams()
+  const paramsOrg = params?.organization
+  const paramsRepo = params?.repo
+
+  // repo can also be set as a query arg
+  const search = useSearchParams()
+  const searchRepo = search?.get('repo')
+
   const listOrganizationsQuery = useListOrganizations()
   const listRepositoriesQuery = useListRepositories()
 
@@ -24,8 +33,15 @@ export const useCurrentOrgAndRepoFromURL = (): {
   const setUserHaveOrgs = useStore((state) => state.setUserHaveOrgs)
 
   useEffect(() => {
-    const orgSlug = typeof queryOrg === 'string' ? queryOrg : ''
-    const repoSlug = typeof queryRepo === 'string' ? queryRepo : ''
+    const orgSlug = typeof paramsOrg === 'string' ? paramsOrg : ''
+
+    // Repo slug form param or search
+    let repoSlug = ''
+    if (typeof paramsRepo === 'string') {
+      repoSlug = paramsRepo
+    } else if (typeof searchRepo === 'string') {
+      repoSlug = searchRepo
+    }
 
     let nextOrg: Organization | undefined
     let nextRepo: Repository | undefined
@@ -72,8 +88,9 @@ export const useCurrentOrgAndRepoFromURL = (): {
     listRepositoriesQuery,
     setCurrentOrgRepo,
     setUserHaveOrgs,
-    queryOrg,
-    queryRepo,
+    paramsOrg,
+    paramsRepo,
+    searchRepo,
   ])
 
   return {

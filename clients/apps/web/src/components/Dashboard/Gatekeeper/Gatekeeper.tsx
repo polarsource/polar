@@ -1,7 +1,9 @@
+'use client'
+
 import { useRequireAuth } from '@/hooks'
 import AcceptTerms from './AcceptTerms'
 
-const Gatekeeper = (props: { children: React.ReactElement }) => {
+const Gatekeeper = (props: { children: React.ReactNode }) => {
   const { currentUser } = useRequireAuth()
 
   if (!currentUser) {

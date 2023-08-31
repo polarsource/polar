@@ -1,11 +1,11 @@
-import { DashboardFilters, navigate } from '@/components/Dashboard/filters'
+import { DashboardFilters } from '@/components/Dashboard/filters'
 import {
   ArrowsUpDownIcon,
   FunnelIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
 import { InfiniteData } from '@tanstack/react-query'
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 import {
   IssueListResponse,
   IssueListType,
@@ -149,6 +149,49 @@ export const Header = (props: {
 }) => {
   const router = useRouter()
 
+  const navigate = (filters: DashboardFilters) => {
+    const params = new URLSearchParams()
+
+    const statuses = []
+    if (filters.statusBacklog) {
+      statuses.push('backlog')
+    }
+    if (filters.statusTriaged) {
+      statuses.push('triaged')
+    }
+    if (filters.statusInProgress) {
+      statuses.push('in_progress')
+    }
+    if (filters.statusPullRequest) {
+      statuses.push('pull_request')
+    }
+    if (filters.statusClosed) {
+      statuses.push('closed')
+    }
+
+    params.set('statuses', statuses.join(','))
+
+    if (filters.q) {
+      params.set('q', filters.q)
+    }
+
+    if (filters.sort) {
+      params.set('sort', filters.sort)
+    }
+
+    if (filters.onlyPledged) {
+      params.set('onlyPledged', '1')
+    }
+
+    if (filters.onlyBadged) {
+      params.set('onlyBadged', '1')
+    }
+
+    const url = new URL(window.location.href)
+    const newPath = `${url.pathname}?${params.toString()}`
+    router.push(newPath)
+  }
+
   const onSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value
 
@@ -169,7 +212,7 @@ export const Header = (props: {
     }
 
     props.onSetFilters(filters)
-    navigate(router, filters)
+    navigate(filters)
   }
 
   const getTitle = (sortBy: IssueSortBy): string => {
@@ -237,12 +280,12 @@ export const Header = (props: {
     }
     props.onSetFilters(f)
 
-    navigate(router, f)
+    navigate(f)
   }
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    navigate(router, props.filters)
+    navigate(props.filters)
   }
 
   const onOnlyBadgedChanged = (value: boolean) => {
@@ -252,7 +295,7 @@ export const Header = (props: {
     }
 
     props.onSetFilters(f)
-    navigate(router, f)
+    navigate(f)
   }
 
   const onShowClosedChanged = (value: boolean) => {
@@ -262,7 +305,7 @@ export const Header = (props: {
     }
 
     props.onSetFilters(f)
-    navigate(router, f)
+    navigate(f)
   }
 
   const onSortingChanged = (value: string) => {
@@ -272,7 +315,7 @@ export const Header = (props: {
     }
 
     props.onSetFilters(f)
-    navigate(router, f)
+    navigate(f)
   }
 
   const canFilterByBadged = props.filters.tab === IssueListType.ISSUES

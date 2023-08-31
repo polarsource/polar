@@ -2,7 +2,7 @@ import { Modal as ModernModal } from '@/components/Modal'
 import Modal, { ModalBox } from '@/components/Shared/Modal'
 import { useToastLatestPledged } from '@/hooks/stripe'
 import Image from 'next/image'
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
 import {
   Issue,
@@ -157,7 +157,7 @@ const IssueListItem = (props: {
   return (
     <>
       <div className="group/issue">
-        <div className="hover:bg-gray-75 group flex items-center justify-between gap-4 overflow-hidden py-4 px-2 pb-5 dark:hover:bg-gray-900">
+        <div className="hover:bg-gray-75 group flex items-center justify-between gap-4 overflow-hidden px-2 py-4 pb-5 dark:hover:bg-gray-900">
           <div className="flex flex-row items-center">
             {isDependency && (
               <div className="mr-3 flex-shrink-0 justify-center rounded-full bg-white p-[1px] shadow">

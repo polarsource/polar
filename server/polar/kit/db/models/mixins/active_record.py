@@ -2,17 +2,13 @@ from __future__ import annotations
 
 from functools import cache
 from typing import Any, ClassVar, Self, Sequence, TypeVar
-from sqlalchemy import Column, ColumnClause, column
+
+from sqlalchemy import Column
 from sqlalchemy.orm import (
     InstrumentedAttribute,
-    Mapped,
-    declared_attr,
-    query_expression,
-    with_expression,
 )
 from sqlalchemy.orm.properties import MappedColumn
 from sqlalchemy.sql.selectable import FromClause
-from polar.context import PolarContext
 
 from polar.kit.schemas import Schema
 from polar.postgres import AsyncSession, sql
@@ -24,35 +20,6 @@ SchemaType = TypeVar("SchemaType", bound=Schema)
 class ActiveRecordMixin:
     __mutables__: set[Column[Any]] | set[str] | None = None
     __table__: ClassVar[FromClause]
-
-    # Support Postgres upserts and being able to easily identify SQLAlchemy objects as
-    # new (inserted) or updated (on conflict).
-    #
-    # Postgres has `xmax` as a system column containing the row lock in case of updates.
-    #
-    # https://www.cybertec-postgresql.com/en/whats-in-an-xmax/
-    # https://stackoverflow.com/questions/59579151/how-do-i-select-a-postgresql-system-column-using-sqlalchemy
-    @declared_attr
-    @classmethod
-    def xmax(cls) -> Mapped[int]:
-        # Unless we use `with_expression` to get `xmax` this will be None
-        return query_expression()
-
-    @property
-    def was_created(self) -> bool:
-        return getattr(self, "_was_created", False)
-
-    @was_created.setter
-    def was_created(self, value: bool) -> None:
-        self._was_created = value
-
-    @property
-    def was_updated(self) -> bool:
-        return getattr(self, "_was_updated", False)
-
-    @was_updated.setter
-    def was_updated(self, value: bool) -> None:
-        self._was_updated = value
 
     @classmethod
     @cache
@@ -113,11 +80,6 @@ class ActiveRecordMixin:
         if not values:
             raise ValueError("Zero values provided")
 
-        # Create a literal column for xmax to be able to select it in the ORM statement
-        xmax: ColumnClause[int] = column(
-            "xmax", is_literal=True, _selectable=cls.__table__
-        )
-
         insert_stmt = sql.insert(cls).values(values)
 
         # Custom method to only get columns we've flagged as mutable on updates
@@ -125,19 +87,16 @@ class ActiveRecordMixin:
             mutable_keys = cls.get_mutable_keys()
 
         # Update the insert statement with what to update on conflict, i.e mutable keys.
-        upsert_stmt = insert_stmt.on_conflict_do_update(
-            index_elements=constraints,
-            set_={k: getattr(insert_stmt.excluded, k) for k in mutable_keys},
-        ).returning(cls, xmax)
-        # Our Postgres upsert query with the added xmax column to detect inserts
-        # or updates per row and bind them to the SQLAlchemy objects.
-        orm_stmt = (
-            sql.select(cls, xmax)
-            .from_statement(upsert_stmt)
-            .options(with_expression(cls.xmax, xmax))
+        upsert_stmt = (
+            insert_stmt.on_conflict_do_update(
+                index_elements=constraints,
+                set_={k: getattr(insert_stmt.excluded, k) for k in mutable_keys},
+            )
+            .returning(cls)
             .execution_options(populate_existing=True)
         )
-        res = await session.execute(orm_stmt)
+
+        res = await session.execute(upsert_stmt)
         instances = res.scalars().all()
         if autocommit:
             await session.commit()
@@ -202,7 +161,3 @@ class ActiveRecordMixin:
         # TODO: Can we get an affected rows or similar to verify delete?
         await session.delete(self)
         await session.commit()
-
-    async def signal_state_change(self, session: AsyncSession, state: str) -> None:
-        if signal := getattr(self, f"on_{state}_signal", None):
-            await signal.send_async(PolarContext(), item=self, session=session)

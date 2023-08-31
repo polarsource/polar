@@ -66,19 +66,15 @@ async def stripe_connect_return(
     assert account.stripe_id
 
     stripe_account = stripe_service.retrieve_account(account.stripe_id)
-    await account_service.update(
-        session,
-        account,
-        AccountUpdate(
-            email=stripe_account.email,
-            country=stripe_account.country,
-            currency=stripe_account.default_currency,
-            is_details_submitted=stripe_account.details_submitted,
-            is_charges_enabled=stripe_account.charges_enabled,
-            is_payouts_enabled=stripe_account.payouts_enabled,
-            data=stripe_account.to_dict(),
-        ),
-    )
+
+    account.email = stripe_account.email
+    account.country = stripe_account.country
+    account.currency = stripe_account.default_currency
+    account.is_details_submitted = stripe_account.details_submitted
+    account.is_charges_enabled = stripe_account.charges_enabled
+    account.is_payouts_enabled = stripe_account.payouts_enabled
+    account.data = stripe_account.to_dict()
+    await account.save(session)
 
     if account.organization_id:
         org = await organization_service.get(session, account.organization_id)

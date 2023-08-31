@@ -99,7 +99,10 @@ class GithubIssueService(IssueService):
             return []
 
         records = await self.upsert_many(
-            session, schemas, constraints=[Issue.external_id]
+            session,
+            schemas,
+            constraints=[Issue.external_id],
+            mutable_keys=IssueCreate.__mutable_keys__,
         )
         for record in records:
             await issue_upserted.call(IssueHook(session, record))

@@ -37,11 +37,6 @@ log = structlog.get_logger()
 
 
 class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
-    # TODO: this is unused, remove when we remove .upsert()
-    @property
-    def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
-        return [self.model.external_id]
-
     async def get_loaded(
         self,
         session: AsyncSession,

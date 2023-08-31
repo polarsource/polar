@@ -19,10 +19,6 @@ log = structlog.get_logger()
 class PullRequestService(
     ResourceService[PullRequest, MinimalPullRequestCreate, PullRequestUpdate]
 ):
-    @property
-    def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
-        return [self.model.external_id]
-
     async def get_by_platform(
         self, session: AsyncSession, platform: Platforms, external_id: int
     ) -> PullRequest | None:
@@ -52,57 +48,17 @@ class PullRequestService(
 class FullPullRequestService(
     ResourceService[PullRequest, FullPullRequestCreate, PullRequestUpdate]
 ):
-    # TODO: remove
-    @property
-    def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
-        return [self.model.external_id]
-
     async def create_or_update(
         self, session: AsyncSession, r: FullPullRequestCreate
     ) -> PullRequest:
-        update_keys = {
-            "title",
-            "body",
-            "comments",
-            "author",
-            "author_association",
-            "labels",
-            "assignee",
-            "assignees",
-            "milestone",
-            "closed_by",
-            "reactions",
-            "state",
-            "state_reason",
-            "issue_closed_at",
-            "issue_modified_at",
-            "commits",
-            "additions",
-            "deletions",
-            "changed_files",
-            "requested_reviewers",
-            "requested_teams",
-            "is_draft",
-            "is_rebaseable",
-            "review_comments",
-            "maintainer_can_modify",
-            "is_mergeable",
-            "mergeable_state",
-            "auto_merge",
-            "is_merged",
-            "merged_by",
-            "merged_at",
-            "merge_commit_sha",
-            "head",
-            "base",
-        }
-
         insert_stmt = sql.insert(PullRequest).values(**r.dict())
-
         stmt = (
             insert_stmt.on_conflict_do_update(
                 index_elements=[PullRequest.external_id],
-                set_={k: getattr(insert_stmt.excluded, k) for k in update_keys},
+                set_={
+                    k: getattr(insert_stmt.excluded, k)
+                    for k in FullPullRequestCreate.__mutable_keys__
+                },
             )
             .returning(PullRequest)
             .execution_options(populate_existing=True)

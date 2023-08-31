@@ -17,6 +17,25 @@ log = structlog.get_logger()
 # However, we leverage the IssueAndPullRequestBase.get_normalized_github_issue
 # method to reduce the amount of reduction to stay DRY-ish.
 
+common_mutable_keys = {
+    "title",
+    "body",
+    "comments",
+    "author",
+    "author_association",
+    "labels",
+    "assignee",
+    "assignees",
+    "milestone",
+    "closed_by",
+    "reactions",
+    "state",
+    "state_reason",
+    "issue_closed_at",
+    "issue_modified_at",
+    "issue_created_at",
+}
+
 
 class MinimalPullRequestCreate(IssueAndPullRequestBase):
     requested_reviewers: JSONAny
@@ -37,7 +56,7 @@ class MinimalPullRequestCreate(IssueAndPullRequestBase):
     # and avoiding overriding our internal ones
     issue_created_at: datetime
 
-    __mutable_keys__ = IssueAndPullRequestBase.__mutable_keys__ | {
+    __mutable_keys__ = common_mutable_keys | {
         "requested_reviewers",
         "requested_teams",
         "is_merged",

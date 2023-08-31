@@ -1,6 +1,6 @@
 import Modal, { ModalBox } from '@/components/Shared/Modal'
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
 import { ACCOUNT_TYPE_DISPLAY_NAMES } from 'polarkit/account'
 import { Account, AccountType, ApiError } from 'polarkit/api/client'
@@ -119,7 +119,7 @@ const SetupAccount = ({
                   id="account_type"
                   name="account_type"
                   onChange={onChangeAccountType}
-                  className="font-display block w-full rounded-lg border-gray-200 bg-transparent py-2 px-4 pr-12 shadow-sm transition-colors focus:z-10 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-500"
+                  className="font-display block w-full rounded-lg border-gray-200 bg-transparent px-4 py-2 pr-12 shadow-sm transition-colors focus:z-10 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-500"
                 >
                   {accountTypes.map((v: AccountType) => (
                     <option key={v} value={v} selected={v === accountType}>

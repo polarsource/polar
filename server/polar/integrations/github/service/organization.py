@@ -99,14 +99,15 @@ class GithubOrganizationService(OrganizationService):
         if suspended_at is None:
             suspended_at = datetime.utcnow()
 
-        # TODO: Return object instead?
-        await org.update(
-            session,
-            installation_suspended_at=suspended_at,
-            status=Organization.Status.SUSPENDED,
-            installation_suspended_by=suspended_by,
-            installation_suspender=external_user_id,
-        )
+        org.installation_suspended_at = suspended_at
+        org.status = Organization.Status.SUSPENDED
+        org.installation_suspended_by = suspended_by
+
+        # TODO: this never worked
+        # org.installation_suspender = external_user_id
+
+        await org.save(session)
+
         return True
 
     async def unsuspend(
@@ -119,14 +120,14 @@ class GithubOrganizationService(OrganizationService):
         if not org:
             return False
 
-        # TODO: Return object instead?
-        await org.update(
-            session,
-            installation_suspended_at=None,
-            status=Organization.Status.ACTIVE,
-            installation_suspended_by=None,
-            installation_suspender=external_user_id,
-        )
+        org.installation_suspended_at = None
+        org.status = Organization.Status.ACTIVE
+        org.installation_suspended_by = None
+
+        # TODO: this never worked
+        # org.installation_suspender=external_user_id
+        await org.save(session)
+
         return True
 
     async def remove(self, session: AsyncSession, org_id: UUID) -> None:

@@ -236,14 +236,6 @@ class Issue(IssueFields, RecordModel):
         nullable=True,
     )
 
-    # TODO: This is never used. Remove once active_record.upsert() is gone
-    __mutables__ = issue_fields_mutables | {
-        "has_pledge_badge_label",
-        "pledge_badge_currently_embedded",
-        "positive_reactions_count",
-        "total_engagement_count",
-    }
-
     @classmethod
     def contains_pledge_badge_label(cls, labels: Any) -> bool:
         if not labels:

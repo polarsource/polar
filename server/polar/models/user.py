@@ -74,14 +74,6 @@ class User(RecordModel):
         Boolean, nullable=False, default=True
     )
 
-    # TODO: This is never used. Remove once active_record.upsert() is gone
-    __mutables__ = {
-        "email",
-        "profile",
-        "invite_only_approved",
-        "accepted_terms_of_service",
-    }
-
     def get_platform_oauth_account(self, platform: Platforms) -> OAuthAccount | None:
         return next(
             (

@@ -111,28 +111,28 @@ class GithubUserService(UserService):
         tokens: OAuthAccessToken,
     ) -> User:
         profile = self.generate_profile_json(github_user=github_user)
-        await user.update(
-            session,
-            autocommit=False,
-            username=github_user.login,
-            email=github_user.email,
-            avatar_url=github_user.avatar_url,
-            profile=profile,
+
+        if not github_user.email:
+            raise Exception("user has no email")
+
+        user.username = github_user.login
+        user.email = github_user.email
+        user.avatar_url = github_user.avatar_url
+        user.profile = profile
+        await user.save(session)
+
+        oauth_account: OAuthAccount | None = user.get_platform_oauth_account(
+            Platforms.github
         )
-        account = user.get_platform_oauth_account(Platforms.github)
-        if not account:
+        if not oauth_account:
             raise RuntimeError("No github account found for user")
 
-        await account.update(
-            session,
-            autocommit=False,
-            # Update everything except unique references (user_id + account_id)
-            access_token=tokens.access_token,
-            expires_at=tokens.expires_at,
-            refresh_token=tokens.refresh_token,
-            account_email=github_user.email,
-        )
-        await session.commit()
+        oauth_account.access_token = tokens.access_token
+        oauth_account.expires_at = tokens.expires_at
+        oauth_account.refresh_token = tokens.refresh_token
+        oauth_account.account_email = github_user.email
+        await oauth_account.save(session)
+
         log.info(
             "github.user.login",
             user_id=user.id,

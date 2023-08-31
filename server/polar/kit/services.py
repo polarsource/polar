@@ -14,6 +14,7 @@ from .schemas import Schema
 ModelType = TypeVar("ModelType", bound=RecordModel)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=Schema)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=Schema)
+SchemaType = TypeVar("SchemaType", bound=Schema)
 
 
 class ResourceServiceReader(
@@ -56,10 +57,6 @@ class ResourceService(
     # no state to retain. Unable to achieve this with mapping the model
     # and schema as class attributes though without breaking typing.
 
-    @property
-    def upsert_constraints(self) -> list[InstrumentedAttribute[Any]]:
-        return [self.model.id]
-
     async def create(
         self,
         session: AsyncSession,
@@ -75,14 +72,11 @@ class ResourceService(
         self,
         session: AsyncSession,
         create_schemas: list[CreateSchemaType],
-        constraints: list[InstrumentedAttribute[Any]] | None = None,
-        mutable_keys: set[str] | None = None,
+        constraints: list[InstrumentedAttribute[Any]],
+        mutable_keys: set[str],
         autocommit: bool = True,
     ) -> Sequence[ModelType]:
-        if constraints is None:
-            constraints = self.upsert_constraints
-
-        return await self.model.upsert_many(
+        return await self._db_upsert_many(
             session,
             create_schemas,
             constraints=constraints,
@@ -94,20 +88,70 @@ class ResourceService(
         self,
         session: AsyncSession,
         create_schema: CreateSchemaType,
-        constraints: list[InstrumentedAttribute[Any]] | None = None,
-        mutable_keys: set[str] | None = None,
+        constraints: list[InstrumentedAttribute[Any]],
+        mutable_keys: set[str],
         autocommit: bool = True,
     ) -> ModelType:
-        if constraints is None:
-            constraints = self.upsert_constraints
-
-        return await self.model.upsert(
+        return await self._db_upsert(
             session,
             create_schema,
             constraints=constraints,
             mutable_keys=mutable_keys,
             autocommit=autocommit,
         )
+
+    async def _db_upsert_many(
+        self,
+        session: AsyncSession,
+        objects: list[CreateSchemaType],
+        constraints: list[InstrumentedAttribute[Any]],
+        mutable_keys: set[str],
+        autocommit: bool = True,
+    ) -> Sequence[ModelType]:
+        values = [obj.dict() for obj in objects]
+        if not values:
+            raise ValueError("Zero values provided")
+
+        insert_stmt = sql.insert(self.model).values(values)
+
+        # Update the insert statement with what to update on conflict, i.e mutable keys.
+        upsert_stmt = (
+            insert_stmt.on_conflict_do_update(
+                index_elements=constraints,
+                set_={k: getattr(insert_stmt.excluded, k) for k in mutable_keys},
+            )
+            .returning(self.model)
+            .execution_options(populate_existing=True)
+        )
+
+        res = await session.execute(upsert_stmt)
+        instances = res.scalars().all()
+        if autocommit:
+            await session.commit()
+        return instances
+
+    async def _db_upsert(
+        self,
+        session: AsyncSession,
+        obj: CreateSchemaType,
+        constraints: list[InstrumentedAttribute[Any]],
+        mutable_keys: set[str],
+        autocommit: bool = True,
+    ) -> ModelType:
+        """
+        Usage of upsert is deprecated.
+        If you need an upsert, add the functionality in the service instead of relying
+        active record.
+        """
+
+        upserted: Sequence[ModelType] = await self._db_upsert_many(
+            session,
+            [obj],
+            constraints=constraints,
+            mutable_keys=mutable_keys,
+            autocommit=autocommit,
+        )
+        return upserted[0]
 
     async def update(
         self,

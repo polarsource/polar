@@ -106,18 +106,3 @@ class Organization(RecordModel):
             base=settings.FRONTEND_BASE_URL,
             slug=self.name,
         )
-
-    # TODO: this is unused, remove
-    __mutables__ = {
-        "name",
-        "avatar_url",
-        "is_personal",
-        "installation_id",
-        "installation_created_at",
-        "installation_updated_at",
-        "installation_suspended_at",
-        "status",
-        "pledge_badge_show_amount",
-        "pledge_minimum_amount",
-        "deleted_at",
-    }

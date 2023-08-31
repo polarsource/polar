@@ -28,11 +28,6 @@ log = structlog.get_logger()
 class OrganizationService(
     ResourceService[Organization, OrganizationCreate, OrganizationUpdate]
 ):
-    # TODO: this is unused, remove when we get rid of upsert
-    @property
-    def upsert_constraints(self) -> list[InstrumentedAttribute[int]]:
-        return [self.model.external_id]
-
     async def list_installed(self, session: AsyncSession) -> Sequence[Organization]:
         stmt = sql.select(Organization).where(
             Organization.deleted_at.is_(None),

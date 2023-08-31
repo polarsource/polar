@@ -299,15 +299,19 @@ class IssueCreate(IssueAndPullRequestBase):
                 ret.body
             )
 
-        # excluding: confused, minus_one
-        ret.positive_reactions_count = (
-            data.reactions.plus_one
-            + data.reactions.laugh
-            + data.reactions.heart
-            + data.reactions.hooray
-            + data.reactions.eyes
-            + data.reactions.rocket
-        )
+        # this is not good, we're risking setting positive_reactions_count to 0 if the
+        # payload is missing
+        # TODO: only update if payload actually is set
+        if data.reactions:
+            # excluding: confused, minus_one
+            ret.positive_reactions_count = (
+                data.reactions.plus_one
+                + data.reactions.laugh
+                + data.reactions.heart
+                + data.reactions.hooray
+                + data.reactions.eyes
+                + data.reactions.rocket
+            )
 
         ret.total_engagement_count = data.reactions.total_count + data.comments
 

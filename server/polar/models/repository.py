@@ -87,28 +87,3 @@ class Repository(RecordModel):
 
     is_archived: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     is_disabled: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
-
-    # TODO: This is never used. Remove once active_record.upsert() is gone
-    __mutables__ = {
-        "name",
-        "description",
-        "open_issues",
-        "forks",
-        "stars",
-        "watchers",
-        "main_branch",
-        "topics",
-        "license",
-        "homepage",
-        "repository_pushed_at",
-        "repository_modified_at",
-        "is_private",
-        "is_fork",
-        "is_issues_enabled",
-        "is_wiki_enabled",
-        "is_pages_enabled",
-        "is_downloads_enabled",
-        "is_archived",
-        "is_disabled",
-        "deleted_at",
-    }

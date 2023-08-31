@@ -55,25 +55,3 @@ class PullRequest(IssueFields, RecordModel):
     # TODO: Storing these for now, but need to trim them down
     head: Mapped[JSONDict | None] = mapped_column(JSONB, nullable=True, default=dict)
     base: Mapped[JSONDict | None] = mapped_column(JSONB, nullable=True, default=dict)
-
-    __mutables__ = issue_fields_mutables | {
-        "commits",
-        "additions",
-        "deletions",
-        "changed_files",
-        "requested_reviewers",
-        "requested_teams",
-        "is_draft",
-        "is_rebaseable",
-        "review_comments",
-        "maintainer_can_modify",
-        "is_mergeable",
-        "mergeable_state",
-        "auto_merge",
-        "is_merged",
-        "merged_by",
-        "merged_at",
-        "merge_commit_sha",
-        "head",
-        "base",
-    }

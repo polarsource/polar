@@ -51,14 +51,3 @@ class UserOrganizationSettings(TimestampedModel):
     email_notification_backed_issue_pull_request_merged: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
     )
-
-    # TODO: This is never used. Remove once active_record.upsert() is gone
-    __mutables__ = {
-        "email_notification_maintainer_issue_receives_backing",
-        "email_notification_maintainer_issue_branch_created",
-        "email_notification_maintainer_pull_request_created",
-        "email_notification_maintainer_pull_request_merged",
-        "email_notification_backed_issue_branch_created",
-        "email_notification_backed_issue_pull_request_created",
-        "email_notification_backed_issue_pull_request_merged",
-    }

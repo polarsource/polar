@@ -1,5 +1,4 @@
 import { Controls } from '@/components/Settings/Badge'
-import BadgeRepositories from '@/components/Settings/Badge/Repositories'
 import type { Meta, StoryObj } from '@storybook/react'
 import { RepositoryBadgeSettingsRead } from 'polarkit/api/client'
 
@@ -7,6 +6,11 @@ const meta: Meta<typeof Controls> = {
   title: 'Organisms/BadgeRepositoriesControls',
   component: Controls,
   tags: ['autodocs'],
+  parameters: {
+    nextjs: {
+      appDirectory: true,
+    },
+  },
 }
 
 export default meta

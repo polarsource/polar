@@ -8,6 +8,7 @@ export const useAuth = (): UserState & {
   hasChecked: boolean
   isChecking: boolean
   reloadUser: () => CancelablePromise<UserRead>
+  hydrated: boolean
 } => {
   const authenticated = useStore((state) => state.authenticated)
   const currentUser = useStore((state) => state.currentUser)
@@ -49,6 +50,7 @@ export const useAuth = (): UserState & {
       login,
       logout,
       reloadUser: getAuthenticatedUser,
+      hydrated,
     }
   }
 
@@ -60,6 +62,7 @@ export const useAuth = (): UserState & {
     login,
     logout,
     reloadUser: getAuthenticatedUser,
+    hydrated,
   }
 }
 

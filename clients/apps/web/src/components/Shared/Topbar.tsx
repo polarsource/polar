@@ -1,12 +1,8 @@
-'use client'
-
 import Link from 'next/link'
 import { LogoIcon, LogoType } from 'polarkit/components/brand'
 import { classNames } from 'polarkit/utils'
-import { useEffect, useState } from 'react'
-import { useAuth } from '../../hooks'
-import Popover from '../Notifications/Popover'
-import Profile from './Profile'
+import { Suspense } from 'react'
+import TopbarRight from './TopbarRight'
 
 export type LogoPosition = 'center' | 'left'
 
@@ -25,8 +21,6 @@ const Topbar = (props: {
 
   const logoPosition: LogoPosition = props?.logoPosition || 'left'
 
-  const { authenticated } = useAuth()
-
   const logo = (
     <>
       <Link
@@ -37,13 +31,6 @@ const Topbar = (props: {
       </Link>
     </>
   )
-
-  // Support server side rendering and hydration.
-  // First render is always as if the user was logged out
-  const [showProfile, setShowProfile] = useState(false)
-  useEffect(() => {
-    setShowProfile(authenticated)
-  }, [authenticated])
 
   return (
     <>
@@ -71,11 +58,10 @@ const Topbar = (props: {
         )}
 
         <div className="flex flex-shrink-0 items-center justify-end space-x-4 md:flex-1">
-          {showProfile && !hideProfile && (
-            <>
-              {authenticated && <Popover />}
-              <Profile />
-            </>
+          {!hideProfile && (
+            <Suspense>
+              <TopbarRight />
+            </Suspense>
           )}
         </div>
       </div>

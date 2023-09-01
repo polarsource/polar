@@ -1,6 +1,11 @@
-import { useInfiniteQuery, UseInfiniteQueryResult } from '@tanstack/react-query'
+import {
+  InfiniteData,
+  useInfiniteQuery,
+  UseInfiniteQueryResult,
+} from '@tanstack/react-query'
 import { api } from '../../api'
 import {
+  ApiError,
   IssueListResponse,
   IssueListType,
   IssueSortBy,
@@ -18,7 +23,7 @@ export const useDashboard = (
   sort?: IssueSortBy,
   onlyPledged?: boolean,
   onlyBadged?: boolean,
-): UseInfiniteQueryResult<IssueListResponse> =>
+): UseInfiniteQueryResult<InfiniteData<IssueListResponse, unknown>, ApiError> =>
   useInfiniteQuery({
     queryKey: [
       'dashboard',
@@ -55,6 +60,7 @@ export const useDashboard = (
     getNextPageParam: (lastPage, pages): number | undefined => {
       return lastPage.pagination.next_page
     },
+    initialPageParam: 0,
     enabled: !!orgName,
     retry: defaultRetry,
   })
@@ -66,7 +72,7 @@ export const usePersonalDashboard = (
   sort?: IssueSortBy,
   onlyPledged?: boolean,
   onlyBadged?: boolean,
-): UseInfiniteQueryResult<IssueListResponse> =>
+) =>
   useInfiniteQuery({
     queryKey: [
       'dashboard',
@@ -98,5 +104,6 @@ export const usePersonalDashboard = (
     getNextPageParam: (lastPage, pages): number | undefined => {
       return lastPage.pagination.next_page
     },
+    initialPageParam: 0,
     retry: defaultRetry,
   })

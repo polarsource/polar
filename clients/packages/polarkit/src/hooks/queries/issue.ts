@@ -7,12 +7,14 @@ import {
 } from '@tanstack/react-query'
 import { api, queryClient } from '../../api'
 import {
+  ApiError,
   ConfirmIssueSplit,
   CurrencyAmount,
   Issue,
   IssueListResponse,
   IssueSortBy,
   IssueUpdateBadgeMessage,
+  ListResource_Issue_,
   Platforms,
   PostIssueComment,
   State,
@@ -44,7 +46,9 @@ export const useIssueAddPolarBadge: () => UseMutationResult<
 
       // update issue in dashboard results
       queryClient.setQueriesData<InfiniteData<IssueListResponse>>(
-        ['dashboard', 'repo'],
+        {
+          queryKey: ['dashboard', 'repo'],
+        },
         (data) => {
           if (!data) {
             return data
@@ -96,7 +100,9 @@ export const useIssueRemovePolarBadge = () =>
     onSuccess: (result, variables, ctx) => {
       // update issue in dashboard results
       queryClient.setQueriesData<InfiniteData<IssueListResponse>>(
-        ['dashboard', 'repo'],
+        {
+          queryKey: ['dashboard', 'repo'],
+        },
         (data) => {
           if (!data) {
             return data
@@ -186,7 +192,9 @@ export const useUpdateIssue = () =>
     onSuccess: (result, variables, ctx) => {
       // update issue in dashboard results
       queryClient.setQueriesData<InfiniteData<IssueListResponse>>(
-        ['dashboard', 'repo'],
+        {
+          queryKey: ['dashboard', 'repo'],
+        },
         (data) => {
           if (!data) {
             return data
@@ -231,7 +239,7 @@ export const useSearchIssues: (v: {
   sort?: IssueSortBy
   havePledge?: boolean
   haveBadge?: boolean
-}) => UseQueryResult<unknown, Error> = (v: {
+}) => UseQueryResult<ListResource_Issue_, ApiError> = (v: {
   organizationName?: string
   repositoryName?: string
   sort?: IssueSortBy

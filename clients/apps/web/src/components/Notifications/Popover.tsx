@@ -104,7 +104,7 @@ const Popover = () => {
       {show && notifs.data && (
         <div
           aria-live="assertive"
-          className="pointer-events-none fixed top-12 right-6 z-40 flex items-end"
+          className="pointer-events-none fixed right-6 top-12 z-40 flex items-end"
           ref={ref}
           onClick={(e) => {
             e.preventDefault()
@@ -250,7 +250,7 @@ const MaintainerPledgeConfirmationPendingWrapper = ({
         payload={payload}
         canMarkSolved={canMarkSolved}
         isMarkedSolved={isMarkedSolved}
-        isLoading={markSolved.isLoading}
+        isLoading={markSolved.isPending}
         onMarkSoved={onMarkSolved}
       />
       <Modal
@@ -330,7 +330,7 @@ const MaintainerPledgedIssueConfirmationPendingWrapper = ({
         payload={payload}
         canMarkSolved={canMarkSolved}
         isMarkedSolved={isMarkedSolved}
-        isLoading={markSolved.isLoading}
+        isLoading={markSolved.isPending}
         onMarkSoved={onMarkSolved}
       />
       <Modal

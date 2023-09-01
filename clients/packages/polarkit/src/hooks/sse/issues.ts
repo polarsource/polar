@@ -12,5 +12,5 @@ export const onIssueUpdated = async (params: {
     params.organization_name,
     params.repository_name,
   ]
-  await queryClient.invalidateQueries(cacheKey)
+  await queryClient.invalidateQueries({ queryKey: cacheKey })
 }

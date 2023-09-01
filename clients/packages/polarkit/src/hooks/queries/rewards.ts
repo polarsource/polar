@@ -1,6 +1,6 @@
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
-import { ListResource_Reward_ } from 'api/client'
-import { api } from '../../..'
+import { api } from '../../api'
+import { ListResource_Reward_ } from '../../api/client'
 import { defaultRetry } from './retry'
 
 export const useListRewards: (

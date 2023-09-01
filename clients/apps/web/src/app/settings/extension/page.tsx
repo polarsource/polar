@@ -1,12 +1,11 @@
-import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
-import LoadingScreen from '@/components/Dashboard/LoadingScreen'
-import Layout from '@/components/Layout/EmptyLayout'
-import type { NextPageWithLayout } from '@/utils/next'
-import { useRouter } from 'next/router'
-import { api } from 'polarkit'
-import { ReactElement, useEffect, useState } from 'react'
+'use client'
 
-const ExtensionSettingsPage: NextPageWithLayout = () => {
+import LoadingScreen from '@/components/Dashboard/LoadingScreen'
+import { useRouter } from 'next/navigation'
+import { api } from 'polarkit'
+import { useEffect, useState } from 'react'
+
+export default function Page() {
   const [token, setToken] = useState<string>()
   const router = useRouter()
 
@@ -37,13 +36,3 @@ const ExtensionSettingsPage: NextPageWithLayout = () => {
     </>
   )
 }
-
-ExtensionSettingsPage.getLayout = (page: ReactElement) => {
-  return (
-    <Gatekeeper>
-      <Layout>{page}</Layout>
-    </Gatekeeper>
-  )
-}
-
-export default ExtensionSettingsPage

@@ -8,6 +8,11 @@ import DashboardLayout, { RepoPickerHeader } from './DashboardLayout'
 const meta: Meta<typeof DashboardLayout> = {
   title: 'Layouts/DashboardLayout',
   component: BackerLayout,
+  parameters: {
+    nextjs: {
+      appDirectory: true,
+    },
+  },
 }
 
 export default meta

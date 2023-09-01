@@ -266,6 +266,11 @@ const meta: Meta<typeof IssueListItem> = {
   title: 'Organisms/IssueListItem',
   component: IssueListItem,
   tags: ['autodocs'],
+  parameters: {
+    nextjs: {
+      appDirectory: true,
+    },
+  },
   argTypes: {
     issue: {
       options: ['Backlog', 'Triaged', 'InProgress', 'PullRequest', 'Closed'],

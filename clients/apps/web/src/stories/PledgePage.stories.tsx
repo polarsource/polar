@@ -10,6 +10,11 @@ const meta: Meta<typeof Pledge> = {
   args: {
     issue: issue,
   },
+  parameters: {
+    nextjs: {
+      appDirectory: true,
+    },
+  },
 }
 
 export default meta

@@ -8,6 +8,11 @@ import { issue, issueRead, org, repo } from './testdata'
 const meta: Meta<typeof OrganizationPublicPage> = {
   title: 'Pages/OrganizationPublicPage',
   component: OrganizationPublicPage,
+  parameters: {
+    nextjs: {
+      appDirectory: true,
+    },
+  },
 }
 
 export default meta

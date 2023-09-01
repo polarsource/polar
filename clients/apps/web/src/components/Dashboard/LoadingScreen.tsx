@@ -36,7 +36,7 @@ const LogoIcon = ({ animate }: { animate: boolean }) => {
       viewBox="0 0 40 40"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={'dark:text-gray-950 m-auto text-gray-50'}
+      className={'m-auto text-gray-50 dark:text-gray-950'}
       animate={{
         rotate: [0, 90, 180],
       }}

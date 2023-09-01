@@ -70,7 +70,7 @@ const nextConfig = {
     return [
       {
         source: '/',
-        destination: '/dashboard',
+        destination: '/login/init',
         has: [
           {
             type: 'host',
@@ -101,6 +101,54 @@ const nextConfig = {
             value: 'polar.new',
           },
         ],
+        permanent: false,
+      },
+
+      {
+        source: '/dashboard',
+        destination: '/login/init',
+        permanent: false,
+      },
+
+      {
+        source: '/dashboard/settings/extension',
+        destination: '/settings/extension',
+        permanent: false,
+      },
+
+      {
+        source: '/dashboard/personal',
+        destination: '/feed',
+        permanent: false,
+      },
+      {
+        source: '/dashboard/:org(.*)/:repo(.*)',
+        destination: '/maintainer/:org/issues?repo=:repo',
+        permanent: false,
+      },
+      {
+        source: '/dashboard/:org(.*)',
+        destination: '/maintainer/:org/issues',
+        permanent: false,
+      },
+      {
+        source: '/dependencies(.*)',
+        destination: '/feed',
+        permanent: false,
+      },
+      {
+        source: '/finance(.*)',
+        destination: '/maintainer',
+        permanent: false,
+      },
+      {
+        source: '/issues(.*)',
+        destination: '/maintainer',
+        permanent: false,
+      },
+      {
+        source: '/promote(.*)',
+        destination: '/maintainer',
         permanent: false,
       },
     ]

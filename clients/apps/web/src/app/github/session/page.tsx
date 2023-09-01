@@ -1,25 +1,21 @@
+'use client'
+
 import { api } from '@/../../../packages/polarkit'
 import LoadingScreen, {
   LoadingScreenError,
 } from '@/components/Dashboard/LoadingScreen'
-import Layout from '@/components/Layout/EmptyLayout'
 import { useAuth } from '@/hooks'
-import type { NextPageWithLayout } from '@/utils/next'
-import { GetServerSideProps } from 'next'
-import { useRouter } from 'next/router'
+import { useRouter, useSearchParams } from 'next/navigation'
 import posthog from 'posthog-js'
-import { ParsedUrlQuery } from 'querystring'
-import { ReactElement, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
-export interface PageQuery extends ParsedUrlQuery {
-  provider?: string
-  code?: string
-  state?: string
-}
-
-const GithubAuthPage: NextPageWithLayout = () => {
+export default function Page() {
   const router = useRouter()
-  const query = router.query as PageQuery
+
+  const search = useSearchParams()
+
+  const code = search?.get('code')
+  const state = search?.get('state')
 
   const session = useAuth()
   const [error, setError] = useState<string | null>(null)
@@ -52,8 +48,8 @@ const GithubAuthPage: NextPageWithLayout = () => {
 
   // Try once on page load
   useEffect(() => {
-    if (query.code && query.state) {
-      exchange(query.code, query.state)
+    if (code && state) {
+      exchange(code, state)
     } else {
       setError('Cannot authenticate without an OAuth code and state')
     }
@@ -78,15 +74,3 @@ const GithubAuthPage: NextPageWithLayout = () => {
     <LoadingScreen animate={true}>Brewing a fresh access token.</LoadingScreen>
   )
 }
-
-GithubAuthPage.getLayout = (page: ReactElement) => {
-  return <Layout>{page}</Layout>
-}
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const query = context.query
-
-  return { props: { query } }
-}
-
-export default GithubAuthPage

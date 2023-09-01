@@ -1,28 +1,30 @@
+'use client'
+
 import LoadingScreen, {
   LoadingScreenError,
 } from '@/components/Dashboard/LoadingScreen'
-import Layout from '@/components/Layout/EmptyLayout'
 import GithubLoginButton from '@/components/Shared/GithubLoginButton'
-import { NextPageWithLayout } from '@/utils/next'
-import { GetServerSideProps } from 'next'
-import { useRouter } from 'next/router'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from 'polarkit'
 import {
   InstallationCreate,
   OrganizationPrivateRead,
 } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
-import { ParsedUrlQuery } from 'querystring'
-import type { ReactElement } from 'react'
 import { useEffect, useState } from 'react'
 
-const GithubInstallationPage: NextPageWithLayout = () => {
+export default function Page() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [installed, setInstalled] = useState<OrganizationPrivateRead | null>(
     null,
   )
-  const query = router.query
+
+  const search = useSearchParams()
+
+  const installationID = search?.get('installation_id')
+  const setupAction = search?.get('setup_action')
+
   const [showLogin, setShowLogin] = useState(false)
 
   const redirectToDashboard = () => {
@@ -30,8 +32,8 @@ const GithubInstallationPage: NextPageWithLayout = () => {
     return
   }
 
-  const install = (query: ParsedUrlQuery) => {
-    if (typeof query?.installation_id !== 'string') {
+  const install = () => {
+    if (!installationID) {
       setError('Unexpected installation_id')
       return
     }
@@ -39,7 +41,7 @@ const GithubInstallationPage: NextPageWithLayout = () => {
     const request = api.integrations.install({
       requestBody: {
         platform: InstallationCreate.platform.GITHUB,
-        external_id: parseInt(query.installation_id),
+        external_id: parseInt(installationID),
       },
     })
 
@@ -62,17 +64,17 @@ const GithubInstallationPage: NextPageWithLayout = () => {
   }
 
   useEffect(() => {
-    if (!query.installation_id) {
+    if (!installationID) {
       return
     }
 
-    const request = install(query)
+    const request = install()
     return () => {
       if (request) {
         request.cancel()
       }
     }
-  }, [query])
+  }, [installationID])
 
   const [gotoUrl, setGotoUrl] = useState('')
 
@@ -117,7 +119,7 @@ const GithubInstallationPage: NextPageWithLayout = () => {
    *
    * Fixed in: https://github.com/polarsource/polar/issues/690
    */
-  if (query.setup_action === 'request') {
+  if (setupAction === 'request') {
     return (
       <LoadingScreen animate={false}>
         <div className="text-center">
@@ -139,15 +141,3 @@ const GithubInstallationPage: NextPageWithLayout = () => {
     </LoadingScreen>
   )
 }
-
-GithubInstallationPage.getLayout = (page: ReactElement) => {
-  return <Layout>{page}</Layout>
-}
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const query = context.query
-
-  return { props: { query } }
-}
-
-export default GithubInstallationPage

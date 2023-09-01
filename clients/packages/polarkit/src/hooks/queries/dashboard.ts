@@ -60,7 +60,7 @@ export const useDashboard = (
     getNextPageParam: (lastPage, pages): number | undefined => {
       return lastPage.pagination.next_page
     },
-    initialPageParam: 0,
+    initialPageParam: 1,
     enabled: !!orgName,
     retry: defaultRetry,
   })
@@ -104,6 +104,6 @@ export const usePersonalDashboard = (
     getNextPageParam: (lastPage, pages): number | undefined => {
       return lastPage.pagination.next_page
     },
-    initialPageParam: 0,
+    initialPageParam: 1,
     retry: defaultRetry,
   })

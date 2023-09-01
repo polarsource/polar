@@ -1,5 +1,6 @@
 import { Repository } from 'polarkit/api/client'
 import { classNames } from 'polarkit/utils'
+import { Suspense } from 'react'
 import SidebarNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import Topbar from '../Shared/Topbar'
@@ -40,7 +41,7 @@ const DashboardLayout = (props: {
               'relative mx-auto max-w-screen-2xl px-4 pb-6 pt-24 sm:px-6 md:px-8',
             )}
           >
-            {props.children}
+            <Suspense>{props.children}</Suspense>
           </div>
         </main>
       </div>

@@ -1,8 +1,52 @@
 import OrganizationPublicPage from '@/components/Organization/OrganizationPublicPage'
 import PageNotFound from '@/components/Shared/PageNotFound'
-import Head from 'next/head'
+import type { Metadata, ResolvingMetadata } from 'next'
 import { api } from 'polarkit/api'
 import { Platforms } from 'polarkit/api/client'
+
+export async function generateMetadata(
+  {
+    params,
+  }: {
+    params: { organization: string }
+  },
+  parent: ResolvingMetadata,
+): Promise<Metadata> {
+  const organization = await api.organizations.lookup({
+    platform: Platforms.GITHUB,
+    organizationName: params.organization,
+  })
+
+  return {
+    title: `${organization.name}`, // " | Polar is added by the template"
+    openGraph: {
+      title: `${organization.name} seeks funding for issues`,
+      description: `${organization.name} seeks funding for issues on Polar`,
+      siteName: 'Polar',
+
+      images: [
+        {
+          url: `https://polar.sh/og?org=${organization.name}`,
+          width: 1200,
+          height: 630,
+        },
+      ],
+    },
+    twitter: {
+      images: [
+        {
+          url: `https://polar.sh/og?org=${organization.name}`,
+          width: 1200,
+          height: 630,
+          alt: `${organization.name} seeks funding for issues`,
+        },
+      ],
+      card: 'summary_large_image',
+      title: `${organization.name} seeks funding for issues`,
+      description: `${organization.name} seeks funding for issues on Polar`,
+    },
+  }
+}
 
 export default async function Page({
   params,
@@ -37,43 +81,6 @@ export default async function Page({
 
   return (
     <>
-      <Head>
-        <title>Polar | {organization.name}</title>
-        <meta
-          property="og:title"
-          content={`${organization.name} seeks funding for issues`}
-        />
-        <meta
-          property="og:description"
-          content={`${organization.name} seeks funding for issues on Polar`}
-        />
-        <meta name="og:site_name" content="Polar"></meta>
-        <meta
-          property="og:image"
-          content={`https://polar.sh/og?org=${organization.name}`}
-        />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-
-        <meta
-          property="twitter:image"
-          content={`https://polar.sh/og?org=${organization.name}`}
-        />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta
-          name="twitter:image:alt"
-          content={`${organization.name} seeks funding for issues`}
-        />
-        <meta
-          name="twitter:title"
-          content={`${organization.name} seeks funding for issues`}
-        />
-        <meta
-          name="twitter:description"
-          content={`${organization.name} seeks funding for issues on Polar`}
-        ></meta>
-      </Head>
-
       <OrganizationPublicPage
         organization={organization}
         repositories={repositories.items || []}

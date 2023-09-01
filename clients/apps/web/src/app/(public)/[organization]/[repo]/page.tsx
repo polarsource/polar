@@ -1,8 +1,61 @@
 import RepositoryPublicPage from '@/components/Organization/RepositoryPublicPage'
 import PageNotFound from '@/components/Shared/PageNotFound'
-import Head from 'next/head'
+import { Metadata, ResolvingMetadata } from 'next'
 import { api } from 'polarkit'
 import { Platforms } from 'polarkit/api/client'
+
+export async function generateMetadata(
+  {
+    params,
+  }: {
+    params: { organization: string; repo: string }
+  },
+  parent: ResolvingMetadata,
+): Promise<Metadata> {
+  const organization = await api.organizations.lookup({
+    platform: Platforms.GITHUB,
+    organizationName: params.organization,
+  })
+
+  const repositories = await api.repositories.search({
+    platform: Platforms.GITHUB,
+    organizationName: params.organization,
+  })
+
+  const repo = repositories.items?.find((r) => r.name === params.repo)
+
+  if (!repo) {
+    return {}
+  }
+
+  return {
+    title: `${organization.name}/${repo.name}`, // " | Polar is added by the template"
+    openGraph: {
+      title: `${organization.name}/${repo.name} seeks funding for issues`,
+      description: `${organization.name}/${repo.name} seeks funding for issues on Polar`,
+      images: [
+        {
+          url: `https://polar.sh/og?org=${organization.name}&repo=${repo.name}`,
+          width: 1200,
+          height: 630,
+        },
+      ],
+    },
+    twitter: {
+      images: [
+        {
+          url: `https://polar.sh/og?org=${organization.name}&repo=${repo.name}`,
+          width: 1200,
+          height: 630,
+          alt: `${organization.name}/${repo.name} seeks funding for issues`,
+        },
+      ],
+      card: 'summary_large_image',
+      title: `${organization.name}/${repo.name} seeks funding for issues`,
+      description: `${organization.name}/${repo.name} seeks funding for issues on Polar`,
+    },
+  }
+}
 
 export default async function Page({
   params,
@@ -43,53 +96,12 @@ export default async function Page({
   }
 
   return (
-    <>
-      <Head>
-        <title>
-          Polar | {organization.name}/{repo.name}
-        </title>
-        <meta
-          property="og:title"
-          content={`${organization.name}/${repo.name} seeks funding for issues`}
-        />
-        <meta
-          property="og:description"
-          content={`${organization.name}/${repo.name} seeks funding for issues on Polar`}
-        />
-        <meta name="og:site_name" content="Polar"></meta>
-        <meta
-          property="og:image"
-          content={`https://polar.sh/og?org=${organization.name}&repo=${repo.name}`}
-        />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-
-        <meta
-          property="twitter:image"
-          content={`https://polar.sh/og?org=${organization.name}&repo=${repo.name}`}
-        />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta
-          name="twitter:image:alt"
-          content={`${organization.name}/${repo.name} seeks funding for issues`}
-        />
-        <meta
-          name="twitter:title"
-          content={`${organization.name}/${repo.name} seeks funding for issues`}
-        />
-        <meta
-          name="twitter:description"
-          content={`${organization.name}/${repo.name} seeks funding for issues on Polar`}
-        ></meta>
-      </Head>
-
-      <RepositoryPublicPage
-        organization={organization}
-        repositories={repositories.items || []}
-        repository={repo}
-        issues={issues.items || []}
-        totalIssueCount={totalIssueCount}
-      />
-    </>
+    <RepositoryPublicPage
+      organization={organization}
+      repositories={repositories.items || []}
+      repository={repo}
+      issues={issues.items || []}
+      totalIssueCount={totalIssueCount}
+    />
   )
 }

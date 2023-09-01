@@ -14,14 +14,10 @@ export default async function Page({
   }
   searchParams: { [key: string]: string | string[] | undefined }
 }) {
-  // const search = useSearchParams()
-
   const pledgeId = searchParams['pledge_id']
   if (typeof pledgeId !== 'string') {
     return <></>
   }
-
-  // return <div>{JSON.stringify({ params, searchParams })}</div>
 
   const res = await api.pledges.getPledgeWithResources({
     platform: Platforms.GITHUB,

@@ -6,7 +6,6 @@ import Icon from '@/components/Icons/Icon'
 import { Modal as ModernModal } from '@/components/Modal'
 import { useRequireAuth } from '@/hooks'
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
-import Head from 'next/head'
 import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from 'polarkit/account'
 import { api } from 'polarkit/api'
 import { Account, AccountType, UserRead } from 'polarkit/api/client'
@@ -25,10 +24,6 @@ export default function Page() {
 
   return (
     <>
-      <Head>
-        <title>Polar</title>
-      </Head>
-
       {rewards.data?.items && currentUser && (
         <div className="flex flex-col space-y-8">
           <AccountBanner

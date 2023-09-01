@@ -94,7 +94,7 @@ const SetupAccount = ({
       })
       window.location.href = link.url
     } catch (e) {
-      router.reload()
+      window.location.reload()
     } finally {
       setLoading(false)
     }

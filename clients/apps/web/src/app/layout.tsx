@@ -19,6 +19,7 @@ export const metadata: Metadata = {
       'https://framerusercontent.com/images/RY34ZklhknDgQWNxaSSQDYqVBM.jpg',
     type: 'website',
     title: 'Polar - Pledge for progress',
+    siteName: 'Polar',
     description:
       'Polar gives open source maintainers a better and funded backlog based on what drives the most impact within their community. ',
   },

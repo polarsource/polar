@@ -276,7 +276,7 @@ const IssueListItem = (props: {
               onDispute={onDispute}
               showConfirmPledgeAction={true}
               onConfirmPledges={onConfirmPledge}
-              confirmPledgeIsLoading={markConfirmed.isLoading}
+              confirmPledgeIsLoading={markConfirmed.isPending}
               funding={'funding' in props.issue ? props.issue.funding : {}}
               showSelfPledgesFor={props.showSelfPledgesFor}
             />

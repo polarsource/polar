@@ -50,7 +50,7 @@ const NotificationSettings = () => {
       settings={settings}
       canSave={canSave}
       onUpdated={onUpdated}
-      isSaving={mutation.isLoading}
+      isSaving={mutation.isPending}
       save={save}
     />
   )

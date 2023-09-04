@@ -7,6 +7,7 @@ import stripe.error as stripe_lib_error
 import structlog
 
 from polar.enums import AccountType
+from polar.exceptions import PolarError
 from polar.integrations.open_collective.service import (
     CollectiveNotFoundError,
     OpenCollectiveAPIError,
@@ -23,10 +24,8 @@ from .schemas import AccountCreate, AccountLink, AccountUpdate
 log = structlog.get_logger()
 
 
-class AccountServiceError(Exception):
-    def __init__(self, message: str) -> None:
-        self.message = message
-        super().__init__(message)
+class AccountServiceError(PolarError):
+    pass
 
 
 class AccountAlreadyExistsError(AccountServiceError):

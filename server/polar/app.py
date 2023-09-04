@@ -11,6 +11,8 @@ from starlette.routing import BaseRoute
 from polar import receivers, worker  # noqa
 from polar.api import router
 from polar.config import settings
+from polar.exceptions import PolarError
+from polar.exception_handlers import polar_exception_handler
 from polar.health.endpoints import router as health_router
 from polar.logging import configure as configure_logging
 from polar.sentry import configure_sentry
@@ -49,6 +51,8 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     configure_cors(app)
+
+    app.add_exception_handler(PolarError, polar_exception_handler)
 
     # /healthz and /readyz
     app.include_router(health_router)

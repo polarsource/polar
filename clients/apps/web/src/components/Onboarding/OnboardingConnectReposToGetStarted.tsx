@@ -12,7 +12,7 @@ const OnboardingConnectReposToGetStarted = () => {
 
   return (
     <div className="flex flex-col items-center space-y-4 pt-24">
-      <h2 className="text-2xl">Connect repos to get started</h2>
+      <h2 className="text-2xl">Get funded</h2>
       <p className="max-w-3xl text-center text-gray-500 dark:text-gray-400">
         Interested in getting backers behind your open source efforts? Connect
         your repositories to get started.

@@ -5,7 +5,6 @@ import {
   DashboardFilters,
   DefaultFilters,
 } from '@/components/Dashboard/filters'
-import BackerLayout from '@/components/Layout/BackerLayout'
 import FundAGithubIssue from '@/components/Onboarding/FundAGithubIssue'
 import OnboardingConnectReposToGetStarted from '@/components/Onboarding/OnboardingConnectReposToGetStarted'
 import { useAuth } from '@/hooks'
@@ -37,14 +36,15 @@ export default function Page() {
     filters.onlyBadged,
   )
   const dashboard = dashboardQuery.data
-  const totalCount = dashboard?.pages[0].pagination.total_count || undefined
+  const totalCount = dashboard?.pages[0].pagination.total_count ?? undefined
 
   // Onboarding splashscreen
   if (!dashboardQuery.isLoading && totalCount === 0) {
     return (
-      <BackerLayout>
-        <OnboardingConnectReposToGetStarted />
-      </BackerLayout>
+      <div className="mt-2 space-y-5">
+        <FundAGithubIssue />
+        <OnboardingConnectReposToGetStarted />{' '}
+      </div>
     )
   }
 

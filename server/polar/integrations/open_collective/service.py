@@ -5,6 +5,7 @@ from collections.abc import AsyncGenerator
 import httpx
 
 from polar.config import settings
+from polar.exceptions import PolarError
 
 
 @dataclasses.dataclass
@@ -27,10 +28,8 @@ class OpenCollectiveCollective:
         )
 
 
-class OpenCollectiveServiceError(Exception):
-    def __init__(self, message: str):
-        self.message = message
-        super().__init__(message)
+class OpenCollectiveServiceError(PolarError):
+    pass
 
 
 class OpenCollectiveAPIError(OpenCollectiveServiceError):

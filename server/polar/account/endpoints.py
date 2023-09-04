@@ -163,15 +163,12 @@ async def create(
             detail="Unauthorized",
         )
 
-    try:
-        created = await account_service.create_account(
-            session,
-            organization_id=account.organization_id,
-            user_id=account.user_id,
-            admin_id=auth.user.id,
-            account=account,
-        )
-    except AccountServiceError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+    created = await account_service.create_account(
+        session,
+        organization_id=account.organization_id,
+        user_id=account.user_id,
+        admin_id=auth.user.id,
+        account=account,
+    )
 
     return Account.from_db(created)

@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from polar.auth.dependencies import Auth
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
-from polar.exceptions import NotPermitted
 from polar.issue.schemas import Issue
 from polar.models import Pledge, Repository
 from polar.organization.schemas import Organization
@@ -277,20 +276,14 @@ async def create_pledge(
         issue=number,
     )
 
-    try:
-        return await pledge_service.create_pledge(
-            user=auth.user,
-            org=org,
-            repo=repo,
-            issue=issue,
-            pledge=pledge,
-            session=session,
-        )
-    except NotPermitted as e:
-        raise HTTPException(
-            status_code=403,
-            detail=str(e),
-        ) from e
+    return await pledge_service.create_pledge(
+        user=auth.user,
+        org=org,
+        repo=repo,
+        issue=issue,
+        pledge=pledge,
+        session=session,
+    )
 
 
 @router.get(

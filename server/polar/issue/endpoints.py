@@ -144,7 +144,7 @@ async def search(
 @router.get(
     "/issues/lookup",
     response_model=IssueSchema,
-    tags=[Tags.INTERNAL],
+    tags=[Tags.PUBLIC],
 )
 async def lookup(
     external_url: str
@@ -208,6 +208,31 @@ async def lookup(
         status_code=404,
         detail="Issue not found",
     )
+
+
+@router.get(
+    "/issues/for_you",
+    response_model=ListResource[IssueSchema],
+    tags=[Tags.INTERNAL],
+)
+async def for_you(
+    auth: Auth = Depends(Auth.current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[IssueSchema]:
+    if not auth.user:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+        )
+
+    issues = await github_issue_service.list_subscribed_issues(session, auth.user)
+
+    # get loaded
+    issues = [
+        i for i in [await issue_service.get_loaded(session, i.id) for i in issues] if i
+    ]
+    items = [IssueSchema.from_db(i) for i in issues]
+    return ListResource(items=items, pagination=Pagination(total_count=len(items)))
 
 
 @router.get(

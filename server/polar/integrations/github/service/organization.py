@@ -11,7 +11,6 @@ from polar.organization.service import OrganizationService
 from polar.postgres import AsyncSession
 
 from .. import client as github
-from .issue import github_issue
 from .repository import github_repository
 
 log = structlog.get_logger(service="GithubOrganizationService")

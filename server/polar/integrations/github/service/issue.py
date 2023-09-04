@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import Any, Sequence, Tuple, Union
+from typing import Any, Literal, Sequence, Tuple, Union
 
 import structlog
 from githubkit import GitHub, Response
@@ -16,7 +16,6 @@ from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
 from polar.integrations.github import client as github
 from polar.integrations.github.service.api import github_api
-from polar.integrations.github.service.organization import GithubOrganizationService
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.issue.schemas import IssueCreate
 from polar.issue.service import IssueService
@@ -26,10 +25,15 @@ from polar.models import Issue, Organization, Repository
 from polar.models.user import User
 from polar.organization.schemas import OrganizationCreate
 from polar.postgres import AsyncSession
+from polar.repository.hooks import (
+    repository_issue_synced,
+    repository_issues_sync_completed,
+)
 from polar.repository.schemas import RepositoryCreate
 
 from ..badge import GithubBadge
 from .organization import github_organization
+from .paginated import ErrorCount, SyncedCount, github_paginated_service
 from .repository import github_repository
 
 log = structlog.get_logger()
@@ -670,6 +674,99 @@ class GithubIssueService(IssueService):
             raise ResourceNotFound()
 
         return (organization, repository, issue)
+
+    async def sync_issues(
+        self,
+        session: AsyncSession,
+        *,
+        organization: Organization,
+        repository: Repository,
+        state: Literal["open", "closed", "all"] = "open",
+        sort: Literal["created", "updated", "comments"] = "updated",
+        direction: Literal["asc", "desc"] = "desc",
+        per_page: int = 30,
+        crawl_with_installation_id: int
+        | None = None,  # Override which installation to use when crawling
+    ) -> tuple[SyncedCount, ErrorCount]:
+        # We get PRs in the issues list too, but super slim versions of them.
+        # Since we sync PRs separately, we therefore skip them here.
+        def skip_if_pr(
+            data: github.rest.Issue | github.rest.PullRequestMinimal,
+        ) -> bool:
+            return bool(getattr(data, "pull_request", None))
+
+        installation_id = (
+            crawl_with_installation_id
+            if crawl_with_installation_id
+            else organization.installation_id
+        )
+
+        if not installation_id:
+            raise Exception("no github installation id found")
+
+        client = github.get_app_installation_client(installation_id)
+
+        paginator = client.paginate(
+            client.rest.issues.async_list_for_repo,
+            owner=organization.name,
+            repo=repository.name,
+            state=state,
+            sort=sort,
+            direction=direction,
+            per_page=per_page,
+        )
+        synced, errors = await github_paginated_service.store_paginated_resource(
+            session,
+            paginator=paginator,
+            store_resource_method=github_issue.store,
+            organization=organization,
+            repository=repository,
+            skip_condition=skip_if_pr,
+            on_sync_signal=repository_issue_synced,
+            on_completed_signal=repository_issues_sync_completed,
+            resource_type="issue",
+        )
+        return (synced, errors)
+
+    async def list_subscribed_issues(
+        self,
+        session: AsyncSession,
+        user: User,
+    ) -> list[Issue]:
+        client = await github.get_user_client(session, user)
+
+        issues = await client.rest.issues.async_list(
+            filter_="subscribed",
+            sort="updated",
+            state="open",
+            direction="desc",
+            since=datetime.datetime.now() - datetime.timedelta(days=356),
+            per_page=100,
+        )
+
+        res: list[Issue] = []
+
+        for i in issues.parsed_data:
+            if not i.repository:
+                continue
+            # skip issues in self owned repositories
+            if i.repository.owner.login == user.username:
+                continue
+
+            org = await github_organization.update_or_create_org_from_github(
+                session, i.repository.owner
+            )
+
+            repo = await github_repository.get_or_create_from_github(
+                session,
+                org,
+                i.repository,
+            )
+
+            issue = await self.store(session, data=i, organization=org, repository=repo)
+            res.append(issue)
+
+        return res
 
 
 github_issue = GithubIssueService(Issue)

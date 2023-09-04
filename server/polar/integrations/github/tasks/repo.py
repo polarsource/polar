@@ -1,9 +1,10 @@
 from uuid import UUID
+
 import structlog
 
 from polar.integrations.github import service
-from polar.worker import JobContext, PolarWorkerContext, enqueue_job, task
 from polar.postgres import AsyncSessionLocal
+from polar.worker import JobContext, PolarWorkerContext, enqueue_job, task
 
 from .utils import get_organization_and_repo
 
@@ -43,7 +44,7 @@ async def sync_repository_issues(
             organization, repository = await get_organization_and_repo(
                 session, organization_id, repository_id
             )
-            await service.github_repository.sync_issues(
+            await service.github_issue.sync_issues(
                 session,
                 organization=organization,
                 repository=repository,
@@ -64,7 +65,7 @@ async def sync_repository_pull_requests(
             organization, repository = await get_organization_and_repo(
                 session, organization_id, repository_id
             )
-            await service.github_repository.sync_pull_requests(
+            await service.github_pull_request.sync_pull_requests(
                 session,
                 organization=organization,
                 repository=repository,

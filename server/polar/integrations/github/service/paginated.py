@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Literal
+from typing import Any, Callable, Coroutine, List, Literal, Union
 
 import structlog
 from githubkit import Paginator
@@ -32,7 +32,10 @@ class GitHubPaginatedService:
         organization: Organization,
         repository: Repository,
         resource_type: Literal["issue", "pull_request"],
-        skip_condition: Callable[..., bool] | None = None,
+        skip_condition: Callable[
+            [Union[github.rest.Issue, github.rest.PullRequestSimple]], bool
+        ]
+        | None = None,
         on_sync_signal: Hook[SyncedHook] | None = None,
         on_completed_signal: Hook[SyncCompletedHook] | None = None,
     ) -> tuple[SyncedCount, ErrorCount]:

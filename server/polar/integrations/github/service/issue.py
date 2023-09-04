@@ -92,6 +92,9 @@ class GithubIssueService(IssueService):
                 github.rest.Issue,
             ],
         ) -> IssueCreate:
+            if issue.pull_request:
+                raise Exception("refusing to save a pull_request as issue")
+
             return IssueCreate.from_github(
                 issue,
                 organization_id=organization.id,
@@ -691,9 +694,13 @@ class GithubIssueService(IssueService):
         # We get PRs in the issues list too, but super slim versions of them.
         # Since we sync PRs separately, we therefore skip them here.
         def skip_if_pr(
-            data: github.rest.Issue | github.rest.PullRequestMinimal,
+            data: github.rest.Issue | github.rest.PullRequestSimple,
         ) -> bool:
-            return bool(getattr(data, "pull_request", None))
+            if isinstance(data, github.rest.PullRequestSimple):
+                return True
+            if data.pull_request:
+                return True
+            return False
 
         installation_id = (
             crawl_with_installation_id
@@ -751,6 +758,10 @@ class GithubIssueService(IssueService):
                 continue
             # skip issues in self owned repositories
             if i.repository.owner.login == user.username:
+                continue
+            if i.pull_request:
+                continue
+            if i.repository.private:
                 continue
 
             org = await github_organization.update_or_create_org_from_github(

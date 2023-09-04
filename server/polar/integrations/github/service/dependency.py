@@ -1,18 +1,17 @@
 from __future__ import annotations
 
 import structlog
+
 from polar.exceptions import IntegrityError, ResourceNotFound
 from polar.integrations.github.client import (
     get_app_installation_client,
 )
-from polar.integrations.github.service.organization import github_organization
+from polar.integrations.github.service.issue import github_issue
+from polar.models import Issue, Organization, Repository
 from polar.models.issue_dependency import IssueDependency
-
-from polar.models import Organization, Repository, Issue
 from polar.postgres import AsyncSession, sql
 
 from .url import github_url
-
 
 log = structlog.get_logger()
 
@@ -58,7 +57,7 @@ class GitHubIssueDependenciesService:
                     _,
                     _,
                     dependency_issue,
-                ) = await github_organization.sync_external_org_with_repo_and_issue(
+                ) = await github_issue.sync_external_org_with_repo_and_issue(
                     session,
                     client=client,
                     org_name=dependency.owner,

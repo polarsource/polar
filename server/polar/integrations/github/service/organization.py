@@ -1,21 +1,14 @@
 from datetime import datetime
-from typing import Any, Tuple, Union
+from typing import Union
 from uuid import UUID
 
 import structlog
-from githubkit import GitHub
-from githubkit.exception import RequestFailed
 
 from polar.enums import Platforms
-from polar.exceptions import ResourceNotFound
-from polar.issue.schemas import IssueCreate
 from polar.models import Organization, User
-from polar.models.issue import Issue
-from polar.models.repository import Repository
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import OrganizationService
 from polar.postgres import AsyncSession
-from polar.repository.schemas import RepositoryCreate
 
 from .. import client as github
 from .issue import github_issue
@@ -187,162 +180,31 @@ class GithubOrganizationService(OrganizationService):
 
         return org
 
-    async def sync_external_org_with_repo_and_issue(
+    async def update_or_create_org_from_github(
         self,
         session: AsyncSession,
-        *,
-        client: GitHub[Any],
-        org_name: str,
-        repo_name: str,
-        issue_number: int,
-    ) -> Tuple[Organization, Repository, Issue]:
-        log.info(
-            "syncing external",
-            org_name=org_name,
-            repo_name=repo_name,
-            issue_number=issue_number,
-        )
+        account: github.rest.SimpleUser,
+    ) -> Organization:
+        is_personal = account.type.lower() == "user"
 
-        organization = await self.get_by_name(session, Platforms.github, org_name)
-
-        if not organization:
-            log.info("organization not found by name", org_name=org_name)
-
-            try:
-                repo_response = await client.rest.repos.async_get(org_name, repo_name)
-                github_repo = repo_response.parsed_data
-                owner = github_repo.owner
-                is_personal = owner.type.lower() == "user"
-            except RequestFailed as e:
-                if e.response.status_code == 404:
-                    raise ResourceNotFound()
-                if e.response.status_code == 401:
-                    raise ResourceNotFound()
-                # re-raise other status codes
-                raise e
-
-            # check if we have org with same external_id
-            organization = await self.get_by_external_id(session, owner.id)
-
-        # still no organization, create it
-        if not organization:
-            log.info(
-                "organization not found by external_id, creating it",
-                org_name=org_name,
-                external_id=owner.id,
+        org = await self.get_by_external_id(session, account.id)
+        if not org:
+            create_schema = OrganizationCreate(
+                platform=Platforms.github,
+                name=account.login,
+                external_id=account.id,
+                avatar_url=account.avatar_url,
+                is_personal=is_personal,
             )
+            organization = await self.create_or_update(session, create_schema)
+            return organization
 
-            organization = await self.create(
-                session,
-                OrganizationCreate(
-                    platform=Platforms.github,
-                    name=owner.login,
-                    external_id=owner.id,
-                    avatar_url=owner.avatar_url,
-                    is_personal=is_personal,
-                ),
-            )
+        # update
+        org.name = account.login
+        org.avatar_url = account.avatar_url
+        await org.save(session)
 
-        repository = await github_repository.get_by_org_and_name(
-            session,
-            organization.id,
-            repo_name,
-        )
-
-        if not repository:
-            log.info(
-                "repository not found by name",
-                organization_id=organization.id,
-                repo_name=repo_name,
-            )
-
-            try:
-                repo_response = await client.rest.repos.async_get(org_name, repo_name)
-                github_repo = repo_response.parsed_data
-            except RequestFailed as e:
-                if e.response.status_code == 404:
-                    raise ResourceNotFound()
-                # re-raise other status codes
-                raise e
-
-            # check if we have repo with same external_id
-            repository = await github_repository.get_by_external_id(
-                session, github_repo.id
-            )
-
-        # still no repository
-        if not repository:
-            log.info(
-                "repository not found by external_id, creating it",
-                organization_id=organization.id,
-                repo_name=repo_name,
-                external_id=github_repo.id,
-            )
-
-            repository = await github_repository.create(
-                session,
-                RepositoryCreate(
-                    platform=Platforms.github,
-                    external_id=github_repo.id,
-                    organization_id=organization.id,
-                    name=github_repo.name,
-                    is_private=github_repo.private,
-                ),
-            )
-
-        issue = await github_issue.get_by_number(
-            session,
-            platform=Platforms.github,
-            organization_id=organization.id,
-            repository_id=repository.id,
-            number=issue_number,
-        )
-
-        if not issue:
-            log.info(
-                "issue not found, creating it",
-                organization_id=organization.id,
-                repository_id=repository.id,
-                number=issue_number,
-            )
-
-            try:
-                issue_response = await client.rest.issues.async_get(
-                    organization.name, repository.name, issue_number
-                )
-            except RequestFailed as e:
-                if e.response.status_code == 404:
-                    raise ResourceNotFound()
-                # re-raise other status codes
-                raise e
-
-            github_issue_data = issue_response.parsed_data
-
-            # This issue is a pull request, reject syncing it
-            if github_issue_data.pull_request:
-                log.info(
-                    "issue is pull request, skipping",
-                    organization_id=organization.id,
-                    repository_id=repository.id,
-                    number=issue_number,
-                )
-                raise ResourceNotFound()
-
-            issue_schema = IssueCreate.from_github(
-                github_issue_data,
-                organization_id=organization.id,
-                repository_id=repository.id,
-            )
-            issue = await github_issue.create(session, issue_schema)
-
-        # load repository for return
-        repository = await github_repository.get(
-            session, id=repository.id, load_organization=True
-        )
-        if not repository:
-            raise ResourceNotFound()
-
-        return (organization, repository, issue)
+        return org
 
     async def populate_org_metadata(
         self, session: AsyncSession, org: Organization

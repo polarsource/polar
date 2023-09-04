@@ -18,7 +18,7 @@
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://docs.polar.sh/api/">API</a>
 
-
+:-)
 
 <p align="center">
   <a href="https://github.com/polarsource/polar/blob/main/LICENSE">

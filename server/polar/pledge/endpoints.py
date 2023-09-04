@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from polar.auth.dependencies import Auth
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
-from polar.exceptions import NotPermitted, ResourceNotFound, StripeError
+from polar.exceptions import NotPermitted
 from polar.issue.schemas import Issue
 from polar.models import Pledge, Repository
 from polar.organization.schemas import Organization
@@ -289,11 +289,6 @@ async def create_pledge(
     except NotPermitted as e:
         raise HTTPException(
             status_code=403,
-            detail=str(e),
-        ) from e
-    except StripeError as e:
-        raise HTTPException(
-            status_code=400,
             detail=str(e),
         ) from e
 

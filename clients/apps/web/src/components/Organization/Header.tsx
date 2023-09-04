@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { Organization, Repository } from 'polarkit/api/client'
 import { LogoType } from 'polarkit/components/brand'
 import Navigation from './Navigation'
@@ -20,9 +19,9 @@ const Header = ({
         repository={repository}
       ></Navigation>
 
-      <Link href="/">
+      <a href="/">
         <LogoType />
-      </Link>
+      </a>
     </div>
   )
 }

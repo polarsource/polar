@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { LogoIcon, LogoType } from 'polarkit/components/brand'
 import { classNames } from 'polarkit/utils'
 import { Suspense } from 'react'
@@ -23,12 +22,12 @@ const Topbar = (props: {
 
   const logo = (
     <>
-      <Link
+      <a
         href="/"
         className="flex-shrink-0 items-center space-x-2 font-semibold text-gray-700 md:inline-flex"
       >
         <LogoType />
-      </Link>
+      </a>
     </>
   )
 

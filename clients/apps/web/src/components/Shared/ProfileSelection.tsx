@@ -189,12 +189,12 @@ const LinkItem = (props: {
 }) => {
   return (
     <ListItem current={false}>
-      <Link href={props.href}>
+      <a href={props.href}>
         <div className="flex items-center text-sm ">
           {props.icon}
           {props.children}
         </div>
-      </Link>
+      </a>
     </ListItem>
   )
 }

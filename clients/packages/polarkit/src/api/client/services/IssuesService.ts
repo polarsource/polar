@@ -33,6 +33,7 @@ export class IssuesService {
     sort,
     havePledge,
     haveBadge,
+    githubMilestoneNumber,
   }: {
     platform: Platforms,
     organizationName: string,
@@ -49,6 +50,10 @@ export class IssuesService {
      * Set to true to only return issues that have the Polar badge in the issue description
      */
     haveBadge?: boolean,
+    /**
+     * Filter to only return issues connected to this GitHub milestone.
+     */
+    githubMilestoneNumber?: number,
   }): CancelablePromise<ListResource_Issue_> {
     return this.httpRequest.request({
       method: 'GET',
@@ -60,6 +65,7 @@ export class IssuesService {
         'sort': sort,
         'have_pledge': havePledge,
         'have_badge': haveBadge,
+        'github_milestone_number': githubMilestoneNumber,
       },
       errors: {
         404: `Not Found`,
@@ -90,6 +96,18 @@ export class IssuesService {
       errors: {
         422: `Validation Error`,
       },
+    });
+  }
+
+  /**
+   * For You
+   * @returns ListResource_Issue_ Successful Response
+   * @throws ApiError
+   */
+  public forYou(): CancelablePromise<ListResource_Issue_> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/issues/for_you',
     });
   }
 

@@ -270,6 +270,13 @@ export const useSearchIssues: (v: {
     enabled: !!v.organizationName,
   })
 
+export const useListForYouIssues = () =>
+  useQuery({
+    queryKey: ['issues', 'for-you'],
+    queryFn: () => api.issues.forYou(),
+    retry: defaultRetry,
+  })
+
 export const useIssueMarkConfirmed = () =>
   useMutation({
     mutationFn: (variables: { id: string; splits: ConfirmIssueSplit[] }) => {

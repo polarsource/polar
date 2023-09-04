@@ -175,7 +175,9 @@ class OrganizationService(
             user_id=user_id,
         )
         if not org:
-            raise ResourceNotFound()
+            raise ResourceNotFound(
+                "Organization/repository combination not found for user"
+            )
 
         # Return a tuple of (org, repo) for intuititive usage (unpacking)
         # versus having to do org.repos[0] in the caller.
@@ -218,7 +220,7 @@ class OrganizationService(
             repo_name=repo_name,
         )
         if not org_and_repo:
-            raise ResourceNotFound()
+            raise ResourceNotFound("Organization and repo combination not found")
 
         organization, repository = org_and_repo
         if isinstance(issue, int):
@@ -235,7 +237,7 @@ class OrganizationService(
                 id=issue,
             )
         if not issue_obj:
-            raise ResourceNotFound()
+            raise ResourceNotFound("Issue not found")
 
         return (organization, repository, issue_obj)
 

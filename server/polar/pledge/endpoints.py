@@ -218,19 +218,13 @@ async def get_pledge_with_resources(
 ) -> PledgeResources:
     includes = include.split(",")
 
-    try:
-        org, repo, issue = await organization_service.get_with_repo_and_issue(
-            session,
-            platform=platform,
-            org_name=org_name,
-            repo_name=repo_name,
-            issue=number,
-        )
-    except ResourceNotFound as e:
-        raise HTTPException(
-            status_code=404,
-            detail="Organization, repo and issue combination not found",
-        ) from e
+    org, repo, issue = await organization_service.get_with_repo_and_issue(
+        session,
+        platform=platform,
+        org_name=org_name,
+        repo_name=repo_name,
+        issue=number,
+    )
 
     pledge = await get_pledge_or_404(
         session,
@@ -292,11 +286,6 @@ async def create_pledge(
             pledge=pledge,
             session=session,
         )
-    except ResourceNotFound as e:
-        raise HTTPException(
-            status_code=404,
-            detail=str(e),
-        ) from e
     except NotPermitted as e:
         raise HTTPException(
             status_code=403,

@@ -5,7 +5,6 @@ from fastapi import Depends, HTTPException, Request
 
 from polar.authz.service import Anonymous, Subject
 from polar.enums import Platforms
-from polar.exceptions import ResourceNotFound
 from polar.models import Organization, Repository, User
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -132,20 +131,14 @@ class Auth:
         session: AsyncSession = Depends(get_db_session),
         user: User = Depends(current_user_required),
     ) -> Self:
-        try:
-            org, repo = await organization_service.get_with_repo_for_user(
-                session,
-                platform=platform,
-                org_name=org_name,
-                repo_name=repo_name,
-                user_id=user.id,
-            )
-            return cls(subject=user, user=user, organization=org, repository=repo)
-        except ResourceNotFound:
-            raise HTTPException(
-                status_code=404,
-                detail="Organization/repository combination not found for user",
-            )
+        org, repo = await organization_service.get_with_repo_for_user(
+            session,
+            platform=platform,
+            org_name=org_name,
+            repo_name=repo_name,
+            user_id=user.id,
+        )
+        return cls(subject=user, user=user, organization=org, repository=repo)
 
     @classmethod
     async def backoffice_user(

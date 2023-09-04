@@ -179,35 +179,23 @@ async def lookup(
 
         client = get_polar_client()
 
-        try:
-            res = await github_issue_service.sync_external_org_with_repo_and_issue(
-                session,
-                client=client,
-                org_name=url.owner,
-                repo_name=url.repo,
-                issue_number=url.number,
-            )
-            org, repo, tmp_issue = res
-        except ResourceNotFound:
-            raise HTTPException(
-                status_code=404,
-                detail="Issue by external_url not found",
-            )
+        res = await github_issue_service.sync_external_org_with_repo_and_issue(
+            session,
+            client=client,
+            org_name=url.owner,
+            repo_name=url.repo,
+            issue_number=url.number,
+        )
+        org, repo, tmp_issue = res
 
         # get for return
         issue = await issue_service.get_loaded(session, tmp_issue.id)
         if not issue:
-            raise HTTPException(
-                status_code=404,
-                detail="Issue not found",
-            )
+            raise ResourceNotFound("Issue not found")
 
         return IssueSchema.from_db(issue)
 
-    raise HTTPException(
-        status_code=404,
-        detail="Issue not found",
-    )
+    raise ResourceNotFound("Issue not found")
 
 
 @router.get(
@@ -498,27 +486,13 @@ async def get_issue_references(
     auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     session: AsyncSession = Depends(get_db_session),
 ) -> Sequence[IssueReferenceRead]:
-    try:
-        _, __, issue = await organization_service.get_with_repo_and_issue(
-            session,
-            platform=platform,
-            org_name=org_name,
-            repo_name=repo_name,
-            issue=number,
-        )
-
-    except ResourceNotFound:
-        raise HTTPException(
-            status_code=404,
-            detail="Organization, repo and issue combination not found",
-        )
-
-    if not issue:
-        raise HTTPException(
-            status_code=404,
-            detail="Issue not found",
-        )
-
+    _, __, issue = await organization_service.get_with_repo_and_issue(
+        session,
+        platform=platform,
+        org_name=org_name,
+        repo_name=repo_name,
+        issue=number,
+    )
     refs = await issue_service.list_issue_references(session, issue)
     return [IssueReferenceRead.from_model(r) for r in refs]
 

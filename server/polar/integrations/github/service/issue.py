@@ -92,14 +92,32 @@ class GithubIssueService(IssueService):
                 github.rest.Issue,
             ],
         ) -> IssueCreate:
-            if issue.pull_request:
-                raise Exception("refusing to save a pull_request as issue")
-
             return IssueCreate.from_github(
                 issue,
                 organization_id=organization.id,
                 repository_id=repository.id,
             )
+
+        def filter(
+            issue: Union[
+                github.webhooks.IssuesOpenedPropIssue,
+                github.webhooks.IssuesClosedPropIssue,
+                github.webhooks.IssuesReopenedPropIssue,
+                github.webhooks.Issue,
+                github.rest.Issue,
+            ],
+        ) -> bool:
+            if issue.pull_request:
+                log.error(
+                    "refusing to save a pull_request as issue",
+                    external_id=issue.id,
+                )
+                return False
+
+            return True
+
+        # Filter out pull requests and log as errors
+        data = [d for d in data if filter(d)]
 
         schemas = [parse(issue) for issue in data]
         if not schemas:

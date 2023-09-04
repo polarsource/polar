@@ -11,9 +11,6 @@ from polar.exceptions import ResourceNotFound
 from polar.integrations.github.badge import GithubBadge
 from polar.integrations.github.client import get_polar_client
 from polar.integrations.github.service.issue import github_issue as github_issue_service
-from polar.integrations.github.service.organization import (
-    github_organization as github_organization_service,
-)
 from polar.integrations.github.service.url import github_url
 from polar.kit.schemas import Schema
 from polar.models import Issue
@@ -183,14 +180,12 @@ async def lookup(
         client = get_polar_client()
 
         try:
-            res = (
-                await github_organization_service.sync_external_org_with_repo_and_issue(
-                    session,
-                    client=client,
-                    org_name=url.owner,
-                    repo_name=url.repo,
-                    issue_number=url.number,
-                )
+            res = await github_issue_service.sync_external_org_with_repo_and_issue(
+                session,
+                client=client,
+                org_name=url.owner,
+                repo_name=url.repo,
+                issue_number=url.number,
             )
             org, repo, tmp_issue = res
         except ResourceNotFound:

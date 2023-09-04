@@ -1,6 +1,7 @@
 import pytest
+
 from polar.integrations.github.client import get_client
-from polar.integrations.github.service.organization import github_organization
+from polar.integrations.github.service.issue import github_issue
 from polar.postgres import AsyncSession
 
 
@@ -14,7 +15,7 @@ async def test_sync_external_org_with_repo_and_issue(
         org,
         repo,
         issue,
-    ) = await github_organization.sync_external_org_with_repo_and_issue(
+    ) = await github_issue.sync_external_org_with_repo_and_issue(
         session=session,
         client=client,
         org_name="polarsource",
@@ -35,7 +36,7 @@ async def test_sync_external_org_with_repo_and_issue(
         org,
         repo,
         issue,
-    ) = await github_organization.sync_external_org_with_repo_and_issue(
+    ) = await github_issue.sync_external_org_with_repo_and_issue(
         session=session,
         client=client,
         org_name="POLARSOURCE",

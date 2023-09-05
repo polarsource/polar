@@ -25,7 +25,7 @@ const BackerLayout = (props: {
 
   return (
     <div className="relative flex flex-col">
-      <Topbar isFixed={true} />
+      <Topbar isFixed={true} useOrgFromURL={false} />
 
       <div className="flex flex-col bg-gray-50 pt-16 dark:bg-gray-950">
         <nav className="fixed z-10 w-full ">

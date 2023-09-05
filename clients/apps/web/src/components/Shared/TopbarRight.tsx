@@ -5,7 +5,7 @@ import Popover from '../Notifications/Popover'
 import GithubLoginButton from './GithubLoginButton'
 import ProfileSelection from './ProfileSelection'
 
-const TopbarRight = () => {
+const TopbarRight = (props: { useOrgFromURL: boolean }) => {
   const { currentUser, hydrated } = useAuth()
 
   if (!hydrated) {
@@ -15,7 +15,7 @@ const TopbarRight = () => {
   return (
     <>
       {currentUser && <Popover />}
-      {currentUser && <ProfileSelection useOrgFromURL={false} />}
+      {currentUser && <ProfileSelection useOrgFromURL={props.useOrgFromURL} />}
       {!currentUser && <GithubLoginButton text="Continue with Github" />}
     </>
   )

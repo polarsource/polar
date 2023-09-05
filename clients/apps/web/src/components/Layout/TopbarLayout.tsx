@@ -13,7 +13,11 @@ const TopbarLayout = ({
   return (
     <EmptyLayout>
       <>
-        <Topbar logoPosition={logoPosition} isFixed={isFixed} />
+        <Topbar
+          logoPosition={logoPosition}
+          isFixed={isFixed}
+          useOrgFromURL={false}
+        />
         {children}
       </>
     </EmptyLayout>

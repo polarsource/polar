@@ -12,23 +12,18 @@ from polar.postgres import AsyncSession, get_db_session
 from .service import AuthService
 
 
-async def current_user_required(
-    request: Request,
-    session: AsyncSession = Depends(get_db_session),
-) -> User:
-    user = await AuthService.get_user_from_request(session, request=request)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    return user
-
-
 async def current_user_optional(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
 ) -> User | None:
-    user = await AuthService.get_user_from_request(session, request=request)
-    if not user:
-        return None
+    return await AuthService.get_user_from_request(session, request=request)
+
+
+async def current_user_required(
+    user: User | None = Depends(current_user_optional),
+) -> User:
+    if user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     return user
 
 

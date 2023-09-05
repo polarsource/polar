@@ -1,6 +1,6 @@
 import asyncio
 from functools import wraps
-from typing import Callable, Sequence
+from typing import Sequence
 
 import typer
 from sqlalchemy.orm import joinedload
@@ -10,14 +10,8 @@ from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.integrations.github import service
 from polar.integrations.github.service import (
-    github_issue,
     github_organization,
-    github_repository,
 )
-from polar.integrations.github.tasks.webhook import (
-    create_from_installation,
-)
-from polar.kit.utils import utc_now
 from polar.models import Issue, Organization, Repository
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import OrganizationCreate
@@ -27,6 +21,12 @@ from polar.user.service import user as user_service
 from polar.worker import enqueue_job
 
 cli = typer.Typer()
+
+#
+# This file contains scripts that are used in development.
+#
+# They are not allowed to be run in production.
+#
 
 ###############################################################################
 # Helpers
@@ -186,37 +186,6 @@ async def sync_repos(org_name: str) -> None:
             raise RuntimeError(f"Organization {org_name} not found")
 
         await trigger_repositories_sync(session, org)
-
-
-@cli.command()
-@typer_async
-async def delete_invalid_issues(org_name: str) -> None:
-    async with AsyncSessionLocal() as session:
-        org = await github_organization.get_by_name(session, Platforms.github, org_name)
-        if not org:
-            raise RuntimeError(f"Organization {org_name} not found")
-
-        client = github.get_app_installation_client(org.installation_id)
-
-        repos = await github_repository.list_by(session, org_ids=[org.id])
-
-        for repo in repos:
-            typer.echo(f"Checking {repo.name}")
-
-            issues = await github_issue.list_by_repository(session, repo.id)
-
-            for i in issues:
-                try:
-                    gh_issue = await client.rest.issues.async_get(
-                        owner=org.name, repo=repo.name, issue_number=i.number
-                    )
-                except Exception:
-                    typer.echo(f"404, skipping #{i.number} - {i.title}")
-                    continue
-
-                if gh_issue.parsed_data.pull_request:
-                    typer.echo(f"found pr, deleting! #{i.number} - {i.title}")
-                    await github_issue.soft_delete(session, i.id)
 
 
 @cli.command()

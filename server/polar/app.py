@@ -15,6 +15,7 @@ from polar.exception_handlers import polar_exception_handler
 from polar.exceptions import PolarError
 from polar.health.endpoints import router as health_router
 from polar.logging import configure as configure_logging
+from polar.middlewares import LogCorrelationIdMiddleware
 from polar.posthog import configure_posthog
 from polar.sentry import configure_sentry, set_sentry_user
 from polar.tags.api import Tags
@@ -53,6 +54,8 @@ def create_app() -> FastAPI:
         dependencies=[Depends(set_sentry_user)],
     )
     configure_cors(app)
+
+    app.add_middleware(LogCorrelationIdMiddleware)
 
     app.add_exception_handler(PolarError, polar_exception_handler)
 

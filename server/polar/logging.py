@@ -1,4 +1,5 @@
 import logging.config
+import uuid
 from typing import Any, Generic, TypeVar
 
 import structlog
@@ -111,3 +112,7 @@ def configure() -> None:
         Development.configure()
     else:
         Production.configure()
+
+
+def generate_correlation_id() -> str:
+    return str(uuid.uuid4())

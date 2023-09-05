@@ -220,6 +220,13 @@ async def for_you(
         i for i in [await issue_service.get_loaded(session, i.id) for i in issues] if i
     ]
     items = [IssueSchema.from_db(i) for i in issues]
+
+    # sort
+    items.sort(
+        key=lambda i: i.reactions.plus_one if i.reactions else 0,
+        reverse=True,
+    )
+
     return ListResource(items=items, pagination=Pagination(total_count=len(items)))
 
 

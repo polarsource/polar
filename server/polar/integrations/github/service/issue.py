@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 from typing import Any, Literal, Sequence, Tuple, Union
+from uuid import UUID
 
 import structlog
 from githubkit import GitHub, Response
@@ -9,6 +10,7 @@ from githubkit.exception import RequestFailed
 from githubkit.rest.models import Issue as GitHubIssue
 from githubkit.rest.models import Label
 from githubkit.webhooks.models import Label as WebhookLabel
+from pydantic import parse_obj_as
 from sqlalchemy import asc, or_
 
 from polar.dashboard.schemas import IssueListType, IssueSortBy
@@ -17,7 +19,7 @@ from polar.exceptions import ResourceNotFound
 from polar.integrations.github import client as github
 from polar.integrations.github.service.api import github_api
 from polar.issue.hooks import IssueHook, issue_upserted
-from polar.issue.schemas import IssueCreate
+from polar.issue.schemas import IssueCreate, Reactions
 from polar.issue.service import IssueService
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
@@ -25,6 +27,7 @@ from polar.models import Issue, Organization, Repository
 from polar.models.user import User
 from polar.organization.schemas import OrganizationCreate
 from polar.postgres import AsyncSession
+from polar.redis import redis, sync_redis
 from polar.repository.hooks import (
     repository_issue_synced,
     repository_issues_sync_completed,
@@ -758,11 +761,24 @@ class GithubIssueService(IssueService):
         session: AsyncSession,
         user: User,
     ) -> list[Issue]:
+        # use cached result if we have one
+        cache_key = "recommendations:" + str(user.id)
+        val = await redis.lrange(cache_key, 0, -1)
+        if val:
+            res_issues: list[Issue] = []
+            for id in val:
+                issue = await github_issue.get(session, UUID(str(id)))
+                if issue:
+                    res_issues.append(issue)
+            return res_issues
+
         client = await github.get_user_client(session, user)
 
         # get the 30 latest starred repos
         starred = (
-            await client.rest.activity.async_list_repos_starred_by_authenticated_user()
+            await client.rest.activity.async_list_repos_starred_by_authenticated_user(
+                per_page=30
+            )
         )
 
         res: list[Issue] = []
@@ -801,7 +817,7 @@ class GithubIssueService(IssueService):
             by_thumbs_up = sorted(
                 issues.parsed_data,
                 key=lambda i: i.reactions.plus_one if i.reactions else 0,
-                reverse=False,
+                reverse=True,
             )
 
             for i in by_thumbs_up:
@@ -821,6 +837,13 @@ class GithubIssueService(IssueService):
                     session, data=i, organization=org, repository=repo
                 )
                 res.append(issue)
+
+        # set cache
+        async with redis.pipeline() as pipe:
+            pipe.delete(cache_key)
+            pipe.rpush(cache_key, *[str(i.id) for i in res])
+            pipe.expire(cache_key, datetime.timedelta(hours=24))
+            await pipe.execute()
 
         return res
 

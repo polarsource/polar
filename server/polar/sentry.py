@@ -31,11 +31,11 @@ class PostHogIntegration(Integration):
 
     The official one suffers from a few limitations:
 
-    * Weird way of setting dynamic parameters like organization
+    * Doesn't have a clean way to set dynamic parameters, like `organization`.
     * Doesn't support a custom instance of PostHog, only the global one.
     * Tries to serialize the Sentry exception object, but fails to do so.
 
-    This implementation tries to solve this limitation to fit our use-case.
+    This implementation tries to solve those limitations to fit our use-case.
     """
 
     identifier = "posthog-python"

@@ -3,6 +3,7 @@
 import { Modal as ModernModal } from '@/components/Modal'
 import Modal, { ModalBox } from '@/components/Shared/Modal'
 import { useToastLatestPledged } from '@/hooks/stripe'
+import { InformationCircleIcon } from '@heroicons/react/20/solid'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
@@ -50,6 +51,7 @@ const IssueListItem = (props: {
   showPledgeAction: boolean
   right?: React.ReactElement
   showSelfPledgesFor?: UserRead
+  recommendedReason?: 'starred' | undefined
 }) => {
   const { title, number, state, issue_created_at, reactions, comments } =
     props.issue
@@ -228,6 +230,13 @@ const IssueListItem = (props: {
                       </a>
                     </p>
                   ))}
+                </div>
+              )}
+
+              {props.recommendedReason === 'starred' && (
+                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                  <InformationCircleIcon className="h-4 w-4" />
+                  <span>Recommended because you&apos;ve starred this repo</span>
                 </div>
               )}
             </div>

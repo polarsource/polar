@@ -213,7 +213,7 @@ async def for_you(
             detail="Unauthorized",
         )
 
-    issues = await github_issue_service.list_subscribed_issues(session, auth.user)
+    issues = await github_issue_service.list_issues_from_starred(session, auth.user)
 
     # get loaded
     issues = [

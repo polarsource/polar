@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs'
 import { useRouter } from 'next/navigation'
 import { CancelablePromise, type UserRead } from 'polarkit/api/client'
 import { CONFIG } from 'polarkit/config'
@@ -18,6 +19,18 @@ export const useAuth = (): UserState & {
   const [hydrated, setHydrated] = useState(false)
   const [hasChecked, setHasChecked] = useState(false)
   const [isChecking, setIsChecking] = useState(false)
+
+  useEffect(() => {
+    if (currentUser) {
+      Sentry.setUser({
+        id: currentUser.id,
+        email: currentUser.email,
+        username: currentUser.username,
+      })
+    } else {
+      Sentry.setUser(null)
+    }
+  }, [currentUser])
 
   const getAuthenticatedUser = useCallback((): CancelablePromise<UserRead> => {
     setIsChecking(true)

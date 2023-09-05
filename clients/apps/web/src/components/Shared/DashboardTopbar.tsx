@@ -3,7 +3,7 @@ import Topbar from './Topbar'
 const DashboardTopbar = () => {
   return (
     <>
-      <Topbar isFixed={true}></Topbar>
+      <Topbar isFixed={true} useOrgFromURL={true}></Topbar>
     </>
   )
 }

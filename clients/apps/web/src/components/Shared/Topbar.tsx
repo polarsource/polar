@@ -10,6 +10,7 @@ const Topbar = (props: {
   customLogoTitle?: string
   hideProfile?: boolean
   logoPosition?: LogoPosition
+  useOrgFromURL: boolean
 }) => {
   const className = classNames(
     props.isFixed !== false ? 'fixed z-20' : '',
@@ -59,7 +60,7 @@ const Topbar = (props: {
         <div className="flex flex-shrink-0 items-center justify-end space-x-4 md:flex-1">
           {!hideProfile && (
             <Suspense>
-              <TopbarRight />
+              <TopbarRight useOrgFromURL={props.useOrgFromURL} />
             </Suspense>
           )}
         </div>

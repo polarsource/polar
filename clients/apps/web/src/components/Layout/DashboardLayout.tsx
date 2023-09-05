@@ -12,7 +12,7 @@ const DashboardLayout = (props: {
 }) => {
   return (
     <div className="relative flex flex-col">
-      <Topbar isFixed={true} />
+      <Topbar isFixed={true} useOrgFromURL={true} />
 
       <div className="flex flex-row bg-gray-50 dark:bg-gray-950">
         {props.showSidebar && (

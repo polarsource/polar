@@ -5,11 +5,13 @@ import {
   DashboardFilters,
   DefaultFilters,
 } from '@/components/Dashboard/filters'
+import Recommended from '@/components/Feed/Recommended'
 import FundAGithubIssue from '@/components/Onboarding/FundAGithubIssue'
 import OnboardingConnectReposToGetStarted from '@/components/Onboarding/OnboardingConnectReposToGetStarted'
 import { useAuth } from '@/hooks'
 import { IssueListType, IssueStatus } from 'polarkit/api/client'
 import { usePersonalDashboard } from 'polarkit/hooks'
+import { useFeatureFlagEnabled } from 'posthog-js/react'
 
 export default function Page() {
   const { currentUser } = useAuth()
@@ -38,12 +40,15 @@ export default function Page() {
   const dashboard = dashboardQuery.data
   const totalCount = dashboard?.pages[0].pagination.total_count ?? undefined
 
+  const recommendationsEnabled = useFeatureFlagEnabled('feed-recommendations')
+
   // Onboarding splashscreen
   if (!dashboardQuery.isLoading && totalCount === 0) {
     return (
       <div className="mt-2 space-y-5">
         <FundAGithubIssue />
-        <OnboardingConnectReposToGetStarted />{' '}
+        {recommendationsEnabled && <Recommended />}
+        {!recommendationsEnabled && <OnboardingConnectReposToGetStarted />}
       </div>
     )
   }
@@ -63,6 +68,7 @@ export default function Page() {
         fetchNextPage={dashboardQuery.fetchNextPage}
         showSelfPledgesFor={currentUser}
       />
+      {recommendationsEnabled && <Recommended />}
     </div>
   )
 }

@@ -768,6 +768,9 @@ class GithubIssueService(IssueService):
         res: list[Issue] = []
 
         for r in starred.parsed_data:
+            if len(res) >= 30:
+                break
+
             # skip self owned repos
             if r.owner.login == user.username:
                 continue
@@ -789,16 +792,27 @@ class GithubIssueService(IssueService):
                 repo.name,
                 state="open",
                 per_page=10,
+                sort="comments",
+                direction="desc",
             )
 
             found = 0
 
-            for i in issues.parsed_data:
+            by_thumbs_up = sorted(
+                issues.parsed_data,
+                key=lambda i: i.reactions.plus_one if i.reactions else 0,
+                reverse=False,
+            )
+
+            for i in by_thumbs_up:
                 if i.pull_request:
                     continue
 
                 # max 3 per repo
                 if found > 3:
+                    break
+
+                if len(res) >= 30:
                     break
 
                 found += 1

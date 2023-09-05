@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation'
 import { CancelablePromise, type UserRead } from 'polarkit/api/client'
 import { CONFIG } from 'polarkit/config'
 import { UserState, useStore } from 'polarkit/store'
+import posthog from 'posthog-js'
 import { useCallback, useEffect, useState } from 'react'
 
 export const useAuth = (): UserState & {
@@ -27,6 +28,14 @@ export const useAuth = (): UserState & {
         email: currentUser.email,
         username: currentUser.username,
       })
+
+      const posthogId = `user:${currentUser.id}`
+      if (posthog.get_distinct_id() !== posthogId) {
+        posthog.identify(posthogId, {
+          username: currentUser.username,
+          email: currentUser.email,
+        })
+      }
     } else {
       Sentry.setUser(null)
     }

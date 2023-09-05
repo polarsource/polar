@@ -6,7 +6,6 @@ import LoadingScreen, {
 } from '@/components/Dashboard/LoadingScreen'
 import { useAuth } from '@/hooks'
 import { useRouter, useSearchParams } from 'next/navigation'
-import posthog from 'posthog-js'
 import { useEffect, useState } from 'react'
 
 export default function Page() {
@@ -34,8 +33,7 @@ export default function Page() {
               setError('Something went wrong logging in')
             }
           })
-          .then((user) => {
-            posthog.identify(`user:${user.id}`)
+          .then(() => {
             router.push(response.goto_url || '/login/init')
           })
       } else {

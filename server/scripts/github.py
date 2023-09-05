@@ -2,7 +2,6 @@ import asyncio
 from functools import wraps
 from typing import Callable, Sequence
 
-import githubkit
 import typer
 from sqlalchemy.orm import joinedload
 
@@ -10,10 +9,13 @@ from polar.config import settings
 from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.integrations.github import service
-from polar.integrations.github.service import github_organization
+from polar.integrations.github.service import (
+    github_issue,
+    github_organization,
+    github_repository,
+)
 from polar.integrations.github.tasks.webhook import (
     create_from_installation,
-    repositories_changed,
 )
 from polar.kit.utils import utc_now
 from polar.models import Issue, Organization, Repository
@@ -188,26 +190,33 @@ async def sync_repos(org_name: str) -> None:
 
 @cli.command()
 @typer_async
-async def sync_all_installations() -> None:
+async def delete_invalid_issues(org_name: str) -> None:
     async with AsyncSessionLocal() as session:
-        # mark all orgs and repositories as uninstalled
-        await session.execute(sql.update(Organization).values(deleted_at=utc_now()))
-        await session.execute(sql.update(Repository).values(deleted_at=utc_now()))
-        await session.commit()
-        await session.flush()
+        org = await github_organization.get_by_name(session, Platforms.github, org_name)
+        if not org:
+            raise RuntimeError(f"Organization {org_name} not found")
 
-        # get installations from github
-        client = github.get_app_client()
+        client = github.get_app_installation_client(org.installation_id)
 
-        # TODO: paginate
-        installations = await client.rest.apps.async_list_installations()
+        repos = await github_repository.list_by(session, org_ids=[org.id])
 
-        # install again!
-        for i in installations.parsed_data:
-            if not i.account or not isinstance(i.account, githubkit.rest.SimpleUser):
-                continue
-            typer.echo(f"Installing {i.account.login if i.account else '???'}")
-            await create_from_installation(session, i, removed=[])
+        for repo in repos:
+            typer.echo(f"Checking {repo.name}")
+
+            issues = await github_issue.list_by_repository(session, repo.id)
+
+            for i in issues:
+                try:
+                    gh_issue = await client.rest.issues.async_get(
+                        owner=org.name, repo=repo.name, issue_number=i.number
+                    )
+                except Exception:
+                    typer.echo(f"404, skipping #{i.number} - {i.title}")
+                    continue
+
+                if gh_issue.parsed_data.pull_request:
+                    typer.echo(f"found pr, deleting! #{i.number} - {i.title}")
+                    await github_issue.soft_delete(session, i.id)
 
 
 @cli.command()

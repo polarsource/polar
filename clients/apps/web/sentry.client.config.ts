@@ -4,6 +4,7 @@
 
 import * as Sentry from '@sentry/nextjs'
 import { CONFIG } from 'polarkit'
+import posthog from 'posthog-js'
 
 Sentry.init({
   dsn: CONFIG.SENTRY_DSN,
@@ -28,5 +29,6 @@ Sentry.init({
       maskAllText: true,
       blockAllMedia: true,
     }),
+    new posthog.SentryIntegration(posthog, 'polar-sh', 4505047079976960),
   ],
 })

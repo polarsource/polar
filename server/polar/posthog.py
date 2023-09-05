@@ -9,9 +9,9 @@ from polar.models.user import User
 
 
 class Service:
-    client: Posthog | None
+    client: Posthog | None = None
 
-    def __init__(self) -> None:
+    def configure(self) -> None:
         if not settings.POSTHOG_PROJECT_API_KEY:
             self.client = None
             return
@@ -19,18 +19,6 @@ class Service:
         self.client = Posthog(settings.POSTHOG_PROJECT_API_KEY)
         self.client.disabled = settings.is_testing()
         self.client.debug = settings.DEBUG
-
-    def generate_distinct_user_id(self, user: User) -> str:
-        return f"user:{user.id}"
-
-    def decorate_properties(
-        self, properties: dict[str, Any] | None = None
-    ) -> dict[str, Any] | None:
-        if not properties:
-            return None
-
-        properties["_environment"] = settings.ENV
-        return properties
 
     def capture(
         self,
@@ -44,7 +32,10 @@ class Service:
         self.client.capture(
             distinct_id,
             event=event,
-            properties=self.decorate_properties(properties),
+            properties={
+                **self._get_common_properties(),
+                **(properties or {}),
+            },
         )
 
     def anonymous_event(
@@ -56,7 +47,10 @@ class Service:
         self.capture(
             distinct_id="polar_anonymous",
             event=event,
-            properties=self.decorate_properties(properties),
+            properties={
+                **self._get_common_properties(),
+                **(properties or {}),
+            },
         )
 
     def user_event(
@@ -66,9 +60,13 @@ class Service:
         properties: dict[str, Any] | None = None,
     ) -> None:
         self.capture(
-            self.generate_distinct_user_id(user),
+            user.posthog_distinct_id,
             event=event,
-            properties=self.decorate_properties(properties),
+            properties={
+                **self._get_common_properties(),
+                "$set": self._get_user_properties(user),
+                **(properties or {}),
+            },
         )
 
     def identify(self, user: User) -> None:
@@ -76,13 +74,27 @@ class Service:
             return
 
         self.client.identify(
-            self.generate_distinct_user_id(user),
-            properties=self.decorate_properties(
-                {
-                    "username": user.username,
-                }
-            ),
+            user.posthog_distinct_id,
+            properties={
+                **self._get_common_properties(),
+                **self._get_user_properties(user),
+            },
         )
+
+    def _get_common_properties(self) -> dict[str, Any]:
+        return {
+            "_environment": settings.ENV,
+        }
+
+    def _get_user_properties(self, user: User) -> dict[str, Any]:
+        return {
+            "username": user.username,
+            "email": user.email,
+        }
 
 
 posthog = Service()
+
+
+def configure_posthog() -> None:
+    posthog.configure()

@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
 import structlog
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
@@ -11,11 +11,12 @@ from starlette.routing import BaseRoute
 from polar import receivers, worker  # noqa
 from polar.api import router
 from polar.config import settings
-from polar.exceptions import PolarError
 from polar.exception_handlers import polar_exception_handler
+from polar.exceptions import PolarError
 from polar.health.endpoints import router as health_router
 from polar.logging import configure as configure_logging
-from polar.sentry import configure_sentry
+from polar.posthog import configure_posthog
+from polar.sentry import configure_sentry, set_sentry_user
 from polar.tags.api import Tags
 
 log = structlog.get_logger()
@@ -49,6 +50,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         generate_unique_id_function=generate_unique_openapi_id,
         lifespan=lifespan,
+        dependencies=[Depends(set_sentry_user)],
     )
     configure_cors(app)
 
@@ -63,6 +65,7 @@ def create_app() -> FastAPI:
 
 
 configure_logging()
+configure_posthog()
 configure_sentry()
 
 log.info("Starting Polar API")

@@ -1,14 +1,99 @@
-import sentry_sdk
-from polar.config import settings
 import os
-from sentry_sdk.integrations.starlette import StarletteIntegration
+from typing import TYPE_CHECKING, Self
+
+import posthog as global_posthog
+import sentry_sdk
+from fastapi import Depends
+from posthog.request import DEFAULT_HOST
+from sentry_sdk.hub import Hub
+from sentry_sdk.integrations import Integration
 from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.scope import add_global_event_processor
+from sentry_sdk.utils import Dsn
+
+from polar.auth.dependencies import current_user_optional
+from polar.config import settings
+from polar.models import User
+from polar.posthog import posthog
+
+if TYPE_CHECKING:
+    from posthog import Posthog
+    from sentry_sdk import _types
+
+POSTHOG_ID_TAG = "posthog_distinct_id"
+
+
+class PostHogIntegration(Integration):
+    """
+    PostHog integration for Sentry, heavily pulled from the official one from PostHog.
+
+    https://github.com/PostHog/posthog-python/blob/master/posthog/sentry/posthog_integration.py
+
+    The official one suffers from a few limitations:
+
+    * Weird way of setting dynamic parameters like organization
+    * Doesn't support a custom instance of PostHog, only the global one.
+    * Tries to serialize the Sentry exception object, but fails to do so.
+
+    This implementation tries to solve this limitation to fit our use-case.
+    """
+
+    identifier = "posthog-python"
+
+    def __init__(
+        self,
+        posthog: "Posthog | None" = None,
+        organization: str | None = None,
+        project_id: str | None = None,
+        prefix: str = "https://sentry.io/organizations/",
+    ):
+        self.posthog = posthog if posthog else global_posthog
+        self.organization = organization
+        self.project_id = project_id
+        self.prefix = prefix
+
+    @staticmethod
+    def setup_once() -> None:
+        @add_global_event_processor
+        def processor(event: "_types.Event", hint: "_types.Hint") -> "_types.Event":
+            integration: Self | None = Hub.current.get_integration(PostHogIntegration)
+            if integration is not None:
+                if event.get("level") != "error":
+                    return event
+
+                if event.get("tags", {}).get(POSTHOG_ID_TAG):
+                    posthog = integration.posthog
+
+                    posthog_distinct_id = event["tags"][POSTHOG_ID_TAG]
+                    event["tags"][
+                        "PostHog URL"
+                    ] = f"{posthog.host or DEFAULT_HOST}/person/{posthog_distinct_id}"
+
+                    properties = {
+                        "$sentry_event_id": event["event_id"],
+                    }
+
+                    if integration.organization:
+                        project_id = integration.project_id
+                        if project_id is None:
+                            sentry_client = Hub.current.client
+                            if (
+                                sentry_client is not None
+                                and sentry_client.dsn is not None
+                            ):
+                                project_id = Dsn(sentry_client.dsn).project_id
+
+                        if project_id:
+                            properties[
+                                "$sentry_url"
+                            ] = f"{integration.prefix}{integration.organization}/issues/?project={project_id}&query={event['event_id']}"
+
+                    posthog.capture(posthog_distinct_id, "$exception", properties)
+
+            return event
 
 
 def configure_sentry() -> None:
-    if not settings.SENTRY_DSN:
-        return
-
     sentry_sdk.init(
         dsn=settings.SENTRY_DSN,
         traces_sample_rate=0.1,
@@ -17,7 +102,19 @@ def configure_sentry() -> None:
         server_name=os.environ.get("RENDER_INSTANCE_ID", "localhost"),
         environment="production" if os.environ.get("RENDER", False) else "development",
         integrations=[
-            StarletteIntegration(transaction_style="endpoint"),
+            PostHogIntegration(posthog=posthog.client, organization="polar-sh"),
             FastApiIntegration(transaction_style="endpoint"),
         ],
     )
+
+
+async def set_sentry_user(user: User | None = Depends(current_user_optional)) -> None:
+    if user is not None:
+        sentry_sdk.set_user(
+            {
+                "id": str(user.id),
+                "email": user.email,
+                "username": user.username,
+            }
+        )
+        sentry_sdk.set_tag(POSTHOG_ID_TAG, user.posthog_distinct_id)

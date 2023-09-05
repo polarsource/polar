@@ -83,3 +83,7 @@ class User(RecordModel):
             ),
             None,
         )
+
+    @property
+    def posthog_distinct_id(self) -> str:
+        return f"user:{self.id}"

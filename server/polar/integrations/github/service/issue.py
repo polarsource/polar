@@ -753,47 +753,60 @@ class GithubIssueService(IssueService):
         )
         return (synced, errors)
 
-    async def list_subscribed_issues(
+    async def list_issues_from_starred(
         self,
         session: AsyncSession,
         user: User,
     ) -> list[Issue]:
         client = await github.get_user_client(session, user)
 
-        issues = await client.rest.issues.async_list(
-            filter_="subscribed",
-            sort="updated",
-            state="open",
-            direction="desc",
-            since=datetime.datetime.now() - datetime.timedelta(days=356),
-            per_page=100,
+        # get the 30 latest starred repos
+        starred = (
+            await client.rest.activity.async_list_repos_starred_by_authenticated_user()
         )
 
         res: list[Issue] = []
 
-        for i in issues.parsed_data:
-            if not i.repository:
+        for r in starred.parsed_data:
+            # skip self owned repos
+            if r.owner.login == user.username:
                 continue
-            # skip issues in self owned repositories
-            if i.repository.owner.login == user.username:
-                continue
-            if i.pull_request:
-                continue
-            if i.repository.private:
+            if r.private:
                 continue
 
             org = await github_organization.update_or_create_org_from_github(
-                session, i.repository.owner
+                session, r.owner
             )
 
             repo = await github_repository.get_or_create_from_github(
                 session,
                 org,
-                i.repository,
+                r,
             )
 
-            issue = await self.store(session, data=i, organization=org, repository=repo)
-            res.append(issue)
+            issues = await client.rest.issues.async_list_for_repo(
+                org.name,
+                repo.name,
+                state="open",
+                per_page=10,
+            )
+
+            found = 0
+
+            for i in issues.parsed_data:
+                if i.pull_request:
+                    continue
+
+                # max 3 per repo
+                if found > 3:
+                    break
+
+                found += 1
+
+                issue = await self.store(
+                    session, data=i, organization=org, repository=repo
+                )
+                res.append(issue)
 
         return res
 

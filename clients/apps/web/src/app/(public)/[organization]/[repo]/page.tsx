@@ -1,8 +1,14 @@
 import RepositoryPublicPage from '@/components/Organization/RepositoryPublicPage'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import { Metadata, ResolvingMetadata } from 'next'
+import { notFound } from 'next/navigation'
 import { api } from 'polarkit'
-import { Platforms } from 'polarkit/api/client'
+import {
+  ApiError,
+  ListResource_Repository_,
+  Organization,
+  Platforms,
+} from 'polarkit/api/client'
 
 export async function generateMetadata(
   {
@@ -12,20 +18,33 @@ export async function generateMetadata(
   },
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
-  const organization = await api.organizations.lookup({
-    platform: Platforms.GITHUB,
-    organizationName: params.organization,
-  })
+  let organization: Organization | undefined
+  let repositories: ListResource_Repository_ | undefined
 
-  const repositories = await api.repositories.search({
-    platform: Platforms.GITHUB,
-    organizationName: params.organization,
-  })
+  try {
+    organization = await api.organizations.lookup({
+      platform: Platforms.GITHUB,
+      organizationName: params.organization,
+    })
+
+    repositories = await api.repositories.search({
+      platform: Platforms.GITHUB,
+      organizationName: params.organization,
+    })
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) {
+      notFound()
+    }
+  }
+
+  if (!organization || !repositories) {
+    notFound()
+  }
 
   const repo = repositories.items?.find((r) => r.name === params.repo)
 
   if (!repo) {
-    return {}
+    notFound()
   }
 
   return {

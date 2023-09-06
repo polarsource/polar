@@ -10,16 +10,6 @@ const Recommended = () => {
   const issues = useListForYouIssues()
   const { currentUser } = useAuth()
 
-  if (issues.isLoading) {
-    return (
-      <div className="flex flex-col gap-2">
-        <div className="h-4 w-[300px] animate-pulse rounded-lg bg-gray-400"></div>
-        <div className="h-4 w-[500px] animate-pulse rounded-lg bg-gray-400"></div>
-        <div className="h-4 w-[350px] animate-pulse rounded-lg bg-gray-400"></div>
-      </div>
-    )
-  }
-
   return (
     <>
       <ShadowBoxOnLg>
@@ -33,6 +23,15 @@ const Recommended = () => {
               popularity
             </p>
           </div>
+
+          {issues.isLoading && (
+            <div className="flex flex-col gap-2">
+              <div className="h-4 w-[300px] animate-pulse rounded-lg bg-gray-400"></div>
+              <div className="h-4 w-[500px] animate-pulse rounded-lg bg-gray-400"></div>
+              <div className="h-4 w-[350px] animate-pulse rounded-lg bg-gray-400"></div>
+            </div>
+          )}
+
           <div className="divide-y divide-gray-100 border-y border-gray-100 dark:divide-gray-800 dark:border-gray-800 ">
             {issues.data?.items?.map((issue) => (
               <IssueListItem

@@ -1,8 +1,9 @@
 import OrganizationPublicPage from '@/components/Organization/OrganizationPublicPage'
 import PageNotFound from '@/components/Shared/PageNotFound'
 import type { Metadata, ResolvingMetadata } from 'next'
+import { notFound } from 'next/navigation'
 import { api } from 'polarkit/api'
-import { Platforms } from 'polarkit/api/client'
+import { ApiError, Organization, Platforms } from 'polarkit/api/client'
 
 export async function generateMetadata(
   {
@@ -12,10 +13,22 @@ export async function generateMetadata(
   },
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
-  const organization = await api.organizations.lookup({
-    platform: Platforms.GITHUB,
-    organizationName: params.organization,
-  })
+  let organization: Organization | undefined
+
+  try {
+    organization = await api.organizations.lookup({
+      platform: Platforms.GITHUB,
+      organizationName: params.organization,
+    })
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) {
+      notFound()
+    }
+  }
+
+  if (!organization) {
+    notFound()
+  }
 
   return {
     title: `${organization.name}`, // " | Polar is added by the template"

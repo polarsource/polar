@@ -1,7 +1,8 @@
 import Pledge from '@/components/Pledge/Pledge'
-import PageNotFound from '@/components/Shared/PageNotFound'
 import { Metadata, ResolvingMetadata } from 'next'
+import { notFound } from 'next/navigation'
 import { api } from 'polarkit'
+import { ApiError, Issue } from 'polarkit/api/client'
 
 export async function generateMetadata(
   {
@@ -11,9 +12,17 @@ export async function generateMetadata(
   },
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
-  const issue = await api.issues.lookup({
-    externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
-  })
+  let issue: Issue | undefined
+
+  try {
+    issue = await api.issues.lookup({
+      externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
+    })
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) {
+      notFound()
+    }
+  }
 
   if (!issue) {
     return {}
@@ -53,12 +62,20 @@ export default async function Page({
 }: {
   params: { organization: string; repo: string; number: string }
 }) {
-  const issue = await api.issues.lookup({
-    externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
-  })
+  let issue: Issue | undefined
+
+  try {
+    issue = await api.issues.lookup({
+      externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
+    })
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) {
+      notFound()
+    }
+  }
 
   if (!issue) {
-    return <PageNotFound />
+    notFound()
   }
 
   return (

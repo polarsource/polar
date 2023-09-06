@@ -227,6 +227,37 @@ async def for_you(
         reverse=True,
     )
 
+    # hacky solution to spread out the repositories in the results
+    def spread(items: list[IssueSchema]) -> list[IssueSchema]:
+        penalties: dict[str, int] = {}
+        res: list[IssueSchema] = []
+
+        while len(items) > 0:
+            # In the next 5 issues, pick the one with the lowest penalty
+            lowest_penalty = 0
+            lowest: IssueSchema | None = None
+            lowest_idx = 0
+
+            for idx, candidate in enumerate(items[0:5]):
+                pen = penalties.get(candidate.repository.name, 0)
+
+                if lowest is None or pen < lowest_penalty:
+                    lowest = candidate
+                    lowest_penalty = pen
+                    lowest_idx = idx
+
+            if lowest is None:
+                break
+
+            # if lowest is not None:
+            penalties[lowest.repository.name] = lowest_penalty + 1
+            res.append(lowest)
+            del items[lowest_idx]
+
+        return res
+
+    items = spread(items)
+
     return ListResource(items=items, pagination=Pagination(total_count=len(items)))
 
 

@@ -7,11 +7,9 @@ import {
 } from '@/components/Dashboard/filters'
 import Recommended from '@/components/Feed/Recommended'
 import FundAGithubIssue from '@/components/Onboarding/FundAGithubIssue'
-import OnboardingConnectReposToGetStarted from '@/components/Onboarding/OnboardingConnectReposToGetStarted'
 import { useAuth } from '@/hooks'
 import { IssueListType, IssueStatus } from 'polarkit/api/client'
 import { usePersonalDashboard } from 'polarkit/hooks'
-import { useFeatureFlagEnabled } from 'posthog-js/react'
 
 export default function Page() {
   const { currentUser } = useAuth()
@@ -40,35 +38,33 @@ export default function Page() {
   const dashboard = dashboardQuery.data
   const totalCount = dashboard?.pages[0].pagination.total_count ?? undefined
 
-  const recommendationsEnabled = useFeatureFlagEnabled('feed-recommendations')
-
-  // Onboarding splashscreen
-  if (!dashboardQuery.isLoading && totalCount === 0) {
-    return (
-      <div className="mt-2 space-y-5">
-        <FundAGithubIssue />
-        {recommendationsEnabled && <Recommended />}
-        {!recommendationsEnabled && <OnboardingConnectReposToGetStarted />}
-      </div>
-    )
-  }
-
   return (
-    <div className="mt-2 space-y-5">
-      <FundAGithubIssue />
-      <IssueList
-        totalCount={totalCount}
-        loading={dashboardQuery.isLoading}
-        dashboard={dashboard}
-        filters={filters}
-        onSetFilters={() => {}}
-        isInitialLoading={dashboardQuery.isInitialLoading}
-        isFetchingNextPage={dashboardQuery.isFetchingNextPage}
-        hasNextPage={dashboardQuery.hasNextPage || false}
-        fetchNextPage={dashboardQuery.fetchNextPage}
-        showSelfPledgesFor={currentUser}
-      />
-      {recommendationsEnabled && <Recommended />}
+    <div className="mt-2 space-y-10">
+      <div className="space-y-10 lg:px-5">
+        <FundAGithubIssue />
+
+        {totalCount && totalCount > 0 && (
+          <div>
+            <h1 className="text-lg text-gray-900 dark:text-gray-300">
+              Funded issues
+            </h1>
+            <IssueList
+              totalCount={totalCount}
+              loading={dashboardQuery.isLoading}
+              dashboard={dashboard}
+              filters={filters}
+              onSetFilters={() => {}}
+              isInitialLoading={dashboardQuery.isInitialLoading}
+              isFetchingNextPage={dashboardQuery.isFetchingNextPage}
+              hasNextPage={dashboardQuery.hasNextPage || false}
+              fetchNextPage={dashboardQuery.fetchNextPage}
+              showSelfPledgesFor={currentUser}
+            />
+          </div>
+        )}
+      </div>
+
+      <Recommended />
     </div>
   )
 }

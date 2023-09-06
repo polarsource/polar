@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/hooks'
 import Link from 'next/link'
+import { ShadowBoxOnLg } from 'polarkit/components/ui'
 import { useListForYouIssues } from 'polarkit/hooks'
 import IssueListItem from '../Dashboard/IssueListItem'
 
@@ -21,32 +22,48 @@ const Recommended = () => {
 
   return (
     <>
-      {issues.data?.items?.map((issue) => (
-        <IssueListItem
-          issue={issue}
-          references={[]}
-          dependents={undefined}
-          pledges={[]}
-          org={issue.repository.organization}
-          repo={issue.repository}
-          key={issue.id}
-          showIssueProgress={true}
-          canAddRemovePolarLabel={false}
-          showPledgeAction={true}
-          showSelfPledgesFor={currentUser}
-          recommendedReason={'starred'}
-          right={
-            <>
-              <Link
-                href={`/${issue.repository.organization.name}/${issue.repository.name}/issues/${issue.number}`}
-                className="font-medium text-blue-600"
-              >
-                Pledge
-              </Link>
-            </>
-          }
-        />
-      ))}
+      <ShadowBoxOnLg>
+        <>
+          <div className="space-y-2 pb-4">
+            <h1 className="text-lg text-gray-900 dark:text-gray-300">
+              Recommended issues
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-500">
+              Based on repositories that you&apos;ve starred and their
+              popularity
+            </p>
+          </div>
+          <div className="divide-y divide-gray-100 border-y border-gray-100 dark:divide-gray-800 dark:border-gray-800 ">
+            {issues.data?.items?.map((issue) => (
+              <IssueListItem
+                issue={issue}
+                references={[]}
+                dependents={undefined}
+                pledges={[]}
+                org={issue.repository.organization}
+                repo={issue.repository}
+                key={issue.id}
+                showIssueProgress={false}
+                canAddRemovePolarLabel={false}
+                showPledgeAction={true}
+                showSelfPledgesFor={currentUser}
+                showLogo={true}
+                className="py-3"
+                right={
+                  <>
+                    <Link
+                      href={`/${issue.repository.organization.name}/${issue.repository.name}/issues/${issue.number}`}
+                      className="font-medium text-blue-600"
+                    >
+                      Fund
+                    </Link>
+                  </>
+                }
+              />
+            ))}
+          </div>
+        </>
+      </ShadowBoxOnLg>
     </>
   )
 }

@@ -29,13 +29,16 @@ export const useAuth = (): UserState & {
         username: currentUser.username,
       })
 
-      const posthogId = `user:${currentUser.id}`
-      if (posthog.get_distinct_id() !== posthogId) {
-        posthog.identify(posthogId, {
-          username: currentUser.username,
-          email: currentUser.email,
-        })
-      }
+      try {
+        const posthogId = `user:${currentUser.id}`
+        if (posthog.get_distinct_id() !== posthogId) {
+          posthog.identify(posthogId, {
+            username: currentUser.username,
+            email: currentUser.email,
+          })
+        }
+        // Handle case where PostHog is not initialized
+      } catch {}
     } else {
       Sentry.setUser(null)
     }

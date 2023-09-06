@@ -119,7 +119,7 @@ services:
   - type: redis
     name: polar-tasks
     ipAllowList: [] # allow only internal connections
-    plan: starter
+    plan: standard
     maxmemoryPolicy: noeviction # no-eviciton for our queue
 
 databases:

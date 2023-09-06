@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import datetime
-from typing import Any, Literal, Sequence, Tuple, Union
+from typing import Any, Awaitable, Coroutine, Literal, Sequence, Tuple, Union
 from uuid import UUID
 
 import structlog
@@ -61,12 +62,14 @@ class GithubIssueService(IssueService):
         ],
         organization: Organization,
         repository: Repository,
+        autocommit: bool = True,
     ) -> Issue:
         records = await self.store_many(
             session,
             data=[data],
             organization=organization,
             repository=repository,
+            autocommit=autocommit,
         )
         return records[0]
 
@@ -85,6 +88,7 @@ class GithubIssueService(IssueService):
         ],
         organization: Organization,
         repository: Repository,
+        autocommit: bool = True,
     ) -> Sequence[Issue]:
         def parse(
             issue: Union[
@@ -137,6 +141,7 @@ class GithubIssueService(IssueService):
             schemas,
             constraints=[Issue.external_id],
             mutable_keys=IssueCreate.__mutable_keys__,
+            autocommit=autocommit,
         )
         for record in records:
             await issue_upserted.call(IssueHook(session, record))
@@ -774,35 +779,16 @@ class GithubIssueService(IssueService):
 
         client = await github.get_user_client(session, user)
 
-        # get the 30 latest starred repos
+        # get the latest starred repos
         starred = (
             await client.rest.activity.async_list_repos_starred_by_authenticated_user(
-                per_page=30
+                per_page=15
             )
         )
 
-        res: list[Issue] = []
-
-        for r in starred.parsed_data:
-            if len(res) >= 30:
-                break
-
-            # skip self owned repos
-            if r.owner.login == user.username:
-                continue
-            if r.private:
-                continue
-
-            org = await github_organization.update_or_create_org_from_github(
-                session, r.owner
-            )
-
-            repo = await github_repository.get_or_create_from_github(
-                session,
-                org,
-                r,
-            )
-
+        async def recommended_in_repo(
+            org: Organization, repo: Repository
+        ) -> list[Issue]:
             issues = await client.rest.issues.async_list_for_repo(
                 org.name,
                 repo.name,
@@ -820,23 +806,57 @@ class GithubIssueService(IssueService):
                 reverse=True,
             )
 
+            res: list[Issue] = []
+
             for i in by_thumbs_up:
                 if i.pull_request:
                     continue
 
-                # max 3 per repo
+                # max 4 per repo
                 if found > 3:
-                    break
-
-                if len(res) >= 30:
-                    break
+                    return res
 
                 found += 1
 
                 issue = await self.store(
-                    session, data=i, organization=org, repository=repo
+                    session,
+                    data=i,
+                    organization=org,
+                    repository=repo,
+                    # The session is shared between multiple coroutines, do not commit
+                    autocommit=False,
                 )
+
                 res.append(issue)
+
+            return res
+
+        # concurrently crawl each repository
+        jobs: list[Awaitable[list[Issue]]] = []
+
+        for r in starred.parsed_data:
+            # skip self owned repos
+            if r.owner.login == user.username:
+                continue
+            if r.private:
+                continue
+
+            org = await github_organization.update_or_create_org_from_github(
+                session, r.owner
+            )
+
+            repo = await github_repository.get_or_create_from_github(
+                session,
+                org,
+                r,
+            )
+
+            jobs.append(recommended_in_repo(org, repo))
+
+        # collect the results from each coroutine
+        results: list[list[Issue]] = await asyncio.gather(*jobs)
+        await session.commit()
+        res = [i for sub in results for i in sub]
 
         # set cache
         async with redis.pipeline() as pipe:

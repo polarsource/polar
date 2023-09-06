@@ -72,7 +72,7 @@ services:
       creds:
         fromRegistryCreds:
           name: polarsource
-    dockerCommand: "poetry run arq run_worker.WorkerSettings"
+    dockerCommand: "poetry run arq run_worker.WorkerSettings --custom-log-dict run_worker.silent_logger_config_dict"
     region: ohio
     plan: standard
     numInstances: 1

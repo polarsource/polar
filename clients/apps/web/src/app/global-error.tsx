@@ -1,5 +1,7 @@
 'use client'
 
+import { PrimaryButton } from 'polarkit/components/ui'
+
 export default function GlobalError({
   error,
   reset,
@@ -10,13 +12,23 @@ export default function GlobalError({
   return (
     <html>
       <body className="bg-blue-100">
-        <div className="flex grow flex-col items-center justify-center p-8">
+        <div className="flex grow flex-col items-center justify-center space-y-4 p-16">
           <h2 className="text-xl">Something went wrong!</h2>
-          <a className="text-blue-500 underline" href="/">
-            Go back to Polar
-          </a>
 
-          <pre className="mt-12 text-sm">{error.message}</pre>
+          <PrimaryButton
+            fullWidth={false}
+            onClick={() => {
+              window.location.href = '/'
+            }}
+          >
+            <span>Go back to Polar</span>
+          </PrimaryButton>
+
+          <p className="pt-24 text-gray-400"></p>
+
+          <pre className="whitespace-break-spaces text-sm text-gray-400">
+            Error digest: {'digest' in error ? <>{error.digest}</> : 'oh oh'}
+          </pre>
         </div>
       </body>
     </html>

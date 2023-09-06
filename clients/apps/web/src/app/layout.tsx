@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     title: 'Polar - Pledge for progress',
     siteName: 'Polar',
     description:
-      'Polar gives open source maintainers a better and funded backlog based on what drives the most impact within their community. ',
+      'Polar gives open source maintainers a better and funded backlog based on what drives the most impact within their community.',
   },
   twitter: {
     images:
@@ -29,8 +29,9 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Polar - Pledge for progress',
     description:
-      'Polar gives open source maintainers a better and funded backlog based on what drives the most impact within their community. ',
+      'Polar gives open source maintainers a better and funded backlog based on what drives the most impact within their community.',
   },
+  metadataBase: new URL('https://polar.sh/'),
 }
 
 export default function RootLayout({

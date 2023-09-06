@@ -517,31 +517,40 @@ class GitHubIssueReferencesService:
             # GitHub has no API to find branches that _contain_ a commit, so if that's
             # what we want to do long term, we'll probably have to clone the repo and
             # analyze it ourselves.
-            branches = await client.rest.repos.async_list_branches_for_head_commit(
-                owner=ref.organization_name,
-                repo=ref.repository_name,
-                commit_sha=ref.commit_id,
-            )
+            try:
+                branches = await client.rest.repos.async_list_branches_for_head_commit(
+                    owner=ref.organization_name,
+                    repo=ref.repository_name,
+                    commit_sha=ref.commit_id,
+                )
 
-            if branches.status_code == 200:
-                if branches and branches.parsed_data:
-                    b = branches.parsed_data
-                    if len(b) == 1:
-                        ref.branch_name = b[0].name
+                if branches.status_code == 200:
+                    if branches and branches.parsed_data:
+                        b = branches.parsed_data
+                        if len(b) == 1:
+                            ref.branch_name = b[0].name
+            except RequestFailed as e:
+                # Don't worry about it.
+                pass
 
             # Get commit message
-            commit = await client.rest.repos.async_get_commit(
-                owner=ref.organization_name,
-                repo=ref.repository_name,
-                ref=ref.commit_id,
-            )
+            try:
+                commit = await client.rest.repos.async_get_commit(
+                    owner=ref.organization_name,
+                    repo=ref.repository_name,
+                    ref=ref.commit_id,
+                )
 
-            if commit.status_code == 200:
-                try:
-                    if commit and commit.parsed_data.commit.message:
-                        ref.message = commit.parsed_data.commit.message
-                except ValidationError:
-                    pass  # don't panic on validation errors
+                if commit.status_code == 200:
+                    try:
+                        if commit and commit.parsed_data.commit.message:
+                            ref.message = commit.parsed_data.commit.message
+                    except ValidationError:
+                        pass  # don't panic on validation errors
+
+            except RequestFailed as e:
+                # Don't worry about it.
+                pass
 
         return ref
 

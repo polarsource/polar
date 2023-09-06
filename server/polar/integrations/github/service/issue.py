@@ -361,7 +361,7 @@ class GithubIssueService(IssueService):
         organization: Organization,
     ) -> Sequence[Issue]:
         current_time = datetime.datetime.utcnow()
-        one_hour_ago = current_time - datetime.timedelta(hours=1)
+        cutoff_time = current_time - datetime.timedelta(hours=12)
 
         stmt = (
             sql.select(Issue)
@@ -370,7 +370,7 @@ class GithubIssueService(IssueService):
             .where(
                 or_(
                     Issue.github_issue_fetched_at.is_(None),
-                    Issue.github_issue_fetched_at < one_hour_ago,
+                    Issue.github_issue_fetched_at < cutoff_time,
                 ),
                 Issue.deleted_at.is_(None),
                 Organization.deleted_at.is_(None),
@@ -392,7 +392,7 @@ class GithubIssueService(IssueService):
         organization: Organization,
     ) -> Sequence[Issue]:
         current_time = datetime.datetime.utcnow()
-        one_hour_ago = current_time - datetime.timedelta(hours=1)
+        cutoff_time = current_time - datetime.timedelta(hours=12)
 
         stmt = (
             sql.select(Issue)
@@ -401,7 +401,7 @@ class GithubIssueService(IssueService):
             .where(
                 or_(
                     Issue.github_timeline_fetched_at.is_(None),
-                    Issue.github_timeline_fetched_at < one_hour_ago,
+                    Issue.github_timeline_fetched_at < cutoff_time,
                 ),
                 Issue.deleted_at.is_(None),
                 Organization.deleted_at.is_(None),

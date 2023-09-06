@@ -1,3 +1,4 @@
+import random
 from uuid import UUID
 
 import structlog
@@ -159,7 +160,12 @@ async def cron_refresh_issues(ctx: JobContext) -> None:
             )
 
             for issue in issues:
-                await enqueue_job("github.issue.sync", issue.id)
+                await enqueue_job(
+                    "github.issue.sync",
+                    issue.id,
+                    _job_id=f"github.issue.sync:{issue.id}",
+                    _defer_by=random.randint(0, 60 * 5),
+                )
 
 
 @interval(
@@ -214,4 +220,9 @@ async def cron_refresh_issue_timelines(ctx: JobContext) -> None:
             )
 
             for issue in issues:
-                await enqueue_job("github.issue.sync.issue_references", issue.id)
+                await enqueue_job(
+                    "github.issue.sync.issue_references",
+                    issue.id,
+                    _job_id=f"github.issue.sync.issue_references:{issue.id}",
+                    _defer_by=random.randint(0, 60 * 5),
+                )

@@ -1,9 +1,7 @@
 import structlog
-from starlette.types import ASGIApp, Message, Receive, Scope, Send
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from polar.logging import generate_correlation_id
-
-log = structlog.get_logger()
 
 
 class LogCorrelationIdMiddleware:

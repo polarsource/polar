@@ -7,7 +7,6 @@ from typing import (
     AsyncGenerator,
     Awaitable,
     Callable,
-    Generator,
     ParamSpec,
     TypedDict,
     TypeVar,
@@ -171,7 +170,7 @@ def interval(
         f: Callable[Params, Awaitable[ReturnValue]]
     ) -> Callable[Params, Awaitable[ReturnValue]]:
         new_cron = cron(
-            f, minute=minute, second=second, run_at_startup=True  # type: ignore
+            f, minute=minute, second=second, run_at_startup=False  # type: ignore
         )
         WorkerSettings.cron_jobs.append(new_cron)
 

@@ -6,9 +6,11 @@ import MoneyInput from './MoneyInput'
 import PolarTimeAgo from './PolarTimeAgo'
 import { PrimaryButton, ThinButton } from './PrimaryButton'
 import ShadowBox from './ShadowBox'
+import ShadowBoxOnLg from './ShadowBoxOnLg'
 
 export {
   ShadowBox,
+  ShadowBoxOnLg,
   Input,
   PolarTimeAgo,
   CountryPicker,

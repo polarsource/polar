@@ -3,7 +3,6 @@
 import { Modal as ModernModal } from '@/components/Modal'
 import Modal, { ModalBox } from '@/components/Shared/Modal'
 import { useToastLatestPledged } from '@/hooks/stripe'
-import { InformationCircleIcon } from '@heroicons/react/20/solid'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
@@ -30,6 +29,7 @@ import { githubIssueUrl } from 'polarkit/github'
 import { useIssueMarkConfirmed } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import { ChangeEvent, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import SplitRewardModal from '../Finance/SplitRewardModal'
 import { useModal } from '../Modal/useModal'
 import PledgeNow from '../Pledge/PledgeNow'
@@ -51,7 +51,8 @@ const IssueListItem = (props: {
   showPledgeAction: boolean
   right?: React.ReactElement
   showSelfPledgesFor?: UserRead
-  recommendedReason?: 'starred' | undefined
+  className?: string
+  showLogo?: boolean
 }) => {
   const { title, number, state, issue_created_at, reactions, comments } =
     props.issue
@@ -160,8 +161,13 @@ const IssueListItem = (props: {
 
   return (
     <>
-      <div className="group/issue">
-        <div className="hover:bg-gray-75 group flex items-center justify-between gap-4 overflow-hidden px-2 py-4 pb-5 dark:hover:bg-gray-900">
+      <div>
+        <div
+          className={twMerge(
+            'hover:bg-gray-75 group flex items-center justify-between gap-4 overflow-hidden px-2 py-4 pb-5 dark:hover:bg-gray-900/50',
+            props.className,
+          )}
+        >
           <div className="flex flex-row items-center">
             {isDependency && (
               <div className="mr-3 flex-shrink-0 justify-center rounded-full bg-white p-[1px] shadow">
@@ -174,6 +180,19 @@ const IssueListItem = (props: {
                 />
               </div>
             )}
+
+            {props.showLogo && 'repository' in props.issue && (
+              <div className="mr-3 flex-shrink-0 justify-center rounded-full bg-white p-[1px] shadow">
+                <Image
+                  alt={`Avatar of ${props.issue.repository.organization.name}`}
+                  src={props.issue.repository.organization.avatar_url}
+                  className="h-8 w-8 rounded-full"
+                  height={200}
+                  width={200}
+                />
+              </div>
+            )}
+
             <div className="flex flex-col gap-1">
               <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
                 <a
@@ -230,13 +249,6 @@ const IssueListItem = (props: {
                       </a>
                     </p>
                   ))}
-                </div>
-              )}
-
-              {props.recommendedReason === 'starred' && (
-                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                  <InformationCircleIcon className="h-4 w-4" />
-                  <span>Recommended because you&apos;ve starred this repo</span>
                 </div>
               )}
             </div>

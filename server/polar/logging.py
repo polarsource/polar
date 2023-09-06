@@ -8,6 +8,8 @@ from polar.config import settings
 
 RendererType = TypeVar("RendererType")
 
+Logger = structlog.stdlib.BoundLogger
+
 
 class Logging(Generic[RendererType]):
     """Hubben logging configurator of `structlog` and `logging`.

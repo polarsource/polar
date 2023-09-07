@@ -161,7 +161,7 @@ class GithubOrganizationService(OrganizationService):
                 "organization not found by external_id, creating it",
                 external_id=data.id,
             )
-            organization = await github_organization.create(
+            organization = await self.create(
                 session, OrganizationCreate.from_github(data)
             )
         else:
@@ -169,7 +169,7 @@ class GithubOrganizationService(OrganizationService):
                 "organization found by external_id, updating it",
                 external_id=data.id,
             )
-            organization = await github_organization.update(
+            organization = await self.update(
                 session,
                 organization,
                 OrganizationUpdate.from_github(data),

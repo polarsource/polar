@@ -845,7 +845,7 @@ class GithubIssueService(IssueService):
                 session, r.owner
             )
 
-            repo = await github_repository.get_or_create_from_github(
+            repo = await github_repository.create_or_update_from_github(
                 session,
                 org,
                 r,

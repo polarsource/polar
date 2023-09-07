@@ -2,7 +2,9 @@ from datetime import datetime
 from uuid import UUID
 
 import structlog
+from githubkit.rest.models import Installation as GitHubInstallation
 from githubkit.rest.models import SimpleUser as GitHubSimpleUser
+from githubkit.webhooks.models import Installation as GitHubWebhookInstallation
 from githubkit.webhooks.models import User as GitHubUser
 
 from polar.enums import Platforms
@@ -152,7 +154,11 @@ class GithubOrganizationService(OrganizationService):
         await self.soft_delete(session, id=org_id)
 
     async def create_or_update_from_github(
-        self, session: AsyncSession, data: GitHubUser | GitHubSimpleUser
+        self,
+        session: AsyncSession,
+        data: GitHubUser | GitHubSimpleUser,
+        *,
+        installation: GitHubInstallation | GitHubWebhookInstallation | None = None,
     ) -> Organization:
         organization = await self.get_by_external_id(session, data.id)
 
@@ -162,7 +168,7 @@ class GithubOrganizationService(OrganizationService):
                 external_id=data.id,
             )
             organization = await self.create(
-                session, OrganizationCreate.from_github(data)
+                session, OrganizationCreate.from_github(data, installation=installation)
             )
         else:
             log.debug(
@@ -172,7 +178,7 @@ class GithubOrganizationService(OrganizationService):
             organization = await self.update(
                 session,
                 organization,
-                OrganizationUpdate.from_github(data),
+                OrganizationUpdate.from_github(data, installation=installation),
                 exclude_unset=True,
             )
 

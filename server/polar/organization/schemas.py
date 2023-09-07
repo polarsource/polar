@@ -90,7 +90,9 @@ class OrganizationCreate(OrganizationPrivateBase):
         cls,
         user: github.webhooks.User | github.rest.SimpleUser,
         *,
-        installation: github.rest.Installation | None = None,
+        installation: github.rest.Installation
+        | github.webhooks.Installation
+        | None = None,
     ) -> Self:
         data: dict[str, Any] = {
             "is_personal": user.type.lower() == "user",

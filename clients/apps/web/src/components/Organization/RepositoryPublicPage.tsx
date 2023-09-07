@@ -27,7 +27,7 @@ const RepositoryPublicPage = ({
       />
 
       <h1 className="text-center text-3xl font-normal text-gray-800 dark:text-gray-300 md:text-3xl">
-        {organization.name}/{repository.name} have{' '}
+        {organization.name}/{repository.name} has{' '}
         {totalIssueCount > 0 ? totalIssueCount : 'no'}{' '}
         {totalIssueCount === 1 ? 'issue' : 'issues'} looking for funding
       </h1>

@@ -27,7 +27,7 @@ const OrganizationPublicPage = ({
       <Header organization={organization} repositories={repositories} />
 
       <h1 className="text-center text-3xl font-normal text-gray-800 dark:text-gray-300 md:text-3xl">
-        {organization.name} have {totalIssueCount > 0 ? totalIssueCount : 'no'}{' '}
+        {organization.name} has {totalIssueCount > 0 ? totalIssueCount : 'no'}{' '}
         {totalIssueCount === 1 ? 'issue' : 'issues'} looking for funding
       </h1>
 

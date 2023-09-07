@@ -1,6 +1,6 @@
 'use client'
 
-import DashboardLayout from '@/components/Layout/DashboardLayout'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import BadgeSetup from '@/components/Settings/Badge'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { useStore } from 'polarkit/store'
@@ -38,29 +38,27 @@ export default function ClientPage() {
   }
 
   return (
-    <DashboardLayout showSidebar={true}>
-      <>
-        <div className="relative z-0">
-          <div className="divide-y divide-gray-200 dark:divide-gray-800">
-            {org && (
-              <Section>
-                <>
-                  <SectionDescription title="Badge settings" />
+    <DashboardBody>
+      <div className="relative z-0">
+        <div className="divide-y divide-gray-200 dark:divide-gray-800">
+          {org && (
+            <Section>
+              <>
+                <SectionDescription title="Badge settings" />
 
-                  <BadgeSetup
-                    org={org}
-                    showControls={true}
-                    setShowControls={() => true}
-                    setSyncIssuesCount={(value: number) => true}
-                    isSettingPage={true}
-                  />
-                </>
-              </Section>
-            )}
-          </div>
+                <BadgeSetup
+                  org={org}
+                  showControls={true}
+                  setShowControls={() => true}
+                  setSyncIssuesCount={(value: number) => true}
+                  isSettingPage={true}
+                />
+              </>
+            </Section>
+          )}
         </div>
-      </>
-    </DashboardLayout>
+      </div>
+    </DashboardBody>
   )
 }
 

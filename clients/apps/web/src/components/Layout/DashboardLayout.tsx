@@ -7,7 +7,6 @@ import Topbar from '../Shared/Topbar'
 
 const DashboardLayout = (props: {
   children: React.ReactNode
-  showSidebar: boolean
   header?: React.ReactNode
 }) => {
   return (
@@ -15,34 +14,11 @@ const DashboardLayout = (props: {
       <Topbar isFixed={true} useOrgFromURL={true} />
 
       <div className="flex flex-row bg-gray-50 dark:bg-gray-950">
-        {props.showSidebar && (
-          <aside className="bg-gray-75 fixed bottom-0 left-0 top-16 w-[300px] flex-shrink-0 border-r border-r-gray-200 dark:border-r-gray-700 dark:bg-gray-800">
-            <SidebarNavigation />
-          </aside>
-        )}
-        <main
-          className={classNames(
-            props.showSidebar ? 'ml-[300px]' : '',
-            'relative w-full',
-          )}
-        >
-          {props.header && (
-            <div
-              className={classNames(
-                props.showSidebar ? 'left-[300px]' : 'left-0',
-                'sticky right-0 top-16 z-10',
-              )}
-            >
-              {props.header}
-            </div>
-          )}
-          <div
-            className={classNames(
-              'relative mx-auto max-w-screen-2xl px-4 pb-6 pt-24 sm:px-6 md:px-8',
-            )}
-          >
-            <Suspense>{props.children}</Suspense>
-          </div>
+        <aside className="bg-gray-75 fixed bottom-0 left-0 top-16 w-[300px] flex-shrink-0 border-r border-r-gray-200 dark:border-r-gray-700 dark:bg-gray-800">
+          <SidebarNavigation />
+        </aside>
+        <main className={classNames('relative ml-[300px] w-full')}>
+          <Suspense>{props.children}</Suspense>
         </main>
       </div>
     </div>
@@ -71,5 +47,25 @@ export const RepoPickerHeader = (props: {
         {props.children}
       </form>
     </>
+  )
+}
+
+export const DashboardHeader = (props: { children?: React.ReactNode }) => {
+  return (
+    <div className={classNames('sticky left-[300px] right-0 top-16 z-10')}>
+      {props.children}
+    </div>
+  )
+}
+
+export const DashboardBody = (props: { children?: React.ReactNode }) => {
+  return (
+    <div
+      className={classNames(
+        'relative mx-auto max-w-screen-2xl px-4 pb-6 pt-24 sm:px-6 md:px-8',
+      )}
+    >
+      {props.children}
+    </div>
   )
 }

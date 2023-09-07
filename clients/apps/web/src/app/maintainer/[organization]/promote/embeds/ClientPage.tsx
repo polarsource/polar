@@ -2,11 +2,12 @@
 
 import { FundOurBacklog } from '@/components/Embed/FundOurBacklog'
 import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
-import DashboardLayout, {
+import {
+  DashboardBody,
+  DashboardHeader,
   RepoPickerHeader,
 } from '@/components/Layout/DashboardLayout'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
-import Head from 'next/head'
 import {
   CopyToClipboardInput,
   LabeledRadioButton,
@@ -76,19 +77,14 @@ export default function ClientPage() {
 
   return (
     <>
-      <Head>
-        <title>Polar | Promote {org?.name} repository</title>
-      </Head>
+      <DashboardHeader>
+        <RepoPickerHeader
+          currentRepository={currentRepo}
+          repositories={allOrgRepositories}
+        />
+      </DashboardHeader>
 
-      <DashboardLayout
-        showSidebar={true}
-        header={
-          <RepoPickerHeader
-            currentRepository={currentRepo}
-            repositories={allOrgRepositories}
-          />
-        }
-      >
+      <DashboardBody>
         <div className="space-y-4">
           <h2 className="text-lg text-gray-900 dark:text-gray-400">
             Github Sponsors
@@ -150,7 +146,7 @@ export default function ClientPage() {
             </div>
           </ShadowBox>
         </div>
-      </DashboardLayout>
+      </DashboardBody>
     </>
   )
 }

@@ -20,10 +20,11 @@ from polar.exceptions import ResourceNotFound
 from polar.integrations.github import client as github
 from polar.integrations.github.service.api import github_api
 from polar.issue.hooks import IssueHook, issue_upserted
-from polar.issue.schemas import IssueCreate, Reactions
+from polar.issue.schemas import IssueCreate, IssueUpdate
 from polar.issue.service import IssueService
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
+from polar.logging import Logger
 from polar.models import Issue, Organization, Repository
 from polar.models.user import User
 from polar.organization.schemas import OrganizationCreate
@@ -40,7 +41,7 @@ from .organization import github_organization
 from .paginated import ErrorCount, SyncedCount, github_paginated_service
 from .repository import github_repository
 
-log = structlog.get_logger()
+log: Logger = structlog.get_logger()
 
 
 class GithubIssueService(IssueService):
@@ -835,11 +836,11 @@ class GithubIssueService(IssueService):
             if r.private:
                 continue
 
-            org = await github_organization.update_or_create_org_from_github(
+            org = await github_organization.create_or_update_from_github(
                 session, r.owner
             )
 
-            repo = await github_repository.get_or_create_from_github(
+            repo = await github_repository.create_or_update_from_github(
                 session,
                 org,
                 r,
@@ -860,6 +861,38 @@ class GithubIssueService(IssueService):
             await pipe.execute()
 
         return res
+
+    async def create_or_update_from_github(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        repository: Repository,
+        data: GitHubIssue,
+    ) -> Issue:
+        issue = await self.get_by_external_id(session, data.id)
+
+        if not issue:
+            log.debug(
+                "issue not found by external_id, creating it",
+                external_id=data.id,
+            )
+
+            issue = await self.create(
+                session, IssueCreate.from_github(data, organization.id, repository.id)
+            )
+        else:
+            log.debug(
+                "issue found by external_id, updating it",
+                external_id=data.id,
+            )
+            issue = await self.update(
+                session,
+                issue,
+                IssueUpdate.from_github(data, organization.id, repository.id),
+                exclude_unset=True,
+            )
+
+        return issue
 
 
 github_issue = GithubIssueService(Issue)

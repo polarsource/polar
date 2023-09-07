@@ -81,9 +81,14 @@ async def create_from_installation(
         ]
     ],
 ) -> Organization:
-    organization = await service.github_organization.update_or_create_from_github(
-        session,
-        installation,
+    account = installation.account
+    if not account:
+        raise Exception("installation has no account")
+    if isinstance(account, github.rest.Enterprise):
+        raise Exception("enterprise accounts is not supported")
+
+    organization = await service.github_organization.create_or_update_from_github(
+        session, account, installation=installation
     )
 
     if removed:

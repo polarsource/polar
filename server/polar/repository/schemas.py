@@ -9,7 +9,6 @@ from pydantic import Field
 from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.kit.schemas import Schema
-from polar.models import Organization as OrganizationModel
 from polar.models import Repository as RepositoryModel
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.visibility import Visibility
@@ -76,36 +75,42 @@ class RepositoryCreate(Schema):
 
     @classmethod
     def from_github(
-        cls, organization: OrganizationModel, repo: github.rest.Repository
+        cls,
+        repository: github.rest.Repository | github.rest.FullRepository,
+        organization_id: UUID,
     ) -> Self:
-        topics = repo.topics if repo.topics else None
-        license = repo.license_.name if repo.license_ and repo.license_.name else None
+        topics = repository.topics if repository.topics else None
+        license = (
+            repository.license_.name
+            if repository.license_ and repository.license_.name
+            else None
+        )
         return cls(
             platform=Platforms.github,
-            external_id=repo.id,
-            organization_id=organization.id,
-            name=repo.name,
-            description=repo.description,
-            open_issues=repo.open_issues,
-            forks=repo.forks,
-            stars=repo.stargazers_count,
-            watchers=repo.watchers_count,
-            main_branch=repo.default_branch,
+            external_id=repository.id,
+            organization_id=organization_id,
+            name=repository.name,
+            description=repository.description,
+            open_issues=repository.open_issues,
+            forks=repository.forks,
+            stars=repository.stargazers_count,
+            watchers=repository.watchers_count,
+            main_branch=repository.default_branch,
             topics=topics,
             license=license,
-            homepage=repo.homepage,
-            repository_pushed_at=repo.pushed_at,
-            repository_created_at=repo.created_at,
-            repository_modified_at=repo.updated_at,
-            is_private=repo.private,
-            is_fork=repo.fork,
-            is_issues_enabled=repo.has_issues,
-            is_projects_enabled=repo.has_projects,
-            is_wiki_enabled=repo.has_wiki,
-            is_pages_enabled=repo.has_pages,
-            is_downloads_enabled=repo.has_downloads,
-            is_archived=repo.archived,
-            is_disabled=repo.disabled,
+            homepage=repository.homepage,
+            repository_pushed_at=repository.pushed_at,
+            repository_created_at=repository.created_at,
+            repository_modified_at=repository.updated_at,
+            is_private=repository.private,
+            is_fork=repository.fork,
+            is_issues_enabled=repository.has_issues,
+            is_projects_enabled=repository.has_projects,
+            is_wiki_enabled=repository.has_wiki,
+            is_pages_enabled=repository.has_pages,
+            is_downloads_enabled=repository.has_downloads,
+            is_archived=repository.archived,
+            is_disabled=repository.disabled,
         )
 
 

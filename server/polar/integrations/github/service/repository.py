@@ -6,19 +6,21 @@ from githubkit.rest import (
     InstallationRepositoriesGetResponse200,
 )
 from githubkit.rest import (
-    Repository as GitHubKitRepository,
+    Repository as GitHubRepository,
 )
+from githubkit.rest.models import FullRepository as GitHubFullRepository
 
 from polar.enums import Platforms
+from polar.logging import Logger
 from polar.models import Organization, Repository
 from polar.postgres import AsyncSession
-from polar.repository.schemas import RepositoryCreate
+from polar.repository.schemas import RepositoryCreate, RepositoryUpdate
 from polar.repository.service import RepositoryService
 from polar.worker import enqueue_job
 
 from .. import client as github
 
-log = structlog.get_logger()
+log: Logger = structlog.get_logger()
 
 
 class GithubRepositoryService(RepositoryService):
@@ -60,14 +62,14 @@ class GithubRepositoryService(RepositoryService):
 
         def mapper(
             res: Response[InstallationRepositoriesGetResponse200],
-        ) -> list[GitHubKitRepository]:
+        ) -> list[GitHubRepository]:
             return res.parsed_data.repositories
 
         async for repo in client.paginate(
             client.rest.apps.async_list_repos_accessible_to_installation,
             map_func=mapper,
         ):
-            create = RepositoryCreate.from_github(organization, repo)
+            create = RepositoryCreate.from_github(repo, organization.id)
             inst = await self.create_or_update(session, create)
 
             # un-delete if previously deleted
@@ -82,21 +84,36 @@ class GithubRepositoryService(RepositoryService):
             await self.enqueue_sync(installation)
         return instances
 
-    async def get_or_create_from_github(
+    async def create_or_update_from_github(
         self,
         session: AsyncSession,
         organization: Organization,
-        repo: github.rest.Repository,
+        data: GitHubRepository | GitHubFullRepository,
     ) -> Repository:
-        r = await self.get_by_external_id(session, repo.id)
-        if r:
-            return r
+        repository = await self.get_by_external_id(session, data.id)
 
-        # create
-        return await self.create(
-            session,
-            RepositoryCreate.from_github(organization, repo),
-        )
+        if not repository:
+            log.debug(
+                "repository not found by external_id, creating it",
+                external_id=data.id,
+            )
+
+            repository = await self.create(
+                session, RepositoryCreate.from_github(data, organization.id)
+            )
+        else:
+            log.debug(
+                "repository found by external_id, updating it",
+                external_id=data.id,
+            )
+            repository = await self.update(
+                session,
+                repository,
+                RepositoryUpdate.from_github(data, organization.id),
+                exclude_unset=True,
+            )
+
+        return repository
 
 
 github_repository = GithubRepositoryService(Repository)

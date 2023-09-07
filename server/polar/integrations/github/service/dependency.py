@@ -34,7 +34,7 @@ class GitHubIssueDependenciesService:
             )
             return
 
-        client = get_app_installation_client(org.installation_id)
+        client = get_app_installation_client(org.safe_installation_id)
         log.info(
             "github.sync_issue_dependencies",
             id=repo.id,

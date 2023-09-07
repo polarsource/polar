@@ -133,7 +133,7 @@ async def cron_refresh_issues(ctx: JobContext) -> None:
                 )
                 continue
 
-            client = get_app_installation_client(org.installation_id)
+            client = get_app_installation_client(org.safe_installation_id)
             try:
                 rate_limit = await github_api.get_rate_limit(client)
             except Exception as e:
@@ -192,7 +192,7 @@ async def cron_refresh_issue_timelines(ctx: JobContext) -> None:
                 )
                 continue
 
-            client = get_app_installation_client(org.installation_id)
+            client = get_app_installation_client(org.safe_installation_id)
 
             try:
                 rate_limit = await github_api.get_rate_limit(client)

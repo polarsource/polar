@@ -90,11 +90,8 @@ class GitHubIssueReferencesService:
         installation_id = (
             crawl_with_installation_id
             if crawl_with_installation_id
-            else org.installation_id
+            else org.safe_installation_id
         )
-
-        if not installation_id:
-            raise Exception("no github installation id found")
 
         client = github.get_app_installation_client(installation_id)
 
@@ -228,11 +225,8 @@ class GitHubIssueReferencesService:
         installation_id = (
             crawl_with_installation_id
             if crawl_with_installation_id
-            else org.installation_id
+            else org.safe_installation_id
         )
-
-        if not installation_id:
-            raise Exception("no github installation id found")
 
         client = github.get_app_installation_client(installation_id)
 

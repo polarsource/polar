@@ -36,7 +36,7 @@ async def delete_invalid_issues(org_name: str) -> None:
         if not org:
             raise RuntimeError(f"Organization {org_name} not found")
 
-        client = github.get_app_installation_client(org.installation_id)
+        client = github.get_app_installation_client(org.safe_installation_id)
 
         repos = await github_repository.list_by(session, org_ids=[org.id])
 

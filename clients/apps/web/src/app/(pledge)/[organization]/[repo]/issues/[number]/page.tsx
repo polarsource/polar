@@ -1,8 +1,16 @@
 import Pledge from '@/components/Pledge/Pledge'
 import { Metadata, ResolvingMetadata } from 'next'
+import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
-import { api } from 'polarkit'
+import { buildAPI } from 'polarkit/api'
 import { ApiError, Issue } from 'polarkit/api/client'
+
+const authedApi = () => {
+  const cookieStore = cookies()
+  const polarCookie = cookieStore.get('polar')
+  const api = buildAPI({ token: polarCookie?.value })
+  return api
+}
 
 export async function generateMetadata(
   {
@@ -15,7 +23,7 @@ export async function generateMetadata(
   let issue: Issue | undefined
 
   try {
-    issue = await api.issues.lookup({
+    issue = await authedApi().issues.lookup({
       externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
     })
   } catch (e) {
@@ -65,7 +73,7 @@ export default async function Page({
   let issue: Issue | undefined
 
   try {
-    issue = await api.issues.lookup({
+    issue = await authedApi().issues.lookup({
       externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
     })
   } catch (e) {

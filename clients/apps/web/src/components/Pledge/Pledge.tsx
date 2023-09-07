@@ -1,7 +1,8 @@
 'use client'
 
-import { Issue } from 'polarkit/api/client'
+import { Issue, Visibility } from 'polarkit/api/client'
 import { IssueCard } from 'polarkit/components/pledge'
+import { Banner } from 'polarkit/components/ui'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
 import posthog from 'posthog-js'
 import { useEffect, useState } from 'react'
@@ -38,6 +39,13 @@ const Pledge = ({
 
   return (
     <>
+      {issue.repository.visibility === Visibility.PRIVATE && (
+        <Banner color="muted">
+          This is an issue in a private repository. Only logged in users that
+          are members of {issue.repository.organization.name} can see it.
+        </Banner>
+      )}
+
       <div className="flex flex-col items-center ">
         <img
           src={issue.repository.organization.avatar_url}

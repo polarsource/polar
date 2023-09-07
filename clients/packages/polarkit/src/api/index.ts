@@ -9,3 +9,10 @@ export const api = new PolarAPI({
   BASE: getServerURL(),
   WITH_CREDENTIALS: true,
 })
+
+export const buildAPI = (opts: { token?: string }) =>
+  new PolarAPI({
+    BASE: getServerURL(),
+    WITH_CREDENTIALS: true,
+    TOKEN: opts.token,
+  })

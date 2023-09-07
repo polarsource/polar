@@ -1,19 +1,23 @@
 from datetime import datetime
-from typing import Union
 from uuid import UUID
 
 import structlog
+from githubkit.rest.models import Installation as GitHubInstallation
+from githubkit.rest.models import SimpleUser as GitHubSimpleUser
+from githubkit.webhooks.models import Installation as GitHubWebhookInstallation
+from githubkit.webhooks.models import User as GitHubUser
 
 from polar.enums import Platforms
+from polar.logging import Logger
 from polar.models import Organization, User
-from polar.organization.schemas import OrganizationCreate
+from polar.organization.schemas import OrganizationCreate, OrganizationUpdate
 from polar.organization.service import OrganizationService
 from polar.postgres import AsyncSession
 
 from .. import client as github
 from .repository import github_repository
 
-log = structlog.get_logger(service="GithubOrganizationService")
+log: Logger = structlog.get_logger(service="GithubOrganizationService")
 
 
 class GithubOrganizationService(OrganizationService):
@@ -45,7 +49,26 @@ class GithubOrganizationService(OrganizationService):
         if not installations:
             return None
 
-        return [OrganizationCreate.from_github_installation(i) for i in installations]
+        organizations: list[OrganizationCreate] = []
+        for installation in installations:
+            account = installation.account
+            if account is None:
+                log.warning(
+                    "installation without associated account",
+                    installation_id=installation.id,
+                )
+                continue
+            elif not isinstance(account, GitHubSimpleUser):
+                log.warning(
+                    "unsupported installation with an Enterprise account",
+                    installation=installation.id,
+                )
+                continue
+            organizations.append(
+                OrganizationCreate.from_github(account, installation=installation)
+            )
+
+        return organizations
 
     async def install(
         self, session: AsyncSession, user: User, installation_id: int
@@ -130,80 +153,36 @@ class GithubOrganizationService(OrganizationService):
 
         await self.soft_delete(session, id=org_id)
 
-    async def update_or_create_from_github(
+    async def create_or_update_from_github(
         self,
         session: AsyncSession,
-        installation: Union[
-            github.rest.Installation,
-            github.webhooks.Installation,
-        ],
+        data: GitHubUser | GitHubSimpleUser,
+        *,
+        installation: GitHubInstallation | GitHubWebhookInstallation | None = None,
     ) -> Organization:
-        account = installation.account
-        if not account:
-            raise Exception("installation has no account")
-        if isinstance(account, github.rest.Enterprise):
-            raise Exception("enterprise accounts is not supported")
+        organization = await self.get_by_external_id(session, data.id)
 
-        is_personal = account.type.lower() == "user"
-
-        if isinstance(installation.created_at, int):
-            installation.created_at = datetime.fromtimestamp(installation.created_at)
-
-        if isinstance(installation.updated_at, int):
-            installation.updated_at = datetime.fromtimestamp(installation.updated_at)
-
-        org = await self.get_by_external_id(session, installation.id)
-        if not org:
-            create_schema = OrganizationCreate(
-                platform=Platforms.github,
-                name=account.login,
-                external_id=account.id,
-                avatar_url=account.avatar_url,
-                is_personal=is_personal,
-                installation_id=installation.id,
-                installation_created_at=installation.created_at,
-                installation_updated_at=installation.updated_at,
-                installation_suspended_at=installation.suspended_at,
+        if organization is None:
+            log.debug(
+                "organization not found by external_id, creating it",
+                external_id=data.id,
             )
-            organization = await self.create_or_update(session, create_schema)
-            return organization
-
-        # update
-        org.deleted_at = None
-        org.name = account.login
-        org.avatar_url = account.avatar_url
-        org.installation_created_at = installation.created_at
-        org.installation_updated_at = installation.updated_at
-        org.installation_suspended_at = installation.suspended_at
-        await org.save(session)
-
-        return org
-
-    async def update_or_create_org_from_github(
-        self,
-        session: AsyncSession,
-        account: github.rest.SimpleUser,
-    ) -> Organization:
-        is_personal = account.type.lower() == "user"
-
-        org = await self.get_by_external_id(session, account.id)
-        if not org:
-            create_schema = OrganizationCreate(
-                platform=Platforms.github,
-                name=account.login,
-                external_id=account.id,
-                avatar_url=account.avatar_url,
-                is_personal=is_personal,
+            organization = await self.create(
+                session, OrganizationCreate.from_github(data, installation=installation)
             )
-            organization = await self.create_or_update(session, create_schema)
-            return organization
+        else:
+            log.debug(
+                "organization found by external_id, updating it",
+                external_id=data.id,
+            )
+            organization = await self.update(
+                session,
+                organization,
+                OrganizationUpdate.from_github(data, installation=installation),
+                exclude_unset=True,
+            )
 
-        # update
-        org.name = account.login
-        org.avatar_url = account.avatar_url
-        await org.save(session)
-
-        return org
+        return organization
 
     async def populate_org_metadata(
         self, session: AsyncSession, org: Organization

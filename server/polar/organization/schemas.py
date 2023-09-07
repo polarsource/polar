@@ -86,32 +86,42 @@ class OrganizationCreate(OrganizationPrivateBase):
     pledge_minimum_amount: int = settings.MINIMUM_ORG_PLEDGE_AMOUNT
 
     @classmethod
-    def from_github_installation(
-        cls, installation: github.rest.Installation
-    ) -> OrganizationCreate:
-        account = installation.account
+    def from_github(
+        cls,
+        user: github.webhooks.User | github.rest.SimpleUser,
+        *,
+        installation: github.webhooks.Installation
+        | github.rest.Installation
+        | None = None,
+    ) -> Self:
+        if installation is None:
+            return cls(
+                platform=Platforms.github,
+                name=user.login,
+                external_id=user.id,
+                avatar_url=user.avatar_url,
+                is_personal=user.type.lower() == "user",
+            )
 
-        if not isinstance(account, github.rest.SimpleUser):
-            raise Exception("Polar does not support GitHub Enterprise")
-
-        is_personal = account.type.lower() == "user"
-        name = account.login
-        avatar_url = account.avatar_url
-        external_id = account.id
-        if not name:
-            raise Exception("repository.name is not set")
-        if not avatar_url:
-            raise Exception("repository.avatar_url is not set")
-
+        installation_created_at = (
+            datetime.fromtimestamp(installation.created_at)
+            if isinstance(installation.created_at, int)
+            else installation.created_at
+        )
+        installation_updated_at = (
+            datetime.fromtimestamp(installation.updated_at)
+            if isinstance(installation.updated_at, int)
+            else installation.updated_at
+        )
         return cls(
             platform=Platforms.github,
-            name=name,
-            external_id=external_id,
-            avatar_url=avatar_url,
-            is_personal=is_personal,
+            name=user.login,
+            external_id=user.id,
+            avatar_url=user.avatar_url,
+            is_personal=user.type.lower() == "user",
             installation_id=installation.id,
-            installation_created_at=installation.created_at,
-            installation_updated_at=installation.updated_at,
+            installation_created_at=installation_created_at,
+            installation_updated_at=installation_updated_at,
             installation_suspended_at=installation.suspended_at,
         )
 

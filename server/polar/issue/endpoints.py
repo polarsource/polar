@@ -7,7 +7,7 @@ from polar.auth.dependencies import Auth
 from polar.authz.service import AccessType, Authz
 from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
 from polar.enums import Platforms
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.integrations.github.badge import GithubBadge
 from polar.integrations.github.client import get_polar_client
 from polar.integrations.github.service.issue import github_issue as github_issue_service
@@ -153,6 +153,8 @@ async def lookup(
         description="URL to issue on external source",
         example="https://github.com/polarsource/polar/issues/897",
     ),
+    authz: Authz = Depends(Authz.authz),
+    auth: Auth = Depends(Auth.optional_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueSchema:
     if not external_url:
@@ -186,12 +188,15 @@ async def lookup(
             repo_name=url.repo,
             issue_number=url.number,
         )
-        org, repo, tmp_issue = res
+        _, _, tmp_issue = res
 
         # get for return
         issue = await issue_service.get_loaded(session, tmp_issue.id)
         if not issue:
             raise ResourceNotFound("Issue not found")
+
+        if not await authz.can(auth.subject, AccessType.read, issue):
+            raise Unauthorized()
 
         return IssueSchema.from_db(issue)
 
@@ -208,10 +213,7 @@ async def for_you(
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[IssueSchema]:
     if not auth.user:
-        raise HTTPException(
-            status_code=401,
-            detail="Unauthorized",
-        )
+        raise Unauthorized()
 
     issues = await github_issue_service.list_issues_from_starred(session, auth.user)
 

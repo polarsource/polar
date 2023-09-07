@@ -26,6 +26,11 @@ class NotPermitted(PolarError):
         super().__init__(message, status_code)
 
 
+class Unauthorized(PolarError):
+    def __init__(self, message: str = "Unauthorized", status_code: int = 401) -> None:
+        super().__init__(message, status_code)
+
+
 class StripeError(PolarError):
     ...
 

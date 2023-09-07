@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Self, Sequence
+from typing import Any, Self, Sequence
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -86,34 +86,29 @@ class OrganizationCreate(OrganizationPrivateBase):
     pledge_minimum_amount: int = settings.MINIMUM_ORG_PLEDGE_AMOUNT
 
     @classmethod
-    def from_github_installation(
-        cls, installation: github.rest.Installation
-    ) -> OrganizationCreate:
-        account = installation.account
+    def from_github(
+        cls,
+        user: github.webhooks.User | github.rest.SimpleUser,
+        *,
+        installation: github.rest.Installation | None = None,
+    ) -> Self:
+        data: dict[str, Any] = {
+            "is_personal": user.type.lower() == "user",
+            "name": user.login,
+            "avatar_url": user.avatar_url,
+            "external_id": user.id,
+        }
 
-        if not isinstance(account, github.rest.SimpleUser):
-            raise Exception("Polar does not support GitHub Enterprise")
+        if installation is not None:
+            data = {
+                **data,
+                "installation_id": installation.id,
+                "installation_created_at": installation.created_at,
+                "installation_updated_at": installation.updated_at,
+                "installation_suspended_at": installation.suspended_at,
+            }
 
-        is_personal = account.type.lower() == "user"
-        name = account.login
-        avatar_url = account.avatar_url
-        external_id = account.id
-        if not name:
-            raise Exception("repository.name is not set")
-        if not avatar_url:
-            raise Exception("repository.avatar_url is not set")
-
-        return cls(
-            platform=Platforms.github,
-            name=name,
-            external_id=external_id,
-            avatar_url=avatar_url,
-            is_personal=is_personal,
-            installation_id=installation.id,
-            installation_created_at=installation.created_at,
-            installation_updated_at=installation.updated_at,
-            installation_suspended_at=installation.suspended_at,
-        )
+        return cls(**data)
 
 
 # Internal model

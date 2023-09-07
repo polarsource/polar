@@ -841,7 +841,7 @@ class GithubIssueService(IssueService):
             if r.private:
                 continue
 
-            org = await github_organization.update_or_create_org_from_github(
+            org = await github_organization.create_or_update_from_github(
                 session, r.owner
             )
 

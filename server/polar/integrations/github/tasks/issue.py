@@ -5,6 +5,7 @@ import structlog
 
 from polar.integrations.github import service
 from polar.integrations.github.client import get_app_installation_client
+from polar.locker import Locker
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSessionLocal
 from polar.worker import JobContext, PolarWorkerContext, enqueue_job, interval, task
@@ -101,8 +102,11 @@ async def issue_sync_issue_dependencies(
                 session, issue.organization_id, issue.repository_id
             )
 
+            locker = Locker(ctx["redis"])
+
             await service.github_dependency.sync_issue_dependencies(
                 session,
+                locker,
                 org=organization,
                 repo=repository,
                 issue=issue,

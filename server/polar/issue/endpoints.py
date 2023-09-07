@@ -13,6 +13,7 @@ from polar.integrations.github.client import get_polar_client
 from polar.integrations.github.service.issue import github_issue as github_issue_service
 from polar.integrations.github.service.url import github_url
 from polar.kit.schemas import Schema
+from polar.locker import Locker, get_locker
 from polar.models import Issue
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.organization.service import organization as organization_service
@@ -156,6 +157,7 @@ async def lookup(
     authz: Authz = Depends(Authz.authz),
     auth: Auth = Depends(Auth.optional_user),
     session: AsyncSession = Depends(get_db_session),
+    locker: Locker = Depends(get_locker),
 ) -> IssueSchema:
     if not external_url:
         raise HTTPException(
@@ -181,14 +183,15 @@ async def lookup(
 
         client = get_polar_client()
 
-        res = await github_issue_service.sync_external_org_with_repo_and_issue(
-            session,
-            client=client,
-            org_name=url.owner,
-            repo_name=url.repo,
-            issue_number=url.number,
-        )
-        _, _, tmp_issue = res
+        async with locker.lock(f"sync_external_{url.owner}_{url.repo}_{url.number}"):
+            res = await github_issue_service.sync_external_org_with_repo_and_issue(
+                session,
+                client=client,
+                org_name=url.owner,
+                repo_name=url.repo,
+                issue_number=url.number,
+            )
+            _, _, tmp_issue = res
 
         # get for return
         issue = await issue_service.get_loaded(session, tmp_issue.id)

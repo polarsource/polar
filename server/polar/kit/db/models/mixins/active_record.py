@@ -45,22 +45,11 @@ class ActiveRecordMixin:
 
         return await instance.save(session, autocommit=autocommit)
 
-    def fill(
-        self,
-        include: set[str] | None = None,
-        exclude: set[str] | None = None,
-        **values: Any,
-    ) -> Self:
-        exclude = exclude or set()
+    def fill(self, **values: Any) -> Self:
         for col, value in values.items():
             if not hasattr(self, col):
                 raise Exception(f"has no attr: {col}")
-
-            if isinstance(include, set) and col not in include:
-                continue
-
-            if col not in exclude:
-                setattr(self, col, value)
+            setattr(self, col, value)
         return self
 
     async def save(self, session: AsyncSession, autocommit: bool = True) -> Self:
@@ -73,11 +62,9 @@ class ActiveRecordMixin:
         self,
         session: AsyncSession,
         autocommit: bool = True,
-        include: set[str] | None = None,
-        exclude: set[str] | None = None,
         **values: Any,
     ) -> Self:
-        updated = self.fill(include=include, exclude=exclude, **values)
+        updated = self.fill(**values)
         return await updated.save(session, autocommit=autocommit)
 
     async def delete(self: Any, session: AsyncSession) -> None:

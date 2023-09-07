@@ -160,12 +160,13 @@ class ResourceService(
         update_schema: UpdateSchemaType,
         include: set[str] | None = None,
         exclude: set[str] | None = None,
+        exclude_unset: bool = False,
         autocommit: bool = True,
     ) -> ModelType:
         return await source.update(
             session,
-            include=include,
-            exclude=exclude,
             autocommit=autocommit,
-            **update_schema.dict(),
+            **update_schema.dict(
+                include=include, exclude=exclude, exclude_unset=exclude_unset
+            ),
         )

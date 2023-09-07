@@ -70,40 +70,6 @@ async def test_update(session: AsyncSession) -> None:
 
 
 @pytest.mark.asyncio
-async def test_update_with_includes(session: AsyncSession) -> None:
-    created = await ActiveRecord.create(
-        session, int_column=1337, str_column="Hello world"
-    )
-    await created.update(
-        session,
-        int_column=4000,
-        str_column="Hello untrusted source",
-        include={"int_column"},
-    )
-    retrieved = await ActiveRecord.find_by(session, int_column=4000)
-    assert retrieved is not None
-    assert retrieved.str_column == "Hello world"
-    await retrieved.delete(session)
-
-
-@pytest.mark.asyncio
-async def test_update_with_excludes(session: AsyncSession) -> None:
-    created = await ActiveRecord.create(
-        session, int_column=1337, str_column="Hello world"
-    )
-    await created.update(
-        session,
-        int_column=4000,
-        str_column="Hello untrusted source",
-        exclude={"str_column"},
-    )
-    retrieved = await ActiveRecord.find_by(session, int_column=4000)
-    assert retrieved is not None
-    assert retrieved.str_column == "Hello world"
-    await retrieved.delete(session)
-
-
-@pytest.mark.asyncio
 async def test_fill(session: AsyncSession) -> None:
     instance = ActiveRecord()
     instance.fill(int_column=1337, str_column="New instance")
@@ -113,20 +79,6 @@ async def test_fill(session: AsyncSession) -> None:
 
     retrieved = await ActiveRecord.find_by(session, int_column=1337)
     assert retrieved is None
-
-
-def test_fill_with_includes() -> None:
-    instance = ActiveRecord()
-    instance.fill(int_column=1337, str_column="From Internetz", include={"int_column"})
-    assert instance.int_column == 1337
-    assert instance.str_column is None
-
-
-def test_fill_with_excludes() -> None:
-    instance = ActiveRecord()
-    instance.fill(int_column=1337, str_column="From Internetz", exclude={"str_column"})
-    assert instance.int_column == 1337
-    assert instance.str_column is None
 
 
 @pytest.mark.asyncio

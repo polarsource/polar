@@ -4,7 +4,7 @@ import BadgeSetup from '@/components/Settings/Badge'
 import Spinner from '@/components/Shared/Spinner'
 import { useSSE } from 'polarkit/hooks'
 import { useState } from 'react'
-import { useCurrentOrgAndRepoFromURL } from '../../../../hooks'
+import { useCurrentOrgAndRepoFromURL } from '../../../../../hooks'
 
 export default function ClientPage() {
   const [showControls, setShowControls] = useState<boolean>(false)

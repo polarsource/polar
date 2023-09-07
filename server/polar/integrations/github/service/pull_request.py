@@ -179,11 +179,8 @@ class GithubPullRequestService(PullRequestService):
         installation_id = (
             crawl_with_installation_id
             if crawl_with_installation_id
-            else organization.installation_id
+            else organization.safe_installation_id
         )
-
-        if not installation_id:
-            raise Exception("no github installation id found")
 
         client = github.get_app_installation_client(installation_id)
 

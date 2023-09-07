@@ -196,7 +196,9 @@ class GithubBadge:
 
     # TODO: Return bool and check using self.badge_is_embedded on response
     async def embed(self) -> None:
-        client = github.get_app_installation_client(self.organization.installation_id)
+        client = github.get_app_installation_client(
+            self.organization.safe_installation_id
+        )
 
         body = await self.get_current_body(client)
 
@@ -212,7 +214,9 @@ class GithubBadge:
 
     # TODO: Return bool and check using self.badge_is_embedded on response
     async def remove(self) -> None:
-        client = github.get_app_installation_client(self.organization.installation_id)
+        client = github.get_app_installation_client(
+            self.organization.safe_installation_id
+        )
 
         body = await self.get_current_body(client)
         if not self.badge_is_embedded(body):

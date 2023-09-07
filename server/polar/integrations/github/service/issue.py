@@ -280,11 +280,8 @@ class GithubIssueService(IssueService):
         installation_id = (
             crawl_with_installation_id
             if crawl_with_installation_id
-            else org.installation_id
+            else org.safe_installation_id
         )
-
-        if not installation_id:
-            raise Exception("no github installation id found")
 
         client = github.get_app_installation_client(installation_id)
 
@@ -498,7 +495,7 @@ class GithubIssueService(IssueService):
         repository: Repository,
         issue: Issue,
     ) -> Issue:
-        client = github.get_app_installation_client(organization.installation_id)
+        client = github.get_app_installation_client(organization.safe_installation_id)
 
         labels = await client.rest.issues.async_add_labels(
             organization.name, repository.name, issue.number, data=["polar"]
@@ -515,7 +512,7 @@ class GithubIssueService(IssueService):
         repository: Repository,
         issue: Issue,
     ) -> Issue:
-        client = github.get_app_installation_client(organization.installation_id)
+        client = github.get_app_installation_client(organization.safe_installation_id)
 
         labels = await client.rest.issues.async_remove_label(
             organization.name, repository.name, issue.number, "polar"
@@ -731,11 +728,8 @@ class GithubIssueService(IssueService):
         installation_id = (
             crawl_with_installation_id
             if crawl_with_installation_id
-            else organization.installation_id
+            else organization.safe_installation_id
         )
-
-        if not installation_id:
-            raise Exception("no github installation id found")
 
         client = github.get_app_installation_client(installation_id)
 

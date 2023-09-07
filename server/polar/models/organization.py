@@ -9,11 +9,17 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.config import settings
 from polar.enums import Platforms
+from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 
 if TYPE_CHECKING:  # pragma: no cover
     from polar.models.repository import Repository
+
+
+class NotInstalledOrganization(PolarError):
+    def __init__(self) -> None:
+        super().__init__("This organization is not installed.")
 
 
 class Organization(RecordModel):
@@ -35,8 +41,10 @@ class Organization(RecordModel):
     avatar_url: Mapped[str] = mapped_column(String, nullable=False)
     is_personal: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
-    installation_id: Mapped[int] = mapped_column(Integer, nullable=True, unique=True)
-    installation_created_at: Mapped[datetime] = mapped_column(
+    installation_id: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, unique=True
+    )
+    installation_created_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=True,
         default=None,
@@ -106,3 +114,9 @@ class Organization(RecordModel):
             base=settings.FRONTEND_BASE_URL,
             slug=self.name,
         )
+
+    @property
+    def safe_installation_id(self) -> int:
+        if self.installation_id is None:
+            raise NotInstalledOrganization()
+        return self.installation_id

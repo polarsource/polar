@@ -214,7 +214,7 @@ async def organization_sync(
         )
 
     await github_repository_service.install_for_organization(
-        session, org, org.installation_id
+        session, org, org.safe_installation_id
     )
 
     return org

@@ -108,7 +108,7 @@ class OrganizationCreate(OrganizationPrivateBase):
                 "installation_suspended_at": installation.suspended_at,
             }
 
-        return cls(**data)
+        return cls(platform=Platforms.github, **data)
 
 
 # Internal model

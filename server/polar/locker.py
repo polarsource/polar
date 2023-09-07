@@ -18,7 +18,7 @@ class Locker:
     @contextlib.asynccontextmanager
     async def lock(
         self,
-        name: str | bytes | memoryview,
+        name: str,
         timeout: float | None = None,
         sleep: float = 0.1,
         blocking_timeout: float | None = None,
@@ -26,7 +26,7 @@ class Locker:
     ) -> AsyncGenerator[Lock, None]:
         lock = Lock(
             self.redis,
-            name,
+            f"polarlock:{name}",
             timeout=timeout,
             sleep=sleep,
             blocking=True,

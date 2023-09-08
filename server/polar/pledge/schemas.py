@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
+from typing import Literal
 from uuid import UUID
 
 from pydantic import Field
@@ -159,28 +160,28 @@ class PledgeTransactionType(str, Enum):
     disputed = "disputed"
 
 
-class PledgeCreate(Schema):
+class PledgeStripePaymentIntentCreate(Schema):
     issue_id: UUID
-    email: str | None = None
+    email: str
     amount: int
-    pledge_as_org: UUID | None = None
+    use_payment_method_id: str | None
+    # setup_future_usage: Literal["on_session", None] ????
 
 
-class PledgeUpdate(Schema):
-    email: str | None
-    amount: int | None
-    pledge_as_org: UUID | None = None
+class PledgeStripePaymentIntentUpdate(Schema):
+    email: str
+    amount: int
+    setup_future_usage: Literal["on_session"] | None
 
 
-class PledgeMutationResponse(PledgeCreate):
-    id: UUID
-    state: PledgeState
+class PledgeStripePaymentIntentMutationResponse(Schema):
+    # pledge_id: UUID
+    payment_intent_id: str
+    # state: PledgeState
+    amount: int
     fee: int
     amount_including_fee: int
     client_secret: str | None = None
-
-    class Config:
-        orm_mode = True
 
 
 class PledgeRead(Schema):

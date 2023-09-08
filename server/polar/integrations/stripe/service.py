@@ -7,6 +7,7 @@ from polar.config import settings
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.user import User
+from polar.postgres import AsyncSession, sql
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 
@@ -32,17 +33,23 @@ class StripeService:
             receipt_email=anonymous_email,
         )
 
-    def create_user_intent(
+    async def create_user_intent(
         self,
+        session: AsyncSession,
         amount: int,
         transfer_group: str,
         issue: Issue,
         user: User,
     ) -> stripe_lib.PaymentIntent:
+        customer = await self.get_or_create_user_customer(session, user)
+        if not customer:
+            raise Exception("failed to get/create customer")
+
         return stripe_lib.PaymentIntent.create(
             amount=amount,
             currency="USD",
             transfer_group=transfer_group,
+            customer=customer.id,
             metadata={
                 "issue_id": issue.id,
                 "issue_title": issue.title,
@@ -77,10 +84,13 @@ class StripeService:
             receipt_email=user.email,
         )
 
-    def modify_intent(self, id: str, amount: int) -> stripe_lib.PaymentIntent:
+    def modify_intent(
+        self, id: str, amount: int, email: str
+    ) -> stripe_lib.PaymentIntent:
         return stripe_lib.PaymentIntent.modify(
             id,
             amount=amount,
+            email=email,
         )
 
     def retrieve_intent(self, id: str) -> stripe_lib.PaymentIntent:
@@ -136,6 +146,36 @@ class StripeService:
             destination=destination_stripe_id,
             transfer_group=transfer_group,
         )
+
+    async def get_or_create_user_customer(
+        self,
+        session: AsyncSession,
+        user: User,
+    ) -> stripe_lib.Customer | None:
+        if user.stripe_customer_id:
+            return stripe_lib.Customer.retrieve(user.stripe_customer_id)
+
+        customer = stripe_lib.Customer.create(
+            name=user.username,
+            metadata={
+                "user_id": user.id,
+                "email": user.email,
+            },
+        )
+
+        if not customer:
+            return None
+
+        # Save customer ID
+        stmt = (
+            sql.Update(User)
+            .where(User.id == user.id)
+            .values(stripe_customer_id=customer.id)
+        )
+        await session.execute(stmt)
+        await session.commit()
+
+        return customer
 
 
 stripe = StripeService()

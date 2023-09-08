@@ -183,7 +183,11 @@ async def lookup(
 
         client = get_polar_client()
 
-        async with locker.lock(f"sync_external_{url.owner}_{url.repo}_{url.number}"):
+        async with locker.lock(
+            f"sync_external_{url.owner}_{url.repo}_{url.number}",
+            timeout=10.0,
+            blocking_timeout=10.0,
+        ):
             res = await github_issue_service.sync_external_org_with_repo_and_issue(
                 session,
                 client=client,

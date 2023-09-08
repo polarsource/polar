@@ -6,6 +6,7 @@ from .issue import Issue
 from .issue_dependency import IssueDependency
 from .issue_reference import IssueReference
 from .issue_reward import IssueReward
+from .magic_link import MagicLink
 from .notification import Notification
 from .organization import Organization
 from .personal_access_token import PersonalAccessToken
@@ -25,6 +26,7 @@ __all__ = [
     "IssueDependency",
     "IssueReference",
     "IssueReward",
+    "MagicLink",
     "Model",
     "Notification",
     "OAuthAccount",

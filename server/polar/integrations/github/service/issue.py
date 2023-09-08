@@ -543,7 +543,7 @@ class GithubIssueService(IssueService):
         org_name: str,
         repo_name: str,
         issue_number: int,
-    ) -> Tuple[Organization, Repository, Issue]:
+    ) -> Issue:
         log.info(
             "syncing external issue",
             org_name=org_name,
@@ -562,9 +562,7 @@ class GithubIssueService(IssueService):
                 issue_number=issue_number,
                 external_id=issue.external_id,
             )
-            issue = await self.get_loaded(session, issue.id)
-            assert issue is not None
-            return (issue.repository.organization, issue.repository, issue)
+            return issue
 
         try:
             github_repository_response = await client.rest.repos.async_get(
@@ -606,11 +604,9 @@ class GithubIssueService(IssueService):
             )
             raise ResourceNotFound()
 
-        issue = await self.create_or_update_from_github(
+        return await self.create_or_update_from_github(
             session, organization, repository, github_issue_data
         )
-
-        return (organization, repository, issue)
 
     async def sync_issues(
         self,

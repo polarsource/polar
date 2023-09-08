@@ -1,6 +1,7 @@
 import Status from '@/components/Pledge/Status'
+import { notFound } from 'next/navigation'
 import { api } from 'polarkit'
-import { Platforms } from 'polarkit/api/client'
+import { ApiError, Pledge } from 'polarkit/api/client'
 
 export default async function Page({
   searchParams,
@@ -10,38 +11,33 @@ export default async function Page({
     organization: string
     repo: string
     number: string
-    pledge_id: string
+    payment_intent_id: string
   }
   searchParams: { [key: string]: string | string[] | undefined }
 }) {
-  const pledgeId = searchParams['pledge_id']
-  if (typeof pledgeId !== 'string') {
-    return <></>
+  const paymentIntentId = searchParams['payment_intent_id']
+  if (typeof paymentIntentId !== 'string') {
+    notFound()
   }
 
-  const res = await api.pledges.getPledgeWithResources({
-    platform: Platforms.GITHUB,
-    orgName: params.organization,
-    repoName: params.repo,
-    number: parseInt(params.number),
-    pledgeId: pledgeId,
-    include: 'issue,organization,repository',
-  })
+  let pledge: Pledge
 
-  const { issue, pledge, organization, repository } = res
-
-  if (!pledge || !organization || !repository || !issue) {
-    return <></>
+  try {
+    pledge = await api.pledges.create({
+      requestBody: {
+        payment_intent_id: paymentIntentId,
+      },
+    })
+  } catch (e) {
+    if (e instanceof ApiError) {
+      if (e.status === 404) {
+        notFound()
+      }
+    }
+    throw e
   }
 
   // TODO: Handle different statuses than success... #happy-path-alpha-programming
 
-  return (
-    <Status
-      issue={issue}
-      pledge={pledge}
-      organization={organization}
-      repository={repository}
-    />
-  )
+  return <Status pledge={pledge} />
 }

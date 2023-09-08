@@ -10,15 +10,7 @@ import Footer from '../Organization/Footer'
 import HowItWorks from './HowItWorks'
 import PledgeForm from './PledgeForm'
 
-const Pledge = ({
-  issue,
-  asOrg,
-  gotoURL,
-}: {
-  issue: Issue
-  asOrg?: string
-  gotoURL?: string
-}) => {
+const Pledge = ({ issue, gotoURL }: { issue: Issue; gotoURL?: string }) => {
   const [amount, setAmount] = useState(0)
   const onAmountChange = (amount: number) => {
     setAmount(amount)
@@ -82,7 +74,6 @@ const Pledge = ({
             <div className="px-3 py-5 md:px-6 ">
               <PledgeForm
                 issue={issue}
-                asOrg={asOrg}
                 gotoURL={gotoURL}
                 onAmountChange={onAmountChange}
               />

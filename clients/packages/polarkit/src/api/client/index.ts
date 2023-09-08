@@ -22,6 +22,7 @@ export type { ConfirmIssue } from './models/ConfirmIssue';
 export type { ConfirmIssueSplit } from './models/ConfirmIssueSplit';
 export type { CreatePersonalAccessToken } from './models/CreatePersonalAccessToken';
 export type { CreatePersonalAccessTokenResponse } from './models/CreatePersonalAccessTokenResponse';
+export type { CreatePledgeFromPaymentIntent } from './models/CreatePledgeFromPaymentIntent';
 export type { CurrencyAmount } from './models/CurrencyAmount';
 export type { Entry_Any_ } from './models/Entry_Any_';
 export type { Entry_IssueDashboardRead_ } from './models/Entry_IssueDashboardRead_';

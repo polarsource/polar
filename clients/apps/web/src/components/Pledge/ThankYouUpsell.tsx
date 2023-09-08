@@ -1,4 +1,3 @@
-import { PledgeRead } from '@/../../../packages/polarkit/src/api/client'
 import GithubLoginButton from '@/components/Shared/GithubLoginButton'
 import {
   CheckCircleIcon,
@@ -6,10 +5,11 @@ import {
   CurrencyDollarIcon,
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
+import { Pledge } from 'polarkit/api/client'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
 import screenshot from './dashboard.png'
 
-const ThankYouUpsell = (props: { pledge: PledgeRead }) => {
+const ThankYouUpsell = (props: { pledge: Pledge }) => {
   const { pledge } = props
   return (
     <>
@@ -63,7 +63,7 @@ const ThankYouUpsell = (props: { pledge: PledgeRead }) => {
               </div>
             </li>
 
-            <li className="mt-3 mb-2 flex flex-row items-center space-x-2">
+            <li className="mb-2 mt-3 flex flex-row items-center space-x-2">
               <ClockIcon height={24} width={24} className="text-blue-500" />
               <div>
                 <strong className="text-sm font-medium">Get unblocked</strong>

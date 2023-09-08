@@ -7,7 +7,11 @@ import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
-import { ApiError, Issue, PledgeMutationResponse } from 'polarkit/api/client'
+import {
+  ApiError,
+  Issue,
+  PledgeStripePaymentIntentMutationResponse,
+} from 'polarkit/api/client'
 import { MoneyInput, PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
@@ -23,7 +27,6 @@ type PledgeSync = {
 }
 
 const generateRedirectURL = (
-  pledge: PledgeMutationResponse,
   gotoURL?: string,
   paymentIntent?: PaymentIntent,
 ) => {
@@ -33,10 +36,6 @@ const generateRedirectURL = (
 
   if (gotoURL) {
     redirectURL.searchParams.append('goto_url', gotoURL)
-  }
-
-  if (pledge) {
-    redirectURL.searchParams.append('pledge_id', pledge.id)
   }
 
   // Only in case we pass our redirect to Stripe which in turn will add it
@@ -61,16 +60,15 @@ const generateRedirectURL = (
 
 const PledgeForm = ({
   issue,
-  asOrg,
   gotoURL,
   onAmountChange: onAmountChangeProp,
 }: {
   issue: Issue
-  asOrg?: string
   gotoURL?: string
   onAmountChange?: (amount: number) => void
 }) => {
-  const [pledge, setPledge] = useState<PledgeMutationResponse | null>(null)
+  const [polarPaymentIntent, setPolarPaymentIntent] =
+    useState<PledgeStripePaymentIntentMutationResponse | null>(null)
   const [amount, setAmount] = useState<number>(
     issue.repository.organization.pledge_minimum_amount,
   )
@@ -107,46 +105,26 @@ const PledgeForm = ({
 
   const { resolvedTheme } = useTheme()
 
-  const getOrganizationForPledge = (): string | undefined => {
-    if (!asOrg) return undefined
-
-    // Filter out personal organizations - use user instead
-    if (currentUser && currentUser.id === asOrg) {
-      return undefined
-    }
-    return asOrg
-  }
-
-  const createPledge = async (pledgeSync: PledgeSync) => {
-    return await api.pledges.createPledge({
-      platform: issue.repository.organization.platform,
-      orgName: issue.repository.organization.name,
-      repoName: issue.repository.name,
-      number: issue.number,
+  const createPaymentIntent = async (pledgeSync: PledgeSync) => {
+    return await api.pledges.createPaymentIntent({
       requestBody: {
         issue_id: issue.id,
         amount: pledgeSync.amount,
         email: pledgeSync.email,
-        pledge_as_org: getOrganizationForPledge(),
       },
     })
   }
 
-  const updatePledge = async (pledgeSync: PledgeSync) => {
-    if (!pledge) {
-      throw new Error('no pledge to update')
+  const updatePaymentIntent = async (pledgeSync: PledgeSync) => {
+    if (!polarPaymentIntent) {
+      throw new Error('no payment intent to update')
     }
 
-    return await api.pledges.updatePledge({
-      platform: issue.repository.organization.platform,
-      orgName: issue.repository.organization.name,
-      repoName: issue.repository.name,
-      number: issue.number,
-      pledgeId: pledge.id,
+    return await api.pledges.updatePaymentIntent({
+      id: polarPaymentIntent.payment_intent_id,
       requestBody: {
         amount: pledgeSync.amount,
         email: pledgeSync.email,
-        pledge_as_org: getOrganizationForPledge(),
       },
     })
   }
@@ -162,22 +140,7 @@ const PledgeForm = ({
       return false
     }
 
-    // Sync if pledge is missing
-    if (!pledge) {
-      return true
-    }
-
-    // Sync if amount has chagned
-    if (pledge && pledge.amount !== pledgeSync.amount) {
-      return true
-    }
-
-    // Sync if email has changed
-    if (pledge && pledge.email !== pledgeSync.email) {
-      return true
-    }
-
-    return false
+    return true
   }
 
   const synchronizePledge = async (pledgeSync: PledgeSync) => {
@@ -188,17 +151,19 @@ const PledgeForm = ({
     setSyncing(true)
     setErrorMessage('')
 
-    let updatedPledge: PledgeMutationResponse | undefined
+    let updatedPaymentIntent:
+      | PledgeStripePaymentIntentMutationResponse
+      | undefined
 
     try {
-      if (!pledge) {
-        updatedPledge = await createPledge(pledgeSync)
+      if (!polarPaymentIntent) {
+        updatedPaymentIntent = await createPaymentIntent(pledgeSync)
       } else {
-        updatedPledge = await updatePledge(pledgeSync)
+        updatedPaymentIntent = await updatePaymentIntent(pledgeSync)
       }
 
-      if (updatedPledge) {
-        setPledge(updatedPledge)
+      if (updatedPaymentIntent) {
+        setPolarPaymentIntent(updatedPaymentIntent)
       }
     } catch (e) {
       if (e instanceof ApiError) {
@@ -280,16 +245,15 @@ const PledgeForm = ({
       await reloadUser()
     }
 
-    if (!pledge) {
+    if (!paymentIntent) {
       throw new Error('got payment success but no pledge')
     }
 
-    const location = generateRedirectURL(pledge, gotoURL, paymentIntent)
+    const location = generateRedirectURL(gotoURL, paymentIntent)
     await router.push(location)
   }
 
-  const showStripeForm = pledge
-
+  const showStripeForm = polarPaymentIntent ? true : false
   const organization = issue.repository.organization
   const repository = issue.repository
 
@@ -350,11 +314,11 @@ const PledgeForm = ({
           </div>
         </div>
 
-        {showStripeForm && (
+        {showStripeForm && polarPaymentIntent && (
           <Elements
             stripe={stripePromise}
             options={{
-              clientSecret: pledge.client_secret,
+              clientSecret: polarPaymentIntent.client_secret,
               appearance: {
                 rules: {
                   '.Label': {
@@ -392,7 +356,7 @@ const PledgeForm = ({
             }}
           >
             <PaymentForm
-              pledge={pledge}
+              paymentIntent={polarPaymentIntent}
               issue={issue}
               organization={organization}
               repository={repository}
@@ -401,7 +365,7 @@ const PledgeForm = ({
               setErrorMessage={setErrorMessage}
               onSuccess={onStripePaymentSuccess}
               hasDetails={hasValidDetails()}
-              redirectTo={generateRedirectURL(pledge, gotoURL)}
+              redirectTo={generateRedirectURL(gotoURL)}
             />
           </Elements>
         )}

@@ -88,7 +88,7 @@ export default async function Page({
 
   return (
     <>
-      <Pledge issue={issue} asOrg={undefined} gotoURL={undefined} />
+      <Pledge issue={issue} gotoURL={undefined} />
     </>
   )
 }

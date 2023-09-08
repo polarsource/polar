@@ -48,9 +48,7 @@ class GithubPullRequestService(PullRequestService):
     ) -> Sequence[PullRequest]:
         def parse(pr: github.rest.PullRequestSimple) -> MinimalPullRequestCreate:
             return MinimalPullRequestCreate.minimal_pull_request_from_github(
-                pr,
-                organization_id=organization.id,
-                repository_id=repository.id,
+                pr, organization, repository
             )
 
         create_schemas = [parse(pr) for pr in data]
@@ -117,9 +115,7 @@ class GithubPullRequestService(PullRequestService):
             ],
         ) -> FullPullRequestCreate:
             return FullPullRequestCreate.full_pull_request_from_github(
-                pr,
-                organization_id=organization.id,
-                repository_id=repository.id,
+                pr, organization, repository
             )
 
         create_schemas = [parse(pr) for pr in data]

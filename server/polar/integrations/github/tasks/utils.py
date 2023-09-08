@@ -154,9 +154,7 @@ async def upsert_pull_request(
     (org, repo) = org_repo
 
     create_schema = FullPullRequestCreate.full_pull_request_from_github(
-        event.pull_request,
-        organization_id=org.id,
-        repository_id=repo.id,
+        event.pull_request, org, repo
     )
 
     records = await service.github_pull_request.store_many_full(

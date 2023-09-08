@@ -27,6 +27,8 @@ from polar.models.issue_reference import (
     IssueReference,
     ReferenceType,
 )
+from polar.models.organization import Organization as OrganizationModel
+from polar.models.repository import Repository as RepositoryModel
 from polar.organization.schemas import Organization
 from polar.repository.schemas import Repository
 from polar.types import JSONAny, JSONDict
@@ -208,8 +210,8 @@ class IssueAndPullRequestBase(Base):
             github.webhooks.PullRequestClosedPropPullRequest,
             github.webhooks.PullRequestReopenedPropPullRequest,
         ],
-        organization_id: UUID,
-        repository_id: UUID,
+        organization: OrganizationModel,
+        repository: RepositoryModel,
     ) -> Self:
         """
         normalizes both issues and pull requests
@@ -244,8 +246,8 @@ class IssueAndPullRequestBase(Base):
         return cls(
             platform=Platforms.github,
             external_id=data.id,
-            organization_id=organization_id,
-            repository_id=repository_id,
+            organization_id=organization.id,
+            repository_id=repository.id,
             number=data.number,
             title=data.title,
             body=data.body if data.body else "",
@@ -268,6 +270,7 @@ class IssueAndPullRequestBase(Base):
 
 
 class IssueCreate(IssueAndPullRequestBase):
+    external_lookup_key: str | None = None
     has_pledge_badge_label: bool = False
     pledge_badge_currently_embedded: bool = False
     positive_reactions_count: int = 0
@@ -283,14 +286,12 @@ class IssueCreate(IssueAndPullRequestBase):
             github.webhooks.IssuesClosedPropIssue,
             github.webhooks.IssuesReopenedPropIssue,
         ],
-        organization_id: UUID,
-        repository_id: UUID,
+        organization: OrganizationModel,
+        repository: RepositoryModel,
     ) -> Self:
-        ret = super().get_normalized_github_issue(
-            data,
-            organization_id=organization_id,
-            repository_id=repository_id,
-        )
+        ret = super().get_normalized_github_issue(data, organization, repository)
+
+        ret.external_lookup_key = f"{organization.name}/{repository.name}/{data.number}"
 
         ret.has_pledge_badge_label = IssueModel.contains_pledge_badge_label(ret.labels)
 

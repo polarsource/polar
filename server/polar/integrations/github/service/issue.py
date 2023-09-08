@@ -98,11 +98,7 @@ class GithubIssueService(IssueService):
                 github.rest.Issue,
             ],
         ) -> IssueCreate:
-            return IssueCreate.from_github(
-                issue,
-                organization_id=organization.id,
-                repository_id=repository.id,
-            )
+            return IssueCreate.from_github(issue, organization, repository)
 
         def filter(
             issue: Union[
@@ -777,7 +773,7 @@ class GithubIssueService(IssueService):
             )
 
             issue = await self.create(
-                session, IssueCreate.from_github(data, organization.id, repository.id)
+                session, IssueCreate.from_github(data, organization, repository)
             )
         else:
             log.debug(
@@ -787,7 +783,7 @@ class GithubIssueService(IssueService):
             issue = await self.update(
                 session,
                 issue,
-                IssueUpdate.from_github(data, organization.id, repository.id),
+                IssueUpdate.from_github(data, organization, repository),
                 exclude_unset=True,
             )
 

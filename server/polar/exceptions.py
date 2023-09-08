@@ -21,6 +21,10 @@ class PolarError(Exception):
         self.status_code = status_code
 
 
+class PolarTaskError(PolarError):
+    ...
+
+
 class NotPermitted(PolarError):
     def __init__(self, message: str = "Not permitted", status_code: int = 403) -> None:
         super().__init__(message, status_code)

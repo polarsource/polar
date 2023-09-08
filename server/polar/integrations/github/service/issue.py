@@ -551,6 +551,21 @@ class GithubIssueService(IssueService):
             issue_number=issue_number,
         )
 
+        issue = await self.get_by_external_lookup_key(
+            session, Platforms.github, f"{org_name}/{repo_name}/{issue_number}"
+        )
+        if issue is not None:
+            log.debug(
+                "external issue found by lookup key",
+                org_name=org_name,
+                repo_name=repo_name,
+                issue_number=issue_number,
+                external_id=issue.external_id,
+            )
+            issue = await self.get_loaded(session, issue.id)
+            assert issue is not None
+            return (issue.repository.organization, issue.repository, issue)
+
         try:
             github_repository_response = await client.rest.repos.async_get(
                 org_name, repo_name

@@ -5,26 +5,16 @@ import ThankYouUpsell from '@/components/Pledge/ThankYouUpsell'
 import { useAuth } from '@/hooks'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import { useRouter, useSearchParams } from 'next/navigation'
-import {
-  Issue,
-  Organization,
-  PledgeRead,
-  Repository,
-} from 'polarkit/api/client'
+import { Pledge } from 'polarkit/api/client'
 import { PolarTimeAgo } from 'polarkit/components/ui'
 import { GrayCard } from 'polarkit/components/ui/Cards'
 import { useStore } from 'polarkit/store'
 import { useEffect, useRef, useState } from 'react'
 
-export const Status = (props: {
-  issue: Issue
-  repository: Repository
-  organization: Organization
-  pledge: PledgeRead
-}) => {
-  const { issue, pledge, organization, repository } = props
-
+export const Status = (props: { pledge: Pledge }) => {
   const search = useSearchParams()
+
+  const pledge = props.pledge
 
   const { currentUser, reloadUser } = useAuth()
   const didReloadUser = useRef(false)
@@ -42,10 +32,6 @@ export const Status = (props: {
     setCheckedAuth(true)
   }, [currentUser, reloadUser])
 
-  if (!pledge || !organization || !repository || !issue || !hasCheckedAuth) {
-    return <></>
-  }
-
   const gotoUrl = search?.get('goto_url')
 
   const redirectToFeed = () => {
@@ -54,13 +40,7 @@ export const Status = (props: {
     }
 
     const redirectURL = new URL(window.location.origin + gotoUrl)
-    setLatestPledge(
-      organization,
-      repository,
-      issue,
-      pledge,
-      search?.get('redirect_status') || '',
-    )
+    setLatestPledge(pledge, search?.get('redirect_status') || '')
     router.replace(redirectURL.toString())
   }
 
@@ -85,9 +65,9 @@ export const Status = (props: {
 
         <GrayCard className="mt-6">
           <IssueListItem
-            issue={issue}
-            org={organization}
-            repo={repository}
+            issue={pledge.issue}
+            org={pledge.issue.repository.organization}
+            repo={pledge.issue.repository}
             pledges={[pledge]}
             references={[]}
             checkJustPledged={false}

@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { CreatePledgeFromPaymentIntent } from '../models/CreatePledgeFromPaymentIntent';
 import type { ListResource_Pledge_ } from '../models/ListResource_Pledge_';
 import type { Platforms } from '../models/Platforms';
 import type { Pledge } from '../models/Pledge';
@@ -75,6 +76,28 @@ export class PledgesService {
       path: {
         'id': id,
       },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Create
+   * Creates a pledge from a payment intent
+   * @returns Pledge Successful Response
+   * @throws ApiError
+   */
+  public create({
+    requestBody,
+  }: {
+    requestBody: CreatePledgeFromPaymentIntent,
+  }): CancelablePromise<Pledge> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/pledges',
+      body: requestBody,
+      mediaType: 'application/json',
       errors: {
         422: `Validation Error`,
       },

@@ -7,9 +7,8 @@ import {
 } from '@stripe/stripe-js'
 import {
   Issue,
-  IssueRead,
   Organization,
-  PledgeMutationResponse,
+  PledgeStripePaymentIntentMutationResponse,
   Repository,
 } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
@@ -18,7 +17,7 @@ import posthog from 'posthog-js'
 import { useEffect, useState } from 'react'
 
 const PaymentForm = ({
-  pledge,
+  paymentIntent,
   issue,
   organization,
   repository,
@@ -29,8 +28,8 @@ const PaymentForm = ({
   redirectTo,
   hasDetails,
 }: {
-  pledge?: PledgeMutationResponse
-  issue: IssueRead | Issue
+  paymentIntent?: PledgeStripePaymentIntentMutationResponse
+  issue: Issue
   organization: Organization
   repository: Repository
   isSyncing: boolean
@@ -44,10 +43,11 @@ const PaymentForm = ({
   const elements = useElements()
 
   const [isStripeCompleted, setStripeCompleted] = useState(false)
-  const canSubmit = !isSyncing && pledge && isStripeCompleted && hasDetails
-  const amount = pledge?.amount || 0
-  const fee = pledge?.fee || 0
-  const amountIncludingFee = pledge?.amount_including_fee || 0
+  const canSubmit =
+    !isSyncing && paymentIntent && isStripeCompleted && hasDetails
+  const amount = paymentIntent?.amount || 0
+  const fee = paymentIntent?.fee || 0
+  const amountIncludingFee = paymentIntent?.amount_including_fee || 0
 
   useEffect(() => {
     if (isStripeCompleted) {
@@ -123,7 +123,7 @@ const PaymentForm = ({
       return
     }
 
-    if (!pledge) {
+    if (!paymentIntent) {
       return
     }
 
@@ -180,7 +180,7 @@ const PaymentForm = ({
     <div className="mt-3 border-t pt-5">
       <PaymentElement onChange={onStripeFormChange} />
 
-      <div className="mt-6 mb-1 flex w-full text-sm text-gray-500 dark:text-gray-400">
+      <div className="mb-1 mt-6 flex w-full text-sm text-gray-500 dark:text-gray-400">
         <div className="w-full">Funding amount</div>
         <div className="w-full text-right">
           ${getCentsInDollarString(amount, true)}
@@ -205,7 +205,7 @@ const PaymentForm = ({
         </p>
       )}
 
-      <div className="mt-4 mb-6 flex w-full text-sm font-medium">
+      <div className="mb-6 mt-4 flex w-full text-sm font-medium">
         <div className="w-1/2">Total</div>
         <div className="w-1/2 text-right">
           ${getCentsInDollarString(amountIncludingFee, true)}

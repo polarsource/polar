@@ -2,10 +2,9 @@ import { StateCreator } from 'zustand'
 import { api } from '../api'
 import {
   CancelablePromise,
-  Issue,
+  Pledge,
   Repository,
   type Organization,
-  type PledgeRead,
   type UserRead,
 } from '../api/client'
 
@@ -43,24 +42,12 @@ export interface ContextState {
 export interface LastPledgeState {
   latestPledge:
     | {
-        orgId: string
-        orgName: string
-        repoId: string
-        repoName: string
-        issueId: string
-        issueNumber: number
-        pledge: PledgeRead
+        pledge: Pledge
         redirectStatus: string
       }
     | undefined
   latestPledgeShown: boolean
-  setLatestPledge: (
-    org: Organization,
-    repo: Repository,
-    issue: Issue,
-    pledge: PledgeRead,
-    redirectStatus: string,
-  ) => void
+  setLatestPledge: (pledge: Pledge, redirectStatus: string) => void
   setLatestPledgeShown: (shown: boolean) => void
 }
 
@@ -145,21 +132,9 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
       onboardingMaintainerConnectRepositoriesSkip: skip,
     })
   },
-  setLatestPledge: (
-    org: Organization,
-    repo: Repository,
-    issue: Issue,
-    pledge: PledgeRead,
-    redirectStatus: string,
-  ) => {
+  setLatestPledge: (pledge: Pledge, redirectStatus: string) => {
     set({
       latestPledge: {
-        orgId: org.id,
-        orgName: org.name,
-        repoId: repo.id,
-        repoName: repo.name,
-        issueId: issue.id,
-        issueNumber: issue.number,
         pledge: pledge,
         redirectStatus: redirectStatus,
       },

@@ -28,33 +28,42 @@ class PaymentIntentService:
     async def create_payment_intent(
         self,
         user: User | None,
-        pledge: PledgeStripePaymentIntentCreate,
+        intent: PledgeStripePaymentIntentCreate,
         issue: Issue,
+        session: AsyncSession,
     ) -> PledgeStripePaymentIntentMutationResponse:
+        if user:
+            return await self.create_user_payment_intent(
+                issue=issue,
+                intent=intent,
+                user=user,
+                session=session,
+            )
+
         return await self.create_anonymous_payment_intent(
             issue,
-            pledge,
+            intent,
         )
 
     async def create_anonymous_payment_intent(
         self,
         issue: Issue,
-        create: PledgeStripePaymentIntentCreate,
+        intent: PledgeStripePaymentIntentCreate,
     ) -> PledgeStripePaymentIntentMutationResponse:
-        if not create.email:
+        if not intent.email:
             raise NotPermitted("pledge.email is required for anonymous pledges")
 
-        amount = create.amount
-        fee = self.calculate_fee(create.amount)
+        amount = intent.amount
+        fee = self.calculate_fee(intent.amount)
         amount_including_fee = amount + fee
 
         # Create a payment intent with Stripe
         try:
             payment_intent = stripe.create_anonymous_intent(
                 amount=amount_including_fee,
-                transfer_group=str(create.issue_id),
+                transfer_group=str(intent.issue_id),
                 issue=issue,
-                anonymous_email=create.email,
+                anonymous_email=intent.email,
             )
         except stripe_lib_error.InvalidRequestError as e:
             raise StripeError("Invalid Stripe Request") from e
@@ -70,19 +79,19 @@ class PaymentIntentService:
     async def create_user_payment_intent(
         self,
         issue: Issue,
-        create: PledgeStripePaymentIntentCreate,
+        intent: PledgeStripePaymentIntentCreate,
         user: User,
         session: AsyncSession,
     ) -> PledgeStripePaymentIntentMutationResponse:
-        amount = create.amount
-        fee = self.calculate_fee(create.amount)
+        amount = intent.amount
+        fee = self.calculate_fee(intent.amount)
         amount_including_fee = amount + fee
 
         # Create a payment intent with Stripe
         payment_intent = await stripe.create_user_intent(
             session=session,
             amount=amount_including_fee,
-            transfer_group=str(create.issue_id),
+            transfer_group=str(intent.issue_id),
             issue=issue,
             user=user,
         )
@@ -121,7 +130,6 @@ class PaymentIntentService:
         self,
         payment_intent_id: str,
         session: AsyncSession,
-        by_user: User | None = None,
     ) -> Pledge:
         # If we alredy have a pledge created from this payment intent, return the
         # existing peldge and do nothing.
@@ -151,18 +159,25 @@ class PaymentIntentService:
 
         email = intent["receipt_email"]
         amount = intent["amount"]
+        user_id = intent["metadata"].get("user_id", None)
+
+        state = (
+            PledgeState.created
+            if intent["status"] == "succeeded"
+            else PledgeState.initiated
+        )
 
         return await Pledge.create(
             session=session,
+            payment_id=payment_intent_id,
             issue_id=issue.id,
             repository_id=repo.id,
             organization_id=org.id,
             email=email,
             amount=amount,
             fee=0,
-            # TODO:   "status": "succeeded", ??
-            state=PledgeState.initiated,
-            by_user_id=by_user and by_user.id or None,
+            state=state,
+            by_user_id=user_id,
             by_organization_id=None,
         )
 

@@ -26,9 +26,10 @@ class MagicLink(RecordModel):
         TIMESTAMP(timezone=True), nullable=False, default=get_expires_at
     )
 
-    user_id: Mapped[UUID] = mapped_column(
+    user_email: Mapped[str] = mapped_column(String, nullable=False)
+    user_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("users.id", ondelete="cascade"),
-        nullable=False,
+        nullable=True,
     )
-    user: Mapped["User"] = relationship("User")
+    user: Mapped["User | None"] = relationship("User")

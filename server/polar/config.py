@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     AUTH_COOKIE_KEY: str = "polar"
     AUTH_COOKIE_TTL_SECONDS: int = 60 * 60 * 24 * 31  # 31 days
 
+    # Magic link
+    MAGIC_LINK_TTL_SECONDS: int = 60 * 30  # 30 minutes
+
     # Postgres
     POSTGRES_SCHEME: str = "postgresql+asyncpg"
     POSTGRES_USER: str = "polar"

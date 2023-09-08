@@ -14,6 +14,7 @@ import {
   IssueStatus,
   Label,
   Organization,
+  Pledge,
   Repository,
   UserRead,
   type PledgeRead,
@@ -44,7 +45,7 @@ const IssueListItem = (props: {
   issue: IssueDashboardRead | IssuePublicRead | Issue
   references: IssueReferenceRead[]
   dependents?: IssueReadWithRelations[]
-  pledges: PledgeRead[]
+  pledges: Array<PledgeRead | Pledge>
   checkJustPledged?: boolean
   canAddRemovePolarLabel: boolean
   showIssueProgress: boolean
@@ -108,10 +109,10 @@ const IssueListItem = (props: {
   const markdownTitle = generateMarkdownTitle(title)
 
   const [showDisputeModalForPledge, setShowDisputeModalForPledge] = useState<
-    PledgeRead | undefined
+    PledgeRead | Pledge | undefined
   >()
 
-  const onDispute = (pledge: PledgeRead) => {
+  const onDispute = (pledge: PledgeRead | Pledge) => {
     setShowDisputeModalForPledge(pledge)
   }
 
@@ -329,7 +330,7 @@ const IssueListItem = (props: {
 
 export default IssueListItem
 
-const DisputeModal = (props: { pledge: PledgeRead }) => {
+const DisputeModal = (props: { pledge: PledgeRead | Pledge }) => {
   const [reason, setReason] = useState('')
   const [canSubmit, setCanSubmit] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -370,40 +371,82 @@ const DisputeModal = (props: { pledge: PledgeRead }) => {
           Submit a dispute and the money will be on hold until Polar has
           manually reviewed the issue and resolved the dispute.
         </p>
-        <table className="min-w-full divide-y divide-gray-300">
-          <tr>
-            <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
-              Amount
-            </td>
-            <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
-              ${getCentsInDollarString(pledge.amount)}
-            </td>
-          </tr>
-          <tr>
-            <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
-              Pledger
-            </td>
-            <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
-              {pledge.pledger_name}
-            </td>
-          </tr>
-          <tr>
-            <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
-              Pledge ID
-            </td>
-            <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
-              {pledge.id}
-            </td>
-          </tr>
-          <tr>
-            <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
-              Issue ID
-            </td>
-            <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
-              {pledge.issue_id}
-            </td>
-          </tr>
-        </table>
+
+        {/* Pledge */}
+        {'pledger' in pledge && (
+          <table className="min-w-full divide-y divide-gray-300">
+            <tr>
+              <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
+                Amount
+              </td>
+              <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
+                ${getCentsInDollarString(pledge.amount.amount)}
+              </td>
+            </tr>
+            <tr>
+              <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
+                Pledger
+              </td>
+              <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
+                {pledge.pledger?.name}
+              </td>
+            </tr>
+            <tr>
+              <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
+                Pledge ID
+              </td>
+              <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
+                {pledge.id}
+              </td>
+            </tr>
+            <tr>
+              <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
+                Issue ID
+              </td>
+              <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
+                {pledge.issue.id}
+              </td>
+            </tr>
+          </table>
+        )}
+
+        {/* PledgeRead */}
+        {'pledger_name' in pledge && (
+          <table className="min-w-full divide-y divide-gray-300">
+            <tr>
+              <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
+                Amount
+              </td>
+              <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
+                ${getCentsInDollarString(pledge.amount)}
+              </td>
+            </tr>
+            <tr>
+              <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
+                Pledger
+              </td>
+              <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
+                {pledge.pledger_name}
+              </td>
+            </tr>
+            <tr>
+              <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
+                Pledge ID
+              </td>
+              <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
+                {pledge.id}
+              </td>
+            </tr>
+            <tr>
+              <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
+                Issue ID
+              </td>
+              <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
+                {pledge.issue_id}
+              </td>
+            </tr>
+          </table>
+        )}
 
         {!didSubmit && (
           <>

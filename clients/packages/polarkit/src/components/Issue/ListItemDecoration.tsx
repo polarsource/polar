@@ -1,6 +1,7 @@
 import {
   Funding,
   IssueReferenceRead,
+  Pledge,
   PledgeRead,
   PledgeState,
   UserRead,
@@ -41,10 +42,10 @@ const IssueListItemDecoration = ({
   orgName: string
   repoName: string
   issueNumber: number
-  pledges: PledgeRead[]
+  pledges: Array<PledgeRead | Pledge>
   references: IssueReferenceRead[]
   showDisputeAction: boolean
-  onDispute: (pledge: PledgeRead) => void
+  onDispute: (pledge: PledgeRead | Pledge) => void
   onConfirmPledges: (
     orgName: string,
     repoName: string,
@@ -60,7 +61,7 @@ const IssueListItemDecoration = ({
   const ONE_DAY = 1000 * 60 * 60 * 24
   const now = new Date()
 
-  const remainingDays = (pledge: PledgeRead) => {
+  const remainingDays = (pledge: PledgeRead | Pledge) => {
     if (!pledge.scheduled_payout_at) {
       return -1
     }
@@ -75,6 +76,7 @@ const IssueListItemDecoration = ({
     pledges
       ?.filter(
         (p) =>
+          'authed_user_can_admin_sender' in p &&
           p.authed_user_can_admin_sender &&
           p.scheduled_payout_at &&
           p.state === PledgeState.PENDING &&
@@ -97,6 +99,7 @@ const IssueListItemDecoration = ({
     pledges &&
     pledges.find(
       (p) =>
+        'authed_user_can_admin_sender' in p &&
         p.authed_user_can_admin_sender &&
         p.scheduled_payout_at &&
         p.state === PledgeState.PENDING &&
@@ -111,11 +114,18 @@ const IssueListItemDecoration = ({
   const showPledgeStatusBox = pledgeStatusShowCount > 0
   const disputeBoxShowAmount = pledgeStatusShowCount > 1
 
-  const onClickDisputeButton = (pledge: PledgeRead) => {
+  const onClickDisputeButton = (pledge: PledgeRead | Pledge) => {
     if (!canDisputeAny || !onDispute) {
       return
     }
     onDispute(pledge)
+  }
+
+  const pledgeAmount = (pledge: Pledge | PledgeRead): number => {
+    if (typeof pledge.amount === 'number') {
+      return pledge.amount
+    }
+    return pledge.amount.amount
   }
 
   const haveReferences = references && references.length > 0
@@ -163,7 +173,7 @@ const IssueListItemDecoration = ({
         </div>
       </div>
       {showDisputeAction && showPledgeStatusBox && (
-        <div className="border-t border-gray-100 bg-gray-50 px-4 pt-1 pb-1.5 dark:border-gray-700 dark:bg-gray-900">
+        <div className="border-t border-gray-100 bg-gray-50 px-4 pb-1.5 pt-1 dark:border-gray-700 dark:bg-gray-900">
           {disputablePledges.map((p) => {
             return (
               <div key={p.id}>
@@ -186,7 +196,7 @@ const IssueListItemDecoration = ({
                   )}
                   {p.remaining_days == 0 && <>today</>}{' '}
                   {disputeBoxShowAmount && (
-                    <>(${getCentsInDollarString(p.amount)})</>
+                    <>(${getCentsInDollarString(pledgeAmount(p))})</>
                   )}
                 </span>
               </div>
@@ -196,23 +206,25 @@ const IssueListItemDecoration = ({
           {disputedPledges.map((p) => {
             return (
               <div key={p.id}>
-                {p.authed_user_can_admin_sender && (
-                  <span className="text-sm text-gray-500">
-                    You've disputed your pledge{' '}
-                    {disputeBoxShowAmount && (
-                      <>(${getCentsInDollarString(p.amount)})</>
-                    )}
-                  </span>
-                )}
+                {'authed_user_can_admin_sender' in p &&
+                  p.authed_user_can_admin_sender && (
+                    <span className="text-sm text-gray-500">
+                      You've disputed your pledge{' '}
+                      {disputeBoxShowAmount && (
+                        <>(${getCentsInDollarString(p.amount)})</>
+                      )}
+                    </span>
+                  )}
 
-                {p.authed_user_can_admin_received && (
-                  <span className="text-sm text-gray-500">
-                    {p.pledger_name} disputed their pledge{' '}
-                    {disputeBoxShowAmount && (
-                      <>(${getCentsInDollarString(p.amount)})</>
-                    )}
-                  </span>
-                )}
+                {'authed_user_can_admin_received' in p &&
+                  p.authed_user_can_admin_received && (
+                    <span className="text-sm text-gray-500">
+                      {p.pledger_name} disputed their pledge{' '}
+                      {disputeBoxShowAmount && (
+                        <>(${getCentsInDollarString(p.amount)})</>
+                      )}
+                    </span>
+                  )}
               </div>
             )
           })}
@@ -223,7 +235,7 @@ const IssueListItemDecoration = ({
                 <span className="text-sm text-gray-500">
                   Payout pending{' '}
                   {disputeBoxShowAmount && (
-                    <>(${getCentsInDollarString(p.amount)})</>
+                    <>(${getCentsInDollarString(pledgeAmount(p))})</>
                   )}
                 </span>
               </div>

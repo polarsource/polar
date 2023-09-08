@@ -1,4 +1,10 @@
-import { Funding, PledgeRead, PledgeState, UserRead } from 'polarkit/api/client'
+import {
+  Funding,
+  Pledge,
+  PledgeRead,
+  PledgeState,
+  UserRead,
+} from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useMemo } from 'react'
 import IssueConfirmButton from './IssueConfirmButton'
@@ -7,7 +13,7 @@ interface Props {
   orgName: string
   repoName: string
   issueNumber: number
-  pledges: PledgeRead[]
+  pledges: Array<PledgeRead | Pledge>
   onConfirmPledges: (
     orgName: string,
     repoName: string,
@@ -30,10 +36,14 @@ const IssuePledge = (props: Props) => {
     showSelfPledgesFor,
   } = props
 
-  const totalPledgeAmount = pledges.reduce(
-    (accumulator, pledge) => accumulator + pledge.amount,
-    0,
-  )
+  const addAmounts = (accumulator: number, pledge: Pledge | PledgeRead) => {
+    if (typeof pledge.amount === 'number') {
+      return accumulator + pledge.amount
+    }
+    return accumulator + pledge.amount.amount
+  }
+
+  const totalPledgeAmount = pledges.reduce(addAmounts, 0)
 
   const confirmPledges = async () => {
     await props.onConfirmPledges(orgName, repoName, issueNumber)
@@ -43,6 +53,7 @@ const IssuePledge = (props: Props) => {
     return (
       pledges.some(
         (p) =>
+          'authed_user_can_admin_received' in p &&
           p.state === PledgeState.CONFIRMATION_PENDING &&
           p.authed_user_can_admin_received,
       ) && !confirmPledgeIsLoading
@@ -54,7 +65,9 @@ const IssuePledge = (props: Props) => {
       !confirmable &&
       pledges.some(
         (p) =>
-          p.state === PledgeState.PENDING && p.authed_user_can_admin_received,
+          'authed_user_can_admin_received' in p &&
+          p.state === PledgeState.PENDING &&
+          p.authed_user_can_admin_received,
       ) &&
       !confirmPledgeIsLoading
     )
@@ -68,9 +81,12 @@ const IssuePledge = (props: Props) => {
 
   const selfContribution = showSelfPledgesFor
     ? pledges
-        .filter((p) => p.pledger_user_id === showSelfPledgesFor.id)
-        .map((p) => p.amount)
-        .reduce((a, b) => a + b, 0)
+        .filter(
+          (p) =>
+            'pledger_user_id' in p &&
+            p.pledger_user_id === showSelfPledgesFor.id,
+        )
+        .reduce(addAmounts, 0)
     : 0
 
   return (

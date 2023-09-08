@@ -27,6 +27,7 @@ export type IssueRead = {
   issue_closed_at?: string;
   issue_modified_at?: string;
   issue_created_at: string;
+  external_lookup_key?: string;
   has_pledge_badge_label?: boolean;
   pledge_badge_currently_embedded?: boolean;
   positive_reactions_count?: number;

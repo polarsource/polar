@@ -75,6 +75,13 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             number=number,
         )
 
+    async def get_by_external_lookup_key(
+        self, session: AsyncSession, platform: Platforms, external_lookup_key: str
+    ) -> Issue | None:
+        return await self.get_by(
+            session, platform=platform, external_lookup_key=external_lookup_key
+        )
+
     async def list_by_repository(
         self, session: AsyncSession, repository_id: UUID
     ) -> Sequence[Issue]:

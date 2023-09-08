@@ -2,10 +2,10 @@
 /* tslint:disable */
 /* eslint-disable */
 
-export type PledgeCreate = {
+export type PledgeStripePaymentIntentCreate = {
   issue_id: string;
-  email?: string;
+  email: string;
   amount: number;
-  pledge_as_org?: string;
+  use_payment_method_id?: string;
 };
 

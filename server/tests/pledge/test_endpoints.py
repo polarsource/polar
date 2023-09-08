@@ -11,7 +11,6 @@ from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
-from polar.pledge.endpoints import create_pledge
 from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession
 from tests.fixtures.random_objects import create_issue
@@ -65,7 +64,7 @@ async def test_get_pledge_not_admin(
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 @pytest.mark.asyncio
@@ -82,7 +81,7 @@ async def test_get_pledge_not_member(
             cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
         )
 
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 @pytest.mark.asyncio

@@ -85,12 +85,12 @@ class StripeService:
         )
 
     def modify_intent(
-        self, id: str, amount: int, email: str
+        self, id: str, amount: int, receipt_email: str
     ) -> stripe_lib.PaymentIntent:
         return stripe_lib.PaymentIntent.modify(
             id,
             amount=amount,
-            email=email,
+            receipt_email=receipt_email,
         )
 
     def retrieve_intent(self, id: str) -> stripe_lib.PaymentIntent:

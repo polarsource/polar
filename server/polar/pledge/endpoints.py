@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from polar import locker
 from polar.auth.dependencies import Auth
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
@@ -22,14 +23,15 @@ from polar.user_organization.service import (
 
 from .payment_intent_service import payment_intent_service
 from .schemas import (
-    Pledge as PledgeSchema,
-)
-from .schemas import (
+    CreatePledgeFromPaymentIntent,
     PledgeRead,
     PledgeResources,
     PledgeStripePaymentIntentCreate,
     PledgeStripePaymentIntentMutationResponse,
     PledgeStripePaymentIntentUpdate,
+)
+from .schemas import (
+    Pledge as PledgeSchema,
 )
 from .service import pledge as pledge_service
 
@@ -177,6 +179,56 @@ async def get(
 
 
 @router.post(
+    "/pledges",
+    response_model=PledgeSchema,
+    tags=[Tags.INTERNAL],
+    description="Creates a pledge from a payment intent",
+    status_code=200,
+)
+async def create(
+    # id: UUID,
+    create: CreatePledgeFromPaymentIntent,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.optional_user),
+    authz: Authz = Depends(Authz.authz),
+    locker: locker.Locker = Depends(locker.get_locker),
+) -> PledgeSchema:
+    # issue = await issue_service.get(session, create.issue_id)
+    # if not issue:
+    #     raise ResourceNotFound()
+
+    # if not await authz.can(auth.subject, AccessType.read, issue):
+    #     raise Unauthorized()
+
+    # org = await organization_service.get(session, issue.organization_id)
+    # if not org:
+    #     raise ResourceNotFound()
+
+    # repo = await repository_service.get(session, issue.repository_id)
+    # if not repo:
+    #     raise ResourceNotFound()
+
+    async with locker.lock(
+        f"create_pledge_from_intent:{create.payment_intent_id}",
+        timeout=60 * 60,
+        blocking_timeout=5,
+    ):
+        pledge = await payment_intent_service.create_pledge(
+            session=session,
+            payment_intent_id=create.payment_intent_id,
+        )
+
+    ret = await pledge_service.get_with_loaded(session, pledge.id)
+    if not ret:
+        raise ResourceNotFound()
+
+    # if not await authz.can(auth.subject, AccessType.read, ret):
+    #     raise Unauthorized()
+
+    return PledgeSchema.from_db(ret)
+
+
+@router.post(
     "/pledges/payment_intent",
     response_model=PledgeStripePaymentIntentMutationResponse,
     status_code=200,
@@ -222,30 +274,15 @@ async def create_payment_intent(
     response_model=PledgeStripePaymentIntentMutationResponse,
 )
 async def update_payment_intent(
-    # platform: Platforms,
-    # org_name: str,
-    # repo_name: str,
-    # number: int,
     id: str,
     updates: PledgeStripePaymentIntentUpdate,
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
 ) -> PledgeStripePaymentIntentMutationResponse:
-    # org, repo, issue = await organization_service.get_with_repo_and_issue(
-    #     session=session,
-    #     platform=platform,
-    #     org_name=org_name,
-    #     repo_name=repo_name,
-    #     issue=number,
-    # )
-
-    # AUTH?!?!??!?
-
     return await payment_intent_service.update_payment_intent(
         session=session,
         payment_intent_id=id,
         user=auth.user,
-        # pledge_id=pledge_id,
         updates=updates,
     )
 

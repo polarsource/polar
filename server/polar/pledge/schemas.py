@@ -153,6 +153,10 @@ class Pledge(Schema):
 # Internal APIs below
 
 
+class CreatePledgeFromPaymentIntent(Schema):
+    payment_intent_id: str
+
+
 class PledgeTransactionType(str, Enum):
     pledge = "pledge"
     transfer = "transfer"

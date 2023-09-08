@@ -130,6 +130,7 @@ class Issue(IssueFields, RecordModel):
     __tablename__ = "issues"
     __table_args__ = (
         UniqueConstraint("external_id"),
+        UniqueConstraint("platform", "external_lookup_key"),
         UniqueConstraint("organization_id", "repository_id", "number"),
         # Search index
         Index("idx_issues_title_tsv", "title_tsv", postgresql_using="gin"),
@@ -158,6 +159,8 @@ class Issue(IssueFields, RecordModel):
             "total_engagement_count",
         ),
     )
+
+    external_lookup_key: Mapped[str] = mapped_column(String, nullable=True, index=True)
 
     pledge_badge_embedded_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True

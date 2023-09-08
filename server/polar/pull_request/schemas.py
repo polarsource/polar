@@ -8,6 +8,7 @@ import structlog
 
 from polar.integrations.github import client as github
 from polar.issue.schemas import IssueAndPullRequestBase
+from polar.models import Organization, Repository
 from polar.types import JSONAny
 
 log = structlog.get_logger()
@@ -79,14 +80,10 @@ class MinimalPullRequestCreate(IssueAndPullRequestBase):
             github.webhooks.PullRequestClosedPropPullRequest,
             github.webhooks.PullRequestReopenedPropPullRequest,
         ],
-        organization_id: UUID,
-        repository_id: UUID,
+        organization: Organization,
+        repository: Repository,
     ) -> Self:
-        create = cls.get_normalized_github_issue(
-            pr,
-            organization_id,
-            repository_id,
-        )
+        create = cls.get_normalized_github_issue(pr, organization, repository)
 
         create.requested_reviewers = github.jsonify(pr.requested_reviewers)
         create.requested_teams = github.jsonify(pr.requested_teams)
@@ -134,12 +131,10 @@ class FullPullRequestCreate(MinimalPullRequestCreate):
             github.webhooks.PullRequestClosedPropPullRequest,
             github.webhooks.PullRequestReopenedPropPullRequest,
         ],
-        organization_id: UUID,
-        repository_id: UUID,
+        organization: Organization,
+        repository: Repository,
     ) -> Self:
-        create = cls.minimal_pull_request_from_github(
-            pr, organization_id, repository_id
-        )
+        create = cls.minimal_pull_request_from_github(pr, organization, repository)
 
         create.merged_by = github.jsonify(pr.merged_by)
 

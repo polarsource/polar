@@ -63,16 +63,14 @@ class GitHubIssueDependenciesService:
             )
             async with locker.lock(lock_key, timeout=10.0, blocking_timeout=10.0):
                 try:
-                    (
-                        _,
-                        _,
-                        dependency_issue,
-                    ) = await github_issue.sync_external_org_with_repo_and_issue(
-                        session,
-                        client=client,
-                        org_name=dependency.owner,
-                        repo_name=dependency.repo,
-                        issue_number=dependency.number,
+                    dependency_issue = (
+                        await github_issue.sync_external_org_with_repo_and_issue(
+                            session,
+                            client=client,
+                            org_name=dependency.owner,
+                            repo_name=dependency.repo,
+                            issue_number=dependency.number,
+                        )
                     )
                 except ResourceNotFound:
                     continue

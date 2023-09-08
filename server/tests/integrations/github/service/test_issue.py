@@ -11,11 +11,7 @@ async def test_sync_external_org_with_repo_and_issue(
 ) -> None:
     client = get_client("")
 
-    (
-        org,
-        repo,
-        issue,
-    ) = await github_issue.sync_external_org_with_repo_and_issue(
+    issue = await github_issue.sync_external_org_with_repo_and_issue(
         session=session,
         client=client,
         org_name="polarsource",
@@ -23,20 +19,11 @@ async def test_sync_external_org_with_repo_and_issue(
         issue_number=8,
     )
 
-    assert org is not None
-    assert repo is not None
     assert issue is not None
-
-    assert org.name == "polarsource"
-    assert repo.name == "open-testing"
 
     # fetch again
 
-    (
-        org,
-        repo,
-        issue,
-    ) = await github_issue.sync_external_org_with_repo_and_issue(
+    issue = await github_issue.sync_external_org_with_repo_and_issue(
         session=session,
         client=client,
         org_name="POLARSOURCE",
@@ -44,9 +31,4 @@ async def test_sync_external_org_with_repo_and_issue(
         issue_number=8,
     )
 
-    assert org is not None
-    assert repo is not None
     assert issue is not None
-
-    assert org.name == "polarsource"
-    assert repo.name == "open-testing"

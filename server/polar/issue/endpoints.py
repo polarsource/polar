@@ -188,14 +188,15 @@ async def lookup(
             timeout=10.0,
             blocking_timeout=10.0,
         ):
-            res = await github_issue_service.sync_external_org_with_repo_and_issue(
-                session,
-                client=client,
-                org_name=url.owner,
-                repo_name=url.repo,
-                issue_number=url.number,
+            tmp_issue = (
+                await github_issue_service.sync_external_org_with_repo_and_issue(
+                    session,
+                    client=client,
+                    org_name=url.owner,
+                    repo_name=url.repo,
+                    issue_number=url.number,
+                )
             )
-            _, _, tmp_issue = res
 
         # get for return
         issue = await issue_service.get_loaded(session, tmp_issue.id)

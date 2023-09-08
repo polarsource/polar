@@ -19,7 +19,7 @@ class Locker:
     async def lock(
         self,
         name: str,
-        timeout: float | None = None,
+        timeout: float | None = 1.0,
         sleep: float = 0.1,
         blocking_timeout: float | None = None,
         thread_local: bool = True,

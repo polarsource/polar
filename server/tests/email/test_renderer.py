@@ -12,4 +12,5 @@ def test_render_from_string() -> None:
     )
 
     assert rendered_subject == "Hello, John!"
-    assert rendered_body == "<p>Hi, John! Welcome to Polar!</p>"
+    assert rendered_body.startswith("<!DOCTYPE html")
+    assert "<p>Hi, John! Welcome to Polar!</p>" in rendered_body

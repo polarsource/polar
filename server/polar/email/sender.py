@@ -37,7 +37,9 @@ class SendgridEmailSender(EmailSender):
         content = Content("text/html", content=html_content)
         mail = Mail(from_email, to_email, subject, content)
         mail.reply_to = ReplyTo("support@polar.sh", "Polar Support")
-        response = self.sg.client.mail.send.post(request_body=mail.get())  # type: ignore
+        response = self.sg.client.mail.send.post(
+            request_body=mail.get()
+        )  # type: ignore
         log.info(
             "sendgrid.send",
             to_email_addr=to_email_addr,

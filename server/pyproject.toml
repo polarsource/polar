@@ -92,7 +92,7 @@ disallow_untyped_defs = true
 skip_cache_mtime_checks = true
 
 [[tool.mypy.overrides]]
-module = "polar.notifications.sender"
+module = "polar.email.sender"
 # false positives with sendgrid
 warn_unused_ignores = false
 

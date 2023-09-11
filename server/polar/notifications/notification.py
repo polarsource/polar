@@ -1,12 +1,10 @@
 from abc import abstractmethod
-from typing import Tuple
 from uuid import UUID
 
-from jinja2 import StrictUndefined
-from jinja2.nativetypes import NativeEnvironment
 from pydantic import BaseModel
 
 from polar.models.user import User
+from polar.email.renderer import get_email_renderer
 
 
 class NotificationBase(BaseModel):
@@ -21,16 +19,12 @@ class NotificationBase(BaseModel):
     def render(
         self,
         user: User,
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         m: dict[str, str] = vars(self)
         m["username"] = user.username
 
-        env = NativeEnvironment(undefined=StrictUndefined)
-
-        subject = env.from_string(self.subject()).render(m).strip()
-        body = env.from_string(self.body()).render(m).strip()
-
-        return (subject, body)
+        email_renderer = get_email_renderer()
+        return email_renderer.render_from_string(self.subject(), self.body(), m)
 
 
 class MaintainerPledgeCreatedNotification(NotificationBase):

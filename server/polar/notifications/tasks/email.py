@@ -12,7 +12,7 @@ from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 from polar.user.service import user as user_service
-from polar.notifications.sender import get_email_sender
+from polar.email.sender import get_email_sender
 from polar.notifications.service import notifications
 from polar.postgres import AsyncSession
 

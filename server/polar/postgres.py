@@ -1,4 +1,5 @@
 from typing import AsyncGenerator
+from fastapi import Request
 
 from polar.config import settings
 from polar.kit.db.postgres import AsyncEngine, AsyncSession, create_sessionmaker, sql
@@ -16,15 +17,15 @@ AsyncEngineLocal = create_engine()
 AsyncSessionLocal = create_sessionmaker(engine=AsyncEngineLocal)
 
 
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncSessionLocal() as db:
+async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSession(request.state.db_engine) as session:
         try:
-            yield db
+            yield session
         except Exception as e:
-            await db.rollback()
+            await session.rollback()
             raise e
         finally:
-            await db.close()
+            await session.close()
 
 
 __all__ = [

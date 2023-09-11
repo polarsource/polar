@@ -17,11 +17,11 @@ async def test_get(
     user_organization: UserOrganization,  # makes User a member of Organization
     issue: Issue,
     auth_jwt: str,
+    client: AsyncClient,
 ) -> None:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            "/api/v1/notifications",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        "/api/v1/notifications",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200

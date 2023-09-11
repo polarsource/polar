@@ -5,7 +5,6 @@ import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
-from polar.app import app
 from polar.config import settings
 from polar.enums import AccountType
 from polar.issue.schemas import ConfirmIssueSplit
@@ -29,6 +28,7 @@ async def test_search(
     user: User,
     mocker: MockerFixture,
     auth_jwt: str,
+    client: AsyncClient,
 ) -> None:
     mocker.patch("polar.worker._enqueue_job")
 
@@ -69,11 +69,10 @@ async def test_search(
     rewards = await reward_service.list(session, pledge_org_id=organization.id)
     assert len(rewards) == 2
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/rewards/search?pledges_to_organization={organization.id}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/rewards/search?pledges_to_organization={organization.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     print(response.text)
 

@@ -36,3 +36,19 @@ async def list(
         items=[PaymentMethod.from_stripe(pm) for pm in pms],
         pagination=Pagination(total_count=len(pms)),
     )
+
+
+@router.post(
+    "/payment_methods/{id}/detach",
+    response_model=PaymentMethod,
+    tags=[Tags.INTERNAL],
+    status_code=200,
+)
+async def detach(
+    id: str,
+    auth: Auth = Depends(Auth.current_user),
+) -> PaymentMethod:
+    if not auth.user:
+        raise Unauthorized()
+    pm = stripe_service.detach_payment_method(id)
+    return PaymentMethod.from_stripe(pm)

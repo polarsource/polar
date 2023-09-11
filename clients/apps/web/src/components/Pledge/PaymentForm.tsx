@@ -199,8 +199,19 @@ const PaymentForm = ({
       .finally(() => setSyncing(false))
   }
 
+  const [
+    stripeElementsCurrentPaymentType,
+    setStripeElementsCurrentPaymentType,
+  ] = useState('')
+
   const onStripeFormChange = (event: StripePaymentElementChangeEvent) => {
     setStripeCompleted(event.complete)
+    setStripeElementsCurrentPaymentType(event.value.type)
+
+    // Don't offer saving payment methods if the type is not card
+    if (event.value.type !== 'card') {
+      onSavePaymentMethodChanged(false)
+    }
   }
 
   return (
@@ -209,25 +220,27 @@ const PaymentForm = ({
 
       <Subtotal paymentIntent={paymentIntent} />
 
-      {!paymentMethod && canSavePaymentMethod && (
-        <div className="items-top mb-2 mt-4 flex space-x-2">
-          <Checkbox
-            id="save_payment_method"
-            onCheckedChange={(e) => onSavePaymentMethodChanged(Boolean(e))}
-          />
-          <div className="grid gap-1.5 leading-none">
-            <label
-              htmlFor="save_payment_method"
-              className="text-sm font-medium text-gray-500 dark:text-gray-400"
-            >
-              Save payment method on file
-            </label>
-            <p className="text-muted-foreground text-sm">
-              Fund future issues easily. Stored securely with Stripe.
-            </p>
+      {!paymentMethod &&
+        canSavePaymentMethod &&
+        stripeElementsCurrentPaymentType === 'card' && (
+          <div className="items-top mb-2 mt-4 flex space-x-2">
+            <Checkbox
+              id="save_payment_method"
+              onCheckedChange={(e) => onSavePaymentMethodChanged(Boolean(e))}
+            />
+            <div className="grid gap-1.5 leading-none">
+              <label
+                htmlFor="save_payment_method"
+                className="text-sm font-medium text-gray-500 dark:text-gray-400"
+              >
+                Save payment method on file
+              </label>
+              <p className="text-muted-foreground text-sm">
+                Fund future issues easily. Stored securely with Stripe.
+              </p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       <div className="mt-6">
         <PrimaryButton

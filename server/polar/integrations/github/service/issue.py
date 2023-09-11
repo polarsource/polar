@@ -759,6 +759,10 @@ class GithubIssueService(IssueService):
         await session.commit()
         res = [i for sub in results for i in sub]
 
+        # No recommendations, nothing to cache!
+        if len(res) == 0:
+            return []
+
         # set cache
         async with redis.pipeline() as pipe:
             pipe.delete(cache_key)
@@ -782,7 +786,6 @@ class GithubIssueService(IssueService):
                 "issue not found by external_id, creating it",
                 external_id=data.id,
             )
-
             issue = await self.create(
                 session, IssueCreate.from_github(data, organization, repository)
             )

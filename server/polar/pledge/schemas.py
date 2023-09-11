@@ -166,8 +166,7 @@ class PledgeStripePaymentIntentCreate(Schema):
     issue_id: UUID
     email: str
     amount: int
-    use_payment_method_id: str | None
-    # setup_future_usage: Literal["on_session", None] ????
+    setup_future_usage: Literal["on_session"] | None
 
 
 class PledgeStripePaymentIntentUpdate(Schema):

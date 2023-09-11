@@ -105,6 +105,8 @@ const PledgeForm = ({
 
   const { resolvedTheme } = useTheme()
 
+  const lastPledgeSync = useRef<PledgeSync | undefined>()
+
   const createPaymentIntent = async (pledgeSync: PledgeSync) => {
     return await api.pledges.createPaymentIntent({
       requestBody: {
@@ -140,7 +142,18 @@ const PledgeForm = ({
       return false
     }
 
-    return true
+    if (lastPledgeSync.current === undefined) {
+      return true
+    }
+
+    if (
+      lastPledgeSync.current.amount !== pledgeSync.amount ||
+      lastPledgeSync.current.email !== pledgeSync.email
+    ) {
+      return true
+    }
+
+    return false
   }
 
   const synchronizePledge = async (pledgeSync: PledgeSync) => {
@@ -165,6 +178,8 @@ const PledgeForm = ({
       if (updatedPaymentIntent) {
         setPolarPaymentIntent(updatedPaymentIntent)
       }
+
+      lastPledgeSync.current = pledgeSync
     } catch (e) {
       if (e instanceof ApiError) {
         if (

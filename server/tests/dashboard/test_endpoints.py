@@ -1,7 +1,6 @@
 import pytest
 from httpx import AsyncClient
 
-from polar.app import app
 from polar.config import settings
 from polar.models.issue import Issue
 from polar.models.organization import Organization
@@ -21,12 +20,12 @@ async def test_get(
     user_organization: UserOrganization,  # makes User a member of Organization
     issue: Issue,
     auth_jwt: str,
+    client: AsyncClient,
 ) -> None:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/dashboard/github/{organization.name}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/dashboard/github/{organization.name}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     res = response.json()
@@ -35,15 +34,11 @@ async def test_get(
 
 
 @pytest.mark.asyncio
-async def test_get_personal(
-    user: User,
-    auth_jwt: str,
-) -> None:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            "/api/v1/dashboard/personal",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+async def test_get_personal(user: User, auth_jwt: str, client: AsyncClient) -> None:
+    response = await client.get(
+        "/api/v1/dashboard/personal",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
 
@@ -55,12 +50,12 @@ async def test_get_no_member(
     repository: Repository,
     issue: Issue,
     auth_jwt: str,
+    client: AsyncClient,
 ) -> None:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/dashboard/github/{organization.name}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/dashboard/github/{organization.name}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 404
 
@@ -75,12 +70,12 @@ async def test_get_with_pledge(
     pledge: Pledge,
     issue: Issue,
     auth_jwt: str,
+    client: AsyncClient,
 ) -> None:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/dashboard/github/{organization.name}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/dashboard/github/{organization.name}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     res = response.json()
@@ -107,16 +102,16 @@ async def test_get_with_pledge_initiated(
     issue: Issue,
     auth_jwt: str,
     session: AsyncSession,
+    client: AsyncClient,
 ) -> None:
     # assert that initiated pledges does not appear in the result
     pledge.state = PledgeState.initiated
     await pledge.save(session)
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/dashboard/github/{organization.name}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/dashboard/github/{organization.name}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     res = response.json()
@@ -140,12 +135,12 @@ async def test_get_only_pledged_with_pledge(
     pledge: Pledge,
     issue: Issue,
     auth_jwt: str,
+    client: AsyncClient,
 ) -> None:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/dashboard/github/{organization.name}?only_pledged=True",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/dashboard/github/{organization.name}?only_pledged=True",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     res = response.json()
@@ -171,12 +166,12 @@ async def test_get_only_pledged_no_pledge(
     # pledge: Pledge,
     issue: Issue,
     auth_jwt: str,
+    client: AsyncClient,
 ) -> None:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/dashboard/github/{organization.name}?only_pledged=True",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/dashboard/github/{organization.name}?only_pledged=True",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     res = response.json()
@@ -196,12 +191,12 @@ async def test_get_only_badged_no_badge(
     # pledge: Pledge,
     issue: Issue,
     auth_jwt: str,
+    client: AsyncClient,
 ) -> None:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/dashboard/github/{organization.name}?only_badged=True",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/dashboard/github/{organization.name}?only_badged=True",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     res = response.json()
@@ -220,15 +215,15 @@ async def test_get_only_badged_is_badged(
     issue: Issue,
     auth_jwt: str,
     session: AsyncSession,
+    client: AsyncClient,
 ) -> None:
     issue.pledge_badge_currently_embedded = True
     await issue.save(session)
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/dashboard/github/{organization.name}?only_badged=True",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/dashboard/github/{organization.name}?only_badged=True",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     res = response.json()

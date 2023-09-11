@@ -3,7 +3,6 @@ from fastapi.encoders import jsonable_encoder
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
-from polar.app import app
 from polar.config import settings
 from polar.issue.schemas import Reactions
 from polar.models.issue import Issue
@@ -23,15 +22,15 @@ async def test_get_issue(
     issue: Issue,
     auth_jwt: str,
     session: AsyncSession,
+    client: AsyncClient,
 ) -> None:
     repository.is_private = False
     await repository.save(session)
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/issues/{issue.id}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/issues/{issue.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
@@ -46,6 +45,7 @@ async def test_get_issue_reactions(
     issue: Issue,
     auth_jwt: str,
     session: AsyncSession,
+    client: AsyncClient,
 ) -> None:
     repository.is_private = False
     await repository.save(session)
@@ -65,11 +65,10 @@ async def test_get_issue_reactions(
     )
     await issue.save(session)
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/issues/{issue.id}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/issues/{issue.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
@@ -83,15 +82,15 @@ async def test_get_not_found_private_repo(
     issue: Issue,
     auth_jwt: str,
     session: AsyncSession,
+    client: AsyncClient,
 ) -> None:
     repository.is_private = True
     await repository.save(session)
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/issues/{issue.id}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/issues/{issue.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 404
 
@@ -104,15 +103,15 @@ async def test_get_private_repo_member(
     auth_jwt: str,
     session: AsyncSession,
     user_organization: UserOrganization,  # makes User a member of Organization
+    client: AsyncClient,
 ) -> None:
     repository.is_private = True
     await repository.save(session)
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/issues/{issue.id}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/issues/{issue.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
@@ -125,16 +124,16 @@ async def test_issue_search_public_repo(
     issue: Issue,
     auth_jwt: str,
     session: AsyncSession,
+    client: AsyncClient,
 ) -> None:
     repository.is_private = False
     repository.is_archived = False
     await repository.save(session)
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/issues/search?platform=github&organization_name={organization.name}&repository_name={repository.name}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/issues/search?platform=github&organization_name={organization.name}&repository_name={repository.name}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     assert len(response.json()["items"]) == 1
@@ -152,16 +151,16 @@ async def test_issue_search_public_repo_without_repo_selector(
     issue: Issue,
     auth_jwt: str,
     session: AsyncSession,
+    client: AsyncClient,
 ) -> None:
     repository.is_private = False
     repository.is_archived = False
     await repository.save(session)
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/issues/search?platform=github&organization_name={organization.name}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/issues/search?platform=github&organization_name={organization.name}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     assert len(response.json()["items"]) == 1
@@ -175,16 +174,16 @@ async def test_issue_search_private_repo(
     issue: Issue,
     auth_jwt: str,
     session: AsyncSession,
+    client: AsyncClient,
 ) -> None:
     repository.is_private = True
     repository.is_archived = False
     await repository.save(session)
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/issues/search?platform=github&organization_name={organization.name}&repository_name={repository.name}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/issues/search?platform=github&organization_name={organization.name}&repository_name={repository.name}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Repository not found"}
@@ -197,16 +196,16 @@ async def test_issue_search_private_repo_without_repo_selector(
     issue: Issue,
     auth_jwt: str,
     session: AsyncSession,
+    client: AsyncClient,
 ) -> None:
     repository.is_private = True
     repository.is_archived = False
     await repository.save(session)
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/issues/search?platform=github&organization_name={organization.name}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/issues/search?platform=github&organization_name={organization.name}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     assert response.json()["items"] == []
@@ -220,28 +219,27 @@ async def test_update_funding_goal(
     auth_jwt: str,
     session: AsyncSession,
     user_organization: UserOrganization,  # makes User a member of Organization
+    client: AsyncClient,
 ) -> None:
     user_organization.is_admin = True
     await user_organization.save(session)
 
     # get, default value should be None
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/issues/{issue.id}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/issues/{issue.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
     assert response.json()["funding"]["funding_goal"] is None
 
     # update value
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.post(
-            f"/api/v1/issues/{issue.id}",
-            json={"funding_goal": {"currency": "USD", "amount": 12000}},
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.post(
+        f"/api/v1/issues/{issue.id}",
+        json={"funding_goal": {"currency": "USD", "amount": 12000}},
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
@@ -251,11 +249,10 @@ async def test_update_funding_goal(
     }
 
     # get after post, should be persisted
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/issues/{issue.id}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/issues/{issue.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
@@ -275,6 +272,7 @@ async def test_confirm_solved(
     session: AsyncSession,
     user_organization: UserOrganization,  # makes User a member of Organization
     mocker: MockerFixture,
+    client: AsyncClient,
 ) -> None:
     mocker.patch("polar.worker._enqueue_job")
 
@@ -284,11 +282,10 @@ async def test_confirm_solved(
     await pledge_service.mark_confirmation_pending_by_issue_id(session, issue.id)
 
     # fetch pledges
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        pledges_response = await ac.get(
-            f"/api/v1/pledges/search?issue_id={pledge.issue_id}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    pledges_response = await client.get(
+        f"/api/v1/pledges/search?issue_id={pledge.issue_id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     print(pledges_response.text)
 
@@ -297,23 +294,22 @@ async def test_confirm_solved(
     assert pledges_response.json()["items"][0]["state"] == "confirmation_pending"
 
     # confirm as solved
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.post(
-            f"/api/v1/issues/{issue.id}/confirm_solved",
-            json={
-                "splits": [
-                    {
-                        "github_username": "zegl",
-                        "share_thousands": 300,
-                    },
-                    {
-                        "organization_id": str(organization.id),
-                        "share_thousands": 700,
-                    },
-                ]
-            },
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.post(
+        f"/api/v1/issues/{issue.id}/confirm_solved",
+        json={
+            "splits": [
+                {
+                    "github_username": "zegl",
+                    "share_thousands": 300,
+                },
+                {
+                    "organization_id": str(organization.id),
+                    "share_thousands": 700,
+                },
+            ]
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     print(response.text)
 
@@ -321,11 +317,10 @@ async def test_confirm_solved(
     assert response.json()["id"] == str(issue.id)
 
     # fetch pledges
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        pledges_response = await ac.get(
-            f"/api/v1/pledges/search?issue_id={pledge.issue_id}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    pledges_response = await client.get(
+        f"/api/v1/pledges/search?issue_id={pledge.issue_id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     print(pledges_response.text)
 

@@ -3,7 +3,6 @@ import uuid
 import pytest
 from httpx import AsyncClient
 
-from polar.app import app
 from polar.config import settings
 from polar.models.issue import Issue
 from polar.models.organization import Organization
@@ -25,15 +24,15 @@ async def test_get_pledge(
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
     session: AsyncSession,
+    client: AsyncClient,
 ) -> None:
     user_organization.is_admin = True
     await user_organization.save(session)
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/pledges/{pledge.id}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/pledges/{pledge.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     assert response.json()["id"] == str(pledge.id)
@@ -54,15 +53,15 @@ async def test_get_pledge_not_admin(
     user_organization: UserOrganization,  # makes User a member of Organization
     auth_jwt: str,
     session: AsyncSession,
+    client: AsyncClient,
 ) -> None:
     user_organization.is_admin = False
     await user_organization.save(session)
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/pledges/{pledge.id}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/pledges/{pledge.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 401
 
@@ -74,12 +73,12 @@ async def test_get_pledge_not_member(
     pledge: Pledge,
     auth_jwt: str,
     session: AsyncSession,
+    client: AsyncClient,
 ) -> None:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/pledges/{pledge.id}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/pledges/{pledge.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 401
 
@@ -93,15 +92,15 @@ async def test_search_pledge(
     auth_jwt: str,
     session: AsyncSession,
     issue: Issue,
+    client: AsyncClient,
 ) -> None:
     user_organization.is_admin = True
     await user_organization.save(session)
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/pledges/search?platform=github&organization_name={organization.name}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/pledges/search?platform=github&organization_name={organization.name}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     assert response.json()["items"][0]["id"] == str(pledge.id)
@@ -122,15 +121,15 @@ async def test_search_pledge_no_admin(
     pledge: Pledge,
     auth_jwt: str,
     session: AsyncSession,
+    client: AsyncClient,
 ) -> None:
     user_organization.is_admin = False
     await user_organization.save(session)
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/pledges/search?platform=github&organization_name={organization.name}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/pledges/search?platform=github&organization_name={organization.name}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     assert response.json()["items"] == []
@@ -142,12 +141,12 @@ async def test_search_pledge_no_member(
     repository: Repository,
     pledge: Pledge,
     auth_jwt: str,
+    client: AsyncClient,
 ) -> None:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/pledges/search?platform=github&organization_name={organization.name}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/pledges/search?platform=github&organization_name={organization.name}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     assert response.json()["items"] == []
@@ -163,6 +162,7 @@ async def test_search_pledge_by_issue_id(
     auth_jwt: str,
     session: AsyncSession,
     issue: Issue,
+    client: AsyncClient,
 ) -> None:
     user_organization.is_admin = True
     await user_organization.save(session)
@@ -198,11 +198,10 @@ async def test_search_pledge_by_issue_id(
 
     await session.commit()
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/pledges/search?issue_id={pledge.issue_id}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/pledges/search?issue_id={pledge.issue_id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     assert len(response.json()["items"]) == 1
@@ -215,11 +214,10 @@ async def test_search_pledge_by_issue_id(
         "id"
     ] == str(organization.id)
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            f"/api/v1/pledges/search?issue_id={other_issue.id}",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        f"/api/v1/pledges/search?issue_id={other_issue.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 200
     assert len(response.json()["items"]) == 2
@@ -235,12 +233,12 @@ async def test_search_no_params(
     repository: Repository,
     pledge: Pledge,
     auth_jwt: str,
+    client: AsyncClient,
 ) -> None:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get(
-            "/api/v1/pledges/search",
-            cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-        )
+    response = await client.get(
+        "/api/v1/pledges/search",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
 
     assert response.status_code == 400
     assert response.json() == {"detail": "No search criteria specified"}

@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from '../ui/select'
 import PaymentForm from './PaymentForm'
+import { prettyCardName } from './payment'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
@@ -313,18 +314,6 @@ const PledgeForm = ({
   const showStripeForm = polarPaymentIntent ? true : false
   const organization = issue.repository.organization
   const repository = issue.repository
-
-  const prettyCardName = (brand?: string) => {
-    if (!brand) {
-      return 'Saved Card'
-    }
-
-    if (brand.toLowerCase() === 'mastercard') {
-      return 'MasterCard'
-    }
-
-    return brand[0].toUpperCase() + brand.slice(1)
-  }
 
   const [savePaymentMethod, setSavePaymentMethod] = useState(false)
 

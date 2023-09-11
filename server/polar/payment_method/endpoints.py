@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 
 from polar.auth.dependencies import Auth
 from polar.exceptions import Unauthorized
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 from polar.types import ListResource, Pagination
@@ -10,7 +11,6 @@ from polar.types import ListResource, Pagination
 from .schemas import (
     PaymentMethod,
 )
-from .service import service
 
 log = structlog.get_logger()
 
@@ -30,8 +30,9 @@ async def list(
     if not auth.user:
         raise Unauthorized()
 
-    orgs = await service.list_for_user(session, auth.user.id)
+    pms = await stripe_service.list_user_payment_methods(session, auth.user)
+
     return ListResource(
-        items=[PaymentMethod.from_db(o) for o in orgs],
-        pagination=Pagination(total_count=len(orgs)),
+        items=[PaymentMethod.from_stripe(pm) for pm in pms],
+        pagination=Pagination(total_count=len(pms)),
     )

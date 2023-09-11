@@ -14,6 +14,7 @@ import { IntegrationsService } from './services/IntegrationsService';
 import { IssuesService } from './services/IssuesService';
 import { NotificationsService } from './services/NotificationsService';
 import { OrganizationsService } from './services/OrganizationsService';
+import { PaymentMethodsService } from './services/PaymentMethodsService';
 import { PersonalAccessTokenService } from './services/PersonalAccessTokenService';
 import { PledgesService } from './services/PledgesService';
 import { PullRequestsService } from './services/PullRequestsService';
@@ -35,6 +36,7 @@ export class PolarAPI {
   public readonly issues: IssuesService;
   public readonly notifications: NotificationsService;
   public readonly organizations: OrganizationsService;
+  public readonly paymentMethods: PaymentMethodsService;
   public readonly personalAccessToken: PersonalAccessTokenService;
   public readonly pledges: PledgesService;
   public readonly pullRequests: PullRequestsService;
@@ -67,6 +69,7 @@ export class PolarAPI {
     this.issues = new IssuesService(this.request);
     this.notifications = new NotificationsService(this.request);
     this.organizations = new OrganizationsService(this.request);
+    this.paymentMethods = new PaymentMethodsService(this.request);
     this.personalAccessToken = new PersonalAccessTokenService(this.request);
     this.pledges = new PledgesService(this.request);
     this.pullRequests = new PullRequestsService(this.request);

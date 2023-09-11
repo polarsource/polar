@@ -7,13 +7,9 @@ from polar.auth.dependencies import Auth
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
-from polar.issue.schemas import Issue
 from polar.issue.service import issue as issue_service
-from polar.models import Pledge, Repository
-from polar.organization.schemas import Organization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
-from polar.repository.schemas import Repository as RepositorySchema
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 from polar.types import ListResource, Pagination
@@ -25,7 +21,6 @@ from .payment_intent_service import payment_intent_service
 from .schemas import (
     CreatePledgeFromPaymentIntent,
     PledgeRead,
-    PledgeResources,
     PledgeStripePaymentIntentCreate,
     PledgeStripePaymentIntentMutationResponse,
     PledgeStripePaymentIntentUpdate,
@@ -252,47 +247,6 @@ async def update_payment_intent(
         payment_intent_id=id,
         updates=updates,
     )
-
-
-# TODO: this API is unused, remove it
-@router.get(
-    "/me/pledges",
-    response_model=list[PledgeRead],
-)
-async def list_personal_pledges(
-    auth: Auth = Depends(Auth.current_user),
-    session: AsyncSession = Depends(get_db_session),
-) -> list[PledgeRead]:
-    if not auth.user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    pledges = await pledge_service.list_by_pledging_user(session, auth.user.id)
-    return [PledgeRead.from_db(p) for p in pledges]
-
-
-# TODO: this API is unused, remove it
-@router.get(
-    "/{platform}/{org_name}/pledges",
-    response_model=list[PledgeResources],
-)
-async def list_organization_pledges(
-    platform: Platforms,
-    org_name: str,
-    auth: Auth = Depends(Auth.user_with_org_access),
-    session: AsyncSession = Depends(get_db_session),
-) -> list[PledgeResources]:
-    pledges = await pledge_service.list_by_receiving_organization(
-        session, auth.organization.id
-    )
-    return [
-        PledgeResources(
-            pledge=PledgeRead.from_db(p),
-            issue=Issue.from_db(p.issue),
-            repository=RepositorySchema.from_db(p.to_repository),
-            organization=Organization.from_db(p.to_organization),
-        )
-        for p in pledges
-    ]
 
 
 @router.post(

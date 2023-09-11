@@ -1,19 +1,11 @@
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { api } from '../../api'
-import { Platforms, PledgeRead } from '../../api/client'
+import { Platforms, Pledge } from '../../api/client'
 import { defaultRetry } from './retry'
 
-export const useListPersonalPledges: () => UseQueryResult<
-  PledgeRead[],
-  Error
-> = () =>
-  useQuery({
-    queryKey: ['listPersonalPledges'],
-    queryFn: () => api.pledges.listPersonalPledges(),
-    retry: defaultRetry,
-  })
-
-export const useGetPledge = (pledgeId?: string) =>
+export const useGetPledge: (
+  pledgeId?: string,
+) => UseQueryResult<Pledge, Error> = (pledgeId?: string) =>
   useQuery({
     queryKey: ['pledge', pledgeId],
     queryFn: () =>

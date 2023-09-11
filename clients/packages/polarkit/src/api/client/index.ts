@@ -80,7 +80,6 @@ export { Platforms } from './models/Platforms';
 export type { Pledge } from './models/Pledge';
 export type { Pledger } from './models/Pledger';
 export type { PledgeRead } from './models/PledgeRead';
-export type { PledgeResources } from './models/PledgeResources';
 export type { PledgeRewardTransfer } from './models/PledgeRewardTransfer';
 export type { PledgerPledgePendingNotification } from './models/PledgerPledgePendingNotification';
 export { PledgeState } from './models/PledgeState';

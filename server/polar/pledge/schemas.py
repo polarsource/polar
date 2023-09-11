@@ -11,8 +11,6 @@ from polar.currency.schemas import CurrencyAmount
 from polar.issue.schemas import Issue
 from polar.kit.schemas import Schema
 from polar.models.pledge import Pledge as PledgeModel
-from polar.organization.schemas import Organization
-from polar.repository.schemas import Repository
 
 
 # Public API
@@ -240,14 +238,3 @@ class PledgeRead(Schema):
             scheduled_payout_at=o.scheduled_payout_at,
             pledger_user_id=o.by_user_id,
         )
-
-
-class PledgeResources(Schema):
-    pledge: PledgeRead
-    issue: Issue | None
-    organization: Organization | None
-    repository: Repository | None
-
-
-class ConfirmPledgesResponse(Schema):
-    ...

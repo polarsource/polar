@@ -85,7 +85,7 @@ export type { PledgeRead } from './models/PledgeRead';
 export type { PledgeRewardTransfer } from './models/PledgeRewardTransfer';
 export type { PledgerPledgePendingNotification } from './models/PledgerPledgePendingNotification';
 export { PledgeState } from './models/PledgeState';
-export type { PledgeStripePaymentIntentCreate } from './models/PledgeStripePaymentIntentCreate';
+export { PledgeStripePaymentIntentCreate } from './models/PledgeStripePaymentIntentCreate';
 export type { PledgeStripePaymentIntentMutationResponse } from './models/PledgeStripePaymentIntentMutationResponse';
 export { PledgeStripePaymentIntentUpdate } from './models/PledgeStripePaymentIntentUpdate';
 export type { polar__integrations__github__endpoints__WebhookResponse } from './models/polar__integrations__github__endpoints__WebhookResponse';

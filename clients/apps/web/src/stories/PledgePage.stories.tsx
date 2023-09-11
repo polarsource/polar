@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 import PublicLayout from '@/components/Layout/PublicLayout'
+import { QueryClientProvider, queryClient } from 'polarkit/api'
 import Pledge from '../components/Pledge/Pledge'
 import { issue } from './testdata'
 
@@ -28,9 +29,11 @@ export const Default: Story = {
 
   render: (args) => {
     return (
-      <PublicLayout>
-        <Pledge {...args} />
-      </PublicLayout>
+      <QueryClientProvider client={queryClient}>
+        <PublicLayout>
+          <Pledge {...args} />
+        </PublicLayout>
+      </QueryClientProvider>
     )
   },
 }

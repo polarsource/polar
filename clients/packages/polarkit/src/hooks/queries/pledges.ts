@@ -43,3 +43,10 @@ export const useListPledgesForOrganization = (
     retry: defaultRetry,
     enabled: !!platform && !!orgName,
   })
+
+export const useListPaymentMethods = () =>
+  useQuery({
+    queryKey: ['paymentMethods'],
+    queryFn: () => api.paymentMethods.list(),
+    retry: defaultRetry,
+  })

@@ -314,13 +314,16 @@ const PledgeForm = ({
   const organization = issue.repository.organization
   const repository = issue.repository
 
-  const prettyCardName = (brand: string) => {
-    if (brand === 'visa') {
-      return 'Visa'
+  const prettyCardName = (brand?: string) => {
+    if (!brand) {
+      return 'Saved Card'
     }
-    if (brand === 'mastercard') {
+
+    if (brand.toLowerCase() === 'mastercard') {
       return 'MasterCard'
     }
+
+    return brand[0].toUpperCase() + brand.slice(1)
   }
 
   const [savePaymentMethod, setSavePaymentMethod] = useState(false)

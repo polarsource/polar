@@ -1,5 +1,6 @@
 'use client'
 
+import { useAuth } from '@/hooks/auth'
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import {
   PaymentIntent,
@@ -49,6 +50,7 @@ const PaymentForm = ({
 }) => {
   const stripe = useStripe()
   const elements = useElements()
+  const { currentUser } = useAuth()
 
   const [isStripeCompleted, setStripeCompleted] = useState(false)
 
@@ -216,7 +218,18 @@ const PaymentForm = ({
 
   return (
     <div className="mt-3 border-t pt-5">
-      {!paymentMethod && <PaymentElement onChange={onStripeFormChange} />}
+      {!paymentMethod && (
+        <PaymentElement
+          onChange={onStripeFormChange}
+          options={{
+            defaultValues: {
+              billingDetails: {
+                email: currentUser?.email,
+              },
+            },
+          }}
+        />
+      )}
 
       <Subtotal paymentIntent={paymentIntent} />
 

@@ -1,6 +1,11 @@
-import { UseQueryResult, useQuery } from '@tanstack/react-query'
-import { api } from '../../api'
-import { Platforms, Pledge } from '../../api/client'
+import {
+  UseMutationResult,
+  UseQueryResult,
+  useMutation,
+  useQuery,
+} from '@tanstack/react-query'
+import { api, queryClient } from '../../api'
+import { PaymentMethod, Platforms, Pledge } from '../../api/client'
 import { defaultRetry } from './retry'
 
 export const useGetPledge: (
@@ -49,4 +54,21 @@ export const useListPaymentMethods = () =>
     queryKey: ['paymentMethods'],
     queryFn: () => api.paymentMethods.list(),
     retry: defaultRetry,
+  })
+
+export const useDetachPaymentMethodMutation: () => UseMutationResult<
+  PaymentMethod,
+  Error,
+  {
+    id: string
+  },
+  unknown
+> = () =>
+  useMutation({
+    mutationFn: (variables: { id: string }) => {
+      return api.paymentMethods.detach(variables)
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.invalidateQueries({ queryKey: ['paymentMethods'] })
+    },
   })

@@ -18,6 +18,11 @@ const BackerNavigation = (props: { classNames: string }) => {
       title: 'Rewards',
       link: `/rewards`,
     },
+    {
+      id: 'settings',
+      title: 'Settings',
+      link: `/settings`,
+    },
   ]
 
   // Filter routes, set isActive, and if subs should be expanded

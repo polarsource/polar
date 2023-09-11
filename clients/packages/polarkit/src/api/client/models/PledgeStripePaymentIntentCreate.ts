@@ -6,6 +6,15 @@ export type PledgeStripePaymentIntentCreate = {
   issue_id: string;
   email: string;
   amount: number;
-  use_payment_method_id?: string;
+  setup_future_usage?: PledgeStripePaymentIntentCreate.setup_future_usage;
 };
+
+export namespace PledgeStripePaymentIntentCreate {
+
+  export enum setup_future_usage {
+    ON_SESSION = 'on_session',
+  }
+
+
+}
 

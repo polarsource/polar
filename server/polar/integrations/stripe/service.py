@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Literal, Tuple
 
 import stripe as stripe_lib
 
@@ -85,12 +85,17 @@ class StripeService:
         )
 
     def modify_intent(
-        self, id: str, amount: int, receipt_email: str
+        self,
+        id: str,
+        amount: int,
+        receipt_email: str,
+        setup_future_usage: Literal["off_session", "on_session"] | None,
     ) -> stripe_lib.PaymentIntent:
         return stripe_lib.PaymentIntent.modify(
             id,
             amount=amount,
             receipt_email=receipt_email,
+            setup_future_usage=setup_future_usage,
         )
 
     def retrieve_intent(self, id: str) -> stripe_lib.PaymentIntent:

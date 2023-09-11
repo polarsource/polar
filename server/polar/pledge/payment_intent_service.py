@@ -116,6 +116,7 @@ class PaymentIntentService:
             payment_intent_id,
             amount=amount_including_fee,
             receipt_email=updates.email,
+            setup_future_usage=updates.setup_future_usage,
         )
 
         return PledgeStripePaymentIntentMutationResponse(

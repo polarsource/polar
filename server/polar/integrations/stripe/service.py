@@ -199,7 +199,7 @@ class StripeService:
         return payment_methods.data
 
     def detach_payment_method(self, id: str) -> stripe_lib.PaymentMethod:
-        return stripe_lib.PaymentMethod.detach(id)
+        return stripe_lib.PaymentMethod.detach(id)  # type: ignore
 
 
 stripe = StripeService()

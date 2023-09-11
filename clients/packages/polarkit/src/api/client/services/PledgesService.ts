@@ -6,7 +6,6 @@ import type { ListResource_Pledge_ } from '../models/ListResource_Pledge_';
 import type { Platforms } from '../models/Platforms';
 import type { Pledge } from '../models/Pledge';
 import type { PledgeRead } from '../models/PledgeRead';
-import type { PledgeResources } from '../models/PledgeResources';
 import type { PledgeStripePaymentIntentCreate } from '../models/PledgeStripePaymentIntentCreate';
 import type { PledgeStripePaymentIntentMutationResponse } from '../models/PledgeStripePaymentIntentMutationResponse';
 import type { PledgeStripePaymentIntentUpdate } from '../models/PledgeStripePaymentIntentUpdate';
@@ -148,43 +147,6 @@ export class PledgesService {
       },
       body: requestBody,
       mediaType: 'application/json',
-      errors: {
-        422: `Validation Error`,
-      },
-    });
-  }
-
-  /**
-   * List Personal Pledges
-   * @returns PledgeRead Successful Response
-   * @throws ApiError
-   */
-  public listPersonalPledges(): CancelablePromise<Array<PledgeRead>> {
-    return this.httpRequest.request({
-      method: 'GET',
-      url: '/api/v1/me/pledges',
-    });
-  }
-
-  /**
-   * List Organization Pledges
-   * @returns PledgeResources Successful Response
-   * @throws ApiError
-   */
-  public listOrganizationPledges({
-    platform,
-    orgName,
-  }: {
-    platform: Platforms,
-    orgName: string,
-  }): CancelablePromise<Array<PledgeResources>> {
-    return this.httpRequest.request({
-      method: 'GET',
-      url: '/api/v1/{platform}/{org_name}/pledges',
-      path: {
-        'platform': platform,
-        'org_name': orgName,
-      },
       errors: {
         422: `Validation Error`,
       },

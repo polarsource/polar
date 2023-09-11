@@ -1,30 +1,27 @@
 from typing import Literal, Self
 from uuid import UUID
 
+import stripe as stripe_lib
+
 from polar.kit.schemas import Schema
-from polar.models.payment_method import PaymentMethod as PaymentMethodModel
 
 
 # Public API
 class PaymentMethod(Schema):
-    id: UUID
     stripe_payment_method_id: str
     type: Literal["card", None]
     brand: Literal["visa", "mastercard", None]
     last4: str
+    exp_month: int
+    exp_year: int
 
     @classmethod
-    def from_db(cls, o: PaymentMethodModel) -> Self:
-        brand: Literal["visa", "mastercard", None] = None
-        if o.brand == "visa":
-            brand = "visa"
-        elif o.brand == "mastercard":
-            brand = "mastercard"
-
+    def from_stripe(cls, o: stripe_lib.PaymentMethod) -> Self:
         return cls(
-            id=o.id,
-            stripe_payment_method_id=o.stripe_payment_method_id,
+            stripe_payment_method_id=o.id,
             type="card" if o.type == "card" else None,
-            brand=brand,
-            last4=o.last4,
+            brand=o.card.brand,
+            last4=o.card.last4,
+            exp_month=o.card.exp_month,
+            exp_year=o.card.exp_year,
         )

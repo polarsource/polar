@@ -1971,17 +1971,18 @@ full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart", "pyyam
 
 [[package]]
 name = "stripe"
-version = "5.5.0"
+version = "6.4.0"
 description = "Python bindings for the Stripe API"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+python-versions = ">=3.6"
 files = [
-    {file = "stripe-5.5.0-py2.py3-none-any.whl", hash = "sha256:b4947da66dbb3de8969004ba6398f9a019c6b1b3ffe6aa88d5b07ac560a52b28"},
-    {file = "stripe-5.5.0.tar.gz", hash = "sha256:04a9732b37a46228ecf0e496163a3edd93596b0e6200029fbc48911638627e19"},
+    {file = "stripe-6.4.0-py2.py3-none-any.whl", hash = "sha256:d1ab2739aa6511f34ba77f66fca9f86cffe2dbb17df84bd224a38e7254efe61b"},
+    {file = "stripe-6.4.0.tar.gz", hash = "sha256:d99e97e6d3f6dbaf9361ebd07b3024ec6f9d7b1f77724c8127338e0754314e9d"},
 ]
 
 [package.dependencies]
 requests = {version = ">=2.20", markers = "python_version >= \"3.0\""}
+typing-extensions = {version = ">=4.0.0", markers = "python_version >= \"3.7\""}
 
 [[package]]
 name = "structlog"
@@ -2523,4 +2524,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "bee39b95b54be92b351a259fc38909ff82c7f84ec2a239bc4f38d5cca5d395dc"
+content-hash = "758fdce3c4fd4692e1961b96ebf7eb72ef4cb990c058413d18c0937e46e012a7"

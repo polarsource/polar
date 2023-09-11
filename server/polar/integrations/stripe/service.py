@@ -177,5 +177,21 @@ class StripeService:
 
         return customer
 
+    async def list_user_payment_methods(
+        self,
+        session: AsyncSession,
+        user: User,
+    ) -> list[stripe_lib.PaymentMethod]:
+        customer = await self.get_or_create_user_customer(session, user)
+        if not customer:
+            return []
+
+        payment_methods = stripe_lib.PaymentMethod.list(
+            customer=customer.id,
+            type="card",
+        )
+
+        return payment_methods.data
+
 
 stripe = StripeService()

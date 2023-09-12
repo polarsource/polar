@@ -8,10 +8,10 @@ from polar.auth.service import AuthService, LoginResponse
 from .schemas import MagicLinkRequest
 from .service import magic_link as magic_link_service
 
-router = APIRouter(prefix="/magic-link", tags=[Tags.INTERNAL])
+router = APIRouter(prefix="/magic_link", tags=["magic_link"])
 
 
-@router.post("/request", status_code=status.HTTP_202_ACCEPTED)
+@router.post("/request", status_code=status.HTTP_202_ACCEPTED, tags=[Tags.INTERNAL])
 async def request_magic_link(
     magic_link_request: MagicLinkRequest,
     session: AsyncSession = Depends(get_db_session),
@@ -19,7 +19,7 @@ async def request_magic_link(
     await magic_link_service.request(session, magic_link_request)
 
 
-@router.post("/authenticate")
+@router.post("/authenticate", tags=[Tags.INTERNAL])
 async def authenticate_magic_link(
     request: Request,
     response: Response,

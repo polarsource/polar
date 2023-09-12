@@ -33,6 +33,7 @@ class BackofficePledge(PledgeSchema):
             created_at=p.created_at,
             amount=p.amount,
             state=p.state,
+            type=p.type,
             refunded_at=p.refunded_at,
             scheduled_payout_at=p.scheduled_payout_at,
             issue=p.issue,

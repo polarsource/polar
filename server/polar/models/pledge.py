@@ -40,6 +40,7 @@ class Pledge(RecordModel):
         return self.amount + self.fee
 
     state: Mapped[str] = mapped_column(String, nullable=False, default="initiated")
+    type: Mapped[str] = mapped_column(String, nullable=False, default="pay_upfront")
 
     # 14 days after the state changes to pending
     scheduled_payout_at: Mapped[datetime | None] = mapped_column(

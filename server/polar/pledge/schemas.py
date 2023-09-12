@@ -19,6 +19,8 @@ class PledgeState(str, Enum):
     initiated = "initiated"
     # Polar has received the money.
     created = "created"
+    # Pay later schemas (pay_on_completion, pay_from_maintainer)
+    pay_later = "pay_later"
     # The issue has been closed, awaiting maintainer to confirm the issue is fixed.
     confirmation_pending = "confirmation_pending"
     # The fix was confirmed, and rewards have been created.
@@ -41,8 +43,16 @@ class PledgeState(str, Enum):
             cls.disputed,
         ]
 
-    # Happy path:
-    # initiated -> created -> confirmation_pending -> pending
+    # Happy paths:
+    #   Pay upfront:
+    #       initiated -> created -> confirmation_pending -> pending -> (transfer)
+    #
+    #   Pay later (pay_on_completion / pay_from_maintainer):
+    #       pay_later -> pending -> (transfer)
+    #
+    #   Pay regardless:
+    #       pending -> (transfer)
+    #
 
     @classmethod
     def to_created_states(cls) -> list[PledgeState]:
@@ -63,12 +73,12 @@ class PledgeState(str, Enum):
         """
         Allowed states to move into pending from
         """
-        return [cls.created, cls.confirmation_pending]
+        return [cls.created, cls.confirmation_pending, cls.pay_later]
 
     @classmethod
     def to_disputed_states(cls) -> list[PledgeState]:
         """
-        Allowed states to move into disputed from
+        # Allowed states to move into disputed from
         """
         return [cls.created, cls.confirmation_pending, cls.pending]
 
@@ -91,6 +101,25 @@ class PledgeState(str, Enum):
         return PledgeState.__members__[s]
 
 
+class PledgeType(str, Enum):
+    # Up front pledges, paid to Polar directly, transfered to maintainer when completed.
+    pay_upfront = "pay_upfront"
+
+    # Pledge without upfront payment. The pledger pays after the issue is completed.
+    pay_on_completion = "pay_on_completion"
+
+    # Pledge without upfront payment. Added bonus / bounty from maintainer to collaborators.  # noqa: E501
+    pay_from_maintainer = "pay_from_maintainer"
+
+    # Pay directly. Money is ready to transfered to maintainer without requiring
+    # issue to be completed.
+    pay_directly = "pay_directly"
+
+    @classmethod
+    def from_str(cls, s: str) -> PledgeType:
+        return PledgeType.__members__[s]
+
+
 class Pledger(Schema):
     name: str
     github_username: str | None
@@ -103,6 +132,7 @@ class Pledge(Schema):
     created_at: datetime = Field(description="When the pledge was created")
     amount: CurrencyAmount = Field(description="Amount pledged towards the issue")
     state: PledgeState = Field(description="Current state of the pledge")
+    type: PledgeType = Field(description="Type of pledge")
 
     refunded_at: datetime | None = Field(
         description="If and when the pledge was refunded to the pledger"
@@ -141,6 +171,7 @@ class Pledge(Schema):
             created_at=o.created_at,
             amount=CurrencyAmount(currency="USD", amount=o.amount),
             state=PledgeState.from_str(o.state),
+            type=PledgeType.from_str(o.type),
             refunded_at=o.refunded_at,
             scheduled_payout_at=o.scheduled_payout_at,
             issue=Issue.from_db(o.issue),

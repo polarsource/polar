@@ -54,6 +54,7 @@ from .hooks import (
 from .schemas import (
     PledgeState,
     PledgeTransactionType,
+    PledgeType,
 )
 
 log = structlog.get_logger()
@@ -202,6 +203,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         get = sql.select(Pledge).where(
             Pledge.issue_id == issue_id,
             Pledge.state.in_(from_states),
+            Pledge.type == PledgeType.pay_upfront,
         )
 
         res = await session.execute(get)
@@ -350,6 +352,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             .where(
                 Pledge.id == pledge_id,
                 Pledge.state.in_(PledgeState.to_pending_states()),
+                Pledge.type == PledgeType.pay_upfront,
             )
             .values(
                 state=PledgeState.pending,
@@ -495,6 +498,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         if pledge.state not in PledgeState.to_created_states():
             raise Exception(f"pledge is in unexpected state: {pledge.state}")
+        
+        if pledge.type != PledgeType.pay_upfront:
+            raise Exception(f"pledge is of unexpected type: {pledge.type}")
 
         pledge.state = PledgeState.created
         session.add(pledge)

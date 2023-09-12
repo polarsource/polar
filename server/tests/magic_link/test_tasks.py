@@ -1,6 +1,7 @@
 import contextlib
 import uuid
 from collections.abc import AsyncIterator
+from unittest.mock import AsyncMock
 
 import pytest_asyncio
 import pytest
@@ -69,6 +70,13 @@ async def test_request_existing_magic_link(
     job_context: JobContext,
     polar_worker_context: PolarWorkerContext,
     magic_link_token: tuple[MagicLink, str],
+    mocker: MockerFixture,
 ) -> None:
+    magic_link_service_send_mock = mocker.patch.object(
+        magic_link_service, "send", new=AsyncMock()
+    )
+
     magic_link, token = magic_link_token
     await magic_link_request(job_context, magic_link.id, token, polar_worker_context)
+
+    magic_link_service_send_mock.assert_called_once_with(magic_link, token)

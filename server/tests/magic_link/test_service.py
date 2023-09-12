@@ -1,6 +1,8 @@
 from collections.abc import Callable, Coroutine
 from uuid import UUID
 from datetime import datetime, UTC, timedelta
+import os
+from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
@@ -83,6 +85,41 @@ async def test_authenticate_expired_token(
     _, token = await generate_magic_link_token("user@example.com", None, expires_at)
     with pytest.raises(InvalidMagicLink):
         await magic_link_service.authenticate(session, token)
+
+
+@pytest.mark.asyncio
+async def test_send(
+    generate_magic_link_token: GenerateMagicLinkToken, mocker: MockerFixture
+) -> None:
+    email_sender_mock = MagicMock()
+    mocker.patch(
+        "polar.magic_link.service.get_email_sender", return_value=email_sender_mock
+    )
+
+    magic_link, _ = await generate_magic_link_token("user@example.com", None, None)
+
+    await magic_link_service.send(magic_link, "TOKEN")
+
+    send_to_user_mock: MagicMock = email_sender_mock.send_to_user
+    assert send_to_user_mock.called
+    to_email_addr = send_to_user_mock.call_args[0][0]
+    subject = send_to_user_mock.call_args[0][1]
+    body = send_to_user_mock.call_args[0][2]
+
+    assert to_email_addr == "user@example.com"
+    expected_content = f"{subject}\n<hr>\n{body}"
+
+    # Run with `POLAR_TEST_RECORD=1 pytest` to produce new golden files :-)
+    record = os.environ.get("POLAR_TEST_RECORD", False) == "1"
+    record_file_name = "./tests/magic_link/testdata/magic_link.html"
+
+    if record:
+        with open(record_file_name, "w+") as f:
+            f.write(expected_content)
+
+    with open(record_file_name, "r") as f:
+        content = f.read()
+        assert content == expected_content
 
 
 @pytest.mark.asyncio

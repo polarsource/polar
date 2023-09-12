@@ -32,4 +32,4 @@ async def magic_link_request(
             if magic_link is None:
                 raise MagicLinkNotFoundError(magic_link_id)
 
-            # SEND EMAIL
+            await magic_link_service.send(magic_link, token)

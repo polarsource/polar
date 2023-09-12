@@ -1,6 +1,8 @@
 from sqlalchemy.orm import joinedload
 
 from polar.config import settings
+from polar.email.sender import get_email_sender
+from polar.email.renderer import get_email_renderer
 from polar.kit.crypto import generate_token, get_token_hash
 from polar.kit.services import ResourceService
 from polar.models import MagicLink, User
@@ -10,6 +12,8 @@ from polar.exceptions import PolarError
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
 from polar.worker import enqueue_job
+
+
 from .schemas import MagicLinkCreate, MagicLinkRequest, MagicLinkUpdate
 
 
@@ -37,6 +41,23 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
         )
 
         return magic_link
+
+    async def send(self, magic_link: MagicLink, token: str) -> None:
+        email_renderer = get_email_renderer({"magic_link": "polar.magic_link"})
+        email_sender = get_email_sender()
+
+        subject, body = email_renderer.render_from_template(
+            "Sign in to Polar",
+            "magic_link/magic_link.html",
+            {
+                "token_lifetime_minutes": int(settings.MAGIC_LINK_TTL_SECONDS / 60),
+                "url": "{base_url}/magic-link/authenticate?token={token}".format(
+                    base_url=settings.FRONTEND_BASE_URL, token=token
+                ),
+            },
+        )
+
+        email_sender.send_to_user(magic_link.user_email, subject, body)
 
     async def authenticate(self, session: AsyncSession, token: str) -> User:
         token_hash = get_token_hash(token, secret=settings.SECRET)

@@ -498,7 +498,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         if pledge.state not in PledgeState.to_created_states():
             raise Exception(f"pledge is in unexpected state: {pledge.state}")
-        
+
         if pledge.type != PledgeType.pay_upfront:
             raise Exception(f"pledge is of unexpected type: {pledge.type}")
 
@@ -777,6 +777,29 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         await pledge_disputed.call(PledgeHook(session, pledge))
         await pledge_updated.call(PledgeHook(session, pledge))
+
+    async def create_pay_on_completion(
+        self,
+        session: AsyncSession,
+        issue_id: UUID,
+        by_user_id: UUID,
+        amount: int,
+    ) -> Pledge:
+        issue = await issue_service.get(session, issue_id)
+        if not issue:
+            raise ResourceNotFound()
+
+        return await Pledge.create(
+            session=session,
+            issue_id=issue.id,
+            repository_id=issue.repository_id,
+            organization_id=issue.organization_id,
+            amount=amount,
+            fee=0,
+            state=PledgeState.pay_later,
+            type=PledgeType.pay_on_completion,
+            by_user_id=by_user_id,
+        )
 
     def user_can_admin_sender_pledge(
         self, user: User, pledge: Pledge, memberships: Sequence[UserOrganization]

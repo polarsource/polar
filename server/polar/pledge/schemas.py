@@ -186,6 +186,11 @@ class CreatePledgeFromPaymentIntent(Schema):
     payment_intent_id: str
 
 
+class CreatePledgePayLater(Schema):
+    issue_id: UUID
+    amount: int
+
+
 class PledgeTransactionType(str, Enum):
     pledge = "pledge"
     transfer = "transfer"

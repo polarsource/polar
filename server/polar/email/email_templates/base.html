@@ -1,5 +1,3 @@
-You have $543.21 in pending pledges for testorg/testrepo#123!
-<hr>
 <!DOCTYPE html
     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -478,7 +476,7 @@ You have $543.21 in pending pledges for testorg/testrepo#123!
 
 <body>
 
-    <span class="preheader"></span>
+    <span class="preheader">{% block preheader %}{% endblock %}</span>
     <table class="email-wrapper" width="100%" cellpadding="0" cellspacing="0" role="presentation">
         <tr>
             <td align="center">
@@ -502,16 +500,7 @@ You have $543.21 in pending pledges for testorg/testrepo#123!
                                 <tr>
                                     <td class="content-cell">
                                         <div class="f-fallback">
-                                            
-            Hi,<br><br>
-
-Your backers had pledged $543.21 behind <a href="https://github.com/testorg/testrepo/issues/123">testorg/testrepo#123</a> which has now been completed - awesome work!<br><br>
-
-We&apos;ve notified the backers and unless we receive any disputes within the next 14 days it will be transferred to your Stripe account.<br><br>
-
-
-
-        
+                                            {% block body %}{% endblock %}
                                         </div>
                                     </td>
                                 </tr>

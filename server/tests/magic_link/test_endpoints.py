@@ -4,14 +4,13 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.models import User
-from polar.magic_link.service import InvalidMagicLink
-from polar.magic_link.endpoints import magic_link_service  # type: ignore
+from polar.magic_link.service import InvalidMagicLink, magic_link as magic_link_service
 from polar.config import settings
 
 
 @pytest.mark.asyncio
 async def test_request(client: AsyncClient, mocker: MockerFixture) -> None:
-    magic_link_service_mock = mocker.patch.object(
+    magic_link_service_request_mock = mocker.patch.object(
         magic_link_service, "request", new=AsyncMock()
     )
 
@@ -21,7 +20,7 @@ async def test_request(client: AsyncClient, mocker: MockerFixture) -> None:
 
     assert response.status_code == 202
 
-    assert magic_link_service_mock.called
+    assert magic_link_service_request_mock.called
 
 
 @pytest.mark.asyncio

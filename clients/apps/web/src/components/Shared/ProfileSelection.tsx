@@ -1,6 +1,9 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import {
   ArrowRightOnRectangleIcon,
+  Cog8ToothIcon,
+  GiftIcon,
+  HeartIcon,
   PlusSmallIcon,
   QuestionMarkCircleIcon,
 } from '@heroicons/react/24/outline'
@@ -49,6 +52,26 @@ const ProfileSelection = ({ useOrgFromURL = true }) => {
 
   const showConnectUsell = orgs && orgs.length === 0
   const showAddOrganization = !showConnectUsell
+
+  const backerLinks = [
+    {
+      href: '/feed',
+      name: 'Funding',
+      icon: <HeartIcon className="h-5 w-5  text-gray-600 dark:text-gray-400" />,
+    },
+    {
+      href: '/rewards',
+      name: 'Rewards',
+      icon: <GiftIcon className="h-5 w-5  text-gray-600 dark:text-gray-400" />,
+    },
+    {
+      href: '/settings',
+      name: 'Settings',
+      icon: (
+        <Cog8ToothIcon className="h-5 w-5  text-gray-600 dark:text-gray-400" />
+      ),
+    },
+  ]
 
   return (
     <>
@@ -117,6 +140,16 @@ const ProfileSelection = ({ useOrgFromURL = true }) => {
                   <span className="mx-1.5 text-blue-600">Add organization</span>
                 </LinkItem>
               )}
+
+              <hr className="ml-6 mr-6" />
+
+              {backerLinks.map((l) => (
+                <LinkItem href={l.href} icon={l.icon}>
+                  <span className="mx-1.5  text-gray-600 dark:text-gray-400">
+                    {l.name}
+                  </span>
+                </LinkItem>
+              ))}
 
               <hr className="ml-6 mr-6" />
 

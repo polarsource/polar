@@ -20,6 +20,7 @@ from polar.user_organization.service import (
 from .payment_intent_service import payment_intent_service
 from .schemas import (
     CreatePledgeFromPaymentIntent,
+    CreatePledgePayLater,
     PledgeRead,
     PledgeStripePaymentIntentCreate,
     PledgeStripePaymentIntentMutationResponse,
@@ -196,6 +197,35 @@ async def create(
             session=session,
             payment_intent_id=create.payment_intent_id,
         )
+
+    ret = await pledge_service.get_with_loaded(session, pledge.id)
+    if not ret:
+        raise ResourceNotFound()
+
+    return PledgeSchema.from_db(ret)
+
+
+@router.post(
+    "/pledges/pay_on_completion",
+    response_model=PledgeSchema,
+    tags=[Tags.INTERNAL],
+    description="Creates a pay_on_completion type of pledge",
+    status_code=200,
+)
+async def create_pay_on_completion(
+    create: CreatePledgePayLater,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.current_user),
+) -> PledgeSchema:
+    if not auth.user:
+        raise Unauthorized()
+
+    pledge = await pledge_service.create_pay_on_completion(
+        session=session,
+        issue_id=create.issue_id,
+        amount=create.amount,
+        by_user_id=auth.user.id,
+    )
 
     ret = await pledge_service.get_with_loaded(session, pledge.id)
     if not ret:

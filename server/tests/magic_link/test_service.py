@@ -45,21 +45,12 @@ async def generate_magic_link_token(
 
 @pytest.mark.asyncio
 async def test_request(session: AsyncSession, mocker: MockerFixture) -> None:
-    enqueue_job_mock = mocker.patch("polar.worker._enqueue_job")
-
     magic_link_request = MagicLinkRequest(email=EmailStr("user@example.com"))
 
-    magic_link = await magic_link_service.request(session, magic_link_request)
+    magic_link, token = await magic_link_service.request(session, magic_link_request)
 
     assert magic_link.user_email == "user@example.com"
-
-    assert enqueue_job_mock.called
-    assert enqueue_job_mock.call_args[0][0] == "magic_link.request"
-    assert enqueue_job_mock.call_args[1]["magic_link_id"] == magic_link.id
-    assert (
-        get_token_hash(enqueue_job_mock.call_args[1]["token"], secret=settings.SECRET)
-        == magic_link.token_hash
-    )
+    assert magic_link.token_hash == get_token_hash(token, secret=settings.SECRET)
 
 
 @pytest.mark.asyncio

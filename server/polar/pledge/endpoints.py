@@ -7,6 +7,7 @@ from polar.auth.dependencies import Auth
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.issue.service import issue as issue_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -228,6 +229,61 @@ async def create_pay_on_completion(
     )
 
     ret = await pledge_service.get_with_loaded(session, pledge.id)
+    if not ret:
+        raise ResourceNotFound()
+
+    return PledgeSchema.from_db(ret)
+
+
+@router.post(
+    "/pledges/{id}/create_invoice",
+    response_model=PledgeSchema,
+    tags=[Tags.INTERNAL],
+    description="Creates a pay_on_completion type of pledge",
+    status_code=200,
+)
+async def create_invoice(
+    id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.current_user),
+) -> PledgeSchema:
+    if not auth.user:
+        raise Unauthorized()
+
+    # TODO: Authz
+
+    pledge = await pledge_service.get(session, id)
+    if not pledge:
+        raise ResourceNotFound()
+
+    pledge_issue = await issue_service.get(session, pledge.issue_id)
+    if not pledge_issue:
+        raise ResourceNotFound()
+
+    pledge_issue_repo = await repository_service.get(
+        session, pledge_issue.repository_id
+    )
+    if not pledge_issue_repo:
+        raise ResourceNotFound()
+
+    pledge_issue_org = await organization_service.get(
+        session, pledge_issue.organization_id
+    )
+    if not pledge_issue_org:
+        raise ResourceNotFound()
+
+    invoice = await stripe_service.create_pledge_invoice(
+        session=session,
+        user=auth.user,
+        pledge=pledge,
+        pledge_issue=pledge_issue,
+        pledge_issue_repo=pledge_issue_repo,
+        pledge_issue_org=pledge_issue_org,
+    )
+
+    print(invoice)
+
+    ret = await pledge_service.get_with_loaded(session, id)
     if not ret:
         raise ResourceNotFound()
 

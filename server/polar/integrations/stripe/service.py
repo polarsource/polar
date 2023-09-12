@@ -6,6 +6,8 @@ from polar.account.schemas import AccountCreate
 from polar.config import settings
 from polar.models.issue import Issue
 from polar.models.organization import Organization
+from polar.models.pledge import Pledge
+from polar.models.repository import Repository
 from polar.models.user import User
 from polar.postgres import AsyncSession, sql
 
@@ -162,6 +164,7 @@ class StripeService:
 
         customer = stripe_lib.Customer.create(
             name=user.username,
+            email=user.email,
             metadata={
                 "user_id": user.id,
                 "email": user.email,
@@ -200,6 +203,58 @@ class StripeService:
 
     def detach_payment_method(self, id: str) -> stripe_lib.PaymentMethod:
         return stripe_lib.PaymentMethod.detach(id)  # type: ignore
+
+    async def create_pledge_invoice(
+        self,
+        session: AsyncSession,
+        user: User,
+        pledge: Pledge,
+        pledge_issue: Issue,
+        pledge_issue_repo: Repository,
+        pledge_issue_org: Organization,
+    ) -> stripe_lib.Invoice | None:
+        customer = await self.get_or_create_user_customer(session, user)
+        if not customer:
+            return None
+
+        # Sync email
+        if not customer.email or customer.email != user.email:
+            stripe_lib.Customer.modify(
+                customer.id,
+                email=user.email,
+            )
+
+        # Create an invoice, then add line items to it
+        invoice = stripe_lib.Invoice.create(
+            customer=customer.id,
+            description=f"""You pledged to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number} on {pledge.created_at.strftime('%Y-%m-%d')}, which has now been fixed!
+            
+Thank you for your support!
+""",  # noqa: E501
+            metadata={
+                "pledge_id": pledge.id,
+            },
+            days_until_due=14,
+            collection_method="send_invoice",
+            auto_advance=False,
+        )
+
+        print(invoice)
+
+        stripe_lib.InvoiceItem.create(
+            invoice=invoice.id,
+            customer=customer.id,
+            amount=pledge.amount_including_fee,
+            description=f"Pledge to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
+            currency="USD",
+            metadata={
+                "pledge_id": pledge.id,
+            },
+        )
+
+        stripe_lib.Invoice.finalize_invoice(invoice.id, auto_advance=False)
+
+        stripe_lib.Invoice.send_invoice(invoice.id)
 
 
 stripe = StripeService()

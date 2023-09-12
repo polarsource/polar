@@ -21,7 +21,7 @@ from polar.postgres import AsyncSession
 from polar.repository.schemas import RepositoryCreate
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture
 async def predictable_organization(session: AsyncSession) -> Organization:
     create_schema = OrganizationCreate(
         platform=Platforms.github,
@@ -41,7 +41,7 @@ async def predictable_organization(session: AsyncSession) -> Organization:
     return org
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture
 async def predictable_pledging_organization(session: AsyncSession) -> Organization:
     create_schema = OrganizationCreate(
         platform=Platforms.github,
@@ -61,7 +61,7 @@ async def predictable_pledging_organization(session: AsyncSession) -> Organizati
     return org
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture
 async def predictable_repository(
     session: AsyncSession, predictable_organization: Organization
 ) -> Repository:
@@ -78,7 +78,7 @@ async def predictable_repository(
     return repo
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture
 async def predictable_issue(
     session: AsyncSession,
     predictable_organization: Organization,
@@ -102,7 +102,7 @@ async def predictable_issue(
     return issue
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture
 async def predictable_user(
     session: AsyncSession,
 ) -> User:
@@ -117,7 +117,7 @@ async def predictable_user(
     return user
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture
 async def predictable_pledge(
     session: AsyncSession,
     predictable_organization: Organization,
@@ -141,7 +141,7 @@ async def predictable_pledge(
     return pledge
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture
 async def predictable_pull_request(
     session: AsyncSession,
     predictable_organization: Organization,

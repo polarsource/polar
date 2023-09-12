@@ -6,7 +6,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.app import app
-from polar.postgres import AsyncSession, AsyncSessionLocal, get_db_session
+from polar.postgres import AsyncSession, get_db_session
 
 
 # We used to use anyio, but it was causing garbage collection issues
@@ -28,11 +28,7 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
 
 @pytest_asyncio.fixture()
 async def client(session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    async def override_get_db_session() -> AsyncGenerator[AsyncSession, None]:
-        async with AsyncSessionLocal() as session:
-            yield session
-
-    app.dependency_overrides[get_db_session] = override_get_db_session
+    app.dependency_overrides[get_db_session] = lambda: session
 
     async with AsyncClient(app=app, base_url="http://test") as client:
         yield client

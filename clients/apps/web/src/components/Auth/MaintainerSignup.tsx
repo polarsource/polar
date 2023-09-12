@@ -24,7 +24,7 @@ const MaintainerSignup = () => {
   ]
 
   return (
-    <div className="dark:bg-gray-950 flex w-full grow items-center justify-center bg-[#FEFDF9] px-4 md:h-screen">
+    <div className="flex w-full grow items-center justify-center bg-[#FEFDF9] px-4 dark:bg-gray-950 md:h-screen">
       <div className="my-16 flex flex-col items-center  md:my-0">
         <LogoType70 className="mb-16 h-10" />
 
@@ -122,7 +122,7 @@ const MaintainerSignup = () => {
 
             <div className="bg-grid-pattern dark:bg-grid-pattern-dark h-full w-full overflow-hidden">
               <div
-                className="mt-8 ml-8 -mb-2 -mr-12"
+                className="-mb-2 -mr-12 ml-8 mt-8"
                 style={{ width: 'inherit' }}
               >
                 <FakePullRequest
@@ -133,6 +133,24 @@ const MaintainerSignup = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="mt-8 text-sm text-gray-500">
+          By using Polar you agree to our{' '}
+          <a
+            className="text-gray-700 dark:text-gray-300"
+            href="https://polar.sh/legal/terms"
+          >
+            Terms of Service
+          </a>{' '}
+          and understand our{' '}
+          <a
+            className="text-gray-700 dark:text-gray-300"
+            href="https://polar.sh/legal/privacy"
+          >
+            Privacy Policy
+          </a>
+          .
         </div>
       </div>
     </div>

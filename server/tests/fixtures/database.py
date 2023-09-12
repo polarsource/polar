@@ -10,7 +10,7 @@ from sqlalchemy.sql import text
 from polar.kit.utils import generate_uuid
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models import Model
-from polar.postgres import AsyncEngineLocal, AsyncSession, AsyncSessionLocal
+from polar.postgres import AsyncEngineLocal, AsyncSession
 
 
 class TestModel(Model):
@@ -23,27 +23,27 @@ class TestModel(Model):
     str_column: Mapped[str | None] = mapped_column(String)
 
 
-@pytest_asyncio.fixture(scope="module", autouse=True)
-async def initialize_test_database(session: AsyncSession) -> None:
-    await session.commit()
-
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def initialize_test_database() -> None:
     async with AsyncEngineLocal.begin() as conn:
         await conn.run_sync(Model.metadata.drop_all)
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
         await conn.run_sync(Model.metadata.create_all)
 
 
-@pytest_asyncio.fixture(scope="function")
-async def initialize_test_database_function(session: AsyncSession) -> None:
-    await session.commit()
-
-    async with AsyncEngineLocal.begin() as conn:
-        await conn.run_sync(Model.metadata.drop_all)
-        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
-        await conn.run_sync(Model.metadata.create_all)
-
-
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture
 async def session() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncSessionLocal() as session:
-        yield session
+    connection = await AsyncEngineLocal.connect()
+    transaction = await connection.begin()
+
+    session = AsyncSession(
+        bind=connection,
+        expire_on_commit=False,
+        autocommit=False,
+        autoflush=False,
+    )
+
+    yield session
+
+    await transaction.rollback()
+    await connection.close()

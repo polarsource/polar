@@ -331,8 +331,16 @@
             text-align: center;
         }
 
-        .email-masthead_logo {
+        .email-masthead_logo img {
             width: 94px;
+        }
+
+        .email-masthead_logo_light {
+            display: inline;
+        }
+
+        .email-masthead_logo_dark {
+            display: none;
         }
 
         .email-masthead_name {
@@ -442,6 +450,14 @@
                 color: #FFF !important;
                 text-shadow: none !important;
             }
+
+            .email-masthead_logo_light {
+                display: none;
+            }
+
+            .email-masthead_logo_dark {
+                display: inline;
+            }
         }
 
         :root {
@@ -467,8 +483,11 @@
                 <table class="email-content" width="100%" cellpadding="0" cellspacing="0" role="presentation">
                     <tr>
                         <td class="email-masthead">
-                            <a href="https://polar.sh" class="f-fallback email-masthead_name">
-                                Polar
+                            <a href="https://polar.sh" class="f-fallback email-masthead_logo">
+                                <img src="https://polar.sh/email-logo.png" alt="Polar"
+                                    class="email-masthead_logo_light" />
+                                <img src="https://polar.sh/email-logo-dark.png" alt="Polar"
+                                    class="email-masthead_logo_dark" />
                             </a>
                         </td>
                     </tr>

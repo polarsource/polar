@@ -15,7 +15,7 @@ async def test_request(client: AsyncClient, mocker: MockerFixture) -> None:
     )
 
     response = await client.post(
-        "/api/v1/magic-link/request", json={"email": "user@example.com"}
+        "/api/v1/magic_link/request", json={"email": "user@example.com"}
     )
 
     assert response.status_code == 202
@@ -32,7 +32,7 @@ async def test_authenticate_invalid_token(
     )
 
     response = await client.post(
-        "/api/v1/magic-link/authenticate", params={"token": "TOKEN"}
+        "/api/v1/magic_link/authenticate", params={"token": "TOKEN"}
     )
 
     assert response.status_code == 401
@@ -52,7 +52,7 @@ async def test_authenticate_valid_token(
     )
 
     response = await client.post(
-        "/api/v1/magic-link/authenticate", params={"token": "TOKEN"}
+        "/api/v1/magic_link/authenticate", params={"token": "TOKEN"}
     )
 
     assert response.status_code == 200

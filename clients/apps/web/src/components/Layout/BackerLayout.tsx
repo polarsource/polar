@@ -2,7 +2,6 @@ import { useStore } from 'polarkit/store'
 import { classNames } from 'polarkit/utils'
 import { useMemo } from 'react'
 import BackerConnectUpsell from '../Dashboard/BackerConnectUpsell'
-import BackerNavigation from '../Dashboard/BackerNavigation'
 import Topbar from '../Shared/Topbar'
 
 const BackerLayout = (props: {
@@ -17,11 +16,8 @@ const BackerLayout = (props: {
     !isBackerConnectUpsellSkiped && !props.disableOnboardingBanner
 
   const fixedHeight = useMemo(() => {
-    return (
-      46 + // BackerNavigation
-      (showBanner ? 36 : 1) // BackerConnectUpsell
-    )
-  }, [isBackerConnectUpsellSkiped])
+    return showBanner ? 37 : 0 // BackerConnectUpsell
+  }, [showBanner])
 
   return (
     <div className="relative flex flex-col">
@@ -30,7 +26,6 @@ const BackerLayout = (props: {
       <div className="flex flex-col bg-gray-50 pt-16 dark:bg-gray-950">
         <nav className="fixed z-10 w-full ">
           {showBanner && <BackerConnectUpsell />}
-          <BackerNavigation classNames={showBanner ? 'border-y' : 'border-b'} />
         </nav>
 
         <main className={classNames('relative w-full')}>

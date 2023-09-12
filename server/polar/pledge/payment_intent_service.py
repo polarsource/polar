@@ -18,6 +18,7 @@ from .schemas import (
     PledgeStripePaymentIntentCreate,
     PledgeStripePaymentIntentMutationResponse,
     PledgeStripePaymentIntentUpdate,
+    PledgeType,
 )
 from .service import pledge as pledge_service
 
@@ -178,6 +179,7 @@ class PaymentIntentService:
             amount=amount,
             fee=0,
             state=state,
+            type=PledgeType.pay_upfront,
             by_user_id=user_id,
             by_organization_id=None,
         )

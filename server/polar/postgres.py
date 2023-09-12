@@ -18,7 +18,12 @@ AsyncSessionLocal = create_sessionmaker(engine=AsyncEngineLocal)
 
 
 async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncSession(request.state.db_engine) as session:
+    async with AsyncSession(
+        request.state.db_engine,
+        expire_on_commit=False,
+        autocommit=False,
+        autoflush=False,
+    ) as session:
         try:
             yield session
         except Exception as e:

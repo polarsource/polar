@@ -16,7 +16,8 @@ async def request_magic_link(
     magic_link_request: MagicLinkRequest,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    await magic_link_service.request(session, magic_link_request)
+    magic_link, token = await magic_link_service.request(session, magic_link_request)
+    await magic_link_service.send(magic_link, token)
 
 
 @router.post("/authenticate", tags=[Tags.INTERNAL])

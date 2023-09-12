@@ -11,7 +11,6 @@ from polar.user.service import user as user_service
 from polar.exceptions import PolarError
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
-from polar.worker import enqueue_job
 
 
 from .schemas import MagicLinkCreate, MagicLinkRequest, MagicLinkUpdate
@@ -25,7 +24,7 @@ class InvalidMagicLink(PolarError):
 class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpdate]):
     async def request(
         self, session: AsyncSession, magic_link_request: MagicLinkRequest
-    ) -> MagicLink:
+    ) -> tuple[MagicLink, str]:
         user = await user_service.get_by_email(session, magic_link_request.email)
 
         token, token_hash = generate_token(secret=settings.SECRET)
@@ -36,11 +35,7 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
         )
         magic_link = await self.create(session, magic_link_create)
 
-        await enqueue_job(
-            "magic_link.request", magic_link_id=magic_link.id, token=token
-        )
-
-        return magic_link
+        return magic_link, token
 
     async def send(self, magic_link: MagicLink, token: str) -> None:
         email_renderer = get_email_renderer({"magic_link": "polar.magic_link"})

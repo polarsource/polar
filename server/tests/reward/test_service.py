@@ -180,8 +180,8 @@ async def test_list_rewards_to_user(
     rewards = await reward_service.list(session, reward_user_id=user.id)
     assert len(rewards) == 2
 
-    assert rewards[0][0].amount == 2000
+    assert rewards[0][0].amount == 1000
     assert rewards[0][1].user_id == user.id
 
-    assert rewards[1][0].amount == 1000
+    assert rewards[1][0].amount == 2000
     assert rewards[1][1].user_id == user.id

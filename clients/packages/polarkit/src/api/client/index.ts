@@ -70,6 +70,7 @@ export type { NotificationRead } from './models/NotificationRead';
 export type { NotificationsList } from './models/NotificationsList';
 export type { NotificationsMarkRead } from './models/NotificationsMarkRead';
 export { NotificationType } from './models/NotificationType';
+export type { OAuthAccountRead } from './models/OAuthAccountRead';
 export type { Organization } from './models/Organization';
 export type { OrganizationBadgeSettingsRead } from './models/OrganizationBadgeSettingsRead';
 export type { OrganizationBadgeSettingsUpdate } from './models/OrganizationBadgeSettingsUpdate';

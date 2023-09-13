@@ -3,6 +3,7 @@ from typing import Any, Self
 
 from pydantic import EmailStr, Field
 
+from polar.enums import Platforms
 from polar.kit.schemas import Schema
 from polar.models.user import User as UserModel
 
@@ -32,11 +33,21 @@ class UserBase(Schema):
         orm_mode = True
 
 
+class OAuthAccountRead(Schema):
+    platform: Platforms
+    account_id: str
+    account_email: str
+
+    class Config:
+        orm_mode = True
+
+
 class UserRead(UserBase):
     id: uuid.UUID
     accepted_terms_of_service: bool
     email_newsletters_and_changelogs: bool
     email_promotions_and_events: bool
+    oauth_accounts: list[OAuthAccountRead]
 
 
 # TODO: remove

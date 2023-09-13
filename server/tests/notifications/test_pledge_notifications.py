@@ -28,6 +28,8 @@ async def test_create_pledge_from_created(
 ) -> None:
     m = mocker.patch("polar.notifications.service.NotificationsService.send_to_org")
 
+    payment_id = "xxx-1"
+
     pledge = await Pledge.create(
         session=session,
         issue_id=issue.id,
@@ -37,11 +39,11 @@ async def test_create_pledge_from_created(
         fee=123,
         by_organization_id=organization.id,
         state=PledgeState.initiated,
-        payment_id="xxx-1",
+        payment_id=payment_id,
     )
     await pledge_service.mark_created_by_payment_id(
         session,
-        pledge.payment_id,
+        payment_id,
         pledge.amount,
         "trx-id",
     )

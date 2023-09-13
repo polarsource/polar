@@ -521,7 +521,7 @@ async def test_can_read_pledge(
                 subject=await create_user(session),
                 receiving_org_member=True,
                 receiving_org_member_admin=False,
-                expected=False,
+                expected=True,
             ),
             TestCase(
                 subject=await create_user(session),

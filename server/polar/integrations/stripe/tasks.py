@@ -1,8 +1,10 @@
 import stripe
+from pydantic import parse_obj_as
 
-from polar.worker import JobContext, PolarWorkerContext, task
-from polar.postgres import AsyncSessionLocal
+from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook
 from polar.pledge.service import pledge as pledge_service
+from polar.postgres import AsyncSessionLocal
+from polar.worker import JobContext, PolarWorkerContext, task
 
 
 @task("stripe.webhook.payment_intent.succeeded")
@@ -12,11 +14,10 @@ async def payment_intent_succeeded(
     with polar_context.to_execution_context():
         async with AsyncSessionLocal() as session:
             payment_intent = event["data"]["object"]
-            await pledge_service.mark_created_by_payment_id(
+            payload = parse_obj_as(PaymentIntentSuccessWebhook, payment_intent)
+            await pledge_service.handle_payment_intent_success(
                 session=session,
-                payment_id=payment_intent["id"],
-                amount=payment_intent["amount"],
-                transaction_id=payment_intent["latest_charge"],
+                payload=payload,
             )
 
 

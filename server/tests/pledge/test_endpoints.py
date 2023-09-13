@@ -36,6 +36,7 @@ async def test_get_pledge(
 
     assert response.status_code == 200
     assert response.json()["id"] == str(pledge.id)
+    assert response.json()["type"] == "pay_upfront"
     assert response.json()["issue"]["id"] == str(issue.id)
     assert response.json()["issue"]["repository"]["id"] == str(repository.id)
     assert response.json()["issue"]["repository"]["organization"]["id"] == str(
@@ -242,3 +243,36 @@ async def test_search_no_params(
 
     assert response.status_code == 400
     assert response.json() == {"detail": "No search criteria specified"}
+
+
+@pytest.mark.asyncio
+async def test_create_pay_on_completion(
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+    auth_jwt: str,
+    client: AsyncClient,
+) -> None:
+    create_pledge = await client.post(
+        "/api/v1/pledges/pay_on_completion",
+        json={"issue_id": str(issue.id), "amount": 133700},
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert create_pledge.status_code == 200
+
+    pledge = create_pledge.json()
+    assert pledge["state"] == "created"
+    assert pledge["type"] == "pay_on_completion"
+
+    # pledge_id = pledge["id"]
+    # create_invoice = await client.post(
+    #     f"/api/v1/pledges/{pledge_id}/create_invoice",
+    #     cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    # )
+    # assert create_invoice.status_code == 200
+    # pledge = create_invoice.json()
+    # assert pledge["type"] == "pay_on_completion"
+    # assert len(pledge["hosted_invoice_url"]) > 5
+    # assert response.json() == {"detail": "No search criteria specified"}
+    # assert False

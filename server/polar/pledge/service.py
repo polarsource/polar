@@ -889,7 +889,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             organization_id=issue.organization_id,
             amount=amount,
             fee=0,
-            state=PledgeState.pay_later,
+            state=PledgeState.created,
             type=PledgeType.pay_on_completion,
             by_user_id=by_user_id,
         )

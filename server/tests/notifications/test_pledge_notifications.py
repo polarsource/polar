@@ -99,6 +99,8 @@ async def test_deduplicate(
     # Check notifictions
     assert spy.call_count == 0
 
+    assert pledge.payment_id
+
     # Update to created
     await pledge_service.mark_created_by_payment_id(
         session,

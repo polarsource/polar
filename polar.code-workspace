@@ -1,17 +1,25 @@
 {
 	"folders": [
 		{
-			"path": "clients"
+			"path": "clients",
+			"name": "clients"
 		},
 		{
-			"path": "server"
+			"path": "server",
+			"name": "server"
 		},
 		{
-			"path": "docs"
+			"path": "docs",
+			"name": "docs"
 		},
 		{
+			"path": ".",
 			"name": "root",
-			"path": "."
 		}
-	]
+	],
+	"settings": {
+		// Set the Python interpreter globally, so VS Code stops complaining about invalid interpreter on other folders
+		// Also fix the Ruff extension
+		"python.defaultInterpreterPath": "${workspaceFolder:server}/.venv/bin/python",
+	}
 }

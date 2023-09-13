@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
+import { useEffect, useState } from 'react'
 
 import { PrimaryButton } from './PrimaryButton'
 
@@ -37,6 +38,26 @@ export const PrimaryLoading: Story = {
   args: {
     children: 'Click me',
     loading: true,
+  },
+}
+
+export const PrimarySwitchingLoadingState: Story = {
+  args: {
+    children: 'Click me',
+  },
+  render: (args) => {
+    const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+      let interval = setInterval(() => {
+        setLoading(!loading)
+      }, 2000)
+      return () => {
+        clearInterval(interval)
+      }
+    }, [loading])
+
+    return <PrimaryButton {...args} loading={loading} />
   },
 }
 

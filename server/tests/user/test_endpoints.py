@@ -20,7 +20,10 @@ async def test_get_users_me_authed(
     )
 
     assert response.status_code == 200
-    assert response.json()["email"] == user.email
+    json = response.json()
+
+    assert json["email"] == user.email
+    assert "oauth_accounts" in json
 
 
 @pytest.mark.asyncio

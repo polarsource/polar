@@ -62,6 +62,7 @@ export const user: UserRead = {
   profile: {},
   email_newsletters_and_changelogs: false,
   email_promotions_and_events: false,
+  oauth_accounts: [],
 }
 
 export const issueRead: IssueRead = {

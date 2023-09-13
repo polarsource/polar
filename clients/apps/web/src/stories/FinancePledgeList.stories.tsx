@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 import List, { Column } from '@/components/Finance/ListPledges'
-import { Pledge, PledgeState } from 'polarkit/api/client'
+import { Pledge, PledgeState, PledgeType } from 'polarkit/api/client'
 import { issue } from './testdata'
 
 type Story = StoryObj<typeof List>
@@ -23,6 +23,7 @@ const pledge: Pledge = {
   // repository_id: 'xx',
   // organization_id: 'xx',
   state: PledgeState.CREATED,
+  type: PledgeType.PAY_UPFRONT,
   // pledger_name: 'Google',
   // pledger_avatar: 'https://avatars.githubusercontent.com/u/1342004?s=200&v=4',
   // authed_user_can_admin: false,

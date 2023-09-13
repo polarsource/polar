@@ -5,6 +5,7 @@ import {
   AccountType,
   Pledge,
   PledgeState,
+  PledgeType,
   Reward,
   RewardState,
 } from 'polarkit/api/client'
@@ -30,6 +31,7 @@ const pledge: Pledge = {
   // repository_id: 'xx',
   // organization_id: 'xx',
   state: PledgeState.CREATED,
+  type: PledgeType.PAY_UPFRONT,
   // pledger_name: 'Google',
   // pledger_avatar: 'https://avatars.githubusercontent.com/u/1342004?s=200&v=4',
   // authed_user_can_admin: false,

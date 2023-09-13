@@ -6,6 +6,7 @@ import type { CurrencyAmount } from './CurrencyAmount';
 import type { Issue } from './Issue';
 import type { Pledger } from './Pledger';
 import type { PledgeState } from './PledgeState';
+import type { PledgeType } from './PledgeType';
 
 export type Pledge = {
   /**
@@ -25,6 +26,10 @@ export type Pledge = {
    */
   state: PledgeState;
   /**
+   * Type of pledge
+   */
+  type: PledgeType;
+  /**
    * If and when the pledge was refunded to the pledger
    */
   refunded_at?: string;
@@ -40,5 +45,9 @@ export type Pledge = {
    * The user or organization that made this pledge
    */
   pledger?: Pledger;
+  /**
+   * URL of invoice for this pledge
+   */
+  hosted_invoice_url?: string;
 };
 

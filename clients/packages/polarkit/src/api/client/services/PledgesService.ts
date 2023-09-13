@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { CreatePledgeFromPaymentIntent } from '../models/CreatePledgeFromPaymentIntent';
+import type { CreatePledgePayLater } from '../models/CreatePledgePayLater';
 import type { ListResource_Pledge_ } from '../models/ListResource_Pledge_';
 import type { Platforms } from '../models/Platforms';
 import type { Pledge } from '../models/Pledge';
@@ -97,6 +98,51 @@ export class PledgesService {
       url: '/api/v1/pledges',
       body: requestBody,
       mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Create Pay On Completion
+   * Creates a pay_on_completion type of pledge
+   * @returns Pledge Successful Response
+   * @throws ApiError
+   */
+  public createPayOnCompletion({
+    requestBody,
+  }: {
+    requestBody: CreatePledgePayLater,
+  }): CancelablePromise<Pledge> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/pledges/pay_on_completion',
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Create Invoice
+   * Creates an invoice for pay_on_completion pledges
+   * @returns Pledge Successful Response
+   * @throws ApiError
+   */
+  public createInvoice({
+    id,
+  }: {
+    id: string,
+  }): CancelablePromise<Pledge> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/pledges/{id}/create_invoice',
+      path: {
+        'id': id,
+      },
       errors: {
         422: `Validation Error`,
       },

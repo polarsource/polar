@@ -15,6 +15,7 @@ import {
   Pledge,
   PledgeRead,
   PledgeState,
+  PledgeType,
   PledgerPledgePendingNotification,
   Repository,
   RewardPaidNotification,
@@ -138,6 +139,7 @@ export const pledgePublicAPI: Pledge = {
   // repository_id: repo.id,
   // organization_id: org.id,
   state: PledgeState.CREATED,
+  type: PledgeType.PAY_UPFRONT,
   // pledger_name?: string;
   // pledger_avatar?: string;
   // authed_user_can_admin?: boolean;

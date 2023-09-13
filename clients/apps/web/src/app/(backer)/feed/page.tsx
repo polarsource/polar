@@ -7,12 +7,13 @@ import {
 } from '@/components/Dashboard/filters'
 import Recommended from '@/components/Feed/Recommended'
 import FundAGithubIssue from '@/components/Onboarding/FundAGithubIssue'
-import { useAuth } from '@/hooks'
+import { useAuth, useGitHubAccount } from '@/hooks'
 import { IssueListType, IssueStatus } from 'polarkit/api/client'
 import { usePersonalDashboard } from 'polarkit/hooks'
 
 export default function Page() {
   const { currentUser } = useAuth()
+  const githubAccount = useGitHubAccount()
 
   const filters: DashboardFilters = {
     ...DefaultFilters,
@@ -64,7 +65,7 @@ export default function Page() {
         )}
       </div>
 
-      <Recommended />
+      {githubAccount && <Recommended />}
     </div>
   )
 }

@@ -70,6 +70,7 @@ type Size = 'normal' | 'small' | 'smaller'
 
 type ButtonProps = {
   children: React.ReactNode
+  type?: 'submit' | 'reset' | 'button' | undefined
   href?: string
   color: Color
   fullWidth: boolean
@@ -161,9 +162,9 @@ export const PrimaryButton = (props: ButtonProps) => {
     }
     if (!props.loading) {
       if (props.size === 'normal') {
-        return <div className="-mr-2 h-6 w-0"></div>
+        return <div className="h-6 w-0"></div>
       } else {
-        return <div className="-mr-2 h-4 w-0"></div>
+        return <div className="h-4 w-0"></div>
       }
     }
 
@@ -172,7 +173,12 @@ export const PrimaryButton = (props: ButtonProps) => {
 
   return (
     <>
-      <button className={classes} onClick={props.onClick} disabled={disabled}>
+      <button
+        type={props.type}
+        className={classes}
+        onClick={props.onClick}
+        disabled={disabled}
+      >
         {spinnerOrPlaceholder()}
         {!props.loading && props.children}
       </button>
@@ -208,7 +214,12 @@ export const ThinButton = (props: ButtonProps) => {
 
   return (
     <>
-      <button className={classes} onClick={props.onClick} disabled={disabled}>
+      <button
+        type={props.type}
+        className={classes}
+        onClick={props.onClick}
+        disabled={disabled}
+      >
         {!props.loading && (
           <div className="h-4">{/* Same height as LoadingSpinner */}</div>
         )}

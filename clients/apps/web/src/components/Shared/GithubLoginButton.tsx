@@ -42,13 +42,12 @@ const GithubLoginButton = (props: {
       <button
         onClick={signin}
         type="button"
-        className={`flex content-center items-center justify-center space-x-2 transition-colors duration-200 ${
+        className={`flex w-full content-center items-center justify-center space-x-2 transition-colors duration-200 ${
           props.size === 'large' ? largeStyle : smallStyle
         }`}
       >
-        <span>{props.text}</span>
         <svg
-          className={`mr-3 ${props.size === 'large' ? 'h-5 w-5' : 'h-4 w-4'}`}
+          className={`${props.size === 'large' ? 'h-5 w-5' : 'h-4 w-4'}`}
           aria-hidden="true"
           fill="currentColor"
           viewBox="0 0 20 20"
@@ -59,6 +58,7 @@ const GithubLoginButton = (props: {
             clipRule="evenodd"
           />
         </svg>
+        <span>{props.text}</span>
       </button>
     </>
   )

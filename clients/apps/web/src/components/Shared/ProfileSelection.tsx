@@ -207,7 +207,13 @@ const Profile = (props: {
   return (
     <>
       <div className="flex items-center text-sm">
-        <img src={props.avatar_url} className="h-5 w-5 rounded-full" />
+        {props.avatar_url && (
+          <img
+            src={props.avatar_url}
+            className="h-5 w-5 rounded-full"
+            alt={props.name}
+          />
+        )}
         <p className="mx-1.5 text-gray-600 dark:text-gray-400">{props.name}</p>
         <ProfileBadge type={props.type} />
       </div>

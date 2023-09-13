@@ -506,6 +506,11 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not pledge:
             raise ResourceNotFound(f"Pledge not found with payment_id: {payload.id}")
 
+        log.info(
+            "handle_payment_intent_success",
+            payment_id=payload.id,
+        )
+
         if pledge.type == PledgeType.pay_directly:
             return await self.mark_created_by_payment_id(
                 session,

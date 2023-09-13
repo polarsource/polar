@@ -30,19 +30,23 @@ class RewardService:
         is_transfered: bool | None = None,
     ) -> Sequence[Tuple[Pledge, IssueReward, PledgeTransaction]]:
         statement = (
-            sql.select(Pledge, IssueReward, PledgeTransaction)
-            .join(Pledge.issue)
-            .join(IssueReward, Issue.id == IssueReward.issue_id)
-            .join(
-                PledgeTransaction,
-                and_(
-                    PledgeTransaction.pledge_id == Pledge.id,
-                    PledgeTransaction.issue_reward_id == IssueReward.id,
-                    PledgeTransaction.type == PledgeTransactionType.transfer,
-                ),
-                isouter=True,
+            (
+                sql.select(Pledge, IssueReward, PledgeTransaction)
+                .join(Pledge.issue)
+                .join(IssueReward, Issue.id == IssueReward.issue_id)
+                .join(
+                    PledgeTransaction,
+                    and_(
+                        PledgeTransaction.pledge_id == Pledge.id,
+                        PledgeTransaction.issue_reward_id == IssueReward.id,
+                        PledgeTransaction.type == PledgeTransactionType.transfer,
+                    ),
+                    isouter=True,
+                )
             )
-        ).where(Pledge.state.in_(PledgeState.active_states()))
+            .where(Pledge.state.in_(PledgeState.active_states()))
+            .order_by(Pledge.created_at)
+        )
 
         if pledge_org_id:
             statement = statement.where(Pledge.organization_id == pledge_org_id)

@@ -72,13 +72,18 @@ async def pledge_created_discord_alert(hook: PledgeHook) -> None:
 
     embed = DiscordEmbed(
         title="New pledge",
-        description=f'A ${pledge.amount/100} pledge has been made towards "{issue.title}"',  # noqa: E501
+        description=f'A ${pledge.amount/100} pledge has been made towards "{issue.title}".',  # noqa: E501
         color="65280",
     )
 
     embed.add_embed_field(
         name="Backoffice",
         value="[Open](https://polar.sh/backoffice/pledges)",
+    )
+
+    embed.add_embed_field(
+        name="Type",
+        value=pledge.type,
     )
 
     webhook.add_embed(embed)

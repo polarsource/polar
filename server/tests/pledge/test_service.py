@@ -673,3 +673,46 @@ async def test_generate_pledge_testdata(
     pledges[3][1].state = PledgeState.charge_disputed
 
     await session.commit()
+
+
+@pytest.mark.asyncio
+async def test_mark_created_by_payment_id(
+    session: AsyncSession,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+    mocker: MockerFixture,
+) -> None:
+    mocker.patch("polar.worker._enqueue_job")
+
+    pledge = await Pledge.create(
+        session=session,
+        issue_id=issue.id,
+        repository_id=repository.id,
+        organization_id=organization.id,
+        amount=12300,
+        fee=123,
+        by_organization_id=organization.id,
+        state=PledgeState.initiated,
+        payment_id="xxx-2",
+    )
+
+    assert pledge.payment_id
+
+    await pledge_service.mark_created_by_payment_id(
+        session,
+        pledge.payment_id,
+        pledge.amount,
+        "trx-id-2",
+    )
+
+    await pledge_service.mark_created_by_payment_id(
+        session,
+        pledge.payment_id,
+        pledge.amount,
+        "trx-id-2",
+    )
+
+    got = await pledge_service.get(session, pledge.id)
+    assert got
+    assert got.state == PledgeState.created

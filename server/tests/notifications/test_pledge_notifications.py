@@ -109,19 +109,13 @@ async def test_deduplicate(
         "trx-id-2",
     )
 
-    errored = False
-    try:
-        await pledge_service.mark_created_by_payment_id(
-            session,
-            pledge.payment_id,
-            pledge.amount,
-            "trx-id-2",
-        )
-    except Exception as e:
-        assert e is not None
-        errored = True
-
-    assert errored is True
+    # do it again, (should not do anything)
+    await pledge_service.mark_created_by_payment_id(
+        session,
+        pledge.payment_id,
+        pledge.amount,
+        "trx-id-2",
+    )
 
     # Check notifictions
     assert spy.call_count == 1

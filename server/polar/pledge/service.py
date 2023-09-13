@@ -511,7 +511,18 @@ class PledgeService(ResourceServiceReader[Pledge]):
             payment_id=payload.id,
         )
 
-        if pledge.type == PledgeType.pay_directly:
+        # Log Transaction
+        session.add(
+            PledgeTransaction(
+                pledge_id=pledge.id,
+                type=PledgeTransactionType.pledge,
+                amount=payload.amount_received,
+                transaction_id=payload.latest_charge,
+            )
+        )
+        await session.commit()
+
+        if pledge.type == PledgeType.pay_upfront:
             return await self.mark_created_by_payment_id(
                 session,
                 payment_id=payload.id,
@@ -540,6 +551,10 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not pledge:
             raise ResourceNotFound(f"Pledge not found with payment_id: {payment_id}")
 
+        # Already in the expected state
+        if pledge.state == PledgeState.created:
+            return None
+
         if pledge.state not in PledgeState.to_created_states():
             raise Exception(f"pledge is in unexpected state: {pledge.state}")
 
@@ -555,19 +570,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
             .values(
                 state=PledgeState.created,
                 amount_received=amount_received,
-                # transaction_id=transaction_id,
             )
         )
         await session.execute(stmt)
-
-        session.add(
-            PledgeTransaction(
-                pledge_id=pledge.id,
-                type=PledgeTransactionType.pledge,
-                amount=amount_received,
-                transaction_id=transaction_id,
-            )
-        )
         await session.commit()
         await pledge_created.call(PledgeHook(session, pledge))
 
@@ -887,7 +892,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not issue:
             raise ResourceNotFound("Issue Not Found")
 
-        return await Pledge.create(
+        pledge = await Pledge.create(
             session=session,
             issue_id=issue.id,
             repository_id=issue.repository_id,
@@ -898,6 +903,10 @@ class PledgeService(ResourceServiceReader[Pledge]):
             type=PledgeType.pay_on_completion,
             by_user_id=by_user_id,
         )
+
+        await pledge_created.call(PledgeHook(session, pledge))
+
+        return pledge
 
     async def send_invoice(
         self,

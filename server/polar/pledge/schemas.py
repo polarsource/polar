@@ -154,6 +154,8 @@ class Pledge(Schema):
         description="The user or organization that made this pledge"
     )
 
+    hosted_invoice_url: str | None = Field(description="URL of invoice for this pledge")
+
     @classmethod
     def from_db(cls, o: PledgeModel) -> Pledge:
         pledger: Pledger | None = None
@@ -182,6 +184,7 @@ class Pledge(Schema):
             scheduled_payout_at=o.scheduled_payout_at,
             issue=Issue.from_db(o.issue),
             pledger=pledger,
+            hosted_invoice_url=o.invoice_hosted_url,
         )
 
 

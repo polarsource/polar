@@ -12,6 +12,7 @@ import { ExtensionService } from './services/ExtensionService';
 import { HealthService } from './services/HealthService';
 import { IntegrationsService } from './services/IntegrationsService';
 import { IssuesService } from './services/IssuesService';
+import { MagicLinkService } from './services/MagicLinkService';
 import { NotificationsService } from './services/NotificationsService';
 import { OrganizationsService } from './services/OrganizationsService';
 import { PaymentMethodsService } from './services/PaymentMethodsService';
@@ -34,6 +35,7 @@ export class PolarAPI {
   public readonly health: HealthService;
   public readonly integrations: IntegrationsService;
   public readonly issues: IssuesService;
+  public readonly magicLink: MagicLinkService;
   public readonly notifications: NotificationsService;
   public readonly organizations: OrganizationsService;
   public readonly paymentMethods: PaymentMethodsService;
@@ -67,6 +69,7 @@ export class PolarAPI {
     this.health = new HealthService(this.request);
     this.integrations = new IntegrationsService(this.request);
     this.issues = new IssuesService(this.request);
+    this.magicLink = new MagicLinkService(this.request);
     this.notifications = new NotificationsService(this.request);
     this.organizations = new OrganizationsService(this.request);
     this.paymentMethods = new PaymentMethodsService(this.request);

@@ -5,10 +5,12 @@ from pytest_mock import MockerFixture
 
 from polar.config import settings
 from polar.issue.schemas import Reactions
+from polar.issue.service import issue as issue_service
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository
+from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.pledge.schemas import PledgeState
 from polar.pledge.service import pledge as pledge_service
@@ -273,13 +275,14 @@ async def test_confirm_solved(
     user_organization: UserOrganization,  # makes User a member of Organization
     mocker: MockerFixture,
     client: AsyncClient,
+    user: User,
 ) -> None:
     mocker.patch("polar.worker._enqueue_job")
 
     user_organization.is_admin = True
     await user_organization.save(session)
 
-    await pledge_service.mark_confirmation_pending_by_issue_id(session, issue.id)
+    await issue_service.mark_confirmed_solved(session, issue.id, user.id)
 
     # fetch pledges
     pledges_response = await client.get(
@@ -291,7 +294,7 @@ async def test_confirm_solved(
 
     assert pledges_response.status_code == 200
     assert len(pledges_response.json()["items"]) == 1
-    assert pledges_response.json()["items"][0]["state"] == "confirmation_pending"
+    assert pledges_response.json()["items"][0]["state"] == "created"
 
     # confirm as solved
     response = await client.post(

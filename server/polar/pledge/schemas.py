@@ -23,11 +23,9 @@ class PledgeState(str, Enum):
     # Type=pay_on_completion: polar has not recevied the money
     created = "created"
 
-    # The issue has been closed, awaiting maintainer to confirm the issue is fixed.
-    confirmation_pending = "confirmation_pending"
-
     # The fix was confirmed, and rewards have been created.
     # See issue rewards to track payment status.
+    #
     # Type=pay_upfront: polar has recevied the money
     # Type=pay_on_completion: polar has recevied the money
     pending = "pending"
@@ -44,7 +42,6 @@ class PledgeState(str, Enum):
     def active_states(cls) -> list[PledgeState]:
         return [
             cls.created,
-            cls.confirmation_pending,
             cls.pending,
             cls.disputed,
         ]
@@ -65,7 +62,7 @@ class PledgeState(str, Enum):
         """
         Allowed states to move into initiated from
         """
-        return [cls.initiated, cls.confirmation_pending]
+        return [cls.initiated]
 
     @classmethod
     def to_confirmation_pending_states(cls) -> list[PledgeState]:
@@ -79,14 +76,14 @@ class PledgeState(str, Enum):
         """
         Allowed states to move into pending from
         """
-        return [cls.created, cls.confirmation_pending]
+        return [cls.created]
 
     @classmethod
     def to_disputed_states(cls) -> list[PledgeState]:
         """
         # Allowed states to move into disputed from
         """
-        return [cls.created, cls.confirmation_pending, cls.pending]
+        return [cls.created, cls.pending]
 
     @classmethod
     def to_paid_states(cls) -> list[PledgeState]:

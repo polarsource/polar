@@ -489,5 +489,51 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         await session.execute(stmt)
         await session.commit()
 
+    async def mark_needs_confirmation(
+        self, session: AsyncSession, issue_id: UUID
+    ) -> bool:
+        issue = await self.get(session, issue_id)
+        if not issue:
+            return False
+
+        # Already marked as needs solving or confirmed solved
+        if issue.needs_confirmation_solved:
+            return False
+        if issue.confirmed_solved_at:
+            return False
+
+        stmt = (
+            sql.update(Issue)
+            .where(Issue.id == issue_id)
+            .values(needs_confirmation_solved=False)
+        )
+
+        await session.execute(stmt)
+        await session.commit()
+
+        return True
+
+    async def mark_not_needs_confirmation(
+        self, session: AsyncSession, issue_id: UUID
+    ) -> bool:
+        issue = await self.get(session, issue_id)
+        if not issue:
+            return False
+
+        # Already marked as solved, do not go back to needs confirmation
+        if issue.confirmed_solved_at:
+            return False
+
+        stmt = (
+            sql.update(Issue)
+            .where(Issue.id == issue_id)
+            .values(needs_confirmation_solved=False)
+        )
+
+        await session.execute(stmt)
+        await session.commit()
+
+        return True
+
 
 issue = IssueService(Issue)

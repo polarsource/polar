@@ -17,7 +17,6 @@ from polar.exceptions import (
     InternalServerError,
     NotPermitted,
     ResourceNotFound,
-    StripeError,
 )
 from polar.integrations.github.service.user import github_user as github_user_service
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook
@@ -242,19 +241,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
             return True
         return False
 
-    async def mark_confirmation_pending_by_issue_id(
-        self, session: AsyncSession, issue_id: UUID
-    ) -> None:
-        any_changed = await self.transition_by_issue_id(
-            session,
-            issue_id,
-            from_states=PledgeState.to_confirmation_pending_states(),
-            to_state=PledgeState.confirmation_pending,
-        )
-
-        if any_changed:
-            await self.pledge_confirmation_pending_notifications(session, issue_id)
-
     async def pledge_confirmation_pending_notifications(
         self, session: AsyncSession, issue_id: UUID
     ) -> None:
@@ -295,16 +281,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
             session=session,
             org_id=org.id,
             notif=PartialNotification(issue_id=issue.id, payload=n),
-        )
-
-    async def mark_confirmation_pending_as_created_by_issue_id(
-        self, session: AsyncSession, issue_id: UUID
-    ) -> None:
-        await self.transition_by_issue_id(
-            session,
-            issue_id,
-            from_states=[PledgeState.confirmation_pending],
-            to_state=PledgeState.created,
         )
 
     async def mark_pending_by_issue_id(

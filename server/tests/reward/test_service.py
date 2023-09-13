@@ -133,7 +133,7 @@ async def test_list_rewards_to_user(
         organization_id=organization.id,
         amount=1000,
         fee=0,
-        state=PledgeState.confirmation_pending,
+        state=PledgeState.created,
         scheduled_payout_at=utc_now() - timedelta(days=2),
         payment_id="test_transfer_payment_id",
     )
@@ -147,7 +147,7 @@ async def test_list_rewards_to_user(
         organization_id=organization.id,
         amount=2000,
         fee=0,
-        state=PledgeState.confirmation_pending,
+        state=PledgeState.created,
         scheduled_payout_at=utc_now() - timedelta(days=2),
         payment_id="test_transfer_payment_id",
     )

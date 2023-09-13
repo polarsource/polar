@@ -21,7 +21,7 @@ export default function Page({
           <span className="font-bold">{email}</span>.
         </div>
         <div className="text-center text-gray-500 dark:text-gray-400">
-          If no account exists, it will be created.
+          An account will be created unless one already exists.
         </div>
       </div>
     </div>

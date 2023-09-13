@@ -17,15 +17,21 @@ from polar.models.pledge import Pledge as PledgeModel
 class PledgeState(str, Enum):
     # Initiated by customer. Polar has not received money yet.
     initiated = "initiated"
-    # Polar has received the money.
+
+    # The pledge has been created.
+    # Type=pay_upfront: polar has recevied the money
+    # Type=pay_on_completion: polar has not recevied the money
     created = "created"
-    # Pay later schemas (pay_on_completion, pay_from_maintainer)
-    pay_later = "pay_later"
+
     # The issue has been closed, awaiting maintainer to confirm the issue is fixed.
     confirmation_pending = "confirmation_pending"
+
     # The fix was confirmed, and rewards have been created.
     # See issue rewards to track payment status.
+    # Type=pay_upfront: polar has recevied the money
+    # Type=pay_on_completion: polar has recevied the money
     pending = "pending"
+
     # The pledge was refunded in full before being paid out.
     refunded = "refunded"
     # The pledge was disputed by the customer (via Polar)
@@ -73,7 +79,7 @@ class PledgeState(str, Enum):
         """
         Allowed states to move into pending from
         """
-        return [cls.created, cls.confirmation_pending, cls.pay_later]
+        return [cls.created, cls.confirmation_pending]
 
     @classmethod
     def to_disputed_states(cls) -> list[PledgeState]:

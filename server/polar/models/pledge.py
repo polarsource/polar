@@ -24,7 +24,15 @@ class Pledge(RecordModel):
     organization_id: Mapped[UUID] = mapped_column(
         PostgresUUID, ForeignKey("organizations.id"), nullable=False
     )
-    payment_id: Mapped[str] = mapped_column(String, nullable=True, index=True)
+
+    # Stripe Payment Intents (may or may not have been paid)
+    payment_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+
+    # Stripe Invoice ID (if pay later and the invoice has been created)
+    invoice_id: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Stripe URL for hosted invoice
+    invoice_hosted_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Deprecated: Not relevant after introduction of split rewards.
     # Instead see pledge_transactions table.
@@ -38,6 +46,11 @@ class Pledge(RecordModel):
     @property
     def amount_including_fee(self) -> int:
         return self.amount + self.fee
+
+    # For paid pledges, this is the amount of monye actually received.
+    # For pledges paid by invoice, this amount can be smaller or larger than
+    # amount_including_fee.
+    amount_received: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
     state: Mapped[str] = mapped_column(String, nullable=False, default="initiated")
     type: Mapped[str] = mapped_column(String, nullable=False, default="pay_upfront")

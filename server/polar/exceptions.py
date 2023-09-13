@@ -35,6 +35,13 @@ class Unauthorized(PolarError):
         super().__init__(message, status_code)
 
 
+class InternalServerError(PolarError):
+    def __init__(
+        self, message: str = "Internal Server Error", status_code: int = 500
+    ) -> None:
+        super().__init__(message, status_code)
+
+
 class StripeError(PolarError):
     ...
 

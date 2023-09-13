@@ -166,6 +166,13 @@ class Authz:
         ):
             return await self._can_user_read_pledge(subject, object)
 
+        if (
+            isinstance(subject, User)
+            and accessType == AccessType.write
+            and isinstance(object, Pledge)
+        ):
+            return await self._can_user_write_pledge(subject, object)
+
         raise Exception(
             f"Unknown subject/action/object combination. subject={type(subject)} access={accessType} object={type(object)}"  # noqa: E501
         )
@@ -360,14 +367,27 @@ class Authz:
             return True
 
         # If member of pledging org
-        if object.by_organization_id and await self._is_member_and_admin(
+        if object.by_organization_id and await self._is_member(
             subject.id, object.by_organization_id
         ):
             return True
 
         # If member of receiving org
-        if object.organization_id and await self._is_member_and_admin(
+        if object.organization_id and await self._is_member(
             subject.id, object.organization_id
+        ):
+            return True
+
+        return False
+
+    async def _can_user_write_pledge(self, subject: User, object: Pledge) -> bool:
+        # If pledged by this user
+        if object.by_user_id and object.by_user_id == subject.id:
+            return True
+
+        # If admin of pledging org
+        if object.by_organization_id and await self._is_member_and_admin(
+            subject.id, object.by_organization_id
         ):
             return True
 

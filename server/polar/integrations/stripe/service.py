@@ -239,7 +239,7 @@ Thank you for your support!
             auto_advance=False,
         )
 
-        print(invoice)
+        # print(invoice)
 
         stripe_lib.InvoiceItem.create(
             invoice=invoice.id,
@@ -254,7 +254,10 @@ Thank you for your support!
 
         stripe_lib.Invoice.finalize_invoice(invoice.id, auto_advance=False)
 
-        stripe_lib.Invoice.send_invoice(invoice.id)
+        in2 = stripe_lib.Invoice.send_invoice(invoice.id)
+        print(in2)
+
+        return in2
 
 
 stripe = StripeService()

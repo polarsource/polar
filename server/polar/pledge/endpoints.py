@@ -239,49 +239,26 @@ async def create_pay_on_completion(
     "/pledges/{id}/create_invoice",
     response_model=PledgeSchema,
     tags=[Tags.INTERNAL],
-    description="Creates a pay_on_completion type of pledge",
+    description="Creates an invoice for pay_on_completion pledges",
     status_code=200,
 )
 async def create_invoice(
     id: UUID,
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.current_user),
+    authz: Authz = Depends(Authz.authz),
 ) -> PledgeSchema:
     if not auth.user:
         raise Unauthorized()
-
-    # TODO: Authz
 
     pledge = await pledge_service.get(session, id)
     if not pledge:
         raise ResourceNotFound()
 
-    pledge_issue = await issue_service.get(session, pledge.issue_id)
-    if not pledge_issue:
-        raise ResourceNotFound()
+    if not await authz.can(auth.subject, AccessType.write, pledge):
+        raise Unauthorized()
 
-    pledge_issue_repo = await repository_service.get(
-        session, pledge_issue.repository_id
-    )
-    if not pledge_issue_repo:
-        raise ResourceNotFound()
-
-    pledge_issue_org = await organization_service.get(
-        session, pledge_issue.organization_id
-    )
-    if not pledge_issue_org:
-        raise ResourceNotFound()
-
-    invoice = await stripe_service.create_pledge_invoice(
-        session=session,
-        user=auth.user,
-        pledge=pledge,
-        pledge_issue=pledge_issue,
-        pledge_issue_repo=pledge_issue_repo,
-        pledge_issue_org=pledge_issue_org,
-    )
-
-    print(invoice)
+    await pledge_service.send_invoice(session, id)
 
     ret = await pledge_service.get_with_loaded(session, id)
     if not ret:

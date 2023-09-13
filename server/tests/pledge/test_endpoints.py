@@ -63,7 +63,7 @@ async def test_get_pledge_not_admin(
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
-    assert response.status_code == 401
+    assert response.status_code == 200
 
 
 @pytest.mark.asyncio
@@ -132,7 +132,7 @@ async def test_search_pledge_no_admin(
     )
 
     assert response.status_code == 200
-    assert response.json()["items"] == []
+    assert len(response.json()["items"]) == 1
 
 
 @pytest.mark.asyncio

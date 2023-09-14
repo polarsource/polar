@@ -29,7 +29,6 @@ from polar.user_organization.service import (
 
 from .schemas import (
     ConfirmIssue,
-    IssueRead,
     IssueReferenceRead,
     IssueUpdateBadgeMessage,
     PostIssueComment,
@@ -428,24 +427,6 @@ async def confirm(
 #
 
 
-@router.get(
-    "/{platform}/{org_name}/{repo_name}/issues",
-    response_model=list[IssueRead],
-    tags=[Tags.INTERNAL],
-)
-async def get_repository_issues(
-    platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
-    session: AsyncSession = Depends(get_db_session),
-) -> Sequence[Issue]:
-    issues = await issue_service.list_by_repository(
-        session=session, repository_id=auth.repository.id
-    )
-    return issues
-
-
 @router.post(
     "/{platform}/{org_name}/{repo_name}/issue/{issue_number}/add_badge",
     response_model=IssueSchema,
@@ -545,7 +526,7 @@ async def get_issue_references(
 
 @router.post(
     "/{platform}/{org_name}/{repo_name}/issue/{issue_number}/comment",
-    response_model=IssueRead,
+    response_model=IssueSchema,
     tags=[Tags.INTERNAL],
 )
 async def add_issue_comment(
@@ -556,7 +537,7 @@ async def add_issue_comment(
     comment: PostIssueComment,
     auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     session: AsyncSession = Depends(get_db_session),
-) -> Issue:
+) -> IssueSchema:
     issue = await issue_service.get_by_number(
         session, platform, auth.organization.id, auth.repository.id, issue_number
     )
@@ -593,12 +574,20 @@ async def add_issue_comment(
         message,
     )
 
-    return issue
+    # get for return
+    issue_ret = await issue_service.get_loaded(session, issue.id)
+    if not issue_ret:
+        raise HTTPException(
+            status_code=404,
+            detail="Issue not found",
+        )
+
+    return IssueSchema.from_db(issue_ret)
 
 
 @router.post(
     "/{platform}/{org_name}/{repo_name}/issue/{issue_number}/badge_message",
-    response_model=IssueRead,
+    response_model=IssueSchema,
     tags=[Tags.INTERNAL],
 )
 async def badge_with_message(
@@ -609,7 +598,7 @@ async def badge_with_message(
     badge_message: IssueUpdateBadgeMessage,
     auth: Auth = Depends(Auth.user_with_org_and_repo_access),
     session: AsyncSession = Depends(get_db_session),
-) -> Issue:
+) -> IssueSchema:
     issue = await issue_service.get_by_number(
         session, platform, auth.organization.id, auth.repository.id, issue_number
     )
@@ -631,4 +620,12 @@ async def badge_with_message(
         triggered_from_label=True,
     )
 
-    return issue
+    # get for return
+    issue_ret = await issue_service.get_loaded(session, issue.id)
+    if not issue_ret:
+        raise HTTPException(
+            status_code=404,
+            detail="Issue not found",
+        )
+
+    return IssueSchema.from_db(issue_ret)

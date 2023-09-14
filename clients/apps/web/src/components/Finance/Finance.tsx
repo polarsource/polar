@@ -50,7 +50,9 @@ const Finance = (props: {
   const { org, tab, pledges, accounts, rewards } = props
 
   const currentPledges =
-    pledges.filter((pr) => pr.state !== PledgeState.PENDING) || []
+    pledges.filter(
+      (pr) => pr.state !== PledgeState.PENDING && !pr.issue.confirmed_solved_at,
+    ) || []
 
   const currentPledgesAmount = currentPledges
     .filter((pr) => !refundedStates.includes(pr.state))

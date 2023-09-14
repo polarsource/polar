@@ -31,7 +31,7 @@ const OnboardingConnectReposToGetStarted = () => {
             window.open(CONFIG.GITHUB_INSTALLATION_URL, '_blank')
           }}
         >
-          <PlusIcon className="h-6 w-6" />
+          <PlusIcon className="mr-2 h-6 w-6" />
           <span>Connect a repository</span>
         </PrimaryButton>
       </div>

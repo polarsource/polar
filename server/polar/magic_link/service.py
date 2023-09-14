@@ -1,3 +1,4 @@
+from sqlalchemy import delete
 from sqlalchemy.orm import joinedload
 
 from polar.config import settings
@@ -67,6 +68,11 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
         await magic_link.delete(session)
 
         return user
+
+    async def delete_expired(self, session: AsyncSession) -> None:
+        statement = delete(MagicLink).where(MagicLink.expires_at < utc_now())
+        await session.execute(statement)
+        await session.commit()
 
     async def _get_valid_magic_link_by_token_hash(
         self, session: AsyncSession, token_hash: str

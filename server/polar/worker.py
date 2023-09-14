@@ -18,7 +18,7 @@ from arq.connections import ArqRedis, RedisSettings
 from arq.connections import create_pool as arq_create_pool
 from arq.cron import CronJob
 from arq.jobs import Job
-from arq.typing import OptionType, SecondsTimedelta
+from arq.typing import OptionType, SecondsTimedelta, WeekdayOptionType
 from arq.worker import Function
 from pydantic import BaseModel
 
@@ -163,8 +163,12 @@ def task(
 
 def interval(
     *,
+    month: OptionType = None,
+    day: OptionType = None,
+    weekday: WeekdayOptionType = None,
+    hour: OptionType = None,
     minute: OptionType = None,
-    second: OptionType = None,
+    second: OptionType = 0,
 ) -> Callable[
     [Callable[Params, Awaitable[ReturnValue]]], Callable[Params, Awaitable[ReturnValue]]
 ]:
@@ -172,7 +176,14 @@ def interval(
         f: Callable[Params, Awaitable[ReturnValue]]
     ) -> Callable[Params, Awaitable[ReturnValue]]:
         new_cron = cron(
-            f, minute=minute, second=second, run_at_startup=False  # type: ignore
+            f,  # type: ignore
+            month=month,
+            day=day,
+            weekday=weekday,
+            hour=hour,
+            minute=minute,
+            second=second,
+            run_at_startup=False,
         )
         WorkerSettings.cron_jobs.append(new_cron)
 

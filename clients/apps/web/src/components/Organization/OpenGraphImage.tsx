@@ -1,11 +1,11 @@
-import { IssuePublicRead } from 'polarkit/api/client'
+import { Issue } from 'polarkit/api/client'
 
 const OpenGraphImage = (props: {
   org_name: string
   repo_name?: string
   issue_count: number
   avatar: string
-  issues: IssuePublicRead[]
+  issues: Issue[]
   largeIssue: boolean
 }) => {
   const issueCount = props.largeIssue ? 1 : 2
@@ -171,7 +171,7 @@ const OpenGraphImage = (props: {
                   flexShrink: 0,
                 }}
               >
-                {(i.reactions.plus_one > 0 && (
+                {i.reactions && i.reactions.plus_one > 0 ? (
                   <div
                     style={{
                       display: 'flex',
@@ -191,7 +191,9 @@ const OpenGraphImage = (props: {
                       }}
                     >{`${i.reactions.plus_one}`}</div>
                   </div>
-                )) || <div></div>}
+                ) : (
+                  <div></div>
+                )}
                 <div
                   style={{
                     background: '#4667CA',

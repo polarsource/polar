@@ -1,20 +1,21 @@
-from collections.abc import Callable, Coroutine
-from uuid import UUID
-from datetime import datetime, UTC, timedelta
 import os
+from collections.abc import Callable, Coroutine
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
+from uuid import UUID
 
 import pytest
 import pytest_asyncio
 from pydantic import EmailStr
 from pytest_mock import MockerFixture
 
-from polar.models import MagicLink, User
-from polar.kit.crypto import get_token_hash, generate_token
-from polar.magic_link.service import magic_link as magic_link_service, InvalidMagicLink
-from polar.magic_link.schemas import MagicLinkRequest
-from polar.kit.db.postgres import AsyncSession
 from polar.config import settings
+from polar.kit.crypto import generate_token, get_token_hash
+from polar.kit.db.postgres import AsyncSession
+from polar.magic_link.schemas import MagicLinkRequest
+from polar.magic_link.service import InvalidMagicLink
+from polar.magic_link.service import magic_link as magic_link_service
+from polar.models import MagicLink, User
 
 GenerateMagicLinkToken = Callable[
     [str, UUID | None, datetime | None], Coroutine[None, None, tuple[MagicLink, str]]
@@ -158,3 +159,28 @@ async def test_authenticate_new_user(
 
     deleted_magic_link = await magic_link_service.get(session, magic_link.id)
     assert deleted_magic_link is None
+
+
+@pytest.mark.asyncio
+async def test_delete_expired(
+    session: AsyncSession, generate_magic_link_token: GenerateMagicLinkToken
+) -> None:
+    magic_link_expired_1, _ = await generate_magic_link_token(
+        "user@example.com",
+        None,
+        datetime(1900, 1, 1, tzinfo=UTC),
+    )
+    magic_link_expired_2, _ = await generate_magic_link_token(
+        "user@example.com",
+        None,
+        datetime.now(UTC) - timedelta(seconds=1),
+    )
+    magic_link_valid, _ = await generate_magic_link_token(
+        "user@example.com", None, None
+    )
+
+    await magic_link_service.delete_expired(session)
+
+    assert await magic_link_service.get(session, magic_link_expired_1.id) is None
+    assert await magic_link_service.get(session, magic_link_expired_2.id) is None
+    assert await magic_link_service.get(session, magic_link_valid.id) is not None

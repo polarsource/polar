@@ -28,5 +28,13 @@ export type IssueDashboardRead = {
   badge_custom_content?: string;
   funding: Funding;
   pledge_badge_currently_embedded: boolean;
+  /**
+   * If a maintainer needs to mark this issue as solved
+   */
+  needs_confirmation_solved: boolean;
+  /**
+   * If this issue has been marked as confirmed solved through Polar
+   */
+  confirmed_solved_at?: string;
 };
 

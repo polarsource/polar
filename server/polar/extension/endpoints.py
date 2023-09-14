@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from polar.auth.dependencies import Auth
 from polar.enums import Platforms
 from polar.extension.schemas import IssueExtensionRead
-from polar.issue.schemas import IssueReferenceRead
+from polar.issue.schemas import Issue, IssueReferenceRead
 from polar.issue.service import issue as issue_service
 from polar.kit import utils
 from polar.models.issue_reference import IssueReference
@@ -89,6 +89,7 @@ async def list_issues_for_extension(
                 number=issue.number,
                 pledges=[PledgeRead.from_db(p) for p in pledges],
                 references=[IssueReferenceRead.from_model(r) for r in references],
+                issue=Issue.from_db(issue),
             )
             ret.append(issue_extension)
 

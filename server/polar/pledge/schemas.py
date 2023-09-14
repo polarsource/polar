@@ -48,7 +48,7 @@ class PledgeState(str, Enum):
 
     # Happy paths:
     #   Pay upfront:
-    #       initiated -> created -> confirmation_pending -> pending -> (transfer)
+    #       initiated -> created -> pending -> (transfer)
     #
     #   Pay later (pay_on_completion / pay_from_maintainer):
     #       created -> pending -> (transfer)

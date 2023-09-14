@@ -229,7 +229,9 @@ class Issue(IssueFields, RecordModel):
         Integer, nullable=False, default=0
     )
 
-    needs_confirmation_solved: Mapped[bool] = mapped_column(Boolean, default=False)
+    needs_confirmation_solved: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
 
     confirmed_solved_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True

@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Any, Generic, List, Self, TypeVar
 from uuid import UUID
 
+from pydantic import Field
 from pydantic.generics import GenericModel
 
 from polar.currency.schemas import CurrencyAmount
@@ -105,6 +106,14 @@ class IssueDashboardRead(Schema):
     funding: Funding
     pledge_badge_currently_embedded: bool
 
+    needs_confirmation_solved: bool = Field(
+        description="If a maintainer needs to mark this issue as solved"
+    )
+
+    confirmed_solved_at: datetime | None = Field(
+        description="If this issue has been marked as confirmed solved through Polar"
+    )
+
     @classmethod
     def from_db(cls, i: Issue) -> Self:
         funding = Funding(
@@ -137,6 +146,8 @@ class IssueDashboardRead(Schema):
             badge_custom_content=i.badge_custom_content,
             funding=funding,
             pledge_badge_currently_embedded=i.pledge_badge_currently_embedded,
+            needs_confirmation_solved=i.needs_confirmation_solved,
+            confirmed_solved_at=i.confirmed_solved_at,
         )
 
 

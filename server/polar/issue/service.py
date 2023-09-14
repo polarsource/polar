@@ -483,6 +483,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             .values(
                 confirmed_solved_at=utc_now(),
                 confirmed_solved_by=by_user_id,
+                needs_confirmation_solved=False,
             )
         )
 

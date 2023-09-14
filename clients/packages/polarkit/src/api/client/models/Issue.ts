@@ -39,6 +39,14 @@ export type Issue = {
   issue_closed_at?: string;
   issue_modified_at?: string;
   issue_created_at: string;
+  /**
+   * If a maintainer needs to mark this issue as solved
+   */
+  needs_confirmation_solved: boolean;
+  /**
+   * If this issue has been marked as confirmed solved through Polar
+   */
+  confirmed_solved_at?: string;
   funding: Funding;
   /**
    * The repository that the issue is in

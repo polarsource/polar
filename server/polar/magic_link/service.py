@@ -65,6 +65,9 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
         if user is None:
             user = await user_service.signup_by_email(session, magic_link.user_email)
 
+        user.email_verified = True
+        await user.update(session)
+
         await magic_link.delete(session)
 
         return user

@@ -126,6 +126,7 @@ async def test_authenticate_existing_user(
 
     authenticated_user = await magic_link_service.authenticate(session, token)
     assert authenticated_user.id == user.id
+    assert authenticated_user.email_verified
 
     deleted_magic_link = await magic_link_service.get(session, magic_link.id)
     assert deleted_magic_link is None
@@ -143,6 +144,7 @@ async def test_authenticate_existing_user_unlinked_from_magic_token(
 
     authenticated_user = await magic_link_service.authenticate(session, token)
     assert authenticated_user.id == user.id
+    assert authenticated_user.email_verified
 
     deleted_magic_link = await magic_link_service.get(session, magic_link.id)
     assert deleted_magic_link is None
@@ -156,6 +158,7 @@ async def test_authenticate_new_user(
 
     authenticated_user = await magic_link_service.authenticate(session, token)
     assert authenticated_user.email == magic_link.user_email
+    assert authenticated_user.email_verified
 
     deleted_magic_link = await magic_link_service.get(session, magic_link.id)
     assert deleted_magic_link is None

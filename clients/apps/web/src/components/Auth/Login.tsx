@@ -14,14 +14,17 @@ const Login = ({ gotoUrl }: { gotoUrl?: string }) => {
       <div id="polar-bg-gradient"></div>
       <div className="flex w-80 flex-col items-center gap-6">
         <LogoType70 className="h-10" />
-        <GithubLoginButton
-          text="Sign in with GitHub"
-          size="large"
-          gotoUrl={gotoUrl}
-          posthogProps={{
-            view: 'Login Page',
-          }}
-        />
+        <div className="w-full">
+          <GithubLoginButton
+            text="Sign in with GitHub"
+            size="large"
+            fullWidth
+            gotoUrl={gotoUrl}
+            posthogProps={{
+              view: 'Login Page',
+            }}
+          />
+        </div>
         <LabeledSeparator label="Or" />
         <MagicLinkLoginForm />
         <div className="mt-8 text-center text-sm text-gray-500">

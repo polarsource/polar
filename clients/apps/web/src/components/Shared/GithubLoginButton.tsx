@@ -8,6 +8,7 @@ const GithubLoginButton = (props: {
   pledgeId?: string
   gotoUrl?: string
   size?: 'large' | 'small'
+  fullWidth?: boolean
   posthogProps?: object
   text: string
 }) => {
@@ -42,9 +43,10 @@ const GithubLoginButton = (props: {
       <button
         onClick={signin}
         type="button"
-        className={`flex w-full content-center items-center justify-center space-x-2 transition-colors duration-200 ${
-          props.size === 'large' ? largeStyle : smallStyle
-        }`}
+        className={`flex content-center items-center justify-center space-x-2 transition-colors duration-200
+          ${props.size === 'large' ? largeStyle : smallStyle}
+          ${props.fullWidth ? 'w-full' : ''}
+        `}
       >
         <svg
           className={`${props.size === 'large' ? 'h-5 w-5' : 'h-4 w-4'}`}

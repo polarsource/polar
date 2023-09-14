@@ -138,8 +138,20 @@ class GithubIssueService(IssueService):
             mutable_keys=IssueCreate.__mutable_keys__,
             autocommit=autocommit,
         )
-        for record in records:
-            await issue_upserted.call(IssueHook(session, record))
+
+        # We're currently in a bit of a pickle here.
+        #
+        # We're propagating the session to the hook functions, and they are unable
+        # to know wether or not we're supposed to commit or not.
+        #
+        # The workaround is to skip calling hooks if autocommit is disabled.
+        # Today (2023-09-14) this only affects issues/for_you.
+        #
+        # TODO: migrate away from this hook!
+        if autocommit:
+            for record in records:
+                await issue_upserted.call(IssueHook(session, record))
+
         return records
 
     async def set_issue_badge_custom_message(

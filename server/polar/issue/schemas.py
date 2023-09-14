@@ -502,36 +502,3 @@ class PostIssueComment(Schema):
 
 class IssueUpdateBadgeMessage(Schema):
     message: str
-
-
-class IssuePublicRead(Schema):
-    id: UUID
-    platform: Platforms
-    organization_id: UUID
-    repository_id: UUID
-    number: int
-    title: str
-    # author: JSONAny
-    labels: JSONAny
-    # closed_by: JSONAny
-    reactions: JSONAny
-    state: IssueModel.State
-    # state_reason: str | None
-    issue_closed_at: datetime | None
-    issue_modified_at: datetime | None
-    issue_created_at: datetime
-    comments: int | None
-    progress: IssueStatus | None = None
-    # badge_custom_content: str | None = None
-    funding_goal: int | None
-
-    class Config:
-        orm_mode = True
-
-
-# Internal model
-class OrganizationPublicPageRead(Schema):
-    organization: Organization
-    repositories: list[Repository]
-    issues: list[IssuePublicRead]
-    total_issue_count: int

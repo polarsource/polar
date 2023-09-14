@@ -29,11 +29,9 @@ from polar.user_organization.service import (
 
 from .schemas import (
     ConfirmIssue,
-    IssuePublicRead,
     IssueRead,
     IssueReferenceRead,
     IssueUpdateBadgeMessage,
-    OrganizationPublicPageRead,
     PostIssueComment,
     UpdateIssue,
 )
@@ -634,76 +632,3 @@ async def badge_with_message(
     )
 
     return issue
-
-
-@router.get(
-    "/{platform}/{org_name}/public",
-    response_model=OrganizationPublicPageRead,
-    tags=[Tags.INTERNAL],
-    summary="Get organization public issues (Internal API)",
-)
-async def get_public_issues(
-    platform: Platforms,
-    org_name: str,
-    repo_name: str | None = None,
-    session: AsyncSession = Depends(get_db_session),
-) -> OrganizationPublicPageRead:
-    org = await organization_service.get_by_name(session, platform, org_name)
-    if not org:
-        raise HTTPException(
-            status_code=404,
-            detail="Organization not found",
-        )
-
-    all_org_repos = await repository_service.list_by(
-        session,
-        org_ids=[org.id],
-        load_organization=True,
-    )
-    all_org_repos = [
-        r for r in all_org_repos if r.is_private is False and r.is_archived is False
-    ]
-
-    if repo_name:
-        repo = await repository_service.get_by(
-            session,
-            organization_id=org.id,
-            name=repo_name,
-            is_private=False,
-            is_archived=False,
-            deleted_at=None,
-        )
-
-        if not repo:
-            raise HTTPException(
-                status_code=404,
-                detail="Repository not found",
-            )
-
-        issues_in_repos = [repo]
-    else:
-        issues_in_repos = all_org_repos
-
-    issues_in_repos_ids = [r.id for r in issues_in_repos]
-
-    (issues, count) = await issue_service.list_by_repository_type_and_status(
-        session=session,
-        repository_ids=issues_in_repos_ids,
-        issue_list_type=IssueListType.issues,
-        sort_by=IssueSortBy.issues_default,
-        limit=50,
-        have_polar_badge=True,
-        include_statuses=[
-            IssueStatus.backlog,
-            IssueStatus.triaged,
-            IssueStatus.in_progress,
-            IssueStatus.pull_request,
-        ],
-    )
-
-    return OrganizationPublicPageRead(
-        organization=OrganizationSchema.from_db(org),
-        repositories=[RepositorySchema.from_db(r) for r in all_org_repos],
-        issues=[IssuePublicRead.from_orm(i) for i in issues],
-        total_issue_count=count,
-    )

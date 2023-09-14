@@ -3,6 +3,7 @@ from typing import Any, List
 import structlog
 
 from polar.enums import Platforms
+from polar.exceptions import PolarError
 from polar.integrations.github.client import GitHub, TokenAuthStrategy
 from polar.kit.extensions.sqlalchemy import sql
 from polar.models import OAuthAccount, User
@@ -18,6 +19,17 @@ log = structlog.get_logger()
 
 
 GithubUser = github.rest.PrivateUser | github.rest.PublicUser
+
+GithubEmail = tuple[str, bool]
+
+
+class GithubUserServiceError(PolarError):
+    ...
+
+
+class NoPrimaryEmailError(PolarError):
+    def __init__(self) -> None:
+        super().__init__("GitHub user without primary email set")
 
 
 class GithubUserService(UserService):
@@ -78,12 +90,15 @@ class GithubUserService(UserService):
         session: AsyncSession,
         *,
         github_user: GithubUser,
+        github_email: GithubEmail,
         tokens: OAuthAccessToken,
     ) -> User:
         profile = self.generate_profile_json(github_user=github_user)
+        email, email_verified = github_email
         new_user = User(
             username=github_user.login,
-            email=github_user.email,
+            email=email,
+            email_verified=email_verified,
             avatar_url=github_user.avatar_url,
             profile=profile,
             oauth_accounts=[
@@ -93,7 +108,7 @@ class GithubUserService(UserService):
                     expires_at=tokens.expires_at,
                     refresh_token=tokens.refresh_token,
                     account_id=str(github_user.id),
-                    account_email=github_user.email,
+                    account_email=email,
                 )
             ],
         )
@@ -107,16 +122,17 @@ class GithubUserService(UserService):
         session: AsyncSession,
         *,
         github_user: GithubUser,
+        github_email: GithubEmail,
         user: User,
         tokens: OAuthAccessToken,
     ) -> User:
         profile = self.generate_profile_json(github_user=github_user)
 
-        if not github_user.email:
-            raise Exception("user has no email")
+        email, email_verified = github_email
 
         user.username = github_user.login
-        user.email = github_user.email
+        user.email = email
+        user.email_verified = email_verified
         user.avatar_url = github_user.avatar_url
         user.profile = profile
         await user.save(session)
@@ -130,7 +146,7 @@ class GithubUserService(UserService):
         oauth_account.access_token = tokens.access_token
         oauth_account.expires_at = tokens.expires_at
         oauth_account.refresh_token = tokens.refresh_token
-        oauth_account.account_email = github_user.email
+        oauth_account.account_email = email
         await oauth_account.save(session)
 
         log.info(
@@ -145,14 +161,24 @@ class GithubUserService(UserService):
     ) -> User:
         client = github.get_client(access_token=tokens.access_token)
         authenticated = await self.fetch_authenticated_user(client=client)
+        github_email = await self.fetch_authenticated_user_primary_email(client=client)
         existing_user = await self.get_user_by_github_id(session, id=authenticated.id)
         if existing_user:
             user = await self.login(
-                session, github_user=authenticated, user=existing_user, tokens=tokens
+                session,
+                github_user=authenticated,
+                github_email=github_email,
+                user=existing_user,
+                tokens=tokens,
             )
             event_name = "User Logged In"
         else:
-            user = await self.signup(session, github_user=authenticated, tokens=tokens)
+            user = await self.signup(
+                session,
+                github_user=authenticated,
+                github_email=github_email,
+                tokens=tokens,
+            )
             event_name = "User Signed Up"
 
         org_count = await self._run_sync_github_admin_orgs(
@@ -175,9 +201,7 @@ class GithubUserService(UserService):
         self, session: AsyncSession, *, user: User
     ) -> None:
         user_client = await github.get_user_client(session, user)
-        github_user = await self.fetch_authenticated_user(
-            client=user_client, email_required=False
-        )
+        github_user = await self.fetch_authenticated_user(client=user_client)
         await self._run_sync_github_admin_orgs(
             session,
             user=user,
@@ -262,29 +286,26 @@ class GithubUserService(UserService):
         return org_count
 
     async def fetch_authenticated_user(
-        self,
-        *,
-        client: GitHub[TokenAuthStrategy],
-        email_required: bool = True,
+        self, *, client: GitHub[TokenAuthStrategy]
     ) -> GithubUser:
-        # Get authenticated github user
         response = await client.rest.users.async_get_authenticated()
         github.ensure_expected_response(response)
-        gh_user = response.parsed_data
-        if not email_required or github.is_set(gh_user, "email"):
-            return gh_user
+        return response.parsed_data
 
-        # No public email. Using our user:email scope permission to fetch
-        # all private emails and using the first one which is the primary.
-        #
-        # TODO: Re-confirm that it is indeed the primary
+    async def fetch_authenticated_user_primary_email(
+        self, *, client: GitHub[TokenAuthStrategy]
+    ) -> GithubEmail:
         email_response = (
             await client.rest.users.async_list_emails_for_authenticated_user()
         )
         github.ensure_expected_response(email_response)
         emails = email_response.parsed_data
-        gh_user.email = emails[0].email
-        return gh_user
+
+        for email in emails:
+            if email.primary:
+                return email.email, email.verified
+
+        raise NoPrimaryEmailError()
 
     def map_installations_func(
         self,

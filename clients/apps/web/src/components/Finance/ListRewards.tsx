@@ -2,7 +2,12 @@ import CheckIcon from '@/components/Icons/CheckIcon'
 import DollarSignIcon from '@/components/Icons/DollarSignIcon'
 import EyeIcon from '@/components/Icons/EyeIcon'
 import Icon from '@/components/Icons/Icon'
-import { Reward, RewardState } from 'polarkit/api/client'
+import {
+  PledgeState,
+  PledgeType,
+  Reward,
+  RewardState,
+} from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/money'
 
 export type Column = 'ESTIMATED_PAYOUT_DATE' | 'PAID_OUT_DATE' | 'RECEIVER'
@@ -140,9 +145,27 @@ const List = (props: {
 
                 {showEstimatedPayoutDate && (
                   <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
-                    {(t.pledge.scheduled_payout_at &&
-                      formatDate(t.pledge.scheduled_payout_at)) ||
-                      'Unknown'}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div>
+                        {(t.pledge.scheduled_payout_at &&
+                          formatDate(t.pledge.scheduled_payout_at)) ||
+                          'Unknown'}
+                      </div>
+
+                      {t.pledge.type === PledgeType.PAY_ON_COMPLETION &&
+                        t.pledge.state === PledgeState.CREATED && (
+                          <div className="w-fit whitespace-nowrap rounded-full bg-blue-200 px-2 py-0.5 text-blue-700 dark:bg-blue-800 dark:text-blue-200">
+                            Pending payment from pledger
+                          </div>
+                        )}
+
+                      {t.pledge.type === PledgeType.PAY_ON_COMPLETION &&
+                        t.pledge.state === PledgeState.PENDING && (
+                          <div className="w-fit whitespace-nowrap rounded-full bg-green-200 px-2 py-0.5 text-green-700 dark:bg-green-800 dark:text-green-200">
+                            Pledger paid invoice
+                          </div>
+                        )}
+                    </div>
                   </td>
                 )}
 

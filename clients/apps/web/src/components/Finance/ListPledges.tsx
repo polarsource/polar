@@ -2,7 +2,7 @@ import DollarSignIcon from '@/components/Icons/DollarSignIcon'
 import EyeIcon from '@/components/Icons/EyeIcon'
 import Icon from '@/components/Icons/Icon'
 import RefundIcon from '@/components/Icons/RefundIcon'
-import { Pledge, PledgeState } from 'polarkit/api/client'
+import { Pledge, PledgeState, PledgeType } from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/money'
 
 export type Column = 'ESTIMATED_PAYOUT_DATE' | 'REFUNDED_DATE'
@@ -116,8 +116,8 @@ const List = (props: {
                   </div>
                 </td>
                 <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
-                  {
-                    <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 ">
                       {t.pledger?.avatar_url && (
                         <img
                           src={t.pledger.avatar_url}
@@ -126,7 +126,14 @@ const List = (props: {
                       )}
                       <span>{t.pledger?.name || 'Anonymous'}</span>
                     </div>
-                  }
+
+                    {t.type === PledgeType.PAY_ON_COMPLETION &&
+                      t.state === PledgeState.CREATED && (
+                        <div className="w-fit whitespace-nowrap rounded-full bg-blue-200 px-2 py-0.5 text-blue-700 dark:bg-blue-800 dark:text-blue-200">
+                          Pay on completion
+                        </div>
+                      )}
+                  </div>
                 </td>
 
                 <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
@@ -135,9 +142,11 @@ const List = (props: {
 
                 {showEstimatedPayoutDate && (
                   <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
-                    {(t.scheduled_payout_at &&
-                      formatDate(t.scheduled_payout_at)) ||
-                      'Unknown'}
+                    <div>
+                      {(t.scheduled_payout_at &&
+                        formatDate(t.scheduled_payout_at)) ||
+                        'Unknown'}
+                    </div>
                   </td>
                 )}
 
@@ -147,8 +156,10 @@ const List = (props: {
                   </td>
                 )}
 
-                <td className="whitespace-nowrap py-3 pr-3 text-right text-sm text-gray-500">
-                  ${getCentsInDollarString(t.amount.amount, true, true)}
+                <td className="whitespace-nowrap py-3 pr-3 text-sm">
+                  <div className="text-right text-gray-500">
+                    ${getCentsInDollarString(t.amount.amount, true, true)}
+                  </div>
                 </td>
               </tr>
             ))}

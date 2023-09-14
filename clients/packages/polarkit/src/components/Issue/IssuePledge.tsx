@@ -1,5 +1,8 @@
 import {
   Funding,
+  Issue,
+  IssueDashboardRead,
+  IssuePublicRead,
   Pledge,
   PledgeRead,
   PledgeState,
@@ -23,6 +26,7 @@ interface Props {
   confirmPledgeIsLoading: boolean
   funding: Funding
   showSelfPledgesFor?: UserRead
+  issue: IssueDashboardRead | IssuePublicRead | Issue
 }
 
 const IssuePledge = (props: Props) => {
@@ -34,6 +38,7 @@ const IssuePledge = (props: Props) => {
     showConfirmPledgeAction,
     confirmPledgeIsLoading,
     showSelfPledgesFor,
+    issue,
   } = props
 
   const addAmounts = (accumulator: number, pledge: Pledge | PledgeRead) => {
@@ -54,11 +59,12 @@ const IssuePledge = (props: Props) => {
       pledges.some(
         (p) =>
           'authed_user_can_admin_received' in p &&
-          p.state === PledgeState.CONFIRMATION_PENDING &&
+          'needs_confirmation_solved' in issue &&
+          issue.needs_confirmation_solved &&
           p.authed_user_can_admin_received,
       ) && !confirmPledgeIsLoading
     )
-  }, [pledges, confirmPledgeIsLoading])
+  }, [pledges, confirmPledgeIsLoading, issue])
 
   const isConfirmed = useMemo(() => {
     return (

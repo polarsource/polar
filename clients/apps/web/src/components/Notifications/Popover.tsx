@@ -8,7 +8,6 @@ import {
   MaintainerPledgedIssuePendingNotification,
   NotificationRead,
   NotificationType,
-  PledgeState,
   PledgerPledgePendingNotification,
   RewardPaidNotification,
 } from 'polarkit/api/client'
@@ -225,10 +224,11 @@ const MaintainerPledgeConfirmationPendingWrapper = ({
   const { isShown, hide: hideModal, show: showModal } = useModal()
 
   const canMarkSolved = useMemo(() => {
-    return pledge.data?.state === PledgeState.CONFIRMATION_PENDING
+    return pledge.data?.issue.needs_confirmation_solved === true
   }, [pledge])
+
   const isMarkedSolved = useMemo(() => {
-    return pledge.data?.state === PledgeState.PENDING
+    return pledge.data?.issue.confirmed_solved_at !== undefined
   }, [pledge])
 
   const markSolved = useIssueMarkConfirmed()
@@ -287,9 +287,7 @@ const MaintainerPledgedIssueConfirmationPendingWrapper = ({
   const canMarkSolved = useMemo(() => {
     if (
       pledges?.data?.items &&
-      pledges.data.items.some(
-        (p) => p.state === PledgeState.CONFIRMATION_PENDING,
-      )
+      pledges.data.items.some((p) => p.issue.needs_confirmation_solved)
     ) {
       return true
     }
@@ -301,9 +299,7 @@ const MaintainerPledgedIssueConfirmationPendingWrapper = ({
     if (
       !canMarkSolved &&
       pledges?.data?.items &&
-      pledges.data.items.some(
-        (p) => p.state === PledgeState.CONFIRMATION_PENDING,
-      )
+      pledges.data.items.some((p) => p.issue.confirmed_solved_at)
     ) {
       return true
     }

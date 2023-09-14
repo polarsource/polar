@@ -26,8 +26,19 @@ import { default as ListPledges } from './ListPledges'
 import ListRewards, { Column } from './ListRewards'
 
 const refundedStates = [PledgeState.REFUNDED, PledgeState.CHARGE_DISPUTED]
-const inReviewStates = [PledgeState.CONFIRMATION_PENDING, PledgeState.DISPUTED]
+
 const paidStates = [PledgeState.PENDING]
+
+const isInReview = (pledge: Pledge): boolean => {
+  const inReviewStates = [PledgeState.DISPUTED]
+  if (inReviewStates.includes(pledge.state)) {
+    return true
+  }
+  if (pledge.issue.needs_confirmation_solved) {
+    return true
+  }
+  return false
+}
 
 const Finance = (props: {
   org: Organization
@@ -107,14 +118,11 @@ const PledgesContent = (props: { pledges: Pledge[] }) => {
     (p) =>
       !paidStates.includes(p.state) &&
       !refundedStates.includes(p.state) &&
-      !inReviewStates.includes(p.state),
+      !isInReview(p),
   )
 
   const refunded = props.pledges.filter((p) => refundedStates.includes(p.state))
-
-  const inReview = props.pledges.filter((p) => inReviewStates.includes(p.state))
-
-  const paid = props.pledges.filter((p) => paidStates.includes(p.state))
+  const inReview = props.pledges.filter(isInReview)
 
   return (
     <>
@@ -194,8 +202,8 @@ export const HeaderPill = (props: {
       className={classNames(
         props.active
           ? ' bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-gray-700'
-          : ' dark:bg-gray-950 border bg-transparent hover:bg-gray-100/50 dark:ring-1 dark:ring-gray-700 dark:hover:bg-gray-800/50',
-        'transition-background relative flex w-full max-w-[300px] flex-col rounded-xl py-4  px-5 duration-200',
+          : ' border bg-transparent hover:bg-gray-100/50 dark:bg-gray-950 dark:ring-1 dark:ring-gray-700 dark:hover:bg-gray-800/50',
+        'transition-background relative flex w-full max-w-[300px] flex-col rounded-xl px-5  py-4 duration-200',
       )}
     >
       <div className=" text-md flex-1 font-medium text-gray-500 dark:text-gray-400">
@@ -207,7 +215,7 @@ export const HeaderPill = (props: {
       {props.active && props.amount > 0 && (
         <>
           <Triangle />
-          <div className="absolute left-1/2 bottom-0 -ml-6 h-2 w-12  bg-white dark:bg-gray-800"></div>
+          <div className="absolute bottom-0 left-1/2 -ml-6 h-2 w-12  bg-white dark:bg-gray-800"></div>
         </>
       )}
     </Link>

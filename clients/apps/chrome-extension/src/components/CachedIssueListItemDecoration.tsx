@@ -20,7 +20,7 @@ const CachedIssueListItemDecoration = ({
 }) => {
   const [value, setValue, isPersistent, error, isInitialStateResolved] =
     useChromeStorageLocal<IssueExtensionRead>(
-      `issues/${orgName}/${repoName}/${number}`,
+      `issues_v2/${orgName}/${repoName}/${number}`,
     )
 
   if (isInitialStateResolved && value) {
@@ -79,6 +79,7 @@ const CachedIssueListItemDecoration = ({
                   onDispute={() => {}}
                   confirmPledgeIsLoading={false}
                   funding={{}}
+                  issue={value.issue}
                 />
               </div>
             )

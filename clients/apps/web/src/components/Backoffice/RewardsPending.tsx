@@ -78,6 +78,26 @@ const Pledges = () => {
 
             <span>&quot;{i[0][0].pledge.issue.title}&quot;</span>
 
+            {i[0][0].pledge.issue.confirmed_solved_at ? (
+              <div className="flex items-center rounded-full  bg-green-400 px-2 text-sm text-white">
+                confirmed solved
+              </div>
+            ) : (
+              <div className="flex items-center rounded-full  bg-orange-400 px-2 text-sm text-white">
+                not confirmed solved
+              </div>
+            )}
+
+            {i[0][0].pledge.issue.needs_confirmation_solved ? (
+              <div className="flex items-center rounded-full  bg-green-400 px-2 text-sm text-white">
+                awaiting confirmation
+              </div>
+            ) : (
+              <div className="flex items-center rounded-full  bg-orange-400 px-2 text-sm text-white">
+                not awaiting confirmation
+              </div>
+            )}
+
             <ThinButton
               color="gray"
               href={`https://github.com/${i[0][0].pledge.issue.repository.organization.name}/${i[0][0].pledge.issue.repository.name}/issues/${i[0][0].pledge.issue.number}`}
@@ -124,9 +144,6 @@ const Pledges = () => {
                         : '',
                       p[0].pledge.state === PledgeState.PENDING
                         ? 'bg-green-700'
-                        : '',
-                      p[0].pledge.state === PledgeState.CONFIRMATION_PENDING
-                        ? 'bg-blue-700'
                         : '',
                       p[0].pledge.state === PledgeState.CREATED
                         ? 'bg-blue-300'

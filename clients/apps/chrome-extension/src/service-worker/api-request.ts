@@ -16,7 +16,7 @@ const apiRequestDecoration = async (
   // Add all the issues to chrome.storage
   const itemsToAdd = {}
   extensionIssues.forEach((issue) => {
-    itemsToAdd[`issues/${orgName}/${repoName}/${issue.number}`] = issue
+    itemsToAdd[`issues_v2/${orgName}/${repoName}/${issue.number}`] = issue
   })
   chrome.storage.local.set(itemsToAdd)
 
@@ -28,7 +28,7 @@ const apiRequestDecoration = async (
       ),
   )
   chrome.storage.local.remove(
-    keysToRemove.map((k) => `issues/${orgName}/${repoName}/${k}`),
+    keysToRemove.map((k) => `issues_v2/${orgName}/${repoName}/${k}`),
   )
 }
 

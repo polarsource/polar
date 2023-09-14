@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from 'polarkit'
 import {
   ExternalGitHubCommitReference,
+  Issue,
   IssueDashboardRead,
   IssueReferenceRead,
   IssueReferenceType,
@@ -12,18 +13,11 @@ import {
   PledgeRead,
   PledgeState,
   PullRequestReference,
+  State,
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
 import IssueListItem from '../components/Dashboard/IssueListItem'
-import {
-  addDays,
-  addHours,
-  issueRead,
-  org,
-  pledge,
-  repo,
-  user,
-} from './testdata'
+import { addDays, addHours, issue, org, pledge, repo, user } from './testdata'
 
 type Story = StoryObj<typeof IssueListItem>
 
@@ -215,12 +209,16 @@ const referencesCommit: IssueReferenceRead[] = [
   },
 ]
 
-interface Issue extends IssueDashboardRead {
+interface DashIssue extends IssueDashboardRead {
   organization?: Organization
 }
 
-const dashboardIssue: Issue = {
-  ...issueRead,
+const dashboardIssue: DashIssue = {
+  ...issue,
+  organization_id: issue.repository.organization.id,
+  repository_id: issue.repository.id,
+  state: issue.state == Issue.state.OPEN ? State.OPEN : State.CLOSED,
+
   organization: org,
   funding: {},
   pledge_badge_currently_embedded: false,
@@ -251,7 +249,11 @@ const issuePullRequest = {
 const issueClosed = { ...dashboardIssue, progress: IssueStatus.CLOSED }
 
 const dependents: IssueReadWithRelations = {
-  ...issueRead,
+  ...issue,
+  organization_id: issue.repository.organization.id,
+  repository_id: issue.repository.id,
+  state: issue.state == Issue.state.OPEN ? State.OPEN : State.CLOSED,
+
   number: 123,
   title: "Wow, we're blocked by this thing",
   organization: { ...org, name: 'someorg' },

@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 import OpenGraphImage from '@/components/Organization/OpenGraphImage'
-import { issue, issueRead, org } from './testdata'
+import { Reactions } from 'polarkit/api/client'
+import { issue, org } from './testdata'
 
 const meta: Meta<typeof OpenGraphImage> = {
   title: 'Organisms/OpenGraphImage',
@@ -44,7 +45,7 @@ export const IssueToday: Story = {
           new Date().getTime() - 60 * 60 * 24 * 1000,
         ).toString(),
         reactions: {
-          ...issueRead.reactions,
+          ...(issue.reactions as Reactions),
           plus_one: 0,
         },
       },
@@ -212,7 +213,7 @@ export const LargeIssueNoReactions: Story = {
       {
         ...issue,
         reactions: {
-          ...issueRead.reactions,
+          ...(issue.reactions as Reactions),
           plus_one: 0,
         },
       },

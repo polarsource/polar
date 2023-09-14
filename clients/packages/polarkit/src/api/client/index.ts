@@ -39,7 +39,6 @@ export type { IssueDashboardRead } from './models/IssueDashboardRead';
 export type { IssueExtensionRead } from './models/IssueExtensionRead';
 export type { IssueListResponse } from './models/IssueListResponse';
 export { IssueListType } from './models/IssueListType';
-export type { IssueRead } from './models/IssueRead';
 export type { IssueReferenceRead } from './models/IssueReferenceRead';
 export { IssueReferenceType } from './models/IssueReferenceType';
 export { IssueSortBy } from './models/IssueSortBy';

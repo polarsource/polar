@@ -1,5 +1,8 @@
 import {
   Funding,
+  Issue,
+  IssueDashboardRead,
+  IssuePublicRead,
   IssueReferenceRead,
   Pledge,
   PledgeRead,
@@ -38,6 +41,7 @@ const IssueListItemDecoration = ({
   confirmPledgeIsLoading,
   funding,
   showSelfPledgesFor,
+  issue,
 }: {
   orgName: string
   repoName: string
@@ -55,6 +59,7 @@ const IssueListItemDecoration = ({
   confirmPledgeIsLoading: boolean
   funding: Funding
   showSelfPledgesFor?: UserRead
+  issue: IssueDashboardRead | IssuePublicRead | Issue
 }) => {
   const showPledges = pledges && pledges.length > 0
 
@@ -136,6 +141,7 @@ const IssueListItemDecoration = ({
         {showPledges && (
           <div className="stretch mr-4 flex-none">
             <IssuePledge
+              issue={issue}
               orgName={orgName}
               repoName={repoName}
               issueNumber={issueNumber}

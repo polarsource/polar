@@ -17,7 +17,7 @@ const List = (props: {
 
   const icon = (pledge: Pledge) => {
     if (
-      pledge.state === PledgeState.CONFIRMATION_PENDING ||
+      pledge.issue.needs_confirmation_solved ||
       pledge.state === PledgeState.PENDING ||
       pledge.state === PledgeState.DISPUTED
     ) {

@@ -40,6 +40,26 @@ const Pledges = () => {
 
             <span>&quot;{i[0].issue.title}&quot;</span>
 
+            {i[0].issue.confirmed_solved_at ? (
+              <div className="flex items-center rounded-full  bg-green-400 px-2 text-sm text-white">
+                confirmed solved
+              </div>
+            ) : (
+              <div className="flex items-center rounded-full  bg-orange-400 px-2 text-sm text-white">
+                not confirmed solved
+              </div>
+            )}
+
+            {i[0].issue.needs_confirmation_solved ? (
+              <div className="flex items-center rounded-full  bg-green-400 px-2 text-sm text-white">
+                awaiting confirmation
+              </div>
+            ) : (
+              <div className="flex items-center rounded-full  bg-orange-400 px-2 text-sm text-white">
+                not awaiting confirmation
+              </div>
+            )}
+
             <ThinButton
               color="gray"
               href={`https://github.com/${i[0].issue.repository.organization.name}/${i[0].issue.repository.name}/issues/${i[0].issue.number}`}
@@ -70,11 +90,11 @@ const Pledges = () => {
                         ? '!bg-red-700'
                         : '',
                       p.state === 'pending' ? '!bg-green-700' : '',
-                      p.state === 'confirmation_pending' ? '!bg-blue-700' : '',
                     )}
                   >
                     {p.state}
                   </div>
+
                   <ThinButton
                     color="gray"
                     href={`https://dashboard.stripe.com/payments/${p.payment_id}`}

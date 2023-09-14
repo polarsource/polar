@@ -114,6 +114,7 @@ export const issue: Issue = {
   issue_created_at: addDays(new Date(), -7).toISOString(),
   repository: repo,
   funding: {},
+  needs_confirmation_solved: false,
 }
 
 export const pledge: PledgeRead = {

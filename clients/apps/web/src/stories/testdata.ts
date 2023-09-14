@@ -1,6 +1,5 @@
 import {
   Issue,
-  IssueRead,
   MaintainerPledgeConfirmationPendingNotification,
   MaintainerPledgeCreatedNotification,
   MaintainerPledgePaidNotification,
@@ -19,7 +18,6 @@ import {
   PledgerPledgePendingNotification,
   Repository,
   RewardPaidNotification,
-  State,
   UserRead,
   Visibility,
 } from 'polarkit/api/client'
@@ -65,22 +63,6 @@ export const user: UserRead = {
   oauth_accounts: [],
 }
 
-export const issueRead: IssueRead = {
-  platform: Platforms.GITHUB,
-  organization_id: 'aa',
-  repository_id: 'bb',
-  number: 222,
-  title: 'SecretStr comparison fails when field is defined with Field',
-  reactions: {
-    plus_one: 3,
-  },
-  state: State.OPEN,
-  id: 'cc',
-  issue_created_at: addDays(new Date(), -7).toISOString(),
-  external_id: 123,
-  created_at: addDays(new Date(), -7).toISOString(),
-}
-
 // Public API
 export const repo: Repository = {
   platform: Platforms.GITHUB,
@@ -120,7 +102,7 @@ export const issue: Issue = {
 export const pledge: PledgeRead = {
   id: 'pppp',
   created_at: addDays(new Date(), -7).toISOString(),
-  issue_id: issueRead.id,
+  issue_id: issue.id,
   amount: 3000,
   repository_id: repo.id,
   organization_id: org.id,
@@ -135,7 +117,6 @@ export const pledge: PledgeRead = {
 export const pledgePublicAPI: Pledge = {
   id: 'pppp',
   created_at: addDays(new Date(), -7).toISOString(),
-  // issue_id: issueRead.id,
   issue: issue,
   amount: { currency: 'USD', amount: 3000 },
   // repository_id: repo.id,

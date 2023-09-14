@@ -3,7 +3,6 @@
 /* eslint-disable */
 import type { ConfirmIssue } from '../models/ConfirmIssue';
 import type { Issue } from '../models/Issue';
-import type { IssueRead } from '../models/IssueRead';
 import type { IssueReferenceRead } from '../models/IssueReferenceRead';
 import type { IssueSortBy } from '../models/IssueSortBy';
 import type { IssueUpdateBadgeMessage } from '../models/IssueUpdateBadgeMessage';
@@ -188,34 +187,6 @@ export class IssuesService {
   }
 
   /**
-   * Get Repository Issues
-   * @returns IssueRead Successful Response
-   * @throws ApiError
-   */
-  public getRepositoryIssues({
-    platform,
-    orgName,
-    repoName,
-  }: {
-    platform: Platforms,
-    orgName: string,
-    repoName: string,
-  }): CancelablePromise<Array<IssueRead>> {
-    return this.httpRequest.request({
-      method: 'GET',
-      url: '/api/v1/{platform}/{org_name}/{repo_name}/issues',
-      path: {
-        'platform': platform,
-        'org_name': orgName,
-        'repo_name': repoName,
-      },
-      errors: {
-        422: `Validation Error`,
-      },
-    });
-  }
-
-  /**
    * Add Polar Badge
    * @returns Issue Successful Response
    * @throws ApiError
@@ -310,7 +281,7 @@ export class IssuesService {
 
   /**
    * Add Issue Comment
-   * @returns IssueRead Successful Response
+   * @returns Issue Successful Response
    * @throws ApiError
    */
   public addIssueComment({
@@ -325,7 +296,7 @@ export class IssuesService {
     repoName: string,
     issueNumber: number,
     requestBody: PostIssueComment,
-  }): CancelablePromise<IssueRead> {
+  }): CancelablePromise<Issue> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/{platform}/{org_name}/{repo_name}/issue/{issue_number}/comment',
@@ -345,7 +316,7 @@ export class IssuesService {
 
   /**
    * Badge With Message
-   * @returns IssueRead Successful Response
+   * @returns Issue Successful Response
    * @throws ApiError
    */
   public badgeWithMessage({
@@ -360,7 +331,7 @@ export class IssuesService {
     repoName: string,
     issueNumber: number,
     requestBody: IssueUpdateBadgeMessage,
-  }): CancelablePromise<IssueRead> {
+  }): CancelablePromise<Issue> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/{platform}/{org_name}/{repo_name}/issue/{issue_number}/badge_message',

@@ -84,19 +84,6 @@ export const useListAccountsByUser = (user_id?: string) =>
     retry: defaultRetry,
   })
 
-export const useRepositoryIssues = (repoOwner: string, repoName: string) =>
-  useQuery({
-    queryKey: ['issues', 'repo', repoOwner, repoName],
-    queryFn: () =>
-      api.issues.getRepositoryIssues({
-        platform: Platforms.GITHUB,
-        orgName: repoOwner,
-        repoName: repoName,
-      }),
-    enabled: !!repoOwner && !!repoName,
-    retry: defaultRetry,
-  })
-
 export const useOrganization = (orgName: string) =>
   useQuery({
     queryKey: ['organization', orgName],

@@ -3,17 +3,25 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { BadgePromotionModal } from '@/components/Dashboard/IssuePromotionModal'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from 'polarkit'
-import { IssueDashboardRead, Organization } from 'polarkit/api/client'
-import { issueRead, org, repo, user } from './testdata'
+import {
+  Issue,
+  IssueDashboardRead,
+  Organization,
+  State,
+} from 'polarkit/api/client'
+import { issue, org, repo, user } from './testdata'
 
 type Story = StoryObj<typeof BadgePromotionModal>
 
-interface Issue extends IssueDashboardRead {
+interface DashIssue extends IssueDashboardRead {
   organization?: Organization
 }
 
-const dashboardIssue: Issue = {
-  ...issueRead,
+const dashboardIssue: DashIssue = {
+  ...issue,
+  organization_id: issue.repository.organization.id,
+  repository_id: issue.repository.id,
+  state: issue.state == Issue.state.OPEN ? State.OPEN : State.CLOSED,
   funding: {},
   organization: org,
   pledge_badge_currently_embedded: false,

@@ -610,9 +610,6 @@ async def test_generate_pledge_testdata(
         issue_reward_id=reward.id,
     )
 
-    # for p in pledges[2]:
-    # p.state = PledgeState.confirmation_pending
-
     pledges[3][0].state = PledgeState.disputed
     pledges[3][0].dispute_reason = "I've been fooled."
     pledges[3][0].disputed_at = utc_now()

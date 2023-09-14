@@ -54,6 +54,7 @@ async def get_personal_dashboard(
 ) -> IssueListResponse:
     return await dashboard(
         session=session,
+        auth=auth,
         issue_list_type=issue_list_type,
         status=status,
         q=q,
@@ -124,6 +125,7 @@ async def get_dashboard(
 
     return await dashboard(
         session=session,
+        auth=auth,
         in_repos=repositories,
         issue_list_type=issue_list_type,
         status=status,
@@ -155,6 +157,7 @@ def default_sort(
 
 async def dashboard(
     session: AsyncSession,
+    auth: Auth,
     in_repos: Sequence[Repository] = [],
     issue_list_type: IssueListType = IssueListType.issues,
     status: Union[List[IssueStatus], None] = None,
@@ -274,10 +277,10 @@ async def dashboard(
 
     # load user memberships
     user_memberships: Sequence[UserOrganization] = []
-    if for_user:
+    if auth.user:
         user_memberships = await user_organization_service.list_by_user_id(
             session,
-            for_user.id,
+            auth.user.id,
         )
 
     # add pledges to included
@@ -298,10 +301,10 @@ async def dashboard(
             if user_can_admin:
                 pledge_read.authed_user_can_admin = True
 
-            if for_user:
+            if auth.user:
                 pledge_read.authed_user_can_admin_sender = (
                     pledge_service.user_can_admin_sender_pledge(
-                        for_user, pled, user_memberships
+                        auth.user, pled, user_memberships
                     )
                 )
                 pledge_read.authed_user_can_admin_received = (

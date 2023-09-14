@@ -506,7 +506,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         stmt = (
             sql.update(Issue)
             .where(Issue.id == issue_id)
-            .values(needs_confirmation_solved=False)
+            .values(needs_confirmation_solved=True)
         )
 
         await session.execute(stmt)

@@ -41,6 +41,11 @@ async def mark_pledges_confirmation_pending_on_issue_close(
     hook: IssueHook,
 ) -> None:
     if hook.issue.state == "closed":
+        # Only do this if the issue has pledges
+        pledges = await pledge_service.get_by_issue_ids(hook.session, [hook.issue.id])
+        if len(pledges) == 0:
+            return
+
         # Mark pledges in "created" as "confirmation_pending"
         changed = await issue_service.mark_needs_confirmation(
             hook.session, hook.issue.id

@@ -27,9 +27,21 @@ class GithubUserServiceError(PolarError):
     ...
 
 
-class NoPrimaryEmailError(PolarError):
+class NoPrimaryEmailError(GithubUserServiceError):
     def __init__(self) -> None:
         super().__init__("GitHub user without primary email set")
+
+
+class CannotLinkUnverifiedEmailError(GithubUserServiceError):
+    def __init__(self, email: str):
+        message = (
+            f"An account already exists on Polar under the email {email}. "
+            "We cannot automatically link it to your GitHub account since "
+            "this email address is not verified on GitHub. "
+            "Either verify your email address on GitHub and try again "
+            "or sign in with a magic link."
+        )
+        super().__init__(message, 403)
 
 
 class GithubUserService(UserService):
@@ -140,8 +152,13 @@ class GithubUserService(UserService):
         oauth_account: OAuthAccount | None = user.get_platform_oauth_account(
             Platforms.github
         )
-        if not oauth_account:
-            raise RuntimeError("No github account found for user")
+        if oauth_account is None:
+            oauth_account = OAuthAccount(
+                platform=Platforms.github,
+                account_id=str(github_user.id),
+                account_email=email,
+                user=user,
+            )
 
         oauth_account.access_token = tokens.access_token
         oauth_account.expires_at = tokens.expires_at
@@ -162,24 +179,47 @@ class GithubUserService(UserService):
         client = github.get_client(access_token=tokens.access_token)
         authenticated = await self.fetch_authenticated_user(client=client)
         github_email = await self.fetch_authenticated_user_primary_email(client=client)
-        existing_user = await self.get_user_by_github_id(session, id=authenticated.id)
-        if existing_user:
+
+        # Check if existing user with this GitHub account
+        existing_user_by_id = await self.get_user_by_github_id(
+            session, id=authenticated.id
+        )
+        if existing_user_by_id:
             user = await self.login(
                 session,
                 github_user=authenticated,
                 github_email=github_email,
-                user=existing_user,
+                user=existing_user_by_id,
                 tokens=tokens,
             )
             event_name = "User Logged In"
         else:
-            user = await self.signup(
-                session,
-                github_user=authenticated,
-                github_email=github_email,
-                tokens=tokens,
-            )
-            event_name = "User Signed Up"
+            # Check if existing user with this email
+            email, email_verified = github_email
+            existing_user_by_email = await self.get_by_email(session, email)
+            if existing_user_by_email:
+                # Automatically link if email is verified
+                if email_verified:
+                    user = await self.login(
+                        session,
+                        github_user=authenticated,
+                        github_email=github_email,
+                        user=existing_user_by_email,
+                        tokens=tokens,
+                    )
+                    event_name = "User Logged In"
+                # For security reasons, don't link if the email is not verified
+                else:
+                    raise CannotLinkUnverifiedEmailError(email)
+            # New user
+            else:
+                user = await self.signup(
+                    session,
+                    github_user=authenticated,
+                    github_email=github_email,
+                    tokens=tokens,
+                )
+                event_name = "User Signed Up"
 
         org_count = await self._run_sync_github_admin_orgs(
             session,

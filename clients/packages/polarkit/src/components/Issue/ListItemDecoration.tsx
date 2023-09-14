@@ -2,7 +2,6 @@ import {
   Funding,
   Issue,
   IssueDashboardRead,
-  IssuePublicRead,
   IssueReferenceRead,
   Pledge,
   PledgeRead,
@@ -55,7 +54,7 @@ const IssueListItemDecoration = ({
   confirmPledgeIsLoading: boolean
   funding: Funding
   showSelfPledgesFor?: UserRead
-  issue: IssueDashboardRead | IssuePublicRead | Issue
+  issue: IssueDashboardRead | Issue
 }) => {
   const showPledges = pledges && pledges.length > 0
 

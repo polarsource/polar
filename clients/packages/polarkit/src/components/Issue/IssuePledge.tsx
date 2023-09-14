@@ -2,7 +2,6 @@ import {
   Funding,
   Issue,
   IssueDashboardRead,
-  IssuePublicRead,
   Pledge,
   PledgeRead,
   PledgeState,
@@ -22,7 +21,7 @@ interface Props {
   confirmPledgeIsLoading: boolean
   funding: Funding
   showSelfPledgesFor?: UserRead
-  issue: IssueDashboardRead | IssuePublicRead | Issue
+  issue: IssueDashboardRead | Issue
 }
 
 const IssuePledge = (props: Props) => {

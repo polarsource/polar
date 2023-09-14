@@ -100,7 +100,7 @@ const Split = (props: {
       raw_value: string | undefined
       share_thousands: number
     }>
-  }, [shares, contributors])
+  }, [shares, contributors, pledgeSumToSplit])
 
   const sumSharesThousands = useMemo(
     () =>
@@ -183,7 +183,7 @@ const Split = (props: {
 
   return (
     <>
-      <ModalHeader hide={() => {}}>
+      <ModalHeader hide={props.onCancel}>
         <>Split reward (${getCentsInDollarString(pledgeSum)})</>
       </ModalHeader>
       <div className="space-y-4 pt-4">
@@ -204,7 +204,7 @@ const Split = (props: {
                   true,
                 )}
               </div>
-              <div className="flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white py-2 px-3 pr-1.5">
+              <div className="flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5">
                 <span className="flex-shrink-0 text-gray-500">%</span>
                 <div className="flex-1">
                   <input

@@ -1,20 +1,21 @@
-from collections.abc import Callable, Coroutine
-from uuid import UUID
-from datetime import datetime, UTC, timedelta
 import os
+from collections.abc import Callable, Coroutine
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
+from uuid import UUID
 
 import pytest
 import pytest_asyncio
 from pydantic import EmailStr
 from pytest_mock import MockerFixture
 
-from polar.models import MagicLink, User
-from polar.kit.crypto import get_token_hash, generate_token
-from polar.magic_link.service import magic_link as magic_link_service, InvalidMagicLink
-from polar.magic_link.schemas import MagicLinkRequest
-from polar.kit.db.postgres import AsyncSession
 from polar.config import settings
+from polar.kit.crypto import generate_token, get_token_hash
+from polar.kit.db.postgres import AsyncSession
+from polar.magic_link.schemas import MagicLinkRequest
+from polar.magic_link.service import InvalidMagicLink
+from polar.magic_link.service import magic_link as magic_link_service
+from polar.models import MagicLink, User
 
 GenerateMagicLinkToken = Callable[
     [str, UUID | None, datetime | None], Coroutine[None, None, tuple[MagicLink, str]]
@@ -125,6 +126,7 @@ async def test_authenticate_existing_user(
 
     authenticated_user = await magic_link_service.authenticate(session, token)
     assert authenticated_user.id == user.id
+    assert authenticated_user.email_verified
 
     deleted_magic_link = await magic_link_service.get(session, magic_link.id)
     assert deleted_magic_link is None
@@ -142,6 +144,7 @@ async def test_authenticate_existing_user_unlinked_from_magic_token(
 
     authenticated_user = await magic_link_service.authenticate(session, token)
     assert authenticated_user.id == user.id
+    assert authenticated_user.email_verified
 
     deleted_magic_link = await magic_link_service.get(session, magic_link.id)
     assert deleted_magic_link is None
@@ -155,6 +158,7 @@ async def test_authenticate_new_user(
 
     authenticated_user = await magic_link_service.authenticate(session, token)
     assert authenticated_user.email == magic_link.user_email
+    assert authenticated_user.email_verified
 
     deleted_magic_link = await magic_link_service.get(session, magic_link.id)
     assert deleted_magic_link is None

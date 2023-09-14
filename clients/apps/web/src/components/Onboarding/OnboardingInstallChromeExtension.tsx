@@ -60,7 +60,7 @@ const OnboardingInstallChromeExtension = () => {
                 onClick={onPrimary}
                 classNames="pl-3.5"
               >
-                <PlusIcon className="h-6 w-6" />
+                <PlusIcon className="mr-2 h-6 w-6" />
                 <span>Install Chrome Extension</span>
               </PrimaryButton>
               <button

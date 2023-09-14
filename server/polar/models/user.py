@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String, func, Column
+from sqlalchemy import TIMESTAMP, Boolean, Column, ForeignKey, Integer, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import Index, UniqueConstraint
@@ -46,6 +46,7 @@ class User(RecordModel):
 
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(320), nullable=False)
+    email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     avatar_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
 
     profile: Mapped[dict[str, Any] | None] = mapped_column(

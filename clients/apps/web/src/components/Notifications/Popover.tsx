@@ -261,7 +261,7 @@ const MaintainerPledgeConfirmationPendingWrapper = ({
             {pledge.data?.issue.id && (
               <SplitRewardModal
                 issueId={pledge.data.issue.id}
-                onCancel={close}
+                onClose={close}
               />
             )}
           </>
@@ -333,7 +333,7 @@ const MaintainerPledgedIssueConfirmationPendingWrapper = ({
         isShown={isShown}
         hide={close}
         modalContent={
-          <SplitRewardModal issueId={payload.issue_id} onCancel={close} />
+          <SplitRewardModal issueId={payload.issue_id} onClose={close} />
         }
       />
     </>

@@ -17,11 +17,7 @@ interface Props {
   repoName: string
   issueNumber: number
   pledges: Array<PledgeRead | Pledge>
-  onConfirmPledges: (
-    orgName: string,
-    repoName: string,
-    issueNumber: number,
-  ) => Promise<void>
+  onConfirmPledges: () => void
   showConfirmPledgeAction: boolean
   confirmPledgeIsLoading: boolean
   funding: Funding
@@ -49,10 +45,6 @@ const IssuePledge = (props: Props) => {
   }
 
   const totalPledgeAmount = pledges.reduce(addAmounts, 0)
-
-  const confirmPledges = async () => {
-    await props.onConfirmPledges(orgName, repoName, issueNumber)
-  }
 
   const confirmable = useMemo(() => {
     return (
@@ -178,7 +170,9 @@ const IssuePledge = (props: Props) => {
                 Loading...
               </span>
             )}
-            {confirmable && <IssueConfirmButton onClick={confirmPledges} />}
+            {confirmable && (
+              <IssueConfirmButton onClick={props.onConfirmPledges} />
+            )}
           </>
         )}
       </div>

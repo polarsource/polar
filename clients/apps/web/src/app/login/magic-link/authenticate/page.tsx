@@ -4,17 +4,14 @@ import LoadingScreen, {
   LoadingScreenError,
 } from '@/components/Dashboard/LoadingScreen'
 import { useAuth } from '@/hooks'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from 'polarkit'
 import { ApiError } from 'polarkit/api'
 import { useEffect, useRef, useState } from 'react'
 
-export default function Page({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined }
-}) {
-  const token = searchParams.token as string | undefined
+export default function Page() {
+  const searchParams = useSearchParams()
+  const token = searchParams ? searchParams.get('token') : null
   const router = useRouter()
   const session = useAuth()
   const [error, setError] = useState<string | null>(null)

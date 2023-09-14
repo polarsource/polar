@@ -9,7 +9,6 @@ import { api } from 'polarkit/api'
 import {
   Issue,
   IssueDashboardRead,
-  IssuePublicRead,
   IssueReferenceRead,
   IssueStatus,
   Label,
@@ -41,7 +40,7 @@ import { AddBadgeButton } from './IssuePromotionModal'
 const IssueListItem = (props: {
   org: Organization
   repo: Repository
-  issue: IssueDashboardRead | IssuePublicRead | Issue
+  issue: IssueDashboardRead | Issue
   references: IssueReferenceRead[]
   dependents?: IssueReadWithRelations[]
   pledges: Array<PledgeRead | Pledge>

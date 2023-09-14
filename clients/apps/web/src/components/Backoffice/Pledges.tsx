@@ -95,6 +95,18 @@ const Pledges = () => {
                     {p.state}
                   </div>
 
+                  <div
+                    className={classNames(
+                      'flex items-center rounded-full bg-gray-500 px-2 text-sm text-white',
+                      p.state === 'disputed' || p.state === 'charge_disputed'
+                        ? '!bg-red-700'
+                        : '',
+                      p.state === 'pending' ? '!bg-green-700' : '',
+                    )}
+                  >
+                    {p.type}
+                  </div>
+
                   <ThinButton
                     color="gray"
                     href={`https://dashboard.stripe.com/payments/${p.payment_id}`}

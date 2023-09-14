@@ -27,7 +27,6 @@ import {
 } from 'polarkit/components/Issue'
 import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
 import { githubIssueUrl } from 'polarkit/github'
-import { useIssueMarkConfirmed } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import { ChangeEvent, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -147,18 +146,15 @@ const IssueListItem = (props: {
     router.push(url.toString())
   }
 
-  const markConfirmed = useIssueMarkConfirmed()
+  const {
+    isShown: isSplitRewardsModalShown,
+    hide: closeSplitRewardModal,
+    show: showSplitRewardModal,
+  } = useModal()
 
-  const onConfirmPledge = async (issue_id: string) => {
-    await markConfirmed.mutateAsync({
-      id: issue_id,
-      // Give 100% of the rewards to the org
-      splits: [{ organization_id: props.org.id, share_thousands: 1000 }],
-    })
+  const onConfirmPledge = () => {
+    showSplitRewardModal()
   }
-
-  const { isShown: isSplitRewardsModalShown, hide: closeSplitRewardModal } =
-    useModal()
 
   return (
     <>
@@ -299,7 +295,7 @@ const IssueListItem = (props: {
               onDispute={onDispute}
               showConfirmPledgeAction={true}
               onConfirmPledges={onConfirmPledge}
-              confirmPledgeIsLoading={markConfirmed.isPending}
+              confirmPledgeIsLoading={false}
               funding={'funding' in props.issue ? props.issue.funding : {}}
               showSelfPledgesFor={props.showSelfPledgesFor}
             />
@@ -320,7 +316,7 @@ const IssueListItem = (props: {
           <>
             <SplitRewardModal
               issueId={props.issue.id}
-              onCancel={closeSplitRewardModal}
+              onClose={closeSplitRewardModal}
             />
           </>
         }

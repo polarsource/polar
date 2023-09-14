@@ -50,11 +50,7 @@ const IssueListItemDecoration = ({
   references: IssueReferenceRead[]
   showDisputeAction: boolean
   onDispute: (pledge: PledgeRead | Pledge) => void
-  onConfirmPledges: (
-    orgName: string,
-    repoName: string,
-    issueNumber: number,
-  ) => Promise<void>
+  onConfirmPledges: () => void
   showConfirmPledgeAction: boolean
   confirmPledgeIsLoading: boolean
   funding: Funding
@@ -215,7 +211,7 @@ const IssueListItemDecoration = ({
                 {'authed_user_can_admin_sender' in p &&
                   p.authed_user_can_admin_sender && (
                     <span className="text-sm text-gray-500">
-                      You've disputed your pledge{' '}
+                      You&apos;ve disputed your pledge{' '}
                       {disputeBoxShowAmount && (
                         <>(${getCentsInDollarString(p.amount)})</>
                       )}

@@ -3,7 +3,7 @@ import { useIssueMarkConfirmed, useListPledesForIssue } from 'polarkit/hooks'
 import Spinner from '../Shared/Spinner'
 import Split, { Contributor, Share } from './Split'
 
-const SplitRewardModal = (props: { issueId: string; onCancel: () => void }) => {
+const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
   const pledges = useListPledesForIssue(props.issueId)
 
   const markSolved = useIssueMarkConfirmed()
@@ -50,6 +50,8 @@ const SplitRewardModal = (props: { issueId: string; onCancel: () => void }) => {
       id: issue.id,
       splits,
     })
+
+    props.onClose()
   }
 
   const shares: Share[] =
@@ -86,7 +88,7 @@ const SplitRewardModal = (props: { issueId: string; onCancel: () => void }) => {
       shares={shares}
       contributors={contributors}
       onConfirm={onSplitConfirm}
-      onCancel={props.onCancel}
+      onCancel={props.onClose}
     />
   )
 }

@@ -52,6 +52,8 @@ export const orgPrivate: OrganizationPrivateRead = {
 }
 
 export const user: UserRead = {
+  created_at: '2023-01-01T00:00:00Z',
+  modified_at: '2023-01-01T09:00:00Z',
   username: 'zegl',
   email: 'test@example.com',
   avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',

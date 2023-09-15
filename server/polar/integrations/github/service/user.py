@@ -11,6 +11,7 @@ from polar.organization.service import organization
 from polar.postgres import AsyncSession
 from polar.posthog import posthog
 from polar.user.service import UserService
+from polar.user.service import oauth_account as oauth_account_service
 
 from .. import client as github
 from ..schemas import OAuthAccessToken
@@ -33,13 +34,23 @@ class NoPrimaryEmailError(GithubUserServiceError):
 
 
 class CannotLinkUnverifiedEmailError(GithubUserServiceError):
-    def __init__(self, email: str):
+    def __init__(self, email: str) -> None:
         message = (
             f"An account already exists on Polar under the email {email}. "
             "We cannot automatically link it to your GitHub account since "
             "this email address is not verified on GitHub. "
             "Either verify your email address on GitHub and try again "
             "or sign in with a magic link."
+        )
+        super().__init__(message, 403)
+
+
+class AccountLinkedToAnotherUserError(GithubUserServiceError):
+    def __init__(self) -> None:
+        message = (
+            "This GitHub account is already linked to another user on Polar. "
+            "You may have already created another account "
+            "with a different email address."
         )
         super().__init__(message, 403)
 
@@ -233,6 +244,38 @@ class GithubUserService(UserService):
                 },
             },
         )
+        return user
+
+    async def link_existing_user(
+        self, session: AsyncSession, *, user: User, tokens: OAuthAccessToken
+    ) -> User:
+        client = github.get_client(access_token=tokens.access_token)
+        authenticated = await self.fetch_authenticated_user(client=client)
+        email, _ = await self.fetch_authenticated_user_primary_email(client=client)
+
+        account_id = str(authenticated.id)
+
+        oauth_account = await oauth_account_service.get_by_platform_and_account_id(
+            session, Platforms.github, account_id
+        )
+
+        if oauth_account is not None:
+            if oauth_account.user_id != user.id:
+                raise AccountLinkedToAnotherUserError()
+        else:
+            oauth_account = OAuthAccount(
+                platform=Platforms.github,
+                account_id=account_id,
+                account_email=email,
+            )
+            user.oauth_accounts.append(oauth_account)
+
+        oauth_account.access_token = tokens.access_token
+        oauth_account.expires_at = tokens.expires_at
+        oauth_account.refresh_token = tokens.refresh_token
+        oauth_account.account_email = email
+        await oauth_account.save(session)
+
         return user
 
     async def sync_github_admin_orgs(

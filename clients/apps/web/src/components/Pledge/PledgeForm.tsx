@@ -658,6 +658,8 @@ const FundOnCompletion = ({
 
   const { currentUser } = useAuth()
 
+  const router = useRouter()
+
   const onAmountChange = (event: ChangeEvent<HTMLInputElement>) => {
     let newAmount = parseInt(event.target.value)
     if (isNaN(newAmount)) {
@@ -675,13 +677,36 @@ const FundOnCompletion = ({
     }
   }, [currentUser])
 
-  if (!currentUser) {
-    return <div>TODO: you need to login!</div>
-  }
+  const [isLoading, setIsLoading] = useState(false)
 
   const hasValidDetails =
     validateEmail(email) &&
     amount >= issue.repository.organization.pledge_minimum_amount
+
+  const submit = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    setIsLoading(true)
+    setErrorMessage('')
+    try {
+      await api.pledges.createPayOnCompletion({
+        requestBody: {
+          issue_id: issue.id,
+          amount: amount,
+        },
+      })
+
+      router.push('/feed')
+    } catch (e) {
+      setErrorMessage('Something went wrong, please try again.')
+      setIsLoading(false)
+    }
+  }
+
+  if (!currentUser) {
+    return <div>TODO: you need to login!</div>
+  }
 
   return (
     <div className="flex flex-col">
@@ -740,8 +765,8 @@ const FundOnCompletion = ({
       <div className="mt-6">
         <PrimaryButton
           disabled={!hasValidDetails}
-          loading={false}
-          onClick={() => false}
+          loading={isLoading}
+          onClick={submit}
         >
           Fund this issue
         </PrimaryButton>

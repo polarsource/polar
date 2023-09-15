@@ -250,15 +250,20 @@ class GithubUserService(UserService):
         self, session: AsyncSession, *, user: User, tokens: OAuthAccessToken
     ) -> User:
         client = github.get_client(access_token=tokens.access_token)
-        authenticated = await self.fetch_authenticated_user(client=client)
+        github_user = await self.fetch_authenticated_user(client=client)
         email, _ = await self.fetch_authenticated_user_primary_email(client=client)
 
-        account_id = str(authenticated.id)
+        account_id = str(github_user.id)
 
+        # Ensure username doesn't already exists
+        existing_user = await self.get_by_username(session, github_user.login)
+        if existing_user is not None:
+            raise AccountLinkedToAnotherUserError()
+
+        # Create or update OAuthAccount
         oauth_account = await oauth_account_service.get_by_platform_and_account_id(
             session, Platforms.github, account_id
         )
-
         if oauth_account is not None:
             if oauth_account.user_id != user.id:
                 raise AccountLinkedToAnotherUserError()
@@ -275,6 +280,13 @@ class GithubUserService(UserService):
         oauth_account.refresh_token = tokens.refresh_token
         oauth_account.account_email = email
         await oauth_account.save(session)
+
+        # Update User profile
+        profile = self.generate_profile_json(github_user=github_user)
+        user.username = github_user.login
+        user.avatar_url = github_user.avatar_url
+        user.profile = profile
+        await user.save(session)
 
         return user
 

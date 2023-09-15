@@ -129,6 +129,28 @@ export class BackofficeService {
   }
 
   /**
+   * Pledge Create Invoice
+   * @returns BackofficePledge Successful Response
+   * @throws ApiError
+   */
+  public pledgeCreateInvoice({
+    pledgeId,
+  }: {
+    pledgeId: string,
+  }): CancelablePromise<BackofficePledge> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/backoffice/pledges/create_invoice/{pledge_id}',
+      path: {
+        'pledge_id': pledgeId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
    * Pledge Mark Disputed
    * @returns BackofficePledge Successful Response
    * @throws ApiError

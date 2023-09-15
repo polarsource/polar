@@ -13,6 +13,7 @@ from polar.organization.service import organization as organization_service
 from polar.pledge.hooks import PledgeHook, pledge_created
 from polar.postgres import AsyncSession
 from polar.repository.service import repository as repository_service
+from polar.user.service import user as user_service
 
 from .schemas import (
     PledgeState,
@@ -163,6 +164,11 @@ class PaymentIntentService:
         email = intent["receipt_email"]
         amount = intent["amount"]
         user_id = intent["metadata"].get("user_id", None)
+
+        # Create an account automatically for anonymous pledges
+        if user_id is None:
+            user = await user_service.get_by_email_or_signup(session, email)
+            user_id = user.id
 
         state = (
             PledgeState.created

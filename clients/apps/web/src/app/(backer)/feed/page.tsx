@@ -43,8 +43,7 @@ export default function Page() {
     <div className="mt-2 space-y-10">
       <div className="space-y-10 lg:px-5">
         <FundAGithubIssue />
-
-        {totalCount && totalCount > 0 && (
+        {totalCount !== undefined && totalCount > 0 && (
           <div>
             <h1 className="text-lg text-gray-900 dark:text-gray-300">
               Funded issues

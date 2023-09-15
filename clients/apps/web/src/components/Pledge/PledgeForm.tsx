@@ -24,7 +24,7 @@ import { useListPaymentMethods } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
 import posthog from 'posthog-js'
-import { ChangeEvent, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
   Select,
@@ -136,7 +136,7 @@ const PledgeForm = ({
             />
           </TabsContent>
           <TabsContent value="fund_on_completion">
-            fund_on_completion
+            <FundOnCompletion issue={issue} gotoURL={gotoURL} />
           </TabsContent>
           <TabsContent value="gift_today">gift_today</TabsContent>
         </Tabs>
@@ -180,6 +180,10 @@ const FundingMethodTab = ({
   </TabsTrigger>
 )
 
+const validateEmail = (email: string) => {
+  return email.includes('@')
+}
+
 const FundToday = ({
   issue,
   gotoURL,
@@ -202,10 +206,6 @@ const FundToday = ({
 
   const savedPaymentMethods = useListPaymentMethods()
 
-  const validateEmail = (email: string) => {
-    return email.includes('@')
-  }
-
   const hasValidDetails = () => {
     let isValidEmail = validateEmail(email)
     if (!isValidEmail) {
@@ -224,18 +224,7 @@ const FundToday = ({
 
   const lastPledgeSync = useRef<PledgeSync | undefined>()
 
-  useEffect(() => {
-    if (currentUser && currentUser.email) {
-      setEmail(currentUser.email)
-      synchronizePledge({
-        amount,
-        email: currentUser.email,
-        setup_future_usage: lastPledgeSync.current?.setup_future_usage,
-      })
-    }
-  }, [currentUser])
-
-  const createPaymentIntent = async (pledgeSync: PledgeSync) => {
+  const createPaymentIntent = useCallback(async (pledgeSync: PledgeSync) => {
     return await api.pledges.createPaymentIntent({
       requestBody: {
         issue_id: issue.id,
@@ -243,9 +232,9 @@ const FundToday = ({
         email: pledgeSync.email,
       },
     })
-  }
+  }, [])
 
-  const updatePaymentIntent = async (pledgeSync: PledgeSync) => {
+  const updatePaymentIntent = useCallback(async (pledgeSync: PledgeSync) => {
     if (!polarPaymentIntent) {
       throw new Error('no payment intent to update')
     }
@@ -258,9 +247,9 @@ const FundToday = ({
         setup_future_usage: pledgeSync.setup_future_usage,
       },
     })
-  }
+  }, [])
 
-  const shouldSynchronizePledge = (pledgeSync: PledgeSync) => {
+  const shouldSynchronizePledge = useCallback((pledgeSync: PledgeSync) => {
     if (
       pledgeSync.amount < issue.repository.organization.pledge_minimum_amount
     ) {
@@ -285,9 +274,9 @@ const FundToday = ({
     }
 
     return false
-  }
+  }, [])
 
-  const synchronizePledge = async (pledgeSync: PledgeSync) => {
+  const synchronizePledge = useCallback(async (pledgeSync: PledgeSync) => {
     if (!shouldSynchronizePledge(pledgeSync)) {
       return
     }
@@ -327,7 +316,21 @@ const FundToday = ({
     }
 
     setSyncing(false)
-  }
+  }, [])
+
+  const didFirstUserEmailSync = useRef(false)
+
+  useEffect(() => {
+    if (currentUser && currentUser.email && !didFirstUserEmailSync.current) {
+      didFirstUserEmailSync.current = true
+      setEmail(currentUser.email)
+      synchronizePledge({
+        amount,
+        email: currentUser.email,
+        setup_future_usage: lastPledgeSync.current?.setup_future_usage,
+      })
+    }
+  }, [currentUser, amount, synchronizePledge])
 
   const onAmountChange = (event: ChangeEvent<HTMLInputElement>) => {
     let newAmount = parseInt(event.target.value)
@@ -629,6 +632,120 @@ const FundToday = ({
           </PrimaryButton>
         </div>
       )}
+
+      {errorMessage && (
+        <div className="mt-3.5 text-red-500 dark:text-red-400">
+          {errorMessage}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const FundOnCompletion = ({
+  issue,
+  gotoURL,
+}: {
+  issue: Issue
+  gotoURL?: string
+}) => {
+  const organization = issue.repository.organization
+  const [amount, setAmount] = useState<number>(
+    issue.repository.organization.pledge_minimum_amount,
+  )
+  const [email, setEmail] = useState('')
+  const [errorMessage, setErrorMessage] = useState<string>('')
+
+  const { currentUser } = useAuth()
+
+  const onAmountChange = (event: ChangeEvent<HTMLInputElement>) => {
+    let newAmount = parseInt(event.target.value)
+    if (isNaN(newAmount)) {
+      newAmount = 0
+    }
+    const amountInCents = newAmount * 100
+    setAmount(amountInCents)
+  }
+
+  const didFirstUserEmailSync = useRef(false)
+  useEffect(() => {
+    if (currentUser && currentUser.email && !didFirstUserEmailSync.current) {
+      didFirstUserEmailSync.current = true
+      setEmail(currentUser.email)
+    }
+  }, [currentUser])
+
+  if (!currentUser) {
+    return <div>TODO: you need to login!</div>
+  }
+
+  const hasValidDetails =
+    validateEmail(email) &&
+    amount >= issue.repository.organization.pledge_minimum_amount
+
+  return (
+    <div className="flex flex-col">
+      <label
+        htmlFor="amount"
+        className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+      >
+        Funding amount
+      </label>
+      <div className="flex flex-row items-center space-x-4">
+        <MoneyInput
+          id="amount"
+          name="amount"
+          onChange={onAmountChange}
+          placeholder={organization.pledge_minimum_amount}
+          value={amount}
+          onFocus={(event) => {
+            event.target.select()
+          }}
+        />
+        <p
+          className={classNames(
+            amount < organization.pledge_minimum_amount ? 'text-red-500' : '',
+            'w-2/5 text-xs text-gray-500 dark:text-gray-400',
+          )}
+        >
+          Minimum is $
+          {getCentsInDollarString(organization.pledge_minimum_amount)}
+        </p>
+      </div>
+
+      <label
+        htmlFor="email"
+        className="mb-2 mt-4 text-sm font-medium text-gray-500 dark:text-gray-400"
+      >
+        Contact details
+      </label>
+      <div className="relative">
+        <input
+          type="email"
+          id="email"
+          onChange={(e) => setEmail(e.target.value)}
+          value={email}
+          className="block w-full rounded-lg border-gray-200 bg-transparent px-3 py-2.5 pl-10 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
+          onFocus={(event) => {
+            event.target.select()
+          }}
+        />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-20 flex items-center pl-3 text-lg">
+          <span className="text-gray-500">
+            <EnvelopeIcon className="h-6 w-6" />
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <PrimaryButton
+          disabled={!hasValidDetails}
+          loading={false}
+          onClick={() => false}
+        >
+          Fund this issue
+        </PrimaryButton>
+      </div>
 
       {errorMessage && (
         <div className="mt-3.5 text-red-500 dark:text-red-400">

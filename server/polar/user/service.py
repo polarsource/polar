@@ -24,17 +24,20 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
     ) -> User | None:
         return await self.get_by(session, username=username)
 
-    async def signup_by_email(self, session: AsyncSession, email: str) -> User:
+    async def get_by_email_or_signup(self, session: AsyncSession, email: str) -> User:
         user = await self.get_by_email(session, email)
-
         if user is None:
-            user = User(username=email, email=email)
-            session.add(user)
-            await session.commit()
+            return await self.signup_by_email(session, email)
+        return user
 
-            posthog.identify(user)
-            posthog.user_event(user, "User Signed Up")
-            log.info("user signed up by email", user_id=user.id, email=email)
+    async def signup_by_email(self, session: AsyncSession, email: str) -> User:
+        user = User(username=email, email=email)
+        session.add(user)
+        await session.commit()
+
+        posthog.identify(user)
+        posthog.user_event(user, "User Signed Up")
+        log.info("user signed up by email", user_id=user.id, email=email)
 
         return user
 

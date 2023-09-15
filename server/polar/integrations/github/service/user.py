@@ -140,11 +140,9 @@ class GithubUserService(UserService):
     ) -> User:
         profile = self.generate_profile_json(github_user=github_user)
 
-        email, email_verified = github_email
+        email, _ = github_email
 
         user.username = github_user.login
-        user.email = email
-        user.email_verified = email_verified
         user.avatar_url = github_user.avatar_url
         user.profile = profile
         await user.save(session)

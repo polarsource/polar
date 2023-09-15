@@ -4,7 +4,7 @@ from typing import Any, Self
 from pydantic import EmailStr, Field
 
 from polar.enums import Platforms
-from polar.kit.schemas import Schema
+from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.user import User as UserModel
 
 
@@ -33,7 +33,7 @@ class UserBase(Schema):
         orm_mode = True
 
 
-class OAuthAccountRead(Schema):
+class OAuthAccountRead(TimestampedSchema):
     platform: Platforms
     account_id: str
     account_email: str
@@ -42,7 +42,7 @@ class OAuthAccountRead(Schema):
         orm_mode = True
 
 
-class UserRead(UserBase):
+class UserRead(UserBase, TimestampedSchema):
     id: uuid.UUID
     accepted_terms_of_service: bool
     email_newsletters_and_changelogs: bool

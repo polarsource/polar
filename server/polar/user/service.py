@@ -1,11 +1,12 @@
 import structlog
 from sqlalchemy import func
 
-from polar.kit.services import ResourceService
-from polar.models import User
+from polar.enums import Platforms
+from polar.kit.services import ResourceService, ResourceServiceReader
+from polar.logging import Logger
+from polar.models import OAuthAccount, User
 from polar.postgres import AsyncSession, sql
 from polar.posthog import posthog
-from polar.logging import Logger
 
 from .schemas import UserCreate, UserUpdate, UserUpdateSettings
 
@@ -54,3 +55,13 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
 
 
 user = UserService(User)
+
+
+class OAuthAccountService(ResourceServiceReader[OAuthAccount]):
+    async def get_by_platform_and_account_id(
+        self, session: AsyncSession, platform: Platforms, account_id: str
+    ) -> OAuthAccount | None:
+        return await self.get_by(session, platform=platform, account_id=account_id)
+
+
+oauth_account = OAuthAccountService(OAuthAccount)

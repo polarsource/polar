@@ -63,6 +63,7 @@ oauth2_authorize_callback = OAuth2AuthorizeCallback(
 async def github_authorize(
     pledge_id: UUID | None = None,
     goto_url: str | None = None,
+    auth: Auth = Depends(Auth.optional_user),
 ) -> AuthorizationResponse:
     state = {}
     if pledge_id:
@@ -74,6 +75,9 @@ async def github_authorize(
             goto_url = f"{settings.FRONTEND_BASE_URL}{goto_url}"
 
         state["goto_url"] = goto_url
+
+    if auth.user is not None:
+        state["user_id"] = str(auth.user.id)
 
     encoded_state = jwt.encode(
         data=state,
@@ -95,6 +99,7 @@ async def github_callback(
     access_token_state: Tuple[OAuth2Token, Optional[str]] = Depends(
         oauth2_authorize_callback
     ),
+    auth: Auth = Depends(Auth.optional_user),
 ) -> LoginResponse:
     token_data, state = access_token_state
     error_description = token_data.get("error_description")
@@ -113,7 +118,14 @@ async def github_callback(
     except ValidationError:
         raise HTTPException(status_code=400, detail="Invalid token data")
 
-    user = await github_user.login_or_signup(session, tokens=tokens)
+    state_user_id = state_data.get("user_id")
+    if auth.user is not None and auth.user.id == UUID(state_user_id):
+        user = await github_user.link_existing_user(
+            session, user=auth.user, tokens=tokens
+        )
+    else:
+        user = await github_user.login_or_signup(session, tokens=tokens)
+
     pledge_id = state_data.get("pledge_id")
     if pledge_id:
         await pledge_service.connect_backer(session, pledge_id=pledge_id, backer=user)

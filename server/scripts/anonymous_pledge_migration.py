@@ -10,6 +10,7 @@ from sqlalchemy import select
 
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Pledge
+from polar.pledge.schemas import PledgeState
 from polar.postgres import create_engine
 from polar.user.service import user as user_service
 
@@ -58,7 +59,10 @@ async def anonymous_pledge_migration(
 
             anonymous_pledges_statement = (
                 select(Pledge)
-                .where(Pledge.by_user_id == None)  # noqa: E711
+                .where(
+                    Pledge.by_user_id == None,  # noqa: E711
+                    Pledge.state != PledgeState.initiated,
+                )
                 .order_by(Pledge.email, Pledge.created_at.asc())
             )
             anonymous_pledges = await session.stream_scalars(

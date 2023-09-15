@@ -1,5 +1,6 @@
 'use client'
 
+import AuthenticationSettings from '@/components/Settings/AuthenticationSettings'
 import NotificationSettings from '@/components/Settings/NotificationSettings'
 import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
 import { ReactElement } from 'react'
@@ -12,6 +13,16 @@ export default function Page() {
           <>
             <SectionDescription title="Payment methods" />
             <PaymentMethodSettings />
+          </>
+        </Section>
+
+        <Section>
+          <>
+            <SectionDescription
+              title="Signin connections"
+              description="Connect external accounts for authenticating to Polar."
+            />
+            <AuthenticationSettings />
           </>
         </Section>
 

@@ -19,7 +19,28 @@ type Story = StoryObj<typeof Badge>
 
 export const Default: Story = {
   args: {},
+  render: (args) => {
+    return (
+      <div className="font-sans">
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap"
+          rel="stylesheet"
+        ></link>
+
+        <Badge {...args} />
+      </div>
+    )
+  },
 }
+
+const avatars = [
+  'https://avatars.githubusercontent.com/u/1144727?v=4',
+  'https://avatars.githubusercontent.com/u/47952?v=4',
+  'https://avatars.githubusercontent.com/u/281715?v=4',
+  'https://avatars.githubusercontent.com/u/1426460?v=4',
+]
 
 export const AmountRaised: Story = {
   ...Default,
@@ -29,6 +50,50 @@ export const AmountRaised: Story = {
     funding: {
       pledges_sum: { currency: 'USD', amount: 5000 },
     },
+    avatarsUrls: avatars,
+  },
+}
+
+export const AmountRaisedSingleAvatar: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showAmountRaised: true,
+    funding: {
+      pledges_sum: { currency: 'USD', amount: 5000 },
+    },
+    avatarsUrls: [avatars[0]],
+  },
+}
+
+export const AmountRaisedFiveAvatars: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showAmountRaised: true,
+    funding: {
+      pledges_sum: { currency: 'USD', amount: 5000 },
+    },
+    avatarsUrls: [...avatars, ...avatars].slice(0, 5),
+  },
+}
+
+export const AmountRaisedTwentyAvatars: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showAmountRaised: true,
+    funding: {
+      pledges_sum: { currency: 'USD', amount: 5000 },
+    },
+    avatarsUrls: [
+      ...avatars,
+      ...avatars,
+      ...avatars,
+      ...avatars,
+      ...avatars,
+      ...avatars,
+    ].slice(0, 20),
   },
 }
 

@@ -21,7 +21,6 @@ def create_engine() -> AsyncEngine:
 
 
 AsyncEngineLocal = create_engine()
-AsyncSessionLocal = create_sessionmaker(engine=AsyncEngineLocal)
 
 
 async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession, None]:
@@ -37,7 +36,6 @@ async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession, None]
 
 
 __all__ = [
-    "AsyncSessionLocal",
     "AsyncSession",
     "AsyncEngineLocal",
     "sql",

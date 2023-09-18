@@ -248,11 +248,15 @@ export const Badge = ({
                     borderRadius: 20,
                     marginLeft: '-6px',
                     textAlign: 'center',
-                    fontSize: '10px',
+                    fontSize: '8px',
                     lineHeight: '20px',
+                    border: '1px solid white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-around',
                   }}
                 >
-                  +{extraAvatarsCount}
+                  <span>+{extraAvatarsCount}</span>
                 </div>
               )}
             </div>

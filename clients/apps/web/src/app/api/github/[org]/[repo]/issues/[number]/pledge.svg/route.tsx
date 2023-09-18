@@ -1,36 +1,65 @@
-import { GithubBadgeRead } from 'polarkit/api/client'
-import { getServerURL } from 'polarkit/api/url'
+import { getServerURL } from 'polarkit/api'
+import { Issue, ListResource_Pledge_, Pledge } from 'polarkit/api/client'
 import { Badge } from 'polarkit/components/badge'
-import { getCentsInDollarString } from 'polarkit/money'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
-const getBadgeData = async (
-  org: string,
-  repo: string,
-  number: number,
-): Promise<GithubBadgeRead> => {
-  const badgeType = 'pledge'
-  return await fetch(
-    `${getServerURL()}/api/v1/integrations/github/${org}/${repo}/issues/${number}/badges/${badgeType}`,
-    {
-      method: 'GET',
-    },
-  ).then((response) => {
+type Data = {
+  pledges: Pledge[]
+  issue: Issue
+}
+
+const lookupIssue = (externalUrl: string): Promise<Issue> =>
+  fetch(`${getServerURL()}/api/v1/issues/lookup?external_url=${externalUrl}`, {
+    method: 'GET',
+  }).then((response) => {
     if (!response.ok) {
       throw new Error(`Unexpected ${response.status} status code`)
     }
     return response.json()
   })
+
+const searchPledges = (issueId: string): Promise<ListResource_Pledge_> =>
+  fetch(`${getServerURL()}/api/v1/pledges/search?issue_id=${issueId}`, {
+    method: 'GET',
+  }).then((response) => {
+    if (!response.ok) {
+      throw new Error(`Unexpected ${response.status} status code`)
+    }
+    return response.json()
+  })
+
+const getBadgeData = async (
+  org: string,
+  repo: string,
+  number: number,
+): Promise<Data> => {
+  try {
+    const issue = await lookupIssue(
+      `https://github.com/${org}/${repo}/issues/${number}`,
+    )
+
+    const pledges = await searchPledges(issue.id)
+
+    return { pledges: pledges.items ?? [], issue }
+  } catch (e) {
+    throw e
+  }
 }
 
-const renderBadge = async (badge: GithubBadgeRead, isDarkmode: boolean) => {
-  let hasAmount = badge.amount !== null
+const renderBadge = async (data: Data, isDarkmode: boolean) => {
+  const funding = data.issue.funding
 
-  const amountRaised = badge.amount
-    ? getCentsInDollarString(badge.amount)
-    : undefined
+  const hasAmount =
+    (funding.pledges_sum?.amount && funding.pledges_sum.amount > 0) || false
+
+  const showAmountRaised =
+    hasAmount && data.issue.repository.organization.pledge_badge_show_amount
+
+  const avatarUrls = data.pledges
+    .map((p) => p.pledger?.avatar_url ?? '')
+    .filter((s) => s.length > 0)
 
   const inter = await fetch(
     new URL(
@@ -41,10 +70,10 @@ const renderBadge = async (badge: GithubBadgeRead, isDarkmode: boolean) => {
 
   return await satori(
     <Badge
-      showAmountRaised={hasAmount}
+      showAmountRaised={showAmountRaised}
       darkmode={isDarkmode}
-      funding={badge.funding}
-      avatarsUrls={[]}
+      funding={funding}
+      avatarsUrls={avatarUrls}
     />,
     {
       height: 60,
@@ -73,13 +102,15 @@ export async function GET(
   const isDarkMode = searchParams.has('darkmode')
 
   try {
-    const badge = await getBadgeData(
+    const data = await getBadgeData(
       params.org,
       params.repo,
       parseInt(params.number),
     )
 
-    const svg = await renderBadge(badge, isDarkMode)
+    data.issue.repository.organization.pledge_minimum_amount
+
+    const svg = await renderBadge(data, isDarkMode)
 
     return new Response(svg, {
       headers: {

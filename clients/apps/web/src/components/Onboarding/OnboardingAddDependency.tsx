@@ -28,6 +28,7 @@ const OnboardingAddDependency = () => {
     platform: Platforms.GITHUB,
     name: 'x',
     pledge_minimum_amount: 2000,
+    pledge_badge_show_amount: true,
   }
   const demoRepo: Repository = {
     platform: Platforms.GITHUB,

@@ -5,10 +5,12 @@ const TopbarLayout = ({
   children,
   logoPosition,
   isFixed,
+  hideProfile,
 }: {
   children: React.ReactElement
   logoPosition?: LogoPosition
   isFixed?: boolean
+  hideProfile?: boolean
 }) => {
   return (
     <EmptyLayout>
@@ -17,6 +19,7 @@ const TopbarLayout = ({
           logoPosition={logoPosition}
           isFixed={isFixed}
           useOrgFromURL={false}
+          hideProfile={hideProfile}
         />
         {children}
       </>

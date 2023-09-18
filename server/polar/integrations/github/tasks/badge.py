@@ -1,10 +1,11 @@
 from uuid import UUID
-import structlog
-from polar.worker import JobContext, PolarWorkerContext, task
-from polar.postgres import AsyncSessionLocal
 
-from .utils import get_organization_and_repo
+import structlog
+
+from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
+
 from ..service.issue import github_issue
+from .utils import get_organization_and_repo
 
 log = structlog.get_logger()
 
@@ -16,7 +17,7 @@ async def embed_badge(
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             issue = await github_issue.get(session, issue_id)
             if not issue or not issue.organization_id or not issue.repository_id:
                 log.warning(
@@ -46,7 +47,7 @@ async def embed_badge_retroactively_on_repository(
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             organization, repository = await get_organization_and_repo(
                 session, organization_id, repository_id
             )
@@ -79,7 +80,7 @@ async def remove_badges_on_repository(
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             organization, repository = await get_organization_and_repo(
                 session, organization_id, repository_id
             )

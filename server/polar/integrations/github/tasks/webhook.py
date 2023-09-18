@@ -9,8 +9,14 @@ from polar.kit.utils import utc_now
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.organization.hooks import OrganizationHook, organization_upserted
-from polar.postgres import AsyncSession, AsyncSessionLocal
-from polar.worker import JobContext, PolarWorkerContext, enqueue_job, task
+from polar.postgres import AsyncSession
+from polar.worker import (
+    AsyncSessionMaker,
+    JobContext,
+    PolarWorkerContext,
+    enqueue_job,
+    task,
+)
 
 from .. import service
 from .utils import (
@@ -114,7 +120,7 @@ async def repositories_added(
         if not isinstance(parsed, github.webhooks.InstallationRepositoriesAdded):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await repositories_changed(session, parsed)
 
 
@@ -131,7 +137,7 @@ async def repositories_removed(
         if not isinstance(parsed, github.webhooks.InstallationRepositoriesRemoved):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await repositories_changed(session, parsed)
 
 
@@ -148,7 +154,7 @@ async def repositories_public(
         if not isinstance(parsed, github.webhooks.PublicEvent):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await repository_updated(session, parsed)
 
 
@@ -165,7 +171,7 @@ async def repositories_renamed(
         if not isinstance(parsed, github.webhooks.RepositoryRenamed):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await repository_updated(session, parsed)
 
 
@@ -182,7 +188,7 @@ async def repositories_redited(
         if not isinstance(parsed, github.webhooks.RepositoryEdited):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await repository_updated(session, parsed)
 
 
@@ -199,7 +205,7 @@ async def repositories_deleted(
         if not isinstance(parsed, github.webhooks.RepositoryDeleted):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await repository_deleted(session, parsed)
 
 
@@ -216,7 +222,7 @@ async def repositories_archived(
         if not isinstance(parsed, github.webhooks.RepositoryArchived):
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await repository_updated(session, parsed)
 
 
@@ -313,7 +319,7 @@ async def issue_opened(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             issue = await handle_issue(session, scope, action, parsed)
 
             # Add badge if has label
@@ -335,7 +341,7 @@ async def issue_reopened(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             issue = await handle_issue(session, scope, action, parsed)
 
             # Add badge if has label
@@ -357,7 +363,7 @@ async def issue_edited(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             issue = await handle_issue(session, scope, action, parsed)
 
             # Add badge if has label
@@ -379,7 +385,7 @@ async def issue_closed(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await handle_issue(session, scope, action, parsed)
 
 
@@ -397,7 +403,7 @@ async def issue_deleted(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             # Save last known version
             await handle_issue(session, scope, action, parsed)
 
@@ -423,7 +429,7 @@ async def issue_labeled(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await issue_labeled_async(session, scope, action, parsed)
 
 
@@ -441,7 +447,7 @@ async def issue_unlabeled(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await issue_labeled_async(session, scope, action, parsed)
 
 
@@ -542,7 +548,7 @@ async def issue_assigned(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await issue_assigned_async(session, scope, action, parsed)
 
 
@@ -560,7 +566,7 @@ async def issue_unassigned(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await issue_assigned_async(session, scope, action, parsed)
 
 
@@ -628,7 +634,7 @@ async def pull_request_opened(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await handle_pull_request(session, scope, action, parsed)
 
 
@@ -646,7 +652,7 @@ async def pull_request_edited(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await handle_pull_request(session, scope, action, parsed)
 
 
@@ -664,7 +670,7 @@ async def pull_request_closed(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await handle_pull_request(session, scope, action, parsed)
 
 
@@ -682,7 +688,7 @@ async def pull_request_reopened(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await handle_pull_request(session, scope, action, parsed)
 
 
@@ -700,7 +706,7 @@ async def pull_request_synchronize(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await handle_pull_request(session, scope, action, parsed)
 
 
@@ -723,7 +729,7 @@ async def installation_created(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await repositories_changed(session, event)
 
 
@@ -741,7 +747,7 @@ async def installation_delete(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             org = await service.github_organization.get_by_external_id(
                 session, event.installation.account.id
             )
@@ -764,7 +770,7 @@ async def installation_suspend(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await service.github_organization.suspend(
                 session,
                 event.installation.id,
@@ -788,5 +794,5 @@ async def installation_unsuspend(
             log.error("github.webhook.unexpected_type")
             raise Exception("unexpected webhook payload")
 
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             await service.github_organization.unsuspend(session, event.installation.id)

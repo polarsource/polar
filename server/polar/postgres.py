@@ -1,4 +1,5 @@
 from typing import AsyncGenerator
+
 from fastapi import Request
 
 from polar.config import settings

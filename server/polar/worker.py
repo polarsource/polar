@@ -1,10 +1,10 @@
 import functools
 import types
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import (
     Any,
-    AsyncGenerator,
     Awaitable,
     Callable,
     ParamSpec,
@@ -25,7 +25,14 @@ from pydantic import BaseModel
 
 from polar.config import settings
 from polar.context import ExecutionContext
+from polar.kit.db.postgres import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_sessionmaker,
+)
 from polar.logging import generate_correlation_id
+from polar.postgres import create_engine
 
 
 async def create_pool() -> ArqRedis:
@@ -37,7 +44,7 @@ glob_arq_pool: ArqRedis | None = None
 
 
 @asynccontextmanager
-async def lifespan() -> AsyncGenerator[None, Any]:
+async def lifespan() -> AsyncIterator[None]:
     global arq_pool
     arq_pool = await create_pool()
     yield
@@ -52,6 +59,8 @@ redis_settings = RedisSettings().from_dsn(settings.redis_url)
 
 class WorkerContext(TypedDict):
     redis: ArqRedis
+    engine: AsyncEngine
+    sessionmaker: async_sessionmaker[AsyncSession]
 
 
 class JobContext(WorkerContext):
@@ -82,15 +91,23 @@ class WorkerSettings:
             raise Exception("arq_pool already exists in startup")
         arq_pool = await create_pool()
 
+        engine = create_engine()
+        sessionmaker = create_sessionmaker(engine)
+        ctx.update({"engine": engine, "sessionmaker": sessionmaker})
+
     @staticmethod
     async def on_shutdown(ctx: WorkerContext) -> None:
-        log.info("polar.worker.shutdown")
         global arq_pool
         if arq_pool:
             await arq_pool.close(True)
             arq_pool = None
         else:
             raise Exception("arq_pool not set in shutdown")
+
+        engine = ctx["engine"]
+        await engine.dispose()
+
+        log.info("polar.worker.shutdown")
 
     @staticmethod
     async def on_job_start(ctx: JobContext) -> None:
@@ -249,4 +266,18 @@ def interval(
     return decorator
 
 
-__all__ = ["WorkerSettings", "task", "lifespan", "enqueue_job", "JobContext"]
+@asynccontextmanager
+async def AsyncSessionMaker(ctx: JobContext) -> AsyncIterator[AsyncSession]:
+    """Helper to open an AsyncSession context manager from the job context."""
+    async with ctx["sessionmaker"]() as session:
+        yield session
+
+
+__all__ = [
+    "WorkerSettings",
+    "task",
+    "lifespan",
+    "enqueue_job",
+    "JobContext",
+    "AsyncSessionMaker",
+]

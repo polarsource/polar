@@ -3,7 +3,6 @@ import {
   ClockIcon,
   CurrencyDollarIcon,
   EnvelopeIcon,
-  GiftIcon,
 } from '@heroicons/react/24/outline'
 import { Elements } from '@stripe/react-stripe-js'
 import { PaymentIntent } from '@stripe/stripe-js'
@@ -111,7 +110,7 @@ const PledgeForm = ({
         <Tabs defaultValue="fund_today" className="">
           <TabsList
             className={twMerge(
-              'grid h-fit w-full grid-cols-1 grid-rows-3 dark:bg-gray-700',
+              'grid h-fit w-full grid-cols-1 grid-rows-2 dark:bg-gray-700',
               showFundingMethodTabs ? '' : 'hidden',
             )}
           >
@@ -131,14 +130,6 @@ const PledgeForm = ({
               title="Fund on completion"
               subtitle="Get an invoice when the issue is completed."
             />
-            <FundingMethodTab
-              value="gift_today"
-              icon={
-                <GiftIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
-              }
-              title="Gift today"
-              subtitle="No strings attached. A gift & vote in one."
-            />
           </TabsList>
           <TabsContent value="fund_today">
             <FundToday
@@ -150,7 +141,6 @@ const PledgeForm = ({
           <TabsContent value="fund_on_completion">
             <FundOnCompletion issue={issue} gotoURL={gotoURL} />
           </TabsContent>
-          <TabsContent value="gift_today">gift_today</TabsContent>
         </Tabs>
 
         <p className="mt-5 text-sm text-gray-600">

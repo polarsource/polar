@@ -1,4 +1,3 @@
-import { useRequireAuth } from '@/hooks'
 import { Marked } from '@ts-stack/markdown'
 import { useTheme } from 'next-themes'
 import { CurrencyAmount, Funding } from 'polarkit/api/client'
@@ -20,8 +19,6 @@ const BadgeMessageForm = (props: {
   canSetFundingGoal: boolean
   funding: Funding
 }) => {
-  const { currentUser } = useRequireAuth()
-
   const [message, setMessage] = useState('')
 
   const [descriptionMode, setDescirptionMode] = useState('View')
@@ -105,13 +102,7 @@ const BadgeMessageForm = (props: {
               showAmountRaised={props.showAmountRaised}
               darkmode={resolvedTheme === 'dark'}
               funding={funding}
-              avatarsUrls={[
-                currentUser?.avatar_url || '',
-                currentUser?.avatar_url || '',
-                currentUser?.avatar_url || '',
-                currentUser?.avatar_url || '',
-                currentUser?.avatar_url || '',
-              ]}
+              avatarsUrls={[]}
             />
           </>
         )}

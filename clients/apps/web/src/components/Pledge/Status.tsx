@@ -5,13 +5,17 @@ import ThankYouUpsell from '@/components/Pledge/ThankYouUpsell'
 import { useAuth } from '@/hooks'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { api } from 'polarkit'
 import { Pledge } from 'polarkit/api/client'
 import { PolarTimeAgo } from 'polarkit/components/ui'
 import { GrayCard } from 'polarkit/components/ui/Cards'
 import { useStore } from 'polarkit/store'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
-export const Status = (props: { pledge: Pledge }) => {
+export const Status = (props: {
+  pledge: Pledge
+  email: string | undefined
+}) => {
   const search = useSearchParams()
 
   const pledge = props.pledge
@@ -44,6 +48,26 @@ export const Status = (props: { pledge: Pledge }) => {
     router.replace(redirectURL.toString())
   }
 
+  const email = props.email
+  const [emailSigninLoading, setEmailSigninLoading] = useState(false)
+  const onEmailSignin = useCallback(async () => {
+    if (!email) {
+      router.push('/login')
+      return
+    }
+
+    setEmailSigninLoading(true)
+    try {
+      await api.magicLink.requestMagicLink({ requestBody: { email } })
+      const searchParams = new URLSearchParams({ email: email })
+      router.push(`/login/magic-link/request?${searchParams}`)
+    } catch (err) {
+      // TODO: error handling
+    } finally {
+      setEmailSigninLoading(false)
+    }
+  }, [email, router])
+
   if (currentUser && gotoUrl && gotoUrl.startsWith('/feed')) {
     redirectToFeed()
     return <></>
@@ -54,7 +78,7 @@ export const Status = (props: { pledge: Pledge }) => {
     <>
       <div className="mx-auto p-4 md:mt-24 md:w-[768px] md:p-0">
         <div className="flex flex-row items-center">
-          <h1 className="w-1/2 text-2xl font-normal text-gray-800">
+          <h1 className="w-1/2 text-2xl font-normal text-gray-800 dark:text-gray-300">
             <CheckCircleIcon className="inline-block h-10 w-10 text-blue-500" />{' '}
             Thank you!
           </h1>
@@ -77,7 +101,12 @@ export const Status = (props: { pledge: Pledge }) => {
           />
         </GrayCard>
 
-        {!currentUser && <ThankYouUpsell />}
+        {!currentUser && (
+          <ThankYouUpsell
+            onEmailSignin={onEmailSignin}
+            emailSigninLoading={emailSigninLoading}
+          />
+        )}
       </div>
     </>
   )

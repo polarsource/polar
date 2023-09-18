@@ -24,7 +24,7 @@ const GithubLoginButton = (props: {
     })
 
     const res = await api.integrations.githubAuthorize({
-      paymentIntentId: search.get('payment_intent_id') ?? undefined,
+      paymentIntentId: search?.get('payment_intent_id') ?? undefined,
       gotoUrl: props.gotoUrl,
     })
 

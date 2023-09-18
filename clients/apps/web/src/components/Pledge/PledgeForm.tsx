@@ -50,6 +50,7 @@ type PledgeSync = {
 const generateRedirectURL = (
   gotoURL?: string,
   paymentIntent?: PaymentIntent,
+  email?: string,
 ) => {
   const redirectURL = new URL(
     window.location.origin + window.location.pathname + '/status',
@@ -57,6 +58,10 @@ const generateRedirectURL = (
 
   if (gotoURL) {
     redirectURL.searchParams.append('goto_url', gotoURL)
+  }
+
+  if (email) {
+    redirectURL.searchParams.append('email', email)
   }
 
   // Only in case we pass our redirect to Stripe which in turn will add it
@@ -415,7 +420,7 @@ const FundToday = ({
       throw new Error('got payment success but no pledge')
     }
 
-    const location = generateRedirectURL(gotoURL, paymentIntent)
+    const location = generateRedirectURL(gotoURL, paymentIntent, email)
     router.push(location)
   }
 

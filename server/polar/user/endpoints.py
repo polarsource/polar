@@ -25,18 +25,6 @@ async def create_token(auth: Auth = Depends(Auth.current_user)) -> LoginResponse
     return AuthService.generate_login_json_response(user=auth.user)
 
 
-@router.post("/me/accept_terms", response_model=UserRead)
-async def accept_terms(
-    auth: Auth = Depends(Auth.current_user),
-    session: AsyncSession = Depends(get_db_session),
-) -> User:
-    if not auth.user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    auth.user.accepted_terms_of_service = True
-    await auth.user.save(session)
-    return auth.user
-
-
 @router.put("/me", response_model=UserRead)
 async def update_preferences(
     settings: UserUpdateSettings,

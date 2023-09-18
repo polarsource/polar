@@ -65,9 +65,8 @@ export const useBackofficePledgeRewardTransfer: () => UseMutationResult<
         },
       })
     },
-    onSuccess: (result, variables, ctx) => {
-      queryClient.invalidateQueries({ queryKey: ['backofficeAllPledges'] })
-      queryClient.invalidateQueries({ queryKey: ['useBackofficeRewards'] })
+    onSuccess: async (result, variables, ctx) => {
+      await invalidateBackofficePledges()
     },
   })
 
@@ -78,9 +77,8 @@ export const useBackofficePledgeMarkPending = () =>
         pledgeId: variables.pledgeId,
       })
     },
-    onSuccess: (result, variables, ctx) => {
-      queryClient.invalidateQueries({ queryKey: ['backofficeAllPledges'] })
-      queryClient.invalidateQueries({ queryKey: ['useBackofficeRewards'] })
+    onSuccess: async (result, variables, ctx) => {
+      await invalidateBackofficePledges()
     },
   })
 
@@ -91,9 +89,8 @@ export const useBackofficePledgeMarkDisputed = () =>
         pledgeId: variables.pledgeId,
       })
     },
-    onSuccess: (result, variables, ctx) => {
-      queryClient.invalidateQueries({ queryKey: ['backofficeAllPledges'] })
-      queryClient.invalidateQueries({ queryKey: ['useBackofficeRewards'] })
+    onSuccess: async (result, variables, ctx) => {
+      await invalidateBackofficePledges()
     },
   })
 
@@ -105,3 +102,23 @@ export const useBackofficeBadgeAction = () =>
       })
     },
   })
+
+export const useBackofficePledgeCreateInvoice = () =>
+  useMutation({
+    mutationFn: (variables: { pledgeId: string }) => {
+      return api.backoffice.pledgeCreateInvoice({
+        pledgeId: variables.pledgeId,
+      })
+    },
+    onSuccess: async (result, variables, ctx) => {
+      await invalidateBackofficePledges()
+    },
+  })
+
+const invalidateBackofficePledges = async () => {
+  await queryClient.invalidateQueries({ queryKey: ['backofficeAllPledges'] })
+  await queryClient.invalidateQueries({ queryKey: ['useBackofficeRewards'] })
+  await queryClient.invalidateQueries({
+    queryKey: ['useBackofficeRewardsPending'],
+  })
+}

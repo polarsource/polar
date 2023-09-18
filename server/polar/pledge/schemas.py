@@ -154,7 +154,7 @@ class Pledge(Schema):
     hosted_invoice_url: str | None = Field(description="URL of invoice for this pledge")
 
     @classmethod
-    def from_db(cls, o: PledgeModel) -> Pledge:
+    def from_db(cls, o: PledgeModel, include_admin_fields: bool = False) -> Pledge:
         pledger: Pledger | None = None
 
         if o.by_organization_id:
@@ -177,11 +177,11 @@ class Pledge(Schema):
             amount=CurrencyAmount(currency="USD", amount=o.amount),
             state=PledgeState.from_str(o.state),
             type=PledgeType.from_str(o.type),
-            refunded_at=o.refunded_at,
-            scheduled_payout_at=o.scheduled_payout_at,
+            refunded_at=o.refunded_at if include_admin_fields else None,
+            scheduled_payout_at=o.scheduled_payout_at if include_admin_fields else None,
             issue=Issue.from_db(o.issue),
             pledger=pledger,
-            hosted_invoice_url=o.invoice_hosted_url,
+            hosted_invoice_url=o.invoice_hosted_url if include_admin_fields else None,
         )
 
 

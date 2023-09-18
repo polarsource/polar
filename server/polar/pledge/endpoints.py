@@ -7,7 +7,6 @@ from polar.auth.dependencies import Auth
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
-from polar.integrations.stripe.service import stripe as stripe_service
 from polar.issue.service import issue as issue_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -140,7 +139,9 @@ async def search(
     )
 
     items = [
-        PledgeSchema.from_db(p)
+        PledgeSchema.from_db(
+            p, include_admin_fields=await authz.can(auth.subject, AccessType.write, p)
+        )
         for p in pledges
         if await authz.can(auth.subject, AccessType.read, p)
     ]
@@ -169,7 +170,10 @@ async def get(
     if not await authz.can(auth.subject, AccessType.read, pledge):
         raise Unauthorized()
 
-    return PledgeSchema.from_db(pledge)
+    return PledgeSchema.from_db(
+        pledge,
+        include_admin_fields=await authz.can(auth.subject, AccessType.write, pledge),
+    )
 
 
 # Internal APIs below
@@ -203,7 +207,9 @@ async def create(
     if not ret:
         raise ResourceNotFound()
 
-    return PledgeSchema.from_db(ret)
+    return PledgeSchema.from_db(
+        ret, include_admin_fields=await authz.can(auth.subject, AccessType.write, ret)
+    )
 
 
 @router.post(
@@ -217,6 +223,7 @@ async def create_pay_on_completion(
     create: CreatePledgePayLater,
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.current_user),
+    authz: Authz = Depends(Authz.authz),
 ) -> PledgeSchema:
     if not auth.user:
         raise Unauthorized()
@@ -232,7 +239,9 @@ async def create_pay_on_completion(
     if not ret:
         raise ResourceNotFound()
 
-    return PledgeSchema.from_db(ret)
+    return PledgeSchema.from_db(
+        ret, include_admin_fields=await authz.can(auth.subject, AccessType.write, ret)
+    )
 
 
 @router.post(
@@ -264,7 +273,9 @@ async def create_invoice(
     if not ret:
         raise ResourceNotFound()
 
-    return PledgeSchema.from_db(ret)
+    return PledgeSchema.from_db(
+        ret, include_admin_fields=await authz.can(auth.subject, AccessType.write, ret)
+    )
 
 
 @router.post(

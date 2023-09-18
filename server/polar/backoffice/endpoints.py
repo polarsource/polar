@@ -52,7 +52,7 @@ async def pledges(
 def r(
     pledge: PledgeModel, reward: IssueReward, transaction: PledgeTransactionModel
 ) -> BackofficeReward:
-    r = reward_to_resource(pledge, reward, transaction)
+    r = reward_to_resource(pledge, reward, transaction, include_admin_fields=True)
     return BackofficeReward(
         pledge=r.pledge,
         user=r.user,
@@ -129,7 +129,9 @@ async def get_pledge(session: AsyncSession, pledge_id: UUID) -> BackofficePledge
             status_code=404,
             detail="Pledge not found",
         )
-    return BackofficePledge.from_db(pledge)
+    return BackofficePledge.from_db(
+        pledge,
+    )
 
 
 class PledgeRewardTransfer(Schema):

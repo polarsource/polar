@@ -494,11 +494,11 @@ async def test_can_read_pledge(
 
     for idx, tc in enumerate(
         [
-            TestCase(subject=Anonymous(), expected=False),
+            TestCase(subject=Anonymous(), expected=True),
             TestCase(
                 subject=await create_user(session),
                 is_pledging_user=False,
-                expected=False,
+                expected=True,
             ),
             TestCase(
                 subject=await create_user(session),
@@ -509,7 +509,7 @@ async def test_can_read_pledge(
                 subject=await create_user(session),
                 is_pledging_org_member=False,
                 is_pledging_org_member_admin=False,
-                expected=False,
+                expected=True,
             ),
             TestCase(
                 subject=await create_user(session),
@@ -578,6 +578,115 @@ async def test_can_read_pledge(
                 await authz.can(
                     tc.subject,
                     AccessType.read,
+                    pledge,
+                )
+                is tc.expected
+            )
+
+
+@pytest.mark.asyncio
+async def test_can_write_pledge(
+    subtests: Any,
+    session: AsyncSession,
+) -> None:
+    authz = Authz(session)
+
+    @dataclass
+    class TestCase:
+        subject: Subject
+        expected: bool
+        is_pledging_user: bool = False
+        is_pledging_org_member: bool = False
+        is_pledging_org_member_admin: bool = False
+        receiving_org_member: bool = False
+        receiving_org_member_admin: bool = False
+
+    for idx, tc in enumerate(
+        [
+            TestCase(subject=Anonymous(), expected=False),
+            TestCase(
+                subject=await create_user(session),
+                is_pledging_user=False,
+                expected=False,
+            ),
+            TestCase(
+                subject=await create_user(session),
+                is_pledging_user=True,
+                expected=True,
+            ),
+            TestCase(
+                subject=await create_user(session),
+                is_pledging_org_member=False,
+                is_pledging_org_member_admin=False,
+                expected=False,
+            ),
+            TestCase(
+                subject=await create_user(session),
+                is_pledging_org_member=True,
+                is_pledging_org_member_admin=True,
+                expected=True,
+            ),
+            TestCase(
+                subject=await create_user(session),
+                receiving_org_member=True,
+                receiving_org_member_admin=False,
+                expected=False,
+            ),
+            TestCase(
+                subject=await create_user(session),
+                receiving_org_member=True,
+                receiving_org_member_admin=True,
+                expected=True,
+            ),
+        ]
+    ):
+        with subtests.test(
+            msg=f"subject={type(tc.subject)} is_pledging_user={tc.is_pledging_user} is_pledging_org_member={tc.is_pledging_org_member} receiving_org_member={tc.receiving_org_member}",  # noqa: E501
+            id=idx,
+        ):
+            org = await create_organization(session)
+            repo = await create_repository(session, org)
+            issue = await create_issue(session, org, repo)
+
+            pledge = await Pledge.create(
+                session,
+                issue_id=issue.id,
+                amount=12345,
+                fee=0,
+                repository_id=repo.id,
+                organization_id=org.id,
+                state=PledgeState.created,
+            )
+
+            if tc.is_pledging_user and isinstance(tc.subject, User):
+                pledge.by_user_id = tc.subject.id
+                await pledge.save(session)
+
+            if tc.receiving_org_member and isinstance(tc.subject, User):
+                await UserOrganization.create(
+                    session=session,
+                    user_id=tc.subject.id,
+                    organization_id=org.id,
+                    is_admin=tc.receiving_org_member_admin,
+                )
+
+            if tc.is_pledging_org_member and isinstance(tc.subject, User):
+                pledging_org = await create_organization(session)
+
+                pledge.by_organization_id = pledging_org.id
+                await pledge.save(session)
+
+                await UserOrganization.create(
+                    session=session,
+                    user_id=tc.subject.id,
+                    organization_id=pledging_org.id,
+                    is_admin=tc.is_pledging_org_member_admin,
+                )
+
+            assert (
+                await authz.can(
+                    tc.subject,
+                    AccessType.write,
                     pledge,
                 )
                 is tc.expected

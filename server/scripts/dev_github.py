@@ -12,10 +12,11 @@ from polar.integrations.github import service
 from polar.integrations.github.service import (
     github_organization,
 )
+from polar.kit.db.postgres import create_sessionmaker
 from polar.models import Issue, Organization, Repository
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import OrganizationCreate
-from polar.postgres import AsyncSession, AsyncSessionLocal, sql
+from polar.postgres import AsyncEngineLocal, AsyncSession, sql
 from polar.repository.schemas import RepositoryCreate
 from polar.user.service import user as user_service
 from polar.worker import enqueue_job
@@ -31,6 +32,8 @@ cli = typer.Typer()
 ###############################################################################
 # Helpers
 ###############################################################################
+
+AsyncSessionLocal = create_sessionmaker(engine=AsyncEngineLocal)
 
 
 def typer_async(f):  # type: ignore

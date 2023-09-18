@@ -1,17 +1,19 @@
 'use client'
 
+import { useSearchParams } from 'next/navigation'
 import { api } from 'polarkit'
 import posthog from 'posthog-js'
 import { MouseEvent } from 'react'
 
 const GithubLoginButton = (props: {
-  pledgeId?: string
   gotoUrl?: string
   size?: 'large' | 'small'
   fullWidth?: boolean
   posthogProps?: object
   text: string
 }) => {
+  const search = useSearchParams()
+
   const signin = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     e.stopPropagation()
@@ -22,7 +24,7 @@ const GithubLoginButton = (props: {
     })
 
     const res = await api.integrations.githubAuthorize({
-      pledgeId: props.pledgeId,
+      paymentIntentId: search.get('payment_intent_id') ?? undefined,
       gotoUrl: props.gotoUrl,
     })
 

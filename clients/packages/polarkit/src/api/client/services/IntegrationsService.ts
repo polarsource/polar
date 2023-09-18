@@ -24,17 +24,17 @@ export class IntegrationsService {
    * @throws ApiError
    */
   public githubAuthorize({
-    pledgeId,
+    paymentIntentId,
     gotoUrl,
   }: {
-    pledgeId?: string,
+    paymentIntentId?: string,
     gotoUrl?: string,
   }): CancelablePromise<AuthorizationResponse> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/integrations/github/authorize',
       query: {
-        'pledge_id': pledgeId,
+        'payment_intent_id': paymentIntentId,
         'goto_url': gotoUrl,
       },
       errors: {

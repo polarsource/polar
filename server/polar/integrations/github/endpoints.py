@@ -61,13 +61,13 @@ oauth2_authorize_callback = OAuth2AuthorizeCallback(
 
 @router.get("/authorize")
 async def github_authorize(
-    pledge_id: UUID | None = None,
+    payment_intent_id: str | None = None,
     goto_url: str | None = None,
     auth: Auth = Depends(Auth.optional_user),
 ) -> AuthorizationResponse:
     state = {}
-    if pledge_id:
-        state["pledge_id"] = str(pledge_id)
+    if payment_intent_id:
+        state["payment_intent_id"] = payment_intent_id
 
     if goto_url:
         # Ensure we have a full URL and within Polar only
@@ -126,9 +126,11 @@ async def github_callback(
     else:
         user = await github_user.login_or_signup(session, tokens=tokens)
 
-    pledge_id = state_data.get("pledge_id")
-    if pledge_id:
-        await pledge_service.connect_backer(session, pledge_id=pledge_id, backer=user)
+    payment_intent_id = state_data.get("payment_intent_id")
+    if payment_intent_id:
+        await pledge_service.connect_backer(
+            session, payment_intent_id=payment_intent_id, backer=user
+        )
 
     # connect dangling rewards
     await reward_service.connect_by_username(session, user)

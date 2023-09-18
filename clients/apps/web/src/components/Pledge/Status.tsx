@@ -77,7 +77,7 @@ export const Status = (props: { pledge: Pledge }) => {
           />
         </GrayCard>
 
-        {!currentUser && <ThankYouUpsell pledge={pledge} />}
+        {!currentUser && <ThankYouUpsell />}
       </div>
     </>
   )

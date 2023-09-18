@@ -14,13 +14,19 @@ from polar.config import settings
 from polar.exception_handlers import polar_exception_handler
 from polar.exceptions import PolarError
 from polar.health.endpoints import router as health_router
-from polar.logging import configure as configure_logging, Logger
+from polar.kit.db.postgres import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_sessionmaker,
+)
+from polar.logging import Logger
+from polar.logging import configure as configure_logging
 from polar.middlewares import LogCorrelationIdMiddleware
+from polar.postgres import create_engine
 from polar.posthog import configure_posthog
 from polar.sentry import configure_sentry, set_sentry_user
 from polar.tags.api import Tags
-from polar.postgres import create_engine
-from polar.kit.db.postgres import AsyncEngine
 
 log: Logger = structlog.get_logger()
 
@@ -43,19 +49,21 @@ def generate_unique_openapi_id(route: APIRoute) -> str:
 
 
 class State(TypedDict):
-    db_engine: AsyncEngine
+    engine: AsyncEngine
+    sessionmaker: async_sessionmaker[AsyncSession]
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     async with worker.lifespan():
-        db_engine = create_engine()
+        engine = create_engine()
+        sessionmaker = create_sessionmaker(engine)
 
         log.info("Polar API started")
 
-        yield {"db_engine": db_engine}
+        yield {"engine": engine, "sessionmaker": sessionmaker}
 
-        await db_engine.dispose()
+        await engine.dispose()
 
         log.info("Polar API stopped")
 

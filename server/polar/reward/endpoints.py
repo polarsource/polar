@@ -2,8 +2,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from polar.auth.dependencies import Auth
-from polar.authz.service import AccessType, Authz, Subject
+from polar.auth.dependencies import UserRequiredAuth
+from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
 from polar.models.issue_reward import IssueReward
 from polar.models.pledge import Pledge as PledgeModel
@@ -30,6 +30,7 @@ router = APIRouter(tags=["rewards"])
     status_code=200,
 )
 async def search(
+    auth: UserRequiredAuth,
     pledges_to_organization: UUID
     | None = Query(
         default=None,
@@ -46,7 +47,6 @@ async def search(
         description="Search rewards to organization.",
     ),
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[Reward]:
     if not pledges_to_organization and not rewards_to_user and not rewards_to_org:

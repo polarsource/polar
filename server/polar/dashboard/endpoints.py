@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import joinedload
 
-from polar.auth.dependencies import Auth
+from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.dashboard.schemas import (
     Entry,
@@ -43,6 +43,7 @@ router = APIRouter(tags=["dashboard"])
     response_model=IssueListResponse,
 )
 async def get_personal_dashboard(
+    auth: UserRequiredAuth,
     issue_list_type: IssueListType = IssueListType.issues,
     status: Union[List[IssueStatus], None] = Query(default=None),
     q: Union[str, None] = Query(default=None),
@@ -50,7 +51,6 @@ async def get_personal_dashboard(
     only_pledged: bool = Query(default=False),
     only_badged: bool = Query(default=False),
     page: int = Query(default=1),
-    auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueListResponse:
     return await dashboard(

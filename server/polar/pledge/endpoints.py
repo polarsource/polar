@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from polar import locker
-from polar.auth.dependencies import Auth
+from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
@@ -159,8 +159,8 @@ async def search(
 )
 async def get(
     id: UUID,
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> PledgeSchema:
     pledge = await pledge_service.get_with_loaded(session, id)
@@ -221,13 +221,10 @@ async def create(
 )
 async def create_pay_on_completion(
     create: CreatePledgePayLater,
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> PledgeSchema:
-    if not auth.user:
-        raise Unauthorized()
-
     pledge = await pledge_service.create_pay_on_completion(
         session=session,
         issue_id=create.issue_id,
@@ -253,13 +250,10 @@ async def create_pay_on_completion(
 )
 async def create_invoice(
     id: UUID,
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> PledgeSchema:
-    if not auth.user:
-        raise Unauthorized()
-
     pledge = await pledge_service.get(session, id)
     if not pledge:
         raise ResourceNotFound()
@@ -330,12 +324,9 @@ async def update_payment_intent(
 async def dispute_pledge(
     pledge_id: UUID,
     reason: str,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> PledgeRead:
-    if not auth.user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
     pledge = await pledge_service.get(session, pledge_id)
     if not pledge:
         raise HTTPException(status_code=404, detail="Pledge not found")

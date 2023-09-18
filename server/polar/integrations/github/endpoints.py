@@ -14,7 +14,7 @@ from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
 from pydantic import BaseModel, ValidationError
 
-from polar.auth.dependencies import Auth
+from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.auth.service import AuthService, LoginResponse
 from polar.config import settings
 from polar.context import ExecutionContext
@@ -210,12 +210,9 @@ class LookupUserRequest(BaseModel):
 @router.post("/lookup_user", response_model=GithubUser)
 async def lookup_user(
     body: LookupUserRequest,
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
 ) -> GithubUser:
-    if not auth.user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
     try:
         client = await github.get_user_client(session, auth.user)
         github_user = client.rest.users.get_by_username(username=body.username)
@@ -241,12 +238,9 @@ class InstallationCreate(BaseModel):
 @router.post("/installations", response_model=OrganizationPrivateRead)
 async def install(
     installation: InstallationCreate,
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
 ) -> Organization | None:
-    if not auth.user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
     with ExecutionContext(is_during_installation=True):
         organization = await github_organization.install(
             session, auth.user, installation_id=installation.external_id

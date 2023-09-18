@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from redis.exceptions import ConnectionError
 from sse_starlette.sse import EventSourceResponse
 
-from polar.auth.dependencies import Auth
+from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.enums import Platforms
 from polar.redis import Redis, get_redis
 
@@ -49,12 +49,9 @@ async def subscribe(
 @router.get("/user/stream")
 async def user_stream(
     request: Request,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:
-    if not auth.user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
     receivers = Receivers(user_id=auth.user.id)
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))
 

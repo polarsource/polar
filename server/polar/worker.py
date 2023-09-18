@@ -10,6 +10,7 @@ from typing import (
     ParamSpec,
     TypedDict,
     TypeVar,
+    cast,
 )
 
 import structlog
@@ -93,29 +94,46 @@ class WorkerSettings:
 
     @staticmethod
     async def on_job_start(ctx: JobContext) -> None:
-        structlog.contextvars.bind_contextvars(
-            correlation_id=generate_correlation_id(),
-            job_id=ctx["job_id"],
-            job_try=ctx["job_try"],
-            enqueue_time=ctx["enqueue_time"].isoformat(),
-            score=ctx["score"],
-        )
-        log.info("polar.worker.job_started")
+        """
+        Unfortunately, we don't have access to task arguments in this hook.
+
+        This prevents us to implement things like common arguments handling, as we
+        do for `request_correlation_id`.
+
+        To circumvent this limitation, we implement this behavior
+        through the `task_hooks` decorator.
+        """
 
     @staticmethod
     async def on_job_end(ctx: JobContext) -> None:
-        log.info("polar.worker.job_ended")
-        structlog.contextvars.unbind_contextvars(
-            "correlation_id", "job_id", "job_try", "enqueue_time", "score"
-        )
+        """
+        Unfortunately, we don't have access to task arguments in this hook.
+
+        This prevents us to implement things like common arguments handling, as we
+        do for `request_correlation_id`.
+
+        To circumvent this limitation, we implement this behavior
+        through the `task_hooks` decorator.
+        """
 
 
 async def enqueue_job(name: str, *args: Any, **kwargs: Any) -> Job | None:
     ctx = ExecutionContext.current()
-    kwargs["polar_context"] = PolarWorkerContext(
+    polar_context = PolarWorkerContext(
         is_during_installation=ctx.is_during_installation,
     )
-    return await _enqueue_job(name, *args, **kwargs)
+
+    request_correlation_id = structlog.contextvars.get_contextvars().get(
+        "correlation_id"
+    )
+
+    return await _enqueue_job(
+        name,
+        *args,
+        request_correlation_id=request_correlation_id,
+        polar_context=polar_context,
+        **kwargs,
+    )
 
 
 async def _enqueue_job(name: str, *args: Any, **kwargs: Any) -> Job | None:
@@ -127,6 +145,45 @@ async def _enqueue_job(name: str, *args: Any, **kwargs: Any) -> Job | None:
 
 Params = ParamSpec("Params")
 ReturnValue = TypeVar("ReturnValue")
+
+
+def task_hooks(
+    f: Callable[Params, Awaitable[ReturnValue]]
+) -> Callable[Params, Awaitable[ReturnValue]]:
+    @functools.wraps(f)
+    async def wrapper(*args: Params.args, **kwargs: Params.kwargs) -> ReturnValue:
+        job_context = cast(JobContext, args[0])
+        structlog.contextvars.bind_contextvars(
+            correlation_id=generate_correlation_id(),
+            job_id=job_context["job_id"],
+            job_try=job_context["job_try"],
+            enqueue_time=job_context["enqueue_time"].isoformat(),
+            score=job_context["score"],
+        )
+
+        request_correlation_id = kwargs.pop("request_correlation_id", None)
+        if request_correlation_id is not None:
+            structlog.contextvars.bind_contextvars(
+                request_correlation_id=request_correlation_id
+            )
+
+        log.info("polar.worker.job_started")
+
+        r = await f(*args, **kwargs)
+
+        log.info("polar.worker.job_ended")
+        structlog.contextvars.unbind_contextvars(
+            "correlation_id",
+            "request_correlation_id",
+            "job_id",
+            "job_try",
+            "enqueue_time",
+            "score",
+        )
+
+        return r
+
+    return wrapper
 
 
 def task(
@@ -142,8 +199,10 @@ def task(
     def decorator(
         f: Callable[Params, Awaitable[ReturnValue]]
     ) -> Callable[Params, Awaitable[ReturnValue]]:
+        wrapped = task_hooks(f)
+
         new_task = func(
-            f,  # type: ignore
+            wrapped,  # type: ignore
             name=name,
             keep_result=keep_result,
             timeout=timeout,
@@ -152,11 +211,7 @@ def task(
         )
         WorkerSettings.functions.append(new_task)
 
-        @functools.wraps(f)
-        async def wrapper(*args: Params.args, **kwargs: Params.kwargs) -> ReturnValue:
-            return await f(*args, **kwargs)
-
-        return wrapper
+        return wrapped
 
     return decorator
 
@@ -175,8 +230,10 @@ def interval(
     def decorator(
         f: Callable[Params, Awaitable[ReturnValue]]
     ) -> Callable[Params, Awaitable[ReturnValue]]:
+        wrapped = task_hooks(f)
+
         new_cron = cron(
-            f,  # type: ignore
+            wrapped,  # type: ignore
             month=month,
             day=day,
             weekday=weekday,
@@ -187,11 +244,7 @@ def interval(
         )
         WorkerSettings.cron_jobs.append(new_cron)
 
-        @functools.wraps(f)
-        async def wrapper(*args: Params.args, **kwargs: Params.kwargs) -> ReturnValue:
-            return await f(*args, **kwargs)
-
-        return wrapper
+        return wrapped
 
     return decorator
 

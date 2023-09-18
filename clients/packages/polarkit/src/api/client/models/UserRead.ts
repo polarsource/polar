@@ -6,7 +6,7 @@ import type { OAuthAccountRead } from './OAuthAccountRead';
 
 export type UserRead = {
   created_at: string;
-  modified_at: string;
+  modified_at?: string;
   username: string;
   email: string;
   avatar_url?: string;

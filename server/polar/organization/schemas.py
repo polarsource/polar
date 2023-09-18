@@ -29,6 +29,7 @@ class Organization(Schema):
     twitter_username: str | None
 
     pledge_minimum_amount: int
+    pledge_badge_show_amount: bool
 
     @classmethod
     def from_db(cls, o: OrganizationModel) -> Self:
@@ -45,6 +46,7 @@ class Organization(Schema):
             email=o.email,
             twitter_username=o.twitter_username,
             pledge_minimum_amount=o.pledge_minimum_amount,
+            pledge_badge_show_amount=o.pledge_badge_show_amount,
         )
 
 

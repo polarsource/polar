@@ -8,10 +8,13 @@ import {
   CurrencyDollarIcon,
 } from '@heroicons/react/20/solid'
 import Link from 'next/link'
-import { api, queryClient } from 'polarkit/api'
+import { api } from 'polarkit/api'
 import { BackofficeReward, PledgeState, PledgeType } from 'polarkit/api/client'
 import { ThinButton } from 'polarkit/components/ui'
-import { useBackofficeRewardsPending } from 'polarkit/hooks'
+import {
+  useBackofficePledgeCreateInvoice,
+  useBackofficeRewardsPending,
+} from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
 import { useMemo } from 'react'
@@ -63,9 +66,10 @@ const Pledges = () => {
     // return Object.values(byIssue)
   }, [rewards])
 
-  const onClickCreateInvoice = async (pledgeID: string) => {
-    await api.backoffice.pledgeCreateInvoice({ pledgeId: pledgeID })
-    queryClient.invalidateQueries({ queryKey: ['useBackofficeRewards'] })
+  const createInvoice = useBackofficePledgeCreateInvoice()
+
+  const onClickCreateInvoice = async (pledgeId: string) => {
+    await createInvoice.mutateAsync({ pledgeId })
   }
 
   return (

@@ -204,13 +204,15 @@ const Split = (props: {
                   true,
                 )}
               </div>
-              <div className="flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5">
+              <div className="flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5 dark:bg-gray-700">
                 <span className="flex-shrink-0 text-gray-500">%</span>
                 <div className="flex-1">
                   <input
                     className={classNames(
-                      'w-full',
-                      s.is_fixed ? 'font-medium text-black' : 'text-gray-500',
+                      'w-full bg-white dark:bg-gray-700 dark:outline-gray-700 ',
+                      s.is_fixed
+                        ? 'font-medium text-black dark:text-gray-100'
+                        : 'text-gray-500 dark:text-gray-400',
                     )}
                     value={prettifyNumber(s.raw_value || '')}
                     placeholder={prettifyNumber(
@@ -239,7 +241,7 @@ const Split = (props: {
               </button>
               <input
                 placeholder="Add a Github user..."
-                className="dark:bg-gray-900"
+                className="px-2 py-1 dark:bg-gray-900 dark:outline-gray-700"
                 value={searchGithubUsername}
                 onChange={(e) => setSearchGithubUsername(e.target.value)}
               />

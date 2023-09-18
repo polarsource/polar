@@ -44,20 +44,18 @@ async def test_installation_no_notifications(
 
     async def in_process_enqueue_job(name, *args, **kwargs) -> None:  # type: ignore  # noqa: E501
         if name == "github.repo.sync.issues":
-            return await tasks.repo.sync_repository_issues(
-                kwargs["polar_context"], *args, **kwargs
-            )
+            return await tasks.repo.sync_repository_issues(FAKE_CTX, *args, **kwargs)
         if name == "github.repo.sync.pull_requests":
             return await tasks.repo.sync_repository_pull_requests(
-                kwargs["polar_context"], *args, **kwargs
+                FAKE_CTX, *args, **kwargs
             )
         elif name == "github.issue.sync.issue_references":
             return await tasks.issue.issue_sync_issue_references(
-                kwargs["polar_context"], *args, **kwargs
+                FAKE_CTX, *args, **kwargs
             )
         elif name == "github.repo.sync.issue_references":
             return await tasks.repo.repo_sync_issue_references(
-                kwargs["polar_context"], *args, **kwargs
+                FAKE_CTX, *args, **kwargs
             )
         elif name == "github.issue.sync.issue_dependencies":
             return None  # skip

@@ -1,7 +1,7 @@
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
 
-from polar.auth.dependencies import Auth
+from polar.auth.dependencies import UserRequiredAuth
 from polar.models.notification import Notification
 from polar.postgres import AsyncSession, get_db_session
 
@@ -21,12 +21,9 @@ log = structlog.get_logger()
 
 @router.get("/notifications", response_model=NotificationsList)
 async def get(
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> NotificationsList:
-    if not auth.user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
     notifs = await notifications.get_for_user(session, auth.user.id)
 
     def decorate(n: Notification) -> NotificationRead | None:
@@ -56,11 +53,8 @@ async def get(
 @router.post("/notifications/read")
 async def mark_read(
     read: NotificationsMarkRead,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    if not auth.user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
     await notifications.set_user_last_read(session, auth.user.id, read.notification_id)
     return None

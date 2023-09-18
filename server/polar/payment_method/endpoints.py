@@ -1,7 +1,7 @@
 import structlog
 from fastapi import APIRouter, Depends
 
-from polar.auth.dependencies import Auth
+from polar.auth.dependencies import UserRequiredAuth
 from polar.exceptions import Unauthorized
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.postgres import AsyncSession, get_db_session
@@ -24,12 +24,9 @@ router = APIRouter(tags=["payment_methods"])
     status_code=200,
 )
 async def list(
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[PaymentMethod]:
-    if not auth.user:
-        raise Unauthorized()
-
     pms = await stripe_service.list_user_payment_methods(session, auth.user)
 
     return ListResource(
@@ -46,9 +43,7 @@ async def list(
 )
 async def detach(
     id: str,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
 ) -> PaymentMethod:
-    if not auth.user:
-        raise Unauthorized()
     pm = stripe_service.detach_payment_method(id)
     return PaymentMethod.from_stripe(pm)

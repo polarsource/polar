@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Annotated, Self
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request
@@ -28,6 +28,9 @@ async def current_user_required(
 
 
 class Auth:
+    subject: Subject
+    user: User | None
+
     def __init__(
         self,
         *,
@@ -150,3 +153,11 @@ class Auth:
             )
 
         return cls(subject=user, user=user)
+
+
+class AuthRequired(Auth):
+    subject: User
+    user: User
+
+
+UserRequiredAuth = Annotated[AuthRequired, Depends(Auth.current_user)]

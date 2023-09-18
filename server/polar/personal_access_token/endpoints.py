@@ -3,7 +3,7 @@ from uuid import UUID
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
 
-from polar.auth.dependencies import Auth
+from polar.auth.dependencies import UserRequiredAuth
 from polar.auth.service import AuthService
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
@@ -31,12 +31,9 @@ router = APIRouter(tags=["personal_access_token"])
 )
 async def delete(
     id: UUID,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> PersonalAccessToken:
-    if not auth.user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
     pat = await personal_access_token_service.get(session, id)
     if not pat:
         raise HTTPException(status_code=404, detail="PAT not found")
@@ -58,12 +55,9 @@ async def delete(
     status_code=200,
 )
 async def list(
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[PersonalAccessToken]:
-    if not auth.user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
     pats = await personal_access_token_service.list_for_user(session, auth.user.id)
 
     return ListResource(
@@ -82,12 +76,9 @@ async def list(
 )
 async def create(
     payload: CreatePersonalAccessToken,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> CreatePersonalAccessTokenResponse:
-    if not auth.user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
     pat = await personal_access_token_service.create(
         session, user_id=auth.user.id, comment=payload.comment
     )

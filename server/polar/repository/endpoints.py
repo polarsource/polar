@@ -3,7 +3,7 @@ from uuid import UUID
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
 
-from polar.auth.dependencies import Auth
+from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.organization.service import organization as organization_service
@@ -30,12 +30,9 @@ router = APIRouter(tags=["repositories"])
     status_code=200,
 )
 async def list(
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[RepositorySchema]:
-    if not auth.user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
     orgs = await organization_service.list_all_orgs_by_user_id(session, auth.user.id)
     repos = await repository.list_by(
         session, org_ids=[o.id for o in orgs], load_organization=True

@@ -5,7 +5,7 @@ from uuid import UUID
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
 
-from polar.auth.dependencies import Auth
+from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
@@ -43,12 +43,9 @@ router = APIRouter(tags=["organizations"])
     status_code=200,
 )
 async def list(
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[OrganizationSchema]:
-    if not auth.user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
     orgs = await organization.list_all_orgs_by_user_id(session, auth.user.id)
     return ListResource(
         items=[OrganizationSchema.from_db(o) for o in orgs],
@@ -165,7 +162,7 @@ class OrganizationPrivateRead(OrganizationPrivateBase, OrganizationSettingsRead)
 )
 async def get_badge_settings(
     id: UUID,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationBadgeSettingsRead:
@@ -236,7 +233,7 @@ async def get_badge_settings(
 async def update_badge_settings(
     id: UUID,
     settings: OrganizationBadgeSettingsUpdate,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationBadgeSettingsUpdate:

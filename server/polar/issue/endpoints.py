@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
-from polar.auth.dependencies import Auth
+from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
 from polar.enums import Platforms
@@ -241,12 +241,9 @@ async def get_body(
     tags=[Tags.INTERNAL],
 )
 async def for_you(
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[IssueSchema]:
-    if not auth.user:
-        raise Unauthorized()
-
     issues = await github_issue_service.list_issues_from_starred(session, auth.user)
 
     # get loaded
@@ -335,8 +332,8 @@ async def get(
 async def update(
     id: UUID,
     update: UpdateIssue,
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
     authz: Authz = Depends(Authz.authz),
 ) -> IssueSchema:
     issue = await issue_service.get_loaded(session, id)
@@ -389,7 +386,7 @@ async def update(
 async def confirm(
     id: UUID,
     body: ConfirmIssue,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> IssueSchema:
@@ -401,12 +398,6 @@ async def confirm(
         )
 
     if not await authz.can(auth.subject, AccessType.write, issue):
-        raise HTTPException(
-            status_code=401,
-            detail="Unauthorized",
-        )
-
-    if not auth.user:
         raise HTTPException(
             status_code=401,
             detail="Unauthorized",
@@ -469,7 +460,7 @@ async def confirm(
 )
 async def add_polar_badge(
     id: UUID,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueSchema:
@@ -504,7 +495,7 @@ async def add_polar_badge(
 )
 async def remove_polar_badge(
     id: UUID,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueSchema:
@@ -541,16 +532,13 @@ async def remove_polar_badge(
 async def add_issue_comment(
     id: UUID,
     comment: PostIssueComment,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> IssueSchema:
     issue = await issue_service.get(session, id)
     if not issue:
         raise ResourceNotFound()
-
-    if not auth.user:
-        raise Unauthorized()
 
     if not await authz.can(auth.subject, AccessType.write, issue):
         raise Unauthorized()
@@ -600,7 +588,7 @@ async def add_issue_comment(
 async def badge_with_message(
     id: UUID,
     badge_message: IssueUpdateBadgeMessage,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> IssueSchema:

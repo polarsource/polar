@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from polar.auth.dependencies import Auth
+from polar.auth.dependencies import UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.enums import AccountType
 from polar.organization.service import organization as organization_service
@@ -21,6 +21,7 @@ router = APIRouter(tags=["accounts"])
     "/accounts/search", tags=[Tags.PUBLIC], response_model=ListResource[Account]
 )
 async def search(
+    auth: UserRequiredAuth,
     organization_id: UUID
     | None = Query(
         default=None,
@@ -31,7 +32,6 @@ async def search(
         default=None,
         description="Search accounts connected to this user. Either user_id or organization_id must be set.",  # noqa: E501
     ),
-    auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[Account]:
@@ -55,7 +55,7 @@ async def search(
 @router.get("/accounts/{id}", tags=[Tags.PUBLIC], response_model=Account)
 async def get(
     id: UUID,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> Account:
@@ -80,7 +80,7 @@ async def get(
 )
 async def onboarding_link(
     id: UUID,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> AccountLink:
@@ -114,7 +114,7 @@ async def onboarding_link(
 )
 async def dashboard_link(
     id: UUID,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> AccountLink:
@@ -141,7 +141,7 @@ async def dashboard_link(
 @router.post("/accounts", tags=[Tags.PUBLIC], response_model=Account)
 async def create(
     account: AccountCreate,
-    auth: Auth = Depends(Auth.current_user),
+    auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> Account:
@@ -152,10 +152,6 @@ async def create(
                 status_code=401,
                 detail="Unauthorized",
             )
-
-    # Accounts can only be created by users, for themselves
-    if not auth.user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
 
     if account.user_id and str(account.user_id) != str(auth.user.id):
         raise HTTPException(

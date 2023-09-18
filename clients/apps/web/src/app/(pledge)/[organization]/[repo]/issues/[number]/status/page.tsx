@@ -37,7 +37,9 @@ export default async function Page({
     throw e
   }
 
+  const email = searchParams['email'] as string | undefined
+
   // TODO: Handle different statuses than success... #happy-path-alpha-programming
 
-  return <Status pledge={pledge} />
+  return <Status pledge={pledge} email={email} />
 }

@@ -21,7 +21,6 @@ export type RepoListItem = Repository & {
 
 export * from './backoffice'
 export * from './dashboard'
-export * from './invite'
 export * from './issue'
 export * from './pledges'
 export * from './rewards'

@@ -59,18 +59,6 @@ export class UsersService {
   }
 
   /**
-   * Accept Terms
-   * @returns UserRead Successful Response
-   * @throws ApiError
-   */
-  public acceptTerms(): CancelablePromise<UserRead> {
-    return this.httpRequest.request({
-      method: 'POST',
-      url: '/api/v1/users/me/accept_terms',
-    });
-  }
-
-  /**
    * Logout
    * @returns LogoutResponse Successful Response
    * @throws ApiError

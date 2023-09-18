@@ -157,7 +157,7 @@ class Authz:
         # Pledge
         #
         if isinstance(subject, Anonymous) and isinstance(object, Pledge):
-            return False
+            return await self._can_anonymous_read_pledge(object)
 
         if (
             isinstance(subject, User)
@@ -361,24 +361,11 @@ class Authz:
     # Pledge
     #
 
+    async def _can_anonymous_read_pledge(self, object: Pledge) -> bool:
+        return True
+
     async def _can_user_read_pledge(self, subject: User, object: Pledge) -> bool:
-        # If pledged by this user
-        if object.by_user_id and object.by_user_id == subject.id:
-            return True
-
-        # If member of pledging org
-        if object.by_organization_id and await self._is_member(
-            subject.id, object.by_organization_id
-        ):
-            return True
-
-        # If member of receiving org
-        if object.organization_id and await self._is_member(
-            subject.id, object.organization_id
-        ):
-            return True
-
-        return False
+        return True
 
     async def _can_user_write_pledge(self, subject: User, object: Pledge) -> bool:
         # If pledged by this user

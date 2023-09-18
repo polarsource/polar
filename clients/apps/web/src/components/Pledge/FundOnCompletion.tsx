@@ -1,9 +1,5 @@
 import { useAuth } from '@/hooks/auth'
-import {
-  BellIcon,
-  EnvelopeIcon,
-  UserCircleIcon,
-} from '@heroicons/react/24/outline'
+import { BellIcon, UserCircleIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
 import { Issue } from 'polarkit/api/client'
@@ -13,7 +9,6 @@ import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
 import { ChangeEvent, useEffect, useRef, useState } from 'react'
 import GithubLoginButton from '../Shared/GithubLoginButton'
-import { validateEmail } from './payment'
 
 const FundOnCompletion = ({
   issue,
@@ -53,8 +48,8 @@ const FundOnCompletion = ({
   const [isLoading, setIsLoading] = useState(false)
 
   const hasValidDetails =
-    validateEmail(email) &&
-    amount >= issue.repository.organization.pledge_minimum_amount
+    amount >= issue.repository.organization.pledge_minimum_amount &&
+    !!currentUser
 
   const submit = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
@@ -109,30 +104,6 @@ const FundOnCompletion = ({
         </p>
       </div>
 
-      <label
-        htmlFor="email"
-        className="mb-2 mt-4 text-sm font-medium text-gray-500 dark:text-gray-400"
-      >
-        Contact details
-      </label>
-      <div className="relative">
-        <input
-          type="email"
-          id="email"
-          onChange={(e) => setEmail(e.target.value)}
-          value={email}
-          className="block w-full rounded-lg border-gray-200 bg-transparent px-3 py-2.5 pl-10 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
-          onFocus={(event) => {
-            event.target.select()
-          }}
-        />
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-20 flex items-center pl-3 text-lg">
-          <span className="text-gray-500">
-            <EnvelopeIcon className="h-6 w-6" />
-          </span>
-        </div>
-      </div>
-
       <div className="mt-6">
         <PrimaryButton
           disabled={!hasValidDetails}
@@ -156,7 +127,7 @@ export default FundOnCompletion
 
 const NotLoggedInBanner = () => {
   return (
-    <div className="mb-4 flex flex-col gap-4 rounded-lg border border-red-200 px-4 py-3 dark:border-red-700">
+    <div className="my-4 flex flex-col gap-4 rounded-lg border border-red-200 px-4 py-3 dark:border-red-700 dark:bg-gray-900">
       <div className="flex items-center justify-between">
         <div className="text-lg font-medium text-gray-700 dark:text-gray-400">
           Sign in with GitHub

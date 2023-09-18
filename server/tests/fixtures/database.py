@@ -1,16 +1,16 @@
+from collections.abc import AsyncIterator
 from uuid import UUID
-from typing import AsyncGenerator
 
 import pytest_asyncio
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import text
 
-
-from polar.kit.utils import generate_uuid
+from polar.kit.db.postgres import AsyncEngine, AsyncSession
 from polar.kit.extensions.sqlalchemy import PostgresUUID
+from polar.kit.utils import generate_uuid
 from polar.models import Model
-from polar.postgres import AsyncEngineLocal, AsyncSession
+from polar.postgres import create_engine
 
 
 class TestModel(Model):
@@ -23,17 +23,24 @@ class TestModel(Model):
     str_column: Mapped[str | None] = mapped_column(String)
 
 
+@pytest_asyncio.fixture(scope="session")
+async def engine() -> AsyncIterator[AsyncEngine]:
+    engine = create_engine()
+    yield engine
+    await engine.dispose()
+
+
 @pytest_asyncio.fixture(scope="session", autouse=True)
-async def initialize_test_database() -> None:
-    async with AsyncEngineLocal.begin() as conn:
+async def initialize_test_database(engine: AsyncEngine) -> None:
+    async with engine.begin() as conn:
         await conn.run_sync(Model.metadata.drop_all)
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
         await conn.run_sync(Model.metadata.create_all)
 
 
 @pytest_asyncio.fixture
-async def session() -> AsyncGenerator[AsyncSession, None]:
-    connection = await AsyncEngineLocal.connect()
+async def session(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
+    connection = await engine.connect()
     transaction = await connection.begin()
 
     session = AsyncSession(

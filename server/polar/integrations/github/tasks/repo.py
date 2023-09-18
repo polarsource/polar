@@ -3,8 +3,13 @@ from uuid import UUID
 import structlog
 
 from polar.integrations.github import service
-from polar.postgres import AsyncSessionLocal
-from polar.worker import JobContext, PolarWorkerContext, enqueue_job, task
+from polar.worker import (
+    AsyncSessionMaker,
+    JobContext,
+    PolarWorkerContext,
+    enqueue_job,
+    task,
+)
 
 from .utils import get_organization_and_repo
 
@@ -18,7 +23,7 @@ async def sync_repositories(
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             organization = await service.github_organization.get(
                 session, organization_id
             )
@@ -40,7 +45,7 @@ async def sync_repository_issues(
     | None = None,  # Override which installation to use when crawling
 ) -> None:
     with polar_context.to_execution_context():
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             organization, repository = await get_organization_and_repo(
                 session, organization_id, repository_id
             )
@@ -61,7 +66,7 @@ async def sync_repository_pull_requests(
     crawl_with_installation_id: int | None = None,
 ) -> None:
     with polar_context.to_execution_context():
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             organization, repository = await get_organization_and_repo(
                 session, organization_id, repository_id
             )
@@ -88,7 +93,7 @@ async def repo_sync_issue_references(
     crawl_with_installation_id: int | None = None,
 ) -> None:
     with polar_context.to_execution_context():
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             organization, repository = await get_organization_and_repo(
                 session, organization_id, repository_id
             )

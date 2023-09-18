@@ -1,20 +1,20 @@
 from uuid import UUID
-import structlog
-from polar.models.user import User
 
+import structlog
+
+from polar.email.sender import get_email_sender
+from polar.models.notification import Notification
+from polar.models.user import User
 from polar.notifications.schemas import (
     NotificationType,
 )
-from polar.worker import JobContext, PolarWorkerContext, task
-from polar.postgres import AsyncSessionLocal
-from polar.models.notification import Notification
+from polar.notifications.service import notifications
+from polar.postgres import AsyncSession
+from polar.user.service import user as user_service
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
-from polar.user.service import user as user_service
-from polar.email.sender import get_email_sender
-from polar.notifications.service import notifications
-from polar.postgres import AsyncSession
+from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 log = structlog.get_logger()
 
@@ -28,7 +28,7 @@ async def notifications_send(
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             notif: Notification | None = await Notification.find(
                 session, notification_id
             )

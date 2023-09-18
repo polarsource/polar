@@ -7,8 +7,14 @@ from polar.integrations.github import service
 from polar.integrations.github.client import get_app_installation_client
 from polar.locker import Locker
 from polar.organization.service import organization as organization_service
-from polar.postgres import AsyncSessionLocal
-from polar.worker import JobContext, PolarWorkerContext, enqueue_job, interval, task
+from polar.worker import (
+    AsyncSessionMaker,
+    JobContext,
+    PolarWorkerContext,
+    enqueue_job,
+    interval,
+    task,
+)
 
 from ..service.api import github_api
 from ..service.issue import github_issue
@@ -26,7 +32,7 @@ async def issue_sync(
     | None = None,  # Override which installation to use when crawling
 ) -> None:
     with polar_context.to_execution_context():
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             issue = await github_issue.get(session, issue_id)
             if not issue or not issue.organization_id or not issue.repository_id:
                 log.warning(
@@ -58,7 +64,7 @@ async def issue_sync_issue_references(
     | None = None,  # Override which installation to use when crawling
 ) -> None:
     with polar_context.to_execution_context():
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             issue = await github_issue.get(session, issue_id)
             if not issue or not issue.organization_id or not issue.repository_id:
                 log.warning(
@@ -88,7 +94,7 @@ async def issue_sync_issue_dependencies(
     polar_context: PolarWorkerContext,
 ) -> None:
     with polar_context.to_execution_context():
-        async with AsyncSessionLocal() as session:
+        async with AsyncSessionMaker(ctx) as session:
             issue = await github_issue.get(session, issue_id)
             if not issue or not issue.organization_id or not issue.repository_id:
                 log.warning(
@@ -125,7 +131,7 @@ async def issue_sync_issue_dependencies(
     second=0,
 )
 async def cron_refresh_issues(ctx: JobContext) -> None:
-    async with AsyncSessionLocal() as session:
+    async with AsyncSessionMaker(ctx) as session:
         orgs = await organization_service.list_installed(session)
         for org in orgs:
             issues = await github_issue.list_issues_to_crawl_issue(session, org)
@@ -184,7 +190,7 @@ async def cron_refresh_issues(ctx: JobContext) -> None:
     second=0,
 )
 async def cron_refresh_issue_timelines(ctx: JobContext) -> None:
-    async with AsyncSessionLocal() as session:
+    async with AsyncSessionMaker(ctx) as session:
         orgs = await organization_service.list_installed(session)
         for org in orgs:
             issues = await github_issue.list_issues_to_crawl_timeline(session, org)

@@ -19,11 +19,13 @@ export const Badge = ({
   // amountRaised = undefined,
   darkmode = false,
   funding = undefined,
+  avatarsUrls = [],
 }: {
   showAmountRaised?: boolean
   // amountRaised?: string
   darkmode: boolean
   funding?: Funding
+  avatarsUrls: string[]
 }) => {
   const showFundingGoal =
     funding &&
@@ -42,6 +44,10 @@ export const Badge = ({
           1, // Min 1
         )
       : 0
+
+  const showAvatars =
+    avatarsUrls.length > 4 ? avatarsUrls.slice(0, 3) : avatarsUrls
+  const extraAvatarsCount = avatarsUrls.length - showAvatars.length
 
   return (
     <>
@@ -85,7 +91,7 @@ export const Badge = ({
               flexShrink: '0',
             }}
           >
-            Fund this issue
+            Fund
           </div>
 
           {showAmount && funding?.pledges_sum?.amount !== undefined && (
@@ -210,6 +216,47 @@ export const Badge = ({
                 </div>
               </div>
             )}
+
+          {showAvatars.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                marginRight: '8px',
+              }}
+            >
+              {showAvatars.map((url, idx) => (
+                <img
+                  key={idx}
+                  src={url}
+                  style={{
+                    height: 20,
+                    width: 20,
+                    borderRadius: 20,
+                    border: '1px solid white',
+                    marginLeft: idx > 0 ? '-6px' : '',
+                  }}
+                />
+              ))}
+
+              {extraAvatarsCount > 0 && (
+                <div
+                  style={{
+                    backgroundColor: '#C9DBF4',
+                    color: '#4667CA',
+                    height: 20,
+                    width: 20,
+                    borderRadius: 20,
+                    marginLeft: '-6px',
+                    textAlign: 'center',
+                    fontSize: '10px',
+                    lineHeight: '20px',
+                  }}
+                >
+                  +{extraAvatarsCount}
+                </div>
+              )}
+            </div>
+          )}
 
           <div
             style={{

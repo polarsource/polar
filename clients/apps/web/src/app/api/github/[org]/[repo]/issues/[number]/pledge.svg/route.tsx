@@ -13,6 +13,7 @@ type Data = {
 const lookupIssue = (externalUrl: string): Promise<Issue> =>
   fetch(`${getServerURL()}/api/v1/issues/lookup?external_url=${externalUrl}`, {
     method: 'GET',
+    next: { revalidate: 60 },
   }).then((response) => {
     if (!response.ok) {
       throw new Error(`Unexpected ${response.status} status code`)
@@ -23,6 +24,7 @@ const lookupIssue = (externalUrl: string): Promise<Issue> =>
 const searchPledges = (issueId: string): Promise<ListResource_Pledge_> =>
   fetch(`${getServerURL()}/api/v1/pledges/search?issue_id=${issueId}`, {
     method: 'GET',
+    next: { revalidate: 60 },
   }).then((response) => {
     if (!response.ok) {
       throw new Error(`Unexpected ${response.status} status code`)

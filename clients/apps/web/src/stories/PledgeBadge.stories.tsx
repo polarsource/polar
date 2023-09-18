@@ -30,6 +30,7 @@ export const Default: Story = {
         ></link>
 
         <Badge {...args} />
+        <Badge {...args} darkmode={true} />
       </div>
     )
   },

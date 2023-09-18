@@ -91,7 +91,7 @@ export const Badge = ({
               flexShrink: '0',
             }}
           >
-            Fund
+            {showAmount ? 'Fund' : 'Fund this issue'}
           </div>
 
           {showAmount && funding?.pledges_sum?.amount !== undefined && (
@@ -232,7 +232,7 @@ export const Badge = ({
                     height: 20,
                     width: 20,
                     borderRadius: 20,
-                    border: '1px solid white',
+                    border: darkmode ? '1px solid #374e96' : '1px solid white',
                     marginLeft: idx > 0 ? '-6px' : '',
                   }}
                 />
@@ -241,8 +241,8 @@ export const Badge = ({
               {extraAvatarsCount > 0 && (
                 <div
                   style={{
-                    backgroundColor: '#C9DBF4',
-                    color: '#4667CA',
+                    backgroundColor: darkmode ? '#2e4070' : '#C9DBF4',
+                    color: darkmode ? '#a6c7ea' : '#4667CA',
                     height: 20,
                     width: 20,
                     borderRadius: 20,
@@ -250,7 +250,7 @@ export const Badge = ({
                     textAlign: 'center',
                     fontSize: '8px',
                     lineHeight: '20px',
-                    border: '1px solid white',
+                    border: darkmode ? '1px solid #374e96' : '1px solid white',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-around',

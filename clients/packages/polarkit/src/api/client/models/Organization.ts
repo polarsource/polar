@@ -17,5 +17,6 @@ export type Organization = {
   email?: string;
   twitter_username?: string;
   pledge_minimum_amount: number;
+  pledge_badge_show_amount: boolean;
 };
 

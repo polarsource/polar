@@ -9,7 +9,7 @@ import {
   Reward,
   RewardState,
 } from 'polarkit/api/client'
-import { issue, org, orgPrivate } from './testdata'
+import { issue, org } from './testdata'
 
 type Story = StoryObj<typeof Finance>
 
@@ -93,7 +93,7 @@ const rewards = [
 export const Default: Story = {
   args: {
     pledges: all_pledge_states,
-    org: orgPrivate,
+    org: org,
     tab: 'current',
     accounts: [],
     rewards: rewards,

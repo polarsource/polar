@@ -52,6 +52,7 @@ const PolarBadge = ({ showAmount }: { showAmount: boolean }) => {
         pledges_sum: { currency: 'USD', amount: 2500 },
       }}
       darkmode={resolvedTheme === 'dark' ? true : false}
+      avatarsUrls={[]}
     />
   )
 }

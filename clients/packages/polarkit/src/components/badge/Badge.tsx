@@ -49,6 +49,8 @@ export const Badge = ({
     avatarsUrls.length > 4 ? avatarsUrls.slice(0, 3) : avatarsUrls
   const extraAvatarsCount = avatarsUrls.length - showAvatars.length
 
+  const title = showFundingGoal || showAmount ? 'Fund' : 'Fund this issue'
+
   return (
     <>
       <div
@@ -91,7 +93,7 @@ export const Badge = ({
               flexShrink: '0',
             }}
           >
-            {showAmount ? 'Fund' : 'Fund this issue'}
+            {title}
           </div>
 
           {showAmount && funding?.pledges_sum?.amount !== undefined && (
@@ -144,6 +146,7 @@ export const Badge = ({
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
+                  overflow: 'hidden',
                   marginRight: 12,
                   marginLeft: 6,
                   fontSize: 12,
@@ -222,6 +225,9 @@ export const Badge = ({
               style={{
                 display: 'flex',
                 marginRight: '8px',
+                overflow: 'hidden',
+                height: '22px',
+                flexWrap: 'wrap',
               }}
             >
               {showAvatars.map((url, idx) => (
@@ -229,11 +235,12 @@ export const Badge = ({
                   key={idx}
                   src={url}
                   style={{
-                    height: 20,
-                    width: 20,
-                    borderRadius: 20,
+                    height: 22,
+                    width: 22,
+                    borderRadius: 22,
                     border: darkmode ? '1px solid #374e96' : '1px solid white',
                     marginLeft: idx > 0 ? '-6px' : '',
+                    flexShrink: '0',
                   }}
                 />
               ))}
@@ -243,9 +250,9 @@ export const Badge = ({
                   style={{
                     backgroundColor: darkmode ? '#2e4070' : '#C9DBF4',
                     color: darkmode ? '#a6c7ea' : '#4667CA',
-                    height: 20,
-                    width: 20,
-                    borderRadius: 20,
+                    height: 22,
+                    width: 22,
+                    borderRadius: 22,
                     marginLeft: '-6px',
                     textAlign: 'center',
                     fontSize: '8px',
@@ -254,6 +261,7 @@ export const Badge = ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-around',
+                    flexShrink: '0',
                   }}
                 >
                   <span>+{extraAvatarsCount}</span>

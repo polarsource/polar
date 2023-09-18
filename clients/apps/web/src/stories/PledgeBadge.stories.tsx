@@ -121,6 +121,31 @@ export const FundingGoal: Story = {
   },
 }
 
+export const FundingGoalAvatars: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showAmountRaised: true,
+    funding: {
+      funding_goal: { currency: 'USD', amount: 12000 },
+      pledges_sum: { currency: 'USD', amount: 6000 },
+    },
+    avatarsUrls: [...avatars, ...avatars],
+  },
+}
+export const FundingGoalAvatarsVeryWide: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showAmountRaised: true,
+    funding: {
+      funding_goal: { currency: 'USD', amount: 1200000000 },
+      pledges_sum: { currency: 'USD', amount: 600000000 },
+    },
+    avatarsUrls: [...avatars, ...avatars],
+  },
+}
+
 export const FundingGoalZero: Story = {
   ...Default,
   args: {

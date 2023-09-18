@@ -111,25 +111,31 @@ const PledgeForm = ({
         <Tabs defaultValue="fund_today" className="">
           <TabsList
             className={twMerge(
-              'grid h-fit w-full grid-cols-1 grid-rows-3',
+              'grid h-fit w-full grid-cols-1 grid-rows-3 dark:bg-gray-700',
               showFundingMethodTabs ? '' : 'hidden',
             )}
           >
             <FundingMethodTab
               value="fund_today"
-              icon={<CurrencyDollarIcon className="h-6 w-6 text-gray-600" />}
+              icon={
+                <CurrencyDollarIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+              }
               title="Fund today"
               subtitle="Paid today. Held by Polar until completion."
             />
             <FundingMethodTab
               value="fund_on_completion"
-              icon={<ClockIcon className="h-6 w-6 text-gray-600" />}
+              icon={
+                <ClockIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+              }
               title="Fund on completion"
               subtitle="Get an invoice when the issue is completed."
             />
             <FundingMethodTab
               value="gift_today"
-              icon={<GiftIcon className="h-6 w-6 text-gray-600" />}
+              icon={
+                <GiftIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+              }
               title="Gift today"
               subtitle="No strings attached. A gift & vote in one."
             />
@@ -179,8 +185,12 @@ const FundingMethodTab = ({
     <div className="flex w-full items-center gap-4 px-1 text-left">
       {icon}
       <div>
-        <div className='font-medium" text-sm text-gray-700'>{title}</div>
-        <div className="text-xs font-normal text-gray-600">{subtitle}</div>
+        <div className='font-medium" text-sm text-gray-700 dark:text-gray-300'>
+          {title}
+        </div>
+        <div className="text-xs font-normal text-gray-600 dark:text-gray-400">
+          {subtitle}
+        </div>
       </div>
     </div>
   </TabsTrigger>

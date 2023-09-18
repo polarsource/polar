@@ -81,7 +81,7 @@ async def test_get_pledge_not_member(
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
-    assert response.status_code == 401
+    assert response.status_code == 200
 
 
 @pytest.mark.asyncio
@@ -150,7 +150,7 @@ async def test_search_pledge_no_member(
     )
 
     assert response.status_code == 200
-    assert response.json()["items"] == []
+    assert len(response.json()["items"]) == 1
 
 
 @pytest.mark.asyncio

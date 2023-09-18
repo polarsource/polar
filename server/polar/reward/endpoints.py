@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from polar.auth.dependencies import Auth
-from polar.authz.service import AccessType, Authz
+from polar.authz.service import AccessType, Authz, Subject
 from polar.currency.schemas import CurrencyAmount
 from polar.models.issue_reward import IssueReward
 from polar.models.pledge import Pledge as PledgeModel
@@ -63,7 +63,14 @@ async def search(
     )
 
     items = [
-        to_resource(pledge, reward, transaction)
+        to_resource(
+            pledge,
+            reward,
+            transaction,
+            include_admin_fields=await authz.can(
+                auth.subject, AccessType.write, pledge
+            ),
+        )
         for pledge, reward, transaction in rewards
         if await authz.can(auth.subject, AccessType.read, reward)
     ]
@@ -75,6 +82,7 @@ def to_resource(
     pledge: PledgeModel,
     reward: IssueReward,
     transaction: PledgeTransactionModel,
+    include_admin_fields: bool,
 ) -> Reward:
     user = None
     if reward and reward.user:
@@ -96,7 +104,10 @@ def to_resource(
         )
 
     return Reward(
-        pledge=Pledge.from_db(pledge),
+        pledge=Pledge.from_db(
+            pledge,
+            include_admin_fields,
+        ),
         user=user,
         organization=organization,
         amount=amount,

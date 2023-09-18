@@ -5,12 +5,10 @@ import {
   CurrencyDollarIcon,
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
-import { Pledge } from 'polarkit/api/client'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
 import screenshot from './dashboard.png'
 
-const ThankYouUpsell = (props: { pledge: Pledge }) => {
-  const { pledge } = props
+const ThankYouUpsell = () => {
   return (
     <>
       <WhiteCard
@@ -21,7 +19,6 @@ const ThankYouUpsell = (props: { pledge: Pledge }) => {
           <h2 className="text-xl">Sign up to Polar</h2>
           <GithubLoginButton
             text="Continue with Github"
-            pledgeId={pledge.id}
             size="large"
             posthogProps={{
               view: 'Thank You Page',

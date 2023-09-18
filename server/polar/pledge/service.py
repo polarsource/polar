@@ -189,12 +189,18 @@ class PledgeService(ResourceServiceReader[Pledge]):
     async def connect_backer(
         self,
         session: AsyncSession,
-        pledge_id: UUID,
+        payment_intent_id: str,
         backer: User,
     ) -> None:
-        pledge = await self.get(session, id=pledge_id)
+        pledge = await self.get_by_payment_id(session, payment_id=payment_intent_id)
         if not pledge:
-            raise ResourceNotFound(f"Pledge not found with id: {pledge_id}")
+            raise ResourceNotFound(
+                f"Pledge not found with payment_id: {payment_intent_id}"
+            )
+
+        # This pledge is already connected
+        if pledge.by_user_id or pledge.by_organization_id:
+            return None
 
         pledge.by_user_id = backer.id
         await pledge.save(session)

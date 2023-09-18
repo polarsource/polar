@@ -25,8 +25,8 @@ class BackofficePledge(PledgeSchema):
     pledger_email: str | None
 
     @classmethod
-    def from_db(cls, o: Pledge) -> Self:
-        p = PledgeSchema.from_db(o)
+    def from_db(cls, o: Pledge, include_admin_fields: bool = False) -> Self:
+        p = PledgeSchema.from_db(o, include_admin_fields=include_admin_fields)
 
         return cls(
             id=p.id,
@@ -43,6 +43,7 @@ class BackofficePledge(PledgeSchema):
             dispute_reason=o.dispute_reason,
             disputed_at=o.disputed_at,
             disputed_by_user_id=o.disputed_by_user_id,
+            hosted_invoice_url=p.hosted_invoice_url,
         )
 
 

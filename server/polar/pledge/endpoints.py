@@ -62,7 +62,7 @@ async def search(
     issue_id: UUID
     | None = Query(default=None, description="Search pledges to this issue"),
     session: AsyncSession = Depends(get_db_session),
-    auth: Auth = Depends(Auth.current_user),
+    auth: Auth = Depends(Auth.optional_user),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[PledgeSchema]:
     list_by_orgs: list[UUID] = []

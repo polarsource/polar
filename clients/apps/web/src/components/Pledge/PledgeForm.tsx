@@ -93,7 +93,7 @@ const PledgeForm = ({
   gotoURL?: string
   onAmountChange?: (amount: number) => void
 }) => {
-  const showFundingMethodTabs = true
+  const showFundingMethodTabs = false
 
   return (
     <>

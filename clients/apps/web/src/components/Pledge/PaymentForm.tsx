@@ -217,7 +217,7 @@ const PaymentForm = ({
   }
 
   return (
-    <div className="mt-3 border-t pt-5">
+    <div className="border-t pt-5 dark:border-gray-500">
       {!paymentMethod && (
         <PaymentElement
           onChange={onStripeFormChange}
@@ -236,7 +236,7 @@ const PaymentForm = ({
       {!paymentMethod &&
         canSavePaymentMethod &&
         stripeElementsCurrentPaymentType === 'card' && (
-          <div className="items-top mb-2 mt-4 flex items-center space-x-2">
+          <div className="items-top flex items-center space-x-2">
             <Checkbox
               id="save_payment_method"
               onCheckedChange={(e) => onSavePaymentMethodChanged(Boolean(e))}
@@ -255,7 +255,7 @@ const PaymentForm = ({
           </div>
         )}
 
-      <div className="mt-6">
+      <div>
         <PrimaryButton
           disabled={!canSubmit}
           loading={isSyncing}

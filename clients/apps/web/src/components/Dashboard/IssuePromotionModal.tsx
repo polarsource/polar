@@ -1,4 +1,5 @@
 import { useRequireAuth } from '@/hooks'
+import { GiftIcon, HeartIcon, MegaphoneIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import {
   CurrencyAmount,
@@ -18,9 +19,11 @@ import {
 import { classNames } from 'polarkit/utils'
 import { posthog } from 'posthog-js'
 import { ChangeEvent, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import CopyToClipboardInput from '../../../../../packages/polarkit/src/components/ui/atoms/CopyToClipboardInput'
 import { ModalHeader, Modal as ModernModal } from '../Modal'
 import { useModal } from '../Modal/useModal'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import BadgeMessageForm from './BadgeMessageForm'
 
 const isIssueBadged = (issue: IssueDashboardRead): boolean => {
@@ -253,14 +256,12 @@ export const BadgePromotionModal = (props: {
 
   return (
     <>
-      <ModalHeader hide={toggle}>
+      <ModalHeader hide={toggle} className="border-none">
         <div className="flex items-center space-x-2">
           <BadgedCheckmarkLargeIcon />
           <div className="pr-2 text-lg font-medium">
-            Badge added to{' '}
-            <a href={gitHubIssueLink}>
-              {props.repoName}#{props.issue.number}
-            </a>
+            Funding is now public for{' '}
+            <a href={gitHubIssueLink}>#{props.issue.number}</a>
           </div>
           {isBadged && (
             <button
@@ -272,6 +273,45 @@ export const BadgePromotionModal = (props: {
           )}
         </div>
       </ModalHeader>
+
+      <Tabs defaultValue="rewards" className="">
+        <TabsList
+          className={twMerge(
+            '!m-0 flex h-fit w-full flex-row justify-start space-x-2 !border-0 bg-transparent !p-0 px-8',
+          )}
+        >
+          <Tab
+            value="funding"
+            icon={
+              <HeartIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+            }
+            title="Funding"
+          />
+          <Tab
+            value="rewards"
+            icon={
+              <GiftIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+            }
+            title="Rewards"
+          />
+          <Tab
+            value="promote"
+            icon={
+              <MegaphoneIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+            }
+            title="Promote"
+          />
+        </TabsList>
+        <TabsContent value="fund_today"></TabsContent>
+        <TabsContent value="fund_on_completion"></TabsContent>
+        <TabsContent
+          value="rewards"
+          className="bg-gray-75 -mt-[1px] border-t pt-4 dark:bg-gray-700"
+        >
+          content goes here
+        </TabsContent>
+      </Tabs>
+
       <div className="bg-gray-75 w-full px-5 py-4 dark:bg-gray-700">
         <BadgeMessageForm
           orgName={props.orgName}
@@ -291,7 +331,7 @@ export const BadgePromotionModal = (props: {
           canSetFundingGoal={true}
         />
       </div>
-      <div className="grid w-full grid-cols-2 space-x-6 bg-white px-5 pt-3.5 pb-7 dark:bg-gray-800">
+      <div className="grid w-full grid-cols-2 space-x-6 bg-white px-5 pb-7 pt-3.5 dark:bg-gray-800">
         <div className="flex flex-col">
           <div className="text-sm font-medium">Post a Github comment</div>
 
@@ -307,7 +347,7 @@ export const BadgePromotionModal = (props: {
         <div className="flex flex-col">
           <div className="text-sm font-medium">Spread the word</div>
 
-          <div className="mt-2 mb-1 text-xs text-gray-500 dark:text-gray-400">
+          <div className="mb-1 mt-2 text-xs text-gray-500 dark:text-gray-400">
             Share link to the pledge page
           </div>
 
@@ -480,3 +520,27 @@ const XIcon = () => {
     </svg>
   )
 }
+
+const Tab = ({
+  value,
+  icon,
+  title,
+}: {
+  value: string
+  icon: React.ReactElement
+  title: string
+}) => (
+  <TabsTrigger
+    value={value}
+    className="data-[state=active]:bg-gray-75 rounded-none rounded-t-lg border !border-b-0 border-transparent bg-transparent !shadow-none outline-0 ring-0 hover:bg-gray-500/50 data-[state=active]:border-gray-200 dark:data-[state=active]:bg-gray-700"
+  >
+    <div className="flex w-full items-center gap-4 px-1 text-left">
+      {icon}
+      <div>
+        <div className='font-medium" text-sm text-gray-700 dark:text-gray-300'>
+          {title}
+        </div>
+      </div>
+    </div>
+  </TabsTrigger>
+)

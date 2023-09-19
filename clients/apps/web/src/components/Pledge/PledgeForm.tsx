@@ -113,7 +113,7 @@ const PledgeForm = ({
           >
             <TabsTrigger
               value="fund"
-              className="text-gray-500 data-[state=active]:text-red-600 dark:text-gray-300"
+              className="text-gray-500 data-[state=active]:text-red-600 dark:text-gray-300 dark:data-[state=active]:text-red-600"
             >
               <div className="flex w-full items-center justify-center  gap-4 px-1 text-left">
                 <HeartIcon className="h-6 w-6" />
@@ -125,9 +125,9 @@ const PledgeForm = ({
 
             <TabsTrigger
               value="contribute"
-              className="data-[state=active]:text-gray-600 dark:text-gray-300"
+              className="data-[state=active]:text-gray-600 dark:text-gray-300 dark:data-[state=active]:text-green-400"
             >
-              <div className="flex w-full items-center gap-4 px-1 text-left">
+              <div className="flex w-full items-center justify-center  gap-4 px-1 text-left">
                 <CommandLineIcon className="h-6 w-6 " />
                 <div>
                   <div className='font-medium" text-sm text-gray-700 dark:text-gray-300'>
@@ -164,11 +164,11 @@ const Fund = ({
   gotoURL?: string
   onAmountChange?: (amount: number) => void
 }) => {
-  const showFundingMethodTabs = true
+  const showFundingMethodTabs = false
 
   return (
     <div className="space-y-4 py-4">
-      <div>
+      <div className={twMerge(showFundingMethodTabs ? '' : '-mt-4')}>
         {showFundingMethodTabs && (
           <label
             htmlFor="funding_method"
@@ -537,7 +537,7 @@ const FundToday = ({
   }, [savedPaymentMethods.isFetched, savedPaymentMethods.data])
 
   return (
-    <div className="flex flex-col space-y-4 py-4">
+    <div className="flex flex-col space-y-4">
       <div>
         <label
           htmlFor="amount"

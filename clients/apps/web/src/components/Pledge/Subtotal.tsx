@@ -12,7 +12,7 @@ const Subtotal = ({
 
   return (
     <>
-      <div className="mb-1 mt-6 flex w-full text-sm text-gray-500 dark:text-gray-400">
+      <div className="flex w-full text-sm text-gray-500 dark:text-gray-400">
         <div className="w-full">Funding amount</div>
         <div className="w-full text-right">
           ${getCentsInDollarString(amount, true)}

@@ -1,0 +1,57 @@
+{
+    "headers": {
+        "Content-Type": "application/json",
+        "User-Agent": "GitHub-Hookshot/9ae9379",
+        "X-Github-Delivery": "<delivery_code>",
+        "X-Github-Event": "organization",
+        "X-Github-Hook-Id": "1337",
+        "X-Github-Hook-Installation-Target-Id": "1000",
+        "X-Github-Hook-Installation-Target-Type": "integration"
+    },
+    "body": {
+        "action": "renamed",
+        "changes": {
+            "login": {
+                "from": "frankie567-test-org"
+            }
+        },
+        "organization": {
+            "login": "frankie567-test-org-renamed",
+            "id": 145430071,
+            "node_id": "O_kgDOCKsWNw",
+            "url": "https://api.github.com/orgs/frankie567-test-org-renamed",
+            "repos_url": "https://api.github.com/orgs/frankie567-test-org-renamed/repos",
+            "events_url": "https://api.github.com/orgs/frankie567-test-org-renamed/events",
+            "hooks_url": "https://api.github.com/orgs/frankie567-test-org-renamed/hooks",
+            "issues_url": "https://api.github.com/orgs/frankie567-test-org-renamed/issues",
+            "members_url": "https://api.github.com/orgs/frankie567-test-org-renamed/members{/member}",
+            "public_members_url": "https://api.github.com/orgs/frankie567-test-org-renamed/public_members{/member}",
+            "avatar_url": "https://avatars.githubusercontent.com/u/145430071?v=4",
+            "description": null
+        },
+        "sender": {
+            "login": "frankie567",
+            "id": 1144727,
+            "node_id": "MDQ6VXNlcjExNDQ3Mjc=",
+            "avatar_url": "https://avatars.githubusercontent.com/u/1144727?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/frankie567",
+            "html_url": "https://github.com/frankie567",
+            "followers_url": "https://api.github.com/users/frankie567/followers",
+            "following_url": "https://api.github.com/users/frankie567/following{/other_user}",
+            "gists_url": "https://api.github.com/users/frankie567/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/frankie567/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/frankie567/subscriptions",
+            "organizations_url": "https://api.github.com/users/frankie567/orgs",
+            "repos_url": "https://api.github.com/users/frankie567/repos",
+            "events_url": "https://api.github.com/users/frankie567/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/frankie567/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "installation": {
+            "id": 41965501,
+            "node_id": "MDIzOkludGVncmF0aW9uSW5zdGFsbGF0aW9uNDE5NjU1MDE="
+        }
+    }
+}

@@ -54,6 +54,22 @@ class UnknownRepositoryTransferOrganization(GitHubTasksWebhookError):
         super().__init__(message)
 
 
+class UnknownIssueTransferOrganization(GitHubTasksWebhookError):
+    """
+    This error may be triggered by `handle_issue_transferred` when we handle
+    a `issues.transferred` event, if the target organization is unknown to us.
+
+    This shouldn't happen since GitHub doesn't allow to transfer issue
+    between organizations.
+    """
+
+    def __init__(self, issue_id: UUID, new_organization_external_id: int) -> None:
+        self.issue_id = issue_id
+        self.new_organization_external_id = new_organization_external_id
+        message = "Tried to handle an issue transfer to an unknown organization"
+        super().__init__(message)
+
+
 # ------------------------------------------------------------------------------
 # ORGANIZATIONS
 # ------------------------------------------------------------------------------
@@ -425,6 +441,42 @@ async def handle_issue(
     return issue
 
 
+async def handle_issue_transferred(
+    session: AsyncSession,
+    scope: str,
+    action: str,
+    event: github.webhooks.IssuesTransferred,
+) -> Issue | None:
+    old_issue_id = event.issue.id
+    old_issue = await service.github_issue.get_by_external_id(session, old_issue_id)
+    if not old_issue:
+        return None
+
+    new_repository_data = event.changes.new_repository
+
+    organization_id = new_repository_data.owner.id
+    organization = await service.github_organization.get_by_external_id(
+        session, organization_id
+    )
+    if organization is None:
+        raise UnknownIssueTransferOrganization(old_issue.id, organization_id)
+
+    repository = await service.github_repository.create_or_update_from_github(
+        session, organization, new_repository_data
+    )
+
+    # The new issue may have already been created following `issues.added` webhook
+    new_issue = await service.github_issue.create_or_update_from_github(
+        session, organization, repository, event.changes.new_issue
+    )
+
+    new_issue = await service.github_issue.transfer(session, old_issue, new_issue)
+
+    await service.github_issue.soft_delete(session, old_issue.id)
+
+    return new_issue
+
+
 @task("github.webhook.issues.opened")
 async def issue_opened(
     ctx: JobContext,
@@ -533,6 +585,24 @@ async def issue_deleted(
                 return None
 
             await service.github_issue.soft_delete(session, issue.id)
+
+
+@task("github.webhook.issues.transferred")
+async def issue_transferred(
+    ctx: JobContext,
+    scope: str,
+    action: str,
+    payload: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        parsed = github.webhooks.parse_obj(scope, payload)
+        if not isinstance(parsed, github.webhooks.IssuesTransferred):
+            log.error("github.webhook.unexpected_type")
+            raise Exception("unexpected webhook payload")
+
+        async with AsyncSessionMaker(ctx) as session:
+            await handle_issue_transferred(session, scope, action, parsed)
 
 
 @task("github.webhook.issues.labeled")

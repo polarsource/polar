@@ -9,6 +9,7 @@ from githubkit.rest import (
     Repository as GitHubRepository,
 )
 from githubkit.rest.models import FullRepository as GitHubFullRepository
+from githubkit.webhooks.models import Repository as GitHubWebhookRepository
 
 from polar.enums import Platforms
 from polar.logging import Logger
@@ -88,7 +89,7 @@ class GithubRepositoryService(RepositoryService):
         self,
         session: AsyncSession,
         organization: Organization,
-        data: GitHubRepository | GitHubFullRepository,
+        data: GitHubRepository | GitHubFullRepository | GitHubWebhookRepository,
     ) -> Repository:
         repository = await self.get_by_external_id(session, data.id)
 

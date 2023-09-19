@@ -76,7 +76,9 @@ class RepositoryCreate(Schema):
     @classmethod
     def from_github(
         cls,
-        repository: github.rest.Repository | github.rest.FullRepository,
+        repository: github.rest.Repository
+        | github.rest.FullRepository
+        | github.webhooks.Repository,
         organization_id: UUID,
     ) -> Self:
         topics = repository.topics if repository.topics else None
@@ -85,6 +87,21 @@ class RepositoryCreate(Schema):
             if repository.license_ and repository.license_.name
             else None
         )
+
+        repository_pushed_at = (
+            datetime.fromtimestamp(repository.pushed_at)
+            if isinstance(repository.pushed_at, int)
+            else repository.pushed_at
+        )
+        repository_created_at = (
+            datetime.fromtimestamp(repository.created_at)
+            if isinstance(repository.created_at, int)
+            else repository.created_at
+        )
+        # FIXME: this shouldn't be needed
+        # Remove it when githubkit has updated the schema
+        disabled = bool(repository.disabled)
+
         return cls(
             platform=Platforms.github,
             external_id=repository.id,
@@ -99,8 +116,8 @@ class RepositoryCreate(Schema):
             topics=topics,
             license=license,
             homepage=repository.homepage,
-            repository_pushed_at=repository.pushed_at,
-            repository_created_at=repository.created_at,
+            repository_pushed_at=repository_pushed_at,
+            repository_created_at=repository_created_at,
             repository_modified_at=repository.updated_at,
             is_private=repository.private,
             is_fork=repository.fork,
@@ -110,7 +127,7 @@ class RepositoryCreate(Schema):
             is_pages_enabled=repository.has_pages,
             is_downloads_enabled=repository.has_downloads,
             is_archived=repository.archived,
-            is_disabled=repository.disabled,
+            is_disabled=disabled,
         )
 
 

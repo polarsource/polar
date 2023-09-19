@@ -15,11 +15,10 @@ from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.models.user import User
-from polar.models.user_organization import UserOrganization
 from polar.pledge.schemas import PledgeState
+from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
-from tests import fixtures
-from tests.fixtures import predictable_objects, random_objects
+from tests.fixtures import random_objects
 
 
 @pytest.mark.asyncio
@@ -687,3 +686,39 @@ async def test_list_by_github_milestone_number(
 
         names = [i.title for i in issues]
         assert names == expected
+
+
+@pytest.mark.asyncio
+async def test_transfer(
+    session: AsyncSession,
+    organization: Organization,
+    pledging_organization: Organization,
+) -> None:
+    old_repository = await random_objects.create_repository(
+        session, organization, is_private=False
+    )
+    old_issue = await random_objects.create_issue(session, organization, old_repository)
+    old_issue.funding_goal = 10_000
+
+    pledges = [
+        await random_objects.create_pledge(
+            session, organization, old_repository, old_issue, pledging_organization
+        )
+        for _ in range(2)
+    ]
+
+    new_repository = await random_objects.create_repository(
+        session, organization, is_private=False
+    )
+    new_issue = await random_objects.create_issue(session, organization, new_repository)
+
+    updated_new_issue = await issue_service.transfer(session, old_issue, new_issue)
+
+    assert updated_new_issue.funding_goal == 10_000
+
+    for pledge in pledges:
+        updated_pledge = await pledge_service.get(session, pledge.id)
+        assert updated_pledge is not None
+        assert updated_pledge.organization_id == organization.id
+        assert updated_pledge.repository_id == new_repository.id
+        assert updated_pledge.issue_id == new_issue.id

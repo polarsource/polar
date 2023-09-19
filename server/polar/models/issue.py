@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 from uuid import UUID
 
 import sqlalchemy
@@ -159,6 +159,19 @@ class Issue(IssueFields, RecordModel):
             "total_engagement_count",
         ),
     )
+
+    TRANSFERRABLE_PROPERTIES: ClassVar[set[str]] = {
+        "pledge_badge_embedded_at",
+        "pledge_badge_ever_embedded",
+        "pledge_badge_currently_embedded",
+        "has_pledge_badge_label",
+        "badge_custom_content",
+        "funding_goal",
+        "pledged_amount_sum",
+        "needs_confirmation_solved",
+        "confirmed_solved_at",
+        "confirmed_solved_by",
+    }
 
     external_lookup_key: Mapped[str] = mapped_column(String, nullable=True, index=True)
 

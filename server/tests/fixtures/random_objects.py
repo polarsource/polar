@@ -166,8 +166,7 @@ async def user_second(
     return user
 
 
-@pytest_asyncio.fixture(scope="function")
-async def pledge(
+async def create_pledge(
     session: AsyncSession,
     organization: Organization,
     repository: Repository,
@@ -190,6 +189,19 @@ async def pledge(
 
     await session.commit()
     return pledge
+
+
+@pytest_asyncio.fixture(scope="function")
+async def pledge(
+    session: AsyncSession,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+    pledging_organization: Organization,
+) -> Pledge:
+    return await create_pledge(
+        session, organization, repository, issue, pledging_organization
+    )
 
 
 @pytest_asyncio.fixture(scope="function")

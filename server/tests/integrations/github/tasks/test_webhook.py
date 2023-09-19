@@ -19,7 +19,7 @@ from polar.organization.schemas import OrganizationCreate
 from polar.postgres import AsyncSession
 from polar.repository.schemas import RepositoryCreate
 from polar.worker import JobContext, PolarWorkerContext
-from tests.fixtures.random_objects import create_organization
+from tests.fixtures import random_objects
 from tests.fixtures.webhook import TestWebhook, TestWebhookFactory
 
 
@@ -905,7 +905,7 @@ async def test_webhook_repository_transferred(
     # Capture and prevent any calls to enqueue_job
     mocker.patch("polar.worker._enqueue_job")
 
-    new_organization = await create_organization(session)
+    new_organization = await random_objects.create_organization(session)
 
     hook = github_webhook.create("repository.transferred")
     hook["repository"]["id"] = repository.external_id
@@ -924,3 +924,52 @@ async def test_webhook_repository_transferred(
     )
     assert updated_repository is not None
     assert updated_repository.organization_id == new_organization.id
+
+
+@pytest.mark.asyncio
+async def test_webhook_issue_transferred(
+    job_context: JobContext,
+    mocker: MockerFixture,
+    session: AsyncSession,
+    github_webhook: TestWebhookFactory,
+    organization: Organization,
+) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("polar.worker._enqueue_job")
+
+    old_repository = await random_objects.create_repository(
+        session, organization, is_private=False
+    )
+    old_issue = await random_objects.create_issue(session, organization, old_repository)
+    old_issue.funding_goal = 10_000
+
+    new_repository = await random_objects.create_repository(
+        session, organization, is_private=False
+    )
+    new_issue = await random_objects.create_issue(session, organization, new_repository)
+
+    hook = github_webhook.create("issues.transferred")
+    hook["issue"]["id"] = old_issue.external_id
+    hook["changes"]["new_issue"]["id"] = new_issue.external_id
+    hook["changes"]["new_repository"]["id"] = new_repository.external_id
+    hook["changes"]["new_repository"]["owner"]["id"] = organization.external_id
+
+    await webhook_tasks.issue_transferred(
+        job_context,
+        "issues",
+        "transferred",
+        hook.json,
+        polar_context=PolarWorkerContext(),
+    )
+
+    updated_new_issue = await service.github_issue.get_by_external_id(
+        session, new_issue.external_id
+    )
+    assert updated_new_issue is not None
+    assert updated_new_issue.funding_goal == 10_000
+
+    updated_old_issue = await service.github_issue.get_by_external_id(
+        session, old_issue.external_id
+    )
+    assert updated_old_issue is not None
+    assert updated_old_issue.deleted_at is not None

@@ -10,6 +10,7 @@ from githubkit import GitHub, Response
 from githubkit.exception import RequestFailed
 from githubkit.rest.models import Issue as GitHubIssue
 from githubkit.rest.models import Label
+from githubkit.webhooks.models import Issue as GitHubWebhookIssue
 from githubkit.webhooks.models import Label as WebhookLabel
 from pydantic import parse_obj_as
 from sqlalchemy import asc, or_
@@ -789,7 +790,7 @@ class GithubIssueService(IssueService):
         session: AsyncSession,
         organization: Organization,
         repository: Repository,
-        data: GitHubIssue,
+        data: GitHubIssue | GitHubWebhookIssue,
     ) -> Issue:
         issue = await self.get_by_external_id(session, data.id)
 

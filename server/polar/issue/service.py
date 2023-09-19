@@ -24,6 +24,8 @@ from polar.kit.utils import utc_now
 from polar.models.issue import Issue
 from polar.models.issue_dependency import IssueDependency
 from polar.models.issue_reference import IssueReference
+from polar.models.issue_reward import IssueReward
+from polar.models.notification import Notification
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository
@@ -535,6 +537,47 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         await session.commit()
 
         return True
+
+    async def transfer(
+        self, session: AsyncSession, old_issue: Issue, new_issue: Issue
+    ) -> Issue:
+        """
+        Transfer meaningful properties and linked objects from an issue to another.
+
+        Useful to handle GitHub issues transfer,
+        because it creates a new issue and deletes the old one.
+        """
+        for property in Issue.TRANSFERRABLE_PROPERTIES:
+            value = getattr(old_issue, property)
+            setattr(new_issue, property, value)
+        await new_issue.save(session, autocommit=False)
+
+        # Transfer Pledges
+        statement = (
+            sql.update(Pledge)
+            .where(Pledge.issue_id == old_issue.id)
+            .values(
+                issue_id=new_issue.id,
+                repository_id=new_issue.repository_id,
+                organization_id=new_issue.organization_id,
+            )
+        )
+        await session.execute(statement)
+
+        # Transfer IssueReward and Notification
+        for model in {IssueReward, Notification}:
+            statement = (
+                sql.update(model)
+                # TODO: could be nice to have a common mixin for issue_id foreign key
+                .where(model.issue_id == old_issue.id).values(  # type: ignore
+                    issue_id=new_issue.id
+                )
+            )
+            await session.execute(statement)
+
+        await session.commit()
+
+        return new_issue
 
 
 issue = IssueService(Issue)

@@ -277,6 +277,7 @@ IMPLEMENTED_WEBHOOKS = {
     "issues.edited",
     "issues.closed",
     "issues.deleted",
+    "issues.transferred",
     "issues.reopened",
     "issues.labeled",
     "issues.unlabeled",

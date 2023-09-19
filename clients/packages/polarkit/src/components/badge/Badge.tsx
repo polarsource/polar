@@ -238,7 +238,7 @@ export const Badge = ({
                     height: 22,
                     width: 22,
                     borderRadius: 22,
-                    border: darkmode ? '1px solid #374e96' : '1px solid white',
+                    border: darkmode ? '1px solid #3E3F43' : '1px solid white',
                     marginLeft: idx > 0 ? '-6px' : '',
                     flexShrink: '0',
                   }}
@@ -257,7 +257,7 @@ export const Badge = ({
                     textAlign: 'center',
                     fontSize: '8px',
                     lineHeight: '20px',
-                    border: darkmode ? '1px solid #374e96' : '1px solid white',
+                    border: darkmode ? '1px solid #3E3F43' : '1px solid white',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-around',

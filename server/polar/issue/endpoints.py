@@ -338,6 +338,14 @@ async def update(
         issue.funding_goal = update.funding_goal.amount
         updated = True
 
+    if update.upfront_split_to_contributors is not None:
+        issue.upfront_split_to_contributors = update.upfront_split_to_contributors
+        updated = True
+
+    if update.unset_upfront_split_to_contributors:
+        issue.upfront_split_to_contributors = None
+        updated = True
+
     if updated:
         await issue.save(session)
 

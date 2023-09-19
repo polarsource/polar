@@ -243,6 +243,12 @@ class Issue(IssueFields, RecordModel):
         nullable=True,
     )
 
+    # a number between 0 and 100
+    # share of rewards that will go to contributors of this issue
+    upfront_split_to_contributors: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )
+
     @classmethod
     def contains_pledge_badge_label(cls, labels: Any) -> bool:
         if not labels:

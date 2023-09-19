@@ -66,14 +66,6 @@ class Issue(Schema):
     )
     labels: list[Label] = []
 
-    # TODO: Add if needed
-    # author: JSONAny
-    # author_association: str | None
-    # assignee: JSONAny
-    # assignees: JSONAny
-    # milestone: JSONAny
-    # closed_by: JSONAny
-
     reactions: Reactions | None = Field(description="Github reactions")
 
     state: Literal["OPEN", "CLOSED"]
@@ -93,6 +85,10 @@ class Issue(Schema):
     funding: Funding
 
     repository: Repository = Field(description="The repository that the issue is in")
+
+    upfront_split_to_contributors: int | None = Field(
+        description="Share of rewrads that will be rewarded to contributors of this issue. A number between 0 and 100 (inclusive)."  # noqa: E501
+    )
 
     @classmethod
     def from_db(cls, i: IssueModel) -> Self:
@@ -130,11 +126,15 @@ class Issue(Schema):
             funding=funding,
             repository=Repository.from_db(i.repository),
             labels=labels,
+            upfront_split_to_contributors=i.upfront_split_to_contributors,
         )
 
 
 class UpdateIssue(Schema):
     funding_goal: CurrencyAmount | None = None
+
+    upfront_split_to_contributors: int | None = Field(default=None, ge=0.0, le=100.0)
+    unset_upfront_split_to_contributors: bool | None = None
 
 
 # Public API

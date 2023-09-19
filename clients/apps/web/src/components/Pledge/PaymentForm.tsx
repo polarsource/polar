@@ -236,12 +236,12 @@ const PaymentForm = ({
       {!paymentMethod &&
         canSavePaymentMethod &&
         stripeElementsCurrentPaymentType === 'card' && (
-          <div className="items-top mb-2 mt-4 flex space-x-2">
+          <div className="items-top mb-2 mt-4 flex items-center space-x-2">
             <Checkbox
               id="save_payment_method"
               onCheckedChange={(e) => onSavePaymentMethodChanged(Boolean(e))}
             />
-            <div className="grid gap-1.5 leading-none">
+            <div className="grid leading-none">
               <label
                 htmlFor="save_payment_method"
                 className="text-sm font-medium text-gray-500 dark:text-gray-400"

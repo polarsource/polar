@@ -31,6 +31,50 @@ log = structlog.get_logger()
 
 
 # ------------------------------------------------------------------------------
+# ORGANIZATIONS
+# ------------------------------------------------------------------------------
+
+
+async def organization_updated(
+    session: AsyncSession,
+    event: github.webhooks.OrganizationRenamed,
+) -> dict[str, Any]:
+    with ExecutionContext(is_during_installation=True):
+        if not event.installation:
+            return dict(success=False)
+
+        organization = await service.github_organization.get_by_external_id(
+            session, event.organization.id
+        )
+        if not organization:
+            return dict(success=False)
+
+        organization.name = event.organization.login
+        organization.avatar_url = event.organization.avatar_url
+
+        await organization.save(session)
+
+        return dict(success=True)
+
+
+@task(name="github.webhook.organization.renamed")
+async def organizations_renamed(
+    ctx: JobContext,
+    scope: str,
+    action: str,
+    payload: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        parsed = github.webhooks.parse_obj(scope, payload)
+        if not isinstance(parsed, github.webhooks.OrganizationRenamed):
+            log.error("github.webhook.unexpected_type")
+            raise Exception("unexpected webhook payload")
+        async with AsyncSessionMaker(ctx) as session:
+            await organization_updated(session, parsed)
+
+
+# ------------------------------------------------------------------------------
 # REPOSITORIES
 # ------------------------------------------------------------------------------
 

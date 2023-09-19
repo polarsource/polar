@@ -862,3 +862,32 @@ async def test_webhook_labeled_remove_badge_body(
         issue=ANY,
         triggered_from_label=True,
     )
+
+
+@pytest.mark.asyncio
+async def test_webhook_organization_renamed(
+    job_context: JobContext,
+    mocker: MockerFixture,
+    session: AsyncSession,
+    github_webhook: TestWebhookFactory,
+    organization: Organization,
+) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("polar.worker._enqueue_job")
+
+    hook = github_webhook.create("organization.renamed")
+    hook["organization"]["id"] = organization.external_id
+
+    await webhook_tasks.organizations_renamed(
+        job_context,
+        "organization",
+        "renamed",
+        hook.json,
+        polar_context=PolarWorkerContext(),
+    )
+
+    updated_organization = await service.github_organization.get_by_external_id(
+        session, organization.external_id
+    )
+    assert updated_organization is not None
+    assert updated_organization.name == hook["organization"]["login"]

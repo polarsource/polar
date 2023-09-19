@@ -19,6 +19,7 @@ from polar.organization.schemas import OrganizationCreate
 from polar.postgres import AsyncSession
 from polar.repository.schemas import RepositoryCreate
 from polar.worker import JobContext, PolarWorkerContext
+from tests.fixtures.random_objects import create_organization
 from tests.fixtures.webhook import TestWebhook, TestWebhookFactory
 
 
@@ -891,3 +892,35 @@ async def test_webhook_organization_renamed(
     )
     assert updated_organization is not None
     assert updated_organization.name == hook["organization"]["login"]
+
+
+@pytest.mark.asyncio
+async def test_webhook_repository_transferred(
+    job_context: JobContext,
+    mocker: MockerFixture,
+    session: AsyncSession,
+    github_webhook: TestWebhookFactory,
+    repository: Repository,
+) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("polar.worker._enqueue_job")
+
+    new_organization = await create_organization(session)
+
+    hook = github_webhook.create("repository.transferred")
+    hook["repository"]["id"] = repository.external_id
+    hook["repository"]["owner"]["id"] = new_organization.external_id
+
+    await webhook_tasks.repositories_transferred(
+        job_context,
+        "repository",
+        "transferred",
+        hook.json,
+        polar_context=PolarWorkerContext(),
+    )
+
+    updated_repository = await service.github_repository.get_by_external_id(
+        session, repository.external_id
+    )
+    assert updated_repository is not None
+    assert updated_repository.organization_id == new_organization.id

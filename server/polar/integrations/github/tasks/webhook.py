@@ -1,8 +1,10 @@
 from typing import Any, Sequence, Union
+from uuid import UUID
 
 import structlog
 
 from polar.context import ExecutionContext
+from polar.exceptions import PolarError
 from polar.integrations.github import client as github
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
@@ -28,6 +30,28 @@ from .utils import (
 )
 
 log = structlog.get_logger()
+
+
+class GitHubTasksWebhookError(PolarError):
+    ...
+
+
+class UnknownRepositoryTransferOrganization(GitHubTasksWebhookError):
+    """
+    This error may be triggered by `repository_transferred` when we handle
+    a `repository.transferred` event, if the target organization is unknown to us.
+
+    This shouldn't happen since GitHub only triggers the event for target organization
+    that actually installed the application. Otherwise, we shouldn't have been pinged.
+
+    Ref: https://docs.github.com/en/webhooks/webhook-events-and-payloads?actionType=transferred#repository
+    """
+
+    def __init__(self, repository_id: UUID, new_organization_external_id: int) -> None:
+        self.repository_id = repository_id
+        self.new_organization_external_id = new_organization_external_id
+        message = "Tried to handle a repository transfer to an unknown organization"
+        super().__init__(message)
 
 
 # ------------------------------------------------------------------------------
@@ -270,6 +294,23 @@ async def repositories_archived(
             await repository_updated(session, parsed)
 
 
+@task(name="github.webhook.repository.transferred")
+async def repositories_transferred(
+    ctx: JobContext,
+    scope: str,
+    action: str,
+    payload: dict[str, Any],
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        parsed = github.webhooks.parse_obj(scope, payload)
+        if not isinstance(parsed, github.webhooks.RepositoryTransferred):
+            log.error("github.webhook.unexpected_type")
+            raise Exception("unexpected webhook payload")
+        async with AsyncSessionMaker(ctx) as session:
+            await repository_transferred(session, parsed)
+
+
 async def repository_updated(
     session: AsyncSession,
     event: Union[
@@ -315,6 +356,41 @@ async def repository_deleted(
         if not repository.deleted_at:
             repository.deleted_at = utc_now()
 
+        await repository.save(session)
+
+        return dict(success=True)
+
+
+async def repository_transferred(
+    session: AsyncSession,
+    event: github.webhooks.RepositoryTransferred,
+) -> dict[str, Any]:
+    with ExecutionContext(is_during_installation=True):
+        if not event.installation:
+            return dict(success=False)
+
+        repository = await service.github_repository.get_by_external_id(
+            session, event.repository.id
+        )
+        if not repository:
+            # We don't know this repository yet, we can stop here:
+            # it'll be handled by `installation_repositories.added` event.
+            return dict(success=False)
+
+        new_organization_id = event.repository.owner.id
+        new_organization = await service.github_organization.get_by_external_id(
+            session, new_organization_id
+        )
+
+        if new_organization is None:
+            raise UnknownRepositoryTransferOrganization(
+                repository.id, new_organization_id
+            )
+
+        repository.organization = new_organization
+        # GitHub triggers the `installation_repositories.removed` event
+        # from the source installation, so make sure it's not deleted
+        repository.deleted_at = None
         await repository.save(session)
 
         return dict(success=True)

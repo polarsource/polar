@@ -292,6 +292,7 @@ IMPLEMENTED_WEBHOOKS = {
     "repository.deleted",
     "repository.edited",
     "repository.archived",
+    "repository.transferred",
     "organization.renamed",
 }
 

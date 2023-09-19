@@ -8,7 +8,7 @@ import {
   Reward,
   RewardState,
 } from 'polarkit/api/client'
-import { addDays, issue } from './testdata'
+import { issue } from './testdata'
 
 type Story = StoryObj<typeof List>
 
@@ -80,7 +80,7 @@ export const Default: Story = {
           state: PledgeState.PENDING,
         },
         state: RewardState.PAID,
-        paid_at: addDays(new Date(), -2).toString(),
+        paid_at: '2023-08-31',
       },
     ],
     columns: ['ESTIMATED_PAYOUT_DATE', 'PAID_OUT_DATE', 'RECEIVER'],

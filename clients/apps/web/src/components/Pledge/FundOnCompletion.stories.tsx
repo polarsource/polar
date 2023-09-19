@@ -8,12 +8,8 @@ const meta: Meta<typeof FundOnCompletion> = {
   title: 'Organisms/FundOnCompletion',
   component: FundOnCompletion,
   tags: ['autodocs'],
-  args: {
-    //children: 'Brewing a fresh access token',
-  },
   parameters: {
-    // Disable chromatic for this component as it's using animations
-    chromatic: { disableSnapshot: true },
+    themes: ['light', 'dark'],
     nextjs: {
       appDirectory: true,
     },

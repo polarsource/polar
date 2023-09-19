@@ -212,28 +212,26 @@ const NextSteps = () => (
       </div>
     </div>
     <div className="flex items-center gap-4">
-      <div className="m-0.5 flex h-5 w-5 items-center justify-around rounded-full border border-gray-200 dark:border-gray-500">
-        <span className="text-sm">1</span>
-      </div>
+      <CircledNumber>1</CircledNumber>
       <div>Pledge amount today</div>
     </div>
     <div className="flex items-center gap-4">
-      <div className="m-0.5 flex h-5 w-5 items-center justify-around rounded-full border border-gray-200 dark:border-gray-500">
-        <span className="text-sm">2</span>
-      </div>
+      <CircledNumber>2</CircledNumber>
       <div>Get progress updates</div>
     </div>
     <div className="flex items-center gap-4">
-      <div className="m-0.5 flex h-5 w-5 items-center justify-around rounded-full border border-gray-200 dark:border-gray-500">
-        <span className="text-sm">3</span>
-      </div>
+      <CircledNumber>3</CircledNumber>
       <div>Receive invoice once issue is completed</div>
     </div>
     <div className="flex items-center gap-4">
-      <div className="m-0.5 flex h-5 w-5 items-center justify-around rounded-full border border-gray-200 dark:border-gray-500">
-        <span className="text-sm">4</span>
-      </div>
+      <CircledNumber>4</CircledNumber>
       <div>Pay invoice within 7 days</div>
     </div>
+  </div>
+)
+
+export const CircledNumber = ({ children }: { children: React.ReactNode }) => (
+  <div className="m-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-around rounded-full border border-gray-200 dark:border-gray-500">
+    <span className="text-sm">{children}</span>
   </div>
 )

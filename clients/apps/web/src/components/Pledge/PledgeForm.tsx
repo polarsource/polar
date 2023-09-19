@@ -4,6 +4,7 @@ import {
   CurrencyDollarIcon,
   EnvelopeIcon,
 } from '@heroicons/react/24/outline'
+import { CommandLineIcon, HeartIcon } from '@heroicons/react/24/solid'
 import { Elements } from '@stripe/react-stripe-js'
 import { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
@@ -33,6 +34,7 @@ import {
   SelectValue,
 } from '../ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
+import Contribute from './Contribute'
 import FundOnCompletion from './FundOnCompletion'
 import PaymentForm from './PaymentForm'
 import { prettyCardName, validateEmail } from './payment'
@@ -93,11 +95,80 @@ const PledgeForm = ({
   gotoURL?: string
   onAmountChange?: (amount: number) => void
 }) => {
-  const showFundingMethodTabs = false
-
   return (
     <>
       <form className="flex flex-col">
+        <label
+          htmlFor="action"
+          className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+        >
+          I want to&hellip;
+        </label>
+
+        <Tabs defaultValue="fund" className="">
+          <TabsList
+            className={twMerge(
+              'grid h-fit w-full grid-cols-2 grid-rows-1 dark:bg-gray-700',
+            )}
+          >
+            <TabsTrigger
+              value="fund"
+              className="text-gray-500 data-[state=active]:text-red-600 dark:text-gray-300"
+            >
+              <div className="flex w-full items-center justify-center  gap-4 px-1 text-left">
+                <HeartIcon className="h-6 w-6" />
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Fund
+                </div>
+              </div>
+            </TabsTrigger>
+
+            <TabsTrigger
+              value="contribute"
+              className="data-[state=active]:text-gray-600 dark:text-gray-300"
+            >
+              <div className="flex w-full items-center gap-4 px-1 text-left">
+                <CommandLineIcon className="h-6 w-6 " />
+                <div>
+                  <div className='font-medium" text-sm text-gray-700 dark:text-gray-300'>
+                    Contribute
+                  </div>
+                </div>
+              </div>
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="fund">
+            <Fund
+              issue={issue}
+              gotoURL={gotoURL}
+              onAmountChange={onAmountChangeProp}
+            />
+          </TabsContent>
+          <TabsContent value="contribute">
+            <Contribute issue={issue} />
+          </TabsContent>
+        </Tabs>
+      </form>
+    </>
+  )
+}
+
+export default PledgeForm
+
+const Fund = ({
+  issue,
+  gotoURL,
+  onAmountChange: onAmountChangeProp,
+}: {
+  issue: Issue
+  gotoURL?: string
+  onAmountChange?: (amount: number) => void
+}) => {
+  const showFundingMethodTabs = true
+
+  return (
+    <div className="space-y-4 py-4">
+      <div>
         {showFundingMethodTabs && (
           <label
             htmlFor="funding_method"
@@ -142,23 +213,22 @@ const PledgeForm = ({
             <FundOnCompletion issue={issue} gotoURL={gotoURL} />
           </TabsContent>
         </Tabs>
+      </div>
 
-        <p className="mt-5 text-sm text-gray-600">
-          By funding this issue, you agree to our{' '}
-          <Link href="https://polar.sh/legal/terms" className="underline">
-            Terms of Service
-          </Link>{' '}
-          and understand our{' '}
-          <Link href="https://polar.sh/legal/privacy" className="underline">
-            Privacy Policy
-          </Link>
-          .
-        </p>
-      </form>
-    </>
+      <p className="text-sm text-gray-600">
+        By funding this issue, you agree to our{' '}
+        <Link href="https://polar.sh/legal/terms" className="underline">
+          Terms of Service
+        </Link>{' '}
+        and understand our{' '}
+        <Link href="https://polar.sh/legal/privacy" className="underline">
+          Privacy Policy
+        </Link>
+        .
+      </p>
+    </div>
   )
 }
-export default PledgeForm
 
 const FundingMethodTab = ({
   value,
@@ -467,67 +537,71 @@ const FundToday = ({
   }, [savedPaymentMethods.isFetched, savedPaymentMethods.data])
 
   return (
-    <div className="flex flex-col">
-      <label
-        htmlFor="amount"
-        className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
-      >
-        Funding amount
-      </label>
-      <div className="flex flex-row items-center space-x-4">
-        <MoneyInput
-          id="amount"
-          name="amount"
-          onChange={onAmountChange}
-          onBlur={onAmountChange}
-          placeholder={organization.pledge_minimum_amount}
-          value={amount}
-          onFocus={(event) => {
-            event.target.select()
-          }}
-        />
-        <p
-          className={classNames(
-            amount < organization.pledge_minimum_amount ? 'text-red-500' : '',
-            'w-2/5 text-xs text-gray-500 dark:text-gray-400',
-          )}
+    <div className="flex flex-col space-y-4 py-4">
+      <div>
+        <label
+          htmlFor="amount"
+          className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
         >
-          Minimum is $
-          {getCentsInDollarString(organization.pledge_minimum_amount)}
-        </p>
+          Funding amount
+        </label>
+        <div className="flex flex-row items-center space-x-4">
+          <MoneyInput
+            id="amount"
+            name="amount"
+            onChange={onAmountChange}
+            onBlur={onAmountChange}
+            placeholder={organization.pledge_minimum_amount}
+            value={amount}
+            onFocus={(event) => {
+              event.target.select()
+            }}
+          />
+          <p
+            className={classNames(
+              amount < organization.pledge_minimum_amount ? 'text-red-500' : '',
+              'w-2/5 text-xs text-gray-500 dark:text-gray-400',
+            )}
+          >
+            Minimum is $
+            {getCentsInDollarString(organization.pledge_minimum_amount)}
+          </p>
+        </div>
       </div>
 
-      <label
-        htmlFor="email"
-        className="mb-2 mt-4 text-sm font-medium text-gray-500 dark:text-gray-400"
-      >
-        Contact details
-      </label>
-      <div className="relative">
-        <input
-          type="email"
-          id="email"
-          onChange={onEmailChange}
-          onBlur={onEmailChange}
-          value={email}
-          className="block w-full rounded-lg border-gray-200 bg-transparent px-3 py-2.5 pl-10 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
-          onFocus={(event) => {
-            event.target.select()
-          }}
-        />
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-20 flex items-center pl-3 text-lg">
-          <span className="text-gray-500">
-            <EnvelopeIcon className="h-6 w-6" />
-          </span>
+      <div>
+        <label
+          htmlFor="email"
+          className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+        >
+          Contact details
+        </label>
+        <div className="relative">
+          <input
+            type="email"
+            id="email"
+            onChange={onEmailChange}
+            onBlur={onEmailChange}
+            value={email}
+            className="block w-full rounded-lg border-gray-200 bg-transparent px-3 py-2.5 pl-10 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
+            onFocus={(event) => {
+              event.target.select()
+            }}
+          />
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-20 flex items-center pl-3 text-lg">
+            <span className="text-gray-500">
+              <EnvelopeIcon className="h-6 w-6" />
+            </span>
+          </div>
         </div>
       </div>
 
       {savedPaymentMethods.data?.items &&
         savedPaymentMethods.data?.items?.length > 0 && (
-          <>
+          <div>
             <label
               htmlFor="payment_method"
-              className="mb-2 mt-4 text-sm font-medium text-gray-500 dark:text-gray-400"
+              className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
             >
               Payment method
             </label>
@@ -558,7 +632,7 @@ const FundToday = ({
                 <SelectItem value="new">+ New payment method</SelectItem>
               </SelectContent>
             </Select>
-          </>
+          </div>
         )}
 
       {showStripeForm && polarPaymentIntent && (

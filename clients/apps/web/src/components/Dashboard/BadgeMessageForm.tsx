@@ -7,7 +7,6 @@ import { classNames } from 'polarkit/utils'
 import { ChangeEvent, MouseEvent, useEffect, useRef, useState } from 'react'
 
 const BadgeMessageForm = (props: {
-  orgName: string
   value: string
   onUpdateMessage: (comment: string) => Promise<void> // when "update" is clicked
   onUpdateFundingGoal: (amount: CurrencyAmount) => Promise<void> // when "update" is clicked

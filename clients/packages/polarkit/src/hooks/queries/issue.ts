@@ -181,11 +181,20 @@ export const useBadgeWithComment = () =>
 
 export const useUpdateIssue = () =>
   useMutation({
-    mutationFn: (variables: { id: string; funding_goal?: CurrencyAmount }) => {
+    mutationFn: (variables: {
+      id: string
+      funding_goal?: CurrencyAmount
+      upfront_split_to_contributors?: number
+      unset_upfront_split_to_contributors?: boolean
+    }) => {
       return api.issues.update({
         id: variables.id,
         requestBody: {
           funding_goal: variables.funding_goal,
+          upfront_split_to_contributors:
+            variables.upfront_split_to_contributors,
+          unset_upfront_split_to_contributors:
+            variables.unset_upfront_split_to_contributors,
         },
       })
     },

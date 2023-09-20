@@ -33,8 +33,8 @@ const meta: Meta<typeof BadgePromotionModal> = {
   component: BadgePromotionModal,
   tags: ['autodocs'],
   args: {
-    repoName: repo.name,
-    orgName: org.name,
+    repo: repo,
+    org: org,
     issue: dashboardIssue,
     isShown: true,
     toggle: () => {},
@@ -72,6 +72,18 @@ export const Rewards: Story = {
   args: {
     ...Default.args,
     defaultTab: 'rewards',
+  },
+}
+
+export const RewardsWithSplit: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    defaultTab: 'rewards',
+    issue: {
+      ...dashboardIssue,
+      upfront_split_to_contributors: 70,
+    },
   },
 }
 

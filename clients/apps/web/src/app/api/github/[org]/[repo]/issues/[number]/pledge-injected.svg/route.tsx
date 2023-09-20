@@ -25,6 +25,7 @@ const renderBadge = async (badge: GithubBadgeRead, isDarkmode: boolean) => {
       darkmode={isDarkmode}
       funding={badge.funding}
       avatarsUrls={[]}
+      orgName="demoorg"
     />,
     {
       height: 60,

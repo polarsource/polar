@@ -76,6 +76,8 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
       darkmode={isDarkmode}
       funding={funding}
       avatarsUrls={avatarUrls}
+      upfront_split_to_contributors={data.issue.upfront_split_to_contributors}
+      orgName={data.issue.repository.organization.name}
     />,
     {
       height: 60,

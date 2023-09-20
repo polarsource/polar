@@ -242,7 +242,7 @@ export const BadgePromotionModal = (props: {
         </div>
       </ModalHeader>
 
-      <Tabs defaultValue={props.defaultTab ?? 'funding'} className="">
+      <Tabs defaultValue={props.defaultTab ?? 'funding'}>
         <TabsList
           className={twMerge(
             'mx-2 flex h-fit w-full flex-row justify-start space-x-2 !border-0 bg-transparent !p-0',
@@ -272,7 +272,7 @@ export const BadgePromotionModal = (props: {
         </TabsList>
         <TabsContent
           value="funding"
-          className="bg-gray-75 -mt-[1px] border-t p-4 dark:border-gray-600 dark:bg-gray-800"
+          className="bg-gray-75 -mt-[1px] border-t p-4 dark:border-gray-600 dark:bg-gray-900"
         >
           <BadgeMessageForm
             orgName={props.orgName}
@@ -294,13 +294,13 @@ export const BadgePromotionModal = (props: {
         </TabsContent>
         <TabsContent
           value="rewards"
-          className="bg-gray-75 -mt-[1px] border-t p-4 dark:border-gray-600 dark:bg-gray-800"
+          className="bg-gray-75 -mt-[1px] border-t p-4 dark:border-gray-600 dark:bg-gray-900"
         >
           content goes here
         </TabsContent>
         <TabsContent
           value="promote"
-          className="bg-gray-75 -mt-[1px] border-t p-4 dark:border-gray-600 dark:bg-gray-800"
+          className="bg-gray-75 -mt-[1px] border-t p-4 dark:border-gray-600 dark:bg-gray-900"
         >
           <PromoteTab {...props} />
         </TabsContent>
@@ -449,7 +449,7 @@ const Tab = ({
 }) => (
   <TabsTrigger
     value={value}
-    className="data-[state=active]:bg-gray-75 rounded-none rounded-t-lg border !border-b-0 border-transparent bg-transparent !shadow-none outline-0 ring-0 hover:bg-gray-500/50 data-[state=active]:border-gray-200 dark:data-[state=active]:border-gray-600 dark:data-[state=active]:bg-gray-800"
+    className="data-[state=active]:bg-gray-75 rounded-none rounded-t-lg border !border-b-0 border-transparent bg-transparent !shadow-none outline-0 ring-0 hover:bg-gray-500/50 data-[state=active]:border-gray-200 dark:data-[state=active]:border-gray-600 dark:data-[state=active]:bg-gray-900"
   >
     <div className="flex w-full items-center gap-4 px-1 text-left">
       {icon}

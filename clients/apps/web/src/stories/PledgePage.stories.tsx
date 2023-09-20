@@ -69,3 +69,19 @@ export const FundingGoal: Story = {
     },
   },
 }
+
+export const LongAuthorName: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    issue: {
+      ...issue,
+      author: issue.author
+        ? {
+            ...issue.author,
+            login: 'ASuperLongUsername',
+          }
+        : undefined,
+    },
+  },
+}

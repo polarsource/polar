@@ -7,7 +7,7 @@ from uuid import UUID
 
 import structlog
 from fastapi.encoders import jsonable_encoder
-from pydantic import Field, parse_obj_as
+from pydantic import Field, HttpUrl, parse_obj_as
 
 from polar.currency.schemas import CurrencyAmount
 from polar.dashboard.schemas import IssueStatus
@@ -54,6 +54,13 @@ class Label(Schema):
     color: str
 
 
+class Author(Schema):
+    id: int
+    login: str
+    html_url: HttpUrl
+    avatar_url: HttpUrl
+
+
 # Public API
 class Issue(Schema):
     id: UUID
@@ -66,6 +73,7 @@ class Issue(Schema):
     )
     labels: list[Label] = []
 
+    author: Author | None = Field(description="GitHub author")
     reactions: Reactions | None = Field(description="Github reactions")
 
     state: Literal["OPEN", "CLOSED"]
@@ -122,6 +130,7 @@ class Issue(Schema):
             issue_created_at=i.issue_created_at,
             needs_confirmation_solved=i.needs_confirmation_solved,
             confirmed_solved_at=i.confirmed_solved_at,
+            author=parse_obj_as(Author, i.author) if i.author else None,
             reactions=parse_obj_as(Reactions, i.reactions) if i.reactions else None,
             funding=funding,
             repository=Repository.from_db(i.repository),

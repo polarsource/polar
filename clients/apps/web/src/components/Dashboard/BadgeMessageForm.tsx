@@ -2,7 +2,11 @@ import { Marked } from '@ts-stack/markdown'
 import { useTheme } from 'next-themes'
 import { CurrencyAmount, Funding } from 'polarkit/api/client'
 import { Badge } from 'polarkit/components/badge'
-import { LabeledRadioButton, MoneyInput } from 'polarkit/components/ui'
+import {
+  LabeledRadioButton,
+  MoneyInput,
+  PrimaryButton,
+} from 'polarkit/components/ui'
 import { classNames } from 'polarkit/utils'
 import { ChangeEvent, MouseEvent, useEffect, useRef, useState } from 'react'
 
@@ -114,7 +118,7 @@ const BadgeMessageForm = (props: {
           </>
         )}
       </div>
-      <div className="flex justify-between">
+      <div className="flex items-center justify-between">
         {/* <div className="text-gray-600">
           Template variables: <code>{'{badge}'}</code>, <code>{'{repo}'}</code>
         </div> */}
@@ -138,19 +142,15 @@ const BadgeMessageForm = (props: {
 
         <div className="flex-1"></div>
         {props.showUpdateButton && (
-          <button
-            onClick={onClickUpdate}
-            disabled={!canSave}
-            className={classNames(
-              isLoading ? 'cursor-wait' : '',
-              canSave
-                ? 'cursor-pointer text-blue-600 dark:text-blue-500'
-                : 'text-gray-400 dark:text-gray-500',
-              'text-sm font-medium',
-            )}
-          >
-            Update
-          </button>
+          <div>
+            <PrimaryButton
+              onClick={onClickUpdate}
+              disabled={!canSave}
+              fullWidth={false}
+            >
+              Update
+            </PrimaryButton>
+          </div>
         )}
       </div>
     </div>

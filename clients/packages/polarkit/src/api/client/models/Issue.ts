@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
+import type { Author } from './Author';
 import type { Funding } from './Funding';
 import type { Label } from './Label';
 import type { Platforms } from './Platforms';
@@ -31,6 +32,10 @@ export type Issue = {
    */
   comments?: number;
   labels?: Array<Label>;
+  /**
+   * GitHub author
+   */
+  author?: Author;
   /**
    * Github reactions
    */

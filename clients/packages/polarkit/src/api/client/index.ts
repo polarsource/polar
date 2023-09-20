@@ -13,6 +13,7 @@ export type { Account } from './models/Account';
 export type { AccountCreate } from './models/AccountCreate';
 export type { AccountLink } from './models/AccountLink';
 export { AccountType } from './models/AccountType';
+export type { Author } from './models/Author';
 export type { AuthorizationResponse } from './models/AuthorizationResponse';
 export { BackofficeBadge } from './models/BackofficeBadge';
 export { BackofficeBadgeResponse } from './models/BackofficeBadgeResponse';

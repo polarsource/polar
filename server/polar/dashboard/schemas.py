@@ -114,6 +114,10 @@ class IssueDashboardRead(Schema):
         description="If this issue has been marked as confirmed solved through Polar"
     )
 
+    upfront_split_to_contributors: int | None = Field(
+        description="Share of rewrads that will be rewarded to contributors of this issue. A number between 0 and 100 (inclusive)."  # noqa: E501
+    )
+
     @classmethod
     def from_db(cls, i: Issue) -> Self:
         funding = Funding(
@@ -148,6 +152,7 @@ class IssueDashboardRead(Schema):
             pledge_badge_currently_embedded=i.pledge_badge_currently_embedded,
             needs_confirmation_solved=i.needs_confirmation_solved,
             confirmed_solved_at=i.confirmed_solved_at,
+            upfront_split_to_contributors=i.upfront_split_to_contributors,
         )
 
 

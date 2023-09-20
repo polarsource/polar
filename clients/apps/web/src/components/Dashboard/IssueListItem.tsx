@@ -270,8 +270,8 @@ const IssueListItem = (props: {
                 'funding' in props.issue &&
                 'pledge_badge_currently_embedded' in props.issue && (
                   <AddBadgeButton
-                    orgName={props.org.name}
-                    repoName={props.repo.name}
+                    org={props.org}
+                    repo={props.repo}
                     issue={props.issue}
                   />
                 )}

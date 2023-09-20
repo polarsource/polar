@@ -250,7 +250,6 @@ const BadgeSetup = ({
         <div className="w-full rounded-xl bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-inset dark:ring-gray-700">
           <div className="flex flex-col space-y-4 p-5">
             <BadgeMessageForm
-              orgName={org.name}
               value={settings.message || ''}
               onUpdateMessage={async (value: string) => {}}
               onUpdateFundingGoal={async () => {}}

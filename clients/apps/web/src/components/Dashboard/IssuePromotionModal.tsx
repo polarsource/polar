@@ -1,13 +1,21 @@
 import { useRequireAuth } from '@/hooks'
-import { GiftIcon, HeartIcon, MegaphoneIcon } from '@heroicons/react/24/outline'
+import {
+  GiftIcon,
+  HeartIcon,
+  MegaphoneIcon,
+  UserIcon,
+} from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import {
   CurrencyAmount,
   IssueDashboardRead,
   Label,
+  Organization,
   Platforms,
+  Repository,
   UserRead,
 } from 'polarkit/api/client'
+import { PrimaryButton } from 'polarkit/components/ui'
 import {
   useBadgeSettings,
   useBadgeWithComment,
@@ -18,11 +26,12 @@ import {
 } from 'polarkit/hooks'
 import { classNames } from 'polarkit/utils'
 import { posthog } from 'posthog-js'
-import { ChangeEvent, useState } from 'react'
+import { ChangeEvent, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CopyToClipboardInput from '../../../../../packages/polarkit/src/components/ui/atoms/CopyToClipboardInput'
 import { ModalHeader, Modal as ModernModal } from '../Modal'
 import { useModal } from '../Modal/useModal'
+import { Switch } from '../ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import BadgeMessageForm from './BadgeMessageForm'
 
@@ -39,8 +48,8 @@ const isIssueBadged = (issue: IssueDashboardRead): boolean => {
 }
 
 export const AddBadgeButton = (props: {
-  orgName: string
-  repoName: string
+  org: Organization
+  repo: Repository
   issue: IssueDashboardRead
 }) => {
   const [isBadged, setBadged] = useState<boolean>(isIssueBadged(props.issue))
@@ -59,8 +68,8 @@ export const AddBadgeButton = (props: {
     await add
       .mutateAsync({
         platform: Platforms.GITHUB,
-        orgName: props.orgName,
-        repoName: props.repoName,
+        orgName: props.org.name,
+        repoName: props.repo.name,
         issueNumber: props.issue.number,
       })
       .then(() => {
@@ -69,8 +78,8 @@ export const AddBadgeButton = (props: {
       })
 
     posthog.capture('add-issue-badge', {
-      organization_name: props.orgName,
-      repository_name: props.repoName,
+      organization_name: props.org.name,
+      repository_name: props.repo.name,
       issue_number: props.issue.number,
     })
   }
@@ -79,8 +88,8 @@ export const AddBadgeButton = (props: {
     await remove
       .mutateAsync({
         platform: Platforms.GITHUB,
-        orgName: props.orgName,
-        repoName: props.repoName,
+        orgName: props.org.name,
+        repoName: props.repo.name,
         issueNumber: props.issue.number,
       })
       .then(() => {
@@ -88,8 +97,8 @@ export const AddBadgeButton = (props: {
       })
 
     posthog.capture('remove-issue-badge', {
-      organization_name: props.orgName,
-      repository_name: props.repoName,
+      organization_name: props.org.name,
+      repository_name: props.repo.name,
       issue_number: props.issue.number,
     })
   }
@@ -99,8 +108,8 @@ export const AddBadgeButton = (props: {
   const onAddComment = async (message: string) => {
     await addComment.mutateAsync({
       platform: Platforms.GITHUB,
-      orgName: props.orgName,
-      repoName: props.repoName,
+      orgName: props.org.name,
+      repoName: props.repo.name,
       issueNumber: props.issue.number,
       body: {
         message: message,
@@ -114,8 +123,8 @@ export const AddBadgeButton = (props: {
   const onBadgeWithComment = async (message: string) => {
     await badgeWithComment.mutateAsync({
       platform: Platforms.GITHUB,
-      orgName: props.orgName,
-      repoName: props.repoName,
+      orgName: props.org.name,
+      repoName: props.repo.name,
       issueNumber: props.issue.number,
       body: {
         message: message,
@@ -123,8 +132,8 @@ export const AddBadgeButton = (props: {
     })
 
     posthog.capture('badge-with-comment', {
-      organization_name: props.orgName,
-      repository_name: props.repoName,
+      organization_name: props.org.name,
+      repository_name: props.repo.name,
       issue_number: props.issue.number,
     })
   }
@@ -138,8 +147,8 @@ export const AddBadgeButton = (props: {
     })
 
     posthog.capture('set-issue-funding-goal', {
-      organization_name: props.orgName,
-      repository_name: props.repoName,
+      organization_name: props.org.name,
+      repository_name: props.repo.name,
       issue_number: props.issue.number,
     })
   }
@@ -181,8 +190,8 @@ export const AddBadgeButton = (props: {
         hide={toggle}
         modalContent={
           <BadgePromotionModal
-            orgName={props.orgName}
-            repoName={props.repoName}
+            org={props.org}
+            repo={props.repo}
             issue={props.issue}
             isShown={isShown}
             toggle={toggle}
@@ -199,8 +208,8 @@ export const AddBadgeButton = (props: {
 }
 
 export const BadgePromotionModal = (props: {
-  orgName: string
-  repoName: string
+  org: Organization
+  repo: Repository
   issue: IssueDashboardRead
   isShown: boolean
   toggle: () => void
@@ -218,9 +227,9 @@ export const BadgePromotionModal = (props: {
     toggle()
   }
 
-  const badgeSettings = useBadgeSettings(Platforms.GITHUB, props.orgName)
+  const badgeSettings = useBadgeSettings(Platforms.GITHUB, props.org.name)
   const isBadged = isIssueBadged(props.issue)
-  const gitHubIssueLink = `https://github.com/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
+  const gitHubIssueLink = `https://github.com/${props.org.name}/${props.repo.name}/issues/${props.issue.number}`
 
   return (
     <>
@@ -275,7 +284,6 @@ export const BadgePromotionModal = (props: {
           className="bg-gray-75 -mt-[1px] border-t p-4 dark:border-gray-600 dark:bg-gray-900"
         >
           <BadgeMessageForm
-            orgName={props.orgName}
             value={
               props.issue.badge_custom_content ||
               badgeSettings.data?.message ||
@@ -296,7 +304,7 @@ export const BadgePromotionModal = (props: {
           value="rewards"
           className="bg-gray-75 -mt-[1px] border-t p-4 dark:border-gray-600 dark:bg-gray-900"
         >
-          content goes here
+          <RewardsTab {...props} />
         </TabsContent>
         <TabsContent
           value="promote"
@@ -310,8 +318,8 @@ export const BadgePromotionModal = (props: {
 }
 
 const PostCommentForm = (props: {
-  orgName: string
-  repoName: string
+  org: Organization
+  repo: Repository
   issue: IssueDashboardRead
   user: UserRead
   onAddComment: (message: string) => Promise<void>
@@ -330,8 +338,8 @@ const PostCommentForm = (props: {
     setPosted(true)
 
     posthog.capture('posted-issue-comment', {
-      organization_name: props.orgName,
-      repository_name: props.repoName,
+      organization_name: props.org.name,
+      repository_name: props.repo.name,
       issue_number: props.issue.number,
     })
   }
@@ -449,7 +457,7 @@ const Tab = ({
 }) => (
   <TabsTrigger
     value={value}
-    className="data-[state=active]:bg-gray-75 rounded-none rounded-t-lg border !border-b-0 border-transparent bg-transparent !shadow-none outline-0 ring-0 hover:bg-gray-500/50 data-[state=active]:border-gray-200 dark:data-[state=active]:border-gray-600 dark:data-[state=active]:bg-gray-900"
+    className="data-[state=active]:bg-gray-75 rounded-none rounded-t-lg border !border-b-0 border-transparent bg-transparent !shadow-none outline-0 ring-0 hover:bg-gray-500/10 data-[state=active]:border-gray-200   dark:data-[state=active]:border-gray-600 dark:data-[state=active]:bg-gray-900"
   >
     <div className="flex w-full items-center gap-4 px-1 text-left">
       {icon}
@@ -463,14 +471,14 @@ const Tab = ({
 )
 
 const PromoteTab = (props: {
-  orgName: string
-  repoName: string
+  org: Organization
+  repo: Repository
   issue: IssueDashboardRead
   user: UserRead
   onAddComment: (message: string) => Promise<void>
 }) => {
-  const pledgePageLink = `https://polar.sh/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
-  const pledgeBadgeSVG = `https://api.polar.sh/api/github/${props.orgName}/${props.repoName}/issues/${props.issue.number}/pledge.svg`
+  const pledgePageLink = `https://polar.sh/${props.org.name}/${props.repo.name}/issues/${props.issue.number}`
+  const pledgeBadgeSVG = `https://api.polar.sh/api/github/${props.org.name}/${props.repo.name}/issues/${props.issue.number}/pledge.svg`
 
   const embeds = [
     {
@@ -495,8 +503,8 @@ const PromoteTab = (props: {
   const onCopy = (id: string) => {
     posthog.capture('copy-to-clipboard', {
       value: id,
-      organization_name: props.orgName,
-      repository_name: props.repoName,
+      organization_name: props.org.name,
+      repository_name: props.repo.name,
       issue_number: props.issue.number,
     })
   }
@@ -507,8 +515,8 @@ const PromoteTab = (props: {
         <div className="text-sm font-medium">Post a Github comment</div>
 
         <PostCommentForm
-          orgName={props.orgName}
-          repoName={props.repoName}
+          org={props.org}
+          repo={props.repo}
           issue={props.issue}
           user={props.user}
           onAddComment={props.onAddComment}
@@ -557,6 +565,127 @@ const PromoteTab = (props: {
           value={embed.embed}
           onCopy={() => onCopy('badge-embed-content')}
         />
+      </div>
+    </div>
+  )
+}
+
+const RewardsTab = (props: {
+  issue: IssueDashboardRead
+  org: Organization
+}) => {
+  const [usePublicRewards, setUsePublicRewards] = useState<boolean>(
+    props.issue.upfront_split_to_contributors !== null,
+  )
+
+  const [contributorsShare, setContributorsShare] = useState<number>(
+    props.issue.upfront_split_to_contributors ?? 50,
+  )
+
+  const maintainerShare = useMemo(() => {
+    if (contributorsShare === undefined) {
+      return 50
+    }
+    return 100 - contributorsShare
+  }, [contributorsShare])
+
+  const updateIssue = useUpdateIssue()
+
+  const onSubmit = async () => {
+    await updateIssue.mutateAsync({
+      id: props.issue.id,
+
+      upfront_split_to_contributors: usePublicRewards
+        ? contributorsShare
+        : undefined,
+
+      unset_upfront_split_to_contributors: !usePublicRewards ? true : undefined,
+    })
+  }
+
+  return (
+    <div className="flex w-full flex-col space-y-2">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm font-medium text-gray-900">
+            Public rewards
+          </div>
+          <div className="text-xs text-gray-600">
+            Public & upfront rewards can attract contributors. You can also
+            reward & adjust splits later too.{' '}
+          </div>
+        </div>
+        <div>
+          <Switch
+            className="data-[state=checked]:bg-blue-600"
+            checked={usePublicRewards}
+            onCheckedChange={setUsePublicRewards}
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <UserIcon className="h-6 w-6 rounded-full bg-gray-50 p-1" />
+          <div className="text-sm">Reserved for contributor(s)</div>
+        </div>
+        <div className="flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5 dark:bg-gray-700">
+          <span className="flex-shrink-0 text-gray-500">%</span>
+          <div className="flex-1">
+            <input
+              className={classNames(
+                'w-full bg-white dark:bg-gray-700 dark:outline-gray-700 ',
+                usePublicRewards
+                  ? 'font-medium text-black dark:text-gray-100'
+                  : 'text-gray-500 dark:text-gray-400',
+              )}
+              disabled={!usePublicRewards}
+              value={contributorsShare}
+              placeholder={'50'}
+              onChange={(e) => {
+                let val = parseInt(e.target.value)
+                val = Math.min(Math.max(val, 0), 100)
+                if (isNaN(val)) {
+                  val = 0
+                }
+                setContributorsShare(val)
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm">
+          <img src={props.org.avatar_url} className="h-6 w-6 rounded-full" />
+          <div>{props.org.pretty_name || props.org.name}.</div>
+          <div className="text-gray-500">
+            Reviews, feedback & maintenance. Reward yourself too.
+          </div>
+        </div>
+        <div className="flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5 dark:bg-gray-700">
+          <span className="flex-shrink-0 text-gray-500">%</span>
+          <div className="flex-1">
+            <input
+              className={classNames(
+                'w-full bg-white dark:bg-gray-700 dark:outline-gray-700 ',
+                'text-gray-500 dark:text-gray-400',
+              )}
+              disabled
+              value={maintainerShare}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <PrimaryButton
+          fullWidth={false}
+          loading={updateIssue.isPending}
+          onClick={onSubmit}
+        >
+          Update
+        </PrimaryButton>
       </div>
     </div>
   )

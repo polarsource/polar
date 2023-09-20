@@ -45,15 +45,16 @@ export const Modal: FunctionComponent<ModalProps> = ({
           role="dialog"
         >
           <div
-            className="flex h-full w-full items-center justify-center bg-black/50"
+            className="flex h-full w-full flex-col items-center  bg-black/50 py-2"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
               hide()
             }}
           >
+            <div className="flex-shrink-1 block h-[20%] w-2"></div>
             <div
-              className="z-10 min-w-[800px] overflow-hidden rounded-xl bg-white shadow dark:bg-gray-800"
+              className="h-content z-10 min-w-[800px] flex-shrink-0 overflow-hidden rounded-xl bg-white shadow dark:bg-gray-800"
               onClick={onInnerClick}
             >
               {modalContent}

@@ -383,16 +383,13 @@ export const Badge = ({
               <div
                 style={{
                   fontWeight: 'bold',
+                  display: 'flex',
                   whiteSpace: 'nowrap',
                 }}
               >
                 @{orgName}&nbsp;
               </div>
-              <div
-                style={{
-                  whiteSpace: 'nowrap',
-                }}
-              >
+              <div style={{ display: 'flex', whiteSpace: 'nowrap' }}>
                 rewards contributors {upfront_split_to_contributors}% of
                 received funds
               </div>
@@ -404,6 +401,7 @@ export const Badge = ({
                 border: darkmode ? '1px solid #505153' : '1px solid #C9DBF4',
                 borderRadius: 8,
                 padding: '4px 8px',
+                display: 'flex',
               }}
             >
               Contribute

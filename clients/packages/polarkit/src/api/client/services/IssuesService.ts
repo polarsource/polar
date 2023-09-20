@@ -98,6 +98,28 @@ export class IssuesService {
   }
 
   /**
+   * Get Body
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public getBody({
+    id,
+  }: {
+    id: string,
+  }): CancelablePromise<any> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/issues/{id}/body',
+      path: {
+        'id': id,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
    * For You
    * @returns ListResource_Issue_ Successful Response
    * @throws ApiError

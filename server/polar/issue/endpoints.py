@@ -1,7 +1,8 @@
 from typing import List, Sequence
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import HTMLResponse
 
 from polar.auth.dependencies import Auth
 from polar.authz.service import AccessType, Authz
@@ -12,6 +13,7 @@ from polar.integrations.github.badge import GithubBadge
 from polar.integrations.github.client import get_polar_client
 from polar.integrations.github.service.issue import github_issue as github_issue_service
 from polar.integrations.github.service.url import github_url
+from polar.issue.body import IssueBodyRenderer, get_issue_body_renderer
 from polar.kit.schemas import Schema
 from polar.locker import Locker, get_locker
 from polar.models import Issue
@@ -206,6 +208,31 @@ async def lookup(
         return IssueSchema.from_db(issue)
 
     raise ResourceNotFound("Issue not found")
+
+
+@router.get(
+    "/issues/{id}/body",
+    tags=[Tags.PUBLIC],
+)
+async def get_body(
+    id: UUID,
+    authz: Authz = Depends(Authz.authz),
+    auth: Auth = Depends(Auth.optional_user),
+    session: AsyncSession = Depends(get_db_session),
+    issue_body_renderer: IssueBodyRenderer = Depends(get_issue_body_renderer),
+) -> HTMLResponse:
+    issue = await issue_service.get_loaded(session, id)
+    if issue is None:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.read, issue):
+        raise Unauthorized()
+
+    content = await issue_body_renderer.render(
+        issue, issue.repository, issue.repository.organization
+    )
+
+    return HTMLResponse(content=content)
 
 
 @router.get(

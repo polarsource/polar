@@ -1,5 +1,6 @@
 import { Issue, Organization, Repository } from 'polarkit/api/client'
-import { abbrStars, prettyURL } from '.'
+import { formatStarsNumber } from 'polarkit/utils'
+import { prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
 import Footer from './Footer'
 import Header from './Header'
@@ -40,7 +41,7 @@ const RepositoryPublicPage = ({
         <div className="flex flex-wrap items-center space-x-4 text-gray-600">
           {repository.license && <p>{repository.license}</p>}
 
-          <p>{abbrStars(repository.stars || 0)} stars</p>
+          <p>{formatStarsNumber(repository.stars || 0)} stars</p>
 
           {repository.homepage && (
             <a

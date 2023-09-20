@@ -1,15 +1,7 @@
+import { formatStarsNumber } from 'polarkit/utils'
 import { Organization, type Repository } from '../../api/client'
 import { githubRepoUrl } from '../../github'
 import { GrayCard } from '../ui/Cards'
-
-const abbrStars = (stars: number): string => {
-  if (stars < 1000) {
-    return stars.toString()
-  }
-
-  stars /= 1000
-  return stars.toFixed(1) + 'k'
-}
 
 const prettyURL = (url: string): string => {
   if (url.indexOf('https://') === 0) {
@@ -47,7 +39,9 @@ const RepositoryCard = ({
         <div className="flex flex-row items-center justify-center space-x-4">
           {typeof repository.stars === 'number' && (
             <p className="inline-flex items-center space-x-1 text-xs text-gray-600 dark:text-gray-400">
-              <span className="font-medium">{abbrStars(repository.stars)}</span>
+              <span className="font-medium">
+                {formatStarsNumber(repository.stars)}
+              </span>
               <span>stars</span>
             </p>
           )}

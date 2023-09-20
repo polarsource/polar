@@ -7,3 +7,12 @@ export const getServerURL = (path?: string): string => {
   const baseWithPath = `${baseURL}${path}`
   return baseWithPath
 }
+
+export const formatStarsNumber = (stars: number): string => {
+  if (stars < 1000) {
+    return stars.toString()
+  }
+
+  stars /= 1000
+  return stars.toFixed(1) + 'k'
+}

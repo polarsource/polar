@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import joinedload
 
 from polar.auth.dependencies import Auth
+from polar.authz.service import AccessType, Authz
 from polar.dashboard.schemas import (
     Entry,
     IssueDashboardRead,
@@ -84,6 +85,7 @@ async def get_dashboard(
     page: int = Query(default=1),
     auth: Auth = Depends(Auth.user_with_org_access),
     session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
 ) -> IssueListResponse:
     repositories: Sequence[Repository] = []
 
@@ -102,14 +104,16 @@ async def get_dashboard(
             )
         repositories = [repo]
     else:
-        # if no repo name is set, use all repositories in the organization
-        # TODO: Once we support it: Only show repositories that the user can see on
-        # GitHub
         repositories = await repository.list_by(
             session,
             org_ids=[auth.organization.id],
             load_organization=True,
         )
+
+    # Limit to repositories that the authed subject can read
+    repositories = [
+        r for r in repositories if await authz.can(auth.subject, AccessType.read, r)
+    ]
 
     if not repositories:
         raise HTTPException(

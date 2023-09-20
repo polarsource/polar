@@ -66,3 +66,19 @@ export const FundingGoal: Story = {
     },
   },
 }
+
+export const Rewards: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    defaultTab: 'rewards',
+  },
+}
+
+export const Promote: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    defaultTab: 'promote',
+  },
+}

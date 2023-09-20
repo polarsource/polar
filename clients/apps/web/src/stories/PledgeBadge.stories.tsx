@@ -212,7 +212,7 @@ export const UpfrontSplitPledgeLongName: Story = {
   ...Default,
   args: {
     ...Default.args,
-    orgName: 'Nushell Project Foundation',
+    orgName: 'zegloforkozegloforko',
     showAmountRaised: true,
     funding: {
       pledges_sum: { currency: 'USD', amount: 5000 },

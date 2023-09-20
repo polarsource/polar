@@ -63,9 +63,16 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
     .map((p) => p.pledger?.avatar_url ?? '')
     .filter((s) => s.length > 0)
 
-  const inter = await fetch(
+  const interRegular = await fetch(
     new URL(
       '../../../../../../../../assets/fonts/Inter-Regular.ttf',
+      import.meta.url,
+    ),
+  ).then((res) => res.arrayBuffer())
+
+  const interMedium = await fetch(
+    new URL(
+      '../../../../../../../../assets/fonts/Inter-Medium.ttf',
       import.meta.url,
     ),
   ).then((res) => res.arrayBuffer())
@@ -84,9 +91,15 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
       fonts: [
         {
           name: 'Inter',
-          data: inter,
+          data: interRegular,
           weight: 500,
           style: 'normal',
+        },
+        {
+          name: 'Inter',
+          data: interMedium,
+          weight: 600,
+          style: 'medium',
         },
       ],
     },

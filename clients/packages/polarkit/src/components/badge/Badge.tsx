@@ -72,6 +72,7 @@ export const Badge = ({
           overflow: 'hidden',
           backgroundColor: darkmode ? '#3E3F42' /*gray-700*/ : 'white',
           fontFamily: 'Inter',
+          // width: 'fit-content',
         }}
       >
         <div
@@ -367,9 +368,6 @@ export const Badge = ({
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              flexWrap: 'wrap',
-              height: '34px',
-              overflow: 'hidden',
             }}
           >
             <Heart />
@@ -378,6 +376,8 @@ export const Badge = ({
                 flexGrow: 1,
                 display: 'flex',
                 alignItems: 'center',
+                gap: '1px',
+                overflow: 'hidden',
               }}
             >
               <div
@@ -389,7 +389,13 @@ export const Badge = ({
               >
                 @{orgName}&nbsp;
               </div>
-              <div style={{ display: 'flex', whiteSpace: 'nowrap' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                }}
+              >
                 rewards contributors {upfront_split_to_contributors}% of
                 received funds
               </div>
@@ -402,6 +408,7 @@ export const Badge = ({
                 borderRadius: 8,
                 padding: '4px 8px',
                 display: 'flex',
+                flexShrink: 0,
               }}
             >
               Contribute

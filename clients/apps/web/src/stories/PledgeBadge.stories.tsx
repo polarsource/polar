@@ -18,7 +18,9 @@ export default meta
 type Story = StoryObj<typeof Badge>
 
 export const Default: Story = {
-  args: {},
+  args: {
+    orgName: 'SerenityOS',
+  },
   render: (args) => {
     return (
       <div className="font-sans">
@@ -167,5 +169,55 @@ export const FundingGoalOver: Story = {
       funding_goal: { currency: 'USD', amount: 12000 },
       pledges_sum: { currency: 'USD', amount: 3000000 },
     },
+  },
+}
+
+export const UpfrontSplit: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showAmountRaised: false,
+    upfront_split_to_contributors: 80,
+  },
+}
+
+export const UpfrontSplitPledge: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showAmountRaised: true,
+    funding: {
+      pledges_sum: { currency: 'USD', amount: 5000 },
+    },
+    avatarsUrls: [...avatars, ...avatars].slice(0, 1),
+    upfront_split_to_contributors: 80,
+  },
+}
+
+export const UpfrontSplitFundingGoal: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showAmountRaised: true,
+    funding: {
+      funding_goal: { currency: 'USD', amount: 12000 },
+      pledges_sum: { currency: 'USD', amount: 6000 },
+    },
+    avatarsUrls: [...avatars, ...avatars].slice(0, 1),
+    upfront_split_to_contributors: 80,
+  },
+}
+
+export const UpfrontSplitPledgeLongName: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    orgName: 'Nushell Project Foundation',
+    showAmountRaised: true,
+    funding: {
+      pledges_sum: { currency: 'USD', amount: 5000 },
+    },
+    avatarsUrls: [...avatars, ...avatars].slice(0, 1),
+    upfront_split_to_contributors: 80,
   },
 }

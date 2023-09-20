@@ -80,9 +80,7 @@ const BadgeMessageForm = (props: {
   return (
     <div className="flex flex-col space-y-3">
       <div className="text-gray flex items-center justify-between">
-        <div className="text-sm font-medium">
-          Markdown added to the end of the issue description
-        </div>
+        <div className="text-sm font-medium">Customize embed</div>
         <LabeledRadioButton
           values={['View', 'Edit']}
           value={descriptionMode}

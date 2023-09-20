@@ -209,6 +209,7 @@ export const BadgePromotionModal = (props: {
   onAddComment: (message: string) => Promise<void>
   onBadgeWithComment: (comment: string) => Promise<void>
   onUpdateFundingGoal: (amount: CurrencyAmount) => Promise<void>
+  defaultTab?: string
 }) => {
   const { isShown, toggle } = props
 
@@ -217,42 +218,9 @@ export const BadgePromotionModal = (props: {
     toggle()
   }
 
-  const onCopy = (id: string) => {
-    posthog.capture('copy-to-clipboard', {
-      value: id,
-      organization_name: props.orgName,
-      repository_name: props.repoName,
-      issue_number: props.issue.number,
-    })
-  }
-
-  const pledgePageLink = `https://polar.sh/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
-  const pledgeBadgeSVG = `https://api.polar.sh/api/github/${props.orgName}/${props.repoName}/issues/${props.issue.number}/pledge.svg`
-  const gitHubIssueLink = `https://github.com/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
-
   const badgeSettings = useBadgeSettings(Platforms.GITHUB, props.orgName)
-
   const isBadged = isIssueBadged(props.issue)
-
-  const embeds = [
-    {
-      name: 'Light theme',
-      classNames: 'w-[100px]',
-      embed: `<a href="${pledgePageLink}"><img alt="Fund with Polar" src="${pledgeBadgeSVG}" /></a>`,
-    },
-    {
-      name: 'Dark theme',
-      classNames: 'w-[100px]',
-      embed: `<a href="${pledgePageLink}"><img alt="Fund with Polar" src="${pledgeBadgeSVG}?darkmode=1" /></a>`,
-    },
-    {
-      name: 'Match the system',
-      classNames: 'w-[130px]',
-      embed: `<a href="${pledgePageLink}"><picture><source media="(prefers-color-scheme: dark)" srcset="${pledgeBadgeSVG}?darkmode=1"><img alt="Fund with Polar" src="${pledgeBadgeSVG}"></picture></a>`,
-    },
-  ]
-
-  const [embed, setEmbed] = useState(embeds[0])
+  const gitHubIssueLink = `https://github.com/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
 
   return (
     <>
@@ -274,10 +242,10 @@ export const BadgePromotionModal = (props: {
         </div>
       </ModalHeader>
 
-      <Tabs defaultValue="rewards" className="">
+      <Tabs defaultValue={props.defaultTab ?? 'funding'} className="">
         <TabsList
           className={twMerge(
-            '!m-0 flex h-fit w-full flex-row justify-start space-x-2 !border-0 bg-transparent !p-0 px-8',
+            'mx-2 flex h-fit w-full flex-row justify-start space-x-2 !border-0 bg-transparent !p-0',
           )}
         >
           <Tab
@@ -302,92 +270,41 @@ export const BadgePromotionModal = (props: {
             title="Promote"
           />
         </TabsList>
-        <TabsContent value="fund_today"></TabsContent>
-        <TabsContent value="fund_on_completion"></TabsContent>
+        <TabsContent
+          value="funding"
+          className="bg-gray-75 -mt-[1px] border-t p-4 dark:border-gray-600 dark:bg-gray-800"
+        >
+          <BadgeMessageForm
+            orgName={props.orgName}
+            value={
+              props.issue.badge_custom_content ||
+              badgeSettings.data?.message ||
+              ''
+            }
+            showAmountRaised={badgeSettings.data?.show_amount || false}
+            funding={props.issue.funding}
+            onUpdateMessage={props.onBadgeWithComment}
+            onUpdateFundingGoal={props.onUpdateFundingGoal}
+            onChangeMessage={() => {}}
+            onChangeFundingGoal={() => {}}
+            showUpdateButton={true}
+            innerClassNames="shadow"
+            canSetFundingGoal={true}
+          />
+        </TabsContent>
         <TabsContent
           value="rewards"
-          className="bg-gray-75 -mt-[1px] border-t pt-4 dark:bg-gray-700"
+          className="bg-gray-75 -mt-[1px] border-t p-4 dark:border-gray-600 dark:bg-gray-800"
         >
           content goes here
         </TabsContent>
+        <TabsContent
+          value="promote"
+          className="bg-gray-75 -mt-[1px] border-t p-4 dark:border-gray-600 dark:bg-gray-800"
+        >
+          <PromoteTab {...props} />
+        </TabsContent>
       </Tabs>
-
-      <div className="bg-gray-75 w-full px-5 py-4 dark:bg-gray-700">
-        <BadgeMessageForm
-          orgName={props.orgName}
-          value={
-            props.issue.badge_custom_content ||
-            badgeSettings.data?.message ||
-            ''
-          }
-          showAmountRaised={badgeSettings.data?.show_amount || false}
-          funding={props.issue.funding}
-          onUpdateMessage={props.onBadgeWithComment}
-          onUpdateFundingGoal={props.onUpdateFundingGoal}
-          onChangeMessage={() => {}}
-          onChangeFundingGoal={() => {}}
-          showUpdateButton={true}
-          innerClassNames="shadow"
-          canSetFundingGoal={true}
-        />
-      </div>
-      <div className="grid w-full grid-cols-2 space-x-6 bg-white px-5 pb-7 pt-3.5 dark:bg-gray-800">
-        <div className="flex flex-col">
-          <div className="text-sm font-medium">Post a Github comment</div>
-
-          <PostCommentForm
-            orgName={props.orgName}
-            repoName={props.repoName}
-            issue={props.issue}
-            user={props.user}
-            onAddComment={props.onAddComment}
-          />
-        </div>
-
-        <div className="flex flex-col">
-          <div className="text-sm font-medium">Spread the word</div>
-
-          <div className="mb-1 mt-2 text-xs text-gray-500 dark:text-gray-400">
-            Share link to the pledge page
-          </div>
-
-          <CopyToClipboardInput
-            id="padge-page-link"
-            value={pledgePageLink}
-            onCopy={() => onCopy('badge-page-link')}
-          />
-
-          <div className="my-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-            <span>Embed badge on website</span>
-
-            <select
-              className={classNames(
-                'border-0 bg-transparent p-0 text-xs',
-                embed.classNames,
-              )}
-              onChange={(e) => {
-                setEmbed(
-                  embeds.find((v) => v.name === e.currentTarget.value) ||
-                    embeds[0],
-                )
-              }}
-              value={embed.name}
-            >
-              {embeds.map((e, i) => (
-                <option key={i} value={e.name}>
-                  {e.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <CopyToClipboardInput
-            id="badge-embed-content"
-            value={embed.embed}
-            onCopy={() => onCopy('badge-embed-content')}
-          />
-        </div>
-      </div>
     </>
   )
 }
@@ -532,7 +449,7 @@ const Tab = ({
 }) => (
   <TabsTrigger
     value={value}
-    className="data-[state=active]:bg-gray-75 rounded-none rounded-t-lg border !border-b-0 border-transparent bg-transparent !shadow-none outline-0 ring-0 hover:bg-gray-500/50 data-[state=active]:border-gray-200 dark:data-[state=active]:bg-gray-700"
+    className="data-[state=active]:bg-gray-75 rounded-none rounded-t-lg border !border-b-0 border-transparent bg-transparent !shadow-none outline-0 ring-0 hover:bg-gray-500/50 data-[state=active]:border-gray-200 dark:data-[state=active]:border-gray-600 dark:data-[state=active]:bg-gray-800"
   >
     <div className="flex w-full items-center gap-4 px-1 text-left">
       {icon}
@@ -544,3 +461,103 @@ const Tab = ({
     </div>
   </TabsTrigger>
 )
+
+const PromoteTab = (props: {
+  orgName: string
+  repoName: string
+  issue: IssueDashboardRead
+  user: UserRead
+  onAddComment: (message: string) => Promise<void>
+}) => {
+  const pledgePageLink = `https://polar.sh/${props.orgName}/${props.repoName}/issues/${props.issue.number}`
+  const pledgeBadgeSVG = `https://api.polar.sh/api/github/${props.orgName}/${props.repoName}/issues/${props.issue.number}/pledge.svg`
+
+  const embeds = [
+    {
+      name: 'Light theme',
+      classNames: 'w-[100px]',
+      embed: `<a href="${pledgePageLink}"><img alt="Fund with Polar" src="${pledgeBadgeSVG}" /></a>`,
+    },
+    {
+      name: 'Dark theme',
+      classNames: 'w-[100px]',
+      embed: `<a href="${pledgePageLink}"><img alt="Fund with Polar" src="${pledgeBadgeSVG}?darkmode=1" /></a>`,
+    },
+    {
+      name: 'Match the system',
+      classNames: 'w-[130px]',
+      embed: `<a href="${pledgePageLink}"><picture><source media="(prefers-color-scheme: dark)" srcset="${pledgeBadgeSVG}?darkmode=1"><img alt="Fund with Polar" src="${pledgeBadgeSVG}"></picture></a>`,
+    },
+  ]
+
+  const [embed, setEmbed] = useState(embeds[0])
+
+  const onCopy = (id: string) => {
+    posthog.capture('copy-to-clipboard', {
+      value: id,
+      organization_name: props.orgName,
+      repository_name: props.repoName,
+      issue_number: props.issue.number,
+    })
+  }
+
+  return (
+    <div className="grid w-full grid-cols-2 space-x-6">
+      <div className="flex flex-col">
+        <div className="text-sm font-medium">Post a Github comment</div>
+
+        <PostCommentForm
+          orgName={props.orgName}
+          repoName={props.repoName}
+          issue={props.issue}
+          user={props.user}
+          onAddComment={props.onAddComment}
+        />
+      </div>
+
+      <div className="flex flex-col">
+        <div className="text-sm font-medium">Spread the word</div>
+
+        <div className="mb-1 mt-2 text-xs text-gray-500 dark:text-gray-400">
+          Share link to the pledge page
+        </div>
+
+        <CopyToClipboardInput
+          id="padge-page-link"
+          value={pledgePageLink}
+          onCopy={() => onCopy('badge-page-link')}
+        />
+
+        <div className="my-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+          <span>Embed badge on website</span>
+
+          <select
+            className={classNames(
+              'border-0 bg-transparent p-0 text-xs',
+              embed.classNames,
+            )}
+            onChange={(e) => {
+              setEmbed(
+                embeds.find((v) => v.name === e.currentTarget.value) ||
+                  embeds[0],
+              )
+            }}
+            value={embed.name}
+          >
+            {embeds.map((e, i) => (
+              <option key={i} value={e.name}>
+                {e.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <CopyToClipboardInput
+          id="badge-embed-content"
+          value={embed.embed}
+          onCopy={() => onCopy('badge-embed-content')}
+        />
+      </div>
+    </div>
+  )
+}

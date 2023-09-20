@@ -80,7 +80,6 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
       orgName={data.issue.repository.organization.name}
     />,
     {
-      height: 60,
       width: 400,
       fonts: [
         {

@@ -28,7 +28,6 @@ const renderBadge = async (badge: GithubBadgeRead, isDarkmode: boolean) => {
       orgName="demoorg"
     />,
     {
-      height: 60,
       width: 400,
       fonts: [
         {

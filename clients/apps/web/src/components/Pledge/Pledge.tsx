@@ -38,48 +38,22 @@ const Pledge = ({ issue, gotoURL }: { issue: Issue; gotoURL?: string }) => {
         </Banner>
       )}
 
-      <div className="flex flex-col items-center ">
-        <img
-          src={issue.repository.organization.avatar_url}
-          className="h-16 w-16 rounded-full border-2 border-white shadow"
-        />
-        <div className="text-center text-lg font-medium text-gray-900 dark:text-gray-300">
-          {issue.repository.organization.pretty_name ||
-            issue.repository.organization.name}
+      <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
+        {/* Left side */}
+        <div className="mt-12">
+          <IssueCard issue={issue} currentPledgeAmount={amount} />
         </div>
-        <div className="text-center text-gray-500 dark:text-gray-400">
-          {issue.repository.description}
-        </div>
-        <h1 className="pt-4 text-center text-3xl text-gray-900 dark:text-gray-300 md:text-4xl">
-          Fund{' '}
-          {issue.repository.organization.pretty_name ||
-            issue.repository.organization.name}
-          &apos;s work on this issue
-        </h1>
-      </div>
 
-      <div className="flex flex-col">
-        <WhiteCard
-          className="flex flex-col items-stretch rounded-none p-2 text-center md:flex-row md:rounded-xl md:pr-0"
-          padding={false}
-        >
-          <div className="md:w-1/2">
-            <IssueCard
+        {/* Right side */}
+        <div>
+          <WhiteCard padding>
+            <PledgeForm
               issue={issue}
-              className="bg-grid-pattern dark:bg-grid-pattern-dark border-blue-100 bg-blue-50 bg-[12px_12px] dark:border-blue-500/20 dark:bg-blue-500/20"
-              currentPledgeAmount={amount}
+              gotoURL={gotoURL}
+              onAmountChange={onAmountChange}
             />
-          </div>
-          <div className="text-left md:w-1/2">
-            <div className="px-3 py-5 md:px-6 ">
-              <PledgeForm
-                issue={issue}
-                gotoURL={gotoURL}
-                onAmountChange={onAmountChange}
-              />
-            </div>
-          </div>
-        </WhiteCard>
+          </WhiteCard>
+        </div>
       </div>
 
       <HowItWorks />

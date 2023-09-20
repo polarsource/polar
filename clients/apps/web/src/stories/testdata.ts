@@ -76,6 +76,7 @@ export const repo: Repository = {
   description: 'Data validation using Python type hints',
   homepage: 'https://docs.pydantic.dev/latest/',
   organization: org,
+  stars: 26000,
 }
 
 // Public API
@@ -83,6 +84,13 @@ export const issue: Issue = {
   platform: Platforms.GITHUB,
   number: 222,
   title: 'SecretStr comparison fails when field is defined with Field',
+  author: {
+    id: 123,
+    login: 'zegl',
+    avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+    html_url: 'https://github.com/zegl',
+  },
+  comments: 5,
   reactions: {
     total_count: 3,
     plus_one: 3,

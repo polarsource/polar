@@ -2,7 +2,7 @@ import React from 'react'
 
 export interface CardProperties {
   children: React.ReactNode
-  className: string
+  className?: string
   border?: boolean
   padding?: boolean
 }

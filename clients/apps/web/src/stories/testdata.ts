@@ -15,6 +15,7 @@ import {
   PledgeRead,
   PledgeState,
   PledgeType,
+  Pledger,
   PledgerPledgePendingNotification,
   Repository,
   RewardPaidNotification,
@@ -130,6 +131,12 @@ export const pledge: PledgeRead = {
   // pledger_avatar?: string;
   // authed_user_can_admin?: boolean;
   //scheduled_payout_at?: string;
+}
+
+export const pledger: Pledger = {
+  name: 'zegl',
+  github_username: 'zegl',
+  avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
 }
 
 // PublicAPI

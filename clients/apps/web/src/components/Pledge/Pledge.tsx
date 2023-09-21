@@ -10,7 +10,15 @@ import Footer from '../Organization/Footer'
 import HowItWorks from './HowItWorks'
 import PledgeForm from './PledgeForm'
 
-const Pledge = ({ issue, gotoURL }: { issue: Issue; gotoURL?: string }) => {
+const Pledge = ({
+  issue,
+  htmlBody,
+  gotoURL,
+}: {
+  issue: Issue
+  htmlBody?: string
+  gotoURL?: string
+}) => {
   const [amount, setAmount] = useState(0)
   const onAmountChange = (amount: number) => {
     setAmount(amount)
@@ -41,7 +49,11 @@ const Pledge = ({ issue, gotoURL }: { issue: Issue; gotoURL?: string }) => {
       <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
         {/* Left side */}
         <div className="mt-12">
-          <IssueCard issue={issue} currentPledgeAmount={amount} />
+          <IssueCard
+            issue={issue}
+            htmlBody={htmlBody}
+            currentPledgeAmount={amount}
+          />
         </div>
 
         {/* Right side */}

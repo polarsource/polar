@@ -1,13 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 import { IssueCard } from 'polarkit/components/pledge'
-import { issue } from './testdata'
+import { issue, issueBodyHTML } from './testdata'
 
 const meta: Meta<typeof IssueCard> = {
   title: 'Organisms/IssueCard',
   component: IssueCard,
   args: {
     issue: issue,
+    htmlBody: issueBodyHTML,
   },
   tags: ['autodocs'],
 }

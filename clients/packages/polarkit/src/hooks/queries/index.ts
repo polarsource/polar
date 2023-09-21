@@ -1,14 +1,9 @@
-import {
-  UseMutationResult,
-  UseQueryResult,
-  useMutation,
-  useQuery,
-} from '@tanstack/react-query'
+import { UseQueryResult, useMutation, useQuery } from '@tanstack/react-query'
 import {
   ApiError,
   ListResource_Organization_,
+  OrganizationBadgeSettingsUpdate,
   OrganizationPrivateRead,
-  OrganizationSettingsUpdate,
   Repository,
 } from 'polarkit/api/client'
 import { api, queryClient } from '../../api'
@@ -24,7 +19,6 @@ export * from './dashboard'
 export * from './issue'
 export * from './pledges'
 export * from './rewards'
-export * from './settings'
 export * from './user'
 
 export const useListOrganizations: () => UseQueryResult<
@@ -83,44 +77,6 @@ export const useListAccountsByUser = (user_id?: string) =>
     retry: defaultRetry,
   })
 
-export const useOrganization = (orgName: string) =>
-  useQuery({
-    queryKey: ['organization', orgName],
-    queryFn: () =>
-      api.organizations.getInternal({
-        platform: Platforms.GITHUB,
-        orgName: orgName,
-      }),
-
-    enabled: !!orgName,
-    retry: defaultRetry,
-  })
-
-export const useOrganizationSettingsMutation: () => UseMutationResult<
-  OrganizationPrivateRead,
-  Error,
-  {
-    orgName: string
-    body: OrganizationSettingsUpdate
-  },
-  unknown
-> = () =>
-  useMutation({
-    mutationFn: (variables: {
-      orgName: string
-      body: OrganizationSettingsUpdate
-    }) => {
-      return api.organizations.updateSettings({
-        platform: Platforms.GITHUB,
-        orgName: variables.orgName,
-        requestBody: variables.body,
-      })
-    },
-    onSuccess: (result, variables, ctx) => {
-      queryClient.setQueryData(['organization', variables.orgName], result)
-    },
-  })
-
 export const useNotifications = () =>
   useQuery({
     queryKey: ['notifications'],
@@ -139,5 +95,30 @@ export const useNotificationsMarkRead = () =>
     },
     onSuccess: (result, variables, ctx) => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    },
+  })
+
+export const useOrganizationBadgeSettings = (id: string) =>
+  useQuery({
+    queryKey: ['organizationBadgeSettings', id],
+    queryFn: () => api.organizations.getBadgeSettings({ id }),
+    retry: defaultRetry,
+  })
+
+export const useUpdateOrganizationBadgeSettings = () =>
+  useMutation({
+    mutationFn: (variables: {
+      id: string
+      settings: OrganizationBadgeSettingsUpdate
+    }) => {
+      return api.organizations.updateBadgeSettings({
+        id: variables.id,
+        requestBody: variables.settings,
+      })
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['organizationBadgeSettings', variables.id],
+      })
     },
   })

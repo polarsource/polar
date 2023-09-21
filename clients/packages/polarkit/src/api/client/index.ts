@@ -73,7 +73,6 @@ export type { Organization } from './models/Organization';
 export type { OrganizationBadgeSettingsRead } from './models/OrganizationBadgeSettingsRead';
 export type { OrganizationBadgeSettingsUpdate } from './models/OrganizationBadgeSettingsUpdate';
 export type { OrganizationPrivateRead } from './models/OrganizationPrivateRead';
-export type { OrganizationSettingsUpdate } from './models/OrganizationSettingsUpdate';
 export type { Pagination } from './models/Pagination';
 export type { PaginationResponse } from './models/PaginationResponse';
 export { PaymentMethod } from './models/PaymentMethod';

@@ -111,9 +111,6 @@ class PledgeType(str, Enum):
     # Pledge without upfront payment. The pledger pays after the issue is completed.
     pay_on_completion = "pay_on_completion"
 
-    # Pledge without upfront payment. Added bonus / bounty from maintainer to collaborators.  # noqa: E501
-    pay_from_maintainer = "pay_from_maintainer"
-
     # Pay directly. Money is ready to transfered to maintainer without requiring
     # issue to be completed.
     pay_directly = "pay_directly"

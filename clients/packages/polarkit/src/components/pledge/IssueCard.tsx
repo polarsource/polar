@@ -5,6 +5,7 @@ import { Alert, IssueBodyRenderer, PolarTimeAgo } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
 import { formatStarsNumber } from 'polarkit/utils'
 import { useMemo } from 'react'
+import { Pledgers } from '.'
 import { Funding, Issue } from '../../api/client'
 import { githubIssueUrl } from '../../github'
 
@@ -214,16 +215,7 @@ const FundingGoal = ({
 
       {/* Pledgers */}
       <div className="mt-2 flex items-center justify-center sm:mt-0 sm:justify-end">
-        {[1, 2, 3].map(() => (
-          <img
-            src="https://placehold.co/50/darkgray/white?text=F"
-            className="-ml-2 h-5 w-5 rounded-full border border-gray-50 dark:border-gray-950"
-            alt="Pledger"
-          />
-        ))}
-        <div className="-ml-2 flex h-5 w-5 items-center justify-center rounded-full border border-gray-50 bg-blue-600 text-[10px] text-blue-200 dark:border-gray-950">
-          +4
-        </div>
+        <Pledgers pledgers={[]} size="sm" />
       </div>
     </div>
   )

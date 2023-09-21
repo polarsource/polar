@@ -11,7 +11,7 @@ import { LogoIcon } from 'polarkit/components/brand'
 import { MoneyInput, PrimaryButton } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
-import { ChangeEvent, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import GithubLoginButton from '../Shared/GithubLoginButton'
 import { Checkbox } from '../ui/checkbox'
 
@@ -32,15 +32,6 @@ const FundOnCompletion = ({
   const { currentUser } = useAuth()
 
   const router = useRouter()
-
-  const onAmountChange = (event: ChangeEvent<HTMLInputElement>) => {
-    let newAmount = parseInt(event.target.value)
-    if (isNaN(newAmount)) {
-      newAmount = 0
-    }
-    const amountInCents = newAmount * 100
-    setAmount(amountInCents)
-  }
 
   const didFirstUserEmailSync = useRef(false)
   useEffect(() => {
@@ -95,7 +86,7 @@ const FundOnCompletion = ({
           <MoneyInput
             id="amount"
             name="amount"
-            onChange={onAmountChange}
+            onAmountChangeInCents={setAmount}
             placeholder={organization.pledge_minimum_amount}
             value={amount}
             onFocus={(event) => {

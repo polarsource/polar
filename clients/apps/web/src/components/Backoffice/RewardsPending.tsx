@@ -175,22 +175,27 @@ const Pledges = () => {
                   >
                     type={p[0].pledge.type}
                   </div>
-                  {p[0].pledge.hosted_invoice_url ? (
-                    <ThinButton
-                      color="gray"
-                      href={p[0].pledge.hosted_invoice_url}
-                    >
-                      <span>Open Invoice</span>
-                      <ArrowTopRightOnSquareIcon />
-                    </ThinButton>
-                  ) : (
-                    <ThinButton
-                      color="gray"
-                      onClick={() => onClickCreateInvoice(p[0].pledge.id)}
-                    >
-                      <span>Send Invoice</span>
-                      <BanknotesIcon />
-                    </ThinButton>
+
+                  {p[0].pledge.type === PledgeType.PAY_ON_COMPLETION && (
+                    <>
+                      {p[0].pledge.hosted_invoice_url ? (
+                        <ThinButton
+                          color="gray"
+                          href={p[0].pledge.hosted_invoice_url}
+                        >
+                          <span>Open Invoice</span>
+                          <ArrowTopRightOnSquareIcon />
+                        </ThinButton>
+                      ) : (
+                        <ThinButton
+                          color="gray"
+                          onClick={() => onClickCreateInvoice(p[0].pledge.id)}
+                        >
+                          <span>Send Invoice</span>
+                          <BanknotesIcon />
+                        </ThinButton>
+                      )}
+                    </>
                   )}
 
                   <ThinButton

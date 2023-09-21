@@ -71,6 +71,17 @@ export const FundingGoal: Story = {
   },
 }
 
+export const UpfrontSplit: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    issue: {
+      ...issue,
+      upfront_split_to_contributors: 75,
+    },
+  },
+}
+
 export const LongAuthorName: Story = {
   ...Default,
   args: {

@@ -75,3 +75,30 @@ export const FundingGoalPlusCurrent: Story = {
     currentPledgeAmount: 800,
   },
 }
+
+export const UpfrontSplit: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    issue: {
+      ...issue,
+      upfront_split_to_contributors: 75,
+    },
+  },
+}
+
+export const LongAuthorName: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    issue: {
+      ...issue,
+      author: issue.author
+        ? {
+            ...issue.author,
+            login: 'ASuperLongUsername',
+          }
+        : undefined,
+    },
+  },
+}

@@ -3,7 +3,6 @@
 /* eslint-disable */
 import type { ConfirmIssue } from '../models/ConfirmIssue';
 import type { Issue } from '../models/Issue';
-import type { IssueReferenceRead } from '../models/IssueReferenceRead';
 import type { IssueSortBy } from '../models/IssueSortBy';
 import type { IssueUpdateBadgeMessage } from '../models/IssueUpdateBadgeMessage';
 import type { ListResource_Issue_ } from '../models/ListResource_Issue_';
@@ -214,24 +213,15 @@ export class IssuesService {
    * @throws ApiError
    */
   public addPolarBadge({
-    platform,
-    orgName,
-    repoName,
-    issueNumber,
+    id,
   }: {
-    platform: Platforms,
-    orgName: string,
-    repoName: string,
-    issueNumber: number,
+    id: string,
   }): CancelablePromise<Issue> {
     return this.httpRequest.request({
       method: 'POST',
-      url: '/api/v1/{platform}/{org_name}/{repo_name}/issue/{issue_number}/add_badge',
+      url: '/api/v1/issues/{id}/add_badge',
       path: {
-        'platform': platform,
-        'org_name': orgName,
-        'repo_name': repoName,
-        'issue_number': issueNumber,
+        'id': id,
       },
       errors: {
         422: `Validation Error`,
@@ -245,55 +235,15 @@ export class IssuesService {
    * @throws ApiError
    */
   public removePolarBadge({
-    platform,
-    orgName,
-    repoName,
-    issueNumber,
+    id,
   }: {
-    platform: Platforms,
-    orgName: string,
-    repoName: string,
-    issueNumber: number,
+    id: string,
   }): CancelablePromise<Issue> {
     return this.httpRequest.request({
       method: 'POST',
-      url: '/api/v1/{platform}/{org_name}/{repo_name}/issue/{issue_number}/remove_badge',
+      url: '/api/v1/issues/{id}/remove_badge',
       path: {
-        'platform': platform,
-        'org_name': orgName,
-        'repo_name': repoName,
-        'issue_number': issueNumber,
-      },
-      errors: {
-        422: `Validation Error`,
-      },
-    });
-  }
-
-  /**
-   * Get Issue References
-   * @returns IssueReferenceRead Successful Response
-   * @throws ApiError
-   */
-  public getIssueReferences({
-    platform,
-    orgName,
-    repoName,
-    number,
-  }: {
-    platform: Platforms,
-    orgName: string,
-    repoName: string,
-    number: number,
-  }): CancelablePromise<Array<IssueReferenceRead>> {
-    return this.httpRequest.request({
-      method: 'GET',
-      url: '/api/v1/{platform}/{org_name}/{repo_name}/issues/{number}/references',
-      path: {
-        'platform': platform,
-        'org_name': orgName,
-        'repo_name': repoName,
-        'number': number,
+        'id': id,
       },
       errors: {
         422: `Validation Error`,
@@ -307,26 +257,17 @@ export class IssuesService {
    * @throws ApiError
    */
   public addIssueComment({
-    platform,
-    orgName,
-    repoName,
-    issueNumber,
+    id,
     requestBody,
   }: {
-    platform: Platforms,
-    orgName: string,
-    repoName: string,
-    issueNumber: number,
+    id: string,
     requestBody: PostIssueComment,
   }): CancelablePromise<Issue> {
     return this.httpRequest.request({
       method: 'POST',
-      url: '/api/v1/{platform}/{org_name}/{repo_name}/issue/{issue_number}/comment',
+      url: '/api/v1/issues/{id}/comment',
       path: {
-        'platform': platform,
-        'org_name': orgName,
-        'repo_name': repoName,
-        'issue_number': issueNumber,
+        'id': id,
       },
       body: requestBody,
       mediaType: 'application/json',
@@ -342,26 +283,17 @@ export class IssuesService {
    * @throws ApiError
    */
   public badgeWithMessage({
-    platform,
-    orgName,
-    repoName,
-    issueNumber,
+    id,
     requestBody,
   }: {
-    platform: Platforms,
-    orgName: string,
-    repoName: string,
-    issueNumber: number,
+    id: string,
     requestBody: IssueUpdateBadgeMessage,
   }): CancelablePromise<Issue> {
     return this.httpRequest.request({
       method: 'POST',
-      url: '/api/v1/{platform}/{org_name}/{repo_name}/issue/{issue_number}/badge_message',
+      url: '/api/v1/issues/{id}/badge_with_message',
       path: {
-        'platform': platform,
-        'org_name': orgName,
-        'repo_name': repoName,
-        'issue_number': issueNumber,
+        'id': id,
       },
       body: requestBody,
       mediaType: 'application/json',

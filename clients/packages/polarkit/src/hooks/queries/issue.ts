@@ -25,20 +25,12 @@ export const useIssueAddPolarBadge: () => UseMutationResult<
   Issue,
   Error,
   {
-    platform: Platforms
-    orgName: string
-    repoName: string
-    issueNumber: number
+    id: string
   },
   unknown
 > = () =>
   useMutation({
-    mutationFn: (variables: {
-      platform: Platforms
-      orgName: string
-      repoName: string
-      issueNumber: number
-    }) => {
+    mutationFn: (variables: { id: string }) => {
       return api.issues.addPolarBadge(variables)
     },
     onSuccess: (result, variables, ctx) => {
@@ -89,12 +81,7 @@ export const useIssueAddPolarBadge: () => UseMutationResult<
 
 export const useIssueRemovePolarBadge = () =>
   useMutation({
-    mutationFn: (variables: {
-      platform: Platforms
-      orgName: string
-      repoName: string
-      issueNumber: number
-    }) => {
+    mutationFn: (variables: { id: string }) => {
       return api.issues.removePolarBadge(variables)
     },
     onSuccess: (result, variables, ctx) => {
@@ -143,18 +130,9 @@ export const useIssueRemovePolarBadge = () =>
 
 export const useIssueAddComment = () =>
   useMutation({
-    mutationFn: (variables: {
-      platform: Platforms
-      orgName: string
-      repoName: string
-      issueNumber: number
-      body: PostIssueComment
-    }) => {
+    mutationFn: (variables: { id: string; body: PostIssueComment }) => {
       return api.issues.addIssueComment({
-        platform: variables.platform,
-        orgName: variables.orgName,
-        repoName: variables.repoName,
-        issueNumber: variables.issueNumber,
+        id: variables.id,
         requestBody: variables.body,
       })
     },
@@ -162,18 +140,9 @@ export const useIssueAddComment = () =>
 
 export const useBadgeWithComment = () =>
   useMutation({
-    mutationFn: (variables: {
-      platform: Platforms
-      orgName: string
-      repoName: string
-      issueNumber: number
-      body: IssueUpdateBadgeMessage
-    }) => {
+    mutationFn: (variables: { id: string; body: IssueUpdateBadgeMessage }) => {
       return api.issues.badgeWithMessage({
-        platform: variables.platform,
-        orgName: variables.orgName,
-        repoName: variables.repoName,
-        issueNumber: variables.issueNumber,
+        id: variables.id,
         requestBody: variables.body,
       })
     },

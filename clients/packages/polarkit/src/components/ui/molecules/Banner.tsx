@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import React from 'react'
 
-type Color = 'default' | 'muted' | 'red' | 'green'
+type Color = 'default' | 'muted' | 'red' | 'green' | 'blue'
 
 const Banner = ({
   children,
@@ -27,6 +27,9 @@ const Banner = ({
           : '',
         color === 'green'
           ? 'border bg-green-100 text-green-600  dark:border-green-800 dark:bg-green-900 dark:text-green-600'
+          : '',
+        color === 'blue'
+          ? 'border bg-blue-100 text-blue-600  dark:border-blue-800 dark:bg-blue-900 dark:text-blue-600'
           : '',
       )}
     >

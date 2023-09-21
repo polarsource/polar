@@ -12,10 +12,11 @@ import {
   IssueDashboardRead,
   Label,
   Organization,
+  Pledge,
   Repository,
   UserRead,
 } from 'polarkit/api/client'
-import { MoneyInput, PrimaryButton } from 'polarkit/components/ui'
+import { Banner, MoneyInput, PrimaryButton } from 'polarkit/components/ui'
 import {
   useBadgeWithComment,
   useIssueAddComment,
@@ -28,7 +29,7 @@ import {
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
 import { posthog } from 'posthog-js'
-import { ChangeEvent, useMemo, useState } from 'react'
+import { ChangeEvent, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CopyToClipboardInput from '../../../../../packages/polarkit/src/components/ui/atoms/CopyToClipboardInput'
 import { ModalHeader, Modal as ModernModal } from '../Modal'
@@ -271,7 +272,7 @@ export const BadgePromotionModal = (props: {
         </TabsList>
         <TabsContent
           value="funding"
-          className="bg-gray-75 -mt-[1px] border-t p-4 dark:border-gray-600 dark:bg-gray-900"
+          className="bg-gray-75 -mt-[1px] border-t p-6 dark:border-gray-600 dark:bg-gray-900"
         >
           <BadgeMessageForm
             value={
@@ -292,13 +293,13 @@ export const BadgePromotionModal = (props: {
         </TabsContent>
         <TabsContent
           value="rewards"
-          className="bg-gray-75 -mt-[1px] border-t p-4 dark:border-gray-600 dark:bg-gray-900"
+          className="bg-gray-75 -mt-[1px] border-t p-6 dark:border-gray-600 dark:bg-gray-900"
         >
           <RewardsTab {...props} />
         </TabsContent>
         <TabsContent
           value="promote"
-          className="bg-gray-75 -mt-[1px] border-t p-4 dark:border-gray-600 dark:bg-gray-900"
+          className="bg-gray-75 -mt-[1px] border-t p-6 dark:border-gray-600 dark:bg-gray-900"
         >
           <PromoteTab {...props} />
         </TabsContent>
@@ -565,6 +566,8 @@ const RewardsTab = (props: {
   org: Organization
   user: UserRead
 }) => {
+  const showSeedRewardsFeature = false
+
   const [usePublicRewards, setUsePublicRewards] = useState<boolean>(
     props.issue.upfront_split_to_contributors !== null,
   )
@@ -582,25 +585,27 @@ const RewardsTab = (props: {
 
   const updateIssue = useUpdateIssue()
 
-  const onSubmitUpfrontSplit = async () => {
+  const saveUpFrontSplit = async (splitShare?: number) => {
     await updateIssue.mutateAsync({
       id: props.issue.id,
-
-      upfront_split_to_contributors: usePublicRewards
-        ? contributorsShare
-        : undefined,
-
-      unset_upfront_split_to_contributors: !usePublicRewards ? true : undefined,
+      upfront_split_to_contributors: splitShare,
+      unset_upfront_split_to_contributors: !splitShare ? true : undefined,
     })
   }
 
   const [selfPledgeAmount, setSelfPledgeAmount] = useState(0)
   const [pledgeIsLoading, setPledgeIsLoading] = useState(false)
 
+  const [bannerSeededPledge, setBannerSeededPledge] = useState(false)
+
+  const [createdSeedPledge, setCreatedSeedPledge] = useState<
+    Pledge | undefined
+  >(undefined)
+
   const onSubmitSeedReward = async () => {
     setPledgeIsLoading(true)
 
-    await api.pledges.createPayOnCompletion({
+    const p = await api.pledges.createPayOnCompletion({
       requestBody: {
         issue_id: props.issue.id,
         amount: selfPledgeAmount,
@@ -612,6 +617,13 @@ const RewardsTab = (props: {
     })
 
     setPledgeIsLoading(false)
+    setCreatedSeedPledge(p)
+
+    setBannerSeededPledge(true)
+    bannerTimeout.current && clearTimeout(bannerTimeout.current)
+    bannerTimeout.current = setTimeout(() => {
+      setBannerSeededPledge(false)
+    }, 10_000)
   }
 
   const issuePledges = useListPledesForIssue(props.issue.id)
@@ -620,6 +632,56 @@ const RewardsTab = (props: {
     .filter((p) => p.pledger?.github_username === props.user.username)
     .map((p) => p.amount.amount)
     .reduce((a, b) => a + b, 0)
+
+  const [bannerContributionRewardShown, setBannerContributionRewardShown] =
+    useState(false)
+
+  const [bannerContributionUpdated, setBannerContributionUpdated] =
+    useState(false)
+  const [bannerContributionUpdatedValue, setBannerContributionUpdatedValue] =
+    useState(0)
+
+  const [bannerContributionRewardHidden, setBannerContributionRewardHidden] =
+    useState(false)
+
+  type Timeout = ReturnType<typeof setTimeout>
+  const bannerTimeout = useRef<Timeout | null>(null)
+
+  const onCheckedChange = (checked: boolean) => {
+    setUsePublicRewards(checked)
+
+    saveUpFrontSplit(checked ? contributorsShare : undefined)
+
+    if (checked) {
+      setBannerContributionRewardShown(true)
+      setBannerContributionRewardHidden(false)
+
+      bannerTimeout.current && clearTimeout(bannerTimeout.current)
+      bannerTimeout.current = setTimeout(() => {
+        setBannerContributionRewardShown(false)
+      }, 2000)
+    } else {
+      setBannerContributionRewardHidden(true)
+      setBannerContributionRewardShown(false)
+
+      bannerTimeout.current && clearTimeout(bannerTimeout.current)
+      bannerTimeout.current = setTimeout(() => {
+        setBannerContributionRewardHidden(false)
+      }, 2000)
+    }
+  }
+
+  const contributorShareUpdated = (val: number) => {
+    setContributorsShare(val)
+    saveUpFrontSplit(val)
+    setBannerContributionUpdatedValue(val)
+    setBannerContributionUpdated(true)
+
+    bannerTimeout.current && clearTimeout(bannerTimeout.current)
+    bannerTimeout.current = setTimeout(() => {
+      setBannerContributionUpdated(false)
+    }, 2000)
+  }
 
   return (
     <div className="flex w-full flex-col space-y-6">
@@ -638,124 +700,156 @@ const RewardsTab = (props: {
             <Switch
               className="data-[state=checked]:bg-blue-600"
               checked={usePublicRewards}
-              onCheckedChange={setUsePublicRewards}
+              onCheckedChange={onCheckedChange}
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <UserIcon className="h-6 w-6 rounded-full bg-gray-50 p-1 dark:bg-gray-950" />
-            <div className="text-sm">Reserved for contributor(s)</div>
-          </div>
-          <div className="flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5 dark:bg-gray-700">
-            <span className="flex-shrink-0 text-gray-500">%</span>
-            <div className="flex-1">
-              <input
-                className={classNames(
-                  'w-full bg-white dark:bg-gray-700 dark:outline-gray-700 ',
-                  usePublicRewards
-                    ? 'font-medium text-black dark:text-gray-100'
-                    : 'text-gray-500 dark:text-gray-400',
-                )}
-                disabled={!usePublicRewards}
-                value={contributorsShare}
-                placeholder={'50'}
-                onChange={(e) => {
-                  let val = parseInt(e.target.value)
-                  val = Math.min(Math.max(val, 0), 100)
-                  if (isNaN(val)) {
-                    val = 0
-                  }
-                  setContributorsShare(val)
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm">
-            <img src={props.org.avatar_url} className="h-6 w-6 rounded-full" />
-            <div>{props.org.pretty_name || props.org.name}.</div>
-            <div className="text-gray-500">
-              Reviews, feedback & maintenance. Reward yourself too.
-            </div>
-          </div>
-          <div className="flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5 dark:bg-gray-700">
-            <span className="flex-shrink-0 text-gray-500">%</span>
-            <div className="flex-1">
-              <input
-                className={classNames(
-                  'w-full bg-white dark:bg-gray-700 dark:outline-gray-700 ',
-                  'text-gray-500 dark:text-gray-400',
-                )}
-                disabled
-                value={maintainerShare}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-end">
-          <PrimaryButton
-            fullWidth={false}
-            loading={updateIssue.isPending}
-            onClick={onSubmitUpfrontSplit}
-          >
-            Update
-          </PrimaryButton>
-        </div>
-      </div>
-
-      <hr className="bg-gray-500" />
-
-      <div className="flex w-full flex-col space-y-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-sm font-medium text-gray-900 dark:text-gray-300">
-              Seed rewards
-            </div>
-            <div className="text-xs text-gray-600 dark:text-gray-500">
-              Payment is made once issue is completed.
-            </div>
-            {selfSeededAmount > 0 && (
-              <div className="text-xs text-gray-600 dark:text-gray-500">
-                You have pledged ${getCentsInDollarString(selfSeededAmount)} to
-                this issue
+        {usePublicRewards && (
+          <>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <UserIcon className="h-6 w-6 rounded-full bg-gray-50 p-1 dark:bg-gray-950" />
+                <div className="text-sm">Reserved for contributor(s)</div>
               </div>
-            )}
-          </div>
-
-          <div className="flex gap-4">
-            <div className="flex items-center gap-2">
-              <img
-                src={props.user.avatar_url}
-                className="h-6 w-6 rounded-full"
-              />
-              <div className="text-sm">@{props.user.username}</div>
+              <div className="flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5 dark:bg-gray-700">
+                <span className="flex-shrink-0 text-gray-500">%</span>
+                <div className="flex-1">
+                  <input
+                    className={classNames(
+                      'w-full bg-white dark:bg-gray-700 dark:outline-gray-700 ',
+                      usePublicRewards
+                        ? 'font-medium text-black dark:text-gray-100'
+                        : 'text-gray-500 dark:text-gray-400',
+                    )}
+                    disabled={!usePublicRewards}
+                    value={contributorsShare}
+                    placeholder={'50'}
+                    onChange={(e) => {
+                      let val = parseInt(e.target.value)
+                      val = Math.min(Math.max(val, 0), 100)
+                      if (isNaN(val)) {
+                        val = 0
+                      }
+                      contributorShareUpdated(val)
+                    }}
+                  />
+                </div>
+              </div>
             </div>
 
-            <MoneyInput
-              id="self_pledge"
-              name="self_pledge"
-              placeholder={1000}
-              value={selfPledgeAmount}
-              onAmountChangeInCents={setSelfPledgeAmount}
-              className="max-w-[150px]"
-            />
-
-            <PrimaryButton
-              fullWidth={false}
-              disabled={selfPledgeAmount === 0}
-              loading={pledgeIsLoading}
-              onClick={onSubmitSeedReward}
-            >
-              Pledge ${getCentsInDollarString(selfPledgeAmount)}
-            </PrimaryButton>
-          </div>
-        </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm">
+                <img
+                  src={props.org.avatar_url}
+                  className="h-6 w-6 rounded-full"
+                />
+                <div>{props.org.pretty_name || props.org.name}.</div>
+                <div className="text-gray-500">
+                  Reviews, feedback & maintenance. Reward yourself too.
+                </div>
+              </div>
+              <div className="flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5 dark:bg-gray-700">
+                <span className="flex-shrink-0 text-gray-500">%</span>
+                <div className="flex-1">
+                  <input
+                    className={classNames(
+                      'w-full bg-white dark:bg-gray-700 dark:outline-gray-700 ',
+                      'text-gray-500 dark:text-gray-400',
+                    )}
+                    disabled
+                    value={maintainerShare}
+                  />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
+
+      {usePublicRewards && showSeedRewardsFeature && (
+        <>
+          <hr className="bg-gray-500" />
+
+          <div className="flex w-full flex-col space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-300">
+                  Seed rewards
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-500">
+                  Payment is made once issue is completed.
+                </div>
+                {selfSeededAmount > 0 && (
+                  <div className="text-xs text-gray-600 dark:text-gray-500">
+                    You have pledged ${getCentsInDollarString(selfSeededAmount)}{' '}
+                    to this issue
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex items-center gap-2">
+                  <img
+                    src={props.user.avatar_url}
+                    className="h-6 w-6 rounded-full"
+                  />
+                  <div className="text-sm">@{props.user.username}</div>
+                </div>
+
+                <MoneyInput
+                  id="self_pledge"
+                  name="self_pledge"
+                  placeholder={1000}
+                  value={selfPledgeAmount}
+                  onAmountChangeInCents={setSelfPledgeAmount}
+                  className="max-w-[150px]"
+                />
+
+                <PrimaryButton
+                  fullWidth={false}
+                  disabled={selfPledgeAmount === 0}
+                  loading={pledgeIsLoading}
+                  onClick={onSubmitSeedReward}
+                >
+                  Pledge ${getCentsInDollarString(selfPledgeAmount)}
+                </PrimaryButton>
+              </div>
+            </div>
+          </div>
+
+          <hr className="bg-gray-500" />
+        </>
+      )}
+
+      {bannerContributionRewardShown && (
+        <Banner color="blue">
+          Contributor reward is now shown in the Polar badge
+        </Banner>
+      )}
+
+      {bannerContributionRewardHidden && (
+        <Banner color="blue">
+          Contributor reward is now hidden from the Polar badge
+        </Banner>
+      )}
+
+      {bannerContributionUpdated && (
+        <Banner color="blue">
+          Contributor reward has been updated to{' '}
+          <strong>{bannerContributionUpdatedValue}%</strong>
+        </Banner>
+      )}
+
+      {bannerSeededPledge && createdSeedPledge && (
+        <Banner color="blue">
+          Amazing! You have seeded the reward with a{' '}
+          <strong>
+            ${getCentsInDollarString(createdSeedPledge.amount.amount)}
+          </strong>{' '}
+          pledge - to be paid on completion.
+        </Banner>
+      )}
     </div>
   )
 }

@@ -67,10 +67,7 @@ export const AddBadgeButton = (props: {
 
     await add
       .mutateAsync({
-        platform: Platforms.GITHUB,
-        orgName: props.org.name,
-        repoName: props.repo.name,
-        issueNumber: props.issue.number,
+        id: props.issue.id,
       })
       .then(() => {
         setBadged(true)
@@ -87,10 +84,7 @@ export const AddBadgeButton = (props: {
   const onRemoveBadge = async () => {
     await remove
       .mutateAsync({
-        platform: Platforms.GITHUB,
-        orgName: props.org.name,
-        repoName: props.repo.name,
-        issueNumber: props.issue.number,
+        id: props.issue.id,
       })
       .then(() => {
         setBadged(false)
@@ -107,10 +101,7 @@ export const AddBadgeButton = (props: {
 
   const onAddComment = async (message: string) => {
     await addComment.mutateAsync({
-      platform: Platforms.GITHUB,
-      orgName: props.org.name,
-      repoName: props.repo.name,
-      issueNumber: props.issue.number,
+      id: props.issue.id,
       body: {
         message: message,
         append_badge: true,
@@ -122,10 +113,7 @@ export const AddBadgeButton = (props: {
 
   const onBadgeWithComment = async (message: string) => {
     await badgeWithComment.mutateAsync({
-      platform: Platforms.GITHUB,
-      orgName: props.org.name,
-      repoName: props.repo.name,
-      issueNumber: props.issue.number,
+      id: props.issue.id,
       body: {
         message: message,
       },

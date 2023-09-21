@@ -5,7 +5,6 @@ import {
 } from '@heroicons/react/24/outline'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { api } from 'polarkit/api'
 import {
   Organization,
   type OrganizationBadgeSettingsRead,
@@ -13,7 +12,11 @@ import {
   type RepositoryBadgeSettingsRead,
 } from 'polarkit/api/client'
 import { MoneyInput, PrimaryButton } from 'polarkit/components/ui'
-import { useBadgeSettings, useSSE } from 'polarkit/hooks'
+import {
+  useOrganizationBadgeSettings,
+  useSSE,
+  useUpdateOrganizationBadgeSettings,
+} from 'polarkit/hooks'
 import { classNames } from 'polarkit/utils'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useTimeoutFn } from 'react-use'
@@ -102,7 +105,7 @@ const BadgeSetup = ({
   setSyncIssuesCount: (state: number) => void
   isSettingPage?: boolean
 }) => {
-  const remoteSettings = useBadgeSettings(org.platform, org.name)
+  const remoteSettings = useOrganizationBadgeSettings(org.id)
   const [settings, setSettings] = useState<MappedRepoSettings>({
     show_amount: true,
     minimum_amount: 2000,
@@ -450,6 +453,8 @@ export const Controls = ({
   const [isSaving, setIsSaving] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
 
+  const updateBadgeSettings = useUpdateOrganizationBadgeSettings()
+
   const save = async () => {
     const data: OrganizationBadgeSettingsUpdate = {
       show_amount: settings.show_amount,
@@ -466,10 +471,9 @@ export const Controls = ({
 
     setIsSaving(true)
 
-    await api.organizations.updateBadgeSettings({
-      platform: org.platform,
-      orgName: org.name,
-      requestBody: data,
+    await updateBadgeSettings.mutateAsync({
+      id: org.id,
+      settings: data,
     })
 
     setIsSaving(false)

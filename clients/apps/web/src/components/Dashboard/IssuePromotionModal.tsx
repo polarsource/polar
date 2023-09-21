@@ -11,17 +11,16 @@ import {
   IssueDashboardRead,
   Label,
   Organization,
-  Platforms,
   Repository,
   UserRead,
 } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui'
 import {
-  useBadgeSettings,
   useBadgeWithComment,
   useIssueAddComment,
   useIssueAddPolarBadge,
   useIssueRemovePolarBadge,
+  useOrganizationBadgeSettings,
   useUpdateIssue,
 } from 'polarkit/hooks'
 import { classNames } from 'polarkit/utils'
@@ -215,7 +214,7 @@ export const BadgePromotionModal = (props: {
     toggle()
   }
 
-  const badgeSettings = useBadgeSettings(Platforms.GITHUB, props.org.name)
+  const badgeSettings = useOrganizationBadgeSettings(props.org.id)
   const isBadged = isIssueBadged(props.issue)
   const gitHubIssueLink = `https://github.com/${props.org.name}/${props.repo.name}/issues/${props.issue.number}`
 

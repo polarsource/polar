@@ -11,56 +11,6 @@ from polar.postgres import AsyncSession
 
 
 @pytest.mark.asyncio
-async def test_get_organization_no_member_old_api(
-    organization: Organization,
-    auth_jwt: str,
-    client: AsyncClient,
-) -> None:
-    response = await client.get(
-        "/api/v1/github/" + organization.name,
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
-
-    assert response.status_code == 404
-
-
-@pytest.mark.asyncio
-async def test_get_organization_member_old_api(
-    organization: Organization,
-    user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
-    client: AsyncClient,
-) -> None:
-    response = await client.get(
-        "/api/v1/github/" + organization.name,
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
-
-    assert response.status_code == 200
-    assert response.json()["id"] == str(organization.id)
-
-
-@pytest.mark.asyncio
-async def test_get_organization_deleted_old_api(
-    session: AsyncSession,
-    organization: Organization,
-    user_organization: UserOrganization,  # makes User a member of Organization
-    auth_jwt: str,
-    client: AsyncClient,
-) -> None:
-    # soft-delete the organization
-    organization.deleted_at = datetime.utcnow()
-    await organization.save(session)
-
-    response = await client.get(
-        "/api/v1/github/" + organization.name,
-        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
-    )
-
-    assert response.status_code == 404
-
-
-@pytest.mark.asyncio
 async def test_get_organization(
     organization: Organization, auth_jwt: str, client: AsyncClient
 ) -> None:

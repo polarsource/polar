@@ -176,12 +176,10 @@ async def get_badge_settings(
         raise Unauthorized()
 
     repositories = await repository_service.list_by(
-        session, org_ids=[auth.organization.id], order_by_open_source=True
+        session, org_ids=[org.id], order_by_open_source=True
     )
 
-    synced = await repository_service.get_repositories_synced_count(
-        session, auth.organization
-    )
+    synced = await repository_service.get_repositories_synced_count(session, org)
 
     repos = []
     for repo in repositories:
@@ -204,7 +202,7 @@ async def get_badge_settings(
         repos.append(
             RepositoryBadgeSettingsRead(
                 id=repo.id,
-                avatar_url=auth.organization.avatar_url,
+                avatar_url=org.avatar_url,
                 badge_auto_embed=repo.pledge_badge_auto_embed,
                 name=repo.name,
                 synced_issues=synced_issues,
@@ -217,13 +215,13 @@ async def get_badge_settings(
             )
         )
 
-    message = auth.organization.default_badge_custom_content
+    message = org.default_badge_custom_content
     if not message:
-        message = GithubBadge.generate_default_promotion_message(auth.organization)
+        message = GithubBadge.generate_default_promotion_message(org)
 
     return OrganizationBadgeSettingsRead(
-        show_amount=auth.organization.pledge_badge_show_amount,
-        minimum_amount=auth.organization.pledge_minimum_amount,
+        show_amount=org.pledge_badge_show_amount,
+        minimum_amount=org.pledge_minimum_amount,
         message=message,
         repositories=repos,
     )
@@ -248,6 +246,4 @@ async def update_badge_settings(
     if not await authz.can(auth.subject, AccessType.write, org):
         raise Unauthorized()
 
-    return await organization.update_badge_settings(
-        session, auth.organization, settings
-    )
+    return await organization.update_badge_settings(session, org, settings)

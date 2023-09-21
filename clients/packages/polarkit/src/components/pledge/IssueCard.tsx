@@ -1,7 +1,7 @@
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
 import { StarIcon } from '@heroicons/react/24/solid'
 import { generateMarkdownTitle } from 'polarkit/components/Issue'
-import { PolarTimeAgo } from 'polarkit/components/ui'
+import { IssueBodyRenderer, PolarTimeAgo } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
 import { formatStarsNumber } from 'polarkit/utils'
 import { useMemo } from 'react'
@@ -10,10 +10,12 @@ import { githubIssueUrl } from '../../github'
 
 const IssueCard = ({
   issue,
-  className,
+  htmlBody,
   currentPledgeAmount,
+  className,
 }: {
   issue: Issue
+  htmlBody?: string
   currentPledgeAmount: number
   className?: string
 }) => {
@@ -84,24 +86,14 @@ const IssueCard = ({
       />
       <hr className="my-4 dark:border-gray-600" />
       {/* Issue description */}
-      <div className="text-gray-600 dark:text-gray-400">
-        <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-          eiusmod tempor incididunt ut labore et dolore magna aliqua. Amet
-          cursus sit amet dictum sit amet justo donec enim. Tempus iaculis urna
-          id volutpat lacus laoreet non curabitur. Sed ullamcorper morbi
-          tincidunt ornare. Velit dignissim sodales ut eu sem integer vitae
-          justo eget. In egestas erat imperdiet sed euismod nisi porta lorem.
-          Nunc scelerisque viverra mauris in aliquam. Volutpat blandit aliquam
-          etiam erat velit scelerisque in dictum. Euismod quis viverra nibh cras
-          pulvinar mattis. Sed viverra ipsum nunc aliquet bibendum enim
-          facilisis gravida neque. Lobortis feugiat vivamus at augue eget arcu.
-        </p>
-        <div className="mt-2">
-          <a href={url} className="text-blue-500">
-            Read more
-          </a>
-        </div>
+      <div className="relative max-h-80 overflow-hidden">
+        {htmlBody && <IssueBodyRenderer html={htmlBody} />}
+        <div className="absolute bottom-0 left-0 h-12 w-full bg-gradient-to-b from-transparent to-gray-50 dark:to-gray-950"></div>
+      </div>
+      <div className="mt-2">
+        <a href={url} className="text-blue-500">
+          Read more
+        </a>
       </div>
       <hr className="my-4 dark:border-gray-600" />
       {/* Repository */}

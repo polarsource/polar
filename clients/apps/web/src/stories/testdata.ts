@@ -110,6 +110,14 @@ export const issue: Issue = {
   needs_confirmation_solved: false,
 }
 
+export const issueBodyHTML = `<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
+nisi ut aliquip ex ea commodo consequat. <strong>Duis aute irure dolor</strong> in
+reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia
+deserunt mollit anim id est laborum.</p>`
+
 export const pledge: PledgeRead = {
   id: 'pppp',
   created_at: addDays(new Date(), -7).toISOString(),

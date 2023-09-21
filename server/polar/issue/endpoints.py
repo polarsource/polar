@@ -480,9 +480,15 @@ async def add_polar_badge(
     if not await authz.can(auth.subject, AccessType.write, issue):
         raise Unauthorized()
 
-    issue = await github_issue_service.add_polar_label(
-        session, auth.organization, auth.repository, issue
-    )
+    org = await organization_service.get(session, issue.organization_id)
+    if not org:
+        raise ResourceNotFound()
+
+    repo = await repository_service.get(session, issue.repository_id)
+    if not repo:
+        raise ResourceNotFound()
+
+    issue = await github_issue_service.add_polar_label(session, org, repo, issue)
 
     # get for return
     issue_ret = await issue_service.get_loaded(session, issue.id)
@@ -509,9 +515,15 @@ async def remove_polar_badge(
     if not await authz.can(auth.subject, AccessType.write, issue):
         raise Unauthorized()
 
-    issue = await github_issue_service.remove_polar_label(
-        session, auth.organization, auth.repository, issue
-    )
+    org = await organization_service.get(session, issue.organization_id)
+    if not org:
+        raise ResourceNotFound()
+
+    repo = await repository_service.get(session, issue.repository_id)
+    if not repo:
+        raise ResourceNotFound()
+
+    issue = await github_issue_service.remove_polar_label(session, org, repo, issue)
 
     # get for return
     issue_ret = await issue_service.get_loaded(session, issue.id)
@@ -543,12 +555,20 @@ async def add_issue_comment(
     if not await authz.can(auth.subject, AccessType.write, issue):
         raise Unauthorized()
 
+    org = await organization_service.get(session, issue.organization_id)
+    if not org:
+        raise ResourceNotFound()
+
+    repo = await repository_service.get(session, issue.repository_id)
+    if not repo:
+        raise ResourceNotFound()
+
     message = comment.message
 
     if comment.append_badge:
         badge = GithubBadge(
-            organization=auth.organization,
-            repository=auth.repository,
+            organization=org,
+            repository=repo,
             issue=issue,
         )
         # Crucial with newlines. See: https://github.com/polarsource/polar/issues/868
@@ -557,8 +577,8 @@ async def add_issue_comment(
 
     await github_issue_service.add_comment_as_user(
         session,
-        auth.organization,
-        auth.repository,
+        org,
+        repo,
         issue,
         auth.user,
         message,
@@ -591,14 +611,22 @@ async def badge_with_message(
     if not await authz.can(auth.subject, AccessType.write, issue):
         raise Unauthorized()
 
+    org = await organization_service.get(session, issue.organization_id)
+    if not org:
+        raise ResourceNotFound()
+
+    repo = await repository_service.get(session, issue.repository_id)
+    if not repo:
+        raise ResourceNotFound()
+
     issue = await github_issue_service.set_issue_badge_custom_message(
         session, issue, badge_message.message
     )
 
     await github_issue_service.embed_badge(
         session,
-        organization=auth.organization,
-        repository=auth.repository,
+        organization=org,
+        repository=repo,
         issue=issue,
         triggered_from_label=True,
     )

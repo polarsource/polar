@@ -13,13 +13,13 @@ type Story = StoryObj<typeof FormattedDateTime>
 
 export const Default: Story = {
   args: {
-    datetime: new Date(),
+    datetime: new Date('2023-11-12'),
   },
 }
 
 export const DisplayTime: Story = {
   args: {
-    datetime: new Date(),
+    datetime: new Date('2023-11-12'),
     displayTime: true,
   },
 }

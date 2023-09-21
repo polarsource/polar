@@ -1,3 +1,4 @@
+import Alert from './Alert'
 import CopyToClipboardInput from './CopyToClipboardInput'
 import CountryPicker from './CountryPicker'
 import FormattedDateTime from './FormattedDateTime'
@@ -13,6 +14,7 @@ import ShadowBoxOnLg from './ShadowBoxOnLg'
 import ShadowListGroup from './ShadowListGroup'
 
 export {
+  Alert,
   ShadowBox,
   ShadowBoxOnLg,
   ShadowListGroup,

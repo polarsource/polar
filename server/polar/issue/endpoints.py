@@ -463,26 +463,22 @@ async def confirm(
 
 
 @router.post(
-    "/{platform}/{org_name}/{repo_name}/issue/{issue_number}/add_badge",
+    "/issues/{id}/add_badge",
     response_model=IssueSchema,
     tags=[Tags.INTERNAL],
 )
 async def add_polar_badge(
-    platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    issue_number: int,
-    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
+    id: UUID,
+    auth: Auth = Depends(Auth.current_user),
+    authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueSchema:
-    issue = await issue_service.get_by_number(
-        session, platform, auth.organization.id, auth.repository.id, issue_number
-    )
+    issue = await issue_service.get(session, id)
     if not issue:
-        raise HTTPException(
-            status_code=404,
-            detail="Issue not found",
-        )
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, issue):
+        raise Unauthorized()
 
     issue = await github_issue_service.add_polar_label(
         session, auth.organization, auth.repository, issue
@@ -491,34 +487,27 @@ async def add_polar_badge(
     # get for return
     issue_ret = await issue_service.get_loaded(session, issue.id)
     if not issue_ret:
-        raise HTTPException(
-            status_code=404,
-            detail="Issue not found",
-        )
+        raise ResourceNotFound()
 
     return IssueSchema.from_db(issue_ret)
 
 
 @router.post(
-    "/{platform}/{org_name}/{repo_name}/issue/{issue_number}/remove_badge",
+    "/issues/{id}/remove_badge",
     response_model=IssueSchema,
 )
 async def remove_polar_badge(
-    platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    issue_number: int,
-    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
+    id: UUID,
+    auth: Auth = Depends(Auth.current_user),
+    authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> IssueSchema:
-    issue = await issue_service.get_by_number(
-        session, platform, auth.organization.id, auth.repository.id, issue_number
-    )
+    issue = await issue_service.get(session, id)
     if not issue:
-        raise HTTPException(
-            status_code=404,
-            detail="Issue not found",
-        )
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, issue):
+        raise Unauthorized()
 
     issue = await github_issue_service.remove_polar_label(
         session, auth.organization, auth.repository, issue
@@ -527,66 +516,32 @@ async def remove_polar_badge(
     # get for return
     issue_ret = await issue_service.get_loaded(session, issue.id)
     if not issue_ret:
-        raise HTTPException(
-            status_code=404,
-            detail="Issue not found",
-        )
+        raise ResourceNotFound()
 
     return IssueSchema.from_db(issue_ret)
 
 
-@router.get(
-    "/{platform}/{org_name}/{repo_name}/issues/{number}/references",
-    response_model=List[IssueReferenceRead],
-    tags=[Tags.INTERNAL],
-)
-async def get_issue_references(
-    platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    number: int,
-    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
-    session: AsyncSession = Depends(get_db_session),
-) -> Sequence[IssueReferenceRead]:
-    _, __, issue = await organization_service.get_with_repo_and_issue(
-        session,
-        platform=platform,
-        org_name=org_name,
-        repo_name=repo_name,
-        issue=number,
-    )
-    refs = await issue_service.list_issue_references(session, issue)
-    return [IssueReferenceRead.from_model(r) for r in refs]
-
-
 @router.post(
-    "/{platform}/{org_name}/{repo_name}/issue/{issue_number}/comment",
+    "/issues/{id}/comment",
     response_model=IssueSchema,
     tags=[Tags.INTERNAL],
 )
 async def add_issue_comment(
-    platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    issue_number: int,
+    id: UUID,
     comment: PostIssueComment,
-    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
+    auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
 ) -> IssueSchema:
-    issue = await issue_service.get_by_number(
-        session, platform, auth.organization.id, auth.repository.id, issue_number
-    )
+    issue = await issue_service.get(session, id)
     if not issue:
-        raise HTTPException(
-            status_code=404,
-            detail="Issue not found",
-        )
+        raise ResourceNotFound()
 
     if not auth.user:
-        raise HTTPException(
-            status_code=401,
-            detail="Unauthorized",
-        )
+        raise Unauthorized()
+
+    if not await authz.can(auth.subject, AccessType.write, issue):
+        raise Unauthorized()
 
     message = comment.message
 
@@ -612,36 +567,29 @@ async def add_issue_comment(
     # get for return
     issue_ret = await issue_service.get_loaded(session, issue.id)
     if not issue_ret:
-        raise HTTPException(
-            status_code=404,
-            detail="Issue not found",
-        )
+        raise ResourceNotFound()
 
     return IssueSchema.from_db(issue_ret)
 
 
 @router.post(
-    "/{platform}/{org_name}/{repo_name}/issue/{issue_number}/badge_message",
+    "/issues/{id}/badge_with_message",
     response_model=IssueSchema,
     tags=[Tags.INTERNAL],
 )
 async def badge_with_message(
-    platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    issue_number: int,
+    id: UUID,
     badge_message: IssueUpdateBadgeMessage,
-    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
+    auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
 ) -> IssueSchema:
-    issue = await issue_service.get_by_number(
-        session, platform, auth.organization.id, auth.repository.id, issue_number
-    )
+    issue = await issue_service.get(session, id)
     if not issue:
-        raise HTTPException(
-            status_code=404,
-            detail="Issue not found",
-        )
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, issue):
+        raise Unauthorized()
 
     issue = await github_issue_service.set_issue_badge_custom_message(
         session, issue, badge_message.message
@@ -658,9 +606,6 @@ async def badge_with_message(
     # get for return
     issue_ret = await issue_service.get_loaded(session, issue.id)
     if not issue_ret:
-        raise HTTPException(
-            status_code=404,
-            detail="Issue not found",
-        )
+        raise ResourceNotFound()
 
     return IssueSchema.from_db(issue_ret)

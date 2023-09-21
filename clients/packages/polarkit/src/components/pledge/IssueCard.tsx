@@ -1,7 +1,7 @@
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
-import { StarIcon } from '@heroicons/react/24/solid'
+import { HeartIcon, StarIcon } from '@heroicons/react/24/solid'
 import { generateMarkdownTitle } from 'polarkit/components/Issue'
-import { IssueBodyRenderer, PolarTimeAgo } from 'polarkit/components/ui'
+import { Alert, IssueBodyRenderer, PolarTimeAgo } from 'polarkit/components/ui'
 import { getCentsInDollarString } from 'polarkit/money'
 import { formatStarsNumber } from 'polarkit/utils'
 import { useMemo } from 'react'
@@ -126,6 +126,23 @@ const IssueCard = ({
           </div>
         )}
       </div>
+      {/* Rewards */}
+      {issue.upfront_split_to_contributors && (
+        <div className="my-4">
+          <Alert color="blue">
+            <div className="flex items-center">
+              <HeartIcon className="mr-2 h-5 w-5 text-blue-300 dark:text-blue-700" />
+              <div className="inline">
+                <span className="font-bold">Rewards</span> contributors{' '}
+                <span className="font-bold">
+                  {issue.upfront_split_to_contributors}%
+                </span>{' '}
+                of received funds
+              </div>
+            </div>
+          </Alert>
+        </div>
+      )}
     </>
   )
 }

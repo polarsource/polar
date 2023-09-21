@@ -18,7 +18,6 @@ import { OrganizationsService } from './services/OrganizationsService';
 import { PaymentMethodsService } from './services/PaymentMethodsService';
 import { PersonalAccessTokenService } from './services/PersonalAccessTokenService';
 import { PledgesService } from './services/PledgesService';
-import { PullRequestsService } from './services/PullRequestsService';
 import { RepositoriesService } from './services/RepositoriesService';
 import { RewardsService } from './services/RewardsService';
 import { StreamService } from './services/StreamService';
@@ -41,7 +40,6 @@ export class PolarAPI {
   public readonly paymentMethods: PaymentMethodsService;
   public readonly personalAccessToken: PersonalAccessTokenService;
   public readonly pledges: PledgesService;
-  public readonly pullRequests: PullRequestsService;
   public readonly repositories: RepositoriesService;
   public readonly rewards: RewardsService;
   public readonly stream: StreamService;
@@ -75,7 +73,6 @@ export class PolarAPI {
     this.paymentMethods = new PaymentMethodsService(this.request);
     this.personalAccessToken = new PersonalAccessTokenService(this.request);
     this.pledges = new PledgesService(this.request);
-    this.pullRequests = new PullRequestsService(this.request);
     this.repositories = new RepositoriesService(this.request);
     this.rewards = new RewardsService(this.request);
     this.stream = new StreamService(this.request);

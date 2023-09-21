@@ -22,18 +22,21 @@ const BadgeMessageForm = (props: {
   canSetFundingGoal: boolean
   funding: Funding
 }) => {
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState(props.value)
 
   const [descriptionMode, setDescirptionMode] = useState('View')
 
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (ref.current) {
-      ref.current.innerHTML = Marked.parse(props.value)
-    }
     setMessage(props.value)
-  }, [ref, props.value, descriptionMode])
+  }, [props.value])
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.innerHTML = Marked.parse(message)
+    }
+  }, [ref, message, descriptionMode])
 
   const [canSave, setCanSave] = useState(false)
 

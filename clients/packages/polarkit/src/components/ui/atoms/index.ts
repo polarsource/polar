@@ -2,6 +2,7 @@ import CopyToClipboardInput from './CopyToClipboardInput'
 import CountryPicker from './CountryPicker'
 import FormattedDateTime from './FormattedDateTime'
 import Input from './Input'
+import IssueBodyRenderer from './IssueBodyRenderer'
 import LabeledRadioButton from './LabeledRadioButton'
 import LabeledSeparator from './LabeledSeparator'
 import MoneyInput from './MoneyInput'
@@ -17,6 +18,7 @@ export {
   ShadowListGroup,
   FormattedDateTime,
   Input,
+  IssueBodyRenderer,
   PolarTimeAgo,
   CountryPicker,
   CopyToClipboardInput,

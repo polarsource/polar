@@ -5,8 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from polar import locker
 from polar.auth.dependencies import Auth
 from polar.authz.service import AccessType, Authz
+from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.funding.schemas import Funding
 from polar.issue.service import issue as issue_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -22,9 +24,12 @@ from .schemas import (
     CreatePledgeFromPaymentIntent,
     CreatePledgePayLater,
     PledgeRead,
+    PledgesSummary,
     PledgeStripePaymentIntentCreate,
     PledgeStripePaymentIntentMutationResponse,
     PledgeStripePaymentIntentUpdate,
+    PledgeType,
+    SummaryPledge,
 )
 from .schemas import (
     Pledge as PledgeSchema,
@@ -147,6 +152,43 @@ async def search(
     ]
 
     return ListResource(items=items, pagination=Pagination(total_count=len(items)))
+
+
+@router.get(
+    "/pledges/summary",
+    response_model=PledgesSummary,
+    tags=[Tags.PUBLIC],
+    description="Get summary of pledges for resource.",  # noqa: E501
+    summary="Get pledges summary (Public API)",
+    status_code=200,
+)
+async def summary(
+    issue_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.optional_user),
+    authz: Authz = Depends(Authz.authz),
+) -> PledgesSummary:
+    issue = await issue_service.get(session, issue_id)
+    if not issue:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.read, issue):
+        raise Unauthorized()
+
+    pledges = await pledge_service.list_by(session, issue_ids=[issue_id])
+
+    sum_pledges = sum([p.amount for p in pledges])
+
+    funding = Funding(
+        funding_goal=CurrencyAmount(currency="USD", amount=issue.funding_goal)
+        if issue.funding_goal
+        else None,
+        pledges_sum=CurrencyAmount(currency="USD", amount=sum_pledges),
+    )
+
+    summary_pledges = [SummaryPledge.from_db(p) for p in pledges]
+
+    return PledgesSummary(funding=funding, pledges=summary_pledges)
 
 
 @router.get(

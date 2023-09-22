@@ -96,6 +96,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         issue_ids: list[UUID] | None = None,
         pledging_user: UUID | None = None,
         load_issue: bool = False,
+        load_pledger: bool = False,
     ) -> Sequence[Pledge]:
         statement = (
             sql.select(Pledge)
@@ -126,6 +127,11 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 joinedload(Pledge.issue)
                 .joinedload(Issue.repository)
                 .joinedload(Repository.organization),
+            )
+
+        if load_pledger:
+            statement = statement.options(
+                joinedload(Pledge.by_organization), joinedload(Pledge.user)
             )
 
         res = await session.execute(statement)

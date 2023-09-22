@@ -269,7 +269,9 @@ const BadgeSetup = ({
               }}
               onChangeFundingGoal={() => {}}
               innerClassNames="border"
-              funding={{}}
+              funding={{
+                pledges_sum: { amount: 5000, currency: 'USD' },
+              }}
               canSetFundingGoal={false}
             />
 

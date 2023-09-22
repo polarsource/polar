@@ -45,8 +45,8 @@
         {
           "id": 4537486413,
           "node_id": "LA_kwDOIAMmLs8AAAABDnSMTQ",
-          "url": "https://api.github.com/repos/HubbenCo/testing/labels/polar",
-          "name": "polar",
+          "url": "https://api.github.com/repos/HubbenCo/testing/labels/Fund",
+          "name": "Fund",
           "color": "d73a4a",
           "default": true,
           "description": "Polar badge"

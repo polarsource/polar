@@ -87,20 +87,22 @@ const IssueCard = ({
       />
       <hr className="my-4 dark:border-gray-600" />
       {/* Issue description */}
-      <div className="relative max-h-80 overflow-hidden">
-        {htmlBody && <IssueBodyRenderer html={htmlBody} />}
-        <div className="absolute bottom-0 left-0 h-12 w-full bg-gradient-to-b from-transparent to-gray-50 dark:to-gray-950"></div>
+      <div className="hidden sm:block">
+        <div className="relative max-h-80 overflow-hidden">
+          {htmlBody && <IssueBodyRenderer html={htmlBody} />}
+          <div className="absolute bottom-0 left-0 h-12 w-full bg-gradient-to-b from-transparent to-gray-50 dark:to-gray-950"></div>
+        </div>
+        <div className="mt-2">
+          <a href={url} className="text-blue-500">
+            Read more
+          </a>
+        </div>
+        <hr className="my-4 dark:border-gray-600" />
       </div>
-      <div className="mt-2">
-        <a href={url} className="text-blue-500">
-          Read more
-        </a>
-      </div>
-      <hr className="my-4 dark:border-gray-600" />
       {/* Repository */}
       <div className="grid grid-cols-1 text-gray-600 dark:text-gray-400 sm:grid-cols-3">
         {/* Name/description */}
-        <div className="col-span-1 flex flex-row items-center justify-center gap-2 sm:col-span-2 sm:justify-start">
+        <div className="col-span-1 flex flex-row items-center gap-2 sm:col-span-2">
           <div className="min-w-max">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -121,7 +123,7 @@ const IssueCard = ({
         </div>
         {/* Stars */}
         {repository.stars !== undefined && (
-          <div className="flex flex-row items-center justify-center gap-1 sm:justify-end">
+          <div className="hidden flex-row items-center justify-end gap-1 sm:flex">
             <StarIcon className="h-5 w-5 text-yellow-500" />
             {formatStarsNumber(repository.stars)}
           </div>
@@ -129,7 +131,7 @@ const IssueCard = ({
       </div>
       {/* Rewards */}
       {issue.upfront_split_to_contributors && (
-        <div className="my-4">
+        <div className="my-4 hidden sm:block">
           <Alert color="blue">
             <div className="flex items-center">
               <HeartIcon className="mr-2 h-5 w-5 text-blue-300 dark:text-blue-700" />
@@ -214,9 +216,7 @@ const FundingGoal = ({
       </div>
 
       {/* Pledgers */}
-      <div className="mt-2 flex items-center justify-center sm:mt-0 sm:justify-end">
-        <Pledgers pledgers={[]} size="sm" />
-      </div>
+      <Pledgers pledgers={[]} size="sm" />
     </div>
   )
 }

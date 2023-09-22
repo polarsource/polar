@@ -1,3 +1,4 @@
+import IssueLabel from '@/components/Dashboard/IssueLabel'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { type RepositoryBadgeSettingsRead } from 'polarkit/api/client'
@@ -58,10 +59,12 @@ const Progress = ({
 
 const EmbedSetting = ({
   repo,
+  showIndividualBadgeLabel,
   isAutoEnabled,
   onChange,
 }: {
   repo: RepositoryBadgeSettingsRead
+  showIndividualBadgeLabel: boolean
   isAutoEnabled: boolean
   onChange: (state: boolean) => void
 }) => {
@@ -85,7 +88,16 @@ const EmbedSetting = ({
             onChange(false)
           }}
         >
-          <p>By label</p>
+          <p>
+            By label
+            {showIndividualBadgeLabel && (
+              <span className="ml-1 inline-flex">
+                <IssueLabel
+                  label={{ name: repo.badge_label, color: '000088' }}
+                />
+              </span>
+            )}
+          </p>
         </div>
         <div
           className={getTabClasses(isAutoEnabled)}
@@ -103,11 +115,13 @@ const EmbedSetting = ({
 export const BadgeRepository = ({
   repo,
   showControls,
+  showIndividualBadgeLabel,
   onEnableBadgeChange,
   isSettingPage = false,
 }: {
   repo: RepositoryBadgeSettingsRead
   showControls: boolean
+  showIndividualBadgeLabel: boolean
   onEnableBadgeChange: (badge: boolean) => void
   isSettingPage?: boolean
 }) => {
@@ -164,6 +178,7 @@ export const BadgeRepository = ({
               {!repo.is_private && (
                 <EmbedSetting
                   repo={repo}
+                  showIndividualBadgeLabel={showIndividualBadgeLabel}
                   isAutoEnabled={repo.badge_auto_embed}
                   onChange={(badge: boolean) => {
                     onEnableBadgeChange(badge)

@@ -1,6 +1,6 @@
 import { type RepositoryBadgeSettingsRead } from 'polarkit/api/client'
 
-import { CONFIG } from 'polarkit/config'
+import IssueLabel from '@/components/Dashboard/IssueLabel'
 import { classNames } from 'polarkit/utils'
 import BadgeRepository from './Repository'
 
@@ -18,6 +18,7 @@ export const BadgeRepositories = ({
   ) => void
   isSettingPage?: boolean
 }) => {
+  const badgeLabels = new Set(repos.map(({ badge_label }) => badge_label))
   return (
     <>
       <h2
@@ -29,17 +30,22 @@ export const BadgeRepositories = ({
         Add badge to issues
       </h2>
       <div className="flex w-full flex-row rounded-lg border border-gray-200 text-sm dark:border-gray-700">
-        <div className="w-1/2 border-r border-gray-200 py-3 px-6 dark:border-gray-700">
+        <div className="w-1/2 border-r border-gray-200 px-6 py-3 dark:border-gray-700">
           <strong className="font-medium">By label</strong>
           <p className="text-gray-500 dark:text-gray-400">
             Issues with a{' '}
-            <span className="rounded-xl border border-gray-200 bg-gray-100 py-0.5 px-2 text-xs text-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
-              {CONFIG.GITHUB_EMBED_LABEL}
+            <span className="flew-row inline-flex gap-1">
+              {Array.from(badgeLabels).map((badgeLabel) => (
+                <IssueLabel
+                  key={badgeLabel}
+                  label={{ name: badgeLabel, color: '000088' }}
+                />
+              ))}
             </span>{' '}
             label will get the badge.
           </p>
         </div>
-        <div className="w-1/2 py-3 px-6">
+        <div className="w-1/2 px-6 py-3">
           <strong className="font-medium">All</strong>
           <p className="text-gray-500 dark:text-gray-400">
             All new issues will get the Polar badge automatically.
@@ -54,6 +60,7 @@ export const BadgeRepositories = ({
                 repo={repo}
                 isSettingPage={isSettingPage}
                 showControls={showControls}
+                showIndividualBadgeLabel={badgeLabels.size > 1}
                 onEnableBadgeChange={(badge: boolean) =>
                   onEnableBadgeChange(repo, badge)
                 }

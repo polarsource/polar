@@ -263,11 +263,10 @@ class Issue(IssueFields, RecordModel):
     )
 
     @classmethod
-    def contains_pledge_badge_label(cls, labels: Any) -> bool:
+    def contains_pledge_badge_label(cls, labels: Any, pledge_badge_label: str) -> bool:
         if not labels:
             return False
 
         return any(
-            label["name"].lower() == settings.GITHUB_BADGE_EMBED_DEFAULT_LABEL.lower()
-            for label in labels
+            label["name"].lower() == pledge_badge_label.lower() for label in labels
         )

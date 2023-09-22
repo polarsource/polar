@@ -312,7 +312,9 @@ class IssueCreate(IssueAndPullRequestBase):
 
         ret.external_lookup_key = f"{organization.name}/{repository.name}/{data.number}"
 
-        ret.has_pledge_badge_label = IssueModel.contains_pledge_badge_label(ret.labels)
+        ret.has_pledge_badge_label = IssueModel.contains_pledge_badge_label(
+            ret.labels, repository.pledge_badge_label
+        )
 
         if ret.body:
             ret.pledge_badge_currently_embedded = GithubBadge.badge_is_embedded(

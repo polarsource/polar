@@ -706,8 +706,15 @@ async def issue_labeled_async(
         )
         return
 
+    repository = await service.github_repository.get(session, issue.repository_id)
+    assert repository is not None
+
+    labels = event.issue.labels
+    if not labels:
+        labels = []
+
     had_polar_label = issue.has_pledge_badge_label
-    issue = await service.github_issue.set_labels(session, issue, event.issue.labels)
+    issue = await service.github_issue.set_labels(session, issue, repository, labels)
 
     log.info(
         "github.webhook.issues.label",
@@ -719,7 +726,10 @@ async def issue_labeled_async(
     )
 
     # Add/remove polar badge if label has changed
-    if event.label.name.lower() == settings.GITHUB_BADGE_EMBED_DEFAULT_LABEL.lower():
+    if (
+        event.label
+        and event.label.name.lower() == repository.pledge_badge_label.lower()
+    ):
         await update_issue_embed(
             session, issue=issue, embed=issue.has_pledge_badge_label
         )

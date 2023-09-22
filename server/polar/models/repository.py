@@ -15,6 +15,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from polar.config import settings
 from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
@@ -70,6 +71,9 @@ class Repository(RecordModel):
     # Automatically badge all new issues
     pledge_badge_auto_embed: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
+    )
+    pledge_badge_label: Mapped[str] = mapped_column(
+        String, nullable=False, default=settings.GITHUB_BADGE_EMBED_DEFAULT_LABEL
     )
 
     ###############################################################################

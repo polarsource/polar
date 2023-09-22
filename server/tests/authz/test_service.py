@@ -494,11 +494,11 @@ async def test_can_read_pledge(
 
     for idx, tc in enumerate(
         [
-            TestCase(subject=Anonymous(), expected=True),
+            TestCase(subject=Anonymous(), expected=False),
             TestCase(
                 subject=await create_user(session),
                 is_pledging_user=False,
-                expected=True,
+                expected=False,
             ),
             TestCase(
                 subject=await create_user(session),
@@ -509,7 +509,7 @@ async def test_can_read_pledge(
                 subject=await create_user(session),
                 is_pledging_org_member=False,
                 is_pledging_org_member_admin=False,
-                expected=True,
+                expected=False,
             ),
             TestCase(
                 subject=await create_user(session),

@@ -7,6 +7,7 @@ import type { ListResource_Pledge_ } from '../models/ListResource_Pledge_';
 import type { Platforms } from '../models/Platforms';
 import type { Pledge } from '../models/Pledge';
 import type { PledgeRead } from '../models/PledgeRead';
+import type { PledgesSummary } from '../models/PledgesSummary';
 import type { PledgeStripePaymentIntentCreate } from '../models/PledgeStripePaymentIntentCreate';
 import type { PledgeStripePaymentIntentMutationResponse } from '../models/PledgeStripePaymentIntentMutationResponse';
 import type { PledgeStripePaymentIntentUpdate } from '../models/PledgeStripePaymentIntentUpdate';
@@ -51,6 +52,29 @@ export class PledgesService {
         'platform': platform,
         'organization_name': organizationName,
         'repository_name': repositoryName,
+        'issue_id': issueId,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Get pledges summary (Public API)
+   * Get summary of pledges for resource.
+   * @returns PledgesSummary Successful Response
+   * @throws ApiError
+   */
+  public summary({
+    issueId,
+  }: {
+    issueId: string,
+  }): CancelablePromise<PledgesSummary> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/pledges/summary',
+      query: {
         'issue_id': issueId,
       },
       errors: {

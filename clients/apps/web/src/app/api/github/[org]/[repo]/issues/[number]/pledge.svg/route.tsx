@@ -1,12 +1,12 @@
 import { getServerURL } from 'polarkit/api'
-import { Issue, ListResource_Pledge_, Pledge } from 'polarkit/api/client'
+import { Issue, PledgesSummary } from 'polarkit/api/client'
 import { Badge } from 'polarkit/components/badge'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
 type Data = {
-  pledges: Pledge[]
+  pledges: PledgesSummary
   issue: Issue
 }
 
@@ -21,8 +21,8 @@ const lookupIssue = (externalUrl: string): Promise<Issue> =>
     return response.json()
   })
 
-const searchPledges = (issueId: string): Promise<ListResource_Pledge_> =>
-  fetch(`${getServerURL()}/api/v1/pledges/search?issue_id=${issueId}`, {
+const pledgesSummary = (issueId: string): Promise<PledgesSummary> =>
+  fetch(`${getServerURL()}/api/v1/pledges/summary?issue_id=${issueId}`, {
     method: 'GET',
     next: { revalidate: 60 },
   }).then((response) => {
@@ -42,16 +42,16 @@ const getBadgeData = async (
       `https://github.com/${org}/${repo}/issues/${number}`,
     )
 
-    const pledges = await searchPledges(issue.id)
+    const pledges = await pledgesSummary(issue.id)
 
-    return { pledges: pledges.items ?? [], issue }
+    return { pledges, issue }
   } catch (e) {
     throw e
   }
 }
 
 const renderBadge = async (data: Data, isDarkmode: boolean) => {
-  const funding = data.issue.funding
+  const funding = data.pledges.funding
 
   const hasAmount =
     (funding.pledges_sum?.amount && funding.pledges_sum.amount > 0) || false
@@ -59,9 +59,11 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
   const showAmountRaised =
     hasAmount && data.issue.repository.organization.pledge_badge_show_amount
 
-  const avatarUrls = data.pledges
-    .map((p) => p.pledger?.avatar_url ?? '')
-    .filter((s) => s.length > 0)
+  const avatarUrlsSet = new Set(
+    data.pledges.pledges
+      .map((p) => p.avatar_url ?? '')
+      .filter((s) => s.length > 0),
+  )
 
   const interRegular = await fetch(
     new URL(
@@ -82,7 +84,7 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
       showAmountRaised={showAmountRaised}
       darkmode={isDarkmode}
       funding={funding}
-      avatarsUrls={avatarUrls}
+      avatarsUrls={Array.from(avatarUrlsSet)}
       upfront_split_to_contributors={data.issue.upfront_split_to_contributors}
       orgName={data.issue.repository.organization.name}
     />,

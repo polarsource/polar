@@ -201,6 +201,7 @@ async def get_badge_settings(
                 id=repo.id,
                 avatar_url=org.avatar_url,
                 badge_auto_embed=repo.pledge_badge_auto_embed,
+                badge_label=repo.pledge_badge_label,
                 name=repo.name,
                 synced_issues=synced_issues,
                 auto_embedded_issues=synced_data["auto_embedded_issues"],

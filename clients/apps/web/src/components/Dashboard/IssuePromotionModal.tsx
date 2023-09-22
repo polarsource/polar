@@ -10,7 +10,6 @@ import { api, queryClient } from 'polarkit/api'
 import {
   CurrencyAmount,
   IssueDashboardRead,
-  Label,
   Organization,
   Pledge,
   Repository,
@@ -39,15 +38,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import BadgeMessageForm from './BadgeMessageForm'
 
 const isIssueBadged = (issue: IssueDashboardRead): boolean => {
-  if (issue.pledge_badge_currently_embedded) {
-    return true
-  }
-
-  const hasPolarLabel =
-    issue.labels &&
-    (issue.labels as Array<Label>).find((l) => l.name.toLowerCase() === 'polar')
-
-  return hasPolarLabel
+  return issue.pledge_badge_currently_embedded
 }
 
 export const AddBadgeButton = (props: {

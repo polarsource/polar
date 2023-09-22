@@ -18,7 +18,6 @@ import {
   IssueListType,
   IssueSortBy,
   IssueStatus,
-  Label,
   Organization,
   Repository,
 } from 'polarkit/api/client'
@@ -211,11 +210,7 @@ const OrganizationIssues = ({
 
   const anyIssueHasPledgeOrBadge = useMemo(() => {
     return dashboardQuery.data?.pages.some((p) =>
-      p.data.some(
-        (issue) =>
-          issue.attributes.labels &&
-          issue.attributes.labels.some((l: Label) => l.name === 'polar'),
-      ),
+      p.data.some((issue) => issue.attributes.pledge_badge_currently_embedded),
     )
   }, [dashboardQuery])
 

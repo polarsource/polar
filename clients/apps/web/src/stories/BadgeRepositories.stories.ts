@@ -22,6 +22,7 @@ const repo: RepositoryBadgeSettingsRead = {
   label_embedded_issues: 0,
   pull_requests: 5,
   badge_auto_embed: false,
+  badge_label: 'Fund',
   is_private: false,
   is_sync_completed: false,
 }

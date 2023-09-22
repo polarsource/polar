@@ -81,7 +81,7 @@ class Settings(BaseSettings):
     # Application behaviours
 
     GITHUB_BADGE_EMBED: bool = False
-    GITHUB_BADGE_EMBED_LABEL: str = "polar"
+    GITHUB_BADGE_EMBED_DEFAULT_LABEL: str = "Fund"
 
     EMAIL_SENDER: EmailSender = EmailSender.logger
     SENDGRID_API_KEY: str = ""

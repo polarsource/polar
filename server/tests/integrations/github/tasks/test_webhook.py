@@ -757,7 +757,7 @@ async def test_webhook_opened_with_label(
 
     assert issue.labels is not None
     assert isinstance(issue.labels, list)
-    assert issue.labels[0]["name"] == "polar"
+    assert issue.labels[0]["name"] == "Fund"
 
     assert issue.contains_pledge_badge_label(issue.labels) is True
     assert issue.has_pledge_badge_label is True
@@ -819,7 +819,7 @@ async def test_webhook_labeled_remove_badge_body(
 
     assert issue.labels is not None
     assert isinstance(issue.labels, list)
-    assert issue.labels[0]["name"] == "polar"
+    assert issue.labels[0]["name"] == "Fund"
 
     assert issue.contains_pledge_badge_label(issue.labels) is True
     assert issue.has_pledge_badge_label is True
@@ -851,7 +851,7 @@ async def test_webhook_labeled_remove_badge_body(
     assert issue is not None
     assert issue.labels is not None
     assert isinstance(issue.labels, list)
-    assert issue.labels[0]["name"] == "polar"
+    assert issue.labels[0]["name"] == "Fund"
     assert issue.contains_pledge_badge_label(issue.labels) is True
 
     # assert badge is added again

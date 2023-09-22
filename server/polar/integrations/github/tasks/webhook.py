@@ -3,6 +3,7 @@ from uuid import UUID
 
 import structlog
 
+from polar.config import settings
 from polar.context import ExecutionContext
 from polar.exceptions import PolarError
 from polar.integrations.github import client as github
@@ -718,7 +719,7 @@ async def issue_labeled_async(
     )
 
     # Add/remove polar badge if label has changed
-    if event.label.name == "polar":
+    if event.label.name.lower() == settings.GITHUB_BADGE_EMBED_DEFAULT_LABEL.lower():
         await update_issue_embed(
             session, issue=issue, embed=issue.has_pledge_badge_label
         )

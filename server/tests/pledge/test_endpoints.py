@@ -276,3 +276,50 @@ async def test_create_pay_on_completion(
     # assert len(pledge["hosted_invoice_url"]) > 5
     # assert response.json() == {"detail": "No search criteria specified"}
     # assert False
+
+
+@pytest.mark.asyncio
+async def test_summary(
+    repository: Repository,
+    pledge: Pledge,
+    client: AsyncClient,
+    session: AsyncSession,
+) -> None:
+    repository.is_private = False
+    await repository.save(session)
+
+    response = await client.get(
+        f"/api/v1/pledges/summary?issue_id={pledge.issue_id}",
+    )
+
+    print(response.json())
+    assert response.status_code == 200
+    assert response.json() == {
+        "funding": {
+            "funding_goal": None,
+            "pledges_sum": {"amount": pledge.amount, "currency": "USD"},
+        },
+        "pledges": [
+            {
+                "avatar_url": "https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
+                "type": "pay_upfront",
+            }
+        ],
+    }
+
+
+@pytest.mark.asyncio
+async def test_summary_private_repo(
+    repository: Repository,
+    pledge: Pledge,
+    client: AsyncClient,
+    session: AsyncSession,
+) -> None:
+    repository.is_private = True
+    await repository.save(session)
+
+    response = await client.get(
+        f"/api/v1/pledges/summary?issue_id={pledge.issue_id}",
+    )
+
+    assert response.status_code == 401

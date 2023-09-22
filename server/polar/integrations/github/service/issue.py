@@ -487,6 +487,7 @@ class GithubIssueService(IssueService):
         self,
         session: AsyncSession,
         issue: Issue,
+        repository: Repository,
         github_labels: Union[
             list[Label],
             list[WebhookLabel],
@@ -494,7 +495,9 @@ class GithubIssueService(IssueService):
     ) -> Issue:
         labels = github.jsonify(github_labels)
         issue.labels = labels
-        issue.has_pledge_badge_label = Issue.contains_pledge_badge_label(labels)
+        issue.has_pledge_badge_label = Issue.contains_pledge_badge_label(
+            labels, repository.pledge_badge_label
+        )
         session.add(issue)
         await session.commit()
 
@@ -510,10 +513,13 @@ class GithubIssueService(IssueService):
         client = github.get_app_installation_client(organization.safe_installation_id)
 
         labels = await client.rest.issues.async_add_labels(
-            organization.name, repository.name, issue.number, data=["polar"]
+            organization.name,
+            repository.name,
+            issue.number,
+            data=[repository.pledge_badge_label],
         )
 
-        issue = await self.set_labels(session, issue, labels.parsed_data)
+        issue = await self.set_labels(session, issue, repository, labels.parsed_data)
 
         return issue
 
@@ -527,10 +533,13 @@ class GithubIssueService(IssueService):
         client = github.get_app_installation_client(organization.safe_installation_id)
 
         labels = await client.rest.issues.async_remove_label(
-            organization.name, repository.name, issue.number, "polar"
+            organization.name,
+            repository.name,
+            issue.number,
+            repository.pledge_badge_label,
         )
 
-        issue = await self.set_labels(session, issue, labels.parsed_data)
+        issue = await self.set_labels(session, issue, repository, labels.parsed_data)
 
         return issue
 

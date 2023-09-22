@@ -217,7 +217,7 @@ const PaymentForm = ({
   }
 
   return (
-    <div className="border-t pt-5 dark:border-gray-500">
+    <div className="flex flex-col gap-4 border-t pt-5 dark:border-gray-500">
       {!paymentMethod && (
         <PaymentElement
           onChange={onStripeFormChange}
@@ -248,9 +248,6 @@ const PaymentForm = ({
               >
                 Save payment method on file
               </label>
-              <p className="text-muted-foreground text-sm">
-                Fund future issues easily. Stored securely with Stripe.
-              </p>
             </div>
           </div>
         )}

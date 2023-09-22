@@ -11,7 +11,7 @@ const Subtotal = ({
   const amountIncludingFee = paymentIntent?.amount_including_fee || 0
 
   return (
-    <>
+    <div>
       <div className="flex w-full text-sm text-gray-500 dark:text-gray-400">
         <div className="w-full">Funding amount</div>
         <div className="w-full text-right">
@@ -43,7 +43,7 @@ const Subtotal = ({
           ${getCentsInDollarString(amountIncludingFee, true)}
         </div>
       </div>
-    </>
+    </div>
   )
 }
 

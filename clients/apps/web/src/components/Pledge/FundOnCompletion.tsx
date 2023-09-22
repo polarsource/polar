@@ -180,10 +180,12 @@ const NotLoggedInBanner = () => {
           </div>
         </div>
       </div>
+
       <GithubLoginButton
         size="large"
         text="Continue with GitHub"
         fullWidth={true}
+        gotoUrl={window.location.href}
       />
     </div>
   )

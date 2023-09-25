@@ -10,6 +10,7 @@ from githubkit import GitHub, Response
 from githubkit.exception import RequestFailed
 from githubkit.rest.models import Issue as GitHubIssue
 from githubkit.rest.models import Label
+from githubkit.rest.models import Repository as GitHubRepository
 from githubkit.webhooks.models import Issue as GitHubWebhookIssue
 from githubkit.webhooks.models import Label as WebhookLabel
 from pydantic import parse_obj_as
@@ -23,12 +24,16 @@ from polar.integrations.github.service.api import github_api
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.issue.schemas import IssueCreate, IssueUpdate
 from polar.issue.service import IssueService
+from polar.kit.db.postgres import (
+    AsyncSession,
+    async_sessionmaker,
+)
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Issue, Organization, Repository
 from polar.models.user import User
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncSessionMaker, get_db_session
 from polar.redis import redis
 from polar.repository.hooks import (
     repository_issue_synced,
@@ -687,6 +692,7 @@ class GithubIssueService(IssueService):
     async def list_issues_from_starred(
         self,
         session: AsyncSession,
+        sessionmaker: AsyncSessionMaker,
         user: User,
     ) -> list[Issue]:
         # use cached result if we have one
@@ -709,51 +715,6 @@ class GithubIssueService(IssueService):
             )
         )
 
-        async def recommended_in_repo(
-            org: Organization, repo: Repository
-        ) -> list[Issue]:
-            issues = await client.rest.issues.async_list_for_repo(
-                org.name,
-                repo.name,
-                state="open",
-                per_page=10,
-                sort="comments",
-                direction="desc",
-            )
-
-            found = 0
-
-            by_thumbs_up = sorted(
-                issues.parsed_data,
-                key=lambda i: i.reactions.plus_one if i.reactions else 0,
-                reverse=True,
-            )
-
-            res: list[Issue] = []
-
-            for i in by_thumbs_up:
-                if i.pull_request:
-                    continue
-
-                # max 4 per repo
-                if found > 3:
-                    return res
-
-                found += 1
-
-                issue = await self.store(
-                    session,
-                    data=i,
-                    organization=org,
-                    repository=repo,
-                    # The session is shared between multiple coroutines, do not commit
-                    autocommit=False,
-                )
-
-                res.append(issue)
-
-            return res
-
         # concurrently crawl each repository
         jobs: list[Awaitable[list[Issue]]] = []
 
@@ -764,17 +725,7 @@ class GithubIssueService(IssueService):
             if r.private:
                 continue
 
-            org = await github_organization.create_or_update_from_github(
-                session, r.owner
-            )
-
-            repo = await github_repository.create_or_update_from_github(
-                session,
-                org,
-                r,
-            )
-
-            jobs.append(recommended_in_repo(org, repo))
+            jobs.append(recommended_in_repo(sessionmaker, r, client))
 
         # collect the results from each coroutine
         results: list[list[Issue]] = await asyncio.gather(*jobs)
@@ -824,6 +775,66 @@ class GithubIssueService(IssueService):
             )
 
         return issue
+
+
+async def recommended_in_repo(
+    sessionmaker: AsyncSessionMaker, r: GitHubRepository, client: GitHub[Any]
+) -> list[Issue]:
+    # this job runs in it's own thread/job, making sure to create our own db session
+    async with sessionmaker() as session:
+        org = await github_organization.create_or_update_from_github(session, r.owner)
+
+        repo = await github_repository.create_or_update_from_github(
+            session,
+            org,
+            r,
+        )
+
+        issues = await client.rest.issues.async_list_for_repo(
+            org.name,
+            repo.name,
+            state="open",
+            per_page=10,
+            sort="comments",
+            direction="desc",
+        )
+
+        found = 0
+
+        by_thumbs_up = sorted(
+            issues.parsed_data,
+            key=lambda i: i.reactions.plus_one if i.reactions else 0,
+            reverse=True,
+        )
+
+        res: list[Issue] = []
+
+        for i in by_thumbs_up:
+            if i.pull_request:
+                continue
+
+            # max 4 per repo
+            if found > 3:
+                return res
+
+            found += 1
+
+            issue = await github_issue.store(
+                session,
+                data=i,
+                organization=org,
+                repository=repo,
+                # disable autocommit to also disable downstream hooks
+                autocommit=False,
+            )
+
+            res.append(issue)
+
+        # commit and cleanup session
+        await session.commit()
+        await session.close()
+
+    return res
 
 
 github_issue = GithubIssueService(Issue)

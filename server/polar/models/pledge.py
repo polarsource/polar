@@ -4,12 +4,20 @@ from uuid import UUID
 from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.models.user import User
+
+
+class PledgeWithoutPledgerError(PolarError):
+    def __init__(self, pledge_id: UUID) -> None:
+        self.pledge_id = pledge_id
+        message = f"The pledge {pledge_id} has no associated pledger"
+        super().__init__(message)
 
 
 class Pledge(RecordModel):
@@ -104,3 +112,11 @@ class Pledge(RecordModel):
     )
 
     issue: Mapped[Issue] = relationship("Issue", foreign_keys=[issue_id], lazy="raise")
+
+    @property
+    def pledger(self) -> User | Organization:
+        if self.by_organization is not None:
+            return self.by_organization
+        if self.user is not None:
+            return self.user
+        raise PledgeWithoutPledgerError(self.id)

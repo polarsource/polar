@@ -301,7 +301,11 @@ async def test_summary(
         },
         "pledges": [
             {
-                "avatar_url": "https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
+                "pledger": {
+                    "avatar_url": "https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
+                    "github_username": pledge.by_organization.name,
+                    "name": pledge.by_organization.name,
+                },
                 "type": "pay_upfront",
             }
         ],

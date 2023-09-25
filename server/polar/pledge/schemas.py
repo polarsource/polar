@@ -8,9 +8,11 @@ from uuid import UUID
 from pydantic import Field
 
 from polar.currency.schemas import CurrencyAmount
+from polar.exceptions import PolarError
 from polar.funding.schemas import Funding
 from polar.issue.schemas import Issue
 from polar.kit.schemas import Schema
+from polar.models import Organization, User
 from polar.models.pledge import Pledge as PledgeModel
 
 
@@ -184,22 +186,28 @@ class Pledge(Schema):
 
 
 class SummaryPledge(Schema):
-    avatar_url: str | None
     type: PledgeType = Field(description="Type of pledge")
+    pledger: Pledger
 
     @classmethod
     def from_db(cls, o: PledgeModel) -> SummaryPledge:
-        avatar_url: str | None = None
-
-        if o.by_organization_id:
-            avatar_url = o.by_organization.avatar_url
-
-        if o.by_user_id:
-            avatar_url = o.user.avatar_url
+        pledger_model = o.pledger
+        if isinstance(pledger_model, Organization):
+            pledger = Pledger(
+                name=pledger_model.name,
+                github_username=pledger_model.name,
+                avatar_url=pledger_model.avatar_url,
+            )
+        else:
+            pledger = Pledger(
+                name=pledger_model.username,
+                github_username=pledger_model.username,
+                avatar_url=pledger_model.avatar_url,
+            )
 
         return SummaryPledge(
-            avatar_url=avatar_url,
             type=PledgeType.from_str(o.type),
+            pledger=pledger,
         )
 
 

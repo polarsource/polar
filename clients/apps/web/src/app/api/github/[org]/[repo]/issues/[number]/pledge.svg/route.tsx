@@ -61,7 +61,7 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
 
   const avatarUrlsSet = new Set(
     data.pledges.pledges
-      .map((p) => p.avatar_url ?? '')
+      .map(({ pledger }) => pledger.avatar_url ?? '')
       .filter((s) => s.length > 0),
   )
 

@@ -564,17 +564,15 @@ name = "githubkit"
 version = "0.10.7"
 description = "GitHub SDK for Python"
 optional = false
-python-versions = ">=3.8,<4.0"
-files = [
-    {file = "githubkit-0.10.7-py3-none-any.whl", hash = "sha256:c3993e7b79e719e4cace328310e87108c6ea7eacdc9ea94ea00aebd6a856abeb"},
-    {file = "githubkit-0.10.7.tar.gz", hash = "sha256:b0a8a42feefad6604fee3faaba01ca0d0d215574f9d4557c1586c1dd926dc1e0"},
-]
+python-versions = "^3.8"
+files = []
+develop = false
 
 [package.dependencies]
-httpx = ">=0.23.0,<1.0.0"
-pydantic = ">=1.9.1,<2.0.0"
-PyJWT = {version = ">=2.4.0,<3.0.0", extras = ["crypto"], optional = true, markers = "extra == \"jwt\" or extra == \"auth-app\" or extra == \"auth\" or extra == \"all\""}
-typing-extensions = ">=4.3.0,<5.0.0"
+httpx = ">=0.23.0, <1.0.0"
+pydantic = "^1.9.1"
+PyJWT = {version = "^2.4.0", extras = ["crypto"], optional = true}
+typing-extensions = "^4.3.0"
 
 [package.extras]
 all = ["PyJWT[crypto] (>=2.4.0,<3.0.0)", "anyio (>=3.6.1,<4.0.0)"]
@@ -582,6 +580,12 @@ auth = ["PyJWT[crypto] (>=2.4.0,<3.0.0)", "anyio (>=3.6.1,<4.0.0)"]
 auth-app = ["PyJWT[crypto] (>=2.4.0,<3.0.0)"]
 auth-oauth-device = ["anyio (>=3.6.1,<4.0.0)"]
 jwt = ["PyJWT[crypto] (>=2.4.0,<3.0.0)"]
+
+[package.source]
+type = "git"
+url = "https://github.com/polarsource/githubkit.git"
+reference = "a89b25d624aa701c8d097770f5f3d7d930aafdbf"
+resolved_reference = "a89b25d624aa701c8d097770f5f3d7d930aafdbf"
 
 [[package]]
 name = "greenlet"
@@ -1993,13 +1997,13 @@ full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart", "pyyam
 
 [[package]]
 name = "stripe"
-version = "6.5.0"
+version = "6.6.0"
 description = "Python bindings for the Stripe API"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "stripe-6.5.0-py2.py3-none-any.whl", hash = "sha256:ac86d6428283bd3ca16c2e4538732850ce84c55f8b516e58f911c29112ee44e9"},
-    {file = "stripe-6.5.0.tar.gz", hash = "sha256:f5f4c76ab7b901f2631ef77741d069320f3328c1e31918dac7edb4aa04acb0fd"},
+    {file = "stripe-6.6.0-py2.py3-none-any.whl", hash = "sha256:5c4ef525861cdee30e3aa766fb5117a0908ff35034721bd9491731998900daaf"},
+    {file = "stripe-6.6.0.tar.gz", hash = "sha256:41477112ed83f19a1ad05344dcbaec039088e6523a4435fcfa3e219cb380b0e4"},
 ]
 
 [package.dependencies]
@@ -2547,4 +2551,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "6da5c18568d3497c65b079bb596bf9e7e4b065aea4ea14ae36f9cc98045886a9"
+content-hash = "b7452fc8eee8312df80bd98a4b5d018c40aad08b85d31e40c99d0ed4b3ae323c"

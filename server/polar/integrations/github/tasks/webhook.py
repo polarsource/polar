@@ -181,6 +181,9 @@ async def create_from_installation(
     organization = await service.github_organization.create_or_update_from_github(
         session, account, installation=installation
     )
+    # Un-delete if previously deleted
+    organization.deleted_at = None
+    await organization.save(session)
 
     if removed:
         await remove_repositories(session, removed)

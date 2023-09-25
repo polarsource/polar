@@ -9,14 +9,17 @@ from sqlalchemy import (
     TIMESTAMP,
     BigInteger,
     Boolean,
+    ColumnElement,
     ForeignKey,
     Index,
     Integer,
     String,
     Text,
     UniqueConstraint,
+    type_coerce,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (
     Mapped,
     MappedColumn,
@@ -163,7 +166,6 @@ class Issue(IssueFields, RecordModel):
     TRANSFERRABLE_PROPERTIES: ClassVar[set[str]] = {
         "pledge_badge_embedded_at",
         "pledge_badge_ever_embedded",
-        "pledge_badge_currently_embedded",
         "has_pledge_badge_label",
         "badge_custom_content",
         "funding_goal",
@@ -179,9 +181,6 @@ class Issue(IssueFields, RecordModel):
         TIMESTAMP(timezone=True), nullable=True
     )
     pledge_badge_ever_embedded: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
-    pledge_badge_currently_embedded: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
 
@@ -270,3 +269,12 @@ class Issue(IssueFields, RecordModel):
         return any(
             label["name"].lower() == pledge_badge_label.lower() for label in labels
         )
+
+    @hybrid_property
+    def pledge_badge_currently_embedded(self) -> bool:
+        return self.pledge_badge_embedded_at is not None
+
+    @pledge_badge_currently_embedded.inplace.expression
+    @classmethod
+    def _pledge_badge_currently_embedded_expression(cls) -> ColumnElement[bool]:
+        return type_coerce(cls.pledge_badge_embedded_at != None, Boolean)  # noqa: E711

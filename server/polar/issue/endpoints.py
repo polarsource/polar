@@ -20,12 +20,7 @@ from polar.models import Issue
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
-from polar.postgres import (
-    AsyncSession,
-    AsyncSessionMaker,
-    get_db_session,
-    get_db_sessionmaker,
-)
+from polar.postgres import AsyncSession, get_db_session
 from polar.repository.schemas import Repository as RepositorySchema
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
@@ -248,11 +243,8 @@ async def get_body(
 async def for_you(
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-    sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
 ) -> ListResource[IssueSchema]:
-    issues = await github_issue_service.list_issues_from_starred(
-        session, sessionmaker, auth.user
-    )
+    issues = await github_issue_service.list_issues_from_starred(session, auth.user)
 
     # get loaded
     issues = [

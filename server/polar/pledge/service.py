@@ -590,7 +590,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
             .values(
                 state=PledgeState.pending,
                 amount_received=amount_received,
-                transaction_id=transaction_id,
             )
         )
         await session.execute(stmt)
@@ -604,7 +603,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
         )
         await session.commit()
-        await pledge_created.call(PledgeHook(session, pledge))
+        await pledge_updated.call(PledgeHook(session, pledge))
 
     async def refund_by_payment_id(
         self, session: AsyncSession, payment_id: str, amount: int, transaction_id: str

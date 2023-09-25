@@ -23,12 +23,16 @@ from polar.integrations.github.service.api import github_api
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.issue.schemas import IssueCreate, IssueUpdate
 from polar.issue.service import IssueService
+from polar.kit.db.postgres import (
+    AsyncSession,
+    async_sessionmaker,
+)
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Issue, Organization, Repository
 from polar.models.user import User
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncSessionMaker, get_db_session
 from polar.redis import redis
 from polar.repository.hooks import (
     repository_issue_synced,
@@ -678,6 +682,7 @@ class GithubIssueService(IssueService):
     async def list_issues_from_starred(
         self,
         session: AsyncSession,
+        sessionmaker: AsyncSessionMaker,
         user: User,
     ) -> list[Issue]:
         # use cached result if we have one
@@ -701,7 +706,7 @@ class GithubIssueService(IssueService):
         )
 
         async def recommended_in_repo(
-            org: Organization, repo: Repository
+            session: AsyncSession, org: Organization, repo: Repository
         ) -> list[Issue]:
             issues = await client.rest.issues.async_list_for_repo(
                 org.name,
@@ -737,11 +742,13 @@ class GithubIssueService(IssueService):
                     data=i,
                     organization=org,
                     repository=repo,
-                    # The session is shared between multiple coroutines, do not commit
+                    # disable autocommit to also disable downstream hooks
                     autocommit=False,
                 )
 
                 res.append(issue)
+
+            await session.commit()
 
             return res
 
@@ -755,17 +762,18 @@ class GithubIssueService(IssueService):
             if r.private:
                 continue
 
-            org = await github_organization.create_or_update_from_github(
-                session, r.owner
-            )
+            async with sessionmaker() as job_session:
+                org = await github_organization.create_or_update_from_github(
+                    job_session, r.owner
+                )
 
-            repo = await github_repository.create_or_update_from_github(
-                session,
-                org,
-                r,
-            )
+                repo = await github_repository.create_or_update_from_github(
+                    job_session,
+                    org,
+                    r,
+                )
 
-            jobs.append(recommended_in_repo(org, repo))
+            jobs.append(recommended_in_repo(job_session, org, repo))
 
         # collect the results from each coroutine
         results: list[list[Issue]] = await asyncio.gather(*jobs)

@@ -291,7 +291,7 @@ class IssueAndPullRequestBase(Base):
 class IssueCreate(IssueAndPullRequestBase):
     external_lookup_key: str | None = None
     has_pledge_badge_label: bool = False
-    pledge_badge_currently_embedded: bool = False
+    pledge_badge_embedded_at: datetime | None = None
     positive_reactions_count: int = 0
     total_engagement_count: int = 0
 
@@ -316,10 +316,8 @@ class IssueCreate(IssueAndPullRequestBase):
             ret.labels, repository.pledge_badge_label
         )
 
-        if ret.body:
-            ret.pledge_badge_currently_embedded = GithubBadge.badge_is_embedded(
-                ret.body
-            )
+        if ret.body and GithubBadge.badge_is_embedded(ret.body):
+            ret.pledge_badge_embedded_at = ret.issue_modified_at
 
         # this is not good, we're risking setting positive_reactions_count to 0 if the
         # payload is missing

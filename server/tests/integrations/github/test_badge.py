@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
@@ -344,7 +345,7 @@ async def test_list_issues_to_add_badge_to_auto(
 
     # Do not add
     i3.pledge_badge_ever_embedded = True
-    i3.pledge_badge_currently_embedded = True
+    i3.pledge_badge_embedded_at = datetime.now(UTC)
     await i3.save(session)
 
     issues = await github_issue.list_issues_to_add_badge_to_auto(
@@ -375,7 +376,7 @@ async def test_list_issues_to_remove_badge_from_auto(
 
     # Do not remove, as issue has label
     i3.has_pledge_badge_label = True
-    i3.pledge_badge_currently_embedded = True
+    i3.pledge_badge_embedded_at = datetime.now(UTC)
     i3.pledge_badge_ever_embedded = True
     await i3.save(session)
 

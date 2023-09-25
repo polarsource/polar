@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 import pytest
 from httpx import AsyncClient
 
@@ -217,7 +219,7 @@ async def test_get_only_badged_is_badged(
     session: AsyncSession,
     client: AsyncClient,
 ) -> None:
-    issue.pledge_badge_currently_embedded = True
+    issue.pledge_badge_embedded_at = datetime.now(UTC)
     await issue.save(session)
 
     response = await client.get(

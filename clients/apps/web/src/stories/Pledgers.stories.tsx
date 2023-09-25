@@ -31,3 +31,9 @@ export const TwoPledgers: Story = {
     pledgers: [pledger, pledger],
   },
 }
+
+export const PledgerWithoutAvatar: Story = {
+  args: {
+    pledgers: [pledger, { name: 'jdoe' }],
+  },
+}

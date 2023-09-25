@@ -333,7 +333,7 @@ class IssueCreate(IssueAndPullRequestBase):
                 + data.reactions.rocket
             )
 
-        ret.total_engagement_count = data.reactions.total_count + data.comments
+            ret.total_engagement_count = data.reactions.total_count + data.comments
 
         return ret
 

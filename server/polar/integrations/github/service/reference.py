@@ -315,8 +315,9 @@ class GitHubIssueReferencesService:
             )
 
         # For some reason, this events maps to the StateChangeIssueEvent type
-        if event.event == "referenced" and isinstance(
-            event, github.rest.StateChangeIssueEvent
+        if (
+            isinstance(event, github.rest.StateChangeIssueEvent)
+            and event.event == "referenced"
         ):
             return await self.parse_issue_commit_reference(event, issue)
 

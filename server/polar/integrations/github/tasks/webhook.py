@@ -723,7 +723,7 @@ async def issue_labeled_async(
         "github.webhook.issues.label",
         action=action,
         issue_id=issue.id,
-        label=event.label.name,
+        label=event.label.name if event.label else None,
         had_polar_label=had_polar_label,
         should_have_polar_label=issue.has_pledge_badge_label,
     )

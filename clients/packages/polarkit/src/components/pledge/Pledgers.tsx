@@ -9,7 +9,7 @@ interface PledgersProps {
 
 const Pledgers: React.FC<PledgersProps> = ({ pledgers, maxShown, size }) => {
   const shownPledgers = useMemo(
-    () => pledgers.slice(0, maxShown),
+    () => pledgers.filter(({ avatar_url }) => !!avatar_url).slice(0, maxShown),
     [pledgers, maxShown],
   )
   const hiddenPledgersCount = useMemo(

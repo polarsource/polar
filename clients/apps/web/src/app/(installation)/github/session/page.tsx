@@ -66,6 +66,13 @@ export default function Page() {
     }
   }, [])
 
+  useEffect(() => {
+    // This user is already authenticated
+    if (session.authenticated) {
+      router.push('/login/init')
+    }
+  }, [session.authenticated, router])
+
   if (error) {
     return (
       <LoadingScreen animate={false}>

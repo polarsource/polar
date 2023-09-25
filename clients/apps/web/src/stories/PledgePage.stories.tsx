@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import PublicLayout from '@/components/Layout/PublicLayout'
 import { QueryClientProvider, queryClient } from 'polarkit/api'
 import Pledge from '../components/Pledge/Pledge'
-import { issue, issueBodyHTML } from './testdata'
+import { issue, issueBodyHTML, pledger } from './testdata'
 
 const meta: Meta<typeof Pledge> = {
   title: 'Pages/Pledge',
@@ -11,6 +11,7 @@ const meta: Meta<typeof Pledge> = {
   args: {
     issue: issue,
     htmlBody: issueBodyHTML,
+    pledgers: [pledger],
   },
   parameters: {
     nextjs: {

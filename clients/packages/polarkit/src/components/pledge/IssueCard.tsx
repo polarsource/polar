@@ -6,17 +6,19 @@ import { getCentsInDollarString } from 'polarkit/money'
 import { formatStarsNumber } from 'polarkit/utils'
 import { useMemo } from 'react'
 import { Pledgers } from '.'
-import { Funding, Issue } from '../../api/client'
+import { Funding, Issue, Pledger } from '../../api/client'
 import { githubIssueUrl } from '../../github'
 
 const IssueCard = ({
   issue,
   htmlBody,
+  pledgers,
   currentPledgeAmount,
   className,
 }: {
   issue: Issue
   htmlBody?: string
+  pledgers: Pledger[]
   currentPledgeAmount: number
   className?: string
 }) => {
@@ -83,6 +85,7 @@ const IssueCard = ({
       {/* Funding goal */}
       <FundingGoal
         funding={issue.funding}
+        pledgers={pledgers}
         currentPledgeAmount={currentPledgeAmount}
       />
       <hr className="my-4 dark:border-gray-600" />
@@ -186,9 +189,11 @@ const FundingGoalProgress = ({
 
 const FundingGoal = ({
   funding,
+  pledgers,
   currentPledgeAmount,
 }: {
   funding: Funding
+  pledgers: Pledger[]
   currentPledgeAmount: number
 }) => {
   const { pledges_sum, funding_goal } = funding
@@ -216,7 +221,7 @@ const FundingGoal = ({
       </div>
 
       {/* Pledgers */}
-      <Pledgers pledgers={[]} size="sm" />
+      <Pledgers pledgers={pledgers} size="sm" />
     </div>
   )
 }

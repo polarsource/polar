@@ -1,6 +1,6 @@
 'use client'
 
-import { Issue, Visibility } from 'polarkit/api/client'
+import { Issue, Pledger, Visibility } from 'polarkit/api/client'
 import { IssueCard } from 'polarkit/components/pledge'
 import { Banner } from 'polarkit/components/ui'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
@@ -13,10 +13,12 @@ import PledgeForm from './PledgeForm'
 const Pledge = ({
   issue,
   htmlBody,
+  pledgers,
   gotoURL,
 }: {
   issue: Issue
   htmlBody?: string
+  pledgers: Pledger[]
   gotoURL?: string
 }) => {
   const [amount, setAmount] = useState(0)
@@ -52,6 +54,7 @@ const Pledge = ({
           <IssueCard
             issue={issue}
             htmlBody={htmlBody}
+            pledgers={pledgers}
             currentPledgeAmount={amount}
           />
         </div>

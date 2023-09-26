@@ -54,7 +54,7 @@ const FundAGithubIssue = () => {
             onChange={onLinkChange}
             onBlur={onLinkChange}
             value={link}
-            placeholder="URL to Github issue"
+            placeholder="URL to GitHub issue"
             className="block w-full flex-1 rounded-lg border-gray-200 bg-transparent px-3 py-2.5 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
           />
 

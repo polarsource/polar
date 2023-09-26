@@ -9,7 +9,7 @@ const MaintainerSignup = () => {
   const steps = [
     {
       num: 1,
-      text: 'Sign in with Github',
+      text: 'Sign in with GitHub',
     },
 
     {
@@ -51,7 +51,7 @@ const MaintainerSignup = () => {
               posthogProps={{
                 view: 'Maintainer Signup',
               }}
-              text="Sign up with Github"
+              text="Sign up with GitHub"
             />
           </div>
 

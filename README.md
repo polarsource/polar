@@ -63,9 +63,9 @@ All available in a dashboard designed to make managing these services a delightf
 Today, Polar gives open source maintainers a better and funded backlog based on what drives the most impact within their community.
 
 For maintainers:
-1. **Embedded pledges.** Our Github app can automatically embed the Polar badge to get backers to pledge behind specific issues or features. You can enable it for all or select issues.
+1. **Embedded pledges.** Our GitHub app can automatically embed the Polar badge to get backers to pledge behind specific issues or features. You can enable it for all or select issues.
 2. **Better backlog.** Sorted by feedback and pledges. Filters by progress and stage.
-3. **Chrome extension.** Bring Polar with you to enhance Github Issues.
+3. **Chrome extension.** Bring Polar with you to enhance GitHub Issues.
 
 For backers (maintainers too):
 1. **Track dependencies.** Automatic detection of internal references to open source issues

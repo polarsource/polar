@@ -240,7 +240,7 @@ const Split = (props: {
                 <PlusIcon className="h-6 w-6" />
               </button>
               <input
-                placeholder="Add a Github user..."
+                placeholder="Add a GitHub user..."
                 className="px-2 py-1 dark:bg-gray-900 dark:outline-gray-700"
                 value={searchGithubUsername}
                 onChange={(e) => setSearchGithubUsername(e.target.value)}

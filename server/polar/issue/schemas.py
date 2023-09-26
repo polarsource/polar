@@ -64,17 +64,17 @@ class Author(Schema):
 # Public API
 class Issue(Schema):
     id: UUID
-    platform: Platforms = Field(description="Issue platform (currently always Github)")
-    number: int = Field(description="Github #number")
-    title: str = Field(description="Github issue title")
-    body: str | None = Field(description="Github issue body")
+    platform: Platforms = Field(description="Issue platform (currently always GitHub)")
+    number: int = Field(description="GitHub #number")
+    title: str = Field(description="GitHub issue title")
+    body: str | None = Field(description="GitHub issue body")
     comments: int | None = Field(
-        description="Number of Github comments made on the issue"
+        description="Number of GitHub comments made on the issue"
     )
     labels: list[Label] = []
 
     author: Author | None = Field(description="GitHub author")
-    reactions: Reactions | None = Field(description="Github reactions")
+    reactions: Reactions | None = Field(description="GitHub reactions")
 
     state: Literal["OPEN", "CLOSED"]
 

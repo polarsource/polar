@@ -46,18 +46,18 @@ const PledgeByLink = ({
           Back an issue
         </h1>
 
-        <div className="mt-8 mb-12 flex flex-col md:mt-14">
+        <div className="mb-12 mt-8 flex flex-col md:mt-14">
           <WhiteCard
             className="flex flex-col items-stretch rounded-none p-2 text-center md:flex-row md:rounded-xl md:pr-0"
             padding={false}
           >
-            <div className="w-full py-5 px-3 text-left md:px-6">
+            <div className="w-full px-3 py-5 text-left md:px-6">
               <form className="flex flex-col">
                 <label
                   htmlFor="link"
-                  className="text mt-4 mb-2 text-sm font-medium"
+                  className="text mb-2 mt-4 text-sm font-medium"
                 >
-                  Github issue link{' '}
+                  GitHub issue link{' '}
                   <span className="font-normal text-gray-500	 dark:text-gray-400 ">
                     (e.g. https://github.com/
                     <wbr />
@@ -77,7 +77,7 @@ const PledgeByLink = ({
                   onChange={onLinkChange}
                   onBlur={onLinkChange}
                   value={link}
-                  className="block w-full rounded-lg border-gray-200 bg-transparent py-2.5 px-3 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
+                  className="block w-full rounded-lg border-gray-200 bg-transparent px-3 py-2.5 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
                 />
 
                 <div className="mt-6">

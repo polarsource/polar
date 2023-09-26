@@ -16,7 +16,7 @@ const TopbarRight = (props: { useOrgFromURL: boolean }) => {
     <>
       {currentUser && <Popover />}
       {currentUser && <ProfileSelection useOrgFromURL={props.useOrgFromURL} />}
-      {!currentUser && <GithubLoginButton text="Continue with Github" />}
+      {!currentUser && <GithubLoginButton text="Continue with GitHub" />}
     </>
   )
 }

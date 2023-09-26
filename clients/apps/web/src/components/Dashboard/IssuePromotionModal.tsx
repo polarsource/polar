@@ -494,7 +494,7 @@ const PromoteTab = (props: {
   return (
     <div className="grid w-full grid-cols-2 space-x-6">
       <div className="flex flex-col">
-        <div className="text-sm font-medium">Post a Github comment</div>
+        <div className="text-sm font-medium">Post a GitHub comment</div>
 
         <PostCommentForm
           org={props.org}

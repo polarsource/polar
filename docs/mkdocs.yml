@@ -44,7 +44,7 @@ extra:
       name: polar_sh on Twitter
     - icon: fontawesome/brands/github
       link: https://github.com/polarsource
-      name: polarsource on Github
+      name: polarsource on GitHub
 
 extra_css:
   - stylesheets/extra.css

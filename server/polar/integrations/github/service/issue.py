@@ -441,7 +441,6 @@ class GithubIssueService(IssueService):
         (issues, _) = await self.list_by_repository_type_and_status(
             session=session,
             repository_ids=[repository.id],
-            issue_list_type=IssueListType.issues,
             sort_by=IssueSortBy.recently_updated,
         )
 
@@ -467,7 +466,6 @@ class GithubIssueService(IssueService):
         (issues, _) = await self.list_by_repository_type_and_status(
             session=session,
             repository_ids=[repository.id],
-            issue_list_type=IssueListType.issues,
             sort_by=IssueSortBy.recently_updated,
         )
 

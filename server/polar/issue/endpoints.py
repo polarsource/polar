@@ -122,7 +122,6 @@ async def search(
     (issues, count) = await issue_service.list_by_repository_type_and_status(
         session=session,
         repository_ids=issues_in_repos_ids,
-        issue_list_type=IssueListType.issues,
         sort_by=sort,
         limit=50,
         include_statuses=[

@@ -42,7 +42,6 @@ const Recommended = () => {
                 org={issue.repository.organization}
                 repo={issue.repository}
                 key={issue.id}
-                showIssueProgress={false}
                 canAddRemovePolarLabel={false}
                 showPledgeAction={true}
                 showSelfPledgesFor={currentUser}

@@ -124,29 +124,3 @@ const Progress100 = () => (
     />
   </svg>
 )
-
-export type Progress =
-  | 'backlog'
-  | 'building'
-  | 'pull_request'
-  | 'closed'
-  | 'triaged'
-  | 'in_progress'
-
-const IssueProgress = (props: { progress: Progress }) => {
-  const { progress } = props
-  const pretty = progress.replace('_', ' ')
-  return (
-    <div className="flex items-center text-gray-500 dark:text-gray-400">
-      <span className="text-sm capitalize">{pretty}</span>
-      {progress === 'backlog' && <Progress0 />}
-      {progress === 'triaged' && <Progress25 />}
-      {progress === 'building' && <Progress50 />}
-      {progress === 'in_progress' && <Progress50 />}
-      {progress === 'pull_request' && <Progress75 />}
-      {progress === 'closed' && <Progress100 />}
-    </div>
-  )
-}
-
-export default IssueProgress

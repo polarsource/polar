@@ -2,7 +2,6 @@ import { CONFIG } from 'polarkit'
 import { PrimaryButton } from 'polarkit/components/ui'
 import IconCounter from '../Dashboard/IconCounter'
 import IssueLabel from '../Dashboard/IssueLabel'
-import IssueProgress from '../Dashboard/IssueProgress'
 
 const OnboardingAddBadge = () => {
   return (
@@ -31,7 +30,6 @@ const OnboardingAddBadge = () => {
 
         <IconCounter icon="thumbs_up" count={21} />
 
-        <IssueProgress progress="backlog" />
         <PrimaryButton fullWidth={false} size="small">
           <span>Add badge</span>
         </PrimaryButton>

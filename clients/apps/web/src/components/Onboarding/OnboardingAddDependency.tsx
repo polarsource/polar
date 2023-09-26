@@ -154,7 +154,6 @@ const OnboardingAddDependency = () => {
             issue={demoIssue}
             dependents={demoDependents}
             pledges={demoPledges}
-            showIssueProgress={true}
             canAddRemovePolarLabel={false}
             references={demoReferences}
             showPledgeAction={false}

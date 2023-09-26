@@ -96,7 +96,6 @@ export const Status = (props: {
             references={[]}
             checkJustPledged={false}
             canAddRemovePolarLabel={false}
-            showIssueProgress={true}
             showPledgeAction={true}
           />
         </GrayCard>

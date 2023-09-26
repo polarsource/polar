@@ -3,6 +3,7 @@
 /* eslint-disable */
 
 import type { PledgeState } from './PledgeState';
+import type { PledgeType } from './PledgeType';
 
 export type PledgeRead = {
   id: string;
@@ -13,6 +14,10 @@ export type PledgeRead = {
   organization_id: string;
   pledger_user_id?: string;
   state: PledgeState;
+  /**
+   * Type of pledge
+   */
+  type: PledgeType;
   pledger_name?: string;
   pledger_avatar?: string;
   authed_user_can_admin?: boolean;

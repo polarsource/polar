@@ -271,6 +271,7 @@ class PledgeRead(Schema):
     pledger_user_id: UUID | None = None
 
     state: PledgeState
+    type: PledgeType = Field(description="Type of pledge")
 
     pledger_name: str | None
     pledger_avatar: str | None
@@ -305,6 +306,7 @@ class PledgeRead(Schema):
             organization_id=o.organization_id,
             amount=o.amount,
             state=PledgeState.from_str(o.state),
+            type=PledgeType.from_str(o.type),
             pledger_name=pledger_name,
             pledger_avatar=pledger_avatar,
             scheduled_payout_at=o.scheduled_payout_at,

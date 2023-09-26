@@ -3,6 +3,7 @@
 import { Modal as ModernModal } from '@/components/Modal'
 import Modal, { ModalBox } from '@/components/Shared/Modal'
 import { useToastLatestPledged } from '@/hooks/stripe'
+import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
@@ -15,6 +16,7 @@ import {
   Organization,
   Pledge,
   Repository,
+  State,
   UserRead,
   type PledgeRead,
 } from 'polarkit/api/client'
@@ -50,6 +52,7 @@ const IssueListItem = (props: {
   showSelfPledgesFor?: UserRead
   className?: string
   showLogo?: boolean
+  showIssueOpenClosedStatus?: boolean
 }) => {
   const { title, number, state, issue_created_at, reactions, comments } =
     props.issue
@@ -80,27 +83,8 @@ const IssueListItem = (props: {
   const showCommentsCount = !!(comments && comments > 0)
   const showReactionsThumbs = !!(reactions.plus_one > 0)
 
-  const getissueProgress = (): Progress => {
-    if ('progress' in props.issue) {
-      switch (props.issue.progress) {
-        case IssueStatus.BUILDING:
-          return 'building'
-        case IssueStatus.PULL_REQUEST:
-          return 'pull_request'
-        case IssueStatus.CLOSED:
-          return 'closed'
-        case IssueStatus.IN_PROGRESS:
-          return 'in_progress'
-        case IssueStatus.TRIAGED:
-          return 'triaged'
-        default:
-          return 'backlog'
-      }
-    }
-
-    return 'backlog'
-  }
-  const issueProgress = getissueProgress()
+  const issueIsOpen =
+    props.issue.state === Issue.state.OPEN || props.issue.state === State.OPEN
 
   const markdownTitle = generateMarkdownTitle(title)
 
@@ -250,6 +234,22 @@ const IssueListItem = (props: {
           <>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-6">
+                {props.showIssueOpenClosedStatus && (
+                  <div className="flex flex-row items-center gap-2 text-sm text-gray-500">
+                    {issueIsOpen ? (
+                      <>
+                        <div className="h-4 w-4 rounded-full border border-gray-500"></div>
+                        <span>Open</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircleIcon className="h-4 w-4" />
+                        <span>Closed</span>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 {showCommentsCount && (
                   <IconCounter icon="comments" count={comments} />
                 )}

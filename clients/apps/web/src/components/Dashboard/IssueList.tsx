@@ -133,6 +133,7 @@ const IssueListPage = (props: {
           key={issue.id}
           canAddRemovePolarLabel={props.canAddRemovePolarLabel}
           showPledgeAction={true}
+          showIssueOpenClosedStatus={true}
           showSelfPledgesFor={props.showSelfPledgesFor}
         />
       ))}

@@ -169,25 +169,20 @@ const Fund = ({
   gotoURL?: string
   onAmountChange?: (amount: number) => void
 }) => {
-  const showFundingMethodTabs = false
-
   return (
     <div className="space-y-4 py-4">
-      <div className={twMerge(showFundingMethodTabs ? '' : '-mt-4')}>
-        {showFundingMethodTabs && (
-          <label
-            htmlFor="funding_method"
-            className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
-          >
-            Funding method
-          </label>
-        )}
+      <div>
+        <label
+          htmlFor="funding_method"
+          className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+        >
+          Funding method
+        </label>
 
         <Tabs defaultValue="fund_today" className="">
           <TabsList
             className={twMerge(
               'grid h-fit w-full grid-cols-1 grid-rows-2 dark:bg-gray-700',
-              showFundingMethodTabs ? '' : 'hidden',
             )}
           >
             <FundingMethodTab
@@ -542,7 +537,7 @@ const FundToday = ({
   }, [savedPaymentMethods.isFetched, savedPaymentMethods.data])
 
   return (
-    <div className="flex flex-col space-y-4">
+    <div className="flex flex-col space-y-4 py-4">
       <div>
         <label
           htmlFor="amount"

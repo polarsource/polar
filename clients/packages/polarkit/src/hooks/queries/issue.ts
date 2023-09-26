@@ -17,7 +17,6 @@ import {
   ListResource_Issue_,
   Platforms,
   PostIssueComment,
-  State,
 } from '../../api/client'
 import { defaultRetry } from './retry'
 
@@ -62,10 +61,6 @@ export const useIssueAddPolarBadge: () => UseMutationResult<
                         // Map Issue (Public API) to IssueDashboardRead
                         organization_id: result.repository.organization.id,
                         repository_id: result.repository.id,
-                        state:
-                          result.state === Issue.state.OPEN
-                            ? State.OPEN
-                            : State.CLOSED,
                       },
                     }
                   }
@@ -111,10 +106,6 @@ export const useIssueRemovePolarBadge = () =>
                         // Map Issue (Public API) to IssueDashboardRead
                         organization_id: result.repository.organization.id,
                         repository_id: result.repository.id,
-                        state:
-                          result.state === Issue.state.OPEN
-                            ? State.OPEN
-                            : State.CLOSED,
                       },
                     }
                   }
@@ -194,10 +185,6 @@ export const useUpdateIssue = () =>
                         // Map Issue (Public API) to IssueDashboardRead
                         organization_id: result.repository.organization.id,
                         repository_id: result.repository.id,
-                        state:
-                          result.state === Issue.state.OPEN
-                            ? State.OPEN
-                            : State.CLOSED,
                       },
                     }
                   }

@@ -11,7 +11,6 @@ import {
   PledgeType,
   PullRequestReference,
   Repository,
-  State,
   Visibility,
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
@@ -42,7 +41,15 @@ const OnboardingAddDependency = () => {
     id: '',
     title: 'Provide a UserInfo endpoint implementation',
     reactions: {
+      total_count: 21,
       plus_one: 21,
+      minus_one: 0,
+      laugh: 0,
+      hooray: 0,
+      confused: 0,
+      heart: 0,
+      rocket: 0,
+      eyes: 0,
     },
     comments: 17,
     progress: IssueStatus.PULL_REQUEST,
@@ -51,7 +58,7 @@ const OnboardingAddDependency = () => {
     repository_id: demoRepo.id,
     number: 123,
     issue_created_at: 'x',
-    state: State.OPEN,
+    state: IssueDashboardRead.state.OPEN,
     funding: {},
     pledge_badge_currently_embedded: false,
     needs_confirmation_solved: false,

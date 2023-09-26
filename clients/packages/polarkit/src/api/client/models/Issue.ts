@@ -12,23 +12,23 @@ import type { Repository } from './Repository';
 export type Issue = {
   id: string;
   /**
-   * Issue platform (currently always Github)
+   * Issue platform (currently always GitHub)
    */
   platform: Platforms;
   /**
-   * Github #number
+   * GitHub #number
    */
   number: number;
   /**
-   * Github issue title
+   * GitHub issue title
    */
   title: string;
   /**
-   * Github issue body
+   * GitHub issue body
    */
   body?: string;
   /**
-   * Number of Github comments made on the issue
+   * Number of GitHub comments made on the issue
    */
   comments?: number;
   labels?: Array<Label>;
@@ -37,7 +37,7 @@ export type Issue = {
    */
   author?: Author;
   /**
-   * Github reactions
+   * GitHub reactions
    */
   reactions?: Reactions;
   state: Issue.state;

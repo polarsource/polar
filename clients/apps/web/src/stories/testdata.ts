@@ -17,6 +17,7 @@ import {
   PledgeType,
   Pledger,
   PledgerPledgePendingNotification,
+  Reactions,
   Repository,
   RewardPaidNotification,
   UserRead,
@@ -80,6 +81,18 @@ export const repo: Repository = {
   stars: 26000,
 }
 
+export const reactions: Reactions = {
+  total_count: 0,
+  plus_one: 0,
+  minus_one: 0,
+  laugh: 0,
+  hooray: 0,
+  confused: 0,
+  heart: 0,
+  rocket: 0,
+  eyes: 0,
+}
+
 // Public API
 export const issue: Issue = {
   platform: Platforms.GITHUB,
@@ -93,15 +106,9 @@ export const issue: Issue = {
   },
   comments: 5,
   reactions: {
+    ...reactions,
     total_count: 3,
     plus_one: 3,
-    minus_one: 0,
-    laugh: 0,
-    hooray: 0,
-    confused: 0,
-    heart: 0,
-    rocket: 0,
-    eyes: 0,
   },
   state: Issue.state.OPEN,
   id: 'cc',

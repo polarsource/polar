@@ -4,8 +4,9 @@
 
 import type { Funding } from './Funding';
 import type { IssueStatus } from './IssueStatus';
+import type { Label } from './Label';
 import type { Platforms } from './Platforms';
-import type { State } from './State';
+import type { Reactions } from './Reactions';
 
 export type IssueDashboardRead = {
   id: string;
@@ -15,11 +16,13 @@ export type IssueDashboardRead = {
   number: number;
   title: string;
   author?: any;
-  labels?: any;
+  labels?: Array<Label>;
   closed_by?: any;
-  reactions?: any;
-  state: State;
-  state_reason?: string;
+  /**
+   * GitHub reactions
+   */
+  reactions?: Reactions;
+  state: IssueDashboardRead.state;
   issue_closed_at?: string;
   issue_modified_at?: string;
   issue_created_at: string;
@@ -41,4 +44,14 @@ export type IssueDashboardRead = {
    */
   upfront_split_to_contributors?: number;
 };
+
+export namespace IssueDashboardRead {
+
+  export enum state {
+    OPEN = 'OPEN',
+    CLOSED = 'CLOSED',
+  }
+
+
+}
 

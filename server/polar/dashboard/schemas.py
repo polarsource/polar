@@ -1,14 +1,15 @@
 from datetime import datetime
 from enum import Enum
-from typing import Any, Generic, List, Self, TypeVar
+from typing import Any, Generic, List, Literal, Self, TypeVar
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, parse_obj_as
 from pydantic.generics import GenericModel
 
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.funding.schemas import Funding
+from polar.issue.schemas import Label, Reactions
 from polar.kit.schemas import Schema
 from polar.models.issue import Issue
 from polar.types import JSONAny
@@ -92,11 +93,10 @@ class IssueDashboardRead(Schema):
     number: int
     title: str
     author: JSONAny
-    labels: JSONAny
+    labels: list[Label] = []
     closed_by: JSONAny
-    reactions: JSONAny
-    state: Issue.State
-    state_reason: str | None
+    reactions: Reactions | None = Field(description="GitHub reactions")
+    state: Literal["OPEN", "CLOSED"]
     issue_closed_at: datetime | None
     issue_modified_at: datetime | None
     issue_created_at: datetime
@@ -127,6 +127,16 @@ class IssueDashboardRead(Schema):
             pledges_sum=CurrencyAmount(currency="USD", amount=i.pledged_amount_sum),
         )
 
+        labels = (
+            [
+                Label(name=label["name"], color=label["color"])
+                for label in i.labels
+                if "name" in label and "color" in label
+            ]
+            if i.labels and isinstance(i.labels, list)
+            else []
+        )
+
         return cls(
             id=i.id,
             platform=i.platform,
@@ -135,13 +145,10 @@ class IssueDashboardRead(Schema):
             number=i.number,
             title=i.title,
             author=i.author,
-            labels=i.labels,
+            labels=labels,
             closed_by=i.closed_by,
-            reactions=i.reactions,
-            state=Issue.State.OPEN
-            if i.state == "OPEN" or i.state == "open"
-            else Issue.State.CLOSED,
-            state_reason=i.state_reason,
+            reactions=parse_obj_as(Reactions, i.reactions) if i.reactions else None,
+            state="OPEN" if i.state == "OPEN" or i.state == "open" else "CLOSED",
             issue_closed_at=i.issue_closed_at,
             issue_modified_at=i.issue_modified_at,
             issue_created_at=i.issue_created_at,

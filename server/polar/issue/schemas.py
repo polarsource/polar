@@ -10,7 +10,6 @@ from fastapi.encoders import jsonable_encoder
 from pydantic import Field, HttpUrl, parse_obj_as
 
 from polar.currency.schemas import CurrencyAmount
-from polar.dashboard.schemas import IssueStatus
 from polar.enums import Platforms
 from polar.funding.schemas import Funding
 from polar.integrations.github import client as github
@@ -29,7 +28,6 @@ from polar.models.issue_reference import (
 )
 from polar.models.organization import Organization as OrganizationModel
 from polar.models.repository import Repository as RepositoryModel
-from polar.organization.schemas import Organization
 from polar.repository.schemas import Repository
 from polar.types import JSONAny, JSONDict
 

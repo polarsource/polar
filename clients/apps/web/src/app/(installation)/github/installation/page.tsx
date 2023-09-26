@@ -98,7 +98,7 @@ export default function Page() {
               posthogProps={{
                 view: 'Github Installation Page',
               }}
-              text="Continue with Github"
+              text="Continue with GitHub"
             />
           )}
         </div>

@@ -555,7 +555,7 @@ export const Controls = ({
           </div>
           <div className="flex w-1/2 flex-row items-center space-x-2 text-xs text-gray-500">
             <ExclamationCircleIcon width={16} height={16} />
-            <p>Updates the modified at of the issues in Github.</p>
+            <p>Updates the modified at of the issues in GitHub.</p>
           </div>
         </div>
       )}

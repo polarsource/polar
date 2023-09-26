@@ -40,12 +40,13 @@ class AuthService:
         *,
         response: Response,
         value: str,
+        expires: int = settings.AUTH_COOKIE_TTL_SECONDS,
         secure: bool = True,
     ) -> None:
         response.set_cookie(
             settings.AUTH_COOKIE_KEY,
             value=value,
-            expires=settings.AUTH_COOKIE_TTL_SECONDS,
+            expires=expires,
             path="/",
             domain=None,
             secure=secure,
@@ -149,5 +150,5 @@ class AuthService:
 
     @classmethod
     def generate_logout_response(cls, *, response: Response) -> LogoutResponse:
-        cls.set_auth_cookie(response=response, value="")
+        cls.set_auth_cookie(response=response, value="", expires=0)
         return LogoutResponse(success=True)

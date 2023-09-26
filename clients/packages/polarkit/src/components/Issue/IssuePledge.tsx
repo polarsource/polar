@@ -12,7 +12,6 @@ import {
 } from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useMemo } from 'react'
-import IssueConfirmButton from './IssueConfirmButton'
 
 interface Props {
   orgName: string
@@ -186,7 +185,13 @@ const IssuePledge = (props: Props) => {
                 </span>
               )}
               {confirmable && (
-                <IssueConfirmButton onClick={props.onConfirmPledges} />
+                <button
+                  className="flex items-center gap-2 rounded-md border border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 transition duration-100 hover:bg-gray-300/50 hover:text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-900"
+                  onClick={props.onConfirmPledges}
+                >
+                  <CheckCircleIcon className="h-6 w-6 text-green-600" />
+                  Mark as completed
+                </button>
               )}
             </>
           )}

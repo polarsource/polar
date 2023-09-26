@@ -563,8 +563,6 @@ const RewardsTab = (props: {
   org: Organization
   user: UserRead
 }) => {
-  const showSeedRewardsFeature = false
-
   const [usePublicRewards, setUsePublicRewards] = useState<boolean>(
     props.issue.upfront_split_to_contributors !== null,
   )
@@ -764,7 +762,7 @@ const RewardsTab = (props: {
         )}
       </div>
 
-      {usePublicRewards && showSeedRewardsFeature && (
+      {usePublicRewards && (
         <>
           <hr className="bg-gray-500" />
 

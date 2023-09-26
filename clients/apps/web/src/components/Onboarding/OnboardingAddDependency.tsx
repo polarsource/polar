@@ -8,6 +8,7 @@ import {
   Platforms,
   PledgeRead,
   PledgeState,
+  PledgeType,
   PullRequestReference,
   Repository,
   State,
@@ -87,6 +88,7 @@ const OnboardingAddDependency = () => {
       repository_id: demoRepo.id,
       organization_id: demoOrg.id,
       state: PledgeState.PENDING,
+      type: PledgeType.PAY_UPFRONT,
     },
   ]
 

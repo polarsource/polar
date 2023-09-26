@@ -1,3 +1,4 @@
+import { ClockIcon, HeartIcon } from '@heroicons/react/20/solid'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import {
   Funding,
@@ -6,6 +7,7 @@ import {
   Pledge,
   PledgeRead,
   PledgeState,
+  PledgeType,
   UserRead,
 } from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/money'
@@ -158,6 +160,15 @@ const IssuePledge = (props: Props) => {
               )}
             </p>
           )}
+
+          <Funded
+            pledges={pledges.filter((p) => p.type === PledgeType.PAY_UPFRONT)}
+          />
+          <Pledged
+            pledges={pledges.filter(
+              (p) => p.type === PledgeType.PAY_ON_COMPLETION,
+            )}
+          />
         </div>
 
         <div className="flex flex-row items-center space-x-4">
@@ -186,3 +197,83 @@ const IssuePledge = (props: Props) => {
 }
 
 export default IssuePledge
+
+const Funded = ({ pledges }: { pledges: Array<PledgeRead | Pledge> }) => {
+  if (pledges.length === 0) {
+    return <></>
+  }
+
+  const avatars = pledges
+    .map((p) => {
+      if ('pledger' in p) {
+        return p.pledger?.avatar_url
+      }
+      if ('pledger_avatar' in p) {
+        return p.pledger_avatar
+      }
+    })
+    .filter((a) => Boolean(a))
+    .slice(0, 3) as Array<string>
+
+  const plus = pledges.length - avatars.length
+
+  return (
+    <div className="flex flex-row items-center">
+      <Avatars avatars={avatars} />
+      <PledgesBubbleWrap>
+        <HeartIcon className="h-4 w-4 text-red-600" />
+        {plus > 0 && <span>+{plus}</span>}
+        <span>Funded</span>
+      </PledgesBubbleWrap>
+    </div>
+  )
+}
+
+const Pledged = ({ pledges }: { pledges: Array<PledgeRead | Pledge> }) => {
+  if (pledges.length === 0) {
+    return <></>
+  }
+
+  const avatars = pledges
+    .map((p) => {
+      if ('pledger' in p) {
+        return p.pledger?.avatar_url
+      }
+      if ('pledger_avatar' in p) {
+        return p.pledger_avatar
+      }
+    })
+    .filter((a) => Boolean(a))
+    .slice(0, 3) as Array<string>
+
+  const plus = pledges.length - avatars.length
+
+  return (
+    <div className="flex flex-row items-center">
+      <Avatars avatars={avatars} />
+      <PledgesBubbleWrap>
+        <ClockIcon className="h-4 w-4 text-yellow-600" />
+        {plus > 0 && <span>+{plus}</span>}
+        <span>Pledged</span>
+      </PledgesBubbleWrap>
+    </div>
+  )
+}
+
+const PledgesBubbleWrap = ({ children }: { children: React.ReactNode }) => (
+  <div className="rouded -ml-2 flex flex-row items-center gap-1 rounded-full border border-gray-200 bg-white pl-1 pr-2 text-sm text-gray-700 dark:border-gray-400 dark:bg-gray-800 dark:text-gray-200">
+    {children}
+  </div>
+)
+
+const Avatars = ({ avatars }: { avatars: Array<string> }) => (
+  <>
+    {avatars.map((a) => (
+      <img
+        key={a}
+        src={a}
+        className="-ml-2 h-5 w-5 rounded-full border border-white dark:border-gray-800"
+      />
+    ))}
+  </>
+)

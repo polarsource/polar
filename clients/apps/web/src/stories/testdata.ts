@@ -127,10 +127,8 @@ export const pledge: PledgeRead = {
   repository_id: repo.id,
   organization_id: org.id,
   state: PledgeState.CREATED,
-  // pledger_name?: string;
-  // pledger_avatar?: string;
-  // authed_user_can_admin?: boolean;
-  //scheduled_payout_at?: string;
+  type: PledgeType.PAY_UPFRONT,
+  pledger_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
 }
 
 export const pledger: Pledger = {
@@ -145,14 +143,9 @@ export const pledgePublicAPI: Pledge = {
   created_at: addDays(new Date(), -7).toISOString(),
   issue: issue,
   amount: { currency: 'USD', amount: 3000 },
-  // repository_id: repo.id,
-  // organization_id: org.id,
   state: PledgeState.CREATED,
   type: PledgeType.PAY_UPFRONT,
-  // pledger_name?: string;
-  // pledger_avatar?: string;
-  // authed_user_can_admin?: boolean;
-  //scheduled_payout_at?: string;
+  pledger: pledger,
 }
 
 export const privateOrganization: OrganizationPrivateRead = {

@@ -12,6 +12,7 @@ import {
   Organization,
   PledgeRead,
   PledgeState,
+  PledgeType,
   PullRequestReference,
   State,
 } from 'polarkit/api/client'
@@ -30,84 +31,61 @@ const pledges: PledgeRead[] = [
     repository_id: 'xx',
     organization_id: 'yy',
     state: PledgeState.CREATED,
+    type: PledgeType.PAY_UPFRONT,
     pledger_name: 'zz',
+    pledger_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
   },
 ]
 
 const pledgeDisputable: PledgeRead[] = [
   {
-    id: 'xx',
-    created_at: 'what',
-    issue_id: 'nah',
-    amount: 1234,
-    repository_id: 'xx',
-    organization_id: 'yy',
+    ...pledges[0],
     state: PledgeState.PENDING,
+    type: PledgeType.PAY_UPFRONT,
     scheduled_payout_at: addDays(new Date(), 7).toISOString(),
     authed_user_can_admin: true,
     authed_user_can_admin_sender: true,
-    pledger_name: 'zz',
   },
 ]
 
 const pledgeDisputableToday: PledgeRead[] = [
   {
-    id: 'xx',
-    created_at: 'what',
-    issue_id: 'nah',
-    amount: 1234,
-    repository_id: 'xx',
-    organization_id: 'yy',
+    ...pledges[0],
     state: PledgeState.PENDING,
+    type: PledgeType.PAY_UPFRONT,
     scheduled_payout_at: addHours(new Date(), 2).toISOString(),
     authed_user_can_admin: true,
     authed_user_can_admin_sender: true,
-    pledger_name: 'zz',
   },
 ]
 
 const pledgeDisputableYesterday: PledgeRead[] = [
   {
-    id: 'xx',
-    created_at: 'what',
-    issue_id: 'nah',
-    amount: 1234,
-    repository_id: 'xx',
-    organization_id: 'yy',
+    ...pledges[0],
     state: PledgeState.PENDING,
+    type: PledgeType.PAY_UPFRONT,
     scheduled_payout_at: addDays(new Date(), -1).toISOString(),
     authed_user_can_admin: true,
     authed_user_can_admin_sender: true,
-    pledger_name: 'zz',
   },
 ]
 
 const pledgeDisputed: PledgeRead[] = [
   {
-    id: 'xx',
-    created_at: 'what',
-    issue_id: 'nah',
-    amount: 1234,
-    repository_id: 'xx',
-    organization_id: 'yy',
+    ...pledges[0],
     state: PledgeState.DISPUTED,
+    type: PledgeType.PAY_UPFRONT,
     authed_user_can_admin: true,
     authed_user_can_admin_sender: true,
-    pledger_name: 'zz',
   },
 ]
 
 const pledgeDisputedByOther: PledgeRead[] = [
   {
-    id: 'xx',
-    created_at: 'what',
-    issue_id: 'nah',
-    amount: 1234,
-    repository_id: 'xx',
-    organization_id: 'yy',
+    ...pledges[0],
     state: PledgeState.DISPUTED,
+    type: PledgeType.PAY_UPFRONT,
     authed_user_can_admin_received: true,
-    pledger_name: 'zz',
   },
 ]
 
@@ -503,6 +481,50 @@ export const PledgeConfirmationPendingConfirmed: Story = {
         ...pledge,
         state: PledgeState.PENDING,
         authed_user_can_admin_received: true,
+      },
+    ],
+  },
+}
+
+export const PledgeMultipleTypes: Story = {
+  args: {
+    ...Default.args,
+    pledges: [
+      {
+        ...pledge,
+        type: PledgeType.PAY_UPFRONT,
+        pledger_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+      },
+      {
+        ...pledge,
+        type: PledgeType.PAY_UPFRONT,
+        pledger_avatar: 'https://avatars.githubusercontent.com/u/47952?v=4',
+      },
+      {
+        ...pledge,
+        type: PledgeType.PAY_UPFRONT,
+        pledger_avatar: 'https://avatars.githubusercontent.com/u/47952?v=4',
+      },
+      {
+        ...pledge,
+        type: PledgeType.PAY_UPFRONT,
+        pledger_avatar: 'https://avatars.githubusercontent.com/u/47952?v=4',
+      },
+      {
+        ...pledge,
+        type: PledgeType.PAY_UPFRONT,
+        pledger_avatar: 'https://avatars.githubusercontent.com/u/47952?v=4',
+      },
+      {
+        ...pledge,
+        type: PledgeType.PAY_UPFRONT,
+        pledger_avatar: 'https://avatars.githubusercontent.com/u/47952?v=4',
+      },
+
+      {
+        ...pledge,
+        type: PledgeType.PAY_ON_COMPLETION,
+        pledger_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
       },
     ],
   },

@@ -107,8 +107,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
     async def list_by_repository_type_and_status(
         self,
         session: AsyncSession,
-        repository_ids: list[UUID],
-        issue_list_type: IssueListType,
+        repository_ids: list[UUID] = [],
         text: str | None = None,
         pledged_by_org: UUID
         | None = None,  # Only include issues that have been pledged by this org
@@ -153,35 +152,22 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
             )
         )
 
-        if issue_list_type == IssueListType.issues:
+        # issues in repo
+        if repository_ids:
             statement = statement.where(Issue.repository_id.in_(repository_ids))
-        elif issue_list_type == IssueListType.dependencies:
-            if not pledged_by_org and not pledged_by_user:
-                raise ValueError("no pledge_by criteria specified")
 
-            statement = statement.join(
-                IssueDependency,
-                IssueDependency.dependency_issue_id == Issue.id,
-                isouter=True,
-            )
+        # issues with pledges by
+        pledge_criterias: list[ColumnElement[bool]] = []
+        if pledged_by_org:
+            pledge_criterias.append(Pledge.by_organization_id == pledged_by_org)
 
-            pledge_criterias: list[ColumnElement[bool]] = []
-            if pledged_by_org:
-                pledge_criterias.append(Pledge.by_organization_id == pledged_by_org)
+        if pledged_by_user:
+            pledge_criterias.append(Pledge.by_user_id == pledged_by_user)
 
-            if pledged_by_user:
-                pledge_criterias.append(Pledge.by_user_id == pledged_by_user)
-
+        if len(pledge_criterias) > 0:
             statement = statement.where(
-                or_(
-                    IssueDependency.repository_id.in_(repository_ids),
-                    # Pledge.id.is_(None),
-                    or_(*pledge_criterias),
-                ),
+                or_(*pledge_criterias),
             )
-
-        else:
-            raise ValueError(f"Unknown issue list type: {issue_list_type}")
 
         # pledge filter
         if have_pledge is not None:

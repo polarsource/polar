@@ -44,7 +44,7 @@ router = APIRouter(tags=["dashboard"])
 )
 async def get_personal_dashboard(
     auth: UserRequiredAuth,
-    issue_list_type: IssueListType = IssueListType.issues,
+    issue_list_type: IssueListType = IssueListType.issues,  # TODO: remove
     status: Union[List[IssueStatus], None] = Query(default=None),
     q: Union[str, None] = Query(default=None),
     sort: Union[IssueSortBy, None] = Query(default=None),
@@ -56,7 +56,6 @@ async def get_personal_dashboard(
     return await dashboard(
         session=session,
         auth=auth,
-        issue_list_type=issue_list_type,
         status=status,
         q=q,
         sort=sort,
@@ -76,7 +75,7 @@ async def get_dashboard(
     platform: Platforms,
     org_name: str,
     repo_name: Union[str, None] = Query(default=None),
-    issue_list_type: IssueListType = IssueListType.issues,
+    issue_list_type: IssueListType = IssueListType.issues,  # TODO: remove
     status: Union[List[IssueStatus], None] = Query(default=None),
     q: Union[str, None] = Query(default=None),
     sort: Union[IssueSortBy, None] = Query(default=None),
@@ -131,7 +130,6 @@ async def get_dashboard(
         session=session,
         auth=auth,
         in_repos=repositories,
-        issue_list_type=issue_list_type,
         status=status,
         q=q,
         sort=sort,
@@ -188,9 +186,8 @@ async def dashboard(
     (issues, total_issue_count) = await issue.list_by_repository_type_and_status(
         session,
         [r.id for r in in_repos],
-        issue_list_type=issue_list_type,
         text=q,
-        pledged_by_org=for_org.id if for_org and IssueListType.dependencies else None,
+        pledged_by_org=None,
         pledged_by_user=for_user.id
         if for_user and IssueListType.dependencies
         else None,
@@ -343,66 +340,6 @@ async def dashboard(
             ir = issue_relationship(ref.issue_id, "references", [])
             if isinstance(ir.data, list):  # it always is
                 ir.data.append(RelationshipData(type="reference", id=ref.external_id))
-
-    # get dependents
-    if issue_list_type == IssueListType.dependencies:
-        issue_deps = await issue.list_issue_dependencies_for_repositories(
-            session, in_repos
-        )
-
-        for dep in issue_deps:
-            dependent_issue = dep.dependent_issue
-
-            # add org to included
-            included[str(dependent_issue.organization_id)] = Entry(
-                id=dependent_issue.organization_id,
-                type="organization",
-                attributes=OrganizationSchema.from_db(
-                    [
-                        o
-                        for o in issue_organizations
-                        if o.id == dependent_issue.organization_id
-                    ][0]
-                ),
-            )
-
-            # add repos to included
-            included[str(dependent_issue.repository_id)] = Entry(
-                id=dependent_issue.repository_id,
-                type="repository",
-                attributes=RepositorySchema.from_db(
-                    [
-                        r
-                        for r in issue_repositories
-                        if r.id == dependent_issue.repository_id
-                    ][0]
-                ),
-            )
-
-            # and to relationships
-            org_data = RelationshipData(
-                type="organization", id=dependent_issue.organization_id
-            )
-            issue_relationship(dependent_issue.id, "organization", org_data)
-
-            issue_relationship(
-                dependent_issue.id,
-                "repository",
-                RelationshipData(type="repository", id=dependent_issue.repository_id),
-            )
-
-            # add dependent issue to included
-            dep_entry: Entry[IssueRead] = Entry(
-                id=dependent_issue.id,
-                type="issue",
-                attributes=IssueRead.from_orm(dependent_issue),
-                relationships=issue_relationships.get(dependent_issue.id, {}),
-            )
-            included[str(dependent_issue.id)] = dep_entry
-
-            ir = issue_relationship(dep.dependency_issue.id, "dependents", [])
-            if isinstance(ir.data, list):  # it always is
-                ir.data.append(RelationshipData(type="issue", id=dependent_issue.id))
 
     next_page = page + 1 if total_issue_count > page * limit else None
 

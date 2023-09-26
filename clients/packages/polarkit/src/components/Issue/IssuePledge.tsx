@@ -215,14 +215,16 @@ const Funded = ({ pledges }: { pledges: Array<PledgeRead | Pledge> }) => {
     .filter((a) => Boolean(a))
     .slice(0, 3) as Array<string>
 
-  const plus = pledges.length - avatars.length
+  const sum = pledges
+    .map((p) => (typeof p.amount === 'number' ? p.amount : p.amount.amount))
+    .reduce((a, b) => a + b, 0)
 
   return (
     <div className="flex flex-row items-center">
       <Avatars avatars={avatars} />
       <PledgesBubbleWrap>
         <HeartIcon className="h-4 w-4 text-red-600" />
-        {plus > 0 && <span>+{plus}</span>}
+        {sum > 0 && <span>${getCentsInDollarString(sum, false, true)}</span>}
         <span>Funded</span>
       </PledgesBubbleWrap>
     </div>
@@ -246,14 +248,16 @@ const Pledged = ({ pledges }: { pledges: Array<PledgeRead | Pledge> }) => {
     .filter((a) => Boolean(a))
     .slice(0, 3) as Array<string>
 
-  const plus = pledges.length - avatars.length
+  const sum = pledges
+    .map((p) => (typeof p.amount === 'number' ? p.amount : p.amount.amount))
+    .reduce((a, b) => a + b, 0)
 
   return (
     <div className="flex flex-row items-center">
       <Avatars avatars={avatars} />
       <PledgesBubbleWrap>
         <ClockIcon className="h-4 w-4 text-yellow-600" />
-        {plus > 0 && <span>+{plus}</span>}
+        {sum > 0 && <span>${getCentsInDollarString(sum, false, true)}</span>}
         <span>Pledged</span>
       </PledgesBubbleWrap>
     </div>

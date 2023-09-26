@@ -83,7 +83,7 @@ const Box = (props: { children: React.ReactNode }) => {
 const Avatar = (props: { src: string }) => {
   return (
     <img
-      className="h-7 w-7 rounded-full border-2 border-white bg-gray-200"
+      className="h-5 w-5 rounded-full border border-white bg-gray-200"
       src={props.src}
     />
   )
@@ -253,7 +253,7 @@ const IssueReferencePullRequest = (props: {
         <span
           className={classNames(
             formatting.iconClasses,
-            'rounded-lg border p-1',
+            'h-5 w-5 rounded-lg border p-0.5',
           )}
         >
           {isMerged && <GitMergeIcon />}

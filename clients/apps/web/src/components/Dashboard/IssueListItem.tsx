@@ -34,7 +34,6 @@ import { useModal } from '../Modal/useModal'
 import PledgeNow from '../Pledge/PledgeNow'
 import IconCounter from './IconCounter'
 import IssueLabel from './IssueLabel'
-import IssueProgress, { Progress } from './IssueProgress'
 import { AddBadgeButton } from './IssuePromotionModal'
 
 const IssueListItem = (props: {
@@ -46,7 +45,6 @@ const IssueListItem = (props: {
   pledges: Array<PledgeRead | Pledge>
   checkJustPledged?: boolean
   canAddRemovePolarLabel: boolean
-  showIssueProgress: boolean
   showPledgeAction: boolean
   right?: React.ReactElement
   showSelfPledgesFor?: UserRead
@@ -259,10 +257,6 @@ const IssueListItem = (props: {
                   <IconCounter icon="thumbs_up" count={reactions.plus_one} />
                 )}
               </div>
-
-              {props.showIssueProgress && (
-                <IssueProgress progress={issueProgress} />
-              )}
 
               {showPledgeAction && <PledgeNow onClick={redirectToPledge} />}
 

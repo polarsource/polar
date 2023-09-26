@@ -96,7 +96,6 @@ const IssuesLookingForFunding = ({
             repo={i.repo}
             references={[]}
             pledges={[]}
-            showIssueProgress={false}
             canAddRemovePolarLabel={false}
             showPledgeAction={true}
             right={

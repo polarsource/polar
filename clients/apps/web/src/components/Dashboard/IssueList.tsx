@@ -131,7 +131,6 @@ const IssueListPage = (props: {
           org={issue.organization}
           repo={issue.repository}
           key={issue.id}
-          showIssueProgress={true}
           canAddRemovePolarLabel={props.canAddRemovePolarLabel}
           showPledgeAction={true}
           showSelfPledgesFor={props.showSelfPledgesFor}

@@ -22,6 +22,7 @@ import {
 } from 'polarkit/hooks'
 import { useOutsideClick } from 'polarkit/utils'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import SplitRewardModal from '../Finance/SplitRewardModal'
 import DollarSignIcon from '../Icons/DollarSignIcon'
 import Icon from '../Icons/Icon'
@@ -169,7 +170,7 @@ const Item = ({
 }) => {
   return (
     <div className="flex space-x-2.5 text-sm transition-colors duration-100">
-      <Icon classes={'mt-1 ' + iconClasses} icon={children.icon} />
+      <Icon classes={twMerge('mt-1 p-1', iconClasses)} icon={children.icon} />
       <div>
         <div>{children.text}</div>
         <div className="text-gray-500 dark:text-gray-400/75">
@@ -624,13 +625,7 @@ export const Notification = ({
 
 const PullRequestCreatedIcon = () => {
   return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 18 18"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
         d="M13.5 15.75C14.7426 15.75 15.75 14.7426 15.75 13.5C15.75 12.2574 14.7426 11.25 13.5 11.25C12.2574 11.25 11.25 12.2574 11.25 13.5C11.25 14.7426 12.2574 15.75 13.5 15.75Z"
         stroke="#24A065"
@@ -665,13 +660,7 @@ const PullRequestCreatedIcon = () => {
 
 const PullRequestMergedIcon = () => {
   return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 18 18"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
         d="M13.5 15.75C14.7426 15.75 15.75 14.7426 15.75 13.5C15.75 12.2574 14.7426 11.25 13.5 11.25C12.2574 11.25 11.25 12.2574 11.25 13.5C11.25 14.7426 12.2574 15.75 13.5 15.75Z"
         stroke="#633EB7"
@@ -702,13 +691,7 @@ const PullRequestMergedIcon = () => {
 
 const BranchCreatedIcon = () => {
   return (
-    <svg
-      width="18"
-      height="19"
-      viewBox="0 0 18 19"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg viewBox="0 0 18 19" fill="none" xmlns="http://www.w3.org/2000/svg">
       <g opacity="0.58">
         <path
           d="M4.5 2.5V11.5"

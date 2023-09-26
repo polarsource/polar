@@ -261,7 +261,7 @@ const Pledged = ({ pledges }: { pledges: Array<PledgeRead | Pledge> }) => {
 }
 
 const PledgesBubbleWrap = ({ children }: { children: React.ReactNode }) => (
-  <div className="rouded -ml-2 flex flex-row items-center gap-1 rounded-full border border-gray-200 bg-white pl-1 pr-2 text-sm text-gray-700 dark:border-gray-400 dark:bg-gray-800 dark:text-gray-200">
+  <div className="rouded -ml-2 flex flex-row items-center gap-1 rounded-full border border-gray-200 bg-white py-0.5 pl-1 pr-2 text-xs text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
     {children}
   </div>
 )

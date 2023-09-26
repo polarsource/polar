@@ -16,7 +16,6 @@ import {
   Organization,
   Pledge,
   Repository,
-  State,
   UserRead,
   type PledgeRead,
 } from 'polarkit/api/client'
@@ -81,10 +80,9 @@ const IssueListItem = (props: {
   const havePledgeOrReference = havePledge || haveReference
 
   const showCommentsCount = !!(comments && comments > 0)
-  const showReactionsThumbs = !!(reactions.plus_one > 0)
+  const showReactionsThumbs = !!(reactions && reactions.plus_one > 0)
 
-  const issueIsOpen =
-    props.issue.state === Issue.state.OPEN || props.issue.state === State.OPEN
+  const issueIsOpen = props.issue.state === Issue.state.OPEN
 
   const markdownTitle = generateMarkdownTitle(title)
 
@@ -195,12 +193,11 @@ const IssueListItem = (props: {
                 <div className="text-xs text-gray-500">
                   <p>
                     #{number}{' '}
-                    {(state == 'open' || state === Issue.state.OPEN) && (
+                    {issueIsOpen ? (
                       <>
                         opened <PolarTimeAgo date={new Date(createdAt)} />
                       </>
-                    )}
-                    {(state == 'closed' || state === Issue.state.CLOSED) && (
+                    ) : (
                       <>
                         closed <PolarTimeAgo date={new Date(closedAt)} />
                       </>
@@ -253,7 +250,7 @@ const IssueListItem = (props: {
                 {showCommentsCount && (
                   <IconCounter icon="comments" count={comments} />
                 )}
-                {showReactionsThumbs && (
+                {showReactionsThumbs && reactions && (
                   <IconCounter icon="thumbs_up" count={reactions.plus_one} />
                 )}
               </div>

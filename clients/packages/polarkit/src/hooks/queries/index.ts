@@ -1,4 +1,9 @@
-import { UseQueryResult, useMutation, useQuery } from '@tanstack/react-query'
+import {
+  UseMutationResult,
+  UseQueryResult,
+  useMutation,
+  useQuery,
+} from '@tanstack/react-query'
 import {
   ApiError,
   ListResource_Organization_,
@@ -84,7 +89,14 @@ export const useNotifications = () =>
     retry: defaultRetry,
   })
 
-export const useNotificationsMarkRead = () =>
+export const useNotificationsMarkRead: () => UseMutationResult<
+  any,
+  Error,
+  {
+    notification_id: string
+  },
+  unknown
+> = () =>
   useMutation({
     mutationFn: (variables: { notification_id: string }) => {
       return api.notifications.markRead({

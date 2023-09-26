@@ -132,9 +132,9 @@ const IssueListItemDecoration = ({
 
   return (
     <div>
-      <div className="flex flex-row items-center px-4 py-3">
+      <div className="flex flex-col">
         {showPledges && (
-          <div className="stretch mr-4 flex-none">
+          <div className="px-4 py-4">
             <IssuePledge
               issue={issue}
               orgName={orgName}
@@ -150,29 +150,28 @@ const IssueListItemDecoration = ({
           </div>
         )}
 
-        <div
-          className={classNames(
-            showPledges ? 'border-l pl-4 dark:border-gray-700' : '',
-            'flex-1 space-y-1',
-          )}
-        >
-          {haveReferences &&
-            references.map((r: IssueReferenceRead) => {
-              return (
-                <IssueReference
-                  orgName={orgName}
-                  repoName={repoName}
-                  reference={r}
-                  key={r.id}
-                />
-              )
-            })}
-
-          {!haveReferences && (
-            <p className="text-sm italic text-gray-400">Not picked up yet</p>
-          )}
-        </div>
+        {haveReferences && (
+          <div
+            className={classNames(
+              showPledges ? ' border-t dark:border-gray-700' : '',
+              'space-y-2 px-4 py-2',
+            )}
+          >
+            {haveReferences &&
+              references.map((r: IssueReferenceRead) => {
+                return (
+                  <IssueReference
+                    orgName={orgName}
+                    repoName={repoName}
+                    reference={r}
+                    key={r.id}
+                  />
+                )
+              })}
+          </div>
+        )}
       </div>
+
       {showDisputeAction && showPledgeStatusBox && (
         <div className="border-t border-gray-100 bg-gray-50 px-4 pb-1.5 pt-1 dark:border-gray-700 dark:bg-gray-900">
           {disputablePledges.map((p) => {

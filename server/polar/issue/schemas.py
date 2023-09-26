@@ -351,12 +351,6 @@ class IssueRead(IssueCreate):
         orm_mode = True
 
 
-class GetIssuePath(Schema):
-    organization: str
-    repo: str
-    number: int
-
-
 class IssueReferenceType(str, Enum):
     pull_request = "pull_request"
     external_github_pull_request = "external_github_pull_request"

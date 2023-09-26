@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import UUID
 
 import structlog
-from fastapi import HTTPException, Request, Response
+from fastapi import Request, Response
 from pydantic import validator
 
 from polar.config import settings
@@ -101,52 +101,31 @@ class AuthService:
         return LoginResponse(success=True, token=token, expires_at=expires_at)
 
     @classmethod
-    async def get_user_from_request(
-        cls, session: AsyncSession, *, request: Request
+    async def get_user_from_cookie(
+        cls, session: AsyncSession, *, cookie: str
     ) -> User | None:
-        token = cls.get_token_from_auth_cookie(request=request)
-        if not token:
-            token = cls.get_token_from_auth_header(request=request)
-            if not token:
-                return None
+        try:
+            decoded = jwt.decode(token=cookie, secret=settings.SECRET)
+            return await user_service.get(session, id=decoded["user_id"])
+        except (KeyError, jwt.DecodeError, jwt.ExpiredSignatureError):
+            return None
 
+    @classmethod
+    async def get_user_from_personal_access_token(
+        cls, session: AsyncSession, *, token: str
+    ) -> User | None:
         try:
             decoded = jwt.decode(token=token, secret=settings.SECRET)
+            pat = await personal_access_token_service.get(
+                session, id=decoded["pat_id"], load_user=True
+            )
+            if pat is None:
+                return None
 
-            if "user_id" in decoded:
-                return await user_service.get(session, id=decoded["user_id"])
-
-            if "pat_id" in decoded:
-                pat = await personal_access_token_service.get(
-                    session, id=decoded["pat_id"], load_user=True
-                )
-                if pat:
-                    await personal_access_token_service.record_usage(session, id=pat.id)
-                    return pat.user
-
-                raise HTTPException(
-                    status_code=401,
-                    detail="Invalid Personal Access Token",
-                )
-
-            raise Exception("failed to decode token")
-
-        except (jwt.DecodeError, jwt.ExpiredSignatureError):
+            await personal_access_token_service.record_usage(session, id=pat.id)
+            return pat.user
+        except (KeyError, jwt.DecodeError, jwt.ExpiredSignatureError):
             return None
-
-    @classmethod
-    def get_token_from_auth_cookie(cls, *, request: Request) -> str | None:
-        return request.cookies.get(settings.AUTH_COOKIE_KEY)
-
-    @classmethod
-    def get_token_from_auth_header(cls, *, request: Request) -> str | None:
-        auhtorization = request.headers.get("Authorization")
-        if not auhtorization:
-            return None
-        method, token = auhtorization.split(" ", 1)
-        if method != "Bearer":
-            return None
-        return token
 
     @classmethod
     def generate_logout_response(cls, *, response: Response) -> LogoutResponse:

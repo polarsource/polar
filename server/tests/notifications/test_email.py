@@ -16,6 +16,7 @@ from polar.notifications.notification import (
     PledgerPledgePendingNotification,
     RewardPaidNotification,
 )
+from polar.pledge.schemas import PledgeType
 
 
 async def check_diff(email: Tuple[str, str]) -> None:
@@ -160,6 +161,26 @@ async def test_PledgerPledgePendingNotification(
         issue_repo_name="testrepo",
         pledge_date="2023-02-02",
         pledge_id=None,
+        pledge_type=PledgeType.pay_upfront,
+    )
+
+    await check_diff(n.render(predictable_user))
+
+
+@pytest.mark.asyncio
+async def test_PledgerPledgePendingNotification_pay_on_completion(
+    predictable_user: User,
+) -> None:
+    n = PledgerPledgePendingNotification(
+        issue_url="https://github.com/testorg/testrepo/issues/123",
+        issue_title="issue title",
+        issue_number=123,
+        pledge_amount="123.45",
+        issue_org_name="testorg",
+        issue_repo_name="testrepo",
+        pledge_date="2023-02-02",
+        pledge_id=None,
+        pledge_type=PledgeType.pay_on_completion,
     )
 
     await check_diff(n.render(predictable_user))

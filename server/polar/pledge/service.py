@@ -415,6 +415,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 issue_repo_name=repo.name,
                 issue_number=issue.number,
                 pledge_id=pledge.id,
+                pledge_type=PledgeType.from_str(pledge.type),
             )
 
             await notification_service.send_to_pledger(

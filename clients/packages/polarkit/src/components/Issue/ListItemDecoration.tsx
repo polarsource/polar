@@ -89,9 +89,6 @@ const IssueListItemDecoration = ({
         }
       }) || []
 
-  const pendingPayoutPledges =
-    pledges?.filter((p) => p.scheduled_payout_at && remainingDays(p) < 0) || []
-
   const disputedPledges =
     pledges?.filter((p) => p.state === PledgeState.DISPUTED) || []
 
@@ -107,9 +104,7 @@ const IssueListItemDecoration = ({
     )
 
   const pledgeStatusShowCount =
-    disputablePledges.length +
-    pendingPayoutPledges.length +
-    disputedPledges.length
+    disputablePledges.length + disputedPledges.length
 
   const showPledgeStatusBox = pledgeStatusShowCount > 0
   const disputeBoxShowAmount = pledgeStatusShowCount > 1
@@ -225,19 +220,6 @@ const IssueListItemDecoration = ({
                       )}
                     </span>
                   )}
-              </div>
-            )
-          })}
-
-          {pendingPayoutPledges.map((p) => {
-            return (
-              <div key={p.id}>
-                <span className="text-sm text-gray-500">
-                  Payout pending{' '}
-                  {disputeBoxShowAmount && (
-                    <>(${getCentsInDollarString(pledgeAmount(p))})</>
-                  )}
-                </span>
               </div>
             )
           })}

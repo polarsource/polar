@@ -40,7 +40,7 @@ class MaintainerPledgeCreatedNotification(NotificationBase):
     pledge_id: UUID | None = None  # Added 2022-06-26
 
     def subject(self) -> str:
-        return "${{pledge_amount}} in funding for {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}"  # noqa: E501
+        return "Received ${{pledge_amount}} in funding for {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}"  # noqa: E501
 
     def body(self) -> str:
         return """Hi,<br><br>
@@ -108,6 +108,10 @@ Before you can receive your share, please verify that the issue is completed on 
 When you're verifying the issue, you can also decide to split the rewards with other contributors.
 <br><br>
 
+After you've marked the issue as completed, we'll start our payment and payout process.
+For backers that have paid upfront, we'll transfer the money to you as soon as the 14-day dispute window is over.
+For backers that are paying by invoice on completion, we'll transfer the money as soon as the invoice has been paid.<br><br>
+
 {% if not maintainer_has_account %}
 Create a Stripe account with Polar today to ensure we can transfer the funds directly once the review period is completed.<br>
 <a href="https://polar.sh/maintainer/{{issue_org_name}}/finance">polar.sh/maintainer/{{issue_org_name}}/finance</a>
@@ -157,7 +161,7 @@ class MaintainerPledgedIssuePendingNotification(NotificationBase):
     maintainer_has_account: bool
 
     def subject(self) -> str:
-        return "Thanks for confirming {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}"  # noqa: E501
+        return "Notified backers that {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}} is completed"  # noqa: E501
 
     def body(self) -> str:
         return """Hi,<br><br>

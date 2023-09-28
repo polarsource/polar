@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from 'polarkit'
 import {
   ExternalGitHubCommitReference,
+  ExternalGitHubPullRequestReference,
   IssueDashboardRead,
   IssueReferenceRead,
   IssueReferenceType,
@@ -369,7 +370,55 @@ export const StatusClosed: Story = {
 export const TwoReferences: Story = {
   args: {
     ...Default.args,
+    pledges: [],
     references: doubleReference,
+  },
+}
+
+export const AllReferences: Story = {
+  args: {
+    ...Default.args,
+    pledges: [],
+    references: [
+      ...doubleReference,
+      ...referencesDraft,
+      ...references,
+      ...referencesMerged,
+      ...referencesClosed,
+      ...referencesCommit,
+      {
+        id: 'wha',
+        type: IssueReferenceType.EXTERNAL_GITHUB_PULL_REQUEST,
+        payload: {
+          author_login: 'petterheterjag',
+          author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+          sha: '160a13da0ecedacb326de1b913186f448185ad9a',
+          organization_name: 'petterheterjag',
+          repository_name: 'polartest',
+          message: 'What is this',
+          branch_name: 'fix-1234',
+          title: 'foo',
+          number: 23,
+          state: 'open',
+        } as ExternalGitHubPullRequestReference,
+      },
+      {
+        id: 'wha',
+        type: IssueReferenceType.EXTERNAL_GITHUB_PULL_REQUEST,
+        payload: {
+          author_login: 'petterheterjag',
+          author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+          sha: '160a13da0ecedacb326de1b913186f448185ad9a',
+          organization_name: 'petterheterjag',
+          repository_name: 'polartest',
+          message: 'What is this',
+          branch_name: 'fix-1234',
+          title: 'foo',
+          number: 23,
+          state: 'closed',
+        } as ExternalGitHubPullRequestReference,
+      },
+    ],
   },
 }
 

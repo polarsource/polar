@@ -156,8 +156,20 @@ const IssueReferenceExternalGitHubPullRequest = (props: {
   return (
     <>
       <LeftSide>
-        {isMerged && <GitMergeIcon />}
-        {!isMerged && <GitPullRequestIcon />}
+        <span
+          className={classNames(
+            isMerged
+              ? 'border-purple-200 bg-purple-100 text-purple-600 dark:border-purple-500/40 dark:bg-purple-500/40 dark:text-purple-200'
+              : '',
+            !isMerged
+              ? 'border-red-200 bg-red-100 text-red-500 dark:border-red-500/30 dark:bg-red-500/30 dark:text-red-300'
+              : '',
+            'h-5 w-5 rounded-lg border p-0.5',
+          )}
+        >
+          {isMerged && <GitMergeIcon />}
+          {!isMerged && <GitPullRequestIcon />}
+        </span>
         <a href={href} className="font-medium">
           {markdownTitle}
         </a>

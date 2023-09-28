@@ -1,4 +1,4 @@
-FROM docker.io/python:3.11.3-bullseye as installer
+FROM docker.io/python:3.11.3-bullseye
 
 LABEL org.opencontainers.image.source=https://github.com/polarsource/polar
 LABEL org.opencontainers.image.description="Polar"
@@ -18,7 +18,7 @@ ADD polar polar
 ADD scripts scripts
 ADD run_worker.py .
 
-ADD hack hack
-
 ADD migrations migrations
 ADD alembic.ini .
+
+CMD ["poetry", "run", "uvicorn", "polar.app:app", "--host", "0.0.0.0", "--port", "10000"]

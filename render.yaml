@@ -8,7 +8,7 @@ services:
       creds:
         fromRegistryCreds:
           name: polarsource
-    dockerCommand: "./hack/production_run_server.sh"
+    preDeployCommand: "poetry run task pre_deploy"
     region: ohio
     plan: standard
     numInstances: 1

@@ -145,9 +145,6 @@ class RepositoryLegacyRead(Schema):
     license: str | None = None
     homepage: str | None = None
 
-    class Config:
-        orm_mode = True
-
 
 class RepositorySeeksFundingShield(Schema):
     count: int

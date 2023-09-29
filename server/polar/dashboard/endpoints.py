@@ -313,6 +313,7 @@ async def dashboard(
 
     return IssueListResponse(
         data=data,
+        included=list(included.values()),
         pagination=PaginationResponse(
             total_count=total_issue_count,
             page=page,

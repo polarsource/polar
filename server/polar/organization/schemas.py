@@ -23,13 +23,13 @@ class Organization(Schema):
     avatar_url: str
     is_personal: bool
 
-    bio: str | None = Field(description="Public field from GitHub")
-    pretty_name: str | None = Field(description="Public field from GitHub")
-    company: str | None = Field(description="Public field from GitHub")
-    blog: str | None = Field(description="Public field from GitHub")
-    location: str | None = Field(description="Public field from GitHub")
-    email: str | None = Field(description="Public field from GitHub")
-    twitter_username: str | None = Field(description="Public field from GitHub")
+    bio: str | None = Field(None, description="Public field from GitHub")
+    pretty_name: str | None = Field(None, description="Public field from GitHub")
+    company: str | None = Field(None, description="Public field from GitHub")
+    blog: str | None = Field(None, description="Public field from GitHub")
+    location: str | None = Field(None, description="Public field from GitHub")
+    email: str | None = Field(None, description="Public field from GitHub")
+    twitter_username: str | None = Field(None, description="Public field from GitHub")
 
     pledge_minimum_amount: int
     pledge_badge_show_amount: bool
@@ -200,7 +200,7 @@ class RepositoryBadgeSettingsUpdate(Schema):
 # Internal model
 class RepositoryBadgeSettingsRead(Schema):
     id: UUID
-    avatar_url: str | None
+    avatar_url: str | None = None
     name: str
     synced_issues: int
     open_issues: int
@@ -225,5 +225,5 @@ class OrganizationBadgeSettingsUpdate(Schema):
 class OrganizationBadgeSettingsRead(Schema):
     show_amount: bool
     minimum_amount: int
-    message: str | None
+    message: str | None = None
     repositories: Sequence[RepositoryBadgeSettingsRead]

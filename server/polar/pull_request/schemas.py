@@ -73,16 +73,16 @@ common_mutable_keys = {
 
 
 class MinimalPullRequestCreate(IssueAndPullRequestBase):
-    requested_reviewers: JSONAny
-    requested_teams: JSONAny
+    requested_reviewers: JSONAny = None
+    requested_teams: JSONAny = None
 
-    is_merged: bool | None
+    is_merged: bool | None = None
 
-    merged_at: datetime | None
-    merge_commit_sha: str | None
+    merged_at: datetime | None = None
+    merge_commit_sha: str | None = None
 
-    head: JSONAny
-    base: JSONAny
+    head: JSONAny = None
+    base: JSONAny = None
 
     is_draft: bool | None = None
 
@@ -129,17 +129,17 @@ class MinimalPullRequestCreate(IssueAndPullRequestBase):
 
 
 class FullPullRequestCreate(MinimalPullRequestCreate):
-    commits: int | None
-    additions: int | None
-    deletions: int | None
-    changed_files: int | None
+    commits: int | None = None
+    additions: int | None = None
+    deletions: int | None = None
+    changed_files: int | None = None
 
-    review_comments: int | None
-    maintainer_can_modify: bool | None
-    is_mergeable: bool | None
-    mergeable_state: str | None
+    review_comments: int | None = None
+    maintainer_can_modify: bool | None = None
+    is_mergeable: bool | None = None
+    mergeable_state: str | None = None
 
-    merged_by: JSONAny
+    merged_by: JSONAny = None
 
     __mutable_keys__ = MinimalPullRequestCreate.__mutable_keys__ | {
         "commits",
@@ -188,7 +188,4 @@ class PullRequestUpdate(FullPullRequestCreate):
 class PullRequestRead(FullPullRequestCreate):
     id: UUID
     created_at: datetime
-    modified_at: datetime | None
-
-    class Config:
-        orm_mode = True
+    modified_at: datetime | None = None

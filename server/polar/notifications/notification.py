@@ -143,7 +143,7 @@ class MaintainerPledgePendingNotification(NotificationBase):
     issue_repo_name: str
     issue_number: int
     maintainer_has_stripe_account: bool
-    pledge_id: UUID | None  # Added 2023-06-26
+    pledge_id: UUID | None = None  # Added 2022-06-26
 
     def subject(self) -> str:
         return "You have ${{pledge_amount}} in pending pledges for {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}!"  # noqa: E501
@@ -204,7 +204,7 @@ class MaintainerPledgePaidNotification(NotificationBase):
     issue_org_name: str
     issue_repo_name: str
     issue_number: int
-    pledge_id: UUID | None  # Added 2023-06-26
+    pledge_id: UUID | None = None  # Added 2022-06-26
 
     def subject(self) -> str:
         return "${{paid_out_amount}} transferred for {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}"  # noqa: E501
@@ -256,8 +256,8 @@ class PledgerPledgePendingNotification(NotificationBase):
     issue_org_name: str
     issue_repo_name: str
     pledge_date: str
-    pledge_id: UUID | None  # Added 2023-06-26
-    pledge_type: PledgeType | None  # Added 2023-11-27
+    pledge_id: UUID | None = None  # Added 2022-06-26
+    pledge_type: PledgeType | None = None  # Added 2022-11-27
 
     def subject(self) -> str:
         return "{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}} is completed"

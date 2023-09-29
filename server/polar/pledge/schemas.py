@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Literal, Self
+from typing import Literal, Self
 from uuid import UUID
 
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from polar.currency.schemas import CurrencyAmount
 from polar.funding.funding_schema import Funding
@@ -18,8 +18,8 @@ from polar.models.pledge import PledgeState, PledgeType
 # Public API
 class Pledger(Schema):
     name: str
-    github_username: str | None
-    avatar_url: str | None
+    github_username: str | None = None
+    avatar_url: str | None = None
 
     @classmethod
     def from_pledge(cls, p: PledgeModel) -> Self | None:
@@ -73,20 +73,23 @@ class Pledge(Schema):
     type: PledgeType = Field(description="Type of pledge")
 
     refunded_at: datetime | None = Field(
-        description="If and when the pledge was refunded to the pledger"
+        None, description="If and when the pledge was refunded to the pledger"
     )  # noqa: E501
 
     scheduled_payout_at: datetime | None = Field(
-        description="When the payout is scheduled to be made to the maintainers behind the issue. Disputes must be made before this date."  # noqa: E501
+        None,
+        description="When the payout is scheduled to be made to the maintainers behind the issue. Disputes must be made before this date.",  # noqa: E501
     )
 
     issue: Issue = Field(description="The issue that the pledge was made towards")
 
     pledger: Pledger | None = Field(
-        description="The user or organization that made this pledge"
+        None, description="The user or organization that made this pledge"
     )
 
-    hosted_invoice_url: str | None = Field(description="URL of invoice for this pledge")
+    hosted_invoice_url: str | None = Field(
+        None, description="URL of invoice for this pledge"
+    )
 
     authed_can_admin_sender: bool = Field(
         default=False,
@@ -176,19 +179,14 @@ class CreatePledgePayLater(Schema):
         description="The organization to create the pledge as. The pledge will be paid by this organization."
     )
 
-    @root_validator(skip_on_failure=True)
-    def validate_payer(cls, values: dict[str, Any]) -> dict[str, Any]:
-        on_behalf_of_organization_id: UUID | None = values[
-            "on_behalf_of_organization_id"
-        ]
-        by_organization_id: UUID | None = values["by_organization_id"]
-
-        if on_behalf_of_organization_id and by_organization_id:
+    @model_validator(mode="after")
+    def validate_payer(self) -> Self:
+        if self.on_behalf_of_organization_id and self.by_organization_id:
             raise ValueError(
                 "on_behalf_of_organization_id and by_organization_id are mutually exclusive"
             )
 
-        return values
+        return self
 
 
 class PledgeStripePaymentIntentCreate(Schema):
@@ -196,10 +194,11 @@ class PledgeStripePaymentIntentCreate(Schema):
     email: str
     amount: int = Field(gt=0)
     setup_future_usage: Literal["on_session"] | None = Field(
-        description="If the payment method should be saved for future usage."
+        None, description="If the payment method should be saved for future usage."
     )
     on_behalf_of_organization_id: UUID | None = Field(
-        description="The organization to give credit to. The pledge will be paid by the authenticated user."
+        None,
+        description="The organization to give credit to. The pledge will be paid by the authenticated user.",
     )
 
 
@@ -209,10 +208,11 @@ class PledgeStripePaymentIntentUpdate(Schema):
         gt=0,
     )
     setup_future_usage: Literal["on_session"] | None = Field(
-        description="If the payment method should be saved for future usage."
+        None, description="If the payment method should be saved for future usage."
     )
     on_behalf_of_organization_id: UUID | None = Field(
-        description="The organization to give credit to. The pledge will be paid by the authenticated user."
+        None,
+        description="The organization to give credit to. The pledge will be paid by the authenticated user.",
     )
 
 

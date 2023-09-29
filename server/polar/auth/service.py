@@ -1,9 +1,11 @@
 from datetime import datetime
+from typing import Self
 from uuid import UUID
 
 import structlog
 from fastapi import Request, Response
 from fastapi.responses import RedirectResponse
+from pydantic import model_validator
 
 from polar.authz.service import Scope, ScopedSubject
 from polar.config import settings
@@ -22,6 +24,16 @@ class LoginResponse(Schema):
     success: bool
     expires_at: datetime
     token: str | None = None
+    goto_url: str | None = None
+
+    @model_validator(mode="after")
+    def validate_goto_url(self) -> Self:
+        if self.goto_url is None or self.goto_url.startswith(
+            settings.FRONTEND_BASE_URL
+        ):
+            return self
+
+        raise ValueError("goto_url has to belong to polar")
 
 
 class LogoutResponse(Schema):

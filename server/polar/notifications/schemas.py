@@ -63,7 +63,7 @@ class NotificationRead(Schema):
 
 class NotificationsList(Schema):
     notifications: list[NotificationRead]
-    last_read_notification_id: UUID | None
+    last_read_notification_id: UUID | None = None
 
 
 class NotificationsMarkRead(Schema):

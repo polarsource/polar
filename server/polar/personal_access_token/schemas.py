@@ -11,7 +11,7 @@ from polar.models.personal_access_token import (
 class PersonalAccessToken(Schema):
     id: UUID
     created_at: datetime
-    last_used_at: datetime | None
+    last_used_at: datetime | None = None
     expires_at: datetime
     comment: str
 

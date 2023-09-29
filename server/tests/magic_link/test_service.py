@@ -6,7 +6,6 @@ from uuid import UUID
 
 import pytest
 import pytest_asyncio
-from pydantic import EmailStr
 from pytest_mock import MockerFixture
 
 from polar.config import settings
@@ -46,7 +45,7 @@ async def generate_magic_link_token(
 
 @pytest.mark.asyncio
 async def test_request(session: AsyncSession, mocker: MockerFixture) -> None:
-    magic_link_request = MagicLinkRequest(email=EmailStr("user@example.com"))
+    magic_link_request = MagicLinkRequest(email="user@example.com")
 
     magic_link, token = await magic_link_service.request(session, magic_link_request)
 

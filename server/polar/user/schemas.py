@@ -63,3 +63,7 @@ class UserUpdate(UserBase):
 class UserUpdateSettings(Schema):
     email_newsletters_and_changelogs: bool | None = None
     email_promotions_and_events: bool | None = None
+
+
+class UserStripePortalSession(Schema):
+    url: str

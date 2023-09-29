@@ -4,6 +4,7 @@
 import type { LoginResponse } from '../models/LoginResponse';
 import type { LogoutResponse } from '../models/LogoutResponse';
 import type { UserRead } from '../models/UserRead';
+import type { UserStripePortalSession } from '../models/UserStripePortalSession';
 import type { UserUpdateSettings } from '../models/UserUpdateSettings';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
@@ -67,6 +68,18 @@ export class UsersService {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/users/logout',
+    });
+  }
+
+  /**
+   * Create Stripe Customer Portal
+   * @returns UserStripePortalSession Successful Response
+   * @throws ApiError
+   */
+  public createStripeCustomerPortal(): CancelablePromise<UserStripePortalSession> {
+    return this.httpRequest.request({
+      method: 'POST',
+      url: '/api/v1/users/me/stripe_customer_portal',
     });
   }
 

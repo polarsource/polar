@@ -256,5 +256,19 @@ Thank you for your support!
 
         return sent_invoice
 
+    async def create_portal_session(
+        self,
+        session: AsyncSession,
+        user: User,
+    ) -> stripe_lib.billing_portal.Session | None:
+        customer = await self.get_or_create_user_customer(session, user)
+        if not customer:
+            return None
+
+        return stripe_lib.billing_portal.Session.create(
+            customer=customer.id,
+            return_url=f"{settings.FRONTEND_BASE_URL}/settings",
+        )
+
 
 stripe = StripeService()

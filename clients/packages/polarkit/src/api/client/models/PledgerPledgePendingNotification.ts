@@ -2,6 +2,8 @@
 /* tslint:disable */
 /* eslint-disable */
 
+import type { PledgeType } from './PledgeType';
+
 export type PledgerPledgePendingNotification = {
   pledge_amount: string;
   issue_url: string;
@@ -11,5 +13,6 @@ export type PledgerPledgePendingNotification = {
   issue_repo_name: string;
   pledge_date: string;
   pledge_id?: string;
+  pledge_type?: PledgeType;
 };
 

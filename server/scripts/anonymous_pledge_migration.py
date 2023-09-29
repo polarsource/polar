@@ -5,7 +5,7 @@ from typing import Any
 
 import structlog
 import typer
-from pydantic import EmailError, EmailStr
+from email_validator import EmailNotValidError, validate_email
 from sqlalchemy import select
 
 from polar.kit.db.postgres import AsyncSession
@@ -74,8 +74,8 @@ async def anonymous_pledge_migration(
                 typer.echo(f"🔄 Handling Pledge {pledge.id} created by {user_email}")
 
                 try:
-                    EmailStr.validate(user_email)
-                except EmailError:
+                    validate_email(user_email, check_deliverability=False)
+                except EmailNotValidError:
                     typer.echo(
                         typer.style("\tInvalid email address. Skipping.", fg="red")
                     )

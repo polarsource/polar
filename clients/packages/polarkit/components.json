@@ -11,6 +11,6 @@
   },
   "aliases": {
     "components": "@/components",
-    "utils": "../../lib/utils"
+    "utils": "@polarkit/lib/utils"
   }
 }

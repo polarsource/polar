@@ -3,7 +3,11 @@
   "compilerOptions": {
     "baseUrl": "src/",
     "allowSyntheticDefaultImports": true,
-    "moduleResolution": "node16"
+    "moduleResolution": "Node16",
+    "paths": {
+      "@/*": ["./*"],
+      "@polarkit/lib/*": ["./lib/*"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["dist", "build", "node_modules", "openapi", "scripts"]

@@ -2,11 +2,13 @@ from fastapi import APIRouter, Depends, Response
 
 from polar.auth.dependencies import UserRequiredAuth
 from polar.auth.service import AuthService, LoginResponse, LogoutResponse
+from polar.exceptions import InternalServerError
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.models import User
 from polar.postgres import AsyncSession, get_db_session
 from polar.user.service import user as user_service
 
-from .schemas import UserRead, UserUpdateSettings
+from .schemas import UserRead, UserStripePortalSession, UserUpdateSettings
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -32,5 +34,23 @@ async def update_preferences(
 
 
 @router.get("/logout")
-async def logout(response: Response, auth: UserRequiredAuth) -> LogoutResponse:
+async def logout(
+    response: Response,
+    auth: UserRequiredAuth,
+) -> LogoutResponse:
     return AuthService.generate_logout_response(response=response)
+
+
+@router.post(
+    "/me/stripe_customer_portal",
+    response_model=UserStripePortalSession,
+)
+async def create_stripe_customer_portal(
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+) -> UserStripePortalSession:
+    portal = await stripe_service.create_portal_session(session, auth.subject)
+    if not portal:
+        raise InternalServerError()
+
+    return UserStripePortalSession(url=portal.url)

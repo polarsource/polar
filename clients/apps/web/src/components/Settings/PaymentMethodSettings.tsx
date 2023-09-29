@@ -1,5 +1,11 @@
-import { CreditCardIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import {
+  ArrowTopRightOnSquareIcon,
+  CreditCardIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline'
+import { api } from 'polarkit/api'
 import { PaymentMethod } from 'polarkit/api/client'
+import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import {
   useDetachPaymentMethodMutation,
   useListPaymentMethods,
@@ -10,6 +16,19 @@ import Spinner from '../Shared/Spinner'
 
 const PaymentMethodSettings = () => {
   const paymentMethods = useListPaymentMethods()
+
+  const [stripePortalLoading, setStripePortalLoading] = useState(false)
+
+  const onGotoStripeCustomerPortal = async () => {
+    setStripePortalLoading(true)
+
+    const portal = await api.users.createStripeCustomerPortal()
+    if (portal) {
+      window.location.href = portal.url
+    }
+
+    setStripePortalLoading(false)
+  }
 
   return (
     <div className="flex w-full flex-col divide-y rounded-md border text-gray-900 dark:text-gray-200">
@@ -23,6 +42,18 @@ const PaymentMethodSettings = () => {
       {paymentMethods.data?.items?.map((pm) => (
         <PaymentMethodItem key={pm.stripe_payment_method_id} pm={pm} />
       ))}
+
+      <div className="dark:text-gray:300 space-y-2 p-4 text-sm text-gray-500">
+        <PrimaryButton
+          fullWidth={false}
+          classNames=""
+          loading={stripePortalLoading}
+          onClick={onGotoStripeCustomerPortal}
+        >
+          <ArrowTopRightOnSquareIcon className="mr-2 h-5 w-5" />
+          <span>Invoice settings and receipts</span>
+        </PrimaryButton>
+      </div>
     </div>
   )
 }

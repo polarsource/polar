@@ -129,27 +129,22 @@ const IssueListItemDecoration = ({
     <div>
       <div className="flex flex-col">
         {showPledges && (
-          <div className="px-4 py-4">
-            <IssuePledge
-              issue={issue}
-              orgName={orgName}
-              repoName={repoName}
-              issueNumber={issueNumber}
-              pledges={pledges}
-              onConfirmPledges={onConfirmPledges}
-              showConfirmPledgeAction={showConfirmPledgeAction}
-              confirmPledgeIsLoading={confirmPledgeIsLoading}
-              funding={funding}
-              showSelfPledgesFor={showSelfPledgesFor}
-            />
-          </div>
+          <IssuePledge
+            issue={issue}
+            pledges={pledges}
+            onConfirmPledges={onConfirmPledges}
+            showConfirmPledgeAction={showConfirmPledgeAction}
+            confirmPledgeIsLoading={confirmPledgeIsLoading}
+            funding={funding}
+            showSelfPledgesFor={showSelfPledgesFor}
+          />
         )}
 
         {haveReferences && (
           <div
             className={classNames(
               showPledges ? ' border-t dark:border-gray-700' : '',
-              'space-y-2 px-4 py-2',
+              'space-y-2 bg-gray-50 px-4 py-2 dark:bg-gray-900',
             )}
           >
             {haveReferences &&

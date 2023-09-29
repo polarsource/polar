@@ -12,7 +12,7 @@ import {
   RewardPaidNotification,
 } from 'polarkit/api/client'
 import { GitMergeIcon } from 'polarkit/components/icons'
-import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
+import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui/atoms'
 import {
   useGetPledge,
   useIssueMarkConfirmed,

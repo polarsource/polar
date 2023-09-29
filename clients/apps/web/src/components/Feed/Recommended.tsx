@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/hooks'
 import Link from 'next/link'
-import { ShadowBoxOnLg } from 'polarkit/components/ui'
+import { ShadowBoxOnLg } from 'polarkit/components/ui/atoms'
 import { useListForYouIssues } from 'polarkit/hooks'
 import IssueListItem from '../Dashboard/IssueListItem'
 

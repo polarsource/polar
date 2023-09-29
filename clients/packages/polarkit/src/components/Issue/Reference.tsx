@@ -11,7 +11,7 @@ import {
   GitPullRequestClosedIcon,
   GitPullRequestIcon,
 } from 'polarkit/components/icons'
-import { PolarTimeAgo } from 'polarkit/components/ui'
+import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import { githubPullReqeustUrl } from 'polarkit/github'
 import { classNames } from 'polarkit/utils'
 import { generateMarkdownTitle } from './markdown'

@@ -1,7 +1,7 @@
 import { PlusIcon } from '@heroicons/react/20/solid'
 import Image from 'next/image'
 import { CONFIG } from 'polarkit'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { useStore } from 'polarkit/store'
 import { classNames } from 'polarkit/utils'
 import { posthog } from 'posthog-js'

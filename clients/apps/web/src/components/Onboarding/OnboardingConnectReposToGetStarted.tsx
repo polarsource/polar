@@ -1,7 +1,7 @@
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { CONFIG } from 'polarkit/config'
 import { posthog } from 'posthog-js'
 import screenshot from './Screenshot.jpg'

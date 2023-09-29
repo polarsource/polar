@@ -1,4 +1,4 @@
-import { ShadowBox } from 'polarkit/components/ui'
+import { ShadowBox } from 'polarkit/components/ui/atoms'
 
 const Box = (props: {
   children: React.ReactElement | React.ReactElement[]

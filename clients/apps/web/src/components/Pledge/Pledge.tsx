@@ -2,8 +2,8 @@
 
 import { Issue, Pledger, Visibility } from 'polarkit/api/client'
 import { IssueCard } from 'polarkit/components/pledge'
-import { Banner } from 'polarkit/components/ui'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
+import { Banner } from 'polarkit/components/ui/molecules'
 import posthog from 'posthog-js'
 import { useEffect, useState } from 'react'
 import Footer from '../Organization/Footer'

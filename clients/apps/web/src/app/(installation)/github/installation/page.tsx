@@ -10,7 +10,7 @@ import {
   InstallationCreate,
   OrganizationPrivateRead,
 } from 'polarkit/api/client'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { useEffect, useState } from 'react'
 
 export default function Page() {

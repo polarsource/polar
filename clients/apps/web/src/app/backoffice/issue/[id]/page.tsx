@@ -1,7 +1,7 @@
 'use client'
 
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
-import { ThinButton } from 'polarkit/components/ui'
+import { ThinButton } from 'polarkit/components/ui/atoms'
 import {
   useBackofficeIssue,
   useBackofficePledgeRewardTransfer,

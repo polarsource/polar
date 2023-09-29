@@ -1,7 +1,11 @@
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
 import { HeartIcon, StarIcon } from '@heroicons/react/24/solid'
 import { generateMarkdownTitle } from 'polarkit/components/Issue'
-import { Alert, IssueBodyRenderer, PolarTimeAgo } from 'polarkit/components/ui'
+import {
+  Alert,
+  IssueBodyRenderer,
+  PolarTimeAgo,
+} from 'polarkit/components/ui/atoms'
 import { getCentsInDollarString } from 'polarkit/money'
 import { formatStarsNumber } from 'polarkit/utils'
 import { useMemo } from 'react'

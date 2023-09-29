@@ -4,8 +4,8 @@ import {
   PlusCircleIcon,
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
-import { PrimaryButton } from 'polarkit/components/ui'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
+import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import GitHubIcon from '../Icons/GitHubIcon'
 import screenshot from './dashboard.png'
 

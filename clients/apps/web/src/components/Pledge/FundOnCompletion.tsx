@@ -8,12 +8,12 @@ import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
 import { Issue } from 'polarkit/api/client'
 import { LogoIcon } from 'polarkit/components/brand'
-import { MoneyInput, PrimaryButton } from 'polarkit/components/ui'
+import { MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
 import { useEffect, useRef, useState } from 'react'
 import GithubLoginButton from '../Shared/GithubLoginButton'
-import { Checkbox } from '../ui/checkbox'
 
 const FundOnCompletion = ({
   issue,

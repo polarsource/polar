@@ -13,10 +13,10 @@ import {
   PledgeStripePaymentIntentMutationResponse,
   Repository,
 } from 'polarkit/api/client'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Checkbox } from 'polarkit/components/ui/checkbox'
 import posthog from 'posthog-js'
 import { useEffect, useState } from 'react'
-import { Checkbox } from '../ui/checkbox'
 import Subtotal from './Subtotal'
 
 const PaymentForm = ({

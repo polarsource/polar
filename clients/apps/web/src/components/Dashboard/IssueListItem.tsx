@@ -25,7 +25,7 @@ import {
   IssueListItemDecoration,
   generateMarkdownTitle,
 } from 'polarkit/components/Issue'
-import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui'
+import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui/atoms'
 import { githubIssueUrl } from 'polarkit/github'
 import { getCentsInDollarString } from 'polarkit/money'
 import { ChangeEvent, useState } from 'react'

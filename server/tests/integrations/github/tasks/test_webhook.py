@@ -249,7 +249,7 @@ def hook_as_obj(
                 full_name=repo.full_name,
                 private=repo.private,
                 # dummy values
-                license=None,
+                license=None,  # type: ignore
                 organization=None,
                 forks=0,
                 permissions=github.rest.RepositoryPropPermissions(

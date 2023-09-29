@@ -144,15 +144,12 @@ async def get(
 class OrganizationPrivateRead(OrganizationPrivateBase, OrganizationSettingsRead):
     id: UUID
     created_at: datetime
-    modified_at: datetime | None
+    modified_at: datetime | None = None
 
     # TODO: remove ASAP!
     # The import of RepositorySchema is why this definition needs to live here, and
     # not in schemas.
-    repositories: List[RepositoryLegacyRead] | None
-
-    class Config:
-        orm_mode = True
+    repositories: List[RepositoryLegacyRead] | None = None
 
 
 @router.get(

@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Any, Self
 from uuid import UUID
 
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from polar.enums import AccountType
 from polar.kit.schemas import Schema
@@ -26,41 +26,37 @@ class AccountCreate(Schema):
         description="Two letter uppercase country code", min_length=2, max_length=2
     )
 
-    @root_validator(skip_on_failure=True)
-    def validate_open_collective(cls, values: dict[str, Any]) -> dict[str, Any]:
-        account_type: AccountType = values["account_type"]
-        open_collective_slug: str | None = values.get("open_collective_slug")
-        if account_type == AccountType.open_collective and open_collective_slug is None:
+    @model_validator(mode="after")
+    def validate_open_collective(self) -> Self:
+        if (
+            self.account_type == AccountType.open_collective
+            and self.open_collective_slug is None
+        ):
             raise ValueError("The Open Collective slug must be provided.")
-        return values
+        return self
 
-    @root_validator(skip_on_failure=True)
-    def validate_user_id_org_id(cls, values: dict[str, Any]) -> dict[str, Any]:
-        user_id: UUID | None = values["user_id"]
-        organization_id: UUID | None = values["organization_id"]
-
-        if user_id and organization_id:
+    @model_validator(mode="after")
+    def validate_user_id_org_id(self) -> Self:
+        if self.user_id and self.organization_id:
             raise ValueError("user_id and organization_id are mutually exclusive")
-        if not user_id and not organization_id:
+        if not self.user_id and not self.organization_id:
             raise ValueError("either user_id and organization_id must be set")
+        return self
 
-        return values
-
-    @root_validator(skip_on_failure=True)
-    def validate_country(cls, values: dict[str, Any]) -> dict[str, Any]:
-        country: str = values["country"]
-        if country.upper() != country:
+    @model_validator(mode="after")
+    def validate_country(self) -> Self:
+        if self.country.upper() != self.country:
             raise ValueError("country must be uppercase")
-        return values
+        return self
 
 
 # Public API
 class Account(Schema):
     id: UUID
     account_type: AccountType
-    stripe_id: str | None
-    open_collective_slug: str | None
-    is_details_submitted: bool | None
+    stripe_id: str | None = None
+    open_collective_slug: str | None = None
+    is_details_submitted: bool | None = None
     country: str = Field(min_length=2, max_length=2)
 
     @classmethod
@@ -76,7 +72,7 @@ class Account(Schema):
 
 
 class AccountUpdate(Schema):
-    email: str | None
+    email: str | None = None
     country: str
     currency: str
     is_details_submitted: bool
@@ -88,15 +84,12 @@ class AccountUpdate(Schema):
 class AccountRead(AccountCreate):
     id: UUID
     account_type: AccountType
-    stripe_id: str | None
-    open_collective_slug: str | None
-    balance: int | None
-    balance_currency: str | None
-    is_details_submitted: bool | None
-    is_admin: bool | None
-
-    class Config:
-        orm_mode = True
+    stripe_id: str | None = None
+    open_collective_slug: str | None = None
+    balance: int | None = None
+    balance_currency: str | None = None
+    is_details_submitted: bool | None = None
+    is_admin: bool | None = None
 
 
 class AccountLink(Schema):

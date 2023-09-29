@@ -3,7 +3,7 @@ from uuid import UUID
 
 import structlog
 from fastapi import Request, Response
-from pydantic import validator
+from pydantic import field_validator
 
 from polar.config import settings
 from polar.kit import jwt
@@ -22,7 +22,8 @@ class LoginResponse(Schema):
     token: str | None = None
     goto_url: str | None = None
 
-    @validator("goto_url")
+    @field_validator("goto_url")
+    @classmethod
     def goto_polar_url(cls, v: str | None) -> str | None:
         if v is None or v.startswith(settings.FRONTEND_BASE_URL):
             return v

@@ -347,9 +347,7 @@ async def dashboard(
     ]
 
     return IssueListResponse(
-        # FIXME: mypy complains that List[Entry[IssueDashboardRead]] is not a
-        # List[Entry[DataT]]. Why?
-        data=data,  # type: ignore
+        data=data,
         included=list(included.values()),
         pagination=PaginationResponse(
             total_count=total_issue_count,

@@ -125,8 +125,8 @@ class PledgeType(str, Enum):
 
 class Pledger(Schema):
     name: str
-    github_username: str | None
-    avatar_url: str | None
+    github_username: str | None = None
+    avatar_url: str | None = None
 
 
 # Public API
@@ -138,20 +138,23 @@ class Pledge(Schema):
     type: PledgeType = Field(description="Type of pledge")
 
     refunded_at: datetime | None = Field(
-        description="If and when the pledge was refunded to the pledger"
+        None, description="If and when the pledge was refunded to the pledger"
     )  # noqa: E501
 
     scheduled_payout_at: datetime | None = Field(
-        description="When the payout is scheduled to be made to the maintainers behind the issue. Disputes must be made before this date."  # noqa: E501
+        None,
+        description="When the payout is scheduled to be made to the maintainers behind the issue. Disputes must be made before this date.",  # noqa: E501
     )
 
     issue: Issue = Field(description="The issue that the pledge was made towards")
 
     pledger: Pledger | None = Field(
-        description="The user or organization that made this pledge"
+        None, description="The user or organization that made this pledge"
     )
 
-    hosted_invoice_url: str | None = Field(description="URL of invoice for this pledge")
+    hosted_invoice_url: str | None = Field(
+        None, description="URL of invoice for this pledge"
+    )
 
     @classmethod
     def from_db(cls, o: PledgeModel, include_admin_fields: bool = False) -> Pledge:
@@ -239,13 +242,13 @@ class PledgeStripePaymentIntentCreate(Schema):
     issue_id: UUID
     email: str
     amount: int
-    setup_future_usage: Literal["on_session"] | None
+    setup_future_usage: Literal["on_session"] | None = None
 
 
 class PledgeStripePaymentIntentUpdate(Schema):
     email: str
     amount: int
-    setup_future_usage: Literal["on_session"] | None
+    setup_future_usage: Literal["on_session"] | None = None
 
 
 class PledgeStripePaymentIntentMutationResponse(Schema):
@@ -273,8 +276,8 @@ class PledgeRead(Schema):
     state: PledgeState
     type: PledgeType = Field(description="Type of pledge")
 
-    pledger_name: str | None
-    pledger_avatar: str | None
+    pledger_name: str | None = None
+    pledger_avatar: str | None = None
 
     authed_user_can_admin: bool = False  # deprecated
     scheduled_payout_at: datetime | None = None

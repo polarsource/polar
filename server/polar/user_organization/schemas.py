@@ -19,6 +19,3 @@ class UserOrganizationSettingsRead(Schema):
     email_notification_backed_issue_branch_created: bool = True
     email_notification_backed_issue_pull_request_created: bool = True
     email_notification_backed_issue_pull_request_merged: bool = True
-
-    class Config:
-        orm_mode = True

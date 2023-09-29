@@ -20,13 +20,13 @@ class Organization(Schema):
     name: str
     avatar_url: str
 
-    bio: str | None
-    pretty_name: str | None
-    company: str | None
-    blog: str | None
-    location: str | None
-    email: str | None
-    twitter_username: str | None
+    bio: str | None = None
+    pretty_name: str | None = None
+    company: str | None = None
+    blog: str | None = None
+    location: str | None = None
+    email: str | None = None
+    twitter_username: str | None = None
 
     pledge_minimum_amount: int
     pledge_badge_show_amount: bool
@@ -143,7 +143,7 @@ class RepositoryBadgeSettingsUpdate(Schema):
 # Internal model
 class RepositoryBadgeSettingsRead(Schema):
     id: UUID
-    avatar_url: str | None
+    avatar_url: str | None = None
     name: str
     synced_issues: int
     open_issues: int
@@ -168,7 +168,7 @@ class OrganizationBadgeSettingsUpdate(Schema):
 class OrganizationBadgeSettingsRead(Schema):
     show_amount: bool
     minimum_amount: int
-    message: str | None
+    message: str | None = None
     repositories: Sequence[RepositoryBadgeSettingsRead]
 
 

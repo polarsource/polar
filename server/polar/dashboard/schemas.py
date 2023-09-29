@@ -3,8 +3,7 @@ from enum import Enum
 from typing import Any, Generic, List, Literal, Self, TypeVar
 from uuid import UUID
 
-from pydantic import Field, parse_obj_as
-from pydantic.generics import GenericModel
+from pydantic import Field
 
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
@@ -68,19 +67,19 @@ class Relationship(Schema):
 IssueRelationship = dict[str, Relationship]
 
 
-class Entry(GenericModel, Generic[DataT]):
+class Entry(Schema, Generic[DataT]):
     type: str
     id: str | UUID
     attributes: DataT
     relationships: IssueRelationship | None = None
 
 
-class ListResponse(GenericModel, Generic[DataT]):
+class ListResponse(Schema, Generic[DataT]):
     data: List[Entry[DataT]]
     included: List[Entry[Any]] = []
 
 
-class SingleResponse(GenericModel, Generic[DataT]):
+class SingleResponse(Schema, Generic[DataT]):
     data: Entry[DataT]
     included: List[Entry[Any]] = []
 
@@ -92,15 +91,15 @@ class IssueDashboardRead(Schema):
     repository_id: UUID
     number: int
     title: str
-    author: JSONAny
+    author: JSONAny = None
     labels: list[Label] = []
-    closed_by: JSONAny
-    reactions: Reactions | None = Field(description="GitHub reactions")
+    closed_by: JSONAny = None
+    reactions: Reactions | None = Field(None, description="GitHub reactions")
     state: Literal["OPEN", "CLOSED"]
-    issue_closed_at: datetime | None
-    issue_modified_at: datetime | None
+    issue_closed_at: datetime | None = None
+    issue_modified_at: datetime | None = None
     issue_created_at: datetime
-    comments: int | None
+    comments: int | None = None
     progress: IssueStatus | None = None
     badge_custom_content: str | None = None
     funding: Funding
@@ -111,11 +110,13 @@ class IssueDashboardRead(Schema):
     )
 
     confirmed_solved_at: datetime | None = Field(
-        description="If this issue has been marked as confirmed solved through Polar"
+        None,
+        description="If this issue has been marked as confirmed solved through Polar",
     )
 
     upfront_split_to_contributors: int | None = Field(
-        description="Share of rewrads that will be rewarded to contributors of this issue. A number between 0 and 100 (inclusive)."  # noqa: E501
+        None,
+        description="Share of rewrads that will be rewarded to contributors of this issue. A number between 0 and 100 (inclusive).",  # noqa: E501
     )
 
     @classmethod
@@ -147,7 +148,7 @@ class IssueDashboardRead(Schema):
             author=i.author,
             labels=labels,
             closed_by=i.closed_by,
-            reactions=parse_obj_as(Reactions, i.reactions) if i.reactions else None,
+            reactions=Reactions.model_validate(i.reactions) if i.reactions else None,
             state="OPEN" if i.state == "OPEN" or i.state == "open" else "CLOSED",
             issue_closed_at=i.issue_closed_at,
             issue_modified_at=i.issue_modified_at,
@@ -191,7 +192,7 @@ def issue_progress(issue: Issue) -> IssueStatus:
 class PaginationResponse(Schema):
     total_count: int
     page: int
-    next_page: int | None
+    next_page: int | None = None
 
 
 class IssueListResponse(ListResponse[IssueDashboardRead]):

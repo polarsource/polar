@@ -11,7 +11,7 @@ import {
   type OrganizationBadgeSettingsUpdate,
   type RepositoryBadgeSettingsRead,
 } from 'polarkit/api/client'
-import { MoneyInput, PrimaryButton } from 'polarkit/components/ui'
+import { MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
 import {
   useOrganizationBadgeSettings,
   useSSE,

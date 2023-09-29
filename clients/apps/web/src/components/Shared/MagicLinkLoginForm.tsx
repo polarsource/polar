@@ -1,6 +1,6 @@
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { useState } from 'react'
 
 interface MagicLinkLoginFormProps {}

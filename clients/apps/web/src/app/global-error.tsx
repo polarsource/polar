@@ -1,6 +1,6 @@
 'use client'
 
-import { PrimaryButton } from 'polarkit/components/ui'
+import { PrimaryButton } from 'polarkit/components/ui/atoms'
 
 export default function GlobalError({
   error,

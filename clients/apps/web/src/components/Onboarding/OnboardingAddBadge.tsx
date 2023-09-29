@@ -1,5 +1,5 @@
 import { CONFIG } from 'polarkit'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import IconCounter from '../Dashboard/IconCounter'
 import IssueLabel from '../Dashboard/IssueLabel'
 

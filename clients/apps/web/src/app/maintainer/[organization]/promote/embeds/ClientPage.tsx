@@ -12,7 +12,7 @@ import {
   CopyToClipboardInput,
   LabeledRadioButton,
   ShadowBox,
-} from 'polarkit/components/ui'
+} from 'polarkit/components/ui/atoms'
 import { useListRepositories, useSearchIssues } from 'polarkit/hooks'
 import { ReactElement, useState } from 'react'
 

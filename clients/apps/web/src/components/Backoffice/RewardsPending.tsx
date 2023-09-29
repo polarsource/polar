@@ -10,7 +10,7 @@ import {
 import Link from 'next/link'
 import { api } from 'polarkit/api'
 import { BackofficeReward, PledgeState, PledgeType } from 'polarkit/api/client'
-import { ThinButton } from 'polarkit/components/ui'
+import { ThinButton } from 'polarkit/components/ui/atoms'
 import {
   useBackofficePledgeCreateInvoice,
   useBackofficeRewardsPending,

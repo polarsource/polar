@@ -6,7 +6,7 @@ import {
   FormattedDateTime,
   PrimaryButton,
   ShadowListGroup,
-} from 'polarkit/components/ui'
+} from 'polarkit/components/ui/atoms'
 import { useCallback, useState } from 'react'
 
 interface AuthenticationMethodProps {

@@ -1,7 +1,7 @@
 'use client'
 
 import { LogoType70 } from 'polarkit/components/brand'
-import { LabeledSeparator } from 'polarkit/components/ui'
+import { LabeledSeparator } from 'polarkit/components/ui/atoms'
 import GithubLoginButton from '../Shared/GithubLoginButton'
 import MagicLinkLoginForm from '../Shared/MagicLinkLoginForm'
 import { useLoginRedirect } from './Redirector'

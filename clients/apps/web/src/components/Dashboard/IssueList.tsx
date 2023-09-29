@@ -13,7 +13,17 @@ import {
   UserRead,
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from 'polarkit/components/ui/dropdown-menu'
 import React, {
   ChangeEvent,
   Dispatch,
@@ -25,16 +35,6 @@ import React, {
 } from 'react'
 import yayson from 'yayson'
 import Spinner from '../Shared/Spinner'
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu'
 import IssueListItem from './IssueListItem'
 
 const IssueList = (props: {

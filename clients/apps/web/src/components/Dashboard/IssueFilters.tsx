@@ -3,7 +3,7 @@
 import { DropdownMenuCheckboxItemProps } from '@radix-ui/react-dropdown-menu'
 import * as React from 'react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from 'polarkit/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -11,7 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from 'polarkit/components/ui/dropdown-menu'
 
 type Checked = DropdownMenuCheckboxItemProps['checked']
 

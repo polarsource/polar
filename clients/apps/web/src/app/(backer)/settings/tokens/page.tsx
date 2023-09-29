@@ -1,12 +1,12 @@
 'use client'
 
 import {
-  Banner,
   CopyToClipboardInput,
   Input,
   PrimaryButton,
   ThinButton,
-} from 'polarkit/components/ui'
+} from 'polarkit/components/ui/atoms'
+import { Banner } from 'polarkit/components/ui/molecules'
 import {
   useCreatePersonalAccessToken,
   useDeletePersonalAccessToken,

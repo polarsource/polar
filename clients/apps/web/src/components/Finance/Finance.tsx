@@ -16,7 +16,8 @@ import {
   Reward,
   RewardState,
 } from 'polarkit/api/client'
-import { Banner, PrimaryButton } from 'polarkit/components/ui'
+import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Banner } from 'polarkit/components/ui/molecules'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
 import { useState } from 'react'

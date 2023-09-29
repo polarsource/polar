@@ -111,27 +111,9 @@ importers:
       '@heroicons/react':
         specifier: ^2.0.16
         version: 2.0.16(react@18.2.0)
-      '@radix-ui/react-checkbox':
-        specifier: ^1.0.4
-        version: 1.0.4(@types/react-dom@18.2.7)(@types/react@18.2.21)(react-dom@18.2.0)(react@18.2.0)
       '@radix-ui/react-dropdown-menu':
         specifier: ^2.0.5
         version: 2.0.5(@types/react-dom@18.2.7)(@types/react@18.2.21)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-popover':
-        specifier: ^1.0.5
-        version: 1.0.5(@types/react@18.2.21)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-select':
-        specifier: ^1.2.2
-        version: 1.2.2(@types/react-dom@18.2.7)(@types/react@18.2.21)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-slot':
-        specifier: ^1.0.2
-        version: 1.0.2(@types/react@18.2.21)(react@18.2.0)
-      '@radix-ui/react-switch':
-        specifier: ^1.0.3
-        version: 1.0.3(@types/react-dom@18.2.7)(@types/react@18.2.21)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-tabs':
-        specifier: ^1.0.4
-        version: 1.0.4(@types/react-dom@18.2.7)(@types/react@18.2.21)(react-dom@18.2.0)(react@18.2.0)
       '@radix-ui/react-toast':
         specifier: ^1.1.3
         version: 1.1.3(react-dom@18.2.0)(react@18.2.0)
@@ -183,9 +165,6 @@ importers:
       jest:
         specifier: ^29.6.2
         version: 29.6.2(@types/node@20.5.7)
-      lucide-react:
-        specifier: ^0.272.0
-        version: 0.272.0(react@18.2.0)
       next:
         specifier: 13.5.2
         version: 13.5.2(@babel/core@7.22.11)(react-dom@18.2.0)(react@18.2.0)(sass@1.59.3)
@@ -355,6 +334,30 @@ importers:
       '@heroicons/react':
         specifier: ^2.0.16
         version: 2.0.16(react@18.2.0)
+      '@radix-ui/react-checkbox':
+        specifier: ^1.0.4
+        version: 1.0.4(@types/react-dom@18.2.7)(@types/react@18.2.21)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-dropdown-menu':
+        specifier: ^2.0.5
+        version: 2.0.5(@types/react-dom@18.2.7)(@types/react@18.2.21)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-popover':
+        specifier: ^1.0.5
+        version: 1.0.5(@types/react@18.2.21)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-select':
+        specifier: ^1.2.2
+        version: 1.2.2(@types/react-dom@18.2.7)(@types/react@18.2.21)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-slot':
+        specifier: ^1.0.2
+        version: 1.0.2(@types/react@18.2.21)(react@18.2.0)
+      '@radix-ui/react-switch':
+        specifier: ^1.0.3
+        version: 1.0.3(@types/react-dom@18.2.7)(@types/react@18.2.21)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-tabs':
+        specifier: ^1.0.4
+        version: 1.0.4(@types/react-dom@18.2.7)(@types/react@18.2.21)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-toast':
+        specifier: ^1.1.3
+        version: 1.1.3(react-dom@18.2.0)(react@18.2.0)
       '@tanstack/react-query':
         specifier: ^5.0.0-beta.20
         version: 5.0.0-beta.20(react-dom@18.2.0)(react@18.2.0)
@@ -367,6 +370,9 @@ importers:
       axios:
         specifier: ^0.27.2
         version: 0.27.2
+      class-variance-authority:
+        specifier: ^0.6.0
+        version: 0.6.0(typescript@5.0.4)
       clsx:
         specifier: ^1.2.1
         version: 1.2.1
@@ -379,6 +385,9 @@ importers:
       eventemitter3:
         specifier: ^5.0.0
         version: 5.0.0
+      lucide-react:
+        specifier: ^0.272.0
+        version: 0.272.0(react@18.2.0)
       react:
         specifier: ^18.2.0
         version: 18.2.0
@@ -388,6 +397,9 @@ importers:
       react-timeago:
         specifier: ^7.1.0
         version: 7.1.0(react@18.2.0)
+      tailwind-merge:
+        specifier: ^1.14.0
+        version: 1.14.0
       zustand:
         specifier: ^4.3.3
         version: 4.3.3(react@18.2.0)
@@ -2861,6 +2873,7 @@ packages:
     engines: {node: '>=6.9.0'}
     dependencies:
       regenerator-runtime: 0.14.0
+    dev: false
 
   /@babel/runtime@7.22.11:
     resolution: {integrity: sha512-ee7jVNlWN09+KftVOu9n7S8gQzD/Z6hN/I8VBRXW4P1+Xe7kJGXMwu8vds4aGIMHZnNbdpSWCfZZtinytpcAvA==}
@@ -4528,7 +4541,7 @@ packages:
       '@types/react':
         optional: true
     dependencies:
-      '@babel/runtime': 7.22.10
+      '@babel/runtime': 7.22.11
       '@radix-ui/react-compose-refs': 1.0.1(@types/react@18.2.21)(react@18.2.0)
       '@types/react': 18.2.21
       react: 18.2.0
@@ -7095,7 +7108,7 @@ packages:
     peerDependencies:
       '@testing-library/dom': '>=7.21.4'
     dependencies:
-      '@babel/runtime': 7.22.11
+      '@babel/runtime': 7.21.0
       '@testing-library/dom': 8.20.0
     dev: true
 

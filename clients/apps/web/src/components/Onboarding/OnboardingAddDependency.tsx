@@ -14,7 +14,7 @@ import {
   Visibility,
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { CONFIG } from 'polarkit/config'
 import { parseGitHubIssueLink } from 'polarkit/github'
 import { posthog } from 'posthog-js'

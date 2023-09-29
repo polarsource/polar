@@ -1,8 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { PrimaryButton } from 'polarkit/components/ui'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
+import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { parseGitHubIssueLink } from 'polarkit/github'
 import { ChangeEvent, MouseEvent, useState } from 'react'
 import HowItWorks from './HowItWorks'

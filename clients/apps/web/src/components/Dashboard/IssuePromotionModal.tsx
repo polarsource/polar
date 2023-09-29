@@ -15,7 +15,15 @@ import {
   Repository,
   UserRead,
 } from 'polarkit/api/client'
-import { Banner, MoneyInput, PrimaryButton } from 'polarkit/components/ui'
+import { MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Banner } from 'polarkit/components/ui/molecules'
+import { Switch } from 'polarkit/components/ui/switch'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from 'polarkit/components/ui/tabs'
 import {
   useBadgeWithComment,
   useIssueAddComment,
@@ -33,8 +41,6 @@ import { twMerge } from 'tailwind-merge'
 import CopyToClipboardInput from '../../../../../packages/polarkit/src/components/ui/atoms/CopyToClipboardInput'
 import { ModalHeader, Modal as ModernModal } from '../Modal'
 import { useModal } from '../Modal/useModal'
-import { Switch } from '../ui/switch'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import BadgeMessageForm from './BadgeMessageForm'
 
 const isIssueBadged = (issue: IssueDashboardRead): boolean => {

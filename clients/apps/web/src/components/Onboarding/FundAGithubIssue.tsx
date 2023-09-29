@@ -1,5 +1,5 @@
 import { useRouter } from 'next/navigation'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { parseGitHubIssueLink } from 'polarkit/github'
 import { ChangeEvent, MouseEvent, useState } from 'react'
 

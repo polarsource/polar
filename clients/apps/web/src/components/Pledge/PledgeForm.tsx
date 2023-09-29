@@ -19,21 +19,26 @@ import {
   PledgeStripePaymentIntentMutationResponse,
   PledgeStripePaymentIntentUpdate,
 } from 'polarkit/api/client'
-import { MoneyInput, PrimaryButton } from 'polarkit/components/ui'
-import { useListPaymentMethods } from 'polarkit/hooks'
-import { getCentsInDollarString } from 'polarkit/money'
-import { classNames } from 'polarkit/utils'
-import posthog from 'posthog-js'
-import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
+} from 'polarkit/components/ui/select'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from 'polarkit/components/ui/tabs'
+import { useListPaymentMethods } from 'polarkit/hooks'
+import { getCentsInDollarString } from 'polarkit/money'
+import { classNames } from 'polarkit/utils'
+import posthog from 'posthog-js'
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import Contribute from './Contribute'
 import FundOnCompletion from './FundOnCompletion'
 import PaymentForm from './PaymentForm'

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import { ThinButton } from 'polarkit/components/ui'
+import { ThinButton } from 'polarkit/components/ui/atoms'
 
 const meta: Meta<typeof ThinButton> = {
   title: 'Atoms/ThinButton',

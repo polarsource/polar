@@ -1,5 +1,5 @@
 import { InformationCircleIcon } from '@heroicons/react/20/solid'
-import { PrimaryButton } from 'polarkit/components/ui'
+import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { useUser, useUserPreferencesMutation } from 'polarkit/hooks'
 import { useEffect, useState } from 'react'
 import Box from './Box'

@@ -6,7 +6,7 @@ import {
   LabeledRadioButton,
   MoneyInput,
   PrimaryButton,
-} from 'polarkit/components/ui'
+} from 'polarkit/components/ui/atoms'
 import { classNames } from 'polarkit/utils'
 import { ChangeEvent, MouseEvent, useEffect, useRef, useState } from 'react'
 

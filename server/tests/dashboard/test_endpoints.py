@@ -94,10 +94,8 @@ async def test_get_with_pledge(
 
     summaries = [x for x in res["included"] if x["type"] == "pledge_summary"]
     assert len(summaries) == 1
-    assert (
-        summaries[0]["attributes"]["funding"]["pledges_sum"]["amount"] == pledge.amount
-    )
-    assert len(summaries[0]["attributes"]["pledges"]) == 1
+    assert summaries[0]["attributes"]["pay_upfront"]["total"]["amount"] == pledge.amount
+    assert len(summaries[0]["attributes"]["pay_upfront"]["pledgers"]) == 1
 
 
 @pytest.mark.asyncio

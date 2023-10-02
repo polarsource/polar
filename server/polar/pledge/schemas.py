@@ -8,11 +8,9 @@ from uuid import UUID
 from pydantic import Field
 
 from polar.currency.schemas import CurrencyAmount
-from polar.exceptions import PolarError
 from polar.funding.funding_schema import Funding
 from polar.issue.schemas import Issue
 from polar.kit.schemas import Schema
-from polar.models import Organization, User
 from polar.models.pledge import Pledge as PledgeModel
 
 
@@ -211,7 +209,7 @@ class SummaryPledge(Schema):
         )
 
 
-class PledgesSummary(Schema):
+class PledgePledgesSummary(Schema):
     funding: Funding
     pledges: list[SummaryPledge]
 

@@ -20,6 +20,8 @@ from polar.exceptions import (
     ResourceNotFound,
 )
 from polar.funding.funding_schema import Funding
+from polar.funding.schemas import PledgesSummary as FundingPledgesSummary
+from polar.funding.schemas import PledgesTypeSummaries
 from polar.integrations.github.service.user import github_user as github_user_service
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -61,7 +63,8 @@ from .hooks import (
     pledge_updated,
 )
 from .schemas import (
-    PledgesSummary,
+    PledgePledgesSummary,
+    Pledger,
     PledgeState,
     PledgeTransactionType,
     PledgeType,
@@ -1000,15 +1003,15 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
     async def issue_pledge_summary(
         self, session: AsyncSession, issue: Issue
-    ) -> PledgesSummary:
+    ) -> PledgePledgesSummary:
         return (await self.issues_pledge_summary(session, [issue]))[issue.id]
 
     async def issues_pledge_summary(
         self, session: AsyncSession, issues: Sequence[Issue]
-    ) -> dict[UUID, PledgesSummary]:
+    ) -> dict[UUID, PledgePledgesSummary]:
         all_pledges = await self.list_by(session, issue_ids=[i.id for i in issues])
 
-        res: dict[UUID, PledgesSummary] = {}
+        res: dict[UUID, PledgePledgesSummary] = {}
 
         pledges_by_issue: dict[UUID, list[Pledge]] = {}
         for p in all_pledges:
@@ -1030,7 +1033,55 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
             summary_pledges = [SummaryPledge.from_db(p) for p in pledges]
 
-            res[i.id] = PledgesSummary(funding=funding, pledges=summary_pledges)
+            res[i.id] = PledgePledgesSummary(funding=funding, pledges=summary_pledges)
+
+        return res
+
+    async def issues_pledge_type_summary(
+        self, session: AsyncSession, issues: Sequence[Issue]
+    ) -> dict[UUID, PledgesTypeSummaries]:
+        all_pledges = await self.list_by(session, issue_ids=[i.id for i in issues])
+
+        res: dict[UUID, PledgesTypeSummaries] = {}
+
+        pledges_by_issue: dict[UUID, list[Pledge]] = {}
+        for p in all_pledges:
+            exist = pledges_by_issue.get(p.issue_id, [])
+            exist.append(p)
+            pledges_by_issue[p.issue_id] = exist
+
+        for i in issues:
+            pledges = pledges_by_issue.get(i.id, [])
+
+            def pledger(p: Pledge) -> Pledger | None:
+                if p.user:
+                    return Pledger(
+                        name=p.user.username,
+                        github_username=p.user.username,
+                        avatar_url=p.user.avatar_url,
+                    )
+                if p.by_organization:
+                    return Pledger(
+                        name=p.by_organization.pretty_name or p.by_organization.name,
+                        github_username=p.by_organization.name,
+                        avatar_url=p.by_organization.avatar_url,
+                    )
+                return None
+
+            def summary(type: PledgeType) -> FundingPledgesSummary:
+                amount = sum([p.amount for p in pledges if p.type == type])
+                pledgers = [p for p in [pledger(p) for p in pledges] if p]
+
+                return FundingPledgesSummary(
+                    total=CurrencyAmount(currency="USD", amount=amount),
+                    pledgers=pledgers,
+                )
+
+            res[i.id] = PledgesTypeSummaries(
+                pay_upfront=summary(PledgeType.pay_upfront),
+                pay_on_completion=summary(PledgeType.pay_on_completion),
+                pay_directly=summary(PledgeType.pay_directly),
+            )
 
         return res
 

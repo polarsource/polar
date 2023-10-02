@@ -18,15 +18,17 @@ from polar.dashboard.schemas import (
     RelationshipData,
 )
 from polar.enums import Platforms
+from polar.exceptions import ResourceNotFound
+from polar.funding.schemas import PledgesTypeSummaries
 from polar.issue.schemas import Issue as IssueSchema
-from polar.issue.schemas import IssueRead, IssueReferenceRead
+from polar.issue.schemas import IssueReferenceRead
 from polar.issue.service import issue
 from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import Organization as OrganizationSchema
-from polar.pledge.schemas import PledgeRead, PledgesSummary, PledgeState
+from polar.pledge.schemas import PledgeRead, PledgeState
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session, sql
 from polar.repository.schemas import Repository as RepositorySchema
@@ -334,7 +336,7 @@ async def dashboard(
                 ir.data.append(RelationshipData(type="reference", id=ref.external_id))
 
     # get pledge summary (public data, vs pledges who are dependent on who you are)
-    pledge_summaries = await pledge_service.issues_pledge_summary(
+    pledge_summaries = await pledge_service.issues_pledge_type_summary(
         session,
         issues=issues,
     )
@@ -346,9 +348,9 @@ async def dashboard(
             attributes=summary,
         )
 
-        ir = issue_relationship(issue_id, "pledge_summary", [])
-        if isinstance(ir.data, list):  # it always is
-            ir.data.append(RelationshipData(type="pledge_summary", id=key))
+        issue_relationship(
+            issue_id, "pledge_summary", RelationshipData(type="pledge_summary", id=key)
+        )
 
     next_page = page + 1 if total_issue_count > page * limit else None
 
@@ -371,3 +373,13 @@ async def dashboard(
             next_page=next_page,
         ),
     )
+
+
+# An annoying hack to force the OpenAPI schema to include type definitions for
+# PledgesTypeSummaries
+@router.get(
+    "/dashboard/dummy_do_not_use",
+    response_model=PledgesTypeSummaries,
+)
+async def dummy_do_not_use() -> PledgesTypeSummaries:
+    raise ResourceNotFound()

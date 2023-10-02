@@ -7,14 +7,7 @@ import {
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import { api, queryClient } from 'polarkit/api'
-import {
-  CurrencyAmount,
-  IssueDashboardRead,
-  Organization,
-  Pledge,
-  Repository,
-  UserRead,
-} from 'polarkit/api/client'
+import { CurrencyAmount, Issue, Pledge, UserRead } from 'polarkit/api/client'
 import { MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { Switch } from 'polarkit/components/ui/switch'
@@ -43,15 +36,11 @@ import { ModalHeader, Modal as ModernModal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import BadgeMessageForm from './BadgeMessageForm'
 
-const isIssueBadged = (issue: IssueDashboardRead): boolean => {
+const isIssueBadged = (issue: Issue): boolean => {
   return issue.pledge_badge_currently_embedded
 }
 
-export const AddBadgeButton = (props: {
-  org: Organization
-  repo: Repository
-  issue: IssueDashboardRead
-}) => {
+export const AddBadgeButton = (props: { issue: Issue }) => {
   const [isBadged, setBadged] = useState<boolean>(isIssueBadged(props.issue))
 
   const remove = useIssueRemovePolarBadge()
@@ -75,8 +64,8 @@ export const AddBadgeButton = (props: {
       })
 
     posthog.capture('add-issue-badge', {
-      organization_name: props.org.name,
-      repository_name: props.repo.name,
+      organization_name: props.issue.repository.organization.name,
+      repository_name: props.issue.repository.name,
       issue_number: props.issue.number,
     })
   }
@@ -91,8 +80,8 @@ export const AddBadgeButton = (props: {
       })
 
     posthog.capture('remove-issue-badge', {
-      organization_name: props.org.name,
-      repository_name: props.repo.name,
+      organization_name: props.issue.repository.organization.name,
+      repository_name: props.issue.repository.name,
       issue_number: props.issue.number,
     })
   }
@@ -120,8 +109,8 @@ export const AddBadgeButton = (props: {
     })
 
     posthog.capture('badge-with-comment', {
-      organization_name: props.org.name,
-      repository_name: props.repo.name,
+      organization_name: props.issue.repository.organization.name,
+      repository_name: props.issue.repository.name,
       issue_number: props.issue.number,
     })
   }
@@ -135,8 +124,8 @@ export const AddBadgeButton = (props: {
     })
 
     posthog.capture('set-issue-funding-goal', {
-      organization_name: props.org.name,
-      repository_name: props.repo.name,
+      organization_name: props.issue.repository.organization.name,
+      repository_name: props.issue.repository.name,
       issue_number: props.issue.number,
     })
   }
@@ -178,8 +167,6 @@ export const AddBadgeButton = (props: {
         hide={toggle}
         modalContent={
           <BadgePromotionModal
-            org={props.org}
-            repo={props.repo}
             issue={props.issue}
             isShown={isShown}
             toggle={toggle}
@@ -196,9 +183,7 @@ export const AddBadgeButton = (props: {
 }
 
 export const BadgePromotionModal = (props: {
-  org: Organization
-  repo: Repository
-  issue: IssueDashboardRead
+  issue: Issue
   isShown: boolean
   toggle: () => void
   onRemoveBadge: () => Promise<void>
@@ -215,9 +200,11 @@ export const BadgePromotionModal = (props: {
     toggle()
   }
 
-  const badgeSettings = useOrganizationBadgeSettings(props.org.id)
+  const badgeSettings = useOrganizationBadgeSettings(
+    props.issue.repository.organization.id,
+  )
   const isBadged = isIssueBadged(props.issue)
-  const gitHubIssueLink = `https://github.com/${props.org.name}/${props.repo.name}/issues/${props.issue.number}`
+  const gitHubIssueLink = `https://github.com/${props.issue.repository.organization.name}/${props.issue.repository.name}/issues/${props.issue.number}`
 
   return (
     <>
@@ -306,9 +293,7 @@ export const BadgePromotionModal = (props: {
 }
 
 const PostCommentForm = (props: {
-  org: Organization
-  repo: Repository
-  issue: IssueDashboardRead
+  issue: Issue
   user: UserRead
   onAddComment: (message: string) => Promise<void>
 }) => {
@@ -326,8 +311,8 @@ const PostCommentForm = (props: {
     setPosted(true)
 
     posthog.capture('posted-issue-comment', {
-      organization_name: props.org.name,
-      repository_name: props.repo.name,
+      organization_name: props.issue.repository.organization.name,
+      repository_name: props.issue.repository.name,
       issue_number: props.issue.number,
     })
   }
@@ -459,14 +444,12 @@ const Tab = ({
 )
 
 const PromoteTab = (props: {
-  org: Organization
-  repo: Repository
-  issue: IssueDashboardRead
+  issue: Issue
   user: UserRead
   onAddComment: (message: string) => Promise<void>
 }) => {
-  const pledgePageLink = `https://polar.sh/${props.org.name}/${props.repo.name}/issues/${props.issue.number}`
-  const pledgeBadgeSVG = `https://api.polar.sh/api/github/${props.org.name}/${props.repo.name}/issues/${props.issue.number}/pledge.svg`
+  const pledgePageLink = `https://polar.sh/${props.issue.repository.organization.name}/${props.issue.repository.name}/issues/${props.issue.number}`
+  const pledgeBadgeSVG = `https://api.polar.sh/api/github/${props.issue.repository.organization.name}/${props.issue.repository.name}/issues/${props.issue.number}/pledge.svg`
 
   const embeds = [
     {
@@ -491,8 +474,8 @@ const PromoteTab = (props: {
   const onCopy = (id: string) => {
     posthog.capture('copy-to-clipboard', {
       value: id,
-      organization_name: props.org.name,
-      repository_name: props.repo.name,
+      organization_name: props.issue.repository.organization.name,
+      repository_name: props.issue.repository.name,
       issue_number: props.issue.number,
     })
   }
@@ -503,8 +486,6 @@ const PromoteTab = (props: {
         <div className="text-sm font-medium">Post a GitHub comment</div>
 
         <PostCommentForm
-          org={props.org}
-          repo={props.repo}
           issue={props.issue}
           user={props.user}
           onAddComment={props.onAddComment}
@@ -558,11 +539,7 @@ const PromoteTab = (props: {
   )
 }
 
-const RewardsTab = (props: {
-  issue: IssueDashboardRead
-  org: Organization
-  user: UserRead
-}) => {
+const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
   const [usePublicRewards, setUsePublicRewards] = useState<boolean>(
     props.issue.upfront_split_to_contributors !== null,
   )
@@ -736,10 +713,14 @@ const RewardsTab = (props: {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm">
                 <img
-                  src={props.org.avatar_url}
+                  src={props.issue.repository.organization.avatar_url}
                   className="h-6 w-6 rounded-full"
                 />
-                <div>{props.org.pretty_name || props.org.name}.</div>
+                <div>
+                  {props.issue.repository.organization.pretty_name ||
+                    props.issue.repository.organization.name}
+                  .
+                </div>
                 <div className="text-gray-500">
                   Reviews, feedback & maintenance. Reward yourself too.
                 </div>

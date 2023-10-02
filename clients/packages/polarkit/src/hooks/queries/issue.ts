@@ -57,10 +57,6 @@ export const useIssueAddPolarBadge: () => UseMutationResult<
                       attributes: {
                         ...issue.attributes,
                         ...result,
-
-                        // Map Issue (Public API) to IssueDashboardRead
-                        organization_id: result.repository.organization.id,
-                        repository_id: result.repository.id,
                       },
                     }
                   }
@@ -102,10 +98,6 @@ export const useIssueRemovePolarBadge = () =>
                       attributes: {
                         ...issue.attributes,
                         ...result,
-
-                        // Map Issue (Public API) to IssueDashboardRead
-                        organization_id: result.repository.organization.id,
-                        repository_id: result.repository.id,
                       },
                     }
                   }
@@ -181,10 +173,6 @@ export const useUpdateIssue = () =>
                       attributes: {
                         ...issue.attributes,
                         ...result,
-
-                        // Map Issue (Public API) to IssueDashboardRead
-                        organization_id: result.repository.organization.id,
-                        repository_id: result.repository.id,
                       },
                     }
                   }

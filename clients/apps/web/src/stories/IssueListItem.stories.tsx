@@ -5,11 +5,9 @@ import { queryClient } from 'polarkit'
 import {
   ExternalGitHubCommitReference,
   ExternalGitHubPullRequestReference,
-  IssueDashboardRead,
   IssueReferenceRead,
   IssueReferenceType,
   IssueStatus,
-  Organization,
   PledgeRead,
   PledgeState,
   PledgeType,
@@ -186,23 +184,8 @@ const referencesCommit: IssueReferenceRead[] = [
   },
 ]
 
-interface DashIssue extends IssueDashboardRead {
-  organization?: Organization
-}
-
-const dashboardIssue: DashIssue = {
-  ...issue,
-  organization_id: issue.repository.organization.id,
-  repository_id: issue.repository.id,
-  organization: org,
-  funding: {},
-  pledge_badge_currently_embedded: false,
-  needs_confirmation_solved: false,
-}
-
 const issueTriaged = {
-  ...dashboardIssue,
-  progress: IssueStatus.TRIAGED,
+  ...issue,
   labels: [
     {
       id: 'x',
@@ -216,18 +199,15 @@ const issueTriaged = {
     },
   ],
 }
-const issueInProgress = { ...dashboardIssue, progress: IssueStatus.IN_PROGRESS }
+const issueInProgress = { ...issue, progress: IssueStatus.IN_PROGRESS }
 const issuePullRequest = {
-  ...dashboardIssue,
+  ...issue,
   progress: IssueStatus.PULL_REQUEST,
 }
-const issueClosed = { ...dashboardIssue, progress: IssueStatus.CLOSED }
+const issueClosed = { ...issue, progress: IssueStatus.CLOSED }
 
 const dependents: IssueReadWithRelations = {
   ...issue,
-  organization_id: issue.repository.organization.id,
-  repository_id: issue.repository.id,
-
   number: 123,
   title: "Wow, we're blocked by this thing",
   organization: { ...org, name: 'someorg' },
@@ -253,7 +233,7 @@ const meta: Meta<typeof IssueListItem> = {
     issue: {
       options: ['Backlog', 'Triaged', 'InProgress', 'PullRequest', 'Closed'],
       mapping: {
-        Backlog: dashboardIssue,
+        Backlog: issue,
         Triaged: issueTriaged,
         InProgress: issueInProgress,
         PullRequest: issuePullRequest,
@@ -322,7 +302,7 @@ const meta: Meta<typeof IssueListItem> = {
     references: references,
     repo: repo,
     org: org,
-    issue: dashboardIssue,
+    issue: issue,
   },
   render: (args) => {
     return (

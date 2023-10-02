@@ -27,7 +27,7 @@ export type { CreatePledgeFromPaymentIntent } from './models/CreatePledgeFromPay
 export type { CreatePledgePayLater } from './models/CreatePledgePayLater';
 export type { CurrencyAmount } from './models/CurrencyAmount';
 export type { Entry_Any_ } from './models/Entry_Any_';
-export type { Entry_IssueDashboardRead_ } from './models/Entry_IssueDashboardRead_';
+export type { Entry_Issue_ } from './models/Entry_Issue_';
 export type { ExternalGitHubCommitReference } from './models/ExternalGitHubCommitReference';
 export type { ExternalGitHubPullRequestReference } from './models/ExternalGitHubPullRequestReference';
 export type { Funding } from './models/Funding';
@@ -36,7 +36,6 @@ export type { GithubUser } from './models/GithubUser';
 export type { HTTPValidationError } from './models/HTTPValidationError';
 export { InstallationCreate } from './models/InstallationCreate';
 export { Issue } from './models/Issue';
-export { IssueDashboardRead } from './models/IssueDashboardRead';
 export type { IssueExtensionRead } from './models/IssueExtensionRead';
 export type { IssueListResponse } from './models/IssueListResponse';
 export { IssueListType } from './models/IssueListType';

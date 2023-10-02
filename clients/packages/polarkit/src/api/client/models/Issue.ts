@@ -61,6 +61,14 @@ export type Issue = {
    * Share of rewrads that will be rewarded to contributors of this issue. A number between 0 and 100 (inclusive).
    */
   upfront_split_to_contributors?: number;
+  /**
+   * If this issue currently has the Polar badge SVG embedded
+   */
+  pledge_badge_currently_embedded: boolean;
+  /**
+   * Optional custom badge SVG promotional content
+   */
+  badge_custom_content?: string;
 };
 
 export namespace Issue {

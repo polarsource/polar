@@ -15,7 +15,17 @@ import {
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
 import IssueListItem from '../components/Dashboard/IssueListItem'
-import { addDays, addHours, issue, org, pledge, repo, user } from './testdata'
+import {
+  addDays,
+  addHours,
+  issue,
+  org,
+  pledge,
+  pledgeSummary,
+  pledger,
+  repo,
+  user,
+} from './testdata'
 
 type Story = StoryObj<typeof IssueListItem>
 
@@ -303,6 +313,13 @@ const meta: Meta<typeof IssueListItem> = {
     repo: repo,
     org: org,
     issue: issue,
+    pledgesSummary: {
+      ...pledgeSummary,
+      pay_upfront: {
+        ...pledgeSummary.pay_upfront,
+        total: { currency: 'USD', amount: 4000 },
+      },
+    },
   },
   render: (args) => {
     return (
@@ -627,6 +644,18 @@ export const SelfSummaryFundingGoal: Story = {
       },
     ],
     showSelfPledgesFor: user,
+
+    pledgesSummary: {
+      ...pledgeSummary,
+      pay_upfront: {
+        total: { currency: 'USD', amount: 4000 },
+        pledgers: [pledger, pledger, pledger],
+      },
+      pay_on_completion: {
+        total: { currency: 'USD', amount: 4000 },
+        pledgers: [pledger, pledger, pledger],
+      },
+    },
   },
 }
 
@@ -635,6 +664,7 @@ export const SelfSummaryNoGoal: Story = {
     ...Default.args,
     issue: {
       ...issueClosed,
+      upfront_split_to_contributors: 90,
     },
     references: referencesMerged,
     pledges: [
@@ -652,5 +682,29 @@ export const SelfSummaryNoGoal: Story = {
       },
     ],
     showSelfPledgesFor: user,
+
+    pledgesSummary: {
+      ...pledgeSummary,
+      pay_upfront: {
+        total: { currency: 'USD', amount: 4000 },
+        pledgers: [pledger, pledger, pledger],
+      },
+      pay_on_completion: {
+        total: { currency: 'USD', amount: 4000 },
+        pledgers: [pledger, pledger, pledger],
+      },
+    },
+  },
+}
+
+export const PublicReward: Story = {
+  args: {
+    ...Default.args,
+    issue: {
+      ...issueClosed,
+      upfront_split_to_contributors: 90,
+    },
+    references: [],
+    pledgesSummary: pledgeSummary,
   },
 }

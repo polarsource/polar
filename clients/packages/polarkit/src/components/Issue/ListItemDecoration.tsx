@@ -5,6 +5,7 @@ import {
   Pledge,
   PledgeRead,
   PledgeState,
+  PledgesTypeSummaries,
   UserRead,
 } from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/money'
@@ -31,6 +32,7 @@ const IssueListItemDecoration = ({
   repoName,
   issueNumber,
   pledges,
+  pledgesSummary,
   references,
   showDisputeAction,
   onDispute,
@@ -45,6 +47,7 @@ const IssueListItemDecoration = ({
   repoName: string
   issueNumber: number
   pledges: Array<PledgeRead | Pledge>
+  pledgesSummary?: PledgesTypeSummaries
   references: IssueReferenceRead[]
   showDisputeAction: boolean
   onDispute: (pledge: PledgeRead | Pledge) => void
@@ -124,6 +127,12 @@ const IssueListItemDecoration = ({
 
   const haveReferences = references && references.length > 0
 
+  const pledgesSummaryOrDefault = pledgesSummary ?? {
+    pay_directly: { total: { currency: 'USD', amount: 0 }, pledgers: [] },
+    pay_on_completion: { total: { currency: 'USD', amount: 0 }, pledgers: [] },
+    pay_upfront: { total: { currency: 'USD', amount: 0 }, pledgers: [] },
+  }
+
   return (
     <div>
       <div className="flex flex-col">
@@ -131,6 +140,7 @@ const IssueListItemDecoration = ({
           <IssuePledge
             issue={issue}
             pledges={pledges}
+            pledgesSummary={pledgesSummaryOrDefault}
             onConfirmPledges={onConfirmPledges}
             showConfirmPledgeAction={showConfirmPledgeAction}
             confirmPledgeIsLoading={confirmPledgeIsLoading}

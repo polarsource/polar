@@ -6,6 +6,7 @@ import type { IssueListType } from '../models/IssueListType';
 import type { IssueSortBy } from '../models/IssueSortBy';
 import type { IssueStatus } from '../models/IssueStatus';
 import type { Platforms } from '../models/Platforms';
+import type { PledgesTypeSummaries } from '../models/PledgesTypeSummaries';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -102,6 +103,18 @@ export class DashboardService {
       errors: {
         422: `Validation Error`,
       },
+    });
+  }
+
+  /**
+   * Dummy Do Not Use
+   * @returns PledgesTypeSummaries Successful Response
+   * @throws ApiError
+   */
+  public dummyDoNotUse(): CancelablePromise<PledgesTypeSummaries> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/dashboard/dummy_do_not_use',
     });
   }
 

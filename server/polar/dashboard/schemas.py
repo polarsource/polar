@@ -9,6 +9,7 @@ from pydantic.generics import GenericModel
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.funding.schemas import Funding
+from polar.issue.schemas import Issue as IssueSchema
 from polar.issue.schemas import Label, Reactions
 from polar.kit.schemas import Schema
 from polar.models.issue import Issue
@@ -85,84 +86,6 @@ class SingleResponse(GenericModel, Generic[DataT]):
     included: List[Entry[Any]] = []
 
 
-class IssueDashboardRead(Schema):
-    id: UUID
-    platform: Platforms
-    organization_id: UUID
-    repository_id: UUID
-    number: int
-    title: str
-    author: JSONAny
-    labels: list[Label] = []
-    closed_by: JSONAny
-    reactions: Reactions | None = Field(description="GitHub reactions")
-    state: Literal["OPEN", "CLOSED"]
-    issue_closed_at: datetime | None
-    issue_modified_at: datetime | None
-    issue_created_at: datetime
-    comments: int | None
-    progress: IssueStatus | None = None
-    badge_custom_content: str | None = None
-    funding: Funding
-    pledge_badge_currently_embedded: bool
-
-    needs_confirmation_solved: bool = Field(
-        description="If a maintainer needs to mark this issue as solved"
-    )
-
-    confirmed_solved_at: datetime | None = Field(
-        description="If this issue has been marked as confirmed solved through Polar"
-    )
-
-    upfront_split_to_contributors: int | None = Field(
-        description="Share of rewrads that will be rewarded to contributors of this issue. A number between 0 and 100 (inclusive)."  # noqa: E501
-    )
-
-    @classmethod
-    def from_db(cls, i: Issue) -> Self:
-        funding = Funding(
-            funding_goal=CurrencyAmount(currency="USD", amount=i.funding_goal)
-            if i.funding_goal
-            else None,
-            pledges_sum=CurrencyAmount(currency="USD", amount=i.pledged_amount_sum),
-        )
-
-        labels = (
-            [
-                Label(name=label["name"], color=label["color"])
-                for label in i.labels
-                if "name" in label and "color" in label
-            ]
-            if i.labels and isinstance(i.labels, list)
-            else []
-        )
-
-        return cls(
-            id=i.id,
-            platform=i.platform,
-            organization_id=i.organization_id,
-            repository_id=i.repository_id,
-            number=i.number,
-            title=i.title,
-            author=i.author,
-            labels=labels,
-            closed_by=i.closed_by,
-            reactions=parse_obj_as(Reactions, i.reactions) if i.reactions else None,
-            state="OPEN" if i.state == "OPEN" or i.state == "open" else "CLOSED",
-            issue_closed_at=i.issue_closed_at,
-            issue_modified_at=i.issue_modified_at,
-            issue_created_at=i.issue_created_at,
-            comments=i.comments,
-            progress=issue_progress(i),
-            badge_custom_content=i.badge_custom_content,
-            funding=funding,
-            pledge_badge_currently_embedded=i.pledge_badge_currently_embedded,
-            needs_confirmation_solved=i.needs_confirmation_solved,
-            confirmed_solved_at=i.confirmed_solved_at,
-            upfront_split_to_contributors=i.upfront_split_to_contributors,
-        )
-
-
 def issue_progress(issue: Issue) -> IssueStatus:
     # closed
     if issue.issue_closed_at:
@@ -194,5 +117,5 @@ class PaginationResponse(Schema):
     next_page: int | None
 
 
-class IssueListResponse(ListResponse[IssueDashboardRead]):
+class IssueListResponse(ListResponse[IssueSchema]):
     pagination: PaginationResponse

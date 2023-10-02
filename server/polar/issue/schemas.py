@@ -96,6 +96,14 @@ class Issue(Schema):
         description="Share of rewrads that will be rewarded to contributors of this issue. A number between 0 and 100 (inclusive)."  # noqa: E501
     )
 
+    pledge_badge_currently_embedded: bool = Field(
+        description="If this issue currently has the Polar badge SVG embedded"
+    )
+
+    badge_custom_content: str | None = Field(
+        default=None, description="Optional custom badge SVG promotional content"
+    )
+
     @classmethod
     def from_db(cls, i: IssueModel) -> Self:
         funding = Funding(
@@ -134,6 +142,8 @@ class Issue(Schema):
             repository=Repository.from_db(i.repository),
             labels=labels,
             upfront_split_to_contributors=i.upfront_split_to_contributors,
+            pledge_badge_currently_embedded=i.pledge_badge_currently_embedded,
+            badge_custom_content=i.badge_custom_content,
         )
 
 

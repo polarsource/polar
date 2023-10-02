@@ -340,7 +340,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 pledge_by_organization.id,
             )
 
-        elif load_repository:
+        if load_repository:
             statement = statement.join(
                 issue_repository,
                 Issue.repository.of_type(issue_repository),

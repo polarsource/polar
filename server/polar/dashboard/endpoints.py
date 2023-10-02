@@ -8,7 +8,6 @@ from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.dashboard.schemas import (
     Entry,
-    IssueDashboardRead,
     IssueListResponse,
     IssueListType,
     IssueRelationship,
@@ -19,6 +18,7 @@ from polar.dashboard.schemas import (
     RelationshipData,
 )
 from polar.enums import Platforms
+from polar.issue.schemas import Issue as IssueSchema
 from polar.issue.schemas import IssueRead, IssueReferenceRead
 from polar.issue.service import issue
 from polar.models.organization import Organization
@@ -336,19 +336,17 @@ async def dashboard(
 
     next_page = page + 1 if total_issue_count > page * limit else None
 
-    data: List[Entry[IssueDashboardRead]] = [
-        Entry[IssueDashboardRead](
+    data: List[Entry[IssueSchema]] = [
+        Entry[IssueSchema](
             id=i.id,
             type="issue",
-            attributes=IssueDashboardRead.from_db(i),
+            attributes=IssueSchema.from_db(i),
             relationships=issue_relationships.get(i.id, None),
         )
         for i in issues
     ]
 
     return IssueListResponse(
-        # FIXME: mypy complains that List[Entry[IssueDashboardRead]] is not a
-        # List[Entry[DataT]]. Why?
         data=data,  # type: ignore
         included=list(included.values()),
         pagination=PaginationResponse(

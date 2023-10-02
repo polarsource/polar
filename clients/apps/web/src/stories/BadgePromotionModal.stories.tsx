@@ -3,33 +3,16 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { BadgePromotionModal } from '@/components/Dashboard/IssuePromotionModal'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from 'polarkit'
-import { IssueDashboardRead, Organization } from 'polarkit/api/client'
-import { issue, org, repo, user } from './testdata'
+import { issue, user } from './testdata'
 
 type Story = StoryObj<typeof BadgePromotionModal>
-
-interface DashIssue extends IssueDashboardRead {
-  organization?: Organization
-}
-
-const dashboardIssue: DashIssue = {
-  ...issue,
-  organization_id: issue.repository.organization.id,
-  repository_id: issue.repository.id,
-  funding: {},
-  organization: org,
-  pledge_badge_currently_embedded: false,
-  needs_confirmation_solved: false,
-}
 
 const meta: Meta<typeof BadgePromotionModal> = {
   title: 'Organisms/BadgePromotionModal',
   component: BadgePromotionModal,
   tags: ['autodocs'],
   args: {
-    repo: repo,
-    org: org,
-    issue: dashboardIssue,
+    issue: issue,
     isShown: true,
     toggle: () => {},
     user: user,
@@ -52,7 +35,7 @@ export const FundingGoal: Story = {
   args: {
     ...Default.args,
     issue: {
-      ...dashboardIssue,
+      ...issue,
       funding: {
         funding_goal: { currency: 'USD', amount: 123000 },
         pledges_sum: { currency: 'USD', amount: 8000 },
@@ -75,7 +58,7 @@ export const RewardsWithSplit: Story = {
     ...Default.args,
     defaultTab: 'rewards',
     issue: {
-      ...dashboardIssue,
+      ...issue,
       upfront_split_to_contributors: 70,
     },
   },

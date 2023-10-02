@@ -9,7 +9,6 @@ import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
 import {
   Issue,
-  IssueDashboardRead,
   IssueReferenceRead,
   IssueStatus,
   Label,
@@ -40,7 +39,7 @@ import { AddBadgeButton } from './IssuePromotionModal'
 const IssueListItem = (props: {
   org: Organization
   repo: Repository
-  issue: IssueDashboardRead | Issue
+  issue: Issue
   references: IssueReferenceRead[]
   dependents?: IssueReadWithRelations[]
   pledges: Array<PledgeRead | Pledge>
@@ -260,11 +259,7 @@ const IssueListItem = (props: {
               {props.canAddRemovePolarLabel &&
                 'funding' in props.issue &&
                 'pledge_badge_currently_embedded' in props.issue && (
-                  <AddBadgeButton
-                    org={props.org}
-                    repo={props.repo}
-                    issue={props.issue}
-                  />
+                  <AddBadgeButton issue={props.issue} />
                 )}
 
               {props.right}

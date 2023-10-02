@@ -2,13 +2,13 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import type { IssueDashboardRead } from './IssueDashboardRead';
+import type { Issue } from './Issue';
 import type { Relationship } from './Relationship';
 
-export type Entry_IssueDashboardRead_ = {
+export type Entry_Issue_ = {
   type: string;
   id: string;
-  attributes: IssueDashboardRead;
+  attributes: Issue;
   relationships?: Record<string, Relationship>;
 };
 

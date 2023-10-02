@@ -116,6 +116,7 @@ export const issue: Issue = {
   repository: repo,
   funding: {},
   needs_confirmation_solved: false,
+  pledge_badge_currently_embedded: false,
 }
 
 export const issueBodyHTML = `<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit,

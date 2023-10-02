@@ -1,9 +1,8 @@
 import { useRouter } from 'next/navigation'
 import {
-  IssueDashboardRead,
+  Issue,
   IssueReferenceRead,
   IssueReferenceType,
-  IssueStatus,
   Organization,
   Platforms,
   PledgeRead,
@@ -37,7 +36,7 @@ const OnboardingAddDependency = () => {
     name: 'x',
     organization: demoOrg,
   }
-  const demoIssue: IssueDashboardRead = {
+  const demoIssue: Issue = {
     id: '',
     title: 'Provide a UserInfo endpoint implementation',
     reactions: {
@@ -52,13 +51,11 @@ const OnboardingAddDependency = () => {
       eyes: 0,
     },
     comments: 17,
-    progress: IssueStatus.PULL_REQUEST,
     platform: Platforms.GITHUB,
-    organization_id: demoOrg.id,
-    repository_id: demoRepo.id,
+    repository: demoRepo,
     number: 123,
     issue_created_at: 'x',
-    state: IssueDashboardRead.state.OPEN,
+    state: Issue.state.OPEN,
     funding: {},
     pledge_badge_currently_embedded: false,
     needs_confirmation_solved: false,

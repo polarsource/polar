@@ -19,7 +19,7 @@ from polar.exceptions import (
     NotPermitted,
     ResourceNotFound,
 )
-from polar.funding.schemas import Funding
+from polar.funding.funding_schema import Funding
 from polar.integrations.github.service.user import github_user as github_user_service
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook
 from polar.integrations.stripe.service import stripe as stripe_service

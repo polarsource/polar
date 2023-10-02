@@ -11,7 +11,7 @@ from pydantic import Field, HttpUrl, parse_obj_as
 
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
-from polar.funding.schemas import Funding
+from polar.funding.funding_schema import Funding
 from polar.integrations.github import client as github
 from polar.integrations.github.badge import GithubBadge
 from polar.kit.schemas import Schema

@@ -8,7 +8,7 @@ from pydantic.generics import GenericModel
 
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
-from polar.funding.schemas import Funding
+from polar.funding.funding_schema import Funding
 from polar.issue.schemas import Issue as IssueSchema
 from polar.issue.schemas import Label, Reactions
 from polar.kit.schemas import Schema

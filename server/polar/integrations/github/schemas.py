@@ -1,6 +1,6 @@
 from typing import Literal
 
-from polar.funding.schemas import Funding
+from polar.funding.funding_schema import Funding
 from polar.kit.schemas import Schema
 
 

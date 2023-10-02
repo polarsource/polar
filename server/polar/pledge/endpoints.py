@@ -8,7 +8,7 @@ from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
-from polar.funding.schemas import Funding
+from polar.funding.funding_schema import Funding
 from polar.issue.service import issue as issue_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session

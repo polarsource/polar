@@ -84,7 +84,9 @@ export default async function Page({
       api.pledges.summary({ issueId: issue.id }),
     ])
     issueHTMLBody = bodyResponse
-    pledgers = pledgeSummary.pledges.map(({ pledger }) => pledger)
+    pledgers = pledgeSummary.pledges
+      .map(({ pledger }) => pledger)
+      .filter((p): p is Pledger => !!p)
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) {
       notFound()

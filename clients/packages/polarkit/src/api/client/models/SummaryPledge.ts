@@ -10,6 +10,6 @@ export type SummaryPledge = {
    * Type of pledge
    */
   type: PledgeType;
-  pledger: Pledger;
+  pledger?: Pledger;
 };
 

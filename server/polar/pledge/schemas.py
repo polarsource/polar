@@ -157,14 +157,13 @@ class Pledge(Schema):
     def from_db(cls, o: PledgeModel, include_admin_fields: bool = False) -> Pledge:
         pledger: Pledger | None = None
 
-        if o.by_organization_id:
+        if o.by_organization:
             pledger = Pledger(
-                name=o.by_organization.pretty_name or o.by_organization.name,
+                name=o.by_organization.name,
                 github_username=o.by_organization.name,
                 avatar_url=o.by_organization.avatar_url,
             )
-
-        if o.by_user_id:
+        elif o.user:
             pledger = Pledger(
                 name=o.user.username,
                 github_username=o.user.username,
@@ -187,22 +186,23 @@ class Pledge(Schema):
 
 class SummaryPledge(Schema):
     type: PledgeType = Field(description="Type of pledge")
-    pledger: Pledger
+    pledger: Pledger | None
 
     @classmethod
     def from_db(cls, o: PledgeModel) -> SummaryPledge:
-        pledger_model = o.pledger
-        if isinstance(pledger_model, Organization):
+        pledger: Pledger | None = None
+
+        if o.by_organization:
             pledger = Pledger(
-                name=pledger_model.name,
-                github_username=pledger_model.name,
-                avatar_url=pledger_model.avatar_url,
+                name=o.by_organization.name,
+                github_username=o.by_organization.name,
+                avatar_url=o.by_organization.avatar_url,
             )
-        else:
+        elif o.user:
             pledger = Pledger(
-                name=pledger_model.username,
-                github_username=pledger_model.username,
-                avatar_url=pledger_model.avatar_url,
+                name=o.user.username,
+                github_username=o.user.username,
+                avatar_url=o.user.avatar_url,
             )
 
         return SummaryPledge(

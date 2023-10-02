@@ -9,7 +9,7 @@ from pydantic import Field
 
 from polar.currency.schemas import CurrencyAmount
 from polar.exceptions import PolarError
-from polar.funding.schemas import Funding
+from polar.funding.funding_schema import Funding
 from polar.issue.schemas import Issue
 from polar.kit.schemas import Schema
 from polar.models import Organization, User

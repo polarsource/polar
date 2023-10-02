@@ -2,11 +2,11 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import type { Funding } from './Funding';
-import type { SummaryPledge } from './SummaryPledge';
+import type { CurrencyAmount } from './CurrencyAmount';
+import type { Pledger } from './Pledger';
 
 export type PledgesSummary = {
-  funding: Funding;
-  pledges: Array<SummaryPledge>;
+  total: CurrencyAmount;
+  pledgers: Array<Pledger>;
 };
 

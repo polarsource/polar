@@ -1,12 +1,14 @@
 import { ClockIcon, HeartIcon } from '@heroicons/react/20/solid'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import {
+  CurrencyAmount,
   Funding,
   Issue,
   Pledge,
   PledgeRead,
   PledgeState,
-  PledgeType,
+  Pledger,
+  PledgesTypeSummaries,
   UserRead,
 } from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/money'
@@ -21,6 +23,7 @@ interface Props {
   funding: Funding
   showSelfPledgesFor?: UserRead
   issue: Issue
+  pledgesSummary: PledgesTypeSummaries
 }
 
 const IssuePledge = (props: Props) => {
@@ -102,15 +105,13 @@ const IssuePledge = (props: Props) => {
             )}
           </p>
 
-          <Funded
-            pledges={pledges.filter((p) => p.type === PledgeType.PAY_UPFRONT)}
-          />
+          <Funded summary={props.pledgesSummary.pay_upfront} />
 
-          <Pledged
-            pledges={pledges.filter(
-              (p) => p.type === PledgeType.PAY_ON_COMPLETION,
-            )}
-          />
+          <Pledged summary={props.pledgesSummary.pay_on_completion} />
+
+          {props.issue.upfront_split_to_contributors && (
+            <PublicReward percent={props.issue.upfront_split_to_contributors} />
+          )}
         </div>
 
         <div className="flex flex-row items-center space-x-4">
@@ -165,66 +166,64 @@ const IssuePledge = (props: Props) => {
 
 export default IssuePledge
 
-const Funded = ({ pledges }: { pledges: Array<PledgeRead | Pledge> }) => {
-  if (pledges.length === 0) {
+const Funded = ({
+  summary,
+}: {
+  summary: {
+    total: CurrencyAmount
+    pledgers: Array<Pledger>
+  }
+}) => {
+  if (summary.total.amount === 0) {
     return <></>
   }
 
-  const avatars = pledges
-    .map((p) => {
-      if ('pledger' in p) {
-        return p.pledger?.avatar_url
-      }
-      if ('pledger_avatar' in p) {
-        return p.pledger_avatar
-      }
-    })
-    .filter((a) => Boolean(a))
-    .slice(0, 3) as Array<string>
+  const avatars = summary.pledgers
+    .map((p) => p.avatar_url)
+    .filter((a): a is string => Boolean(a))
+    .slice(0, 3)
 
-  const sum = pledges
-    .map((p) => (typeof p.amount === 'number' ? p.amount : p.amount.amount))
-    .reduce((a, b) => a + b, 0)
+  const sum = 0 // TODO!!!
 
   return (
     <div className="flex flex-row items-center">
       <Avatars avatars={avatars} />
       <PledgesBubbleWrap>
         <HeartIcon className="h-4 w-4 text-red-600" />
-        {sum > 0 && <span>${getCentsInDollarString(sum, false, true)}</span>}
+        <span>
+          ${getCentsInDollarString(summary.total.amount, false, true)}
+        </span>
         <span>Funded</span>
       </PledgesBubbleWrap>
     </div>
   )
 }
 
-const Pledged = ({ pledges }: { pledges: Array<PledgeRead | Pledge> }) => {
-  if (pledges.length === 0) {
+const Pledged = ({
+  summary,
+}: {
+  summary: {
+    total: CurrencyAmount
+    pledgers: Array<Pledger>
+  }
+}) => {
+  if (summary.total.amount === 0) {
     return <></>
   }
 
-  const avatars = pledges
-    .map((p) => {
-      if ('pledger' in p) {
-        return p.pledger?.avatar_url
-      }
-      if ('pledger_avatar' in p) {
-        return p.pledger_avatar
-      }
-    })
-    .filter((a) => Boolean(a))
-    .slice(0, 3) as Array<string>
-
-  const sum = pledges
-    .map((p) => (typeof p.amount === 'number' ? p.amount : p.amount.amount))
-    .reduce((a, b) => a + b, 0)
+  const avatars = summary.pledgers
+    .map((p) => p.avatar_url)
+    .filter((a): a is string => Boolean(a))
+    .slice(0, 3)
 
   return (
     <div className="flex flex-row items-center">
       <Avatars avatars={avatars} />
       <PledgesBubbleWrap>
         <ClockIcon className="h-4 w-4 text-yellow-600" />
-        {sum > 0 && <span>${getCentsInDollarString(sum, false, true)}</span>}
+        <span>
+          ${getCentsInDollarString(summary.total.amount, false, true)}
+        </span>
         <span>Pledged</span>
       </PledgesBubbleWrap>
     </div>
@@ -247,4 +246,13 @@ const Avatars = ({ avatars }: { avatars: Array<string> }) => (
       />
     ))}
   </>
+)
+
+const PublicReward = ({ percent }: { percent: number }) => (
+  <div className="flex items-center gap-2 rounded-xl border border-blue-200 py-0.5 pl-2 pr-0.5 text-xs text-gray-900 dark:border-blue-800 dark:text-gray-200">
+    <div>Public Reward</div>
+    <div className="rounded-xl bg-blue-100 px-1 py-0.5 dark:bg-blue-700">
+      {percent}%
+    </div>
+  </div>
 )

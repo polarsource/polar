@@ -128,6 +128,7 @@ const IssueListPage = (props: {
           references={issue.references}
           dependents={issue.dependents}
           pledges={issue.pledges}
+          pledgesSummary={issue.pledge_summary}
           org={issue.organization}
           repo={issue.repository}
           key={issue.id}

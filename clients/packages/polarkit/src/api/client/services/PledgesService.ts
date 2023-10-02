@@ -6,8 +6,8 @@ import type { CreatePledgePayLater } from '../models/CreatePledgePayLater';
 import type { ListResource_Pledge_ } from '../models/ListResource_Pledge_';
 import type { Platforms } from '../models/Platforms';
 import type { Pledge } from '../models/Pledge';
+import type { PledgePledgesSummary } from '../models/PledgePledgesSummary';
 import type { PledgeRead } from '../models/PledgeRead';
-import type { PledgesSummary } from '../models/PledgesSummary';
 import type { PledgeStripePaymentIntentCreate } from '../models/PledgeStripePaymentIntentCreate';
 import type { PledgeStripePaymentIntentMutationResponse } from '../models/PledgeStripePaymentIntentMutationResponse';
 import type { PledgeStripePaymentIntentUpdate } from '../models/PledgeStripePaymentIntentUpdate';
@@ -63,14 +63,14 @@ export class PledgesService {
   /**
    * Get pledges summary (Public API)
    * Get summary of pledges for resource.
-   * @returns PledgesSummary Successful Response
+   * @returns PledgePledgesSummary Successful Response
    * @throws ApiError
    */
   public summary({
     issueId,
   }: {
     issueId: string,
-  }): CancelablePromise<PledgesSummary> {
+  }): CancelablePromise<PledgePledgesSummary> {
     return this.httpRequest.request({
       method: 'GET',
       url: '/api/v1/pledges/summary',

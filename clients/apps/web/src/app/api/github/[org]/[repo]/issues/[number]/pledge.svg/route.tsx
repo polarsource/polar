@@ -1,12 +1,12 @@
 import { getServerURL } from 'polarkit/api'
-import { Issue, Pledger, PledgesSummary } from 'polarkit/api/client'
+import { Issue, PledgePledgesSummary, Pledger } from 'polarkit/api/client'
 import { Badge } from 'polarkit/components/badge'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
 type Data = {
-  pledges: PledgesSummary
+  pledges: PledgePledgesSummary
   issue: Issue
 }
 
@@ -21,7 +21,7 @@ const lookupIssue = (externalUrl: string): Promise<Issue> =>
     return response.json()
   })
 
-const pledgesSummary = (issueId: string): Promise<PledgesSummary> =>
+const pledgesSummary = (issueId: string): Promise<PledgePledgesSummary> =>
   fetch(`${getServerURL()}/api/v1/pledges/summary?issue_id=${issueId}`, {
     method: 'GET',
     next: { revalidate: 60 },

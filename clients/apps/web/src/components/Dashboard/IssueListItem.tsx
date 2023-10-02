@@ -14,6 +14,7 @@ import {
   Label,
   Organization,
   Pledge,
+  PledgesTypeSummaries,
   Repository,
   UserRead,
   type PledgeRead,
@@ -43,6 +44,7 @@ const IssueListItem = (props: {
   references: IssueReferenceRead[]
   dependents?: IssueReadWithRelations[]
   pledges: Array<PledgeRead | Pledge>
+  pledgesSummary?: PledgesTypeSummaries
   checkJustPledged?: boolean
   canAddRemovePolarLabel: boolean
   showPledgeAction: boolean
@@ -275,6 +277,7 @@ const IssueListItem = (props: {
               repoName={props.repo.name}
               issueNumber={props.issue.number}
               pledges={mergedPledges}
+              pledgesSummary={props.pledgesSummary}
               references={props.references}
               showDisputeAction={true}
               onDispute={onDispute}

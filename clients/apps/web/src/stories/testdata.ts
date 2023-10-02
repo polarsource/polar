@@ -17,6 +17,7 @@ import {
   PledgeType,
   Pledger,
   PledgerPledgePendingNotification,
+  PledgesTypeSummaries,
   Reactions,
   Repository,
   RewardPaidNotification,
@@ -143,6 +144,12 @@ export const pledger: Pledger = {
   name: 'zegl',
   github_username: 'zegl',
   avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+}
+
+export const pledgeSummary: PledgesTypeSummaries = {
+  pay_directly: { total: { currency: 'USD', amount: 0 }, pledgers: [] },
+  pay_on_completion: { total: { currency: 'USD', amount: 0 }, pledgers: [] },
+  pay_upfront: { total: { currency: 'USD', amount: 0 }, pledgers: [] },
 }
 
 // PublicAPI

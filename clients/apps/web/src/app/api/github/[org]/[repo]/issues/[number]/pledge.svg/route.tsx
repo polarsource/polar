@@ -1,5 +1,5 @@
 import { getServerURL } from 'polarkit/api'
-import { Issue, PledgesSummary } from 'polarkit/api/client'
+import { Issue, Pledger, PledgesSummary } from 'polarkit/api/client'
 import { Badge } from 'polarkit/components/badge'
 const { default: satori } = require('satori')
 
@@ -61,7 +61,9 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
 
   const avatarUrlsSet = new Set(
     data.pledges.pledges
-      .map(({ pledger }) => pledger.avatar_url ?? '')
+      .map(({ pledger }) => pledger)
+      .filter((p): p is Pledger => !!p)
+      .map((p) => p.avatar_url ?? '')
       .filter((s) => s.length > 0),
   )
 

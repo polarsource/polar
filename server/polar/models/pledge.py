@@ -97,7 +97,9 @@ class Pledge(RecordModel):
         default=None,
     )
 
-    user: Mapped[User] = relationship("User", foreign_keys=[by_user_id], lazy="raise")
+    user: Mapped[User | None] = relationship(
+        "User", foreign_keys=[by_user_id], lazy="raise"
+    )
 
     by_organization: Mapped[Organization] = relationship(
         "Organization", foreign_keys=[by_organization_id], lazy="raise"
@@ -112,11 +114,3 @@ class Pledge(RecordModel):
     )
 
     issue: Mapped[Issue] = relationship("Issue", foreign_keys=[issue_id], lazy="raise")
-
-    @property
-    def pledger(self) -> User | Organization:
-        if self.by_organization is not None:
-            return self.by_organization
-        if self.user is not None:
-            return self.user
-        raise PledgeWithoutPledgerError(self.id)

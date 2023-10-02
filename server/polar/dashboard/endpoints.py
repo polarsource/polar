@@ -26,7 +26,7 @@ from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import Organization as OrganizationSchema
-from polar.pledge.schemas import PledgeRead, PledgeState
+from polar.pledge.schemas import PledgeRead, PledgesSummary, PledgeState
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session, sql
 from polar.repository.schemas import Repository as RepositorySchema
@@ -323,16 +323,32 @@ async def dashboard(
     for i in issues:
         refs = i.references
         for ref in refs:
-            ref_entry: Entry[IssueReferenceRead] = Entry(
+            included[ref.external_id] = Entry(
                 id=ref.external_id,
                 type="reference",
                 attributes=IssueReferenceRead.from_model(ref),
             )
-            included[ref.external_id] = ref_entry
 
             ir = issue_relationship(ref.issue_id, "references", [])
             if isinstance(ir.data, list):  # it always is
                 ir.data.append(RelationshipData(type="reference", id=ref.external_id))
+
+    # get pledge summary (public data, vs pledges who are dependent on who you are)
+    pledge_summaries = await pledge_service.issues_pledge_summary(
+        session,
+        issues=issues,
+    )
+    for issue_id, summary in pledge_summaries.items():
+        key = f"ps_{issue_id}"
+        included[key] = Entry(
+            id=key,
+            type="pledge_summary",
+            attributes=summary,
+        )
+
+        ir = issue_relationship(issue_id, "pledge_summary", [])
+        if isinstance(ir.data, list):  # it always is
+            ir.data.append(RelationshipData(type="pledge_summary", id=key))
 
     next_page = page + 1 if total_issue_count > page * limit else None
 

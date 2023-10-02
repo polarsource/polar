@@ -1069,8 +1069,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 return None
 
             def summary(type: PledgeType) -> FundingPledgesSummary:
-                amount = sum([p.amount for p in pledges if p.type == type])
-                pledgers = [p for p in [pledger(p) for p in pledges] if p]
+                pledges_of_type = [p for p in pledges if p.type == type]
+                amount = sum([p.amount for p in pledges_of_type])
+                pledgers = [p for p in [pledger(p) for p in pledges_of_type] if p]
 
                 return FundingPledgesSummary(
                     total=CurrencyAmount(currency="USD", amount=amount),

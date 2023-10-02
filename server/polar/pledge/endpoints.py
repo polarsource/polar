@@ -175,20 +175,7 @@ async def summary(
     if not await authz.can(auth.subject, AccessType.read, issue):
         raise Unauthorized()
 
-    pledges = await pledge_service.list_by(session, issue_ids=[issue_id])
-
-    sum_pledges = sum([p.amount for p in pledges])
-
-    funding = Funding(
-        funding_goal=CurrencyAmount(currency="USD", amount=issue.funding_goal)
-        if issue.funding_goal
-        else None,
-        pledges_sum=CurrencyAmount(currency="USD", amount=sum_pledges),
-    )
-
-    summary_pledges = [SummaryPledge.from_db(p) for p in pledges]
-
-    return PledgesSummary(funding=funding, pledges=summary_pledges)
+    return await pledge_service.issue_pledge_summary(session, issue)
 
 
 @router.get(

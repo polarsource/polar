@@ -92,6 +92,13 @@ async def test_get_with_pledge(
     assert pledges[0]["id"] == rel_pledged["id"]
     assert pledges[0]["attributes"]["pledger_name"] == pledging_organization.name
 
+    summaries = [x for x in res["included"] if x["type"] == "pledge_summary"]
+    assert len(summaries) == 1
+    assert (
+        summaries[0]["attributes"]["funding"]["pledges_sum"]["amount"] == pledge.amount
+    )
+    assert len(summaries[0]["attributes"]["pledges"]) == 1
+
 
 @pytest.mark.asyncio
 async def test_get_with_pledge_initiated(

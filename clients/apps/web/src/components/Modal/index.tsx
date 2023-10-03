@@ -7,12 +7,14 @@ export interface ModalProps {
   isShown: boolean
   hide: () => void
   modalContent: JSX.Element
+  className?: string
 }
 
 export const Modal: FunctionComponent<ModalProps> = ({
   isShown,
   hide,
   modalContent,
+  className,
 }) => {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -54,7 +56,10 @@ export const Modal: FunctionComponent<ModalProps> = ({
           >
             <div className="flex-shrink-1 block h-[20%] w-2"></div>
             <div
-              className="h-content z-10 min-w-[800px] flex-shrink-0 overflow-hidden rounded-xl bg-white shadow dark:bg-gray-800"
+              className={twMerge(
+                'h-content z-10 min-w-[800px] flex-shrink-0 overflow-hidden rounded-xl bg-white shadow dark:bg-gray-800',
+                className,
+              )}
               onClick={onInnerClick}
             >
               {modalContent}
@@ -108,5 +113,24 @@ const XIcon = () => {
         strokeLinejoin="round"
       />
     </svg>
+  )
+}
+
+export const ModalBox = ({
+  children,
+  className,
+}: {
+  children: React.ReactElement
+  className?: string
+}) => {
+  return (
+    <div
+      className={twMerge(
+        'z-0 flex h-full w-full flex-col space-y-2 overflow-hidden rounded-2xl bg-white p-5 shadow-2xl dark:bg-gray-700',
+        className,
+      )}
+    >
+      {children}
+    </div>
   )
 }

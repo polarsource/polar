@@ -1,7 +1,6 @@
 'use client'
 
-import { Modal as ModernModal } from '@/components/Modal'
-import Modal, { ModalBox } from '@/components/Shared/Modal'
+import { ModalBox, Modal as ModernModal } from '@/components/Modal'
 import { useToastLatestPledged } from '@/hooks/stripe'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
@@ -293,11 +292,17 @@ const IssueListItem = (props: {
         )}
       </div>
 
-      {showDisputeModalForPledge && (
-        <Modal onClose={onDisputeModalClose}>
-          <DisputeModal pledge={showDisputeModalForPledge} />
-        </Modal>
-      )}
+      <ModernModal
+        isShown={showDisputeModalForPledge !== undefined}
+        hide={onDisputeModalClose}
+        modalContent={
+          <>
+            {showDisputeModalForPledge && (
+              <DisputeModal pledge={showDisputeModalForPledge} />
+            )}
+          </>
+        }
+      />
 
       <ModernModal
         isShown={isSplitRewardsModalShown}

@@ -1,19 +1,19 @@
-import { ClockIcon, HeartIcon } from '@heroicons/react/20/solid'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import {
-  CurrencyAmount,
   Funding,
   Issue,
   Pledge,
   PledgeRead,
   PledgeState,
-  Pledger,
   PledgesTypeSummaries,
   UserRead,
 } from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import FundingPill from './FundingPill'
+import PledgeSummaryPill from './PledgeSummaryPill'
+import PublicRewardPill from './PublicRewardPill'
 
 interface Props {
   pledges: Array<PledgeRead | Pledge>
@@ -88,29 +88,27 @@ const IssuePledge = (props: Props) => {
     <>
       <div className="flex flex-row items-center space-x-4 p-4">
         <div className="flex flex-1 flex-row items-center space-x-4">
-          <p className="flex-shrink-0 rounded-2xl bg-blue-800 px-3 py-1 text-sm text-blue-300 dark:bg-blue-200 dark:text-blue-700">
-            ${' '}
-            <span className="whitespace-nowrap text-blue-100 dark:text-blue-900">
-              {getCentsInDollarString(totalPledgeAmount, false, true)}
-            </span>
-            {showFundingGoal && (
-              <span className="whitespace-nowrap text-blue-100/70 dark:text-blue-900/70">
-                &nbsp;/ $
-                {getCentsInDollarString(
-                  props.funding.funding_goal?.amount || 0,
-                  false,
-                  true,
-                )}
-              </span>
-            )}
-          </p>
+          <FundingPill
+            total={{ amount: totalPledgeAmount, currency: 'USD' }}
+            goal={showFundingGoal ? issue.funding.funding_goal : undefined}
+          />
 
-          <Funded summary={props.pledgesSummary.pay_upfront} />
+          {props.pledgesSummary.pay_upfront.total.amount > 0 && (
+            <PledgeSummaryPill.Funded
+              summary={props.pledgesSummary.pay_upfront}
+            />
+          )}
 
-          <Pledged summary={props.pledgesSummary.pay_on_completion} />
+          {props.pledgesSummary.pay_on_completion.total.amount > 0 && (
+            <PledgeSummaryPill.Pledged
+              summary={props.pledgesSummary.pay_on_completion}
+            />
+          )}
 
           {props.issue.upfront_split_to_contributors && (
-            <PublicReward percent={props.issue.upfront_split_to_contributors} />
+            <PublicRewardPill
+              percent={props.issue.upfront_split_to_contributors}
+            />
           )}
         </div>
 
@@ -165,94 +163,3 @@ const IssuePledge = (props: Props) => {
 }
 
 export default IssuePledge
-
-const Funded = ({
-  summary,
-}: {
-  summary: {
-    total: CurrencyAmount
-    pledgers: Array<Pledger>
-  }
-}) => {
-  if (summary.total.amount === 0) {
-    return <></>
-  }
-
-  const avatars = summary.pledgers
-    .map((p) => p.avatar_url)
-    .filter((a): a is string => Boolean(a))
-    .slice(0, 3)
-
-  const sum = 0 // TODO!!!
-
-  return (
-    <div className="flex flex-row items-center">
-      <Avatars avatars={avatars} />
-      <PledgesBubbleWrap>
-        <HeartIcon className="h-4 w-4 text-red-600" />
-        <span>
-          ${getCentsInDollarString(summary.total.amount, false, true)}
-        </span>
-        <span>Funded</span>
-      </PledgesBubbleWrap>
-    </div>
-  )
-}
-
-const Pledged = ({
-  summary,
-}: {
-  summary: {
-    total: CurrencyAmount
-    pledgers: Array<Pledger>
-  }
-}) => {
-  if (summary.total.amount === 0) {
-    return <></>
-  }
-
-  const avatars = summary.pledgers
-    .map((p) => p.avatar_url)
-    .filter((a): a is string => Boolean(a))
-    .slice(0, 3)
-
-  return (
-    <div className="flex flex-row items-center">
-      <Avatars avatars={avatars} />
-      <PledgesBubbleWrap>
-        <ClockIcon className="h-4 w-4 text-yellow-600" />
-        <span>
-          ${getCentsInDollarString(summary.total.amount, false, true)}
-        </span>
-        <span>Pledged</span>
-      </PledgesBubbleWrap>
-    </div>
-  )
-}
-
-const PledgesBubbleWrap = ({ children }: { children: React.ReactNode }) => (
-  <div className="rouded -ml-2 flex flex-row items-center gap-1 rounded-full border border-gray-200 bg-white py-0.5 pl-1 pr-2 text-xs text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-    {children}
-  </div>
-)
-
-const Avatars = ({ avatars }: { avatars: Array<string> }) => (
-  <>
-    {avatars.map((a) => (
-      <img
-        key={a}
-        src={a}
-        className="-ml-2 h-5 w-5 rounded-full border border-white dark:border-gray-800"
-      />
-    ))}
-  </>
-)
-
-const PublicReward = ({ percent }: { percent: number }) => (
-  <div className="flex items-center gap-2 rounded-xl border border-blue-200 py-0.5 pl-2 pr-0.5 text-xs text-gray-900 dark:border-blue-800 dark:text-gray-200">
-    <div>Public Reward</div>
-    <div className="rounded-xl bg-blue-100 px-1 py-0.5 dark:bg-blue-700">
-      {percent}%
-    </div>
-  </div>
-)

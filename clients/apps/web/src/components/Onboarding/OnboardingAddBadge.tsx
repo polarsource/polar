@@ -1,7 +1,6 @@
 import { CONFIG } from 'polarkit'
+import { IconCounter, IssueLabel } from 'polarkit/components/Issue'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
-import IconCounter from '../Dashboard/IconCounter'
-import IssueLabel from '../Dashboard/IssueLabel'
 
 const OnboardingAddBadge = () => {
   return (

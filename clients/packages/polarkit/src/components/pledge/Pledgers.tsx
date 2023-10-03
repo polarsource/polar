@@ -19,7 +19,7 @@ const Pledgers: React.FC<PledgersProps> = ({ pledgers, maxShown, size }) => {
   const sizeClasses = useMemo(() => {
     switch (size) {
       case 'xs':
-        return 'h-6 w-6 text-xs'
+        return 'h-5 w-5 text-xs'
       case 'sm':
         return 'h-8 w-8 text-base'
       case 'md':

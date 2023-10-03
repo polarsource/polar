@@ -15,7 +15,6 @@ import {
   Reward,
   RewardState,
 } from 'polarkit/api/client'
-import { IssueReadWithRelations } from 'polarkit/api/types'
 import {
   addDays,
   addHours,
@@ -219,20 +218,6 @@ const issuePullRequest = {
 }
 const issueClosed = { ...issue, progress: IssueStatus.CLOSED }
 
-const dependents: IssueReadWithRelations = {
-  ...issue,
-  number: 123,
-  title: "Wow, we're blocked by this thing",
-  organization: { ...org, name: 'someorg' },
-  repository: { ...repo, name: 'somerepo' },
-  references: [],
-  pledges: [],
-  dependents: [],
-  funding: {},
-  pledge_badge_currently_embedded: false,
-  needs_confirmation_solved: false,
-}
-
 const meta: Meta<typeof IssueListItem> = {
   title: 'Organisms/IssueListItem',
   component: IssueListItem,
@@ -300,14 +285,6 @@ const meta: Meta<typeof IssueListItem> = {
         Repo: org,
       },
       defaultValue: org,
-    },
-    dependents: {
-      options: ['No', 'Yes'],
-      mapping: {
-        No: [],
-        Yes: [dependents],
-      },
-      defaultValue: [],
     },
   },
   args: {
@@ -571,20 +548,6 @@ export const PledgeMultipleTypes: Story = {
         pledger_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
       },
     ],
-  },
-}
-
-export const Dependency: Story = {
-  args: {
-    ...Default.args,
-    dependents: [dependents],
-  },
-}
-
-export const DependencyMultiple: Story = {
-  args: {
-    ...Default.args,
-    dependents: [dependents, dependents, dependents],
   },
 }
 

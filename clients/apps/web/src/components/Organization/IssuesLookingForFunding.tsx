@@ -1,6 +1,6 @@
 import { Issue, Organization, Repository } from 'polarkit/api/client'
+import { IconCounter } from 'polarkit/components/Issue'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
-import IconCounter from '../Dashboard/IconCounter'
 import IssueListItem from '../Dashboard/IssueListItem'
 
 const IssuesLookingForFunding = ({

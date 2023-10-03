@@ -37,7 +37,6 @@ const Recommended = () => {
               <IssueListItem
                 issue={issue}
                 references={[]}
-                dependents={undefined}
                 pledges={[]}
                 org={issue.repository.organization}
                 repo={issue.repository}

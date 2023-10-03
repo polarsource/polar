@@ -12,7 +12,6 @@ import {
   Repository,
   Visibility,
 } from 'polarkit/api/client'
-import { IssueReadWithRelations } from 'polarkit/api/types'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { CONFIG } from 'polarkit/config'
 import { parseGitHubIssueLink } from 'polarkit/github'
@@ -60,28 +59,6 @@ const OnboardingAddDependency = () => {
     pledge_badge_currently_embedded: false,
     needs_confirmation_solved: false,
   }
-
-  const demoDependents: IssueReadWithRelations[] = [
-    {
-      ...demoIssue,
-      title: 'Internal bug title',
-      number: 102,
-
-      organization: {
-        ...demoOrg,
-        name: 'corp',
-      },
-      repository: {
-        ...demoRepo,
-        name: 'api',
-        visibility: Visibility.PUBLIC,
-      },
-
-      references: [],
-      dependents: [],
-      pledges: [],
-    },
-  ]
 
   const demoPledges: PledgeRead[] = [
     {
@@ -156,11 +133,11 @@ const OnboardingAddDependency = () => {
             org={demoOrg}
             repo={demoRepo}
             issue={demoIssue}
-            dependents={demoDependents}
             pledges={demoPledges}
             canAddRemovePolarLabel={false}
             references={demoReferences}
             showPledgeAction={false}
+            showLogo={true}
           />
           <div className="absolute -left-1 -right-1 -top-1 bottom-6 bg-gradient-to-b from-gray-50/10 to-gray-50 dark:from-gray-950/10 dark:to-gray-950"></div>
         </div>

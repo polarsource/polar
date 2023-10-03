@@ -16,6 +16,7 @@ import {
   Pledge,
   PledgesTypeSummaries,
   Repository,
+  Reward,
   UserRead,
   type PledgeRead,
 } from 'polarkit/api/client'
@@ -53,6 +54,7 @@ const IssueListItem = (props: {
   className?: string
   showLogo?: boolean
   showIssueOpenClosedStatus?: boolean
+  rewards?: Reward[]
 }) => {
   const { title, number, state, issue_created_at, reactions, comments } =
     props.issue
@@ -268,7 +270,6 @@ const IssueListItem = (props: {
             </div>
           </>
         </div>
-
         {havePledgeOrReference && (
           <IssueActivityBox>
             <IssueListItemDecoration
@@ -286,6 +287,7 @@ const IssueListItem = (props: {
               confirmPledgeIsLoading={false}
               funding={'funding' in props.issue ? props.issue.funding : {}}
               showSelfPledgesFor={props.showSelfPledgesFor}
+              rewards={props.rewards}
             />
           </IssueActivityBox>
         )}

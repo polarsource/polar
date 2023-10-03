@@ -5,6 +5,7 @@ import {
   PledgeRead,
   PledgesTypeSummaries,
   Repository,
+  Reward,
 } from './client'
 
 export type IssueReadWithRelations = Issue & {
@@ -12,6 +13,7 @@ export type IssueReadWithRelations = Issue & {
   dependents: IssueReadWithRelations[]
   pledges: PledgeRead[]
   pledge_summary?: PledgesTypeSummaries
+  rewards?: Reward[]
 
   // TODO: organization and repository can be removed, they are properties of issue
   organization: Organization

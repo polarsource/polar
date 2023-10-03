@@ -6,12 +6,14 @@ import {
   PledgeRead,
   PledgeState,
   PledgesTypeSummaries,
+  Reward,
   UserRead,
 } from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
 import IssuePledge from './IssuePledge'
-import IssueReference from './Reference'
+import IssueReference from './IssueReference'
+import IssueRewards from './IssueRewards'
 
 // When rendering in the Chrome Extension, the iframe needs to know it's expected height in pixels
 export const getExpectedHeight = ({
@@ -42,6 +44,7 @@ const IssueListItemDecoration = ({
   funding,
   showSelfPledgesFor,
   issue,
+  rewards,
 }: {
   orgName: string
   repoName: string
@@ -57,6 +60,7 @@ const IssueListItemDecoration = ({
   funding: Funding
   showSelfPledgesFor?: UserRead
   issue: Issue
+  rewards?: Reward[]
 }) => {
   const showPledges = pledges && pledges.length > 0
 
@@ -135,7 +139,7 @@ const IssueListItemDecoration = ({
 
   return (
     <div>
-      <div className="flex flex-col">
+      <div className="flex flex-col divide-y divide-gray-100 dark:divide-gray-700">
         {showPledges && (
           <IssuePledge
             issue={issue}
@@ -152,7 +156,6 @@ const IssueListItemDecoration = ({
         {haveReferences && (
           <div
             className={classNames(
-              showPledges ? ' border-t dark:border-gray-700' : '',
               'space-y-2 bg-gray-50 px-4 py-2 dark:bg-gray-900',
             )}
           >
@@ -169,6 +172,8 @@ const IssueListItemDecoration = ({
               })}
           </div>
         )}
+
+        {rewards && rewards?.length > 0 && <IssueRewards rewards={rewards} />}
       </div>
 
       {showDisputeAction && showPledgeStatusBox && (

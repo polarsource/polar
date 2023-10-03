@@ -12,6 +12,8 @@ import {
   PledgeState,
   PledgeType,
   PullRequestReference,
+  Reward,
+  RewardState,
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
 import IssueListItem from '../components/Dashboard/IssueListItem'
@@ -21,6 +23,7 @@ import {
   issue,
   org,
   pledge,
+  pledgePublicAPI,
   pledgeSummary,
   pledger,
   repo,
@@ -706,5 +709,94 @@ export const PublicReward: Story = {
     },
     references: [],
     pledgesSummary: pledgeSummary,
+  },
+}
+
+const reward: Reward = {
+  pledge: pledgePublicAPI,
+  state: RewardState.PENDING,
+  amount: { currency: 'USD', amount: 4000 },
+}
+
+export const RewardsStatusAll: Story = {
+  args: {
+    ...Default.args,
+    issue: {
+      ...issueClosed,
+      upfront_split_to_contributors: 90,
+      funding: {
+        pledges_sum: { amount: 8000, currency: 'USD' },
+      },
+    },
+    references: [],
+
+    pledgesSummary: {
+      ...pledgeSummary,
+      pay_upfront: {
+        total: { currency: 'USD', amount: 4000 },
+        pledgers: [pledger, pledger, pledger],
+      },
+      pay_on_completion: {
+        total: { currency: 'USD', amount: 4000 },
+        pledgers: [pledger, pledger, pledger],
+      },
+    },
+
+    rewards: [
+      {
+        ...reward,
+        state: RewardState.PENDING,
+
+        amount: { currency: 'USD', amount: 1000 },
+      },
+      {
+        ...reward,
+        state: RewardState.PAID,
+        amount: { currency: 'USD', amount: 2000 },
+      },
+      {
+        ...reward,
+        state: RewardState.PENDING,
+        amount: { currency: 'USD', amount: 3000 },
+        pledge: {
+          ...reward.pledge,
+          refunded_at: '2023-10-03',
+        },
+      },
+    ],
+  },
+}
+
+export const RewardsStatusPaidOnly: Story = {
+  args: {
+    ...Default.args,
+    issue: {
+      ...issueClosed,
+      upfront_split_to_contributors: 90,
+      funding: {
+        pledges_sum: { amount: 8000, currency: 'USD' },
+      },
+    },
+    references: [],
+
+    pledgesSummary: {
+      ...pledgeSummary,
+      pay_upfront: {
+        total: { currency: 'USD', amount: 4000 },
+        pledgers: [pledger, pledger, pledger],
+      },
+      pay_on_completion: {
+        total: { currency: 'USD', amount: 4000 },
+        pledgers: [pledger, pledger, pledger],
+      },
+    },
+
+    rewards: [
+      {
+        ...reward,
+        state: RewardState.PAID,
+        amount: { currency: 'USD', amount: 2000 },
+      },
+    ],
   },
 }

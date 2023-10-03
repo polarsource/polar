@@ -1,6 +1,6 @@
 import pytest
 
-from polar.funding.service import ListByRowType
+from polar.funding.service import ListByRowType, ListFundingSortBy
 from polar.funding.service import funding as funding_service
 from polar.models import Issue, Pledge
 from polar.pledge.schemas import PledgeType
@@ -40,11 +40,30 @@ def issue_row_assertions(
 
 
 @pytest.mark.asyncio
-async def test_list_by(
-    issues_pledges: IssuesPledgesFixture, session: AsyncSession
-) -> None:
-    results = await funding_service.list_by(session)
+class TestListBy:
+    async def test_without_option(
+        self, issues_pledges: IssuesPledgesFixture, session: AsyncSession
+    ) -> None:
+        results = await funding_service.list_by(session)
 
-    for i, result in enumerate(results):
-        issue, pledges = issues_pledges[i]
-        issue_row_assertions(result, issue, pledges)
+        for i, result in enumerate(results):
+            issue, pledges = issues_pledges[i]
+            issue_row_assertions(result, issue, pledges)
+
+    async def test_sorting_newest(
+        self, issues_pledges: IssuesPledgesFixture, session: AsyncSession
+    ) -> None:
+        results = await funding_service.list_by(
+            session, sorting=[ListFundingSortBy.newest]
+        )
+
+        assert results[0]._tuple()[0].id == issues_pledges[-1][0].id
+
+    async def test_sorting_most_funded(
+        self, issues_pledges: IssuesPledgesFixture, session: AsyncSession
+    ) -> None:
+        results = await funding_service.list_by(
+            session, sorting=[ListFundingSortBy.most_funded]
+        )
+
+        assert results[0]._tuple()[0].id == issues_pledges[0][0].id

@@ -19,7 +19,7 @@ from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import OrganizationCreate
-from polar.pledge.schemas import PledgeState
+from polar.pledge.schemas import PledgeState, PledgeType
 from polar.postgres import AsyncSession
 from polar.repository.schemas import RepositoryCreate
 
@@ -172,6 +172,8 @@ async def create_pledge(
     repository: Repository,
     issue: Issue,
     pledging_organization: Organization,
+    *,
+    type: PledgeType = PledgeType.pay_upfront,
 ) -> Pledge:
     amount = secrets.randbelow(100000) + 1
     fee = round(amount * 0.05)
@@ -185,6 +187,7 @@ async def create_pledge(
         amount=amount,
         fee=fee,
         state=PledgeState.created,
+        type=type,
     )
 
     await session.commit()

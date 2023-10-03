@@ -10,7 +10,7 @@ import {
 } from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/money'
 
-export type Column = 'ESTIMATED_PAYOUT_DATE' | 'PAID_OUT_DATE' | 'RECEIVER'
+export type Column = 'PAID_OUT_DATE' | 'RECEIVER' | 'BACKER' | 'PAYMENT_STATUS'
 
 const List = (props: {
   rewards: Reward[]
@@ -36,13 +36,13 @@ const List = (props: {
     return `https://github.com/${reward.pledge.issue.repository.organization.name}/${reward.pledge.issue.repository.name}/issues/${reward.pledge.issue?.number}`
   }
 
-  const showEstimatedPayoutDate = columns.some(
-    (c) => c === 'ESTIMATED_PAYOUT_DATE',
-  )
+  const showPaymentStatus = columns.some((c) => c === 'PAYMENT_STATUS')
 
   const showPaidOutDate = columns.some((c) => c === 'PAID_OUT_DATE')
 
   const showReceiver = columns.some((c) => c === 'RECEIVER')
+
+  const showBacker = columns.some((c) => c === 'BACKER')
 
   return (
     <div>
@@ -68,6 +68,15 @@ const List = (props: {
               </th>
             )}
 
+            {showBacker && (
+              <th
+                scope="col"
+                className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-left text-sm font-semibold"
+              >
+                Backer
+              </th>
+            )}
+
             <th
               scope="col"
               className="relative isolate hidden whitespace-nowrap py-3.5 pr-2 text-left text-sm font-medium md:table-cell"
@@ -75,14 +84,15 @@ const List = (props: {
               Pledge Date
             </th>
 
-            {showEstimatedPayoutDate && (
+            {showPaymentStatus && (
               <th
                 scope="col"
                 className="relative isolate whitespace-nowrap  py-3.5 pr-2 text-left text-sm font-medium"
               >
-                Est. payout date
+                Status
               </th>
             )}
+
             {showPaidOutDate && (
               <th
                 scope="col"
@@ -139,32 +149,49 @@ const List = (props: {
                   </td>
                 )}
 
+                {showBacker && (
+                  <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
+                    <div className="flex items-center gap-1 ">
+                      {t.pledge.pledger?.avatar_url && (
+                        <img
+                          src={t.pledge.pledger?.avatar_url}
+                          className="h-6 w-6 rounded-full"
+                        />
+                      )}
+
+                      {t.pledge.pledger?.github_username ? (
+                        <a
+                          href={`https://github.com/${t.pledge.pledger?.github_username}`}
+                          className="text-blue-500"
+                        >
+                          @{t.pledge.pledger?.name || 'Unknown'}
+                        </a>
+                      ) : (
+                        <span>{t.pledge.pledger?.name || 'Unknown'}</span>
+                      )}
+                    </div>
+                  </td>
+                )}
+
                 <td className="hidden whitespace-nowrap py-3 pr-3 text-sm text-gray-500 md:table-cell">
                   {formatDate(t.pledge.created_at)}
                 </td>
 
-                {showEstimatedPayoutDate && (
+                {showPaymentStatus && (
                   <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
                     <div className="flex flex-wrap items-center gap-2">
-                      <div>
-                        {(t.pledge.scheduled_payout_at &&
-                          formatDate(t.pledge.scheduled_payout_at)) ||
-                          'Unknown'}
-                      </div>
-
                       {t.pledge.type === PledgeType.PAY_ON_COMPLETION &&
                         t.pledge.state === PledgeState.CREATED && (
-                          <div className="w-fit whitespace-nowrap rounded-full bg-blue-200 px-2 py-0.5 text-blue-700 dark:bg-blue-800 dark:text-blue-200">
+                          <div className="w-fit whitespace-nowrap rounded-full bg-blue-200 px-1.5 py-0 text-blue-700 dark:bg-blue-800 dark:text-blue-200">
                             Pending payment from pledger
                           </div>
                         )}
 
-                      {t.pledge.type === PledgeType.PAY_ON_COMPLETION &&
-                        t.pledge.state === PledgeState.PENDING && (
-                          <div className="w-fit whitespace-nowrap rounded-full bg-green-200 px-2 py-0.5 text-green-700 dark:bg-green-800 dark:text-green-200">
-                            Pledger paid invoice
-                          </div>
-                        )}
+                      {t.pledge.state === PledgeState.PENDING && (
+                        <div className="w-fit whitespace-nowrap rounded-full bg-green-200 px-1.5 py-0 text-green-700 dark:bg-green-800 dark:text-green-200">
+                          Paid to Polar
+                        </div>
+                      )}
                     </div>
                   </td>
                 )}

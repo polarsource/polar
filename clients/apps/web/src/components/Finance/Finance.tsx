@@ -165,11 +165,11 @@ export const RewardsContent = (props: {
   const paid = props.rewards.filter((r) => r.state == RewardState.PAID)
 
   const pendingColumns: Column[] = props.showReceiver
-    ? ['ESTIMATED_PAYOUT_DATE', 'RECEIVER']
-    : ['ESTIMATED_PAYOUT_DATE']
+    ? ['BACKER', 'PAYMENT_STATUS', 'RECEIVER']
+    : ['BACKER', 'PAYMENT_STATUS']
   const paidColumns: Column[] = props.showReceiver
-    ? ['PAID_OUT_DATE', 'RECEIVER']
-    : ['PAID_OUT_DATE']
+    ? ['PAID_OUT_DATE', 'BACKER', 'PAYMENT_STATUS', 'RECEIVER']
+    : ['PAID_OUT_DATE', 'BACKER', 'PAYMENT_STATUS']
 
   return (
     <>

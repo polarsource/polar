@@ -83,7 +83,7 @@ export const Default: Story = {
         paid_at: '2023-08-31',
       },
     ],
-    columns: ['ESTIMATED_PAYOUT_DATE', 'PAID_OUT_DATE', 'RECEIVER'],
+    columns: ['PAID_OUT_DATE', 'RECEIVER', 'BACKER', 'PAYMENT_STATUS'],
     title: 'Pledges',
     subtitle: 'Issue',
   },

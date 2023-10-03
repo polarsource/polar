@@ -18,7 +18,7 @@ from polar.dashboard.schemas import (
     RelationshipData,
 )
 from polar.enums import Platforms
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.funding.schemas import PledgesTypeSummaries
 from polar.issue.schemas import Issue as IssueSchema
 from polar.issue.schemas import IssueReferenceRead
@@ -33,6 +33,8 @@ from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session, sql
 from polar.repository.schemas import Repository as RepositorySchema
 from polar.repository.service import repository
+from polar.reward.endpoints import to_resource
+from polar.reward.service import reward_service
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -54,10 +56,12 @@ async def get_personal_dashboard(
     only_badged: bool = Query(default=False),
     page: int = Query(default=1),
     session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
 ) -> IssueListResponse:
     return await dashboard(
         session=session,
         auth=auth,
+        authz=authz,
         status=status,
         q=q,
         sort=sort,
@@ -88,6 +92,17 @@ async def get_dashboard(
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> IssueListResponse:
+    if not auth.user:
+        raise Unauthorized()
+
+    # only if user is a member of this org
+    if not await user_organization_service.get_by_user_and_org(
+        session,
+        auth.user.id,
+        organization_id=auth.organization.id,
+    ):
+        raise Unauthorized()
+
     repositories: Sequence[Repository] = []
 
     # if repo name is set, use that repository
@@ -125,6 +140,7 @@ async def get_dashboard(
     return await dashboard(
         session=session,
         auth=auth,
+        authz=authz,
         in_repos=repositories,
         status=status,
         q=q,
@@ -155,6 +171,7 @@ def default_sort(
 async def dashboard(
     session: AsyncSession,
     auth: Auth,
+    authz: Authz,
     in_repos: Sequence[Repository] = [],
     issue_list_type: IssueListType = IssueListType.issues,
     status: Union[List[IssueStatus], None] = None,
@@ -309,7 +326,6 @@ async def dashboard(
                     )
                 )
 
-            # for pled in pledges:
             included[str(pled.id)] = Entry(
                 id=pled.id, type="pledge", attributes=pledge_read
             )
@@ -351,6 +367,32 @@ async def dashboard(
         issue_relationship(
             issue_id, "pledge_summary", RelationshipData(type="pledge_summary", id=key)
         )
+
+    # get rewards
+    if for_org:
+        rewards = await reward_service.list(session, issue_ids=[i.id for i in issues])
+        for pledge, reward, transaction in rewards:
+            reward_resource = to_resource(
+                pledge,
+                reward,
+                transaction,
+                include_admin_fields=await authz.can(
+                    auth.subject, AccessType.write, pledge
+                ),
+            )
+
+            key = f"reward_{pledge.id}_{reward.id}"
+            included[key] = Entry(
+                id=key,
+                type="reward",
+                attributes=reward_resource,
+            )
+
+            issue_relationship(
+                pledge.issue_id,
+                "reward",
+                RelationshipData(type="reward", id=key),
+            )
 
     next_page = page + 1 if total_issue_count > page * limit else None
 

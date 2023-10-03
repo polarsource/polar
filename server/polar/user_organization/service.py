@@ -1,15 +1,16 @@
 from typing import Any, Sequence
 from uuid import UUID
-from sqlalchemy import and_
+
 import structlog
-from polar.postgres import AsyncSession, sql
+from sqlalchemy import and_
+from sqlalchemy.exc import NoResultFound
+
 from polar.models import UserOrganization, UserOrganizationSettings
+from polar.postgres import AsyncSession, sql
 from polar.user_organization.schemas import (
     UserOrganizationSettingsRead,
     UserOrganizationSettingsUpdate,
 )
-from sqlalchemy.exc import NoResultFound
-
 
 log = structlog.get_logger()
 
@@ -30,6 +31,20 @@ class UserOrganizationervice:
         stmt = sql.select(UserOrganization).where(UserOrganization.user_id == user_id)
         res = await session.execute(stmt)
         return res.scalars().unique().all()
+
+    async def get_by_user_and_org(
+        self,
+        session: AsyncSession,
+        user_id: UUID,
+        organization_id: UUID,
+    ) -> UserOrganization | None:
+        stmt = sql.select(UserOrganization).where(
+            UserOrganization.user_id == user_id,
+            UserOrganization.organization_id == organization_id,
+            UserOrganization.deleted_at.is_(None),
+        )
+        res = await session.execute(stmt)
+        return res.scalars().unique().one_or_none()
 
     async def get_settings(
         self,

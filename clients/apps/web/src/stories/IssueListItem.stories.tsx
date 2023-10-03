@@ -16,7 +16,6 @@ import {
   RewardState,
 } from 'polarkit/api/client'
 import { IssueReadWithRelations } from 'polarkit/api/types'
-import IssueListItem from '../components/Dashboard/IssueListItem'
 import {
   addDays,
   addHours,
@@ -28,7 +27,8 @@ import {
   pledger,
   repo,
   user,
-} from './testdata'
+} from 'polarkit/testdata'
+import IssueListItem from '../components/Dashboard/IssueListItem'
 
 type Story = StoryObj<typeof IssueListItem>
 

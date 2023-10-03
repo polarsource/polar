@@ -5,6 +5,7 @@
   "types": "./index.ts",
   "exports": {
     ".": "./index.ts",
+    "./testdata": "./testdata.ts",
     "./api/client": "./src/api/client/index.ts",
     "./api": "./src/api/index.ts",
     "./api/errors": "./src/api/errors.ts",

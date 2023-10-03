@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 import { IssueCard } from 'polarkit/components/pledge'
-import { issue, issueBodyHTML, pledger } from './testdata'
+import { issue, issueBodyHTML, pledger } from 'polarkit/testdata'
 
 const meta: Meta<typeof IssueCard> = {
   title: 'Organisms/IssueCard',

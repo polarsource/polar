@@ -3,7 +3,7 @@ import RepositoryPublicPage from '@/components/Organization/RepositoryPublicPage
 import type { Meta, StoryObj } from '@storybook/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from 'polarkit'
-import { issue, org, repo } from './testdata'
+import { issue, org, repo } from 'polarkit/testdata'
 
 const meta: Meta<typeof RepositoryPublicPage> = {
   title: 'Pages/RepositoryPublicPage',

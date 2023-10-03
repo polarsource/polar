@@ -8,7 +8,7 @@ import {
   Reward,
   RewardState,
 } from 'polarkit/api/client'
-import { issue } from './testdata'
+import { issue } from 'polarkit/testdata'
 
 type Story = StoryObj<typeof List>
 

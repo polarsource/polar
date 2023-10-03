@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import FundOnCompletion from './FundOnCompletion'
 
-import { issue } from '../../stories/testdata'
+import { issue } from 'polarkit/testdata'
 
 const meta: Meta<typeof FundOnCompletion> = {
   title: 'Organisms/FundOnCompletion',

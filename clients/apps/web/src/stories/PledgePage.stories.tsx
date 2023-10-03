@@ -2,8 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import PublicLayout from '@/components/Layout/PublicLayout'
 import { QueryClientProvider, queryClient } from 'polarkit/api'
+import { issue, issueBodyHTML, pledger } from 'polarkit/testdata'
 import Pledge from '../components/Pledge/Pledge'
-import { issue, issueBodyHTML, pledger } from './testdata'
 
 const meta: Meta<typeof Pledge> = {
   title: 'Pages/Pledge',

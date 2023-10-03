@@ -289,6 +289,7 @@ const AccountBanner = (props: { org: Organization; accounts: Account[] }) => {
         </Banner>
         <ModernModal
           isShown={showSetupModal}
+          className="min-w-[400px]"
           hide={toggle}
           modalContent={
             <SetupAccount

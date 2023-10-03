@@ -92,6 +92,7 @@ const AccountBanner = (props: { user: UserRead; accounts: Account[] }) => {
         <ModernModal
           isShown={showSetupModal}
           hide={toggle}
+          className="min-w-[400px]"
           modalContent={
             <SetupAccount
               onClose={() => setShowSetupModal(false)}

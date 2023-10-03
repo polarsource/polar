@@ -1,0 +1,14 @@
+{
+  "extends": "tsconfig/base.json",
+  "compilerOptions": {
+    "baseUrl": "src/",
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "Node16",
+    "paths": {
+      "@/*": ["./*"],
+      "@polarkit/lib/*": ["./lib/*"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "build", "node_modules", "openapi", "scripts"]
+}

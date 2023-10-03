@@ -1,0 +1,30 @@
+{
+  "name": "@polar-sh/sdk",
+  "version": "0.0.0",
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist/*"
+  ],
+  "scripts": {
+    "generate": "node scripts/generate-schema.js http://127.0.0.1:8000/openapi.json openapi/source.json openapi/updated.json && openapi --input openapi/updated.json --output src/client --client axios --name PolarSDK --useOptions --indent 2 --exportSchemas false",
+    "build": "tsup src/index.ts --format cjs,esm --dts"
+  },
+  "dependencies": {
+    "axios": "^0.27.2",
+    "tsup": "^7.2.0"
+  },
+  "devDependencies": {
+    "form-data": "^4.0.0",
+    "openapi-typescript-codegen": "^0.23.0",
+    "tsconfig": "workspace:*",
+    "typescript": "5.0.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

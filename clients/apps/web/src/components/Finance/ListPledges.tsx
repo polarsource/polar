@@ -127,12 +127,17 @@ const List = (props: {
                       <span>{t.pledger?.name || 'Anonymous'}</span>
                     </div>
 
-                    {t.type === PledgeType.PAY_ON_COMPLETION &&
-                      t.state === PledgeState.CREATED && (
-                        <div className="w-fit whitespace-nowrap rounded-full bg-blue-200 px-2 py-0.5 text-blue-700 dark:bg-blue-800 dark:text-blue-200">
-                          Pay on completion
-                        </div>
-                      )}
+                    {t.type === PledgeType.PAY_ON_COMPLETION && (
+                      <div className="text-sx w-fit whitespace-nowrap rounded-full bg-blue-200 px-1.5 py-0 text-blue-700 dark:bg-blue-800 dark:text-blue-200">
+                        Pay on completion
+                      </div>
+                    )}
+
+                    {t.type === PledgeType.PAY_UPFRONT && (
+                      <div className="text-sx w-fit whitespace-nowrap rounded-full bg-blue-200 px-1.5 py-0 text-blue-700 dark:bg-blue-800 dark:text-blue-200">
+                        Pay upfront
+                      </div>
+                    )}
                   </div>
                 </td>
 

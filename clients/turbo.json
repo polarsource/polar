@@ -4,7 +4,7 @@
   "globalEnv": ["NEXT_PUBLIC_API_URL", "NEXT_PUBLIC_STRIPE_KEY"],
   "pipeline": {
     "build": {
-      "outputs": [".next/**"]
+      "outputs": [".next/**", "dist/**"]
     },
     "lint": {},
     "test": {},

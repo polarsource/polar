@@ -143,6 +143,7 @@ class RewardService:
             .values(user_id=user.id)
         )
         await session.execute(stmt)
+        await session.commit()
 
 
 reward_service = RewardService()

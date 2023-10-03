@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Literal
+from typing import Literal, Self
 from uuid import UUID
 
 from pydantic import Field
@@ -11,6 +11,7 @@ from polar.currency.schemas import CurrencyAmount
 from polar.funding.funding_schema import Funding
 from polar.issue.schemas import Issue
 from polar.kit.schemas import Schema
+from polar.models import Organization, User
 from polar.models.pledge import Pledge as PledgeModel
 
 
@@ -125,6 +126,22 @@ class Pledger(Schema):
     name: str
     github_username: str | None
     avatar_url: str | None
+
+    @classmethod
+    def from_user(cls, user: User) -> Self:
+        return cls(
+            name=user.username,
+            github_username=user.username,
+            avatar_url=user.avatar_url,
+        )
+
+    @classmethod
+    def from_organization(cls, organization: Organization) -> Self:
+        return cls(
+            name=organization.name,
+            github_username=organization.name,
+            avatar_url=organization.avatar_url,
+        )
 
 
 # Public API

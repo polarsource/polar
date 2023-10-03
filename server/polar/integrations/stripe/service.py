@@ -234,7 +234,7 @@ Thank you for your support!
             metadata={
                 "pledge_id": pledge.id,
             },
-            days_until_due=14,
+            days_until_due=7,
             collection_method="send_invoice",
             auto_advance=False,
         )

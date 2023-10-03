@@ -44,7 +44,7 @@ class PersonalAccessTokenService:
             session=session,
             user_id=user_id,
             comment=comment,
-            expires_at=utc_now() + timedelta(days=356),
+            expires_at=utc_now() + timedelta(days=365),
         )
         return pat
 

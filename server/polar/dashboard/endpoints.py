@@ -388,11 +388,9 @@ async def dashboard(
                 attributes=reward_resource,
             )
 
-            issue_relationship(
-                pledge.issue_id,
-                "reward",
-                RelationshipData(type="reward", id=key),
-            )
+            ir = issue_relationship(pledge.issue_id, "rewards", [])
+            if isinstance(ir.data, list):  # it always is
+                ir.data.append(RelationshipData(type="reward", id=key))
 
     next_page = page + 1 if total_issue_count > page * limit else None
 

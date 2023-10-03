@@ -15,13 +15,12 @@
     "build": "tsup src/index.ts --format cjs,esm --dts"
   },
   "dependencies": {
-    "axios": "^0.27.2",
-    "tsup": "^7.2.0"
+    "axios": "^0.27.2"
   },
   "devDependencies": {
-    "form-data": "^4.0.0",
     "openapi-typescript-codegen": "^0.23.0",
     "tsconfig": "workspace:*",
+    "tsup": "^7.2.0",
     "typescript": "5.0.4"
   },
   "publishConfig": {

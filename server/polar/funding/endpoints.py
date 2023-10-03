@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, Query
-from pydantic import UUID4
 
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
@@ -12,7 +11,9 @@ from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 from polar.types import ListResource, Pagination
 
+from .dependencies import ListFundingSorting
 from .schemas import IssueFunding
+from .service import ListFundingSortBy
 from .service import funding as funding_service
 
 router = APIRouter(prefix="/funding", tags=["funding"])
@@ -22,6 +23,7 @@ router = APIRouter(prefix="/funding", tags=["funding"])
 async def list_funding(
     organization_name: OrganizationNameQuery,
     repository_name: OptionalRepositoryNameQuery = None,
+    sorting: ListFundingSorting = [ListFundingSortBy.newest],
     platform: Platforms = Query(...),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[IssueFunding]:
@@ -40,7 +42,7 @@ async def list_funding(
             raise ResourceNotFound("Repository not found")
 
     rows = await funding_service.list_by(
-        session, organization=organization, repository=repository
+        session, organization=organization, repository=repository, sorting=sorting
     )
     return ListResource(
         items=[IssueFunding.from_list_by_row(row) for row in rows],

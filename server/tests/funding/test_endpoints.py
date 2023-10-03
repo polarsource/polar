@@ -53,3 +53,23 @@ class TestListFunding:
 
         json = response.json()
         assert len(json["items"]) == len(issues_pledges)
+
+    async def test_sorting(
+        self,
+        issues_pledges: IssuesPledgesFixture,
+        client: AsyncClient,
+        organization: Organization,
+    ) -> None:
+        response = await client.get(
+            "/api/v1/funding/",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+                "sorting": ["newest", "most_funded"],
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["items"][0]["issue"]["id"] == str(issues_pledges[-1][0].id)

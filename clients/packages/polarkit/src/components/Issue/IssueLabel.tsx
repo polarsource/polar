@@ -1,4 +1,3 @@
-import { useTheme } from 'next-themes'
 import { Label } from 'polarkit/api/client'
 
 const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
@@ -82,37 +81,63 @@ function RGBtoHSV(
   return h && s && v ? { h: h, s: s, v: v } : null
 }
 
+const BG_SATURATION_LIGHT = 0.17
+const BG_SATURATION_DARK = 0.3
+const BG_VALUE_LIGHT = 0.94
+const BG_VALUE_DARK = 0.35
+
+const TEXT_SATURATION_LIGHT = 0.25
+const TEXT_SATURATION_DARK = 0.2
+const TEXT_VALUE_LIGHT = 0.35
+const TEXT_VALUE_DARK = 0.8
+
 const IssueLabel = (props: { label: Label }) => {
   const { name, color } = props.label
 
-  const { resolvedTheme } = useTheme()
-
   const rgb = hexToRgb(color)
   const hsv = rgb ? RGBtoHSV(rgb.r, rgb.g, rgb.b) : null
-  const bgColor = HSVtoRGB(
+
+  const bgColorLight = HSVtoRGB(
     hsv ? hsv.h : 0,
-    resolvedTheme === 'dark' ? 0.3 : 0.17,
-    resolvedTheme === 'dark' ? 0.35 : 0.94,
+    BG_SATURATION_LIGHT,
+    BG_VALUE_LIGHT,
   )
-  const textColor = HSVtoRGB(
+  const bgColorDark = HSVtoRGB(
     hsv ? hsv.h : 0,
-    resolvedTheme === 'dark' ? 0.2 : 0.25,
-    resolvedTheme === 'dark' ? 0.8 : 0.35,
+    BG_SATURATION_DARK,
+    BG_VALUE_DARK,
+  )
+
+  const textColorLight = HSVtoRGB(
+    hsv ? hsv.h : 0,
+    TEXT_SATURATION_LIGHT,
+    TEXT_VALUE_LIGHT,
+  )
+  const textColorDark = HSVtoRGB(
+    hsv ? hsv.h : 0,
+    TEXT_SATURATION_DARK,
+    TEXT_VALUE_DARK,
   )
 
   const style = {
-    backgroundColor: bgColor
-      ? `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`
-      : `rgb(200, 200, 200)`,
-    color: textColor
-      ? `rgb(${textColor.r}, ${textColor.g}, ${textColor.b})`
-      : `rgb(50, 50, 50)`,
-  }
+    '--bg-light-r': bgColorLight?.r,
+    '--bg-light-g': bgColorLight?.g,
+    '--bg-light-b': bgColorLight?.b,
+    '--bg-dark-r': bgColorDark?.r,
+    '--bg-dark-g': bgColorDark?.g,
+    '--bg-dark-b': bgColorDark?.b,
+    '--text-light-r': textColorLight?.r,
+    '--text-light-g': textColorLight?.g,
+    '--text-light-b': textColorLight?.b,
+    '--text-dark-r': textColorDark?.r,
+    '--text-dark-g': textColorDark?.g,
+    '--text-dark-b': textColorDark?.b,
+  } as React.CSSProperties
 
   return (
     <>
       <div
-        className="whitespace-nowrap rounded-xl px-2.5 py-1 text-xs font-medium"
+        className="text whitespace-nowrap rounded-xl bg-[rgb(var(--bg-light-r),var(--bg-light-g),var(--bg-light-b))] px-2.5 py-1 text-xs font-medium text-[rgb(var(--text-light-r),var(--text-light-g),var(--text-light-b))] dark:bg-[rgb(var(--bg-dark-r),var(--bg-dark-g),var(--bg-dark-b))] dark:text-[rgb(var(--text-dark-r),var(--text-dark-g),var(--text-dark-b))]"
         style={style}
       >
         {name}

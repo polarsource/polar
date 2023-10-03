@@ -1,6 +1,6 @@
 import { type RepositoryBadgeSettingsRead } from 'polarkit/api/client'
 
-import IssueLabel from '@/components/Dashboard/IssueLabel'
+import { IssueLabel } from 'polarkit/components/Issue'
 import { classNames } from 'polarkit/utils'
 import BadgeRepository from './Repository'
 

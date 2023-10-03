@@ -126,7 +126,6 @@ const IssueListPage = (props: {
         <IssueListItem
           issue={issue}
           references={issue.references}
-          dependents={issue.dependents}
           pledges={issue.pledges}
           pledgesSummary={issue.pledge_summary}
           rewards={issue.rewards}

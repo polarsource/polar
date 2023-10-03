@@ -1,7 +1,7 @@
-import IssueLabel from '@/components/Dashboard/IssueLabel'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { type RepositoryBadgeSettingsRead } from 'polarkit/api/client'
+import { IssueLabel } from 'polarkit/components/Issue'
 import { classNames } from 'polarkit/utils'
 
 const ProgressText = ({

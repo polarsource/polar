@@ -25,6 +25,7 @@ class RewardService:
         session: AsyncSession,
         pledge_org_id: UUID | None = None,
         issue_id: UUID | None = None,
+        issue_ids: list[UUID] | None = None,
         reward_org_id: UUID | None = None,
         reward_user_id: UUID | None = None,
         is_transfered: bool | None = None,
@@ -53,6 +54,9 @@ class RewardService:
 
         if issue_id:
             statement = statement.where(Pledge.issue_id == issue_id)
+
+        if issue_ids is not None:
+            statement = statement.where(Pledge.issue_id.in_(issue_ids))
 
         if reward_org_id:
             statement = statement.where(IssueReward.organization_id == reward_org_id)

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import Contribute from './Contribute'
 
-import { issue } from '../../stories/testdata'
+import { issue } from 'polarkit/testdata'
 
 const meta: Meta<typeof Contribute> = {
   title: 'Organisms/Contribute',

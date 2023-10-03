@@ -9,7 +9,7 @@ import {
   Reward,
   RewardState,
 } from 'polarkit/api/client'
-import { issue, org } from './testdata'
+import { issue, org } from 'polarkit/testdata'
 
 type Story = StoryObj<typeof Finance>
 

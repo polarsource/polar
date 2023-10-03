@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import { List } from '../components/Notifications/Popover'
 import {
   notification_maintainerPledgeCreatedNotification,
   notification_maintainerPledgePaidNotification,
   notification_maintainerPledgePendingNotification,
   notification_pledgerPledgePendingNotification,
-} from './testdata'
+} from 'polarkit/testdata'
+import { List } from '../components/Notifications/Popover'
 
 const meta: Meta<typeof List> = {
   title: 'Organisms/NotificationList',

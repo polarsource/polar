@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from 'polarkit'
 import { Reactions } from 'polarkit/api/client'
-import { issue, org, repo } from './testdata'
+import { issue, org, repo } from 'polarkit/testdata'
 
 const meta: Meta<typeof OrganizationPublicPage> = {
   title: 'Pages/OrganizationPublicPage',

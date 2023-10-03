@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { Pledgers } from 'polarkit/components/pledge'
-import { pledger } from './testdata'
+import { pledger } from 'polarkit/testdata'
 
 const meta: Meta<typeof Pledgers> = {
   title: 'Organisms/Pledgers',

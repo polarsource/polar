@@ -8,17 +8,17 @@ import {
   NotificationType,
 } from 'polarkit/api/client'
 import {
-  MaintainerPledgeConfirmationPending,
-  Notification,
-} from '../components/Notifications/Popover'
-import {
   notification_maintainerPledgeConfirmationPendingNotification,
   notification_maintainerPledgeCreatedNotification,
   notification_maintainerPledgePaidNotification,
   notification_maintainerPledgePendingNotification,
   notification_pledgerPledgePendingNotification,
   notification_rewardPaidNotification,
-} from './testdata'
+} from 'polarkit/testdata'
+import {
+  MaintainerPledgeConfirmationPending,
+  Notification,
+} from '../components/Notifications/Popover'
 
 const meta: Meta<typeof Notification> = {
   title: 'Organisms/Notification',

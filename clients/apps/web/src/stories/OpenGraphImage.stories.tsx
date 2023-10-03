@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import OpenGraphImage from '@/components/Organization/OpenGraphImage'
 import { Reactions } from 'polarkit/api/client'
-import { issue, org } from './testdata'
+import { issue, org } from 'polarkit/testdata'
 
 const meta: Meta<typeof OpenGraphImage> = {
   title: 'Organisms/OpenGraphImage',

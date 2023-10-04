@@ -13,11 +13,11 @@ export class FundingService {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
-   * List Funding
+   * List
    * @returns ListResource_IssueFunding_ Successful Response
    * @throws ApiError
    */
-  public listFunding({
+  public list({
     organizationName,
     platform,
     repositoryName,

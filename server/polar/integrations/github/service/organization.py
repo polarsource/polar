@@ -8,6 +8,7 @@ from githubkit.webhooks.models import Installation as GitHubWebhookInstallation
 from githubkit.webhooks.models import User as GitHubUser
 
 from polar.enums import Platforms
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Organization, User
 from polar.organization.schemas import OrganizationCreate, OrganizationUpdate
@@ -151,7 +152,12 @@ class GithubOrganizationService(OrganizationService):
         for repo in repos:
             await github_repository.soft_delete(session, repo.id)
 
-        await self.soft_delete(session, id=org_id)
+        organization = await self.get(session, org_id)
+        if organization is not None:
+            organization.installation_id = None
+            organization.deleted_at = utc_now()
+            session.add(organization)
+            await session.commit()
 
     async def create_or_update_from_github(
         self,

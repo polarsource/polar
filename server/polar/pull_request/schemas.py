@@ -5,13 +5,39 @@ from typing import Self, Union
 from uuid import UUID
 
 import structlog
+from pydantic import parse_obj_as
 
 from polar.integrations.github import client as github
-from polar.issue.schemas import IssueAndPullRequestBase
+from polar.issue.schemas import Author, IssueAndPullRequestBase
+from polar.kit.schemas import Schema
 from polar.models import Organization, Repository
+from polar.models.pull_request import PullRequest as PullRequestModel
 from polar.types import JSONAny
 
 log = structlog.get_logger()
+
+
+# Public API
+class PullRequest(Schema):
+    id: UUID
+    number: int
+    title: str
+    author: Author | None
+
+    @classmethod
+    def from_db(cls, pr: PullRequestModel) -> Self:
+        return cls(
+            id=pr.id,
+            number=pr.number,
+            title=pr.title,
+            author=parse_obj_as(Author, pr.author) if pr.author else None,
+        )
+
+
+#
+# Internal APIs below
+#
+
 
 # Since we cannot use mixins with Pydantic, we have to redefine
 # some of the fields shared between IssueAndPullRequestBase + CreatePullRequest.

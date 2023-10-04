@@ -28,6 +28,7 @@ class FundingService:
         *,
         organization: Organization | None = None,
         repository: Repository | None = None,
+        badged: bool | None = None,
         sorting: list[ListFundingSortBy] = [ListFundingSortBy.oldest],
     ) -> Sequence[ListByRowType]:
         statement = (
@@ -63,6 +64,9 @@ class FundingService:
             statement = statement.join(Issue.repository).where(
                 Repository.id == repository.id
             )
+
+        if badged is not None:
+            statement = statement.where(Issue.pledge_badge_currently_embedded == badged)
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion in sorting:

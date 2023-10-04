@@ -1,6 +1,6 @@
-import Split, { Contributor } from '@/components/Finance/Split'
 import type { Meta, StoryObj } from '@storybook/react'
 import { pledgePublicAPI, user } from 'polarkit/testdata'
+import Split, { Contributor } from './Split'
 
 const meta: Meta<typeof Split> = {
   title: 'Organisms/SplitReward',

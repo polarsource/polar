@@ -7,7 +7,7 @@ from sqlalchemy import Row, UnaryExpression, desc, func, select
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.models import Issue, Organization, Pledge, Repository
-from polar.pledge.schemas import PledgeType
+from polar.pledge.schemas import PledgeState, PledgeType
 from polar.postgres import AsyncSession
 
 
@@ -31,15 +31,22 @@ class FundingService:
         badged: bool | None = None,
         sorting: list[ListFundingSortBy] = [ListFundingSortBy.oldest],
     ) -> Sequence[ListByRowType]:
+        issue_pledges_eager_loading_clause = selectinload(
+            Issue.pledges.and_(Pledge.state.in_(PledgeState.active_states()))
+        )
         statement = (
             select(Issue)
             .join(Pledge, onclause=Pledge.issue_id == Issue.id, full=True)
             .options(joinedload(Issue.repository).joinedload(Repository.organization))
-            .options(selectinload(Issue.pledges).joinedload(Pledge.user))
-            .options(selectinload(Issue.pledges).joinedload(Pledge.by_organization))
+            .options(issue_pledges_eager_loading_clause.joinedload(Pledge.user))
+            .options(
+                issue_pledges_eager_loading_clause.joinedload(Pledge.by_organization)
+            )
             .add_columns(
                 func.coalesce(
-                    func.sum(Pledge.amount).over(partition_by=Issue.id),
+                    func.sum(Pledge.amount)
+                    .filter(Pledge.state.in_(PledgeState.active_states()))
+                    .over(partition_by=Issue.id),
                     0,
                 ).label("total"),
             )
@@ -49,7 +56,10 @@ class FundingService:
             statement = statement.add_columns(
                 func.coalesce(
                     func.sum(Pledge.amount)
-                    .filter(Pledge.type == pledge_type)
+                    .filter(
+                        Pledge.state.in_(PledgeState.active_states()),
+                        Pledge.type == pledge_type,
+                    )
                     .over(partition_by=Issue.id),
                     0,
                 ).label(f"{pledge_type}_total"),

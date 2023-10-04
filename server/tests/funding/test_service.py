@@ -3,7 +3,7 @@ import pytest
 from polar.funding.service import ListByRowType, ListFundingSortBy
 from polar.funding.service import funding as funding_service
 from polar.models import Issue, Pledge
-from polar.pledge.schemas import PledgeType
+from polar.pledge.schemas import PledgeState, PledgeType
 from polar.postgres import AsyncSession
 
 from .conftest import IssuesPledgesFixture
@@ -21,21 +21,33 @@ def issue_row_assertions(
     ) = row._tuple()
     assert isinstance(issue, Issue)
     assert issue_object.id == issue.id
-    assert len(issue.pledges) == len(pledges)
 
-    assert total == sum([pledge.amount for pledge in pledges])
+    active_pledges = [
+        pledge for pledge in pledges if pledge.state in PledgeState.active_states()
+    ]
+    assert len(issue.pledges) == len(active_pledges)
+
+    assert total == sum([pledge.amount for pledge in active_pledges])
     assert pay_upfront_total == sum(
-        [pledge.amount for pledge in pledges if pledge.type == PledgeType.pay_upfront]
+        [
+            pledge.amount
+            for pledge in active_pledges
+            if pledge.type == PledgeType.pay_upfront
+        ]
     )
     assert pay_on_completion_total == sum(
         [
             pledge.amount
-            for pledge in pledges
+            for pledge in active_pledges
             if pledge.type == PledgeType.pay_on_completion
         ]
     )
     assert pay_directly_total == sum(
-        [pledge.amount for pledge in pledges if pledge.type == PledgeType.pay_directly]
+        [
+            pledge.amount
+            for pledge in active_pledges
+            if pledge.type == PledgeType.pay_directly
+        ]
     )
 
 

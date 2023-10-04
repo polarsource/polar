@@ -1,7 +1,7 @@
 import pytest_asyncio
 
 from polar.models import Issue, Organization, Pledge, Repository
-from polar.pledge.schemas import PledgeType
+from polar.pledge.schemas import PledgeState, PledgeType
 from polar.postgres import AsyncSession
 from tests.fixtures.random_objects import create_issue, create_pledge
 
@@ -43,7 +43,21 @@ async def issues_pledges(
     issue_2 = await create_issue(session, organization, repository)
     issue_2_pledges: list[Pledge] = []
 
+    issue_3 = await create_issue(session, organization, repository)
+    issue_3_pledges: list[Pledge] = [
+        await create_pledge(
+            session,
+            organization,
+            repository,
+            issue_3,
+            pledging_organization=organization,
+            state=PledgeState.initiated,
+            type=PledgeType.pay_upfront,
+        ),
+    ]
+
     return [
         (issue_1, issue_1_pledges),
         (issue_2, issue_2_pledges),
+        (issue_3, issue_3_pledges),
     ]

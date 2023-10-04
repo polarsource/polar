@@ -120,9 +120,10 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         sort_by: IssueSortBy = IssueSortBy.newest,
         offset: int = 0,
         limit: int | None = None,
-        include_statuses: list[IssueStatus] | None = None,
         have_polar_badge: bool | None = None,  # If issue has the polar badge or not
         github_milestone_number: int | None = None,
+        show_closed: bool = False,
+        show_closed_if_needs_action: bool = False,
     ) -> Tuple[Sequence[Issue], int]:  # (issues, total_issue_count)
         pledge_by_organization = aliased(Organization)
         issue_repository = aliased(Repository)
@@ -186,64 +187,15 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 Issue.milestone["number"].cast(Integer) == github_milestone_number
             )
 
-        if include_statuses:
-            conds: list[ColumnElement[bool]] = []
-
-            is_closed = Issue.issue_closed_at.is_not(None)
-
-            is_pull_request = Issue.issue_has_pull_request_relationship.is_(True)
-
-            is_in_progress = Issue.issue_has_in_progress_relationship.is_(True)
-
-            is_triaged = or_(Issue.assignee.is_not(None), Issue.assignees.is_not(None))
-
-            # backlog
-            is_backlog: ColumnElement[bool] = and_(
-                not_(is_triaged),
-                not_(is_in_progress),
-                not_(is_pull_request),
-                not_(is_closed),
+        if not show_closed and show_closed_if_needs_action:
+            statement = statement.where(
+                or_(
+                    Issue.issue_closed_at.is_(None),
+                    Issue.needs_confirmation_solved.is_(True),
+                )
             )
-
-            for status in include_statuses:
-                if status == IssueStatus.backlog:
-                    conds.append(is_backlog)
-
-                if status == IssueStatus.triaged:
-                    conds.append(
-                        and_(
-                            is_triaged,
-                            not_(is_in_progress),
-                            not_(is_pull_request),
-                            not_(is_closed),
-                        )
-                    )
-
-                if status == IssueStatus.in_progress:
-                    conds.append(
-                        and_(
-                            is_in_progress,
-                            not_(is_pull_request),
-                            not_(is_closed),
-                        )
-                    )
-
-                if status == IssueStatus.pull_request:
-                    conds.append(
-                        and_(
-                            is_pull_request,
-                            not_(is_closed),
-                        )
-                    )
-
-                if status == IssueStatus.closed:
-                    conds.append(
-                        and_(
-                            is_closed,
-                        )
-                    )
-
-            statement = statement.where(or_(*conds))
+        elif not show_closed:
+            statement = statement.where(Issue.issue_closed_at.is_(None))
 
         # free text search
         if text:

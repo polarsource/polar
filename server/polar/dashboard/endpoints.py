@@ -49,7 +49,9 @@ router = APIRouter(tags=["dashboard"])
 async def get_personal_dashboard(
     auth: UserRequiredAuth,
     issue_list_type: IssueListType = IssueListType.issues,  # TODO: remove
-    status: Union[List[IssueStatus], None] = Query(default=None),
+    status: Union[List[IssueStatus], None] = Query(
+        default=None
+    ),  # TODO: remove, replace with show_closed
     q: Union[str, None] = Query(default=None),
     sort: Union[IssueSortBy, None] = Query(default=None),
     only_pledged: bool = Query(default=False),
@@ -62,7 +64,6 @@ async def get_personal_dashboard(
         session=session,
         auth=auth,
         authz=authz,
-        status=status,
         q=q,
         sort=sort,
         in_repos=[],
@@ -70,6 +71,7 @@ async def get_personal_dashboard(
         for_user=auth.user,
         only_pledged=only_pledged,
         only_badged=only_badged,
+        show_closed=status is not None and IssueStatus.closed in status,
     )
 
 
@@ -82,7 +84,9 @@ async def get_dashboard(
     org_name: str,
     repo_name: Union[str, None] = Query(default=None),
     issue_list_type: IssueListType = IssueListType.issues,  # TODO: remove
-    status: Union[List[IssueStatus], None] = Query(default=None),
+    status: Union[List[IssueStatus], None] = Query(
+        default=None
+    ),  # TODO: remove, replace with show_closed
     q: Union[str, None] = Query(default=None),
     sort: Union[IssueSortBy, None] = Query(default=None),
     only_pledged: bool = Query(default=False),
@@ -142,12 +146,12 @@ async def get_dashboard(
         auth=auth,
         authz=authz,
         in_repos=repositories,
-        status=status,
         q=q,
         sort=sort,
         for_org=auth.organization,
         only_pledged=only_pledged,
         only_badged=only_badged,
+        show_closed=status is not None and IssueStatus.closed in status,
         page=page,
     )
 
@@ -174,13 +178,13 @@ async def dashboard(
     authz: Authz,
     in_repos: Sequence[Repository] = [],
     issue_list_type: IssueListType = IssueListType.issues,
-    status: Union[List[IssueStatus], None] = None,
     q: Union[str, None] = None,
     sort: Union[IssueSortBy, None] = None,
     for_org: Organization | None = None,
     for_user: User | None = None,
     only_pledged: bool = False,
     only_badged: bool = False,
+    show_closed: bool = False,
     page: int = 1,
 ) -> IssueListResponse:
     # Default sorting
@@ -208,7 +212,8 @@ async def dashboard(
         load_references=True,
         load_pledges=True,
         load_repository=True,
-        include_statuses=status,
+        show_closed=show_closed,
+        show_closed_if_needs_action=True,
         sort_by=sort,
         limit=limit,
         offset=offset,

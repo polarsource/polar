@@ -16,7 +16,9 @@ const BasePledgeSummaryPill: React.FC<BasePledgeSummaryPillProps> = ({
 }) => {
   return (
     <div className="flex flex-row items-center">
-      <Pledgers pledgers={summary.pledgers} maxShown={3} size="xs" />
+      <div className="hidden md:block">
+        <Pledgers pledgers={summary.pledgers} maxShown={3} size="xs" />
+      </div>
       <div className="rouded -ml-2 flex flex-row items-center gap-1 rounded-full border border-gray-200 bg-white py-0.5 pl-1 pr-2 text-xs text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
         {icon}
         <span>

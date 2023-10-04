@@ -25,16 +25,18 @@ const IssueFundingDetails: React.FC<IssueFundingDetailsProps> = ({
 }) => {
   const { pay_upfront, pay_on_completion } = pledgesSummaries
   return (
-    <div className="flex flex-row items-center space-x-4">
+    <div className="flex flex-col items-center gap-4 md:flex-row">
       <FundingPill total={total} goal={fundingGoal} />
 
-      {pay_upfront.total.amount > 0 && (
-        <PledgeSummaryPill.Funded summary={pay_upfront} />
-      )}
+      <div className="flex flex-row gap-4">
+        {pay_upfront.total.amount > 0 && (
+          <PledgeSummaryPill.Funded summary={pay_upfront} />
+        )}
 
-      {pay_on_completion.total.amount > 0 && (
-        <PledgeSummaryPill.Pledged summary={pay_on_completion} />
-      )}
+        {pay_on_completion.total.amount > 0 && (
+          <PledgeSummaryPill.Pledged summary={pay_on_completion} />
+        )}
+      </div>
 
       {issue.upfront_split_to_contributors && (
         <PublicRewardPill percent={issue.upfront_split_to_contributors} />

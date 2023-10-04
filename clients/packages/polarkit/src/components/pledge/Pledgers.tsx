@@ -42,7 +42,7 @@ const Pledgers: React.FC<PledgersProps> = ({ pledgers, maxShown, size }) => {
   }, [size])
 
   return (
-    <div className="mt-2 flex items-center justify-center sm:mt-0 sm:justify-end">
+    <div className="flex items-center justify-center sm:mt-0 sm:justify-end">
       {shownPledgers.map((pledger) => (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img

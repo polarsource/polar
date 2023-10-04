@@ -3,7 +3,12 @@ import PageNotFound from '@/components/Shared/PageNotFound'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
 import { api } from 'polarkit/api'
-import { ApiError, Organization, Platforms } from 'polarkit/api/client'
+import {
+  ApiError,
+  ListFundingSortBy,
+  Organization,
+  Platforms,
+} from 'polarkit/api/client'
 
 export async function generateMetadata(
   {
@@ -76,13 +81,18 @@ export default async function Page({
     organizationName: params.organization,
   })
 
-  const issues = await api.issues.search({
+  const issuesFunding = await api.funding.list({
     platform: Platforms.GITHUB,
     organizationName: params.organization,
-    haveBadge: true,
+    badged: true,
+    sorting: [
+      ListFundingSortBy.MOST_FUNDED,
+      ListFundingSortBy.MOST_ENGAGEMENT,
+      ListFundingSortBy.NEWEST,
+    ],
   })
 
-  const totalIssueCount = issues.pagination.total_count
+  const totalIssueCount = issuesFunding.pagination.total_count
 
   if (
     organization === undefined ||
@@ -97,7 +107,7 @@ export default async function Page({
       <OrganizationPublicPage
         organization={organization}
         repositories={repositories.items || []}
-        issues={issues.items || []}
+        issuesFunding={issuesFunding.items || []}
         totalIssueCount={totalIssueCount}
       />
     </>

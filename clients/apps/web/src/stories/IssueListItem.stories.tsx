@@ -22,8 +22,8 @@ import {
   org,
   pledge,
   pledgePublicAPI,
-  pledgeSummary,
   pledger,
+  pledgesSummaries,
   repo,
   user,
 } from 'polarkit/testdata'
@@ -294,9 +294,9 @@ const meta: Meta<typeof IssueListItem> = {
     org: org,
     issue: issue,
     pledgesSummary: {
-      ...pledgeSummary,
+      ...pledgesSummaries,
       pay_upfront: {
-        ...pledgeSummary.pay_upfront,
+        ...pledgesSummaries.pay_upfront,
         total: { currency: 'USD', amount: 4000 },
       },
     },
@@ -612,7 +612,7 @@ export const SelfSummaryFundingGoal: Story = {
     showSelfPledgesFor: user,
 
     pledgesSummary: {
-      ...pledgeSummary,
+      ...pledgesSummaries,
       pay_upfront: {
         total: { currency: 'USD', amount: 4000 },
         pledgers: [pledger, pledger, pledger],
@@ -650,7 +650,7 @@ export const SelfSummaryNoGoal: Story = {
     showSelfPledgesFor: user,
 
     pledgesSummary: {
-      ...pledgeSummary,
+      ...pledgesSummaries,
       pay_upfront: {
         total: { currency: 'USD', amount: 4000 },
         pledgers: [pledger, pledger, pledger],
@@ -671,7 +671,7 @@ export const PublicReward: Story = {
       upfront_split_to_contributors: 90,
     },
     references: [],
-    pledgesSummary: pledgeSummary,
+    pledgesSummary: pledgesSummaries,
   },
 }
 
@@ -694,7 +694,7 @@ export const RewardsStatusAll: Story = {
     references: [],
 
     pledgesSummary: {
-      ...pledgeSummary,
+      ...pledgesSummaries,
       pay_upfront: {
         total: { currency: 'USD', amount: 4000 },
         pledgers: [pledger, pledger, pledger],
@@ -743,7 +743,7 @@ export const RewardsStatusPaidOnly: Story = {
     references: [],
 
     pledgesSummary: {
-      ...pledgeSummary,
+      ...pledgesSummaries,
       pay_upfront: {
         total: { currency: 'USD', amount: 4000 },
         pledgers: [pledger, pledger, pledger],

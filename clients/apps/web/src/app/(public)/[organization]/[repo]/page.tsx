@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { api } from 'polarkit'
 import {
   ApiError,
+  ListFundingSortBy,
   ListResource_Repository_,
   Organization,
   Platforms,
@@ -91,14 +92,19 @@ export default async function Page({
     organizationName: params.organization,
   })
 
-  const issues = await api.issues.search({
+  const issuesFunding = await api.funding.list({
     platform: Platforms.GITHUB,
     organizationName: params.organization,
     repositoryName: params.repo,
-    haveBadge: true,
+    badged: true,
+    sorting: [
+      ListFundingSortBy.MOST_FUNDED,
+      ListFundingSortBy.MOST_ENGAGEMENT,
+      ListFundingSortBy.NEWEST,
+    ],
   })
 
-  const totalIssueCount = issues.pagination.total_count
+  const totalIssueCount = issuesFunding.pagination.total_count
 
   if (
     organization === undefined ||
@@ -119,7 +125,7 @@ export default async function Page({
       organization={organization}
       repositories={repositories.items || []}
       repository={repo}
-      issues={issues.items || []}
+      issuesFunding={issuesFunding.items || []}
       totalIssueCount={totalIssueCount}
     />
   )

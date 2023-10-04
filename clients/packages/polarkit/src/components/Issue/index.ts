@@ -1,5 +1,6 @@
 import IconCounter from './IconCounter'
 import IssueActivityBox from './IssueActivityBox'
+import IssueFundingDetails from './IssueFundingDetails'
 import IssueLabel from './IssueLabel'
 import IssuePledge from './IssuePledge'
 import IssueReference from './IssueReference'
@@ -10,8 +11,9 @@ import IssueListItemDecoration, {
 import { generateMarkdownTitle } from './markdown'
 
 export {
-  IssueActivityBox,
   IconCounter,
+  IssueActivityBox,
+  IssueFundingDetails,
   IssueLabel,
   IssueListItemDecoration,
   IssuePledge,

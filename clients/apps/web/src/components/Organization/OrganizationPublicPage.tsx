@@ -1,4 +1,4 @@
-import { Issue, Organization, Repository } from 'polarkit/api/client'
+import { IssueFunding, Organization, Repository } from 'polarkit/api/client'
 import { prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
 import Footer from './Footer'
@@ -8,12 +8,12 @@ import IssuesLookingForFunding from './IssuesLookingForFunding'
 const OrganizationPublicPage = ({
   organization,
   repositories,
-  issues,
+  issuesFunding,
   totalIssueCount,
 }: {
   organization: Organization
   repositories: Repository[]
-  issues?: Issue[]
+  issuesFunding: IssueFunding[]
   totalIssueCount: number
 }) => {
   const showMeta =
@@ -65,13 +65,7 @@ const OrganizationPublicPage = ({
         </div>
       )}
 
-      {issues && (
-        <IssuesLookingForFunding
-          organization={organization}
-          repositories={repositories}
-          issues={issues}
-        />
-      )}
+      <IssuesLookingForFunding issuesFunding={issuesFunding} />
 
       <HowItWorks />
 

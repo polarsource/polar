@@ -1,4 +1,4 @@
-import { Issue, Organization, Repository } from 'polarkit/api/client'
+import { IssueFunding, Organization, Repository } from 'polarkit/api/client'
 import { formatStarsNumber } from 'polarkit/utils'
 import { prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
@@ -10,13 +10,13 @@ const RepositoryPublicPage = ({
   organization,
   repository,
   repositories,
-  issues,
+  issuesFunding,
   totalIssueCount,
 }: {
   organization: Organization
   repository: Repository
   repositories: Repository[]
-  issues?: Issue[]
+  issuesFunding: IssueFunding[]
   totalIssueCount: number
 }) => {
   return (
@@ -54,13 +54,7 @@ const RepositoryPublicPage = ({
         </div>
       </div>
 
-      {issues && (
-        <IssuesLookingForFunding
-          organization={organization}
-          repositories={[repository]}
-          issues={issues}
-        />
-      )}
+      <IssuesLookingForFunding issuesFunding={issuesFunding} />
 
       <HowItWorks />
 

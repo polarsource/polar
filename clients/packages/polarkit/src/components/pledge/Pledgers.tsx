@@ -48,7 +48,7 @@ const Pledgers: React.FC<PledgersProps> = ({ pledgers, maxShown, size }) => {
         <img
           key={pledger.name}
           src={pledger.avatar_url}
-          className={`rounded-full border border-gray-50 dark:border-gray-950 ${marginClasses} ${sizeClasses}`}
+          className={`min-w-fit rounded-full border border-gray-50 dark:border-gray-950 ${marginClasses} ${sizeClasses}`}
           alt={pledger.name}
         />
       ))}

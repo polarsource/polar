@@ -3,7 +3,7 @@ import RepositoryPublicPage from '@/components/Organization/RepositoryPublicPage
 import type { Meta, StoryObj } from '@storybook/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from 'polarkit'
-import { issue, org, repo } from 'polarkit/testdata'
+import { issueFunding, org, repo } from 'polarkit/testdata'
 
 const meta: Meta<typeof RepositoryPublicPage> = {
   title: 'Pages/RepositoryPublicPage',
@@ -45,7 +45,8 @@ export const Default: Story = {
     organization: orgWithBio,
     repository: repoWithData,
     repositories: [repo],
-    issues: [issue, issue, issue, issue, issue, issue],
+    totalIssueCount: 4,
+    issuesFunding: [issueFunding, issueFunding, issueFunding, issueFunding],
   },
   render: (args) => {
     return (

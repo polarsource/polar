@@ -1,5 +1,6 @@
 import {
   Issue,
+  IssueFunding,
   MaintainerPledgeConfirmationPendingNotification,
   MaintainerPledgeCreatedNotification,
   MaintainerPledgePaidNotification,
@@ -146,10 +147,23 @@ export const pledger: Pledger = {
   avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
 }
 
-export const pledgeSummary: PledgesTypeSummaries = {
+export const pledgesSummaries: PledgesTypeSummaries = {
   pay_directly: { total: { currency: 'USD', amount: 0 }, pledgers: [] },
-  pay_on_completion: { total: { currency: 'USD', amount: 0 }, pledgers: [] },
-  pay_upfront: { total: { currency: 'USD', amount: 0 }, pledgers: [] },
+  pay_on_completion: {
+    total: { currency: 'USD', amount: 40000 },
+    pledgers: [pledger, pledger],
+  },
+  pay_upfront: {
+    total: { currency: 'USD', amount: 10000 },
+    pledgers: [pledger],
+  },
+}
+
+export const issueFunding: IssueFunding = {
+  issue,
+  funding_goal: { currency: 'USD', amount: 60000 },
+  total: { currency: 'USD', amount: 50000 },
+  pledges_summaries: pledgesSummaries,
 }
 
 // PublicAPI

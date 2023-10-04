@@ -36,3 +36,18 @@ export const Pledged: Story = {
     return <PledgeSummaryPill.Pledged {...args} />
   },
 }
+
+export const OnePledger: Story = {
+  args: {
+    summary: {
+      pledgers: [pledger],
+      total: {
+        amount: 25000,
+        currency: 'USD',
+      },
+    },
+  },
+  render: (args) => {
+    return <PledgeSummaryPill.Pledged {...args} />
+  },
+}

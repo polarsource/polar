@@ -19,7 +19,9 @@ from .service import funding as funding_service
 router = APIRouter(prefix="/funding", tags=["funding"])
 
 
-@router.get("/", response_model=ListResource[IssueFunding], tags=[Tags.PUBLIC])
+@router.get(
+    "/", name="list", response_model=ListResource[IssueFunding], tags=[Tags.PUBLIC]
+)
 async def list_funding(
     organization_name: OrganizationNameQuery,
     repository_name: OptionalRepositoryNameQuery = None,

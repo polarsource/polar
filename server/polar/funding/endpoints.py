@@ -25,6 +25,7 @@ router = APIRouter(prefix="/funding", tags=["funding"])
 async def list_funding(
     organization_name: OrganizationNameQuery,
     repository_name: OptionalRepositoryNameQuery = None,
+    badged: bool | None = Query(None),
     sorting: ListFundingSorting = [ListFundingSortBy.newest],
     platform: Platforms = Query(...),
     session: AsyncSession = Depends(get_db_session),
@@ -44,7 +45,11 @@ async def list_funding(
             raise ResourceNotFound("Repository not found")
 
     rows = await funding_service.list_by(
-        session, organization=organization, repository=repository, sorting=sorting
+        session,
+        organization=organization,
+        repository=repository,
+        badged=badged,
+        sorting=sorting,
     )
     return ListResource(
         items=[IssueFunding.from_list_by_row(row) for row in rows],

@@ -21,6 +21,7 @@ export class FundingService {
     organizationName,
     platform,
     repositoryName,
+    badged,
     sorting,
   }: {
     /**
@@ -32,6 +33,7 @@ export class FundingService {
      * Filter by repository name.
      */
     repositoryName?: string,
+    badged?: boolean,
     /**
      * Sorting criterion. Several criteria can be used simultaneously and will be applied in order.
      */
@@ -43,6 +45,7 @@ export class FundingService {
       query: {
         'organization_name': organizationName,
         'repository_name': repositoryName,
+        'badged': badged,
         'sorting': sorting,
         'platform': platform,
       },

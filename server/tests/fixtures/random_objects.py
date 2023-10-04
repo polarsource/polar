@@ -222,7 +222,12 @@ async def pull_request(
         number=secrets.randbelow(5000),
         external_id=secrets.randbelow(5000),
         title="PR Title",
-        author={"login": "pr_creator_login"},
+        author={
+            "login": "pr_creator_login",
+            "avatar_url": "http://example.com/avatar.jpg",
+            "html_url": "https://github.com/pr_creator_login",
+            "id": 47952,
+        },
         platform=Platforms.github,
         state="open",
         issue_created_at=datetime.now(),

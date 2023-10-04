@@ -124,12 +124,6 @@ async def search(
         repository_ids=issues_in_repos_ids,
         sort_by=sort,
         limit=50,
-        include_statuses=[
-            IssueStatus.backlog,
-            IssueStatus.triaged,
-            IssueStatus.in_progress,
-            IssueStatus.pull_request,
-        ],
         load_repository=True,
         have_pledge=have_pledge,
         have_polar_badge=have_badge,

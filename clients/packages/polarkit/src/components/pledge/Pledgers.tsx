@@ -41,8 +41,26 @@ const Pledgers: React.FC<PledgersProps> = ({ pledgers, maxShown, size }) => {
     }
   }, [size])
 
+  /**
+   * Compensate the negative margin of the leftmost avatar with an opposite padding.
+   * This way, it won't mess the spacing of components using it.
+   */
+  const negativeMarginCompensationPadding = useMemo(() => {
+    switch (size) {
+      case 'xs':
+        return 'pl-2'
+      case 'sm':
+      case 'md':
+        return 'pl-3'
+      case 'lg':
+        return 'pl-4'
+    }
+  }, [size])
+
   return (
-    <div className="flex items-center justify-center sm:mt-0 sm:justify-end">
+    <div
+      className={`flex items-center justify-center pl-2 sm:mt-0 sm:justify-end ${negativeMarginCompensationPadding}`}
+    >
       {shownPledgers.map((pledger) => (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img

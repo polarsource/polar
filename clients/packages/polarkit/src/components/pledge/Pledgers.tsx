@@ -33,11 +33,21 @@ const Pledgers: React.FC<PledgersProps> = ({ pledgers, maxShown, size }) => {
       case 'xs':
         return '-ml-2'
       case 'sm':
-        return '-ml-3 border-2'
+        return '-ml-3'
       case 'md':
-        return '-ml-3 border-2'
+        return '-ml-3'
       case 'lg':
-        return '-ml-4 border-2'
+        return '-ml-4'
+    }
+  }, [size])
+  const borderClasses = useMemo(() => {
+    switch (size) {
+      case 'xs':
+        return ''
+      case 'sm':
+      case 'md':
+      case 'lg':
+        return 'border-2'
     }
   }, [size])
 
@@ -59,20 +69,22 @@ const Pledgers: React.FC<PledgersProps> = ({ pledgers, maxShown, size }) => {
 
   return (
     <div
-      className={`flex items-center justify-center pl-2 sm:mt-0 sm:justify-end ${negativeMarginCompensationPadding}`}
+      className={`flex items-center pl-2 ${negativeMarginCompensationPadding}`}
     >
       {shownPledgers.map((pledger) => (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          key={pledger.name}
-          src={pledger.avatar_url}
-          className={`min-w-fit rounded-full border border-gray-50 dark:border-gray-950 ${marginClasses} ${sizeClasses}`}
-          alt={pledger.name}
-        />
+        <div className={`${marginClasses} ${sizeClasses}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            key={pledger.name}
+            src={pledger.avatar_url}
+            className={`rounded-full border border-gray-50 dark:border-gray-950 ${borderClasses}`}
+            alt={pledger.name}
+          />
+        </div>
       ))}
       {hiddenPledgersCount > 0 && (
         <div
-          className={`flex aspect-square items-center justify-center rounded-full border border-gray-50 bg-blue-600 text-blue-200 dark:border-gray-950 ${marginClasses} ${sizeClasses}`}
+          className={`flex aspect-square items-center justify-center rounded-full border border-gray-50 bg-blue-600 text-blue-200 dark:border-gray-950 ${marginClasses} ${borderClasses} ${sizeClasses}`}
         >
           +{hiddenPledgersCount}
         </div>

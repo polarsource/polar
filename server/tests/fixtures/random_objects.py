@@ -173,6 +173,7 @@ async def create_pledge(
     issue: Issue,
     pledging_organization: Organization,
     *,
+    state: PledgeState = PledgeState.created,
     type: PledgeType = PledgeType.pay_upfront,
 ) -> Pledge:
     amount = secrets.randbelow(100000) + 1
@@ -186,7 +187,7 @@ async def create_pledge(
         organization_id=organization.id,
         amount=amount,
         fee=fee,
-        state=PledgeState.created,
+        state=state,
         type=type,
     )
 

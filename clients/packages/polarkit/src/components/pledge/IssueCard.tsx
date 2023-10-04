@@ -225,7 +225,7 @@ const FundingGoal = ({
       </div>
 
       {/* Pledgers */}
-      <div className="mt-2 md:mt-0">
+      <div className="mt-2 flex justify-center md:mt-0 md:justify-end">
         <Pledgers pledgers={pledgers} size="sm" />
       </div>
     </div>

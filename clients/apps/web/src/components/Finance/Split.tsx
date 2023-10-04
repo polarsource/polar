@@ -140,7 +140,10 @@ const Split = (props: {
     )
   }
 
+  const [isLoading, setIsLoading] = useState(false)
+
   const onConfirm = () => {
+    setIsLoading(true)
     const res = computedShares.map((s) => {
       return {
         username: s.username,
@@ -288,7 +291,11 @@ const Split = (props: {
             </button>
           </div>
           <div>
-            <PrimaryButton disabled={!canSubmit} onClick={onConfirm}>
+            <PrimaryButton
+              disabled={!canSubmit}
+              onClick={onConfirm}
+              loading={isLoading}
+            >
               <span>Confirm</span>
             </PrimaryButton>
           </div>

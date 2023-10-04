@@ -1,10 +1,18 @@
+import { useAuth } from '@/hooks'
 import { ConfirmIssueSplit } from 'polarkit/api/client'
 import { useIssueMarkConfirmed, useListPledesForIssue } from 'polarkit/hooks'
+import { useState } from 'react'
 import Spinner from '../Shared/Spinner'
 import Split, { Contributor, Share } from './Split'
+import SplitNotify from './SplitNotify'
 
 const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
   const pledges = useListPledesForIssue(props.issueId)
+
+  const { currentUser } = useAuth()
+
+  const [showNotifyScreen, setShowNotifyScreen] = useState(false)
+  const [notifySplits, setNotifySplits] = useState<ConfirmIssueSplit[]>([])
 
   const markSolved = useIssueMarkConfirmed()
 
@@ -51,7 +59,16 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
       splits,
     })
 
-    props.onClose()
+    // have external rewards
+    const haveExternalRewards =
+      splits.filter((s) => !!s.github_username).length > 0
+
+    if (haveExternalRewards) {
+      setShowNotifyScreen(true)
+      setNotifySplits(splits)
+    } else {
+      props.onClose()
+    }
   }
 
   const shares: Share[] =
@@ -80,6 +97,20 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
 
   if (!pledges.isFetched) {
     return <Spinner />
+  }
+
+  const issue = pledges.data?.items ? pledges.data?.items[0].issue : undefined
+
+  if (currentUser && issue && showNotifyScreen) {
+    return (
+      <SplitNotify
+        pledges={pledges.data?.items || []}
+        splits={notifySplits}
+        user={currentUser}
+        onCancel={props.onClose}
+        issue={issue}
+      />
+    )
   }
 
   return (

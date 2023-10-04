@@ -28,6 +28,7 @@
     "./components/ui/select": "./src/components/ui/select.tsx",
     "./components/ui/checkbox": "./src/components/ui/checkbox.tsx",
     "./components/ui/switch": "./src/components/ui/switch.tsx",
+    "./components/ui/textarea": "./src/components/ui/textarea.tsx",
     "./components/ui/tabs": "./src/components/ui/tabs.tsx",
     "./components/pledge": "./src/components/pledge/index.ts",
     "./components/brand": "./src/components/brand/index.ts",

@@ -1,6 +1,10 @@
 import { useAuth } from '@/hooks'
-import { ConfirmIssueSplit } from 'polarkit/api/client'
-import { useIssueMarkConfirmed, useListPledesForIssue } from 'polarkit/hooks'
+import { Author, ConfirmIssueSplit } from 'polarkit/api/client'
+import {
+  useIssueMarkConfirmed,
+  useListPledesForIssue,
+  useListPullsReferencingIssue,
+} from 'polarkit/hooks'
 import { useState } from 'react'
 import Spinner from '../Shared/Spinner'
 import Split, { Contributor, Share } from './Split'
@@ -8,6 +12,7 @@ import SplitNotify from './SplitNotify'
 
 const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
   const pledges = useListPledesForIssue(props.issueId)
+  const pulls = useListPullsReferencingIssue(props.issueId)
 
   const { currentUser } = useAuth()
 
@@ -71,18 +76,7 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
     }
   }
 
-  const shares: Share[] =
-    pledges.data?.items &&
-    pledges.data?.items.length > 0 &&
-    pledges.data?.items[0].issue.repository.organization
-      ? [
-          {
-            username: pledges.data?.items[0].issue.repository.organization.name,
-          },
-        ]
-      : []
-
-  const contributors: Contributor[] =
+  const selfOrgContributors: Contributor[] =
     pledges.data?.items &&
     pledges.data?.items.length > 0 &&
     pledges.data?.items[0].issue.repository.organization
@@ -94,6 +88,35 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
           },
         ]
       : []
+
+  const pullRequestContributors: Contributor[] = pulls.data?.items
+    ? pulls.data.items
+        .map((pr) => pr.author)
+        .filter((a): a is Author => !!a)
+        .map((a) => {
+          return {
+            username: a.login,
+            avatar_url: a.avatar_url,
+            is_suggested_from_contributions: true,
+          }
+        })
+    : []
+
+  const contributors: Contributor[] = [
+    ...selfOrgContributors,
+    ...pullRequestContributors,
+  ]
+
+  const tmpShares: Share[] = contributors.map((c) => {
+    return {
+      username: c.username,
+    }
+  })
+
+  // deduplicate
+  const shares: Share[] = [
+    ...new Map(tmpShares.map((item) => [item.username, item])).values(),
+  ]
 
   if (!pledges.isFetched) {
     return <Spinner />
@@ -114,13 +137,15 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
   }
 
   return (
-    <Split
-      pledges={pledges.data?.items || []}
-      shares={shares}
-      contributors={contributors}
-      onConfirm={onSplitConfirm}
-      onCancel={props.onClose}
-    />
+    <>
+      <Split
+        pledges={pledges.data?.items || []}
+        shares={shares}
+        contributors={contributors}
+        onConfirm={onSplitConfirm}
+        onCancel={props.onClose}
+      />
+    </>
   )
 }
 

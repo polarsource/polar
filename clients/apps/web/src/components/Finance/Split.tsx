@@ -6,7 +6,7 @@ import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { ModalHeader } from '../Modal'
 
 export type Share = {
@@ -25,6 +25,7 @@ const zeroIfNanOrInfinite = (value: number): number => {
 export interface Contributor {
   username: string
   avatar_url?: string
+  is_suggested_from_contributions?: boolean
 }
 
 const Split = (props: {
@@ -36,6 +37,10 @@ const Split = (props: {
 }) => {
   const [shares, setShares] = useState(props.shares)
   const [contributors, setContributors] = useState(props.contributors)
+
+  useEffect(() => {
+    setContributors(props.contributors)
+  }, [props.contributors])
 
   const pledgeSum = props.pledges
     .map((p) => p.amount.amount)
@@ -90,6 +95,8 @@ const Split = (props: {
           est_amount,
           raw_value: s.raw_value,
           share_thousands,
+          is_suggested_from_contributions:
+            !!user?.is_suggested_from_contributions,
         }
       })
       .filter((s) => s.username) as Array<{
@@ -100,6 +107,7 @@ const Split = (props: {
       est_amount: number
       raw_value: string | undefined
       share_thousands: number
+      is_suggested_from_contributions: boolean
     }>
   }, [shares, contributors, pledgeSumToSplit])
 
@@ -197,9 +205,16 @@ const Split = (props: {
               <div>
                 <img src={s.avatar_url} className="h-6 w-6 rounded-full" />
               </div>
-              <span className="flex-1 text-gray-900 dark:text-gray-200">
-                {s.username}
-              </span>
+              <div className="flex flex-1 flex-col items-start text-gray-900 dark:text-gray-200">
+                <span>{s.username}</span>
+                {s.is_suggested_from_contributions && (
+                  <div className="flex">
+                    <span className="text-xs text-gray-500">
+                      Suggested from linked PRs
+                    </span>
+                  </div>
+                )}
+              </div>
 
               <div className="text-gray-500">
                 Est. $

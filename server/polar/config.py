@@ -88,6 +88,8 @@ class Settings(BaseSettings):
 
     POSTHOG_PROJECT_API_KEY: str = ""
 
+    LOOPS_API_KEY: str | None = None
+
     # Default organization setting for minimum pledge amount ($20)
     MINIMUM_ORG_PLEDGE_AMOUNT: int = 2000
 

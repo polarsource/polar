@@ -24,7 +24,7 @@ const MaintainerSignup = () => {
   ]
 
   return (
-    <div className="flex w-full grow items-center justify-center bg-[#FEFDF9] px-4 dark:bg-gray-950 md:h-screen">
+    <div className="dark:bg-gray-950 flex w-full grow items-center justify-center bg-[#FEFDF9] px-4 md:h-screen">
       <div className="my-16 flex flex-col items-center  md:my-0">
         <LogoType70 className="mb-16 h-10" />
 
@@ -110,7 +110,7 @@ const MaintainerSignup = () => {
 
               <div className="flex flex-col space-y-2 border-b border-[#C9DAF4]/60 p-4 dark:border-blue-600/50">
                 <h2 className="font-medium text-blue-600 dark:text-blue-400">
-                  Funded milestones
+                  Sponsorship 2.0
                 </h2>
                 <div className="flex flex-1 flex-col justify-center">
                   <span className="font-mono text-blue-400 dark:text-blue-600">

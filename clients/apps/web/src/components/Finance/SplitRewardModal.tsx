@@ -85,6 +85,7 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
             username: pledges.data?.items[0].issue.repository.organization.name,
             avatar_url:
               pledges.data?.items[0].issue.repository.organization.avatar_url,
+            is_maintainer_org: true,
           },
         ]
       : []
@@ -118,7 +119,7 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
     ...new Map(tmpShares.map((item) => [item.username, item])).values(),
   ]
 
-  if (!pledges.isFetched) {
+  if (!pledges.isFetched || !pulls.isFetched) {
     return <Spinner />
   }
 
@@ -136,17 +137,22 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
     )
   }
 
-  return (
-    <>
-      <Split
-        pledges={pledges.data?.items || []}
-        shares={shares}
-        contributors={contributors}
-        onConfirm={onSplitConfirm}
-        onCancel={props.onClose}
-      />
-    </>
-  )
+  if (issue && pledges.data?.items) {
+    return (
+      <>
+        <Split
+          issue={issue}
+          pledges={pledges.data?.items || []}
+          shares={shares}
+          contributors={contributors}
+          onConfirm={onSplitConfirm}
+          onCancel={props.onClose}
+        />
+      </>
+    )
+  }
+
+  return <Spinner />
 }
 
 export default SplitRewardModal

@@ -8,6 +8,7 @@ import IssueSummary from './IssueSummary'
 import IssueListItemDecoration, {
   getExpectedHeight,
 } from './ListItemDecoration'
+import PublicRewardPill from './PublicRewardPill'
 import { generateMarkdownTitle } from './markdown'
 
 export {
@@ -20,5 +21,6 @@ export {
   IssueReference,
   IssueSummary,
   getExpectedHeight,
+  PublicRewardPill,
   generateMarkdownTitle,
 }

@@ -1,7 +1,8 @@
 import { InformationCircleIcon, PlusIcon } from '@heroicons/react/24/outline'
 import { XMarkIcon } from '@heroicons/react/24/solid'
 import { api } from 'polarkit/api'
-import { Pledge } from 'polarkit/api/client'
+import { Issue, Pledge } from 'polarkit/api/client'
+import { PublicRewardPill } from 'polarkit/components/Issue'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { getCentsInDollarString } from 'polarkit/money'
@@ -26,9 +27,11 @@ export interface Contributor {
   username: string
   avatar_url?: string
   is_suggested_from_contributions?: boolean
+  is_maintainer_org?: boolean
 }
 
 const Split = (props: {
+  issue: Issue
   pledges: Pledge[]
   contributors: Contributor[]
   shares: Share[]
@@ -54,13 +57,35 @@ const Split = (props: {
   }
 
   const computedShares = useMemo(() => {
-    const fixedShares = shares.filter((s) => isFixed(s.share_thousands))
+    const upfrontAdjustedShares = shares.map((s) => {
+      const user = contributors.find((c) => c.username === s.username)
+
+      if (!user?.is_maintainer_org) {
+        return s
+      }
+      if (!props.issue.upfront_split_to_contributors) {
+        return s
+      }
+      if (s.share_thousands !== undefined || s.raw_value !== undefined) {
+        return s
+      }
+
+      return {
+        ...s,
+        share_thousands: (100 - props.issue.upfront_split_to_contributors) * 10,
+      }
+    })
+
+    const fixedShares = upfrontAdjustedShares.filter((s) =>
+      isFixed(s.share_thousands),
+    )
 
     const fixedSharesSum = fixedShares
       .map((s) => s.share_thousands || 0)
       .reduce((a, b) => a + b, 0)
 
-    const remainingUsersCount = shares.length - fixedShares.length
+    const remainingUsersCount =
+      upfrontAdjustedShares.length - fixedShares.length
 
     const deducedShare = (): number => {
       if (fixedSharesSum >= 1000) {
@@ -69,9 +94,7 @@ const Split = (props: {
       return Math.floor((1000 - fixedSharesSum) / remainingUsersCount)
     }
 
-    console.log('calculate computed shares', { shares })
-
-    return shares
+    return upfrontAdjustedShares
       .map((s) => {
         const share_thousands =
           s.share_thousands !== undefined && s.raw_value !== ''
@@ -196,7 +219,16 @@ const Split = (props: {
   return (
     <>
       <ModalHeader hide={props.onCancel}>
-        <>Split reward (${getCentsInDollarString(pledgeSum)})</>
+        <div className="flex items-center gap-4">
+          <div>Split reward (${getCentsInDollarString(pledgeSum)})</div>
+          {props.issue.upfront_split_to_contributors && (
+            <div className="w-fit">
+              <PublicRewardPill
+                percent={props.issue.upfront_split_to_contributors}
+              />
+            </div>
+          )}
+        </div>
       </ModalHeader>
       <div className="space-y-4 pt-4">
         <div className="flex flex-col gap-4 px-4">

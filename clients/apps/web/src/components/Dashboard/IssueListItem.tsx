@@ -24,6 +24,7 @@ import { getCentsInDollarString } from 'polarkit/money'
 import { ChangeEvent, useState } from 'react'
 import SplitRewardModal from '../Finance/SplitRewardModal'
 import { useModal } from '../Modal/useModal'
+import { AddBadgeButton } from './IssuePromotionModal'
 
 const IssueListItem = (props: {
   org: Organization
@@ -89,7 +90,16 @@ const IssueListItem = (props: {
           issue={props.issue}
           showLogo={props.showLogo}
           showStatus={props.showIssueOpenClosedStatus}
-          right={props.right}
+          right={
+            <>
+              {props.canAddRemovePolarLabel &&
+                'funding' in props.issue &&
+                'pledge_badge_currently_embedded' in props.issue && (
+                  <AddBadgeButton issue={props.issue} />
+                )}
+              {props.right}
+            </>
+          }
         />
         {havePledgeOrReference && (
           <IssueActivityBox>

@@ -8,7 +8,11 @@ import {
 import Image from 'next/image'
 import { api, queryClient } from 'polarkit/api'
 import { CurrencyAmount, Issue, Pledge, UserRead } from 'polarkit/api/client'
-import { MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
+import {
+  CopyToClipboardInput,
+  MoneyInput,
+  PrimaryButton,
+} from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { Switch } from 'polarkit/components/ui/switch'
 import {
@@ -31,7 +35,6 @@ import { classNames } from 'polarkit/utils'
 import { posthog } from 'posthog-js'
 import { ChangeEvent, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import CopyToClipboardInput from '../../../../../packages/polarkit/src/components/ui/atoms/CopyToClipboardInput'
 import { ModalHeader, Modal as ModernModal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import BadgeMessageForm from './BadgeMessageForm'

@@ -1,12 +1,11 @@
 'use client'
 
-import { api } from '@/../../../packages/polarkit'
 import LoadingScreen, {
   LoadingScreenError,
 } from '@/components/Dashboard/LoadingScreen'
 import { useAuth } from '@/hooks'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ApiError } from 'polarkit/api'
+import { ApiError, api } from 'polarkit/api'
 import { useEffect, useRef, useState } from 'react'
 
 export default function Page() {

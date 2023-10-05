@@ -236,7 +236,9 @@ Thank you for your support!
             },
             days_until_due=7,
             collection_method="send_invoice",
-            auto_advance=False,
+            # Enabling auto_advance means that Stripe will automatically send emails
+            # and reminders to the Customer to notify them about this invoice.
+            auto_advance=True,
         )
 
         stripe_lib.InvoiceItem.create(

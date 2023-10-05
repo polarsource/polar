@@ -97,7 +97,7 @@ const ProfileSelection = ({ useOrgFromURL = true }) => {
           >
             <ul>
               <ListItem current={currentOrg === undefined}>
-                <Link href="/feed">
+                <Link href="/feed" className="w-full">
                   <Profile
                     name={loggedUser.username}
                     avatar_url={loggedUser.avatar_url}
@@ -119,7 +119,10 @@ const ProfileSelection = ({ useOrgFromURL = true }) => {
               {orgs &&
                 orgs.map((org) => (
                   <ListItem key={org.id} current={currentOrg?.id === org.id}>
-                    <Link href={`/maintainer/${org.name}/issues`}>
+                    <Link
+                      href={`/maintainer/${org.name}/issues`}
+                      className="w-full"
+                    >
                       <Profile
                         name={org.name}
                         avatar_url={org.avatar_url}
@@ -206,15 +209,19 @@ const Profile = (props: {
 }) => {
   return (
     <>
-      <div className="flex items-center text-sm">
-        {props.avatar_url && (
-          <img
-            src={props.avatar_url}
-            className="h-5 w-5 rounded-full"
-            alt={props.name}
-          />
-        )}
-        <p className="mx-1.5 text-gray-600 dark:text-gray-400">{props.name}</p>
+      <div className="flex w-full items-center justify-between text-sm">
+        <div className="flex items-center">
+          {props.avatar_url && (
+            <img
+              src={props.avatar_url}
+              className="h-5 w-5 rounded-full"
+              alt={props.name}
+            />
+          )}
+          <p className="mx-1.5 text-gray-600 dark:text-gray-400">
+            {props.name}
+          </p>
+        </div>
         <ProfileBadge type={props.type} />
       </div>
     </>

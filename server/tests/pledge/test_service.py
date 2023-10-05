@@ -18,7 +18,7 @@ from polar.models.pledge import Pledge
 from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
 from polar.models.user import OAuthAccount, User
-from polar.pledge.schemas import PledgeState, PledgeTransactionType
+from polar.pledge.schemas import PledgeState, PledgeTransactionType, PledgeType
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from tests.fixtures.random_objects import (
@@ -62,6 +62,29 @@ async def test_mark_pending_by_issue_id(
         "polar.pledge.service.PledgeService.pledge_pending_notification"
     )
 
+    @dataclass
+    class Invoice:
+        @property
+        def id(self) -> str:
+            return "inv_test"
+
+        @property
+        def stripe_id(self) -> str:
+            return "inv_test"
+
+        @property
+        def payment_intent(self) -> str:
+            return "pi_text"
+
+        @property
+        def hosted_invoice_url(self) -> str:
+            return "https://polar.sh/test.html"
+
+    transfer = mocker.patch(
+        "polar.integrations.stripe.service.StripeService.create_pledge_invoice"
+    )
+    transfer.return_value = Invoice()
+
     amount = 2000
     fee = 200
 
@@ -77,18 +100,36 @@ async def test_mark_pending_by_issue_id(
             amount=amount,
             fee=fee,
             state=PledgeState.created,
+            type=PledgeType.pay_upfront,
         )
         for x in range(4)
     ]
-    await session.commit()
 
     # Mark one of the pledges as refunded
     pledges[0].state = PledgeState.refunded
     await pledges[0].save(session)
 
+    # Create a pay on completion pledge
+    await Pledge.create(
+        session=session,
+        id=uuid.uuid4(),
+        by_user_id=user.id,
+        issue_id=issue.id,
+        repository_id=repository.id,
+        organization_id=organization.id,
+        amount=amount,
+        fee=fee,
+        state=PledgeState.created,
+        type=PledgeType.pay_on_completion,
+    )
+
+    await session.commit()
+
     await pledge_service.mark_pending_by_issue_id(session, issue.id)
 
-    get_pledges = [(await pledge_service.get(session, p.id)) for p in pledges]
+    get_pledges = await pledge_service.list_by(
+        session, issue_ids=[issue.id], all_states=True
+    )
     states = [p.state for p in get_pledges if p]
 
     assert states == [
@@ -96,8 +137,13 @@ async def test_mark_pending_by_issue_id(
         PledgeState.pending,
         PledgeState.pending,
         PledgeState.pending,
+        PledgeState.created,  # invoiced
     ]
 
+    assert pending_notif.call_count == 1
+
+    # do it again, no notifications should be sent!
+    await pledge_service.mark_pending_by_issue_id(session, issue.id)
     assert pending_notif.call_count == 1
 
 

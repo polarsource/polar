@@ -104,17 +104,17 @@ class PledgeService(ResourceServiceReader[Pledge]):
         pledging_user: UUID | None = None,
         load_issue: bool = False,
         load_pledger: bool = False,
+        all_states: bool = False,
     ) -> Sequence[Pledge]:
-        statement = (
-            sql.select(Pledge)
-            .options(
-                joinedload(Pledge.user),
-                joinedload(Pledge.by_organization),
-            )
-            .where(
+        statement = sql.select(Pledge).options(
+            joinedload(Pledge.user),
+            joinedload(Pledge.by_organization),
+        )
+
+        if not all_states:
+            statement = statement.where(
                 Pledge.state.in_(PledgeState.active_states()),
             )
-        )
 
         if organization_ids:
             statement = statement.where(Pledge.organization_id.in_(organization_ids))
@@ -307,14 +307,19 @@ class PledgeService(ResourceServiceReader[Pledge]):
         session: AsyncSession,
         issue_id: UUID,
     ) -> None:
-        any_changed = await self.transition_by_issue_id(
+        # transition pay_upfront to pending
+        # (invoiced pledges are moved to pending _after_ the invoice has been paid)
+        any_upfront_changed = await self.transition_by_issue_id(
             session,
             issue_id,
             from_states=PledgeState.to_pending_states(),
             to_state=PledgeState.pending,
         )
 
-        if any_changed:
+        # send invoices for pay later peldges thate still don't have one sent
+        any_invoices_sent = await self.send_invoices(session, issue_id)
+
+        if any_upfront_changed or any_invoices_sent:
             await self.pledge_pending_notification(session, issue_id)
 
     async def issue_confirmed_discord_alert(self, issue: Issue) -> None:
@@ -339,6 +344,8 @@ class PledgeService(ResourceServiceReader[Pledge]):
         webhook.add_embed(embed)
         await webhook.execute()
 
+    # TODO: only used by backoffice and tests, should be removed, and should not
+    # send notifications!
     async def mark_pending_by_pledge_id(
         self, session: AsyncSession, pledge_id: UUID
     ) -> None:
@@ -412,6 +419,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
         )
 
         # Send to pledgers
+        #
+        # TODO! Move this to a hook or something that's called after creating an invoice
+        # or pledge state transition. It's dangerous to have here....
         for pledge in pledges:
             pledger_notif = PledgerPledgePendingNotification(
                 pledge_amount=get_cents_in_dollar_string(pledge.amount),
@@ -902,6 +912,22 @@ class PledgeService(ResourceServiceReader[Pledge]):
         await pledge_created.call(PledgeHook(session, pledge))
 
         return pledge
+
+    async def send_invoices(
+        self,
+        session: AsyncSession,
+        issue_id: UUID,
+    ) -> bool:
+        pledges = await self.list_by(session, issue_ids=[issue_id])
+        any_sent = False
+        for p in pledges:
+            if p.type != PledgeType.pay_on_completion:
+                continue
+            if p.invoice_id:
+                continue
+            await self.send_invoice(session, p.id)
+            any_sent = True
+        return any_sent
 
     async def send_invoice(
         self,

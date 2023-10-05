@@ -92,7 +92,7 @@ const ProfileSelection = ({ useOrgFromURL = true }) => {
           <div
             ref={ref}
             className={clsx(
-              'absolute right-4 top-4 min-w-[300px] overflow-hidden rounded-lg border border-transparent bg-white shadow hover:border-blue-100 dark:bg-gray-900 hover:dark:border-gray-800',
+              'absolute right-4 top-4 min-w-[300px] overflow-hidden rounded-lg border border-transparent bg-white py-2 shadow hover:border-blue-100 dark:bg-gray-900 hover:dark:border-gray-800',
             )}
           >
             <ul>
@@ -105,6 +105,16 @@ const ProfileSelection = ({ useOrgFromURL = true }) => {
                   />
                 </Link>
               </ListItem>
+
+              {backerLinks.map((l) => (
+                <LinkItem href={l.href} icon={l.icon}>
+                  <span className="mx-1.5  text-gray-600 dark:text-gray-400">
+                    {l.name}
+                  </span>
+                </LinkItem>
+              ))}
+
+              <hr className="my-2 ml-6 mr-6" />
 
               {orgs &&
                 orgs.map((org) => (
@@ -141,17 +151,7 @@ const ProfileSelection = ({ useOrgFromURL = true }) => {
                 </LinkItem>
               )}
 
-              <hr className="ml-6 mr-6" />
-
-              {backerLinks.map((l) => (
-                <LinkItem href={l.href} icon={l.icon}>
-                  <span className="mx-1.5  text-gray-600 dark:text-gray-400">
-                    {l.name}
-                  </span>
-                </LinkItem>
-              ))}
-
-              <hr className="ml-6 mr-6" />
+              <hr className="my-2 ml-6 mr-6" />
 
               <LinkItem
                 href={'https://polar.sh/faq'}

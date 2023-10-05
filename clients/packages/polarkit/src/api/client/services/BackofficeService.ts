@@ -107,28 +107,6 @@ export class BackofficeService {
   }
 
   /**
-   * Pledge Mark Pending
-   * @returns BackofficePledge Successful Response
-   * @throws ApiError
-   */
-  public pledgeMarkPending({
-    pledgeId,
-  }: {
-    pledgeId: string,
-  }): CancelablePromise<BackofficePledge> {
-    return this.httpRequest.request({
-      method: 'POST',
-      url: '/api/v1/backoffice/pledges/mark_pending/{pledge_id}',
-      path: {
-        'pledge_id': pledgeId,
-      },
-      errors: {
-        422: `Validation Error`,
-      },
-    });
-  }
-
-  /**
    * Pledge Create Invoice
    * @returns BackofficePledge Successful Response
    * @throws ApiError

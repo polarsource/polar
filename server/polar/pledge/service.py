@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 from datetime import timedelta
-from typing import List, Sequence
+from typing import Any, List, Sequence
 from uuid import UUID
 
 import structlog
@@ -235,6 +235,13 @@ class PledgeService(ResourceServiceReader[Pledge]):
         res = await session.execute(get)
         pledges = res.scalars().unique().all()
 
+        values: dict[str, Any] = {
+            "state": to_state,
+        }
+
+        if to_state == PledgeState.pending:
+            values["scheduled_payout_at"] = utc_now() + timedelta(days=7)
+
         for pledge in pledges:
             # Update pledge
             statement = (
@@ -243,7 +250,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
                     Pledge.id == pledge.id,
                     Pledge.state.in_(from_states),
                 )
-                .values(state=to_state)
+                .values(values)
                 .returning(Pledge)
             )
             await session.execute(statement)
@@ -343,38 +350,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         webhook.add_embed(embed)
         await webhook.execute()
-
-    # TODO: only used by backoffice and tests, should be removed, and should not
-    # send notifications!
-    async def mark_pending_by_pledge_id(
-        self, session: AsyncSession, pledge_id: UUID
-    ) -> None:
-        pledge = await self.get(session, pledge_id)
-
-        if not pledge:
-            raise ResourceNotFound(f"Pledge not found with id: {pledge_id}")
-
-        if pledge.state not in PledgeState.to_pending_states():
-            raise Exception(f"pledge is in unexpected state: {pledge.state}")
-
-        statement = (
-            sql.update(Pledge)
-            .where(
-                Pledge.id == pledge_id,
-                Pledge.state.in_(PledgeState.to_pending_states()),
-                Pledge.type == PledgeType.pay_upfront,
-            )
-            .values(
-                state=PledgeState.pending,
-                scheduled_payout_at=utc_now() + timedelta(days=14),
-            )
-        )
-        await session.execute(statement)
-        await session.commit()
-
-        await pledge_updated.call(PledgeHook(session, pledge))
-
-        await self.pledge_pending_notification(session, pledge.issue_id)
 
     async def pledge_pending_notification(
         self, session: AsyncSession, issue_id: UUID

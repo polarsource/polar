@@ -29,26 +29,6 @@ from tests.fixtures.random_objects import (
 
 
 @pytest.mark.asyncio
-async def test_mark_pending_by_pledge_id(
-    session: AsyncSession,
-    pledge: Pledge,
-    mocker: MockerFixture,
-) -> None:
-    pending_notif = mocker.patch(
-        "polar.pledge.service.PledgeService.pledge_pending_notification"
-    )
-
-    await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
-
-    # get
-    got = await pledge_service.get(session, pledge.id)
-    assert got is not None
-    assert got.state == PledgeState.pending
-
-    pending_notif.assert_called_once()
-
-
-@pytest.mark.asyncio
 async def test_mark_pending_by_issue_id(
     session: AsyncSession,
     organization: Organization,
@@ -170,7 +150,7 @@ async def test_transfer_early(
     pledge: Pledge,
     mocker: MockerFixture,
 ) -> None:
-    await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
+    await pledge_service.mark_pending_by_issue_id(session, pledge.issue_id)
 
     reward = await IssueReward.create(
         session,
@@ -198,7 +178,7 @@ async def test_transfer_org(
         "polar.pledge.service.PledgeService.transfer_created_notification"
     )
 
-    await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
+    await pledge_service.mark_pending_by_issue_id(session, pledge.issue_id)
 
     got = await pledge_service.get(session, pledge.id)
     assert got is not None
@@ -256,7 +236,7 @@ async def test_transfer_org_no_account(
         "polar.pledge.service.PledgeService.transfer_created_notification"
     )
 
-    await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
+    await pledge_service.mark_pending_by_issue_id(session, pledge.issue_id)
 
     got = await pledge_service.get(session, pledge.id)
     assert got is not None
@@ -299,7 +279,7 @@ async def test_transfer_user(
         "polar.pledge.service.PledgeService.transfer_created_notification"
     )
 
-    await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
+    await pledge_service.mark_pending_by_issue_id(session, pledge.issue_id)
 
     got = await pledge_service.get(session, pledge.id)
     assert got is not None
@@ -357,7 +337,7 @@ async def test_transfer_user_no_account(
         "polar.pledge.service.PledgeService.transfer_created_notification"
     )
 
-    await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
+    await pledge_service.mark_pending_by_issue_id(session, pledge.issue_id)
 
     got = await pledge_service.get(session, pledge.id)
     assert got is not None

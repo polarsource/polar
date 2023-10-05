@@ -333,7 +333,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         embed.add_embed_field(
             name="Backoffice",
-            value=f"[Open](https://polar.sh/backoffice/issue/{str(issue.id)}",
+            value=f"[Open](https://polar.sh/backoffice/issue/{str(issue.id)})",
         )
 
         webhook.add_embed(embed)

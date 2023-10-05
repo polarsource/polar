@@ -163,20 +163,6 @@ async def pledge_reward_transfer(
 
 
 @router.post(
-    "/pledges/mark_pending/{pledge_id}",
-    response_model=BackofficePledge,
-    tags=[Tags.INTERNAL],
-)
-async def pledge_mark_pending(
-    pledge_id: UUID,
-    auth: Auth = Depends(Auth.backoffice_user),
-    session: AsyncSession = Depends(get_db_session),
-) -> BackofficePledge:
-    await pledge_service.mark_pending_by_pledge_id(session, pledge_id)
-    return await get_pledge(session, pledge_id)
-
-
-@router.post(
     "/pledges/create_invoice/{pledge_id}",
     response_model=BackofficePledge,
     tags=[Tags.INTERNAL],

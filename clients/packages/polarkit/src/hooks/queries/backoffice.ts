@@ -70,18 +70,6 @@ export const useBackofficePledgeRewardTransfer: () => UseMutationResult<
     },
   })
 
-export const useBackofficePledgeMarkPending = () =>
-  useMutation({
-    mutationFn: (variables: { pledgeId: string }) => {
-      return api.backoffice.pledgeMarkPending({
-        pledgeId: variables.pledgeId,
-      })
-    },
-    onSuccess: async (result, variables, ctx) => {
-      await invalidateBackofficePledges()
-    },
-  })
-
 export const useBackofficePledgeMarkDisputed = () =>
   useMutation({
     mutationFn: (variables: { pledgeId: string }) => {

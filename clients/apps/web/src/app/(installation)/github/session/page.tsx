@@ -20,56 +20,60 @@ export default function Page() {
   const loading = useRef(false)
   const [error, setError] = useState<string | null>(null)
 
-  const exchange = async (code: string, state: string) => {
-    if (loading.current) {
-      return
-    }
-
-    loading.current = true
-    try {
-      const response = await api.integrations.githubCallback({
-        code: code,
-        state: state,
-      })
-
-      if (response.success) {
-        await session
-          .login((authenticated: boolean) => {
-            if (!authenticated) {
-              setError('Something went wrong logging in')
-            }
-          })
-          .then(() => {
-            router.push(response.goto_url || '/login/init')
-          })
-      } else {
-        setError('Invalid response')
-      }
-    } catch (err) {
-      let errorMessage =
-        'Something went wrong exchanging the OAuth code for a cookie'
-      if (err instanceof ApiError && err.body.detail) {
-        errorMessage = err.body.detail
-      }
-      setError(errorMessage)
-    } finally {
-      loading.current = false
-    }
-  }
-
   // Try once on page load
   useEffect(() => {
+    const exchange = async (code: string, state: string) => {
+      if (loading.current) {
+        return
+      }
+
+      loading.current = true
+      try {
+        const response = await api.integrations.githubCallback({
+          code: code,
+          state: state,
+        })
+
+        if (response.success) {
+          await session
+            .login((authenticated: boolean) => {
+              if (!authenticated) {
+                setError('Something went wrong logging in')
+              }
+            })
+            .then(() => {
+              router.push(response.goto_url || '/login/init')
+            })
+        } else {
+          setError('Invalid response')
+        }
+      } catch (err) {
+        let errorMessage =
+          'Something went wrong exchanging the OAuth code for a cookie'
+        if (err instanceof ApiError && err.body.detail) {
+          errorMessage = err.body.detail
+        }
+        setError(errorMessage)
+      } finally {
+        loading.current = false
+      }
+    }
+
     if (code && state) {
       exchange(code, state)
     } else {
       setError('Cannot authenticate without an OAuth code and state')
     }
-  }, [])
+  }, [code, state, router, session])
 
   useEffect(() => {
+    // Handling GitHub OAuth takes presedence - even if already signed in
+    if (loading.current) return
+
     // This user is already authenticated
     if (session.authenticated) {
       router.push('/login/init')
+      return
     }
   }, [session.authenticated, router])
 

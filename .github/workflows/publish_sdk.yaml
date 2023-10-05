@@ -1,0 +1,35 @@
+name: Publish Polar SDK to NPM
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+      name: "SDK: Publish"
+      timeout-minutes: 15
+      runs-on: ubuntu-22.04
+ 
+      steps:
+        - name: Check out code
+          uses: actions/checkout@v3
+
+        - uses: pnpm/action-setup@v2.2.4
+          with:
+            version: 8.7.0
+
+        - name: Setup Node.js environment
+          uses: actions/setup-node@v3
+          with:
+            node-version: v18
+            cache: 'pnpm'
+            cache-dependency-path: 'clients/pnpm-lock.yaml'
+
+        - name: Install dependencies
+          working-directory: ./clients
+          run: pnpm install
+
+        - name: Publish SDK
+          working-directory: ./clients/packages/sdk
+          run: pnpm publish
+          env:
+            NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 from datetime import timedelta
-from typing import Any, List, Sequence
+from typing import Any, Awaitable, Callable, List, Sequence
 from uuid import UUID
 
 import structlog
@@ -225,6 +225,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         from_states: list[PledgeState],
         to_state: PledgeState,
         hook: Hook[PledgeHook] | None = None,
+        callback: Callable[[PledgeHook], Awaitable[None]] | None = None,
     ) -> bool:
         get = sql.select(Pledge).where(
             Pledge.issue_id == issue_id,
@@ -262,6 +263,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
             if hook:
                 await hook.call(PledgeHook(session, pledge))
+
+            if callback:
+                await callback(PledgeHook(session, pledge))
 
         if len(pledges) > 0:
             return True
@@ -314,20 +318,29 @@ class PledgeService(ResourceServiceReader[Pledge]):
         session: AsyncSession,
         issue_id: UUID,
     ) -> None:
+        async def send_pledger_notification(hook: PledgeHook) -> None:
+            await self.send_pledger_pending_notification(hook.session, hook.pledge.id)
+
         # transition pay_upfront to pending
         # (invoiced pledges are moved to pending _after_ the invoice has been paid)
+        #
+        # sends notifications to pledgers for pledges that are transitioned
+        # (via the callback)
         any_upfront_changed = await self.transition_by_issue_id(
             session,
             issue_id,
             from_states=PledgeState.to_pending_states(),
             to_state=PledgeState.pending,
+            callback=send_pledger_notification,
         )
 
         # send invoices for pay later peldges thate still don't have one sent
+        # sends notifications to pledgers that gets an invoice sent
         any_invoices_sent = await self.send_invoices(session, issue_id)
 
+        # send notifications to maintainers
         if any_upfront_changed or any_invoices_sent:
-            await self.pledge_pending_notification(session, issue_id)
+            await self.send_maintainer_pending_notification(session, issue_id)
 
     async def issue_confirmed_discord_alert(self, issue: Issue) -> None:
         if not settings.DISCORD_WEBHOOK_URL:
@@ -351,7 +364,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         webhook.add_embed(embed)
         await webhook.execute()
 
-    async def pledge_pending_notification(
+    async def send_maintainer_pending_notification(
         self, session: AsyncSession, issue_id: UUID
     ) -> None:
         pledges = await self.list_by(session, issue_ids=[issue_id])
@@ -393,30 +406,46 @@ class PledgeService(ResourceServiceReader[Pledge]):
             notif=PartialNotification(issue_id=issue_id, payload=n),
         )
 
-        # Send to pledgers
-        #
-        # TODO! Move this to a hook or something that's called after creating an invoice
-        # or pledge state transition. It's dangerous to have here....
-        for pledge in pledges:
-            pledger_notif = PledgerPledgePendingNotification(
-                pledge_amount=get_cents_in_dollar_string(pledge.amount),
-                pledge_date=pledge.created_at.strftime("%Y-%m-%d"),
-                issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
-                issue_title=issue.title,
-                issue_org_name=org.name,
-                issue_repo_name=repo.name,
-                issue_number=issue.number,
-                pledge_id=pledge.id,
-                pledge_type=PledgeType.from_str(pledge.type),
-            )
+    async def send_pledger_pending_notification(
+        self,
+        session: AsyncSession,
+        pledge_id: UUID,
+    ) -> None:
+        pledge = await self.get(session, pledge_id)
+        if not pledge:
+            raise Exception("pledge not found")
 
-            await notification_service.send_to_pledger(
-                session,
-                pledge,
-                notif=PartialNotification(
-                    issue_id=pledge.issue_id, pledge_id=pledge.id, payload=pledger_notif
-                ),
-            )
+        issue = await issue_service.get(session, pledge.issue_id)
+        if not issue:
+            raise Exception("issue not found")
+
+        org = await organization_service.get(session, issue.organization_id)
+        if not org:
+            raise Exception("org not found")
+
+        repo = await repository_service.get(session, issue.repository_id)
+        if not repo:
+            raise Exception("repo not found")
+
+        pledger_notif = PledgerPledgePendingNotification(
+            pledge_amount=get_cents_in_dollar_string(pledge.amount),
+            pledge_date=pledge.created_at.strftime("%Y-%m-%d"),
+            issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
+            issue_title=issue.title,
+            issue_org_name=org.name,
+            issue_repo_name=repo.name,
+            issue_number=issue.number,
+            pledge_id=pledge.id,
+            pledge_type=PledgeType.from_str(pledge.type),
+        )
+
+        await notification_service.send_to_pledger(
+            session,
+            pledge,
+            notif=PartialNotification(
+                issue_id=pledge.issue_id, pledge_id=pledge.id, payload=pledger_notif
+            ),
+        )
 
     def validate_splits(self, splits: list[ConfirmIssueSplit]) -> bool:
         sum = 0.0
@@ -900,8 +929,14 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 continue
             if p.invoice_id:
                 continue
+
+            # send invoice via Stripe
             await self.send_invoice(session, p.id)
             any_sent = True
+
+            # send notification to maintainer
+            await self.send_pledger_pending_notification(session, p.id)
+
         return any_sent
 
     async def send_invoice(

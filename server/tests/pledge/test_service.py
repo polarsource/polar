@@ -38,8 +38,12 @@ async def test_mark_pending_by_issue_id(
     pledging_organization: Organization,
     mocker: MockerFixture,
 ) -> None:
-    pending_notif = mocker.patch(
-        "polar.pledge.service.PledgeService.pledge_pending_notification"
+    maintainer_notif = mocker.patch(
+        "polar.pledge.service.PledgeService.send_maintainer_pending_notification"
+    )
+
+    pledger_notif = mocker.patch(
+        "polar.pledge.service.PledgeService.send_pledger_pending_notification"
     )
 
     @dataclass
@@ -120,11 +124,13 @@ async def test_mark_pending_by_issue_id(
         PledgeState.created,  # invoiced
     ]
 
-    assert pending_notif.call_count == 1
+    assert maintainer_notif.call_count == 1
+    assert pledger_notif.call_count == 4
 
     # do it again, no notifications should be sent!
     await pledge_service.mark_pending_by_issue_id(session, issue.id)
-    assert pending_notif.call_count == 1
+    assert maintainer_notif.call_count == 1
+    assert pledger_notif.call_count == 4
 
 
 @pytest.mark.asyncio

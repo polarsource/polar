@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { pledgePublicAPI, user } from 'polarkit/testdata'
+import { issue, pledgePublicAPI, user } from 'polarkit/testdata'
 import Split, { Contributor } from './Split'
 
 const meta: Meta<typeof Split> = {
@@ -13,7 +13,7 @@ export default meta
 type Story = StoryObj<typeof Split>
 
 const contributors: Array<Contributor> = [
-  { ...user, username: 'zegl' },
+  { ...user, username: 'zegl', is_maintainer_org: true },
   {
     ...user,
     username: 'birkjernstrom',
@@ -37,6 +37,7 @@ export const Default: Story = {
   args: {
     pledges: [pledgePublicAPI, pledgePublicAPI, pledgePublicAPI],
     contributors: contributors,
+    issue: issue,
     shares: [
       {
         username: 'zegl',
@@ -128,6 +129,24 @@ export const TooManyPercentages: Story = {
         username: 'birkjernstrom',
         share_thousands: 805,
         raw_value: '80.5',
+      },
+    ],
+  },
+}
+
+export const UpfrontSplit: Story = {
+  args: {
+    ...Default.args,
+    issue: { ...issue, upfront_split_to_contributors: 90 },
+    shares: [
+      {
+        username: 'zegl',
+      },
+      {
+        username: 'birkjernstrom',
+      },
+      {
+        username: 'petterheterjag',
       },
     ],
   },

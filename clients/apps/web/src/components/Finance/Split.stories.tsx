@@ -23,6 +23,13 @@ const contributors: Array<Contributor> = [
     ...user,
     username: 'petterheterjag',
     avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+    is_suggested_from_contributions: true,
+  },
+  {
+    ...user,
+    username: 'petterheterjag',
+    avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+    is_suggested_from_contributions: true,
   },
 ]
 

@@ -246,3 +246,15 @@ export const useIssueMarkConfirmed = () =>
       await queryClient.invalidateQueries({ queryKey: ['listPersonalPledges'] })
     },
   })
+
+export const useListPullsReferencingIssue = (issueId?: string) =>
+  useQuery({
+    queryKey: ['pulls', 'byIssue', issueId],
+    queryFn: () =>
+      api.pullRequests.search({
+        referencesIssueId: issueId || '',
+      }),
+
+    enabled: !!issueId,
+    retry: defaultRetry,
+  })

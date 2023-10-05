@@ -252,7 +252,7 @@ Thank you for your support!
             },
         )
 
-        stripe_lib.Invoice.finalize_invoice(invoice.id, auto_advance=False)
+        stripe_lib.Invoice.finalize_invoice(invoice.id, auto_advance=True)
 
         sent_invoice = stripe_lib.Invoice.send_invoice(invoice.id)
 

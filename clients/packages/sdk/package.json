@@ -13,12 +13,13 @@
   "scripts": {
     "generate": "node scripts/generate-schema.js http://127.0.0.1:8000/openapi.json openapi/source.json openapi/updated.json && openapi --input openapi/updated.json --output src/client --client axios --name PolarSDK --useOptions --indent 2 --exportSchemas false",
     "build": "tsup src/index.ts --format cjs,esm --dts",
-    "prepublish": "pnpm run build"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "axios": "^0.27.2"
   },
   "devDependencies": {
+    "form-data": "^4.0.0",
     "openapi-typescript-codegen": "^0.23.0",
     "tsconfig": "workspace:*",
     "tsup": "^7.2.0",

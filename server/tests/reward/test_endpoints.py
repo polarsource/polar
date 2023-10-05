@@ -35,7 +35,7 @@ async def test_search(
     user_organization.is_admin = True
     await user_organization.save(session)
 
-    await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
+    await pledge_service.mark_pending_by_issue_id(session, pledge.issue_id)
 
     got = await pledge_service.get(session, pledge.id)
     assert got is not None

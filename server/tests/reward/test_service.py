@@ -28,7 +28,7 @@ async def test_list_rewards(
     user: User,
     mocker: MockerFixture,
 ) -> None:
-    await pledge_service.mark_pending_by_pledge_id(session, pledge.id)
+    await pledge_service.mark_pending_by_issue_id(session, pledge.issue_id)
 
     got = await pledge_service.get(session, pledge.id)
     assert got is not None

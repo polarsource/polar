@@ -254,7 +254,7 @@ async def create_pay_on_completion(
         session=session,
         issue_id=create.issue_id,
         amount=create.amount,
-        by_user_id=auth.user.id,
+        by_user=auth.user,
     )
 
     ret = await pledge_service.get_with_loaded(session, pledge.id)

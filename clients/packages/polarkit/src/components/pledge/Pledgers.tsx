@@ -7,7 +7,11 @@ interface PledgersProps {
   size: 'xs' | 'sm' | 'md' | 'lg'
 }
 
-const Pledgers: React.FC<PledgersProps> = ({ pledgers, maxShown, size }) => {
+const Pledgers: React.FC<PledgersProps> = ({
+  pledgers,
+  size,
+  maxShown = 3,
+}) => {
   const shownPledgers = useMemo(
     () => pledgers.filter(({ avatar_url }) => !!avatar_url).slice(0, maxShown),
     [pledgers, maxShown],
@@ -71,8 +75,8 @@ const Pledgers: React.FC<PledgersProps> = ({ pledgers, maxShown, size }) => {
     <div
       className={`flex items-center pl-2 ${negativeMarginCompensationPadding}`}
     >
-      {shownPledgers.map((pledger) => (
-        <div className={`${marginClasses} ${sizeClasses}`}>
+      {shownPledgers.map((pledger, idx) => (
+        <div className={`${marginClasses} ${sizeClasses}`} key={idx}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             key={pledger.name}
@@ -91,10 +95,6 @@ const Pledgers: React.FC<PledgersProps> = ({ pledgers, maxShown, size }) => {
       )}
     </div>
   )
-}
-
-Pledgers.defaultProps = {
-  maxShown: 3,
 }
 
 export default Pledgers

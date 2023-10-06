@@ -1,4 +1,5 @@
 import React from 'react'
+import { twMerge } from 'tailwind-merge'
 import { classNames } from '../../../utils/dom'
 
 type Color = 'blue' | 'gray' | 'red' | 'green' | 'lightblue'
@@ -8,11 +9,14 @@ type ButtonProps = {
   children: React.ReactNode
   type?: 'submit' | 'reset' | 'button' | undefined
   href?: string
-  color: Color
-  fullWidth: boolean
-  size: Size
+  color?: Color
+  fullWidth?: boolean
+  size?: Size
   onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
-} & typeof defaultProps
+  disabled?: boolean
+  loading?: boolean
+  classNames?: string
+}
 
 const LoadingSpinner = (props: { disabled: boolean; size: Size }) => {
   const classes = classNames(
@@ -45,15 +49,6 @@ const LoadingSpinner = (props: { disabled: boolean; size: Size }) => {
       </div>
     </>
   )
-}
-
-const defaultProps = {
-  disabled: false,
-  loading: false,
-  color: 'blue' as Color,
-  size: 'normal' as Size,
-  fullWidth: true,
-  classNames: '',
 }
 
 const bg = (color: Color, loading: boolean, disabled: boolean) => {
@@ -103,7 +98,7 @@ const text = (color: Color, loading: boolean, disabled: boolean) => {
   return 'text-white'
 }
 
-const size = (size: Size) => {
+const sizeClasses = (size: Size) => {
   if (size === 'normal') {
     return 'px-5 py-2 text-sm font-medium '
   }
@@ -117,59 +112,75 @@ const height = (size: Size) => {
   return 'h-4'
 }
 
-export const PrimaryButton = (props: ButtonProps) => {
-  const disabled = props.disabled ? props.disabled : false
-  let classes = classNames(
-    bg(props.color, props.loading, disabled),
-    text(props.color, props.loading, disabled),
-    size(props.size),
-    props.fullWidth ? 'w-full' : '',
+export const PrimaryButton: React.FC<ButtonProps> = ({
+  children = undefined,
+  type = undefined,
+  color = 'blue' as Color,
+  fullWidth = true,
+  size = 'normal',
+  onClick,
+  disabled = false,
+  loading = false,
+  classNames = '',
+}) => {
+  const classes = twMerge(
+    bg(color, loading, disabled),
+    text(color, loading, disabled),
+    sizeClasses(size),
+    fullWidth ? 'w-full' : '',
     'rounded-lg text-center inline-flex items-center transition-colors duration-100 justify-center whitespace-nowrap',
-    props.classNames,
+    classNames,
   )
 
   return (
     <>
       <button
-        type={props.type}
+        type={type}
         className={classes}
-        onClick={props.onClick}
+        onClick={onClick}
         disabled={disabled}
       >
-        {!props.loading && (
-          <div className={height(props.size)}>
-            {/* Same height as LoadingSpinner */}
-          </div>
+        {loading ? (
+          <LoadingSpinner size={size} disabled={disabled} />
+        ) : (
+          <>
+            <div className={height(size)}>
+              {/* Same height as LoadingSpinner */}
+            </div>
+            {children}
+          </>
         )}
-        {props.loading && (
-          <LoadingSpinner size={props.size} disabled={disabled} />
-        )}
-        {!props.loading && props.children}
       </button>
     </>
   )
 }
 
-PrimaryButton.defaultProps = defaultProps
-
-export const ThinButton = (props: ButtonProps) => {
-  const disabled = props.disabled ? props.disabled : false
-  let classes = classNames(
-    bg(props.color, props.loading, disabled),
-    text(props.color, props.loading, disabled),
+export const ThinButton = ({
+  children,
+  type,
+  href,
+  color = 'blue' as Color,
+  onClick,
+  disabled = false,
+  loading = false,
+}: ButtonProps) => {
+  let classes = twMerge(
+    bg(color, loading, disabled),
+    text(color, loading, disabled),
     'rounded-md px-2 py-1 text-xs font-semibold transition-colors duration-100 h-6 flex whitespace-nowrap inline-flex',
   )
 
-  if (props.href) {
+  if (href) {
     return (
       <>
-        <a className={classes} href={props.href} target="_blank">
-          {!props.loading && (
-            <div className="h-4">{/* Same height as LoadingSpinner */}</div>
-          )}
-          {props.loading && <LoadingSpinner size="small" disabled={disabled} />}
-          {!props.loading && (
-            <div className="flex space-x-1">{props.children}</div>
+        <a className={classes} href={href} target="_blank">
+          {loading ? (
+            <LoadingSpinner size="small" disabled={disabled} />
+          ) : (
+            <>
+              <div className="h-4">{/* Same height as LoadingSpinner */}</div>
+              <div className="flex space-x-1">{children}</div>
+            </>
           )}
         </a>
       </>
@@ -179,21 +190,20 @@ export const ThinButton = (props: ButtonProps) => {
   return (
     <>
       <button
-        type={props.type}
+        type={type}
         className={classes}
-        onClick={props.onClick}
+        onClick={onClick}
         disabled={disabled}
       >
-        {!props.loading && (
-          <div className="h-4">{/* Same height as LoadingSpinner */}</div>
-        )}
-        {props.loading && <LoadingSpinner size="small" disabled={disabled} />}
-        {!props.loading && (
-          <div className="flex space-x-1">{props.children}</div>
+        {loading ? (
+          <LoadingSpinner size="small" disabled={disabled} />
+        ) : (
+          <>
+            <div className="h-4">{/* Same height as LoadingSpinner */}</div>
+            <div className="flex space-x-1">{children}</div>
+          </>
         )}
       </button>
     </>
   )
 }
-
-ThinButton.defaultProps = defaultProps

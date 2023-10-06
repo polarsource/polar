@@ -755,17 +755,13 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm font-medium text-gray-900 dark:text-gray-300">
-                  Seed rewards
+                  Boost reward
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-500">
-                  Payment is made once issue is completed.
+                  You have pledged{' '}
+                  <b>${getCentsInDollarString(selfSeededAmount)} </b>
+                  to be paid on completion.
                 </div>
-                {selfSeededAmount > 0 && (
-                  <div className="text-xs text-gray-600 dark:text-gray-500">
-                    You have pledged ${getCentsInDollarString(selfSeededAmount)}{' '}
-                    to this issue
-                  </div>
-                )}
               </div>
 
               <div className="flex gap-4">

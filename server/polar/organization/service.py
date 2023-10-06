@@ -9,6 +9,7 @@ from sqlalchemy.orm import InstrumentedAttribute, contains_eager
 
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
+from polar.integrations.loops.service import loops as loops_service
 from polar.issue.service import issue as issue_service
 from polar.kit.services import ResourceService
 from polar.models import Issue, Organization, Repository, User, UserOrganization
@@ -287,6 +288,10 @@ class OrganizationService(
         )
         await session.execute(stmt)
         await session.commit()
+
+        await loops_service.user_update(
+            user, isMaintainer=True, organizationInstalled=True
+        )
 
     async def update_badge_settings(
         self,

@@ -13,14 +13,19 @@ from .client import client as loops_client
 
 class Loops:
     async def user_signup(
-        self, user: User, signup_type: UserSignupType | None = None
+        self,
+        user: User,
+        signup_type: UserSignupType | None = None,
+        **properties: Unpack[Properties],
     ) -> None:
-        properties: Properties = {
+        properties = {
             "isMaintainer": False,
             "isBacker": False,
+            "gitHubConnected": False,
             "organizationInstalled": False,
             "repositoryInstalled": False,
             "issueBadged": False,
+            **properties,
         }
         if signup_type is not None:
             properties["isMaintainer"] = signup_type == UserSignupType.maintainer

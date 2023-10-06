@@ -8,6 +8,7 @@ import typer
 from sqlalchemy import select
 
 from polar.config import settings
+from polar.enums import Platforms
 from polar.integrations.github.service.issue import github_issue as github_issue_service
 from polar.integrations.loops.client import LoopsClient, Properties
 from polar.kit.db.postgres import create_sessionmaker
@@ -65,10 +66,14 @@ async def loops_migration(
             properties: Properties = {
                 "isBacker": False,
                 "isMaintainer": False,
+                "gitHubConnected": False,
                 "organizationInstalled": False,
                 "repositoryInstalled": False,
                 "issueBadged": False,
             }
+
+            if user.get_platform_oauth_account(Platforms.github) is not None:
+                properties["gitHubConnected"] = True
 
             user_organizations_statement = select(UserOrganization).where(
                 UserOrganization.user_id == user.id

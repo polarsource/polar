@@ -114,6 +114,7 @@ export type { SummaryPledge } from './models/SummaryPledge';
 export type { UpdateIssue } from './models/UpdateIssue';
 export type { User } from './models/User';
 export type { UserRead } from './models/UserRead';
+export { UserSignupType } from './models/UserSignupType';
 export type { UserStripePortalSession } from './models/UserStripePortalSession';
 export type { UserUpdateSettings } from './models/UserUpdateSettings';
 export type { ValidationError } from './models/ValidationError';

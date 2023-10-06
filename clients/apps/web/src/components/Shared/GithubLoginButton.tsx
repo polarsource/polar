@@ -2,11 +2,13 @@
 
 import { useSearchParams } from 'next/navigation'
 import { api } from 'polarkit'
+import { UserSignupType } from 'polarkit/api/client'
 import posthog from 'posthog-js'
 import { MouseEvent } from 'react'
 
 const GithubLoginButton = (props: {
   gotoUrl?: string
+  userSignupType?: UserSignupType
   size?: 'large' | 'small'
   fullWidth?: boolean
   posthogProps?: object
@@ -26,6 +28,7 @@ const GithubLoginButton = (props: {
     const res = await api.integrations.githubAuthorize({
       paymentIntentId: search?.get('payment_intent_id') ?? undefined,
       gotoUrl: props.gotoUrl,
+      userSignupType: props.userSignupType,
     })
 
     if (res.authorization_url) {

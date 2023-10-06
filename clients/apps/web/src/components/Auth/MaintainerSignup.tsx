@@ -1,5 +1,6 @@
 'use client'
 
+import { UserSignupType } from 'polarkit/api/client'
 import { LogoType70 } from 'polarkit/components/brand'
 import { Progress50 } from '../Dashboard/IssueProgress'
 import FakePullRequest from '../Settings/FakePullRequest'
@@ -24,7 +25,7 @@ const MaintainerSignup = () => {
   ]
 
   return (
-    <div className="dark:bg-gray-950 flex w-full grow items-center justify-center bg-[#FEFDF9] px-4 md:h-screen">
+    <div className="flex w-full grow items-center justify-center bg-[#FEFDF9] px-4 dark:bg-gray-950 md:h-screen">
       <div className="my-16 flex flex-col items-center  md:my-0">
         <LogoType70 className="mb-16 h-10" />
 
@@ -48,6 +49,7 @@ const MaintainerSignup = () => {
             <GithubLoginButton
               size="large"
               gotoUrl={'/maintainer'}
+              userSignupType={UserSignupType.MAINTAINER}
               posthogProps={{
                 view: 'Maintainer Signup',
               }}

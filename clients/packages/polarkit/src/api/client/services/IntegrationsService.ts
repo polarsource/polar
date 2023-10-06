@@ -10,6 +10,7 @@ import type { LookupUserRequest } from '../models/LookupUserRequest';
 import type { OrganizationPrivateRead } from '../models/OrganizationPrivateRead';
 import type { polar__integrations__github__endpoints__WebhookResponse } from '../models/polar__integrations__github__endpoints__WebhookResponse';
 import type { polar__integrations__stripe__endpoints__WebhookResponse } from '../models/polar__integrations__stripe__endpoints__WebhookResponse';
+import type { UserSignupType } from '../models/UserSignupType';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -26,9 +27,11 @@ export class IntegrationsService {
   public githubAuthorize({
     paymentIntentId,
     gotoUrl,
+    userSignupType,
   }: {
     paymentIntentId?: string,
     gotoUrl?: string,
+    userSignupType?: UserSignupType,
   }): CancelablePromise<AuthorizationResponse> {
     return this.httpRequest.request({
       method: 'GET',
@@ -36,6 +39,7 @@ export class IntegrationsService {
       query: {
         'payment_intent_id': paymentIntentId,
         'goto_url': gotoUrl,
+        'user_signup_type': userSignupType,
       },
       errors: {
         422: `Validation Error`,

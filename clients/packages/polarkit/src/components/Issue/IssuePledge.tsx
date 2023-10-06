@@ -4,7 +4,6 @@ import {
   Issue,
   Pledge,
   PledgeRead,
-  PledgeState,
   PledgesTypeSummaries,
   UserRead,
 } from 'polarkit/api/client'
@@ -59,17 +58,8 @@ const IssuePledge = (props: Props) => {
   }, [pledges, confirmPledgeIsLoading, issue])
 
   const isConfirmed = useMemo(() => {
-    return (
-      !confirmable &&
-      pledges.some(
-        (p) =>
-          'authed_user_can_admin_received' in p &&
-          p.state === PledgeState.PENDING &&
-          p.authed_user_can_admin_received,
-      ) &&
-      !confirmPledgeIsLoading
-    )
-  }, [pledges, confirmPledgeIsLoading, confirmable])
+    return !confirmable && issue.confirmed_solved_at && !confirmPledgeIsLoading
+  }, [confirmPledgeIsLoading, confirmable, issue])
 
   const showFundingGoal =
     props.funding?.funding_goal?.amount && props.funding.funding_goal.amount > 0

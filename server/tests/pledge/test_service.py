@@ -28,6 +28,25 @@ from tests.fixtures.random_objects import (
 )
 
 
+@dataclass
+class Invoice:
+    @property
+    def id(self) -> str:
+        return "inv_test"
+
+    @property
+    def stripe_id(self) -> str:
+        return "inv_test"
+
+    @property
+    def payment_intent(self) -> str:
+        return "pi_text"
+
+    @property
+    def hosted_invoice_url(self) -> str:
+        return "https://polar.sh/test.html"
+
+
 @pytest.mark.asyncio
 async def test_mark_pending_by_issue_id(
     session: AsyncSession,
@@ -45,24 +64,6 @@ async def test_mark_pending_by_issue_id(
     pledger_notif = mocker.patch(
         "polar.pledge.service.PledgeService.send_pledger_pending_notification"
     )
-
-    @dataclass
-    class Invoice:
-        @property
-        def id(self) -> str:
-            return "inv_test"
-
-        @property
-        def stripe_id(self) -> str:
-            return "inv_test"
-
-        @property
-        def payment_intent(self) -> str:
-            return "pi_text"
-
-        @property
-        def hosted_invoice_url(self) -> str:
-            return "https://polar.sh/test.html"
 
     transfer = mocker.patch(
         "polar.integrations.stripe.service.StripeService.create_pledge_invoice"
@@ -92,6 +93,10 @@ async def test_mark_pending_by_issue_id(
     # Mark one of the pledges as refunded
     pledges[0].state = PledgeState.refunded
     await pledges[0].save(session)
+
+    # ... and one as of the pledges as pending (no notification should be sent!)
+    pledges[1].state = PledgeState.pending
+    await pledges[1].save(session)
 
     # Create a pay on completion pledge
     await Pledge.create(
@@ -125,12 +130,82 @@ async def test_mark_pending_by_issue_id(
     ]
 
     assert maintainer_notif.call_count == 1
-    assert pledger_notif.call_count == 4
+    assert pledger_notif.call_count == 3
 
     # do it again, no notifications should be sent!
     await pledge_service.mark_pending_by_issue_id(session, issue.id)
     assert maintainer_notif.call_count == 1
-    assert pledger_notif.call_count == 4
+    assert pledger_notif.call_count == 3
+
+
+@pytest.mark.asyncio
+async def test_mark_pending_already_pending_no_notification(
+    session: AsyncSession,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+    user: User,
+    pledging_organization: Organization,
+    mocker: MockerFixture,
+) -> None:
+    maintainer_notif = mocker.patch(
+        "polar.pledge.service.PledgeService.send_maintainer_pending_notification"
+    )
+
+    pledger_notif = mocker.patch(
+        "polar.pledge.service.PledgeService.send_pledger_pending_notification"
+    )
+
+    transfer = mocker.patch(
+        "polar.integrations.stripe.service.StripeService.create_pledge_invoice"
+    )
+    transfer.return_value = Invoice()
+
+    amount = 2000
+    fee = 200
+
+    # create multiple pledges
+    pledges: list[Pledge] = [
+        await Pledge.create(
+            session=session,
+            id=uuid.uuid4(),
+            by_organization_id=pledging_organization.id,
+            issue_id=issue.id,
+            repository_id=repository.id,
+            organization_id=organization.id,
+            amount=amount,
+            fee=fee,
+            state=PledgeState.pending,
+            type=PledgeType.pay_upfront,
+        )
+        for x in range(2)
+    ]
+
+    # Mark one of the pledges as refunded
+    pledges[0].state = PledgeState.refunded
+    await pledges[0].save(session)
+
+    await session.commit()
+
+    await pledge_service.mark_pending_by_issue_id(session, issue.id)
+
+    get_pledges = await pledge_service.list_by(
+        session, issue_ids=[issue.id], all_states=True
+    )
+    states = [p.state for p in get_pledges if p]
+
+    assert states == [
+        PledgeState.refunded,  # not modified
+        PledgeState.pending,  # not modified
+    ]
+
+    assert maintainer_notif.call_count == 0
+    assert pledger_notif.call_count == 0
+
+    # do it again, no notifications should be sent!
+    await pledge_service.mark_pending_by_issue_id(session, issue.id)
+    assert maintainer_notif.call_count == 0
+    assert pledger_notif.call_count == 0
 
 
 @pytest.mark.asyncio

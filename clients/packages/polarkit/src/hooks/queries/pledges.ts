@@ -23,7 +23,7 @@ export const useGetPledge: (
 
 export const useListPledesForIssue = (issueId?: string) =>
   useQuery({
-    queryKey: ['pledge', 'byIssue', issueId],
+    queryKey: ['pledgeByIssue', issueId],
     queryFn: () =>
       api.pledges.search({
         issueId: issueId || '',
@@ -38,7 +38,7 @@ export const useListPledgesForOrganization = (
   orgName?: string,
 ) =>
   useQuery({
-    queryKey: ['pledge', 'list', platform, orgName],
+    queryKey: ['pledgeList', platform, orgName],
     queryFn: () =>
       api.pledges.search({
         platform: platform || Platforms.GITHUB,

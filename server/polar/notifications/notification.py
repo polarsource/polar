@@ -109,7 +109,7 @@ When you're verifying the issue, you can also decide to split the rewards with o
 <br><br>
 
 After you've marked the issue as completed, we'll start our payment and payout process.
-For backers that have paid upfront, we'll transfer the money to you as soon as the 14-day dispute window is over.
+For backers that have paid upfront, we'll transfer the money to you as soon as the 7 day dispute window is over.
 For backers that are paying by invoice on completion, we'll transfer the money as soon as the invoice has been paid.<br><br>
 
 {% if not maintainer_has_account %}
@@ -140,7 +140,7 @@ class MaintainerPledgePendingNotification(NotificationBase):
 
 Your backers had pledged ${{pledge_amount}} behind <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}</a> which has now been completed - awesome work!<br><br>
 
-We&apos;ve notified the backers and unless we receive any disputes within the next 14 days it will be transferred to your Stripe account.<br><br>
+We&apos;ve notified the backers and unless we receive any disputes within the next 7 days it will be transferred to your Stripe account.<br><br>
 
 {% if not maintainer_has_stripe_account %}
 Create a Stripe account with Polar today to ensure we can transfer the funds directly once the review period is completed.<br>
@@ -170,7 +170,7 @@ Thanks for confirming that <a href="{{issue_url}}">{{issue_org_name}}/{{issue_re
 
 We've now notified all of your backers, and will soon start paying out the rewards!<br<br>
 
-If the backer have paid upfront, we'll transfer the money to you as soon as the 14-day dispute window is over. For backers that are paying by invoice on completion, we'll transfer the money as soon as the invoice has been paid.<br><br>
+If the backer have paid upfront, we'll transfer the money to you as soon as the 7 day dispute window is over. For backers that are paying by invoice on completion, we'll transfer the money as soon as the invoice has been paid.<br><br>
 
 You can track the payment status over on <a href="https://polar.sh/maintainer/{{issue_org_name}}/finance">your "Finance" page on Polar</a>.<br<br>
 
@@ -255,7 +255,7 @@ class PledgerPledgePendingNotification(NotificationBase):
 Good news: <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}</a> has been completed!<br><br>
 
 {% if pledge_type == "pay_upfront" %}
-You funded it with ${{pledge_amount}} on {{pledge_date}}. It will be rewarded to the creators in 14 days unless you file a dispute via email or the Polar dashboard within the next 7 days.<br><br>
+You funded it with ${{pledge_amount}} on {{pledge_date}}. It will be rewarded to the creators in 7 days unless you file a dispute via email or the Polar dashboard before the dispute window ends.<br><br>
 {% elif pledge_type == "pay_on_completion" %}
 You made a ${{pledge_amount}} pledge behind it on {{pledge_date}}, to be paid on completion. We'll soon send you an invoice via Stipe, please keep an eye in your inbox.<br><br>
 {% endif %}

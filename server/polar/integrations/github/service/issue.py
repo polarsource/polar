@@ -21,6 +21,7 @@ from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
 from polar.integrations.github import client as github
 from polar.integrations.github.service.api import github_api
+from polar.integrations.loops.service import loops as loops_service
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.issue.schemas import IssueCreate, IssueUpdate
 from polar.issue.service import IssueService
@@ -215,6 +216,8 @@ class GithubIssueService(IssueService):
         )
         await session.execute(stmt)
         await session.commit()
+
+        await loops_service.issue_badged(session, issue=issue)
 
         return True
 

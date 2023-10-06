@@ -1,4 +1,5 @@
 import { useRequireAuth } from '@/hooks'
+import { githubIssueLink } from '@/utils/github'
 import {
   GiftIcon,
   HeartIcon,
@@ -206,8 +207,8 @@ export const BadgePromotionModal = (props: {
   const badgeSettings = useOrganizationBadgeSettings(
     props.issue.repository.organization.id,
   )
-  const isBadged = isIssueBadged(props.issue)
-  const gitHubIssueLink = `https://github.com/${props.issue.repository.organization.name}/${props.issue.repository.name}/issues/${props.issue.number}`
+  const isBadged = useMemo(() => isIssueBadged(props.issue), [props.issue])
+  const gitHubIssueLink = githubIssueLink(props.issue)
 
   return (
     <>

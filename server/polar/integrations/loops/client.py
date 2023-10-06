@@ -24,6 +24,7 @@ class Properties(TypedDict, total=False):
     createdAt: str
     isBacker: bool
     isMaintainer: bool
+    gitHubConnected: bool
     organizationInstalled: bool
     repositoryInstalled: bool
     issueBadged: bool

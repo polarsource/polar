@@ -252,9 +252,9 @@ class GithubUserService(UserService):
             },
         )
         if signup:
-            await loops_service.user_signup(user, signup_type)
+            await loops_service.user_signup(user, signup_type, gitHubConnected=True)
         else:
-            await loops_service.user_update(user)
+            await loops_service.user_update(user, gitHubConnected=True)
         return user
 
     async def link_existing_user(

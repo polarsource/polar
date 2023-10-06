@@ -22,6 +22,7 @@ class Properties(TypedDict, total=False):
     notes: str
     source: str
     userGroup: str
+    userId: str
     subscribed: bool
     createdAt: str
     isBacker: bool

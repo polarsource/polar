@@ -25,17 +25,14 @@ class Loops:
             "organizationInstalled": False,
             "repositoryInstalled": False,
             "issueBadged": False,
+            "userId": str(user.id),
             **properties,
         }
         if signup_type is not None:
             properties["isMaintainer"] = signup_type == UserSignupType.maintainer
             properties["isBacker"] = signup_type == UserSignupType.backer
 
-        await loops_client.create_contact(
-            user.email,
-            str(user.id),
-            **properties,
-        )
+        await loops_client.send_event(user.email, "User Signed Up", **properties)
 
     async def user_update(self, user: User, **properties: Unpack[Properties]) -> None:
         await loops_client.update_contact(user.email, str(user.id), **properties)
@@ -46,9 +43,10 @@ class Loops:
         organization_users = await user_organization_service.list_by_user_id(
             session, user.id
         )
-        await loops_client.update_contact(
+        await loops_client.send_event(
             user.email,
-            str(user.id),
+            "Organization Installed",
+            userId=str(user.id),
             isMaintainer=True,
             organizationInstalled=True,
             firstOrganizationName=organization_users[0].organization.name,
@@ -61,9 +59,10 @@ class Loops:
             session, organization.id
         ):
             user = organization_user.user
-            await loops_client.update_contact(
+            await loops_client.send_event(
                 user.email,
-                str(user.id),
+                "Repository Installed",
+                userId=str(user.id),
                 isMaintainer=True,
                 organizationInstalled=True,
                 repositoryInstalled=True,
@@ -74,9 +73,10 @@ class Loops:
             session, issue.organization_id
         ):
             user = organization_user.user
-            await loops_client.update_contact(
+            await loops_client.send_event(
                 user.email,
-                str(user.id),
+                "Issue Badged",
+                userId=str(user.id),
                 isMaintainer=True,
                 organizationInstalled=True,
                 repositoryInstalled=True,

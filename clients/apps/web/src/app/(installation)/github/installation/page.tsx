@@ -9,6 +9,7 @@ import { api } from 'polarkit'
 import {
   InstallationCreate,
   OrganizationPrivateRead,
+  UserSignupType,
 } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { useEffect, useState } from 'react'
@@ -95,6 +96,7 @@ export default function Page() {
           {gotoUrl && (
             <GithubLoginButton
               gotoUrl={gotoUrl}
+              userSignupType={UserSignupType.MAINTAINER}
               posthogProps={{
                 view: 'Github Installation Page',
               }}

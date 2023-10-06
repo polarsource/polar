@@ -6,7 +6,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
-import { Issue } from 'polarkit/api/client'
+import { Issue, UserSignupType } from 'polarkit/api/client'
 import { LogoIcon } from 'polarkit/components/brand'
 import { MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
@@ -186,6 +186,7 @@ const NotLoggedInBanner = () => {
         text="Continue with GitHub"
         fullWidth={true}
         gotoUrl={window.location.href}
+        userSignupType={UserSignupType.BACKER}
       />
     </div>
   )

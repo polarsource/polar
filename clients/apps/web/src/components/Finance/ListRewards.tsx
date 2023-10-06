@@ -2,6 +2,7 @@ import CheckIcon from '@/components/Icons/CheckIcon'
 import DollarSignIcon from '@/components/Icons/DollarSignIcon'
 import EyeIcon from '@/components/Icons/EyeIcon'
 import Icon from '@/components/Icons/Icon'
+import { githubIssueLink } from '@/utils/github'
 import {
   PledgeState,
   PledgeType,
@@ -30,10 +31,6 @@ const List = (props: {
     return (
       <Icon classes="bg-blue-200 text-blue-600" icon={<DollarSignIcon />} />
     )
-  }
-
-  const issueLink = (reward: Reward): string => {
-    return `https://github.com/${reward.pledge.issue.repository.organization.name}/${reward.pledge.issue.repository.name}/issues/${reward.pledge.issue?.number}`
   }
 
   const showPaymentStatus = columns.some((c) => c === 'PAYMENT_STATUS')
@@ -119,7 +116,7 @@ const List = (props: {
                     {icon(t)}
                     <span className="inline-flex flex-col">
                       <a
-                        href={issueLink(t)}
+                        href={githubIssueLink(t.pledge.issue)}
                         className="text-blue-600 dark:text-blue-500"
                       >
                         {t.pledge.issue.repository.organization.name}/

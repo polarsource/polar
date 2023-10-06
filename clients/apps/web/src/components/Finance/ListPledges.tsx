@@ -2,6 +2,7 @@ import DollarSignIcon from '@/components/Icons/DollarSignIcon'
 import EyeIcon from '@/components/Icons/EyeIcon'
 import Icon from '@/components/Icons/Icon'
 import RefundIcon from '@/components/Icons/RefundIcon'
+import { githubIssueLink } from '@/utils/github'
 import { Pledge, PledgeState, PledgeType } from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/money'
 
@@ -33,10 +34,6 @@ const List = (props: {
     return (
       <Icon classes="bg-blue-200 text-blue-600" icon={<DollarSignIcon />} />
     )
-  }
-
-  const issueLink = (pledge: Pledge): string => {
-    return `https://github.com/${pledge.issue.repository.organization.name}/${pledge.issue.repository.name}/issues/${pledge.issue.number}`
   }
 
   const showEstimatedPayoutDate = columns.some(
@@ -105,7 +102,7 @@ const List = (props: {
                     {icon(t)}
                     <span className="inline-flex flex-col">
                       <a
-                        href={issueLink(t)}
+                        href={githubIssueLink(t.issue)}
                         className="text-blue-600 dark:text-blue-500"
                       >
                         {t.issue.repository.organization.name}/

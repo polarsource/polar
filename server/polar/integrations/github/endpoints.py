@@ -19,7 +19,7 @@ from polar.auth.service import AuthService, LoginResponse
 from polar.config import settings
 from polar.context import ExecutionContext
 from polar.currency.schemas import CurrencyAmount
-from polar.enums import Platforms
+from polar.enums import Platforms, UserSignupType
 from polar.funding.funding_schema import Funding
 from polar.integrations.github import client as github
 from polar.kit import jwt
@@ -63,6 +63,7 @@ oauth2_authorize_callback = OAuth2AuthorizeCallback(
 async def github_authorize(
     payment_intent_id: str | None = None,
     goto_url: str | None = None,
+    user_signup_type: UserSignupType | None = None,
     auth: Auth = Depends(Auth.optional_user),
 ) -> AuthorizationResponse:
     state = {}
@@ -75,6 +76,9 @@ async def github_authorize(
             goto_url = f"{settings.FRONTEND_BASE_URL}{goto_url}"
 
         state["goto_url"] = goto_url
+
+    if user_signup_type:
+        state["user_signup_type"] = user_signup_type
 
     if auth.user is not None:
         state["user_id"] = str(auth.user.id)

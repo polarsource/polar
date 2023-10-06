@@ -257,7 +257,7 @@ Good news: <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issu
 {% if pledge_type == "pay_upfront" %}
 You funded it with ${{pledge_amount}} on {{pledge_date}}. It will be rewarded to the creators in 7 days unless you file a dispute via email or the Polar dashboard before the dispute window ends.<br><br>
 {% elif pledge_type == "pay_on_completion" %}
-You made a ${{pledge_amount}} pledge behind it on {{pledge_date}}, to be paid on completion. We'll soon send you an invoice via Stipe, please keep an eye in your inbox.<br><br>
+You made a ${{pledge_amount}} pledge behind it on {{pledge_date}}, to be paid on completion. We'll soon send you an invoice via Stripe, please keep an eye in your inbox.<br><br>
 {% endif %}
 
 Best,<br>

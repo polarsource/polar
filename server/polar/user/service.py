@@ -1,7 +1,8 @@
 import structlog
 from sqlalchemy import func
 
-from polar.enums import Platforms
+from polar.enums import Platforms, UserSignupType
+from polar.integrations.loops.service import loops as loops_service
 from polar.kit.services import ResourceService, ResourceServiceReader
 from polar.logging import Logger
 from polar.models import OAuthAccount, User
@@ -24,10 +25,23 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
     ) -> User | None:
         return await self.get_by(session, username=username)
 
-    async def get_by_email_or_signup(self, session: AsyncSession, email: str) -> User:
+    async def get_by_email_or_signup(
+        self,
+        session: AsyncSession,
+        email: str,
+        *,
+        signup_type: UserSignupType | None = None,
+    ) -> User:
         user = await self.get_by_email(session, email)
+        signup = False
         if user is None:
-            return await self.signup_by_email(session, email)
+            user = await self.signup_by_email(session, email)
+            signup = True
+
+        if signup:
+            await loops_service.user_signup(user, signup_type)
+        else:
+            await loops_service.user_update(user)
         return user
 
     async def signup_by_email(self, session: AsyncSession, email: str) -> User:

@@ -2,9 +2,10 @@ from typing import Any, List
 
 import structlog
 
-from polar.enums import Platforms
+from polar.enums import Platforms, UserSignupType
 from polar.exceptions import PolarError
 from polar.integrations.github.client import GitHub, TokenAuthStrategy
+from polar.integrations.loops.service import loops as loops_service
 from polar.kit.extensions.sqlalchemy import sql
 from polar.models import OAuthAccount, User
 from polar.organization.service import organization
@@ -183,13 +184,18 @@ class GithubUserService(UserService):
         return user
 
     async def login_or_signup(
-        self, session: AsyncSession, *, tokens: OAuthAccessToken
+        self,
+        session: AsyncSession,
+        *,
+        tokens: OAuthAccessToken,
+        signup_type: UserSignupType | None = None,
     ) -> User:
         client = github.get_client(access_token=tokens.access_token)
         authenticated = await self.fetch_authenticated_user(client=client)
         github_email = await self.fetch_authenticated_user_primary_email(client=client)
 
         # Check if existing user with this GitHub account
+        signup = False
         existing_user_by_id = await self.get_user_by_github_id(
             session, id=authenticated.id
         )
@@ -229,6 +235,7 @@ class GithubUserService(UserService):
                     tokens=tokens,
                 )
                 event_name = "User Signed Up"
+                signup = True
 
         org_count = await self._run_sync_github_admin_orgs(
             session,
@@ -244,6 +251,10 @@ class GithubUserService(UserService):
                 },
             },
         )
+        if signup:
+            await loops_service.user_signup(user, signup_type)
+        else:
+            await loops_service.user_update(user)
         return user
 
     async def link_existing_user(

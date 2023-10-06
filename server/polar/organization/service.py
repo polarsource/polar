@@ -265,7 +265,6 @@ class OrganizationService(
                 organization_id=organization.id,
                 is_admin=is_admin,
             )
-            return
         except IntegrityError:
             # TODO: Currently, we treat this as success since the connection
             # exists. However, once we use status to distinguish active/inactive
@@ -277,21 +276,19 @@ class OrganizationService(
             )
             await nested.rollback()
 
-        # Update
-        stmt = (
-            sql.Update(UserOrganization)
-            .where(
-                UserOrganization.user_id == user.id,
-                UserOrganization.organization_id == organization.id,
+            # Update
+            stmt = (
+                sql.Update(UserOrganization)
+                .where(
+                    UserOrganization.user_id == user.id,
+                    UserOrganization.organization_id == organization.id,
+                )
+                .values(is_admin=is_admin)
             )
-            .values(is_admin=is_admin)
-        )
-        await session.execute(stmt)
-        await session.commit()
-
-        await loops_service.user_update(
-            user, isMaintainer=True, organizationInstalled=True
-        )
+            await session.execute(stmt)
+            await session.commit()
+        finally:
+            await loops_service.organization_installed(session, user=user)
 
     async def update_badge_settings(
         self,

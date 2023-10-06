@@ -40,6 +40,20 @@ class Loops:
     async def user_update(self, user: User, **properties: Unpack[Properties]) -> None:
         await loops_client.update_contact(user.email, str(user.id), **properties)
 
+    async def organization_installed(
+        self, session: AsyncSession, *, user: User
+    ) -> None:
+        organization_users = await user_organization_service.list_by_user_id(
+            session, user.id
+        )
+        await loops_client.update_contact(
+            user.email,
+            str(user.id),
+            isMaintainer=True,
+            organizationInstalled=True,
+            firstOrganizationName=organization_users[0].organization.name,
+        )
+
     async def repository_installed_on_organization(
         self, session: AsyncSession, *, organization: Organization
     ) -> None:

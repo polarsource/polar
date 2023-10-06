@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from typing import cast
+
 import stripe.error as stripe_lib_error
 import structlog
 
 from polar.exceptions import NotPermitted, ResourceNotFound, StripeError
+from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe
 from polar.issue.service import issue as issue_service
 from polar.models.issue import Issue
@@ -169,6 +172,9 @@ class PaymentIntentService:
         if user_id is None:
             user = await user_service.get_by_email_or_signup(session, email)
             user_id = user.id
+        else:
+            user = cast(User, await user_service.get(session, user_id))
+        await loops_service.user_update(user, isBacker=True)
 
         state = (
             PledgeState.created

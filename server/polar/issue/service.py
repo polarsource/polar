@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import List, Sequence, Tuple
 from uuid import UUID
 
@@ -192,6 +193,13 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 or_(
                     Issue.issue_closed_at.is_(None),
                     Issue.needs_confirmation_solved.is_(True),
+                    # Show confirmed issues by default for 12 hours.
+                    #
+                    # This solves the problem where the issue suddenly is removed from
+                    # listings after it's been confirmed. Which can be unexpected
+                    # from a user point of view, and also causes som bugs in the UI,
+                    # if an element that currently has spawned a modal disappears.
+                    Issue.confirmed_solved_at > utc_now() - timedelta(hours=12),
                 )
             )
         elif not show_closed:

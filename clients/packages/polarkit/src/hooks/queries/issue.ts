@@ -15,6 +15,7 @@ import {
   IssueSortBy,
   IssueUpdateBadgeMessage,
   ListResource_Issue_,
+  ListResource_Pledge_,
   Platforms,
   PostIssueComment,
 } from '../../api/client'
@@ -33,40 +34,7 @@ export const useIssueAddPolarBadge: () => UseMutationResult<
       return api.issues.addPolarBadge(variables)
     },
     onSuccess: (result, variables, ctx) => {
-      // TODO: it would be cool to have an optimistic update here! :-)
-
-      // update issue in dashboard results
-      queryClient.setQueriesData<InfiniteData<IssueListResponse>>(
-        {
-          queryKey: ['dashboard', 'repo'],
-        },
-        (data) => {
-          if (!data) {
-            return data
-          }
-
-          return {
-            ...data,
-            pages: data.pages.map((p) => {
-              return {
-                ...p,
-                data: p.data.map((issue) => {
-                  if (issue.id === result.id) {
-                    return {
-                      ...issue,
-                      attributes: {
-                        ...issue.attributes,
-                        ...result,
-                      },
-                    }
-                  }
-                  return { ...issue }
-                }),
-              }
-            }),
-          }
-        },
-      )
+      updateIssuesCache(result)
     },
   })
 
@@ -76,38 +44,7 @@ export const useIssueRemovePolarBadge = () =>
       return api.issues.removePolarBadge(variables)
     },
     onSuccess: (result, variables, ctx) => {
-      // update issue in dashboard results
-      queryClient.setQueriesData<InfiniteData<IssueListResponse>>(
-        {
-          queryKey: ['dashboard', 'repo'],
-        },
-        (data) => {
-          if (!data) {
-            return data
-          }
-
-          return {
-            ...data,
-            pages: data.pages.map((p) => {
-              return {
-                ...p,
-                data: p.data.map((issue) => {
-                  if (issue.id === result.id) {
-                    return {
-                      ...issue,
-                      attributes: {
-                        ...issue.attributes,
-                        ...result,
-                      },
-                    }
-                  }
-                  return { ...issue }
-                }),
-              }
-            }),
-          }
-        },
-      )
+      updateIssuesCache(result)
     },
   })
 
@@ -151,40 +88,132 @@ export const useUpdateIssue = () =>
       })
     },
     onSuccess: (result, variables, ctx) => {
-      // update issue in dashboard results
-      queryClient.setQueriesData<InfiniteData<IssueListResponse>>(
-        {
-          queryKey: ['dashboard', 'repo'],
-        },
-        (data) => {
-          if (!data) {
-            return data
-          }
-
-          return {
-            ...data,
-            pages: data.pages.map((p) => {
-              return {
-                ...p,
-                data: p.data.map((issue) => {
-                  if (issue.id === result.id) {
-                    return {
-                      ...issue,
-                      attributes: {
-                        ...issue.attributes,
-                        ...result,
-                      },
-                    }
-                  }
-                  return { ...issue }
-                }),
-              }
-            }),
-          }
-        },
-      )
+      updateIssuesCache(result)
     },
   })
+
+const updateIssuesCache = (result: Issue) => {
+  // update issue in dashboard results
+  queryClient.setQueriesData<InfiniteData<IssueListResponse>>(
+    {
+      queryKey: ['dashboard', 'repo'],
+    },
+    (data) => {
+      if (!data) {
+        return data
+      }
+
+      return {
+        ...data,
+        pages: data.pages.map((p) => {
+          return {
+            ...p,
+            data: p.data.map((issue) => {
+              if (issue.id === result.id) {
+                return {
+                  ...issue,
+                  attributes: {
+                    ...issue.attributes,
+                    ...result,
+                  },
+                }
+              }
+              return { ...issue }
+            }),
+          }
+        }),
+      }
+    },
+  )
+
+  queryClient.setQueriesData<ListResource_Pledge_>(
+    {
+      queryKey: ['pledgeByIssue', result.id],
+    },
+    (data) => {
+      if (!data) {
+        return data
+      }
+
+      return {
+        ...data,
+        items: data.items?.map((i) => {
+          if (i.issue.id === result.id) {
+            return {
+              ...i,
+              issue: result,
+            }
+          }
+          return { ...i }
+        }),
+      }
+    },
+  )
+
+  queryClient.setQueriesData<ListResource_Pledge_>(
+    {
+      queryKey: ['pledgeList'],
+    },
+    (data) => {
+      if (!data) {
+        return data
+      }
+
+      return {
+        ...data,
+        items: data.items?.map((i) => {
+          if (i.issue.id === result.id) {
+            return {
+              ...i,
+              issue: result,
+            }
+          }
+          return { ...i }
+        }),
+      }
+    },
+  )
+
+  queryClient.setQueriesData<ListResource_Issue_>(
+    {
+      queryKey: ['issues'],
+    },
+    (data) => {
+      if (!data) {
+        return data
+      }
+      return {
+        ...data,
+        items: data.items?.map((i) => {
+          if (i.id === result.id) {
+            return result
+          }
+          return { ...i }
+        }),
+      }
+    },
+  )
+
+  queryClient.setQueriesData<ListResource_Issue_>(
+    {
+      queryKey: ['issuesForYou'],
+    },
+    (data) => {
+      if (!data) {
+        return data
+      }
+      return {
+        ...data,
+        items: data.items?.map((i) => {
+          if (i.id === result.id) {
+            return result
+          }
+          return { ...i }
+        }),
+      }
+    },
+  )
+}
 
 export const useSearchIssues: (v: {
   organizationName?: string
@@ -225,7 +254,7 @@ export const useSearchIssues: (v: {
 
 export const useListForYouIssues = () =>
   useQuery({
-    queryKey: ['issues', 'for-you'],
+    queryKey: ['issuesForYou'],
     queryFn: () => api.issues.forYou(),
     retry: defaultRetry,
   })
@@ -241,15 +270,13 @@ export const useIssueMarkConfirmed = () =>
       })
     },
     onSuccess: async (result, variables, ctx) => {
-      await queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-      await queryClient.invalidateQueries({ queryKey: ['pledge'] })
-      await queryClient.invalidateQueries({ queryKey: ['listPersonalPledges'] })
+      updateIssuesCache(result)
     },
   })
 
 export const useListPullsReferencingIssue = (issueId?: string) =>
   useQuery({
-    queryKey: ['pulls', 'byIssue', issueId],
+    queryKey: ['pullsByIssue', issueId],
     queryFn: () =>
       api.pullRequests.search({
         referencesIssueId: issueId || '',

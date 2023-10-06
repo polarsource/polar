@@ -12,6 +12,7 @@ from githubkit.rest.models import FullRepository as GitHubFullRepository
 from githubkit.webhooks.models import Repository as GitHubWebhookRepository
 
 from polar.enums import Platforms
+from polar.integrations.loops.service import loops as loops_service
 from polar.logging import Logger
 from polar.models import Organization, Repository
 from polar.postgres import AsyncSession
@@ -79,6 +80,11 @@ class GithubRepositoryService(RepositoryService):
                 await inst.save(session, autocommit=False)
 
             instances.append(inst)
+
+        if len(instances) > 0:
+            await loops_service.repository_installed_on_organization(
+                session, organization=organization
+            )
 
         await session.commit()
         for installation in instances:

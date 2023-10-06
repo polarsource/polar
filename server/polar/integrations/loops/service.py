@@ -1,7 +1,7 @@
 from typing import Unpack
 
 from polar.enums import UserSignupType
-from polar.models import Issue, User
+from polar.models import Issue, Organization, User
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -34,6 +34,21 @@ class Loops:
 
     async def user_update(self, user: User, **properties: Unpack[Properties]) -> None:
         await loops_client.update_contact(user.email, str(user.id), **properties)
+
+    async def repository_installed_on_organization(
+        self, session: AsyncSession, *, organization: Organization
+    ) -> None:
+        for organization_user in await user_organization_service.list_by_org(
+            session, organization.id
+        ):
+            user = organization_user.user
+            await loops_client.update_contact(
+                user.email,
+                str(user.id),
+                isMaintainer=True,
+                organizationInstalled=True,
+                repositoryInstalled=True,
+            )
 
     async def issue_badged(self, session: AsyncSession, *, issue: Issue) -> None:
         for organization_user in await user_organization_service.list_by_org(

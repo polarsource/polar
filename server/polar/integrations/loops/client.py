@@ -11,7 +11,9 @@ log: Logger = structlog.get_logger()
 
 
 class LoopsClientError(PolarError):
-    ...
+    def __init__(self, message: str, response: httpx.Response) -> None:
+        self.response = response
+        super().__init__(message, 500)
 
 
 class Properties(TypedDict, total=False):
@@ -25,6 +27,7 @@ class Properties(TypedDict, total=False):
     isBacker: bool
     isMaintainer: bool
     gitHubConnected: bool
+    firstOrganizationName: str
     organizationInstalled: bool
     repositoryInstalled: bool
     issueBadged: bool
@@ -78,7 +81,7 @@ class LoopsClient:
         try:
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
-            raise LoopsClientError(str(e), 500) from e
+            raise LoopsClientError(str(e), e.response) from e
         return response
 
 

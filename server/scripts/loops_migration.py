@@ -10,9 +10,9 @@ from sqlalchemy import select
 from polar.config import settings
 from polar.enums import Platforms
 from polar.integrations.github.service.issue import github_issue as github_issue_service
-from polar.integrations.loops.client import LoopsClient, Properties
+from polar.integrations.loops.client import LoopsClient, LoopsClientError, Properties
 from polar.kit.db.postgres import create_sessionmaker
-from polar.models import User, UserOrganization
+from polar.models import Organization, User, UserOrganization
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import create_engine
 from polar.repository.service import repository as repository_service
@@ -113,6 +113,61 @@ async def loops_migration(
                 str(user.id),
                 **properties,
             )
+
+        typer.echo("\n---\n")
+
+        if dry_run:
+            typer.echo(
+                typer.style("Dry run, changes were not sent to Loops", fg="yellow")
+            )
+
+
+@cli.command()
+@typer_async
+async def personal_organization_name(
+    dry_run: bool = typer.Option(
+        False, help="If `True`, requests won't be truly sent to Loops."
+    )
+) -> None:
+    loops_client = LoopsClient(settings.LOOPS_API_KEY if not dry_run else None)
+    engine = create_engine()
+    sessionmaker = create_sessionmaker(engine)
+    async with sessionmaker() as session:
+        users_statement = (
+            select(User)
+            .where(User.deleted_at == None)  # noqa: E711
+            .order_by(User.created_at.asc())
+        )
+        result = await session.execute(users_statement)
+        for user in result.unique().scalars():
+            typer.echo("\n---\n")
+            typer.echo(f"🔄 Handling User {user.email}")
+
+            user_organizations_statement = (
+                select(UserOrganization)
+                .join(Organization)
+                .where(UserOrganization.user_id == user.id)
+                .order_by(UserOrganization.created_at.asc())
+            ).limit(1)
+            user_organization_result = await session.execute(
+                user_organizations_statement
+            )
+            user_organization = user_organization_result.unique().scalar_one_or_none()
+            if user_organization is not None:
+                first_organization_name = user_organization.organization.name
+                try:
+                    await loops_client.update_contact(
+                        user.email,
+                        str(user.id),
+                        firstOrganizationName=first_organization_name,
+                    )
+                    typer.echo(
+                        f"Updated personalOrganizationName={first_organization_name}"
+                    )
+                except LoopsClientError as e:
+                    typer.echo(typer.style(e.message, fg="red"))
+            else:
+                typer.echo("No organization")
 
         typer.echo("\n---\n")
 

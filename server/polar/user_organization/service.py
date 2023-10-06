@@ -28,7 +28,11 @@ class UserOrganizationervice:
     async def list_by_user_id(
         self, session: AsyncSession, user_id: UUID
     ) -> Sequence[UserOrganization]:
-        stmt = sql.select(UserOrganization).where(UserOrganization.user_id == user_id)
+        stmt = (
+            sql.select(UserOrganization)
+            .where(UserOrganization.user_id == user_id)
+            .order_by(UserOrganization.created_at.asc())
+        )
         res = await session.execute(stmt)
         return res.scalars().unique().all()
 

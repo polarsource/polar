@@ -1,10 +1,11 @@
+from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from polar.authz.service import AccessType, Authz
 from polar.auth.dependencies import Auth
 from polar.locker import Locker, get_locker
 
 from polar.enums import Platforms
-from polar.exceptions import BadRequest, ResourceNotFound
+from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.models import Repository
 from polar.organization.dependencies import OrganizationNameQuery
 from polar.organization.service import organization as organization_service
@@ -68,3 +69,32 @@ async def list_funding(
         items=items,
         pagination=Pagination(total_count=len(items)),
     )
+
+
+@router.get(
+    "/lookup",
+    name="lookup",
+    response_model=IssueFunding,
+    tags=[Tags.PUBLIC],
+)
+async def lookup(
+    issue_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+    auth: Auth = Depends(Auth.optional_user),
+) -> IssueFunding:
+    rows = await funding_service.list_by(
+        session,
+        issue_ids=[issue_id],
+    )
+
+    if len(rows) != 1:
+        raise ResourceNotFound()
+
+    row = rows[0]
+    issue = row[0]
+
+    if not await authz.can(auth.subject, AccessType.read, issue):
+        raise Unauthorized()
+
+    return IssueFunding.from_list_by_row(row)

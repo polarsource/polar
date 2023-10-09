@@ -14,6 +14,7 @@ from polar.integrations.github.client import get_polar_client
 from polar.integrations.github.service.issue import github_issue as github_issue_service
 from polar.integrations.github.service.url import github_url
 from polar.issue.body import IssueBodyRenderer, get_issue_body_renderer
+from polar.kit.pagination import ListResource, Pagination
 from polar.kit.schemas import Schema
 from polar.locker import Locker, get_locker
 from polar.models import Issue
@@ -29,7 +30,6 @@ from polar.postgres import (
 from polar.repository.schemas import Repository as RepositorySchema
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
-from polar.types import ListResource, Pagination
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -135,7 +135,7 @@ async def search(
             for i in issues
             if await authz.can(auth.subject, AccessType.read, i)
         ],
-        pagination=Pagination(total_count=count),
+        pagination=Pagination(total_count=count, max_page=1),
     )
 
 
@@ -290,7 +290,9 @@ async def for_you(
 
     items = spread(items)
 
-    return ListResource(items=items, pagination=Pagination(total_count=len(items)))
+    return ListResource(
+        items=items, pagination=Pagination(total_count=len(items), max_page=1)
+    )
 
 
 @router.get(

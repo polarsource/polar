@@ -55,6 +55,9 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "127.0.0.1"
     REDIS_PORT: int = 6379
 
+    # Public API
+    API_PAGINATION_MAX_LIMIT: int = 100
+
     # Github App
     GITHUB_APP_IDENTIFIER: str = ""
     GITHUB_APP_WEBHOOK_SECRET: str = ""

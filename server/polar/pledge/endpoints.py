@@ -8,11 +8,11 @@ from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.issue.service import issue as issue_service
+from polar.kit.pagination import ListResource, Pagination
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
-from polar.types import ListResource, Pagination
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -146,7 +146,9 @@ async def search(
         if await authz.can(auth.subject, AccessType.read, p)
     ]
 
-    return ListResource(items=items, pagination=Pagination(total_count=len(items)))
+    return ListResource(
+        items=items, pagination=Pagination(total_count=len(items), max_page=1)
+    )
 
 
 @router.get(

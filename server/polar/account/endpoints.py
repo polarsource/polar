@@ -5,10 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from polar.auth.dependencies import UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.enums import AccountType
+from polar.kit.pagination import ListResource, Pagination
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
-from polar.types import ListResource, Pagination
 
 from .schemas import Account, AccountCreate, AccountLink
 from .service import AccountServiceError
@@ -49,7 +49,9 @@ async def search(
         for a in accs
         if await authz.can(auth.subject, AccessType.read, a)
     ]
-    return ListResource(items=items, pagination=Pagination(total_count=len(items)))
+    return ListResource(
+        items=items, pagination=Pagination(total_count=len(items), max_page=1)
+    )
 
 
 @router.get("/accounts/{id}", tags=[Tags.PUBLIC], response_model=Account)

@@ -10,11 +10,11 @@ from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.integrations.github.badge import GithubBadge
+from polar.kit.pagination import ListResource, Pagination
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.schemas import RepositoryLegacyRead
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
-from polar.types import ListResource, Pagination
 
 from .schemas import (
     Organization as OrganizationSchema,
@@ -49,7 +49,7 @@ async def list(
     orgs = await organization.list_all_orgs_by_user_id(session, auth.user.id)
     return ListResource(
         items=[OrganizationSchema.from_db(o) for o in orgs],
-        pagination=Pagination(total_count=len(orgs)),
+        pagination=Pagination(total_count=len(orgs), max_page=1),
     )
 
 
@@ -73,13 +73,13 @@ async def search(
         if org:
             return ListResource(
                 items=[OrganizationSchema.from_db(org)],
-                pagination=Pagination(total_count=0),
+                pagination=Pagination(total_count=0, max_page=1),
             )
 
     # no org found
     return ListResource(
         items=[],
-        pagination=Pagination(total_count=0),
+        pagination=Pagination(total_count=0, max_page=1),
     )
 
 

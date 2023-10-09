@@ -7,12 +7,12 @@ from polar.auth.dependencies import Auth
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.issue.service import issue as issue_service
+from polar.kit.pagination import ListResource, Pagination
 from polar.postgres import (
     AsyncSession,
     get_db_session,
 )
 from polar.tags.api import Tags
-from polar.types import ListResource, Pagination
 
 from .schemas import PullRequest
 from .service import pull_request as pull_request_service
@@ -51,5 +51,5 @@ async def search(
 
     return ListResource(
         items=[PullRequest.from_db(pr) for pr in prs],
-        pagination=Pagination(total_count=len(prs)),
+        pagination=Pagination(total_count=len(prs), max_page=1),
     )

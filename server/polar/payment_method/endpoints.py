@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends
 from polar.auth.dependencies import UserRequiredAuth
 from polar.exceptions import Unauthorized
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.kit.pagination import ListResource, Pagination
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
-from polar.types import ListResource, Pagination
 
 from .schemas import (
     PaymentMethod,
@@ -31,7 +31,7 @@ async def list(
 
     return ListResource(
         items=[PaymentMethod.from_stripe(pm) for pm in pms],
-        pagination=Pagination(total_count=len(pms)),
+        pagination=Pagination(total_count=len(pms), max_page=1),
     )
 
 

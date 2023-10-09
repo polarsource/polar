@@ -14,6 +14,7 @@ from polar.integrations.github.service.repository import (
 )
 from polar.issue.schemas import Issue
 from polar.issue.service import issue as issue_service
+from polar.kit.pagination import ListResource, Pagination
 from polar.kit.schemas import Schema
 from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
@@ -26,7 +27,6 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.reward.endpoints import to_resource as reward_to_resource
 from polar.reward.service import reward_service
 from polar.tags.api import Tags
-from polar.types import ListResource, Pagination
 
 from .pledge_service import bo_pledges_service
 from .schemas import (
@@ -83,7 +83,7 @@ async def rewards(
         items=[
             r(pledge, reward, transaction) for pledge, reward, transaction in rewards
         ],
-        pagination=Pagination(total_count=len(rewards)),
+        pagination=Pagination(total_count=len(rewards), max_page=1),
     )
 
 
@@ -102,7 +102,7 @@ async def rewards_pending(
         items=[
             r(pledge, reward, transaction) for pledge, reward, transaction in rewards
         ],
-        pagination=Pagination(total_count=len(rewards)),
+        pagination=Pagination(total_count=len(rewards), max_page=1),
     )
 
 

@@ -11,7 +11,6 @@ import {
   RepoPickerHeader,
 } from '@/components/Layout/DashboardLayout'
 import OnboardingAddBadge from '@/components/Onboarding/OnboardingAddBadge'
-import OnboardingInstallChromeExtension from '@/components/Onboarding/OnboardingInstallChromeExtension'
 import { useToast } from '@/components/Toast/use-toast'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -273,7 +272,6 @@ const OrganizationIssues = ({
 
       <DashboardBody>
         <div className="space-y-4">
-          <OnboardingInstallChromeExtension />
           {showAddBadgeBanner && <OnboardingAddBadge />}
 
           <IssueList

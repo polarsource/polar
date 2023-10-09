@@ -3,7 +3,6 @@ import {
   Funding,
   Issue,
   Pledge,
-  PledgeRead,
   PledgesTypeSummaries,
   UserRead,
 } from 'polarkit/api/client'
@@ -15,7 +14,7 @@ import PledgeSummaryPill from './PledgeSummaryPill'
 import PublicRewardPill from './PublicRewardPill'
 
 interface Props {
-  pledges: Array<PledgeRead | Pledge>
+  pledges: Array<Pledge>
   onConfirmPledges: () => void
   showConfirmPledgeAction: boolean
   confirmPledgeIsLoading: boolean
@@ -34,25 +33,15 @@ const IssuePledge = (props: Props) => {
     issue,
   } = props
 
-  const addAmounts = (accumulator: number, pledge: Pledge | PledgeRead) => {
-    if (typeof pledge.amount === 'number') {
-      return accumulator + pledge.amount
-    }
-    return accumulator + pledge.amount.amount
-  }
-
   const totalPledgeAmount = Math.max(
     issue.funding.pledges_sum?.amount ?? 0,
-    pledges.reduce(addAmounts, 0),
+    pledges.reduce((a, b) => a + b.amount.amount, 0),
   )
 
   const confirmable = useMemo(() => {
     return (
       pledges.some(
-        (p) =>
-          'authed_user_can_admin_received' in p &&
-          issue.needs_confirmation_solved &&
-          p.authed_user_can_admin_received,
+        (p) => issue.needs_confirmation_solved && p.authed_can_admin_received,
       ) && !confirmPledgeIsLoading
     )
   }, [pledges, confirmPledgeIsLoading, issue])
@@ -64,15 +53,18 @@ const IssuePledge = (props: Props) => {
   const showFundingGoal =
     props.funding?.funding_goal?.amount && props.funding.funding_goal.amount > 0
 
-  const selfContribution = showSelfPledgesFor
-    ? pledges
-        .filter(
-          (p) =>
-            'pledger_user_id' in p &&
-            p.pledger_user_id === showSelfPledgesFor.id,
-        )
-        .reduce(addAmounts, 0)
-    : 0
+  const currentUserPledges = showSelfPledgesFor
+    ? pledges.filter((p) => {
+        if (p.pledger?.github_username === showSelfPledgesFor.username) {
+          return true
+        }
+      })
+    : []
+
+  const selfContribution = currentUserPledges.reduce(
+    (a, b) => a + b.amount.amount,
+    0,
+  )
 
   return (
     <>

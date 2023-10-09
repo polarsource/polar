@@ -49,6 +49,14 @@ export type BackofficePledge = {
    * URL of invoice for this pledge
    */
   hosted_invoice_url?: string;
+  /**
+   * If the currently authenticated subject can perform admin actions on behalf of the maker of the peldge
+   */
+  authed_can_admin_sender?: boolean;
+  /**
+   * If the currently authenticated subject can perform admin actions on behalf of the receiver of the peldge
+   */
+  authed_can_admin_received?: boolean;
   payment_id?: string;
   dispute_reason?: string;
   disputed_by_user_id?: string;

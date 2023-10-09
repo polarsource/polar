@@ -4,11 +4,11 @@
 
 import type { Issue } from './Issue';
 import type { IssueReferenceRead } from './IssueReferenceRead';
-import type { PledgeRead } from './PledgeRead';
+import type { Pledge } from './Pledge';
 
 export type IssueExtensionRead = {
   number: number;
-  pledges: Array<PledgeRead>;
+  pledges: Array<Pledge>;
   references: Array<IssueReferenceRead>;
   issue: Issue;
 };

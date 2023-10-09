@@ -3,7 +3,6 @@ import {
   Issue,
   IssueReferenceRead,
   Pledge,
-  PledgeRead,
   PledgeState,
   PledgesTypeSummaries,
   Reward,
@@ -20,7 +19,7 @@ export const getExpectedHeight = ({
   pledges,
   references,
 }: {
-  pledges: PledgeRead[]
+  pledges: Pledge[]
   references: IssueReferenceRead[]
 }): number => {
   const pledgeHeight = pledges.length > 0 ? 28 : 0
@@ -49,11 +48,11 @@ const IssueListItemDecoration = ({
   orgName: string
   repoName: string
   issueNumber: number
-  pledges: Array<PledgeRead | Pledge>
+  pledges: Array<Pledge>
   pledgesSummary?: PledgesTypeSummaries
   references: IssueReferenceRead[]
   showDisputeAction: boolean
-  onDispute: (pledge: PledgeRead | Pledge) => void
+  onDispute: (pledge: Pledge) => void
   onConfirmPledges: () => void
   showConfirmPledgeAction: boolean
   confirmPledgeIsLoading: boolean
@@ -67,7 +66,7 @@ const IssueListItemDecoration = ({
   const ONE_DAY = 1000 * 60 * 60 * 24
   const now = new Date()
 
-  const remainingDays = (pledge: PledgeRead | Pledge) => {
+  const remainingDays = (pledge: Pledge) => {
     if (!pledge.scheduled_payout_at) {
       return -1
     }
@@ -82,8 +81,7 @@ const IssueListItemDecoration = ({
     pledges
       ?.filter(
         (p) =>
-          'authed_user_can_admin_sender' in p &&
-          p.authed_user_can_admin_sender &&
+          p.authed_can_admin_sender &&
           p.scheduled_payout_at &&
           p.state === PledgeState.PENDING &&
           remainingDays(p) >= 0,
@@ -102,8 +100,7 @@ const IssueListItemDecoration = ({
     pledges &&
     pledges.find(
       (p) =>
-        'authed_user_can_admin_sender' in p &&
-        p.authed_user_can_admin_sender &&
+        p.authed_can_admin_sender &&
         p.scheduled_payout_at &&
         p.state === PledgeState.PENDING &&
         remainingDays(p) >= 0,
@@ -115,14 +112,14 @@ const IssueListItemDecoration = ({
   const showPledgeStatusBox = pledgeStatusShowCount > 0
   const disputeBoxShowAmount = pledgeStatusShowCount > 1
 
-  const onClickDisputeButton = (pledge: PledgeRead | Pledge) => {
+  const onClickDisputeButton = (pledge: Pledge) => {
     if (!canDisputeAny || !onDispute) {
       return
     }
     onDispute(pledge)
   }
 
-  const pledgeAmount = (pledge: Pledge | PledgeRead): number => {
+  const pledgeAmount = (pledge: Pledge): number => {
     if (typeof pledge.amount === 'number') {
       return pledge.amount
     }
@@ -210,25 +207,23 @@ const IssueListItemDecoration = ({
           {disputedPledges.map((p) => {
             return (
               <div key={p.id}>
-                {'authed_user_can_admin_sender' in p &&
-                  p.authed_user_can_admin_sender && (
-                    <span className="text-sm text-gray-500">
-                      You&apos;ve disputed your pledge{' '}
-                      {disputeBoxShowAmount && (
-                        <>(${getCentsInDollarString(p.amount)})</>
-                      )}
-                    </span>
-                  )}
+                {p.authed_can_admin_sender && (
+                  <span className="text-sm text-gray-500">
+                    You&apos;ve disputed your pledge{' '}
+                    {disputeBoxShowAmount && (
+                      <>(${getCentsInDollarString(p.amount.amount)})</>
+                    )}
+                  </span>
+                )}
 
-                {'authed_user_can_admin_received' in p &&
-                  p.authed_user_can_admin_received && (
-                    <span className="text-sm text-gray-500">
-                      {p.pledger_name} disputed their pledge{' '}
-                      {disputeBoxShowAmount && (
-                        <>(${getCentsInDollarString(p.amount)})</>
-                      )}
-                    </span>
-                  )}
+                {p.authed_can_admin_received && (
+                  <span className="text-sm text-gray-500">
+                    {p.pledger?.name} disputed their pledge{' '}
+                    {disputeBoxShowAmount && (
+                      <>(${getCentsInDollarString(p.amount.amount)})</>
+                    )}
+                  </span>
+                )}
               </div>
             )
           })}

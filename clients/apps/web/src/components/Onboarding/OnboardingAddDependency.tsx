@@ -5,7 +5,7 @@ import {
   IssueReferenceType,
   Organization,
   Platforms,
-  PledgeRead,
+  Pledge,
   PledgeState,
   PledgeType,
   PullRequestReference,
@@ -60,14 +60,12 @@ const OnboardingAddDependency = () => {
     needs_confirmation_solved: false,
   }
 
-  const demoPledges: PledgeRead[] = [
+  const demoPledges: Pledge[] = [
     {
       id: 'x',
       created_at: 'y',
-      issue_id: demoIssue.id,
-      amount: 70000,
-      repository_id: demoRepo.id,
-      organization_id: demoOrg.id,
+      issue: demoIssue,
+      amount: { currency: 'USD', amount: 70000 },
       state: PledgeState.PENDING,
       type: PledgeType.PAY_UPFRONT,
     },

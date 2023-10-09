@@ -2,7 +2,7 @@ import {
   Issue,
   IssueReferenceRead,
   Organization,
-  PledgeRead,
+  Pledge,
   PledgesTypeSummaries,
   Repository,
   Reward,
@@ -11,7 +11,7 @@ import {
 export type IssueReadWithRelations = Issue & {
   references: IssueReferenceRead[]
   dependents: IssueReadWithRelations[]
-  pledges: PledgeRead[]
+  pledges: Pledge[]
   pledge_summary?: PledgesTypeSummaries
   rewards?: Reward[]
 

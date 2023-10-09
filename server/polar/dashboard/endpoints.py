@@ -28,7 +28,8 @@ from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import Organization as OrganizationSchema
-from polar.pledge.schemas import PledgeRead, PledgeState
+from polar.pledge.schemas import Pledge as PledgeSchema
+from polar.pledge.schemas import PledgeState
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session, sql
 from polar.repository.schemas import Repository as RepositorySchema
@@ -308,31 +309,23 @@ async def dashboard(
             if pled.state not in pledge_statuses:
                 continue
 
-            pledge_read = PledgeRead.from_db(pled)
+            pledge_schema = PledgeSchema.from_db(pled)
 
             # Add user-specific metadata
-
-            user_can_admin = (for_user and pled.by_user_id == for_user.id) or (
-                for_org and pled.by_organization_id == for_org.id
-            )
-
-            if user_can_admin:
-                pledge_read.authed_user_can_admin = True
-
             if auth.user:
-                pledge_read.authed_user_can_admin_sender = (
+                pledge_schema.authed_can_admin_sender = (
                     pledge_service.user_can_admin_sender_pledge(
                         auth.user, pled, user_memberships
                     )
                 )
-                pledge_read.authed_user_can_admin_received = (
+                pledge_schema.authed_can_admin_received = (
                     pledge_service.user_can_admin_received_pledge(
                         pled, user_memberships
                     )
                 )
 
             included[str(pled.id)] = Entry(
-                id=pled.id, type="pledge", attributes=pledge_read
+                id=pled.id, type="pledge", attributes=pledge_schema
             )
 
             # inject relationships

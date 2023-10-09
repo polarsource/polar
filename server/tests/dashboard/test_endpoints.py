@@ -63,7 +63,7 @@ async def test_get_no_member(
 
 
 @pytest.mark.asyncio
-async def test_get_with_pledge(
+async def test_get_with_pledge_from_org(
     user: User,
     organization: Organization,
     repository: Repository,
@@ -90,11 +90,50 @@ async def test_get_with_pledge(
     pledges = [x for x in res["included"] if x["type"] == "pledge"]
     assert len(pledges) == 1
     assert pledges[0]["id"] == rel_pledged["id"]
-    assert pledges[0]["attributes"]["pledger_name"] == pledging_organization.name
+    assert pledges[0]["attributes"]["pledger"]["name"] == pledging_organization.name
 
     summaries = [x for x in res["included"] if x["type"] == "pledge_summary"]
     assert len(summaries) == 1
     assert summaries[0]["attributes"]["pay_upfront"]["total"]["amount"] == pledge.amount
+    assert len(summaries[0]["attributes"]["pay_upfront"]["pledgers"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_get_with_pledge_from_user(
+    user: User,
+    organization: Organization,
+    repository: Repository,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    # pledging_organization: Organization,
+    pledge_by_user: Pledge,
+    issue: Issue,
+    auth_jwt: str,
+    client: AsyncClient,
+) -> None:
+    response = await client.get(
+        f"/api/v1/dashboard/github/{organization.name}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+    res = response.json()
+
+    assert len(res["data"]) == 1
+    assert res["data"][0]["id"] == str(issue.id)
+    assert len(res["data"][0]["relationships"]["pledges"]["data"]) == 1
+    rel_pledged = res["data"][0]["relationships"]["pledges"]["data"][0]
+
+    pledges = [x for x in res["included"] if x["type"] == "pledge"]
+    assert len(pledges) == 1
+    assert pledges[0]["id"] == rel_pledged["id"]
+    assert str(pledges[0]["attributes"]["pledger"]["name"]).startswith("testuser")
+
+    summaries = [x for x in res["included"] if x["type"] == "pledge_summary"]
+    assert len(summaries) == 1
+    assert (
+        summaries[0]["attributes"]["pay_upfront"]["total"]["amount"]
+        == pledge_by_user.amount
+    )
     assert len(summaries[0]["attributes"]["pay_upfront"]["pledgers"]) == 1
 
 
@@ -160,7 +199,7 @@ async def test_get_only_pledged_with_pledge(
     pledges = [x for x in res["included"] if x["type"] == "pledge"]
     assert len(pledges) == 1
     assert pledges[0]["id"] == rel_pledged["id"]
-    assert pledges[0]["attributes"]["pledger_name"] == pledging_organization.name
+    assert pledges[0]["attributes"]["pledger"]["name"] == pledging_organization.name
 
 
 @pytest.mark.asyncio

@@ -22,7 +22,6 @@ from .schemas import (
     CreatePledgeFromPaymentIntent,
     CreatePledgePayLater,
     PledgePledgesSummary,
-    PledgeRead,
     PledgeStripePaymentIntentCreate,
     PledgeStripePaymentIntentMutationResponse,
     PledgeStripePaymentIntentUpdate,
@@ -344,14 +343,14 @@ async def update_payment_intent(
 
 @router.post(
     "/pledges/{pledge_id}/dispute",
-    response_model=PledgeRead,
+    response_model=PledgeSchema,
 )
 async def dispute_pledge(
     pledge_id: UUID,
     reason: str,
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-) -> PledgeRead:
+) -> PledgeSchema:
     pledge = await pledge_service.get(session, pledge_id)
     if not pledge:
         raise HTTPException(status_code=404, detail="Pledge not found")
@@ -379,4 +378,4 @@ async def dispute_pledge(
     if not pledge:
         raise HTTPException(status_code=404, detail="Pledge not found")
 
-    return PledgeRead.from_db(pledge)
+    return PledgeSchema.from_db(pledge)

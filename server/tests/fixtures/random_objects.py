@@ -209,6 +209,35 @@ async def pledge(
 
 
 @pytest_asyncio.fixture(scope="function")
+async def pledge_by_user(
+    session: AsyncSession,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+) -> Pledge:
+    user = await create_user(session)
+
+    amount = secrets.randbelow(100000) + 1
+    fee = round(amount * 0.05)
+    pledge = await Pledge.create(
+        session=session,
+        id=uuid.uuid4(),
+        # by_organization_id=pledging_organization.id,
+        issue_id=issue.id,
+        repository_id=repository.id,
+        organization_id=organization.id,
+        by_user_id=user.id,
+        amount=amount,
+        fee=fee,
+        state=PledgeState.created,
+        type=PledgeType.pay_upfront,
+    )
+
+    await session.commit()
+    return pledge
+
+
+@pytest_asyncio.fixture(scope="function")
 async def pull_request(
     session: AsyncSession,
     organization: Organization,

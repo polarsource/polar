@@ -23,11 +23,8 @@ from .service import funding as funding_service
 router = APIRouter(prefix="/funding", tags=["funding"])
 
 
-# TODO: this should be /search to be consistent with other endpoints
-@router.get(
-    "/", name="list", response_model=ListResource[IssueFunding], tags=[Tags.PUBLIC]
-)
-async def list_funding(
+@router.get("/search", response_model=ListResource[IssueFunding], tags=[Tags.PUBLIC])
+async def search(
     pagination: PaginationParamsQuery,
     organization_name: OrganizationNameQuery,
     repository_name: OptionalRepositoryNameQuery = None,

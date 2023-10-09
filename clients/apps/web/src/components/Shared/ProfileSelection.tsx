@@ -55,7 +55,7 @@ const ProfileSelection = ({ useOrgFromURL = true }) => {
     <>
       <div className="relative flex w-full flex-col">
         <div
-          className="relative flex cursor-pointer flex-row items-center justify-between gap-x-2 rounded-2xl p-4 shadow-lg transition-colors hover:bg-gray-100/50 dark:border dark:border-transparent dark:bg-gray-950 dark:shadow-none dark:hover:border-gray-800"
+          className="relative flex cursor-pointer flex-row items-center justify-between gap-x-2 rounded-2xl p-4 shadow-xl transition-colors hover:bg-gray-100/50 dark:border dark:border-transparent dark:bg-gray-950 dark:shadow-none dark:hover:border-gray-800"
           onClick={() => setOpen(true)}
         >
           <Profile

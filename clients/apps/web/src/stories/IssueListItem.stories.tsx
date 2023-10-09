@@ -8,7 +8,7 @@ import {
   IssueReferenceRead,
   IssueReferenceType,
   IssueStatus,
-  PledgeRead,
+  Pledge,
   PledgeState,
   PledgeType,
   PullRequestReference,
@@ -20,7 +20,6 @@ import {
   addHours,
   issue,
   org,
-  pledge,
   pledgePublicAPI,
   pledger,
   pledgesSummaries,
@@ -31,70 +30,66 @@ import IssueListItem from '../components/Dashboard/IssueListItem'
 
 type Story = StoryObj<typeof IssueListItem>
 
-const pledges: PledgeRead[] = [
+const pledges: Pledge[] = [
   {
     id: 'xx',
     created_at: 'what',
-    issue_id: 'nah',
-    amount: 1234,
-    repository_id: 'xx',
-    organization_id: 'yy',
+    issue: issue,
+    amount: { currency: 'USD', amount: 1234 },
     state: PledgeState.CREATED,
     type: PledgeType.PAY_UPFRONT,
-    pledger_name: 'zz',
-    pledger_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+    pledger: {
+      name: 'zz',
+      avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+    },
   },
 ]
 
-const pledgeDisputable: PledgeRead[] = [
+const pledgeDisputable: Pledge[] = [
   {
     ...pledges[0],
     state: PledgeState.PENDING,
     type: PledgeType.PAY_UPFRONT,
     scheduled_payout_at: addDays(new Date(), 7).toISOString(),
-    authed_user_can_admin: true,
-    authed_user_can_admin_sender: true,
+    authed_can_admin_sender: true,
   },
 ]
 
-const pledgeDisputableToday: PledgeRead[] = [
+const pledgeDisputableToday: Pledge[] = [
   {
     ...pledges[0],
     state: PledgeState.PENDING,
     type: PledgeType.PAY_UPFRONT,
     scheduled_payout_at: addHours(new Date(), 2).toISOString(),
-    authed_user_can_admin: true,
-    authed_user_can_admin_sender: true,
+    authed_can_admin_sender: true,
   },
 ]
 
-const pledgeDisputableYesterday: PledgeRead[] = [
+const pledgeDisputableYesterday: Pledge[] = [
   {
     ...pledges[0],
     state: PledgeState.PENDING,
     type: PledgeType.PAY_UPFRONT,
     scheduled_payout_at: addDays(new Date(), -1).toISOString(),
-    authed_user_can_admin: true,
-    authed_user_can_admin_sender: true,
+    authed_can_admin_sender: true,
   },
 ]
 
-const pledgeDisputed: PledgeRead[] = [
+const pledgeDisputed: Pledge[] = [
   {
     ...pledges[0],
     state: PledgeState.DISPUTED,
     type: PledgeType.PAY_UPFRONT,
-    authed_user_can_admin: true,
-    authed_user_can_admin_sender: true,
+    authed_can_admin_sender: true,
   },
 ]
 
-const pledgeDisputedByOther: PledgeRead[] = [
+const pledgeDisputedByOther: Pledge[] = [
   {
     ...pledges[0],
     state: PledgeState.DISPUTED,
     type: PledgeType.PAY_UPFRONT,
-    authed_user_can_admin_received: true,
+    authed_can_admin_received: true,
   },
 ]
 
@@ -460,15 +455,33 @@ export const PledgeDisputableMultiple: Story = {
   args: {
     ...Default.args,
     pledges: [
-      { ...pledgeDisputedByOther[0], amount: 1000 },
-      { ...pledgeDisputedByOther[0], amount: 2000 },
-      { ...pledgeDisputable[0], amount: 3500 },
-      { ...pledgeDisputableYesterday[0], amount: 2200 },
-      { ...pledgeDisputableYesterday[0], amount: 10000 },
-      { ...pledgeDisputableToday[0], amount: 3800 },
-      { ...pledgeDisputableToday[0], amount: 3500 },
-      { ...pledgeDisputed[0], amount: 3500 },
-      { ...pledgeDisputable[0], amount: 8300 },
+      {
+        ...pledgeDisputedByOther[0],
+        amount: { currency: 'USD', amount: 1000 },
+      },
+      {
+        ...pledgeDisputedByOther[0],
+        amount: { currency: 'USD', amount: 2000 },
+      },
+      { ...pledgeDisputable[0], amount: { currency: 'USD', amount: 3500 } },
+      {
+        ...pledgeDisputableYesterday[0],
+        amount: { currency: 'USD', amount: 2200 },
+      },
+      {
+        ...pledgeDisputableYesterday[0],
+        amount: { currency: 'USD', amount: 10000 },
+      },
+      {
+        ...pledgeDisputableToday[0],
+        amount: { currency: 'USD', amount: 3800 },
+      },
+      {
+        ...pledgeDisputableToday[0],
+        amount: { currency: 'USD', amount: 3500 },
+      },
+      { ...pledgeDisputed[0], amount: { currency: 'USD', amount: 3500 } },
+      { ...pledgeDisputable[0], amount: { currency: 'USD', amount: 8300 } },
     ],
   },
 }
@@ -480,9 +493,9 @@ export const PledgeConfirmationPending: Story = {
     references: referencesMerged,
     pledges: [
       {
-        ...pledge,
+        ...pledgePublicAPI,
         state: PledgeState.CREATED,
-        authed_user_can_admin_received: true,
+        authed_can_admin_received: true,
       },
     ],
   },
@@ -499,9 +512,9 @@ export const PledgeConfirmationPendingConfirmed: Story = {
     references: referencesMerged,
     pledges: [
       {
-        ...pledge,
+        ...pledgePublicAPI,
         state: PledgeState.PENDING,
-        authed_user_can_admin_received: true,
+        authed_can_admin_received: true,
       },
     ],
   },
@@ -512,40 +525,61 @@ export const PledgeMultipleTypes: Story = {
     ...Default.args,
     pledges: [
       {
-        ...pledge,
+        ...pledgePublicAPI,
         type: PledgeType.PAY_UPFRONT,
-        pledger_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+        pledger: {
+          name: 'xx',
+          avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+        },
       },
       {
-        ...pledge,
+        ...pledgePublicAPI,
         type: PledgeType.PAY_UPFRONT,
-        pledger_avatar: 'https://avatars.githubusercontent.com/u/47952?v=4',
+        pledger: {
+          name: 'xx',
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+        },
       },
       {
-        ...pledge,
+        ...pledgePublicAPI,
         type: PledgeType.PAY_UPFRONT,
-        pledger_avatar: 'https://avatars.githubusercontent.com/u/47952?v=4',
+        pledger: {
+          name: 'xx',
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+        },
       },
       {
-        ...pledge,
+        ...pledgePublicAPI,
         type: PledgeType.PAY_UPFRONT,
-        pledger_avatar: 'https://avatars.githubusercontent.com/u/47952?v=4',
+        pledger: {
+          name: 'xx',
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+        },
       },
       {
-        ...pledge,
+        ...pledgePublicAPI,
         type: PledgeType.PAY_UPFRONT,
-        pledger_avatar: 'https://avatars.githubusercontent.com/u/47952?v=4',
+        pledger: {
+          name: 'xx',
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+        },
       },
       {
-        ...pledge,
+        ...pledgePublicAPI,
         type: PledgeType.PAY_UPFRONT,
-        pledger_avatar: 'https://avatars.githubusercontent.com/u/47952?v=4',
+        pledger: {
+          name: 'xx',
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+        },
       },
 
       {
-        ...pledge,
+        ...pledgePublicAPI,
         type: PledgeType.PAY_ON_COMPLETION,
-        pledger_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+        pledger: {
+          name: 'xx',
+          avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+        },
       },
     ],
   },
@@ -579,7 +613,7 @@ export const FundingGoal: Story = {
     references: referencesMerged,
     pledges: [
       {
-        ...pledge,
+        ...pledgePublicAPI,
       },
     ],
   },
@@ -597,16 +631,21 @@ export const SelfSummaryFundingGoal: Story = {
     references: referencesMerged,
     pledges: [
       {
-        ...pledge,
-        pledger_user_id: user.id,
+        ...pledgePublicAPI,
+        pledger: {
+          name: user.username,
+          github_username: user.username,
+        },
       },
       {
-        ...pledge,
-        pledger_user_id: user.id,
+        ...pledgePublicAPI,
+        pledger: {
+          name: user.username,
+          github_username: user.username,
+        },
       },
-
       {
-        ...pledge,
+        ...pledgePublicAPI,
       },
     ],
     showSelfPledgesFor: user,
@@ -635,16 +674,22 @@ export const SelfSummaryNoGoal: Story = {
     references: referencesMerged,
     pledges: [
       {
-        ...pledge,
-        pledger_user_id: user.id,
+        ...pledgePublicAPI,
+        pledger: {
+          name: user.username,
+          github_username: user.username,
+        },
       },
       {
-        ...pledge,
-        pledger_user_id: user.id,
+        ...pledgePublicAPI,
+        pledger: {
+          name: user.username,
+          github_username: user.username,
+        },
       },
 
       {
-        ...pledge,
+        ...pledgePublicAPI,
       },
     ],
     showSelfPledgesFor: user,

@@ -7,7 +7,6 @@ import type { ListResource_Pledge_ } from '../models/ListResource_Pledge_';
 import type { Platforms } from '../models/Platforms';
 import type { Pledge } from '../models/Pledge';
 import type { PledgePledgesSummary } from '../models/PledgePledgesSummary';
-import type { PledgeRead } from '../models/PledgeRead';
 import type { PledgeStripePaymentIntentCreate } from '../models/PledgeStripePaymentIntentCreate';
 import type { PledgeStripePaymentIntentMutationResponse } from '../models/PledgeStripePaymentIntentMutationResponse';
 import type { PledgeStripePaymentIntentUpdate } from '../models/PledgeStripePaymentIntentUpdate';
@@ -225,7 +224,7 @@ export class PledgesService {
 
   /**
    * Dispute Pledge
-   * @returns PledgeRead Successful Response
+   * @returns Pledge Successful Response
    * @throws ApiError
    */
   public disputePledge({
@@ -234,7 +233,7 @@ export class PledgesService {
   }: {
     pledgeId: string,
     reason: string,
-  }): CancelablePromise<PledgeRead> {
+  }): CancelablePromise<Pledge> {
     return this.httpRequest.request({
       method: 'POST',
       url: '/api/v1/pledges/{pledge_id}/dispute',

@@ -12,7 +12,6 @@ import {
   Repository,
   Reward,
   UserRead,
-  type PledgeRead,
 } from 'polarkit/api/client'
 import {
   IssueActivityBox,
@@ -31,7 +30,7 @@ const IssueListItem = (props: {
   repo: Repository
   issue: Issue
   references: IssueReferenceRead[]
-  pledges: Array<PledgeRead | Pledge>
+  pledges: Array<Pledge>
   pledgesSummary?: PledgesTypeSummaries
   checkJustPledged?: boolean
   canAddRemovePolarLabel: boolean
@@ -62,10 +61,10 @@ const IssueListItem = (props: {
   const havePledgeOrReference = havePledge || haveReference
 
   const [showDisputeModalForPledge, setShowDisputeModalForPledge] = useState<
-    PledgeRead | Pledge | undefined
+    Pledge | undefined
   >()
 
-  const onDispute = (pledge: PledgeRead | Pledge) => {
+  const onDispute = (pledge: Pledge) => {
     setShowDisputeModalForPledge(pledge)
   }
 
@@ -92,11 +91,9 @@ const IssueListItem = (props: {
           showStatus={props.showIssueOpenClosedStatus}
           right={
             <>
-              {props.canAddRemovePolarLabel &&
-                'funding' in props.issue &&
-                'pledge_badge_currently_embedded' in props.issue && (
-                  <AddBadgeButton issue={props.issue} />
-                )}
+              {props.canAddRemovePolarLabel && (
+                <AddBadgeButton issue={props.issue} />
+              )}
               {props.right}
             </>
           }
@@ -116,7 +113,7 @@ const IssueListItem = (props: {
               showConfirmPledgeAction={true}
               onConfirmPledges={onConfirmPledge}
               confirmPledgeIsLoading={false}
-              funding={'funding' in props.issue ? props.issue.funding : {}}
+              funding={props.issue.funding}
               showSelfPledgesFor={props.showSelfPledgesFor}
               rewards={props.rewards}
             />
@@ -154,7 +151,7 @@ const IssueListItem = (props: {
 
 export default IssueListItem
 
-const DisputeModal = (props: { pledge: PledgeRead | Pledge }) => {
+const DisputeModal = (props: { pledge: Pledge }) => {
   const [reason, setReason] = useState('')
   const [canSubmit, setCanSubmit] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -196,81 +193,40 @@ const DisputeModal = (props: { pledge: PledgeRead | Pledge }) => {
           manually reviewed the issue and resolved the dispute.
         </p>
 
-        {/* Pledge */}
-        {'pledger' in pledge && (
-          <table className="min-w-full divide-y divide-gray-300">
-            <tr>
-              <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
-                Amount
-              </td>
-              <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
-                ${getCentsInDollarString(pledge.amount.amount)}
-              </td>
-            </tr>
-            <tr>
-              <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
-                Pledger
-              </td>
-              <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
-                {pledge.pledger?.name}
-              </td>
-            </tr>
-            <tr>
-              <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
-                Pledge ID
-              </td>
-              <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
-                {pledge.id}
-              </td>
-            </tr>
-            <tr>
-              <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
-                Issue ID
-              </td>
-              <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
-                {pledge.issue.id}
-              </td>
-            </tr>
-          </table>
-        )}
-
-        {/* PledgeRead */}
-        {'pledger_name' in pledge && (
-          <table className="min-w-full divide-y divide-gray-300">
-            <tr>
-              <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
-                Amount
-              </td>
-              <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
-                ${getCentsInDollarString(pledge.amount)}
-              </td>
-            </tr>
-            <tr>
-              <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
-                Pledger
-              </td>
-              <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
-                {pledge.pledger_name}
-              </td>
-            </tr>
-            <tr>
-              <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
-                Pledge ID
-              </td>
-              <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
-                {pledge.id}
-              </td>
-            </tr>
-            <tr>
-              <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
-                Issue ID
-              </td>
-              <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
-                {pledge.issue_id}
-              </td>
-            </tr>
-          </table>
-        )}
+        <table className="min-w-full divide-y divide-gray-300">
+          <tr>
+            <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
+              Amount
+            </td>
+            <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
+              ${getCentsInDollarString(pledge.amount.amount)}
+            </td>
+          </tr>
+          <tr>
+            <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
+              Pledger
+            </td>
+            <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
+              {pledge.pledger?.name}
+            </td>
+          </tr>
+          <tr>
+            <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
+              Pledge ID
+            </td>
+            <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
+              {pledge.id}
+            </td>
+          </tr>
+          <tr>
+            <td className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
+              Issue ID
+            </td>
+            <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
+              {pledge.issue.id}
+            </td>
+          </tr>
+        </table>
 
         {!didSubmit && (
           <>

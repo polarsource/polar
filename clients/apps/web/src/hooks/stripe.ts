@@ -41,7 +41,6 @@ export const useToastLatestPledged = (
           return
         }
 
-        // const pledge: PledgeRead = response.pledge
         const issueName = `${pledge.issue.repository.organization.name}/${pledge.issue.repository.name}#${pledge.issue.number}`
         const amount = getCentsInDollarString(pledge.amount.amount)
         toast({

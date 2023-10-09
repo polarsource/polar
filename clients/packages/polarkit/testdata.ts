@@ -13,7 +13,6 @@ import {
   OrganizationPrivateRead,
   Platforms,
   Pledge,
-  PledgeRead,
   PledgeState,
   PledgeType,
   Pledger,
@@ -128,18 +127,6 @@ nisi ut aliquip ex ea commodo consequat. <strong>Duis aute irure dolor</strong> 
 reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
 Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia
 deserunt mollit anim id est laborum.</p>`
-
-export const pledge: PledgeRead = {
-  id: 'pppp',
-  created_at: addDays(new Date(), -7).toISOString(),
-  issue_id: issue.id,
-  amount: 3000,
-  repository_id: repo.id,
-  organization_id: org.id,
-  state: PledgeState.CREATED,
-  type: PledgeType.PAY_UPFRONT,
-  pledger_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
-}
 
 export const pledger: Pledger = {
   name: 'zegl',

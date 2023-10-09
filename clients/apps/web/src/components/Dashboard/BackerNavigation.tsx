@@ -1,29 +1,13 @@
-import clsx from 'clsx'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { classNames } from 'polarkit/utils'
+import { backerRoutes } from './navigation'
 
-const BackerNavigation = (props: { classNames: string }) => {
+const BackerNavigation = (props: { classNames?: string }) => {
   const path = usePathname()
 
   // All routes and conditions
-  const navs = [
-    {
-      id: 'active-issues',
-      title: 'Active Issues',
-      link: `/feed`,
-    },
-    {
-      id: 'rewards',
-      title: 'Rewards',
-      link: `/rewards`,
-    },
-    {
-      id: 'settings',
-      title: 'Settings',
-      link: `/settings`,
-    },
-  ]
+  const navs = backerRoutes
 
   // Filter routes, set isActive, and if subs should be expanded
   const filteredNavs = navs.map((n) => {
@@ -35,25 +19,23 @@ const BackerNavigation = (props: { classNames: string }) => {
   })
 
   return (
-    <div className={clsx('bg-gray-50 py-3 dark:bg-gray-800', props.classNames)}>
-      <div className="flex flex-row items-center justify-center gap-8 text-sm">
-        {filteredNavs.map((n) => (
-          <>
-            <Link
-              className={classNames(
-                'hover:text-blue-700 dark:hover:text-blue-800',
-                n.isActive
-                  ? 'text-blue-600'
-                  : 'text-gray-600 dark:text-gray-400',
-              )}
-              key={n.title}
-              href={n.link}
-            >
-              <span className="font-medium ">{n.title}</span>
-            </Link>
-          </>
-        ))}
-      </div>
+    <div className="flex flex-col gap-2 px-4 py-6">
+      {filteredNavs.map((n) => (
+        <div key={n.link} className="flex flex-col gap-4">
+          <Link
+            className={classNames(
+              'flex items-center gap-2 rounded-xl px-5 py-3 hover:text-blue-700 dark:hover:text-gray-200',
+              n.isActive
+                ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-gray-100'
+                : 'text-gray-900 dark:text-gray-500',
+            )}
+            href={n.link}
+          >
+            {n.icon}
+            <span className="ml-3 text-sm font-medium">{n.title}</span>
+          </Link>
+        </div>
+      ))}
     </div>
   )
 }

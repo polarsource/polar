@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from decimal import Decimal
 from enum import StrEnum
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import Row, UnaryExpression, desc, func, select
 from sqlalchemy.orm import joinedload, selectinload
@@ -30,6 +31,7 @@ class FundingService:
         repository: Repository | None = None,
         badged: bool | None = None,
         sorting: list[ListFundingSortBy] = [ListFundingSortBy.oldest],
+        issue_ids: list[UUID] | None = None,
     ) -> Sequence[ListByRowType]:
         issue_pledges_eager_loading_clause = selectinload(
             Issue.pledges.and_(Pledge.state.in_(PledgeState.active_states()))
@@ -74,6 +76,9 @@ class FundingService:
             statement = statement.join(Issue.repository).where(
                 Repository.id == repository.id
             )
+
+        if issue_ids is not None:
+            statement = statement.where(Issue.id.in_(issue_ids))
 
         if badged is not None:
             statement = statement.where(Issue.pledge_badge_currently_embedded == badged)

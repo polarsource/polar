@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, Query
+from polar.authz.service import AccessType, Authz
+from polar.auth.dependencies import Auth
+from polar.locker import Locker, get_locker
 
 from polar.enums import Platforms
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import BadRequest, ResourceNotFound
 from polar.models import Repository
 from polar.organization.dependencies import OrganizationNameQuery
 from polar.organization.service import organization as organization_service
@@ -19,6 +22,7 @@ from .service import funding as funding_service
 router = APIRouter(prefix="/funding", tags=["funding"])
 
 
+# TODO: this should be /search to be consistent with other endpoints
 @router.get(
     "/", name="list", response_model=ListResource[IssueFunding], tags=[Tags.PUBLIC]
 )
@@ -29,6 +33,8 @@ async def list_funding(
     sorting: ListFundingSorting = [ListFundingSortBy.newest],
     platform: Platforms = Query(...),
     session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+    auth: Auth = Depends(Auth.optional_user),
 ) -> ListResource[IssueFunding]:
     organization = await organization_service.get_by_name(
         session, platform, organization_name
@@ -51,7 +57,14 @@ async def list_funding(
         badged=badged,
         sorting=sorting,
     )
+
+    items = [
+        IssueFunding.from_list_by_row(row)
+        for row in rows
+        if await authz.can(auth.subject, AccessType.read, row[0])
+    ]
+
     return ListResource(
-        items=[IssueFunding.from_list_by_row(row) for row in rows],
-        pagination=Pagination(total_count=len(rows)),
+        items=items,
+        pagination=Pagination(total_count=len(items)),
     )

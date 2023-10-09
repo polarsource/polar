@@ -142,6 +142,8 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 joinedload(Pledge.by_organization), joinedload(Pledge.user)
             )
 
+        statement = statement.order_by(Pledge.created_at)
+
         res = await session.execute(statement)
         return res.scalars().unique().all()
 

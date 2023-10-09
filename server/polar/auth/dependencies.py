@@ -15,7 +15,7 @@ from .service import AuthService
 
 personal_access_token_scheme = HTTPBearer(
     auto_error=False,
-    description="You can generate a **Personal Access Token** from your [settings](https://polar.sh/settings/tokens).",
+    description="You can generate a **Personal Access Token** from your [settings](https://polar.sh/settings).",
 )
 
 

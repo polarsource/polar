@@ -151,6 +151,13 @@ const nextConfig = {
         destination: '/maintainer',
         permanent: false,
       },
+
+      // Access tokens redirect
+      {
+        source: '/settings/tokens',
+        destination: '/settings',
+        permanent: false
+      }
     ]
   },
 }

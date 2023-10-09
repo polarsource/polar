@@ -12,15 +12,17 @@ from .conftest import IssuesPledgesFixture, create_issues_pledges
 
 
 @pytest.mark.asyncio
-class TestListFunding:
+class TestSearch:
     async def test_missing_organization_name(self, client: AsyncClient) -> None:
-        response = await client.get("/api/v1/funding/", params={"platform": "github"})
+        response = await client.get(
+            "/api/v1/funding/search", params={"platform": "github"}
+        )
 
         assert response.status_code == 422
 
     async def test_unknown_organization(self, client: AsyncClient) -> None:
         response = await client.get(
-            "/api/v1/funding/",
+            "/api/v1/funding/search",
             params={"platform": "github", "organization_name": "not-existing"},
         )
 
@@ -30,7 +32,7 @@ class TestListFunding:
         self, client: AsyncClient, organization: Organization
     ) -> None:
         response = await client.get(
-            "/api/v1/funding/",
+            "/api/v1/funding/search",
             params={
                 "platform": organization.platform.value,
                 "organization_name": organization.name,
@@ -52,7 +54,7 @@ class TestListFunding:
         await repository.save(session)
 
         response = await client.get(
-            "/api/v1/funding/",
+            "/api/v1/funding/search",
             params={
                 "platform": organization.platform.value,
                 "organization_name": organization.name,
@@ -76,7 +78,7 @@ class TestListFunding:
         await repository.save(session)
 
         response = await client.get(
-            "/api/v1/funding/",
+            "/api/v1/funding/search",
             params={
                 "platform": organization.platform.value,
                 "organization_name": organization.name,
@@ -105,7 +107,7 @@ class TestListFunding:
         )
 
         response = await client.get(
-            "/api/v1/funding/",
+            "/api/v1/funding/search",
             params={
                 "platform": organization.platform.value,
                 "organization_name": organization.name,
@@ -121,7 +123,7 @@ class TestListFunding:
         # authed user can see
 
         response = await client.get(
-            "/api/v1/funding/",
+            "/api/v1/funding/search",
             params={
                 "platform": organization.platform.value,
                 "organization_name": organization.name,
@@ -141,7 +143,7 @@ class TestListFunding:
         organization: Organization,
     ) -> None:
         response = await client.get(
-            "/api/v1/funding/",
+            "/api/v1/funding/search",
             params={
                 "platform": organization.platform.value,
                 "organization_name": organization.name,

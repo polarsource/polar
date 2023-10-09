@@ -92,7 +92,7 @@ export default async function Page({
     organizationName: params.organization,
   })
 
-  const issuesFunding = await api.funding.list({
+  const issuesFunding = await api.funding.search({
     platform: Platforms.GITHUB,
     organizationName: params.organization,
     repositoryName: params.repo,
@@ -102,6 +102,7 @@ export default async function Page({
       ListFundingSortBy.MOST_ENGAGEMENT,
       ListFundingSortBy.NEWEST,
     ],
+    limit: 20,
   })
 
   const totalIssueCount = issuesFunding.pagination.total_count

@@ -14,11 +14,11 @@ export class FundingService {
   constructor(public readonly httpRequest: BaseHttpRequest) {}
 
   /**
-   * List
+   * Search
    * @returns ListResource_IssueFunding_ Successful Response
    * @throws ApiError
    */
-  public list({
+  public search({
     organizationName,
     platform,
     repositoryName,
@@ -52,7 +52,7 @@ export class FundingService {
   }): CancelablePromise<ListResource_IssueFunding_> {
     return this.httpRequest.request({
       method: 'GET',
-      url: '/api/v1/funding/',
+      url: '/api/v1/funding/search',
       query: {
         'organization_name': organizationName,
         'repository_name': repositoryName,

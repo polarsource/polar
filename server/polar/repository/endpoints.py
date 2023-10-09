@@ -6,10 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
+from polar.kit.pagination import ListResource, Pagination
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
-from polar.types import ListResource, Pagination
 
 from .schemas import (
     Repository as RepositorySchema,
@@ -39,7 +39,7 @@ async def list(
     )
     return ListResource(
         items=[RepositorySchema.from_db(r) for r in repos],
-        pagination=Pagination(total_count=len(repos)),
+        pagination=Pagination(total_count=len(repos), max_page=1),
     )
 
 
@@ -67,7 +67,7 @@ async def search(
     )
     if not org:
         return ListResource(
-            items=[], pagination=Pagination(total_count=0)
+            items=[], pagination=Pagination(total_count=0, max_page=1)
         )  # search endpoints returns empty lists in case of no matches
 
     repos = await repository.list_by(
@@ -84,7 +84,7 @@ async def search(
 
     return ListResource(
         items=[RepositorySchema.from_db(r) for r in repos],
-        pagination=Pagination(total_count=len(repos)),
+        pagination=Pagination(total_count=len(repos), max_page=1),
     )
 
 

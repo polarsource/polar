@@ -6,6 +6,8 @@ from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
 from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.issue.service import issue as issue_service
+from polar.kit.pagination import ListResource, Pagination
 from polar.models.issue_reward import IssueReward
 from polar.models.pledge import Pledge as PledgeModel
 from polar.models.pledge_transaction import PledgeTransaction as PledgeTransactionModel
@@ -13,11 +15,9 @@ from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.schemas import Pledge
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
-from polar.types import ListResource, Pagination
 from polar.user.schemas import User
-from polar.issue.service import issue as issue_service
 
-from .schemas import Reward, RewardState, RewardsSummary, RewardsSummaryReceiver
+from .schemas import Reward, RewardsSummary, RewardsSummaryReceiver, RewardState
 from .service import reward_service
 
 router = APIRouter(tags=["rewards"])
@@ -77,7 +77,9 @@ async def search(
         if await authz.can(auth.subject, AccessType.read, reward)
     ]
 
-    return ListResource(items=items, pagination=Pagination(total_count=len(items)))
+    return ListResource(
+        items=items, pagination=Pagination(total_count=len(items), max_page=1)
+    )
 
 
 def to_resource(

@@ -5,9 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import UserRequiredAuth
 from polar.auth.service import AuthService
+from polar.kit.pagination import ListResource, Pagination
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
-from polar.types import ListResource, Pagination
 
 from .schemas import (
     CreatePersonalAccessToken,
@@ -62,7 +62,7 @@ async def list(
 
     return ListResource(
         items=[PersonalAccessToken.from_db(p) for p in pats],
-        pagination=Pagination(total_count=len(pats)),
+        pagination=Pagination(total_count=len(pats), max_page=1),
     )
 
 

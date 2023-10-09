@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
+import type { Assignee } from './Assignee';
 import type { Author } from './Author';
 import type { Funding } from './Funding';
 import type { Label } from './Label';
@@ -36,6 +37,10 @@ export type Issue = {
    * GitHub author
    */
   author?: Author;
+  /**
+   * GitHub assignees
+   */
+  assignees?: Array<Assignee>;
   /**
    * GitHub reactions
    */

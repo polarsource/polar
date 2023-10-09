@@ -8,8 +8,7 @@ from tests.fixtures.random_objects import create_issue, create_pledge
 IssuesPledgesFixture = list[tuple[Issue, list[Pledge]]]
 
 
-@pytest_asyncio.fixture
-async def issues_pledges(
+async def create_issues_pledges(
     session: AsyncSession, organization: Organization, repository: Repository
 ) -> IssuesPledgesFixture:
     issue_1 = await create_issue(session, organization, repository)
@@ -61,3 +60,10 @@ async def issues_pledges(
         (issue_2, issue_2_pledges),
         (issue_3, issue_3_pledges),
     ]
+
+
+@pytest_asyncio.fixture
+async def issues_pledges(
+    session: AsyncSession, organization: Organization, public_repository: Repository
+) -> IssuesPledgesFixture:
+    return await create_issues_pledges(session, organization, public_repository)

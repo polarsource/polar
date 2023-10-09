@@ -3,11 +3,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 
 from polar.auth.dependencies import Auth
-from polar.authz.service import AccessType, Authz
+from polar.authz.service import Authz
 from polar.enums import Platforms
-from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
-from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.locker import Locker, get_locker
+from polar.exceptions import ResourceNotFound
+from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.models import Repository
 from polar.organization.dependencies import OrganizationNameQuery
 from polar.organization.service import organization as organization_service
@@ -36,7 +35,6 @@ async def list_funding(
     sorting: ListFundingSorting = [ListFundingSortBy.newest],
     platform: Platforms = Query(...),
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
     auth: Auth = Depends(Auth.optional_user),
 ) -> ListResource[IssueFunding]:
     organization = await organization_service.get_by_name(
@@ -55,6 +53,7 @@ async def list_funding(
 
     results, count = await funding_service.list_by(
         session,
+        auth.subject,
         organization=organization,
         repository=repository,
         badged=badged,
@@ -62,13 +61,8 @@ async def list_funding(
         pagination=pagination,
     )
 
-    items = [
-        IssueFunding.from_list_by_row(result)
-        for result in results
-        if await authz.can(auth.subject, AccessType.read, result[0])
-    ]
     return ListResource.from_paginated_results(
-        items,
+        [IssueFunding.from_list_by_result(result) for result in results],
         count,
         pagination,
     )
@@ -83,21 +77,15 @@ async def list_funding(
 async def lookup(
     issue_id: UUID,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
     auth: Auth = Depends(Auth.optional_user),
 ) -> IssueFunding:
-    rows = await funding_service.list_by(
-        session,
-        issue_ids=[issue_id],
+    rows, _ = await funding_service.list_by(
+        session, auth.subject, issue_ids=[issue_id], pagination=PaginationParams(1, 1)
     )
 
     if len(rows) != 1:
         raise ResourceNotFound()
 
     row = rows[0]
-    issue = row[0]
 
-    if not await authz.can(auth.subject, AccessType.read, issue):
-        raise Unauthorized()
-
-    return IssueFunding.from_list_by_row(row)
+    return IssueFunding.from_list_by_result(row)

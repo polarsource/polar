@@ -5,7 +5,7 @@ from polar.issue.schemas import Issue
 from polar.kit.schemas import Schema
 from polar.pledge.schemas import Pledger, PledgeType
 
-from .service import ListByRowType
+from .service import ListByResultType
 
 
 # Public API
@@ -27,14 +27,14 @@ class IssueFunding(Schema):
     pledges_summaries: PledgesTypeSummaries
 
     @classmethod
-    def from_list_by_row(cls, row: ListByRowType) -> Self:
+    def from_list_by_result(cls, result: ListByResultType) -> Self:
         (
             issue,
             total,
             pay_upfront_total,
             pay_on_completion_total,
             pay_directly_total,
-        ) = row._tuple()
+        ) = result
 
         pledgers: dict[PledgeType, list[Pledger]] = {
             pledge_type: [] for pledge_type in PledgeType

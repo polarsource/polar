@@ -158,7 +158,9 @@ const IssueCard = ({
       )}
 
       {/* Rewards Receivers Avatars*/}
-      {rewards && <RewardsReceivers rewards={rewards} />}
+      {rewards && rewards.receivers.length > 0 && (
+        <RewardsReceivers rewards={rewards} />
+      )}
     </>
   )
 }

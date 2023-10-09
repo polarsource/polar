@@ -59,6 +59,13 @@ class Author(Schema):
     avatar_url: HttpUrl
 
 
+class Assignee(Schema):
+    id: int
+    login: str
+    html_url: HttpUrl
+    avatar_url: HttpUrl
+
+
 # Public API
 class Issue(Schema):
     id: UUID
@@ -72,6 +79,7 @@ class Issue(Schema):
     labels: list[Label] = []
 
     author: Author | None = Field(description="GitHub author")
+    assignees: list[Assignee] | None = Field(description="GitHub assignees")
     reactions: Reactions | None = Field(description="GitHub reactions")
 
     state: Literal["OPEN", "CLOSED"]
@@ -137,6 +145,9 @@ class Issue(Schema):
             needs_confirmation_solved=i.needs_confirmation_solved,
             confirmed_solved_at=i.confirmed_solved_at,
             author=parse_obj_as(Author, i.author) if i.author else None,
+            assignees=parse_obj_as(list[Assignee], i.assignees)
+            if i.assignees
+            else None,
             reactions=parse_obj_as(Reactions, i.reactions) if i.reactions else None,
             funding=funding,
             repository=Repository.from_db(i.repository),

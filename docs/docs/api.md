@@ -7,4 +7,4 @@ All of the public websites on Polar, like `polar.sh/polarsource` are built using
 * [Documentation](https://api.polar.sh/redoc)
 * [OpenAPI Schema](https://api.polar.sh/openapi.json)
 
-To access private data, you'll need to use a Personal Access Token to authenticate yourself with the API. You can get one from [`polar.sh/settings/tokens`](https://polar.sh/settings/tokens).
+To access private data, you'll need to use a Personal Access Token to authenticate yourself with the API. You can get one from [`polar.sh/settings`](https://polar.sh/settings).

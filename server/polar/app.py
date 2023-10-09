@@ -127,7 +127,7 @@ The Public API is currently a [work in progress](https://github.com/polarsource/
 
 #### Authentication
 
-Use a [Personal Access Token](https://polar.sh/settings/tokens) and send it in the `Authorization` header on the format `Bearer [YOUR_TOKEN]`.
+Use a [Personal Access Token](https://polar.sh/settings) and send it in the `Authorization` header on the format `Bearer [YOUR_TOKEN]`.
 
 #### Feedback
 

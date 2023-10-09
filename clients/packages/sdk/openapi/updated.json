@@ -2,7 +2,7 @@
     "openapi": "3.0.2",
     "info": {
         "title": "Polar API",
-        "description": "\nWelcome to the **Polar API** for [polar.sh](https://polar.sh).\n\nThe Public API is currently a [work in progress](https://github.com/polarsource/polar/issues/834) and is in active development. 🚀\n\n#### Authentication\n\nUse a [Personal Access Token](https://polar.sh/settings/tokens) and send it in the `Authorization` header on the format `Bearer [YOUR_TOKEN]`.\n\n#### Feedback\n\nIf you have any feedback or comments, reach out in the [Polar API-issue](https://github.com/polarsource/polar/issues/834), or reach out on the Polar Discord server.\n\nWe'd love to see what you've built with the API and to get your thoughts on how we can make the API better!\n\n#### Connecting\n\nThe Polar API is online at `https://api.polar.sh`.\n",
+        "description": "\nWelcome to the **Polar API** for [polar.sh](https://polar.sh).\n\nThe Public API is currently a [work in progress](https://github.com/polarsource/polar/issues/834) and is in active development. 🚀\n\n#### Authentication\n\nUse a [Personal Access Token](https://polar.sh/settings) and send it in the `Authorization` header on the format `Bearer [YOUR_TOKEN]`.\n\n#### Feedback\n\nIf you have any feedback or comments, reach out in the [Polar API-issue](https://github.com/polarsource/polar/issues/834), or reach out on the Polar Discord server.\n\nWe'd love to see what you've built with the API and to get your thoughts on how we can make the API better!\n\n#### Connecting\n\nThe Polar API is online at `https://api.polar.sh`.\n",
         "version": "0.1.0",
         "x-logo": {
             "url": "https://blog.polar.sh/content/images/2023/07/Frame-647--1-.png"
@@ -7315,7 +7315,7 @@
         "securitySchemes": {
             "HTTPBearer": {
                 "type": "http",
-                "description": "You can generate a **Personal Access Token** from your [settings](https://polar.sh/settings/tokens).",
+                "description": "You can generate a **Personal Access Token** from your [settings](https://polar.sh/settings).",
                 "scheme": "bearer"
             }
         }

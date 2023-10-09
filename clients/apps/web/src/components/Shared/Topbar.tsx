@@ -70,7 +70,7 @@ const Topbar = ({
   return (
     <>
       <div className={className}>
-        <div className="mx-auto flex max-w-screen-2xl flex-row items-center justify-between px-4 sm:px-6 md:flex-1 md:px-8">
+        <div className="flex w-full flex-row items-center justify-between px-4 sm:px-6 md:px-12">
           <div className="flex flex-row items-center gap-x-24">
             <h3 className="text-xl font-medium dark:text-gray-300">
               {currentRoute?.title}

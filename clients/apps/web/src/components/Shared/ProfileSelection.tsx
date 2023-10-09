@@ -1,16 +1,14 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import {
   ArrowRightOnRectangleIcon,
-  Cog8ToothIcon,
-  GiftIcon,
-  HeartIcon,
+  ChevronUpDownIcon,
   PlusSmallIcon,
   QuestionMarkCircleIcon,
 } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { CONFIG } from 'polarkit/config'
 import { useListOrganizations } from 'polarkit/hooks'
-import { clsx, useOutsideClick } from 'polarkit/utils'
+import { classNames, clsx, useOutsideClick } from 'polarkit/utils'
 import React, { useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../hooks'
 
@@ -53,83 +51,53 @@ const ProfileSelection = ({ useOrgFromURL = true }) => {
   const showConnectUsell = orgs && orgs.length === 0
   const showAddOrganization = !showConnectUsell
 
-  const backerLinks = [
-    {
-      href: '/feed',
-      name: 'Funding',
-      icon: <HeartIcon className="h-5 w-5  text-gray-600 dark:text-gray-400" />,
-    },
-    {
-      href: '/rewards',
-      name: 'Rewards',
-      icon: <GiftIcon className="h-5 w-5  text-gray-600 dark:text-gray-400" />,
-    },
-    {
-      href: '/settings',
-      name: 'Settings',
-      icon: (
-        <Cog8ToothIcon className="h-5 w-5  text-gray-600 dark:text-gray-400" />
-      ),
-    },
-  ]
-
   return (
     <>
-      <div className="flex flex-col">
-        {!isOpen && (
-          <div className="shadow-hidden dark:hover:shadow-hidden relative cursor-pointer rounded-lg border border-transparent px-4 py-2 hover:border-blue-100 hover:shadow hover:dark:border-gray-800 dark:hover:bg-gray-900">
-            <div onClick={() => setOpen(true)}>
-              <Profile
-                name={current.name}
-                avatar_url={current.avatar_url}
-                type={current.type}
-              />
-            </div>
-          </div>
-        )}
+      <div className="relative flex w-full flex-col">
+        <div
+          className="relative flex cursor-pointer flex-row items-center justify-between gap-x-2 rounded-2xl p-4 shadow-lg transition-colors hover:bg-gray-100/50 dark:border dark:border-transparent dark:bg-gray-950 dark:shadow-none dark:hover:border-gray-800"
+          onClick={() => setOpen(true)}
+        >
+          <Profile
+            name={current.name}
+            avatar_url={current.avatar_url}
+            type={current.type}
+          />
+          <ChevronUpDownIcon className="h-5 w-5 flex-shrink-0 text-gray-400 dark:text-gray-500" />
+        </div>
 
         {isOpen && (
           <div
             ref={ref}
             className={clsx(
-              'absolute right-4 top-4 min-w-[300px] overflow-hidden rounded-lg border border-transparent bg-white py-2 shadow hover:border-blue-100 dark:bg-gray-900 hover:dark:border-gray-800',
+              'absolute left-0 top-0 w-[286px] max-w-[286px] overflow-hidden rounded-2xl bg-white py-2 shadow-xl dark:bg-gray-950',
             )}
           >
             <ul>
-              <ListItem current={currentOrg === undefined}>
-                <Link href="/feed" className="w-full">
+              <Link href="/feed" className="w-full">
+                <ListItem current={currentOrg === undefined}>
                   <Profile
                     name={loggedUser.username}
                     avatar_url={loggedUser.avatar_url}
                     type="backer"
                   />
-                </Link>
-              </ListItem>
-
-              {backerLinks.map((l) => (
-                <LinkItem href={l.href} icon={l.icon}>
-                  <span className="mx-1.5  text-gray-600 dark:text-gray-400">
-                    {l.name}
-                  </span>
-                </LinkItem>
-              ))}
-
-              <hr className="my-2 ml-6 mr-6" />
+                </ListItem>
+              </Link>
 
               {orgs &&
                 orgs.map((org) => (
-                  <ListItem key={org.id} current={currentOrg?.id === org.id}>
-                    <Link
-                      href={`/maintainer/${org.name}/issues`}
-                      className="w-full"
-                    >
+                  <Link
+                    href={`/maintainer/${org.name}/issues`}
+                    className="w-full"
+                  >
+                    <ListItem key={org.id} current={currentOrg?.id === org.id}>
                       <Profile
                         name={org.name}
                         avatar_url={org.avatar_url}
                         type="maintainer"
                       />
-                    </Link>
-                  </ListItem>
+                    </ListItem>
+                  </Link>
                 ))}
 
               {showConnectUsell && (
@@ -154,7 +122,7 @@ const ProfileSelection = ({ useOrgFromURL = true }) => {
                 </LinkItem>
               )}
 
-              <hr className="my-2 ml-6 mr-6" />
+              <hr className="my-2 ml-4 mr-4" />
 
               <LinkItem
                 href={'https://polar.sh/faq'}
@@ -191,15 +159,14 @@ const ListItem = (props: {
   children: React.ReactElement
   current: boolean
 }) => {
-  return (
-    <li className="animate-background duration-10 flex items-center gap-2 py-2 pl-3 pr-4 hover:bg-gray-200/50 dark:hover:bg-gray-950/50">
-      {props.current && (
-        <div className="h-2 w-2 rounded-full bg-blue-600"></div>
-      )}
-      {!props.current && <div className="h-2 w-2"></div>}
-      {props.children}
-    </li>
+  const className = classNames(
+    'animate-background duration-10 flex items-center gap-2 py-2 px-4',
+    props.current
+      ? 'bg-blue-50 dark:bg-white/5'
+      : 'hover:bg-gray-100/50 dark:hover:bg-white/5',
   )
+
+  return <li className={className}>{props.children}</li>
 }
 
 const Profile = (props: {
@@ -209,16 +176,16 @@ const Profile = (props: {
 }) => {
   return (
     <>
-      <div className="flex w-full items-center justify-between text-sm">
-        <div className="flex items-center">
+      <div className="flex w-full min-w-0 shrink grow-0 items-center justify-between text-sm">
+        <div className="flex w-full min-w-0 shrink grow-0 items-center">
           {props.avatar_url && (
             <img
               src={props.avatar_url}
-              className="h-5 w-5 rounded-full"
+              className="h-8 w-8 rounded-full"
               alt={props.name}
             />
           )}
-          <p className="mx-1.5 text-gray-600 dark:text-gray-400">
+          <p className="ml-4 truncate text-gray-600 dark:text-gray-400 ">
             {props.name}
           </p>
         </div>
@@ -234,14 +201,14 @@ const LinkItem = (props: {
   children: React.ReactElement
 }) => {
   return (
-    <ListItem current={false}>
-      <a href={props.href}>
-        <div className="flex items-center text-sm ">
+    <a href={props.href}>
+      <ListItem current={false}>
+        <div className="flex items-center gap-x-2 text-sm">
           {props.icon}
           {props.children}
         </div>
-      </a>
-    </ListItem>
+      </ListItem>
+    </a>
   )
 }
 
@@ -251,15 +218,17 @@ const TextItem = (props: {
   children: React.ReactElement
 }) => {
   return (
-    <ListItem current={false}>
-      <div
-        className="flex cursor-pointer items-center text-sm"
-        onClick={props.onClick}
-      >
-        {props.icon}
-        {props.children}
-      </div>
-    </ListItem>
+    <div
+      className="flex cursor-pointer items-center text-sm hover:bg-gray-100/50 dark:hover:bg-white/5"
+      onClick={props.onClick}
+    >
+      <ListItem current={false}>
+        <>
+          {props.icon}
+          {props.children}
+        </>
+      </ListItem>
+    </div>
   )
 }
 
@@ -271,7 +240,7 @@ const ProfileBadge = (props: { type: 'backer' | 'maintainer' }) => {
           'border-green-200 bg-green-100 text-green-600 dark:border-green-600 dark:bg-green-700 dark:text-green-300',
         props.type === 'maintainer' &&
           'border-blue-200 bg-blue-100 text-blue-600 dark:border-blue-600 dark:bg-blue-700 dark:text-blue-300',
-        'rounded-lg border px-1.5 text-xs',
+        'shrink-0 rounded-lg border px-1.5 text-xs',
       )}
     >
       {props.type === 'backer' && 'Backer'}

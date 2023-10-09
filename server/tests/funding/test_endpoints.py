@@ -1,13 +1,14 @@
 import pytest
 from httpx import AsyncClient
 
+from polar.config import settings
 from polar.models import Organization
 from polar.models.repository import Repository
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
-from polar.config import settings
+from tests.fixtures.random_objects import create_repository
 
-from .conftest import IssuesPledgesFixture
+from .conftest import IssuesPledgesFixture, create_issues_pledges
 
 
 @pytest.mark.asyncio
@@ -90,16 +91,18 @@ class TestListFunding:
 
     async def test_private_repository(
         self,
-        issues_pledges: IssuesPledgesFixture,
-        repository: Repository,
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,  # makes User a member of Organization
         session: AsyncSession,
         auth_jwt: str,
     ) -> None:
-        repository.is_private = True
-        await repository.save(session)
+        private_repository = await create_repository(
+            session, organization, is_private=True
+        )
+        issues_pledges = await create_issues_pledges(
+            session, organization, private_repository
+        )
 
         response = await client.get(
             "/api/v1/funding/",
@@ -112,6 +115,7 @@ class TestListFunding:
         assert response.status_code == 200
 
         json = response.json()
+        assert json["pagination"]["total_count"] == 0
         assert len(json["items"]) == 0
 
         # authed user can see
@@ -129,3 +133,28 @@ class TestListFunding:
 
         json = response.json()
         assert len(json["items"]) == len(issues_pledges)
+
+    async def test_pagination(
+        self,
+        issues_pledges: IssuesPledgesFixture,
+        client: AsyncClient,
+        organization: Organization,
+    ) -> None:
+        response = await client.get(
+            "/api/v1/funding/",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+                "sorting": ["newest"],
+                "limit": 1,
+                "page": 3,
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert len(json["items"]) == 1
+        assert json["pagination"]["total_count"] == len(issues_pledges)
+        assert json["pagination"]["max_page"] == len(issues_pledges)
+        assert json["items"][0]["issue"]["id"] == str(issues_pledges[0][0].id)

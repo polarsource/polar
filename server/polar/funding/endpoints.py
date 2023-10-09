@@ -79,13 +79,11 @@ async def lookup(
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
 ) -> IssueFunding:
-    rows, _ = await funding_service.list_by(
-        session, auth.subject, issue_ids=[issue_id], pagination=PaginationParams(1, 1)
+    result = await funding_service.get_by_issue_id(
+        session, auth.subject, issue_id=issue_id
     )
 
-    if len(rows) != 1:
+    if result is None:
         raise ResourceNotFound()
 
-    row = rows[0]
-
-    return IssueFunding.from_list_by_result(row)
+    return IssueFunding.from_list_by_result(result)

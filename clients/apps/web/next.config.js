@@ -151,6 +151,11 @@ const nextConfig = {
         destination: '/maintainer',
         permanent: false,
       },
+      {
+        source: '/maintainer/:organization/promote',
+        destination: '/maintainer/:organization/promote/issues',
+        permanent: false
+      },
 
       // Access tokens redirect
       {

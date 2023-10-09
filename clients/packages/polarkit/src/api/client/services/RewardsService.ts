@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { ListResource_Reward_ } from '../models/ListResource_Reward_';
+import type { RewardsSummary } from '../models/RewardsSummary';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import type { BaseHttpRequest } from '../core/BaseHttpRequest';
@@ -41,6 +42,29 @@ export class RewardsService {
         'pledges_to_organization': pledgesToOrganization,
         'rewards_to_user': rewardsToUser,
         'rewards_to_org': rewardsToOrg,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Get rewards summary (Public API)
+   * Get summary of rewards for resource.
+   * @returns RewardsSummary Successful Response
+   * @throws ApiError
+   */
+  public summary({
+    issueId,
+  }: {
+    issueId: string,
+  }): CancelablePromise<RewardsSummary> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/rewards/summary',
+      query: {
+        'issue_id': issueId,
       },
       errors: {
         422: `Validation Error`,

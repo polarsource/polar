@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { IssueFunding } from '../models/IssueFunding';
 import type { ListFundingSortBy } from '../models/ListFundingSortBy';
 import type { ListResource_IssueFunding_ } from '../models/ListResource_IssueFunding_';
 import type { Platforms } from '../models/Platforms';
@@ -48,6 +49,28 @@ export class FundingService {
         'badged': badged,
         'sorting': sorting,
         'platform': platform,
+      },
+      errors: {
+        422: `Validation Error`,
+      },
+    });
+  }
+
+  /**
+   * Lookup
+   * @returns IssueFunding Successful Response
+   * @throws ApiError
+   */
+  public lookup({
+    issueId,
+  }: {
+    issueId: string,
+  }): CancelablePromise<IssueFunding> {
+    return this.httpRequest.request({
+      method: 'GET',
+      url: '/api/v1/funding/lookup',
+      query: {
+        'issue_id': issueId,
       },
       errors: {
         422: `Validation Error`,

@@ -28,3 +28,12 @@ class Reward(Schema):
     amount: CurrencyAmount
     state: RewardState
     paid_at: datetime | None = Field(description="If and when the reward was paid out.")
+
+
+class RewardsSummaryReceiver(Schema):
+    name: str
+    avatar_url: str | None
+
+
+class RewardsSummary(Schema):
+    receivers: list[RewardsSummaryReceiver]

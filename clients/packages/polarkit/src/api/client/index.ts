@@ -109,6 +109,8 @@ export type { RepositoryBadgeSettingsUpdate } from './models/RepositoryBadgeSett
 export type { RepositoryLegacyRead } from './models/RepositoryLegacyRead';
 export type { Reward } from './models/Reward';
 export type { RewardPaidNotification } from './models/RewardPaidNotification';
+export type { RewardsSummary } from './models/RewardsSummary';
+export type { RewardsSummaryReceiver } from './models/RewardsSummaryReceiver';
 export { RewardState } from './models/RewardState';
 export type { SummaryPledge } from './models/SummaryPledge';
 export type { UpdateIssue } from './models/UpdateIssue';

@@ -1,6 +1,6 @@
 'use client'
 
-import { Issue, Pledger, Visibility } from 'polarkit/api/client'
+import { Issue, Pledger, RewardsSummary, Visibility } from 'polarkit/api/client'
 import { IssueCard } from 'polarkit/components/pledge'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
 import { Banner } from 'polarkit/components/ui/molecules'
@@ -15,11 +15,13 @@ const Pledge = ({
   htmlBody,
   pledgers,
   gotoURL,
+  rewards,
 }: {
   issue: Issue
   htmlBody?: string
   pledgers: Pledger[]
   gotoURL?: string
+  rewards?: RewardsSummary
 }) => {
   const [amount, setAmount] = useState(0)
   const onAmountChange = (amount: number) => {
@@ -56,6 +58,7 @@ const Pledge = ({
             htmlBody={htmlBody}
             pledgers={pledgers}
             currentPledgeAmount={amount}
+            rewards={rewards}
           />
         </div>
 

@@ -1,4 +1,5 @@
 import Alert from './Alert'
+import Avatar from './Avatar'
 import CopyToClipboardInput from './CopyToClipboardInput'
 import CountryPicker from './CountryPicker'
 import FormattedDateTime from './FormattedDateTime'
@@ -29,4 +30,5 @@ export {
   MoneyInput,
   PrimaryButton,
   ThinButton,
+  Avatar,
 }

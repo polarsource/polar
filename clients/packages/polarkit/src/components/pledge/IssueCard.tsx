@@ -10,8 +10,9 @@ import { getCentsInDollarString } from 'polarkit/money'
 import { formatStarsNumber } from 'polarkit/utils'
 import { useMemo } from 'react'
 import { Pledgers } from '.'
-import { Funding, Issue, Pledger } from '../../api/client'
+import { Funding, Issue, Pledger, RewardsSummary } from '../../api/client'
 import { githubIssueUrl } from '../../github'
+import Avatar from '../ui/atoms/Avatar'
 
 const IssueCard = ({
   issue,
@@ -19,12 +20,14 @@ const IssueCard = ({
   pledgers,
   currentPledgeAmount,
   className,
+  rewards,
 }: {
   issue: Issue
   htmlBody?: string
   pledgers: Pledger[]
   currentPledgeAmount: number
   className?: string
+  rewards?: RewardsSummary
 }) => {
   const url = githubIssueUrl(
     issue.repository.organization.name,
@@ -153,6 +156,9 @@ const IssueCard = ({
           </Alert>
         </div>
       )}
+
+      {/* Rewards Receivers Avatars*/}
+      {rewards && <RewardsReceivers rewards={rewards} />}
     </>
   )
 }
@@ -231,5 +237,20 @@ const FundingGoal = ({
     </div>
   )
 }
+
+const RewardsReceivers = ({ rewards }: { rewards: RewardsSummary }) => (
+  <div className="my-4 hidden sm:block">
+    <div className="flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-white py-0.5 pl-0.5 pr-2 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400">
+      <div className="flex flex-shrink-0 -space-x-1.5">
+        {rewards.receivers.map((r) => (
+          <Avatar avatar_url={r.avatar_url} name={r.name} />
+        ))}
+      </div>
+      <span className="flex-shrink-0 whitespace-nowrap text-blue-600">
+        🎉 Rewarded
+      </span>
+    </div>
+  </div>
+)
 
 export default IssueCard

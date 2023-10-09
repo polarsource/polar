@@ -83,6 +83,37 @@ export const UpfrontSplit: Story = {
   },
 }
 
+export const Rewards: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    issue: {
+      ...issue,
+      upfront_split_to_contributors: 75,
+    },
+    rewards: {
+      receivers: [
+        {
+          name: 'foo',
+          avatar_url: 'https://avatars.githubusercontent.com/u/10053249?v=4',
+        },
+        {
+          name: 'bar',
+          avatar_url: 'https://avatars.githubusercontent.com/u/1144727?v=4',
+        },
+
+        {
+          name: 'Foo Bar',
+        },
+        {
+          name: 'baz',
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+        },
+      ],
+    },
+  },
+}
+
 export const LongAuthorName: Story = {
   ...Default,
   args: {

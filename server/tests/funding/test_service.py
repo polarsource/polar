@@ -1,7 +1,9 @@
+import uuid
+
 import pytest
 
 from polar.authz.service import Anonymous
-from polar.funding.service import ListByResultType, ListFundingSortBy
+from polar.funding.service import FundingResultType, ListFundingSortBy
 from polar.funding.service import funding as funding_service
 from polar.kit.pagination import PaginationParams
 from polar.models import Issue, Organization, Pledge, User, UserOrganization
@@ -13,7 +15,7 @@ from .conftest import IssuesPledgesFixture, create_issues_pledges
 
 
 def issue_row_assertions(
-    result: ListByResultType, issue: Issue, pledges: list[Pledge]
+    result: FundingResultType, issue: Issue, pledges: list[Pledge]
 ) -> None:
     (
         issue_object,
@@ -126,3 +128,50 @@ class TestListBy:
 
         assert count == len(issues_pledges)
         assert len(results) == len(issues_pledges)
+
+
+@pytest.mark.asyncio
+class TestGetByIssueId:
+    async def test_not_existing_issue(self, session: AsyncSession) -> None:
+        result = await funding_service.get_by_issue_id(
+            session, Anonymous(), issue_id=uuid.uuid4()
+        )
+        assert result is None
+
+    async def test_public_issue(
+        self, issues_pledges: IssuesPledgesFixture, session: AsyncSession
+    ) -> None:
+        issue, pledges = issues_pledges[0]
+
+        result = await funding_service.get_by_issue_id(
+            session, Anonymous(), issue_id=issue.id
+        )
+
+        assert result is not None
+        issue_row_assertions(result, issue, pledges)
+
+    async def test_private_issue(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,  # makes User a member of Organization
+    ) -> None:
+        private_repository = await create_repository(
+            session, organization, is_private=True
+        )
+        issues_pledges = await create_issues_pledges(
+            session, organization, private_repository
+        )
+        issue, pledges = issues_pledges[0]
+
+        result = await funding_service.get_by_issue_id(
+            session, Anonymous(), issue_id=issue.id
+        )
+
+        assert result is None
+
+        result = await funding_service.get_by_issue_id(session, user, issue_id=issue.id)
+
+        assert result is not None
+        issue_row_assertions(result, issue, pledges)

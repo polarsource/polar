@@ -5,7 +5,7 @@ from polar.issue.schemas import Issue
 from polar.kit.schemas import Schema
 from polar.pledge.schemas import Pledger, PledgeType
 
-from .service import ListByResultType
+from .service import FundingResultType
 
 
 # Public API
@@ -27,7 +27,7 @@ class IssueFunding(Schema):
     pledges_summaries: PledgesTypeSummaries
 
     @classmethod
-    def from_list_by_result(cls, result: ListByResultType) -> Self:
+    def from_list_by_result(cls, result: FundingResultType) -> Self:
         (
             issue,
             total,

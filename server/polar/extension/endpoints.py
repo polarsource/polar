@@ -10,7 +10,7 @@ from polar.issue.service import issue as issue_service
 from polar.kit import utils
 from polar.models.issue_reference import IssueReference
 from polar.models.pledge import Pledge
-from polar.pledge.schemas import PledgeRead
+from polar.pledge.schemas import Pledge as PledgeSchema
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
@@ -87,7 +87,7 @@ async def list_issues_for_extension(
         if pledges or references:
             issue_extension = IssueExtensionRead(
                 number=issue.number,
-                pledges=[PledgeRead.from_db(p) for p in pledges],
+                pledges=[PledgeSchema.from_db(p) for p in pledges],
                 references=[IssueReferenceRead.from_model(r) for r in references],
                 issue=Issue.from_db(issue),
             )

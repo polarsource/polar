@@ -292,6 +292,10 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 contains_eager(Issue.pledges).contains_eager(
                     Pledge.by_organization.of_type(pledge_by_organization)
                 ),
+                contains_eager(Issue.pledges)
+                .joinedload(Pledge.issue)
+                .joinedload(Issue.repository)
+                .joinedload(Repository.organization),
             )
             statement = statement.group_by(
                 Issue.id,

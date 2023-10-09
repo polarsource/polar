@@ -168,6 +168,16 @@ class Pledge(Schema):
 
     hosted_invoice_url: str | None = Field(description="URL of invoice for this pledge")
 
+    authed_can_admin_sender: bool = Field(
+        default=False,
+        description="If the currently authenticated subject can perform admin actions on behalf of the maker of the peldge",  # noqa: E501
+    )
+
+    authed_can_admin_received: bool = Field(
+        default=False,
+        description="If the currently authenticated subject can perform admin actions on behalf of the receiver of the peldge",  # noqa: E501
+    )
+
     @classmethod
     def from_db(cls, o: PledgeModel, include_admin_fields: bool = False) -> Pledge:
         pledger: Pledger | None = None
@@ -271,59 +281,3 @@ class PledgeStripePaymentIntentMutationResponse(Schema):
     fee: int
     amount_including_fee: int
     client_secret: str | None = None
-
-
-class PledgeRead(Schema):
-    id: UUID
-    created_at: datetime
-
-    issue_id: UUID
-    amount: int
-
-    repository_id: UUID
-    organization_id: UUID
-
-    pledger_user_id: UUID | None = None
-
-    state: PledgeState
-    type: PledgeType = Field(description="Type of pledge")
-
-    pledger_name: str | None
-    pledger_avatar: str | None
-
-    authed_user_can_admin: bool = False  # deprecated
-    scheduled_payout_at: datetime | None = None
-    paid_at: datetime | None = None
-    refunded_at: datetime | None = None
-
-    # If the user can admin the _sending_ of the pledge (disputing, etc)
-    authed_user_can_admin_sender: bool = False
-
-    # If the user can admin the _receiving_ of the pledge (confirm it, manage payouts, ...)  # noqa: E501
-    authed_user_can_admin_received: bool = False
-
-    @classmethod
-    def from_db(cls, o: PledgeModel) -> PledgeRead:
-        pledger_name = None
-        pledger_avatar = None
-        if o.user:
-            pledger_name = o.user.username
-            pledger_avatar = o.user.avatar_url
-        if o.by_organization:
-            pledger_name = o.by_organization.name
-            pledger_avatar = o.by_organization.avatar_url
-
-        return PledgeRead(
-            id=o.id,
-            created_at=o.created_at,
-            issue_id=o.issue_id,
-            repository_id=o.repository_id,
-            organization_id=o.organization_id,
-            amount=o.amount,
-            state=PledgeState.from_str(o.state),
-            type=PledgeType.from_str(o.type),
-            pledger_name=pledger_name,
-            pledger_avatar=pledger_avatar,
-            scheduled_payout_at=o.scheduled_payout_at,
-            pledger_user_id=o.by_user_id,
-        )

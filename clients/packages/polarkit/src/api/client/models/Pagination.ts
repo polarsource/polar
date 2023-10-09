@@ -4,5 +4,6 @@
 
 export type Pagination = {
   total_count: number;
+  max_page: number;
 };
 

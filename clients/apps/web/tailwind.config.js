@@ -62,6 +62,7 @@ module.exports = {
       boxShadow: {
         DEFAULT: '0 1px 8px rgb(0 0 0 / 0.07), 0 0.5px 2.5px rgb(0 0 0 / 0.16)',
         lg: '0 5px 17px rgba(0 0 0 / 0.15), 0 0px 3px rgba(0 0 0 / 0.12)',
+        xl: '0 0px 30px rgba(0 0 0 / 0.08), 0 0px 10px rgba(0 0 0 / 0.05)',
         hidden: '0 1px 8px rgb(0 0 0 / 0), 0 0.5px 2.5px rgb(0 0 0 / 0)',
         up: '-2px -2px 22px 0px rgba(61, 84, 171, 0.15)',
       },

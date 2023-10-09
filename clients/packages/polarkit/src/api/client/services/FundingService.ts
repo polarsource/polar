@@ -24,6 +24,8 @@ export class FundingService {
     repositoryName,
     badged,
     sorting,
+    page = 1,
+    limit = 10,
   }: {
     /**
      * Filter by organization name.
@@ -39,6 +41,14 @@ export class FundingService {
      * Sorting criterion. Several criteria can be used simultaneously and will be applied in order.
      */
     sorting?: Array<ListFundingSortBy>,
+    /**
+     * Page number, defaults to 1.
+     */
+    page?: number,
+    /**
+     * Size of a page, defaults to 10. Maximum is 100
+     */
+    limit?: number,
   }): CancelablePromise<ListResource_IssueFunding_> {
     return this.httpRequest.request({
       method: 'GET',
@@ -49,6 +59,8 @@ export class FundingService {
         'badged': badged,
         'sorting': sorting,
         'platform': platform,
+        'page': page,
+        'limit': limit,
       },
       errors: {
         422: `Validation Error`,

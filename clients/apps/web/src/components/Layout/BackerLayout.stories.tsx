@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from 'polarkit'
 import BackerLayout from './BackerLayout'
 
 const meta: Meta<typeof BackerLayout> = {
@@ -16,9 +18,11 @@ export const Default: Story = {
     padding: 'p-0 m-0',
   },
   render: (args) => (
-    <BackerLayout {...args}>
-      <div className="bg-red-200 text-black">Content</div>
-    </BackerLayout>
+    <QueryClientProvider client={queryClient}>
+      <BackerLayout {...args}>
+        <div className="bg-red-200 text-black">Content</div>
+      </BackerLayout>
+    </QueryClientProvider>
   ),
 }
 

@@ -1,154 +1,63 @@
 'use client'
 
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
-import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
-import {
-  CubeIcon,
-  CurrencyDollarIcon,
-  ExclamationCircleIcon,
-  MegaphoneIcon,
-} from '@heroicons/react/24/outline'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { classNames } from 'polarkit/utils'
-import { useState } from 'react'
+import { maintainerRoutes } from './navigation'
 
 const MaintainerNavigation = () => {
-  const router = useRouter()
   const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
 
   // All routes and conditions
-  const navs = [
-    {
-      id: 'org-issues',
-      title: 'Issues',
-      icon: <ExclamationCircleIcon className="h-6 w-6" />,
-      link: `/maintainer/${org?.name}/issues`,
-      if: org && isLoaded,
-    },
-    {
-      id: 'org-finance',
-      title: 'Finance',
-      icon: <CurrencyDollarIcon className="h-6 w-6" />,
-      link: `/maintainer/${org?.name}/finance`,
-      if: org && isLoaded,
-    },
-    {
-      id: 'org-promote',
-      title: 'Promote',
-      icon: <MegaphoneIcon className="h-6 w-6" />,
-      link: '#', // Hacky. Navs with subs are not clickable.
-      if: org && isLoaded,
-      subs: [
-        {
-          title: 'Issues',
-          link: `/maintainer/${org?.name}/promote/issues`,
-        },
-        {
-          title: 'Embeds',
-          link: `/maintainer/${org?.name}/promote/embeds`,
-        },
-        {
-          title: 'Public site',
-          link: `/${org?.name}`,
-          postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
-        },
-      ],
-    },
-
-    // Non org navigation
-    {
-      id: 'personal-dependencies',
-      title: 'Dependencies',
-      icon: <CubeIcon className="h-6 w-6" />,
-      link: `/feed`,
-      if: !org && isLoaded,
-    },
-  ]
-
-  const [clickedFirstLevelLink, setClickedFirstLevelLink] = useState('')
-
-  const onFirstLevelLinkClick = (
-    e: React.MouseEvent<HTMLAnchorElement>,
-    id: string,
-  ) => {
-    const nav = navs.find((n) => n.id === id)
-    if (!nav) {
-      return
-    }
-
-    // If have subs, prevent navigation and save as clicked
-    if (nav && nav.subs) {
-      e.preventDefault()
-      e.stopPropagation()
-      setClickedFirstLevelLink(id)
-    }
-  }
+  const navs = maintainerRoutes(org, isLoaded)
 
   const pathname = usePathname()
 
   // Filter routes, set isActive, and if subs should be expanded
   const filteredNavs = navs
-    .filter((n) => !!n.if)
+    .filter((n) => 'if' in n && n.if)
     .map((n) => {
       const isActive = pathname && pathname.startsWith(n.link)
 
       const subs =
-        n.subs?.map((s) => {
-          return {
-            ...s,
-            isActive: pathname && pathname.startsWith(s.link),
-          }
-        }) || []
+        ('subs' in n &&
+          n.subs.map((s) => {
+            return {
+              ...s,
+              isActive: pathname && pathname.startsWith(s.link),
+            }
+          })) ||
+        []
 
       const anySubIsActive = subs.find((s) => s.isActive)
 
       return {
         ...n,
         isActive,
-        expandSubs:
-          isActive || clickedFirstLevelLink === n.id || anySubIsActive,
+        expandSubs: isActive || anySubIsActive,
         subs,
       }
     })
 
   return (
-    <div className="flex flex-col gap-6 py-8 pl-6 pr-2">
+    <div className="flex flex-col gap-2 px-4 py-6">
       {filteredNavs.map((n) => (
         <div key={n.link} className="flex flex-col gap-4">
           <Link
             className={classNames(
-              'flex items-center gap-2 hover:text-blue-700 dark:hover:text-blue-800',
-              n.isActive ? 'text-blue-600' : 'text-gray-900 dark:text-gray-400',
+              'flex items-center gap-2 rounded-xl px-5 py-3 hover:text-blue-700 dark:hover:text-gray-200',
+              n.isActive
+                ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-gray-100'
+                : 'text-gray-900 dark:text-gray-500',
             )}
             href={n.link}
-            onClick={(e) => {
-              onFirstLevelLinkClick(e, n.id)
-            }}
           >
-            {n.icon}
-            <span className="font-medium ">{n.title}</span>
+            {'icon' in n ? <span className="mr-3">{n.icon}</span> : undefined}
+            <span className="text-sm font-medium">{n.title}</span>
+            {'postIcon' in n ? <span>{n.postIcon}</span> : undefined}
           </Link>
-
-          {n.subs &&
-            n.expandSubs &&
-            n.subs.map((s) => (
-              <Link
-                key={s.link}
-                className={classNames(
-                  'ml-8',
-                  'flex items-center gap-1 hover:text-blue-700 dark:hover:text-blue-800',
-                  s.isActive
-                    ? 'text-blue-600'
-                    : 'text-gray-900 dark:text-gray-400',
-                )}
-                href={s.link}
-              >
-                {s.title}
-                {s.postIcon}
-              </Link>
-            ))}
         </div>
       ))}
     </div>

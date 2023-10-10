@@ -4,13 +4,12 @@ import { useAuth, useCurrentOrgAndRepoFromURL } from '@/hooks'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { classNames } from 'polarkit/utils'
-import { Suspense, useMemo } from 'react'
+import { useMemo } from 'react'
 import {
   SubRoute,
   backerRoutes,
   maintainerRoutes,
 } from '../Dashboard/navigation'
-import Popover from '../Notifications/Popover'
 
 export type LogoPosition = 'center' | 'left'
 
@@ -92,9 +91,7 @@ const DashboardTopbar = ({
                 />
               )}
           </div>
-          <div className="flex flex-row items-center gap-x-6">
-            <Suspense>{currentUser && <Popover />}</Suspense>
-          </div>
+          <div className="flex flex-row items-center gap-x-6"></div>
         </div>
       </div>
     </>

@@ -10,7 +10,13 @@ import { getCentsInDollarString } from 'polarkit/money'
 import { formatStarsNumber } from 'polarkit/utils'
 import { useMemo } from 'react'
 import { Pledgers } from '.'
-import { Funding, Issue, Pledger, RewardsSummary } from '../../api/client'
+import {
+  Assignee,
+  Funding,
+  Issue,
+  Pledger,
+  RewardsSummary,
+} from '../../api/client'
 import { githubIssueUrl } from '../../github'
 import Avatar from '../ui/atoms/Avatar'
 
@@ -157,10 +163,17 @@ const IssueCard = ({
         </div>
       )}
 
-      {/* Rewards Receivers Avatars*/}
-      {rewards && rewards.receivers.length > 0 && (
-        <RewardsReceivers rewards={rewards} />
-      )}
+      <div className="my-4 hidden items-center space-x-4 sm:flex">
+        {/* Rewards Receivers Avatars */}
+        {rewards && rewards.receivers.length > 0 && (
+          <RewardsReceivers rewards={rewards} />
+        )}
+
+        {/* Assignees Avatars */}
+        {issue.assignees && issue.assignees.length > 0 && (
+          <Assignees assignees={issue.assignees} />
+        )}
+      </div>
     </>
   )
 }
@@ -241,17 +254,28 @@ const FundingGoal = ({
 }
 
 const RewardsReceivers = ({ rewards }: { rewards: RewardsSummary }) => (
-  <div className="my-4 hidden sm:block">
-    <div className="flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-white py-0.5 pl-0.5 pr-2 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400">
-      <div className="flex flex-shrink-0 -space-x-1.5">
-        {rewards.receivers.map((r) => (
-          <Avatar avatar_url={r.avatar_url} name={r.name} />
-        ))}
-      </div>
-      <span className="flex-shrink-0 whitespace-nowrap text-blue-600">
-        🎉 Rewarded
-      </span>
+  <div className="flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-white py-0.5 pl-0.5 pr-2 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400">
+    <div className="flex flex-shrink-0 -space-x-1.5">
+      {rewards.receivers.map((r) => (
+        <Avatar avatar_url={r.avatar_url} name={r.name} />
+      ))}
     </div>
+    <span className="flex-shrink-0 whitespace-nowrap text-blue-600">
+      🎉 Rewarded
+    </span>
+  </div>
+)
+
+const Assignees = ({ assignees }: { assignees: Assignee[] }) => (
+  <div className="flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-blue-50 py-0.5 pl-0.5 pr-2 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400">
+    <div className="flex flex-shrink-0 -space-x-1.5">
+      {assignees.map((a) => (
+        <Avatar avatar_url={a.avatar_url} name={a.login} />
+      ))}
+    </div>
+    <span className="flex-shrink-0 whitespace-nowrap text-blue-600">
+      Assigned
+    </span>
   </div>
 )
 

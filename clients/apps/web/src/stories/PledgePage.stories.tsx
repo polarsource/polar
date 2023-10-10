@@ -114,6 +114,70 @@ export const Rewards: Story = {
   },
 }
 
+export const Assignees: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    issue: {
+      ...issue,
+      upfront_split_to_contributors: 75,
+      assignees: [
+        {
+          login: 'xx',
+          avatar_url: 'https://avatars.githubusercontent.com/u/10053249?v=4',
+          html_url: '',
+          id: 10053249,
+        },
+        {
+          login: 'xx',
+          avatar_url: 'https://avatars.githubusercontent.com/u/1144727?v=4',
+          html_url: '',
+          id: 1144727,
+        },
+      ],
+    },
+  },
+}
+
+export const AssigneeAndRewards: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    issue: {
+      ...issue,
+      upfront_split_to_contributors: 75,
+      assignees: [
+        {
+          login: 'xx',
+          avatar_url: 'https://avatars.githubusercontent.com/u/10053249?v=4',
+          html_url: '',
+          id: 10053249,
+        },
+      ],
+    },
+    rewards: {
+      receivers: [
+        {
+          name: 'foo',
+          avatar_url: 'https://avatars.githubusercontent.com/u/10053249?v=4',
+        },
+        {
+          name: 'bar',
+          avatar_url: 'https://avatars.githubusercontent.com/u/1144727?v=4',
+        },
+
+        {
+          name: 'Foo Bar',
+        },
+        {
+          name: 'baz',
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+        },
+      ],
+    },
+  },
+}
+
 export const LongAuthorName: Story = {
   ...Default,
   args: {

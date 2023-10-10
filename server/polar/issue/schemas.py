@@ -422,7 +422,11 @@ class IssueReferenceRead(Schema):
         PullRequestReference,
         ExternalGitHubPullRequestReference,
         ExternalGitHubCommitReference,
-    ]
+    ] = Field(deprecated=True)
+
+    pullRequestReference: PullRequestReference | None = None
+    externalGitHubPullRequestReference: ExternalGitHubPullRequestReference | None = None
+    externalGitHubCommitReference: ExternalGitHubCommitReference | None = None
 
     @classmethod
     def from_model(cls, m: IssueReference) -> IssueReferenceRead:
@@ -449,23 +453,26 @@ class IssueReferenceRead(Schema):
                             "unable to convert IssueReference to IssueReferenceRead"
                         )
 
+                    pr_ref = PullRequestReference(
+                        id=pr.id,
+                        title=pr.title,
+                        author_login=login,
+                        author_avatar=avatar,
+                        number=pr.number,
+                        additions=pr.additions or 0,
+                        deletions=pr.deletions or 0,
+                        state=pr.state,
+                        created_at=pr.issue_created_at,
+                        merged_at=pr.merged_at,
+                        closed_at=pr.issue_closed_at,
+                        is_draft=bool(pr.is_draft),
+                    )
+
                     return IssueReferenceRead(
                         id=m.external_id,
                         type=IssueReferenceType.pull_request,
-                        payload=PullRequestReference(
-                            id=pr.id,
-                            title=pr.title,
-                            author_login=login,
-                            author_avatar=avatar,
-                            number=pr.number,
-                            additions=pr.additions or 0,
-                            deletions=pr.deletions or 0,
-                            state=pr.state,
-                            created_at=pr.issue_created_at,
-                            merged_at=pr.merged_at,
-                            closed_at=pr.issue_closed_at,
-                            is_draft=bool(pr.is_draft),
-                        ),
+                        payload=pr_ref,
+                        pullRequestReference=pr_ref,
                     )
 
             case ReferenceType.EXTERNAL_GITHUB_PULL_REQUEST:
@@ -473,18 +480,20 @@ class IssueReferenceRead(Schema):
                     prx = parse_obj_as(
                         ExternalGitHubPullRequestReferenceModel, m.external_source
                     )
+                    ext_pr_ref = ExternalGitHubPullRequestReference(
+                        title=prx.title,
+                        author_login=prx.user_login,
+                        author_avatar=prx.user_avatar,
+                        number=prx.number,
+                        organization_name=prx.organization_name,
+                        repository_name=prx.repository_name,
+                        state=prx.state,
+                    )
                     return IssueReferenceRead(
                         id=m.external_id,
                         type=IssueReferenceType.external_github_pull_request,
-                        payload=ExternalGitHubPullRequestReference(
-                            title=prx.title,
-                            author_login=prx.user_login,
-                            author_avatar=prx.user_avatar,
-                            number=prx.number,
-                            organization_name=prx.organization_name,
-                            repository_name=prx.repository_name,
-                            state=prx.state,
-                        ),
+                        payload=ext_pr_ref,
+                        externalGitHubPullRequestReference=ext_pr_ref,
                     )
 
             case ReferenceType.EXTERNAL_GITHUB_COMMIT:
@@ -492,18 +501,20 @@ class IssueReferenceRead(Schema):
                     r = parse_obj_as(
                         ExternalGitHubCommitReferenceModel, m.external_source
                     )
+                    ext_commit_ref = ExternalGitHubCommitReference(
+                        author_login=r.user_login,
+                        author_avatar=r.user_avatar,
+                        organization_name=r.organization_name,
+                        repository_name=r.repository_name,
+                        sha=r.commit_id,
+                        branch_name=r.branch_name,
+                        message=r.message,
+                    )
                     return IssueReferenceRead(
                         id=m.external_id,
                         type=IssueReferenceType.external_github_commit,
-                        payload=ExternalGitHubCommitReference(
-                            author_login=r.user_login,
-                            author_avatar=r.user_avatar,
-                            organization_name=r.organization_name,
-                            repository_name=r.repository_name,
-                            sha=r.commit_id,
-                            branch_name=r.branch_name,
-                            message=r.message,
-                        ),
+                        payload=ext_commit_ref,
+                        externalGitHubCommitReference=ext_commit_ref,
                     )
 
         raise Exception("unable to convert IssueReference to IssueReferenceRead")

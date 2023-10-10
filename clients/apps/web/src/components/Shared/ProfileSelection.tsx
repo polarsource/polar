@@ -229,18 +229,20 @@ const Profile = (props: {
 
 const LinkItem = (props: {
   href: string
-  icon: React.ReactElement
+  icon?: React.ReactElement
   children: React.ReactElement
 }) => {
   return (
     <a href={props.href}>
       <ListItem current={false} className="px-6">
         <div className="flex flex-row items-center gap-x-2 text-sm">
-          <div className="text-[20px]">
-            {React.cloneElement(props.icon, {
-              fontSize: 'inherit',
-            })}
-          </div>
+          {props.icon && (
+            <div className="text-[20px]">
+              {React.cloneElement(props.icon, {
+                fontSize: 'inherit',
+              })}
+            </div>
+          )}
           {props.children}
         </div>
       </ListItem>

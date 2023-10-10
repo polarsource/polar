@@ -5,12 +5,16 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { classNames } from 'polarkit/utils'
 import { Suspense, useMemo } from 'react'
-import { Route, backerRoutes, maintainerRoutes } from '../Dashboard/navigation'
+import {
+  SubRoute,
+  backerRoutes,
+  maintainerRoutes,
+} from '../Dashboard/navigation'
 import Popover from '../Notifications/Popover'
 
 export type LogoPosition = 'center' | 'left'
 
-const SubNav = (props: { items: (Route & { active: boolean })[] }) => {
+const SubNav = (props: { items: (SubRoute & { active: boolean })[] }) => {
   return (
     <div className="flex flex-row items-center gap-x-2 rounded-lg bg-gray-100 p-1 dark:border-gray-800 dark:bg-gray-800">
       {props.items.map((item) => {
@@ -77,12 +81,14 @@ const DashboardTopbar = ({
             </h4>
             {currentRoute &&
               'subs' in currentRoute &&
-              currentRoute.subs.length > 0 && (
+              (currentRoute.subs?.length ?? 0) > 0 && (
                 <SubNav
-                  items={currentRoute.subs.map((sub) => ({
-                    ...sub,
-                    active: sub.link === pathname,
-                  }))}
+                  items={
+                    currentRoute.subs?.map((sub) => ({
+                      ...sub,
+                      active: sub.link === pathname,
+                    })) ?? []
+                  }
                 />
               )}
           </div>

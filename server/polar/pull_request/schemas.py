@@ -23,6 +23,10 @@ class PullRequest(Schema):
     number: int
     title: str
     author: Author | None
+    additions: int
+    deletions: int
+    is_merged: bool
+    is_closed: bool
 
     @classmethod
     def from_db(cls, pr: PullRequestModel) -> Self:
@@ -31,6 +35,10 @@ class PullRequest(Schema):
             number=pr.number,
             title=pr.title,
             author=parse_obj_as(Author, pr.author) if pr.author else None,
+            additions=pr.additions if pr.additions else 0,
+            deletions=pr.deletions if pr.deletions else 0,
+            is_merged=pr.is_merged if pr.is_merged else False,
+            is_closed=True if pr.issue_closed_at else False,
         )
 
 

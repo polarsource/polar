@@ -15,7 +15,7 @@ export type LogoPosition = 'center' | 'left'
 
 const SubNav = (props: { items: (SubRoute & { active: boolean })[] }) => {
   return (
-    <div className="flex flex-row items-center gap-x-2 rounded-lg bg-gray-100 p-1 dark:border-gray-800 dark:bg-gray-800">
+    <div className="flex flex-row items-center gap-x-2 rounded-xl bg-gray-100 p-1 dark:border-gray-800 dark:bg-gray-800">
       {props.items.map((item) => {
         const className = classNames(
           item.active

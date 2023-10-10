@@ -16,7 +16,9 @@ const TopbarLayout = ({
     <EmptyLayout>
       <>
         <Topbar
-          logoPosition={logoPosition}
+          logo={{
+            position: logoPosition
+          }}
           isFixed={isFixed}
           useOrgFromURL={false}
           hideProfile={hideProfile}

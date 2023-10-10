@@ -1,18 +1,28 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import {
-  ArrowRightOnRectangleIcon,
-  ChevronUpDownIcon,
-  PlusSmallIcon,
-  QuestionMarkCircleIcon,
-} from '@heroicons/react/24/outline'
+  AddOutlined,
+  ContactSupportOutlined,
+  LogoutOutlined,
+} from '@mui/icons-material'
 import Link from 'next/link'
 import { CONFIG } from 'polarkit/config'
 import { useListOrganizations } from 'polarkit/hooks'
 import { classNames, clsx, useOutsideClick } from 'polarkit/utils'
 import React, { useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../hooks'
+import { backerRoutes } from '../Dashboard/navigation'
 
-const ProfileSelection = ({ useOrgFromURL = true }) => {
+const ProfileSelection = ({
+  useOrgFromURL = true,
+  className = '',
+  narrow = true,
+  showBackerLinks = false,
+}) => {
+  const classNames = clsx(
+    'relative flex w-full flex-col rounded-xl bg-white dark:bg-gray-950 hover:bg-gray-100/50 dark:shadow-none',
+    className,
+  )
   const { currentUser: loggedUser, logout } = useAuth()
   const listOrganizationQuery = useListOrganizations()
 
@@ -53,9 +63,12 @@ const ProfileSelection = ({ useOrgFromURL = true }) => {
 
   return (
     <>
-      <div className="relative flex w-full flex-col">
+      <div className={classNames}>
         <div
-          className="relative flex cursor-pointer flex-row items-center justify-between gap-x-2 rounded-2xl p-4 shadow-xl transition-colors hover:bg-gray-100/50 dark:border dark:border-transparent dark:bg-gray-950 dark:shadow-none dark:hover:border-gray-800"
+          className={clsx(
+            'relative flex cursor-pointer flex-row items-center justify-between gap-x-2 px-4 transition-colors',
+            narrow ? 'py-2' : 'py-3',
+          )}
           onClick={() => setOpen(true)}
         >
           <Profile
@@ -70,7 +83,8 @@ const ProfileSelection = ({ useOrgFromURL = true }) => {
           <div
             ref={ref}
             className={clsx(
-              'absolute left-0 top-0 w-[286px] max-w-[286px] overflow-hidden rounded-2xl bg-white py-2 shadow-xl dark:bg-gray-950',
+              'absolute left-0 w-full overflow-hidden rounded-2xl bg-white py-2 shadow-xl dark:bg-gray-950',
+              narrow ? '-top-2' : '-top-1',
             )}
           >
             <ul>
@@ -83,6 +97,22 @@ const ProfileSelection = ({ useOrgFromURL = true }) => {
                   />
                 </ListItem>
               </Link>
+
+              {showBackerLinks && (
+                <>
+                  {backerRoutes.map((n) => {
+                    return (
+                      <LinkItem href={n.link} icon={n.icon}>
+                        <span className="mx-1.5 text-gray-600 dark:text-gray-400">
+                          {n.title}
+                        </span>
+                      </LinkItem>
+                    )
+                  })}
+
+                  <hr className="my-2 ml-4 mr-4" />
+                </>
+              )}
 
               {orgs &&
                 orgs.map((org) => (
@@ -116,7 +146,7 @@ const ProfileSelection = ({ useOrgFromURL = true }) => {
               {showAddOrganization && (
                 <LinkItem
                   href={CONFIG.GITHUB_INSTALLATION_URL}
-                  icon={<PlusSmallIcon className="h-5 w-5 text-blue-600" />}
+                  icon={<AddOutlined className="text-blue-600" />}
                 >
                   <span className="mx-1.5 text-blue-600">Add organization</span>
                 </LinkItem>
@@ -127,7 +157,7 @@ const ProfileSelection = ({ useOrgFromURL = true }) => {
               <LinkItem
                 href={'https://polar.sh/faq'}
                 icon={
-                  <QuestionMarkCircleIcon className="h-5 w-5  text-gray-600 dark:text-gray-400" />
+                  <ContactSupportOutlined className="text-gray-600 dark:text-gray-400" />
                 }
               >
                 <span className="mx-1.5  text-gray-600 dark:text-gray-400">
@@ -138,7 +168,7 @@ const ProfileSelection = ({ useOrgFromURL = true }) => {
               <TextItem
                 onClick={logout}
                 icon={
-                  <ArrowRightOnRectangleIcon className="h-5 w-5  text-gray-600 dark:text-gray-400" />
+                  <LogoutOutlined className="text-gray-600 dark:text-gray-400" />
                 }
               >
                 <span className="mx-1.5  text-gray-600 dark:text-gray-400">
@@ -158,12 +188,14 @@ export default ProfileSelection
 const ListItem = (props: {
   children: React.ReactElement
   current: boolean
+  className?: string
 }) => {
   const className = classNames(
-    'animate-background duration-10 flex items-center gap-2 py-2 px-4',
+    'animate-background duration-10 flex items-center gap-2 py-2 px-4 w-full',
     props.current
       ? 'bg-blue-50 dark:bg-white/5'
       : 'hover:bg-gray-100/50 dark:hover:bg-white/5',
+    props.className ?? '',
   )
 
   return <li className={className}>{props.children}</li>
@@ -202,9 +234,13 @@ const LinkItem = (props: {
 }) => {
   return (
     <a href={props.href}>
-      <ListItem current={false}>
-        <div className="flex items-center gap-x-2 text-sm">
-          {props.icon}
+      <ListItem current={false} className="px-6">
+        <div className="flex flex-row items-center gap-x-2 text-sm">
+          <div className="text-[20px]">
+            {React.cloneElement(props.icon, {
+              fontSize: 'inherit',
+            })}
+          </div>
           {props.children}
         </div>
       </ListItem>
@@ -219,12 +255,16 @@ const TextItem = (props: {
 }) => {
   return (
     <div
-      className="flex cursor-pointer items-center text-sm hover:bg-gray-100/50 dark:hover:bg-white/5"
+      className="flex cursor-pointer items-center text-sm"
       onClick={props.onClick}
     >
-      <ListItem current={false}>
+      <ListItem current={false} className="px-6">
         <>
-          {props.icon}
+          <div className="text-[20px]">
+            {React.cloneElement(props.icon, {
+              fontSize: 'inherit',
+            })}
+          </div>
           {props.children}
         </>
       </ListItem>

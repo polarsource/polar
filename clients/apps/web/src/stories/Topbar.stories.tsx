@@ -23,7 +23,9 @@ export const LogoLeft: Story = {
     chromatic: { viewports: [390, 1200] },
   },
   args: {
-    logoPosition: 'left',
+    logo: {
+      position: 'left',
+    },
   },
 }
 
@@ -32,6 +34,8 @@ export const Custom: Story = {
     chromatic: { viewports: [390, 1200] },
   },
   args: {
-    customLogoTitle: 'Custom',
+    logo: {
+      title: 'Custom',
+    },
   },
 }

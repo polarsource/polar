@@ -4,8 +4,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Topbar
-        customLogoTitle="Backoffice"
-        logoPosition="center"
+        logo={{ title: 'Backoffice', position: 'center' }}
         isFixed={false}
         hideProfile={true}
         useOrgFromURL={false}

@@ -1,88 +1,82 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { BaseHttpRequest } from './core/BaseHttpRequest';
-import type { OpenAPIConfig } from './core/OpenAPI';
-import { AxiosHttpRequest } from './core/AxiosHttpRequest';
 
-import { AccountsService } from './services/AccountsService';
-import { BackofficeService } from './services/BackofficeService';
-import { DashboardService } from './services/DashboardService';
-import { ExtensionService } from './services/ExtensionService';
-import { FundingService } from './services/FundingService';
-import { HealthService } from './services/HealthService';
-import { IntegrationsService } from './services/IntegrationsService';
-import { IssuesService } from './services/IssuesService';
-import { MagicLinkService } from './services/MagicLinkService';
-import { NotificationsService } from './services/NotificationsService';
-import { OrganizationsService } from './services/OrganizationsService';
-import { PaymentMethodsService } from './services/PaymentMethodsService';
-import { PersonalAccessTokenService } from './services/PersonalAccessTokenService';
-import { PledgesService } from './services/PledgesService';
-import { PullRequestsService } from './services/PullRequestsService';
-import { RepositoriesService } from './services/RepositoriesService';
-import { RewardsService } from './services/RewardsService';
-import { StreamService } from './services/StreamService';
-import { UsersService } from './services/UsersService';
-
-type HttpRequestConstructor = new (config: OpenAPIConfig) => BaseHttpRequest;
+import {
+  AccountsApi,
+  BackofficeApi,
+  Configuration,
+  DashboardApi,
+  ExtensionApi,
+  FundingApi,
+  HealthApi,
+  IntegrationsApi,
+  IssuesApi,
+  MagicLinkApi,
+  NotificationsApi,
+  OrganizationsApi,
+  PaymentMethodsApi,
+  PersonalAccessTokenApi,
+  PledgesApi,
+  PullRequestsApi,
+  RepositoriesApi,
+  RewardsApi,
+  StreamApi,
+  UsersApi,
+} from '.'
 
 export class PolarAPI {
+  public readonly accounts: AccountsApi
+  public readonly backoffice: BackofficeApi
+  public readonly dashboard: DashboardApi
+  public readonly extension: ExtensionApi
+  public readonly funding: FundingApi
+  public readonly health: HealthApi
+  public readonly integrations: IntegrationsApi
+  public readonly issues: IssuesApi
+  public readonly magicLink: MagicLinkApi
+  public readonly notifications: NotificationsApi
+  public readonly organizations: OrganizationsApi
+  public readonly paymentMethods: PaymentMethodsApi
+  public readonly personalAccessToken: PersonalAccessTokenApi
+  public readonly pledges: PledgesApi
+  public readonly pullRequests: PullRequestsApi
+  public readonly repositories: RepositoriesApi
+  public readonly rewards: RewardsApi
+  public readonly stream: StreamApi
+  public readonly users: UsersApi
 
-  public readonly accounts: AccountsService;
-  public readonly backoffice: BackofficeService;
-  public readonly dashboard: DashboardService;
-  public readonly extension: ExtensionService;
-  public readonly funding: FundingService;
-  public readonly health: HealthService;
-  public readonly integrations: IntegrationsService;
-  public readonly issues: IssuesService;
-  public readonly magicLink: MagicLinkService;
-  public readonly notifications: NotificationsService;
-  public readonly organizations: OrganizationsService;
-  public readonly paymentMethods: PaymentMethodsService;
-  public readonly personalAccessToken: PersonalAccessTokenService;
-  public readonly pledges: PledgesService;
-  public readonly pullRequests: PullRequestsService;
-  public readonly repositories: RepositoriesService;
-  public readonly rewards: RewardsService;
-  public readonly stream: StreamService;
-  public readonly users: UsersService;
+  constructor(config: Configuration) {
+    // this.request = new HttpRequest({
+    //   BASE: config?.BASE ?? 'https://api.polar.sh',
+    //   VERSION: config?.VERSION ?? '0.1.0',
+    //   WITH_CREDENTIALS: config?.WITH_CREDENTIALS ?? false,
+    //   CREDENTIALS: config?.CREDENTIALS ?? 'include',
+    //   TOKEN: config?.TOKEN,
+    //   USERNAME: config?.USERNAME,
+    //   PASSWORD: config?.PASSWORD,
+    //   HEADERS: config?.HEADERS,
+    //   ENCODE_PATH: config?.ENCODE_PATH,
+    // })
 
-  public readonly request: BaseHttpRequest;
-
-  constructor(config?: Partial<OpenAPIConfig>, HttpRequest: HttpRequestConstructor = AxiosHttpRequest) {
-    this.request = new HttpRequest({
-      BASE: config?.BASE ?? 'https://api.polar.sh',
-      VERSION: config?.VERSION ?? '0.1.0',
-      WITH_CREDENTIALS: config?.WITH_CREDENTIALS ?? false,
-      CREDENTIALS: config?.CREDENTIALS ?? 'include',
-      TOKEN: config?.TOKEN,
-      USERNAME: config?.USERNAME,
-      PASSWORD: config?.PASSWORD,
-      HEADERS: config?.HEADERS,
-      ENCODE_PATH: config?.ENCODE_PATH,
-    });
-
-    this.accounts = new AccountsService(this.request);
-    this.backoffice = new BackofficeService(this.request);
-    this.dashboard = new DashboardService(this.request);
-    this.extension = new ExtensionService(this.request);
-    this.funding = new FundingService(this.request);
-    this.health = new HealthService(this.request);
-    this.integrations = new IntegrationsService(this.request);
-    this.issues = new IssuesService(this.request);
-    this.magicLink = new MagicLinkService(this.request);
-    this.notifications = new NotificationsService(this.request);
-    this.organizations = new OrganizationsService(this.request);
-    this.paymentMethods = new PaymentMethodsService(this.request);
-    this.personalAccessToken = new PersonalAccessTokenService(this.request);
-    this.pledges = new PledgesService(this.request);
-    this.pullRequests = new PullRequestsService(this.request);
-    this.repositories = new RepositoriesService(this.request);
-    this.rewards = new RewardsService(this.request);
-    this.stream = new StreamService(this.request);
-    this.users = new UsersService(this.request);
+    this.accounts = new AccountsApi(config)
+    this.backoffice = new BackofficeApi(config)
+    this.dashboard = new DashboardApi(config)
+    this.extension = new ExtensionApi(config)
+    this.funding = new FundingApi(config)
+    this.health = new HealthApi(config)
+    this.integrations = new IntegrationsApi(config)
+    this.issues = new IssuesApi(config)
+    this.magicLink = new MagicLinkApi(config)
+    this.notifications = new NotificationsApi(config)
+    this.organizations = new OrganizationsApi(config)
+    this.paymentMethods = new PaymentMethodsApi(config)
+    this.personalAccessToken = new PersonalAccessTokenApi(config)
+    this.pledges = new PledgesApi(config)
+    this.pullRequests = new PullRequestsApi(config)
+    this.repositories = new RepositoriesApi(config)
+    this.rewards = new RewardsApi(config)
+    this.stream = new StreamApi(config)
+    this.users = new UsersApi(config)
   }
 }
-

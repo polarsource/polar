@@ -49,7 +49,7 @@ const MaintainerNavigation = () => {
             className={classNames(
               'flex items-center gap-2 rounded-xl px-5 py-3 hover:text-blue-700 dark:hover:text-gray-200',
               n.isActive
-                ? 'bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-gray-100'
+                ? 'bg-blue-50 text-blue-600 dark:bg-gray-900'
                 : 'text-gray-900 dark:text-gray-500',
             )}
             href={n.link}

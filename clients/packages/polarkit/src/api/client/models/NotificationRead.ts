@@ -13,6 +13,42 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { MaintainerPledgeConfirmationPendingNotification } from './MaintainerPledgeConfirmationPendingNotification';
+import {
+    MaintainerPledgeConfirmationPendingNotificationFromJSON,
+    MaintainerPledgeConfirmationPendingNotificationFromJSONTyped,
+    MaintainerPledgeConfirmationPendingNotificationToJSON,
+} from './MaintainerPledgeConfirmationPendingNotification';
+import type { MaintainerPledgeCreatedNotification } from './MaintainerPledgeCreatedNotification';
+import {
+    MaintainerPledgeCreatedNotificationFromJSON,
+    MaintainerPledgeCreatedNotificationFromJSONTyped,
+    MaintainerPledgeCreatedNotificationToJSON,
+} from './MaintainerPledgeCreatedNotification';
+import type { MaintainerPledgePaidNotification } from './MaintainerPledgePaidNotification';
+import {
+    MaintainerPledgePaidNotificationFromJSON,
+    MaintainerPledgePaidNotificationFromJSONTyped,
+    MaintainerPledgePaidNotificationToJSON,
+} from './MaintainerPledgePaidNotification';
+import type { MaintainerPledgePendingNotification } from './MaintainerPledgePendingNotification';
+import {
+    MaintainerPledgePendingNotificationFromJSON,
+    MaintainerPledgePendingNotificationFromJSONTyped,
+    MaintainerPledgePendingNotificationToJSON,
+} from './MaintainerPledgePendingNotification';
+import type { MaintainerPledgedIssueConfirmationPendingNotification } from './MaintainerPledgedIssueConfirmationPendingNotification';
+import {
+    MaintainerPledgedIssueConfirmationPendingNotificationFromJSON,
+    MaintainerPledgedIssueConfirmationPendingNotificationFromJSONTyped,
+    MaintainerPledgedIssueConfirmationPendingNotificationToJSON,
+} from './MaintainerPledgedIssueConfirmationPendingNotification';
+import type { MaintainerPledgedIssuePendingNotification } from './MaintainerPledgedIssuePendingNotification';
+import {
+    MaintainerPledgedIssuePendingNotificationFromJSON,
+    MaintainerPledgedIssuePendingNotificationFromJSONTyped,
+    MaintainerPledgedIssuePendingNotificationToJSON,
+} from './MaintainerPledgedIssuePendingNotification';
 import type { NotificationType } from './NotificationType';
 import {
     NotificationTypeFromJSON,
@@ -25,6 +61,18 @@ import {
     Payload1FromJSONTyped,
     Payload1ToJSON,
 } from './Payload1';
+import type { PledgerPledgePendingNotification } from './PledgerPledgePendingNotification';
+import {
+    PledgerPledgePendingNotificationFromJSON,
+    PledgerPledgePendingNotificationFromJSONTyped,
+    PledgerPledgePendingNotificationToJSON,
+} from './PledgerPledgePendingNotification';
+import type { RewardPaidNotification } from './RewardPaidNotification';
+import {
+    RewardPaidNotificationFromJSON,
+    RewardPaidNotificationFromJSONTyped,
+    RewardPaidNotificationToJSON,
+} from './RewardPaidNotification';
 
 /**
  * 
@@ -54,8 +102,57 @@ export interface NotificationRead {
      * 
      * @type {Payload1}
      * @memberof NotificationRead
+     * @deprecated
      */
     payload: Payload1;
+    /**
+     * 
+     * @type {MaintainerPledgePaidNotification}
+     * @memberof NotificationRead
+     */
+    maintainer_pledge_paid?: MaintainerPledgePaidNotification;
+    /**
+     * 
+     * @type {MaintainerPledgeConfirmationPendingNotification}
+     * @memberof NotificationRead
+     */
+    maintainer_pledge_confirmation_pending?: MaintainerPledgeConfirmationPendingNotification;
+    /**
+     * 
+     * @type {MaintainerPledgePendingNotification}
+     * @memberof NotificationRead
+     */
+    maintainer_pledge_pending?: MaintainerPledgePendingNotification;
+    /**
+     * 
+     * @type {MaintainerPledgeCreatedNotification}
+     * @memberof NotificationRead
+     */
+    maintainer_pledge_created?: MaintainerPledgeCreatedNotification;
+    /**
+     * 
+     * @type {PledgerPledgePendingNotification}
+     * @memberof NotificationRead
+     */
+    pledger_pledge_pending?: PledgerPledgePendingNotification;
+    /**
+     * 
+     * @type {RewardPaidNotification}
+     * @memberof NotificationRead
+     */
+    reward_paid?: RewardPaidNotification;
+    /**
+     * 
+     * @type {MaintainerPledgedIssueConfirmationPendingNotification}
+     * @memberof NotificationRead
+     */
+    maintainer_pledged_issue_confirmation_pending?: MaintainerPledgedIssueConfirmationPendingNotification;
+    /**
+     * 
+     * @type {MaintainerPledgedIssuePendingNotification}
+     * @memberof NotificationRead
+     */
+    maintainer_pledged_issue_pending?: MaintainerPledgedIssuePendingNotification;
 }
 
 /**
@@ -85,6 +182,14 @@ export function NotificationReadFromJSONTyped(json: any, ignoreDiscriminator: bo
         'type': NotificationTypeFromJSON(json['type']),
         'created_at': (new Date(json['created_at'])),
         'payload': Payload1FromJSON(json['payload']),
+        'maintainer_pledge_paid': !exists(json, 'maintainerPledgePaid') ? undefined : MaintainerPledgePaidNotificationFromJSON(json['maintainerPledgePaid']),
+        'maintainer_pledge_confirmation_pending': !exists(json, 'maintainerPledgeConfirmationPending') ? undefined : MaintainerPledgeConfirmationPendingNotificationFromJSON(json['maintainerPledgeConfirmationPending']),
+        'maintainer_pledge_pending': !exists(json, 'maintainerPledgePending') ? undefined : MaintainerPledgePendingNotificationFromJSON(json['maintainerPledgePending']),
+        'maintainer_pledge_created': !exists(json, 'maintainerPledgeCreated') ? undefined : MaintainerPledgeCreatedNotificationFromJSON(json['maintainerPledgeCreated']),
+        'pledger_pledge_pending': !exists(json, 'pledgerPledgePending') ? undefined : PledgerPledgePendingNotificationFromJSON(json['pledgerPledgePending']),
+        'reward_paid': !exists(json, 'rewardPaid') ? undefined : RewardPaidNotificationFromJSON(json['rewardPaid']),
+        'maintainer_pledged_issue_confirmation_pending': !exists(json, 'maintainerPledgedIssueConfirmationPending') ? undefined : MaintainerPledgedIssueConfirmationPendingNotificationFromJSON(json['maintainerPledgedIssueConfirmationPending']),
+        'maintainer_pledged_issue_pending': !exists(json, 'maintainerPledgedIssuePending') ? undefined : MaintainerPledgedIssuePendingNotificationFromJSON(json['maintainerPledgedIssuePending']),
     };
 }
 
@@ -101,6 +206,14 @@ export function NotificationReadToJSON(value?: NotificationRead | null): any {
         'type': NotificationTypeToJSON(value.type),
         'created_at': (value.created_at.toISOString()),
         'payload': Payload1ToJSON(value.payload),
+        'maintainerPledgePaid': MaintainerPledgePaidNotificationToJSON(value.maintainer_pledge_paid),
+        'maintainerPledgeConfirmationPending': MaintainerPledgeConfirmationPendingNotificationToJSON(value.maintainer_pledge_confirmation_pending),
+        'maintainerPledgePending': MaintainerPledgePendingNotificationToJSON(value.maintainer_pledge_pending),
+        'maintainerPledgeCreated': MaintainerPledgeCreatedNotificationToJSON(value.maintainer_pledge_created),
+        'pledgerPledgePending': PledgerPledgePendingNotificationToJSON(value.pledger_pledge_pending),
+        'rewardPaid': RewardPaidNotificationToJSON(value.reward_paid),
+        'maintainerPledgedIssueConfirmationPending': MaintainerPledgedIssueConfirmationPendingNotificationToJSON(value.maintainer_pledged_issue_confirmation_pending),
+        'maintainerPledgedIssuePending': MaintainerPledgedIssuePendingNotificationToJSON(value.maintainer_pledged_issue_pending),
     };
 }
 

@@ -7,15 +7,14 @@ import {
 } from '@tanstack/react-query'
 import { api, queryClient } from '../../api'
 import {
-  ApiError,
   ConfirmIssueSplit,
   CurrencyAmount,
   Issue,
   IssueListResponse,
   IssueSortBy,
   IssueUpdateBadgeMessage,
-  ListResource_Issue_,
-  ListResource_Pledge_,
+  ListResourceIssue,
+  ListResourcePledge,
   Platforms,
   PostIssueComment,
 } from '../../api/client'
@@ -53,7 +52,7 @@ export const useIssueAddComment = () =>
     mutationFn: (variables: { id: string; body: PostIssueComment }) => {
       return api.issues.addIssueComment({
         id: variables.id,
-        requestBody: variables.body,
+        postIssueComment: variables.body,
       })
     },
   })
@@ -63,7 +62,7 @@ export const useBadgeWithComment = () =>
     mutationFn: (variables: { id: string; body: IssueUpdateBadgeMessage }) => {
       return api.issues.badgeWithMessage({
         id: variables.id,
-        requestBody: variables.body,
+        issueUpdateBadgeMessage: variables.body,
       })
     },
   })
@@ -78,7 +77,7 @@ export const useUpdateIssue = () =>
     }) => {
       return api.issues.update({
         id: variables.id,
-        requestBody: {
+        updateIssue: {
           funding_goal: variables.funding_goal,
           upfront_split_to_contributors:
             variables.upfront_split_to_contributors,
@@ -126,7 +125,7 @@ const updateIssuesCache = (result: Issue) => {
     },
   )
 
-  queryClient.setQueriesData<ListResource_Pledge_>(
+  queryClient.setQueriesData<ListResourcePledge>(
     {
       queryKey: ['pledgeByIssue', result.id],
     },
@@ -150,7 +149,7 @@ const updateIssuesCache = (result: Issue) => {
     },
   )
 
-  queryClient.setQueriesData<ListResource_Pledge_>(
+  queryClient.setQueriesData<ListResourcePledge>(
     {
       queryKey: ['pledgeList'],
     },
@@ -174,7 +173,7 @@ const updateIssuesCache = (result: Issue) => {
     },
   )
 
-  queryClient.setQueriesData<ListResource_Issue_>(
+  queryClient.setQueriesData<ListResourceIssue>(
     {
       queryKey: ['issues'],
     },
@@ -194,7 +193,7 @@ const updateIssuesCache = (result: Issue) => {
     },
   )
 
-  queryClient.setQueriesData<ListResource_Issue_>(
+  queryClient.setQueriesData<ListResourceIssue>(
     {
       queryKey: ['issuesForYou'],
     },
@@ -221,7 +220,7 @@ export const useSearchIssues: (v: {
   sort?: IssueSortBy
   havePledge?: boolean
   haveBadge?: boolean
-}) => UseQueryResult<ListResource_Issue_, ApiError> = (v: {
+}) => UseQueryResult<ListResourceIssue> = (v: {
   organizationName?: string
   repositoryName?: string
   sort?: IssueSortBy
@@ -264,7 +263,7 @@ export const useIssueMarkConfirmed = () =>
     mutationFn: (variables: { id: string; splits: ConfirmIssueSplit[] }) => {
       return api.issues.confirm({
         id: variables.id,
-        requestBody: {
+        confirmIssue: {
           splits: variables.splits,
         },
       })

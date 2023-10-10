@@ -22,10 +22,10 @@ export default meta
 
 const pledge: Pledge = {
   id: 'xx',
-  created_at: '2023-06-29',
+  created_at: new Date('2023-06-29'),
   amount: { currency: 'USD', amount: 12300 },
   state: PledgeState.CREATED,
-  type: PledgeType.PAY_UPFRONT,
+  type: PledgeType.UPFRONT,
   scheduled_payout_at: undefined,
   issue: issue,
 }
@@ -61,14 +61,14 @@ export const Default: Story = {
         ...reward,
         pledge: {
           ...reward.pledge,
-          type: PledgeType.PAY_ON_COMPLETION,
+          type: PledgeType.ON_COMPLETION,
         },
       },
       {
         ...reward,
         pledge: {
           ...reward.pledge,
-          type: PledgeType.PAY_ON_COMPLETION,
+          type: PledgeType.ON_COMPLETION,
           state: PledgeState.PENDING,
         },
       },
@@ -76,11 +76,11 @@ export const Default: Story = {
         ...reward,
         pledge: {
           ...reward.pledge,
-          type: PledgeType.PAY_ON_COMPLETION,
+          type: PledgeType.ON_COMPLETION,
           state: PledgeState.PENDING,
         },
         state: RewardState.PAID,
-        paid_at: '2023-08-31',
+        paid_at: new Date('2023-08-31'),
       },
     ],
     columns: ['PAID_OUT_DATE', 'RECEIVER', 'BACKER', 'PAYMENT_STATUS'],

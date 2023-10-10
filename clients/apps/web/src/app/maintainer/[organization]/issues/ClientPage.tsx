@@ -69,7 +69,7 @@ export default function ClientPage() {
 }
 
 const buildStatusesFilter = (filters: DashboardFilters): Array<IssueStatus> => {
-  const next = []
+  const next: Array<IssueStatus> = []
   filters.statusBacklog && next.push(IssueStatus.BACKLOG)
   filters.statusTriaged && next.push(IssueStatus.TRIAGED)
   filters.statusInProgress && next.push(IssueStatus.IN_PROGRESS)

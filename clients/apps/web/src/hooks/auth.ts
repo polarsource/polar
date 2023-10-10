@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/nextjs'
 import { useRouter } from 'next/navigation'
-import { CancelablePromise, type UserRead } from 'polarkit/api/client'
+import { type UserRead } from 'polarkit/api/client'
 import { CONFIG } from 'polarkit/config'
 import { UserState, useStore } from 'polarkit/store'
 import posthog from 'posthog-js'
@@ -9,7 +9,7 @@ import { useCallback, useEffect, useState } from 'react'
 export const useAuth = (): UserState & {
   hasChecked: boolean
   isChecking: boolean
-  reloadUser: () => CancelablePromise<UserRead>
+  reloadUser: () => Promise<UserRead>
   hydrated: boolean
 } => {
   const authenticated = useStore((state) => state.authenticated)
@@ -44,7 +44,10 @@ export const useAuth = (): UserState & {
     }
   }, [currentUser])
 
-  const getAuthenticatedUser = useCallback((): CancelablePromise<UserRead> => {
+  const getAuthenticatedUser = useCallback((): {
+    request: Promise<UserRead>
+    controller: AbortController
+  } => {
     setIsChecking(true)
     return login(() => {
       setIsChecking(false)
@@ -58,11 +61,9 @@ export const useAuth = (): UserState & {
       return
     }
 
-    let request = getAuthenticatedUser()
+    let { controller } = getAuthenticatedUser()
     return () => {
-      if (request) {
-        request.cancel()
-      }
+      controller.abort()
     }
   }, [authenticated, hasChecked, getAuthenticatedUser, hydrated])
 
@@ -74,7 +75,10 @@ export const useAuth = (): UserState & {
       isChecking: false,
       login,
       logout,
-      reloadUser: getAuthenticatedUser,
+      reloadUser: () => {
+        const { request } = getAuthenticatedUser()
+        return request
+      },
       hydrated,
     }
   }
@@ -86,7 +90,10 @@ export const useAuth = (): UserState & {
     isChecking,
     login,
     logout,
-    reloadUser: getAuthenticatedUser,
+    reloadUser: () => {
+      const { request } = getAuthenticatedUser()
+      return request
+    },
     hydrated,
   }
 }

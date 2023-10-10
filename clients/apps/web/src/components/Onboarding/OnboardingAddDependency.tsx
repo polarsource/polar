@@ -3,12 +3,12 @@ import {
   Issue,
   IssueReferenceRead,
   IssueReferenceType,
+  IssueStateEnum,
   Organization,
   Platforms,
   Pledge,
   PledgeState,
   PledgeType,
-  PullRequestReference,
   Repository,
   Visibility,
 } from 'polarkit/api/client'
@@ -53,8 +53,8 @@ const OnboardingAddDependency = () => {
     platform: Platforms.GITHUB,
     repository: demoRepo,
     number: 123,
-    issue_created_at: 'x',
-    state: Issue.state.OPEN,
+    issue_created_at: new Date(),
+    state: IssueStateEnum.OPEN,
     funding: {},
     pledge_badge_currently_embedded: false,
     needs_confirmation_solved: false,
@@ -63,11 +63,11 @@ const OnboardingAddDependency = () => {
   const demoPledges: Pledge[] = [
     {
       id: 'x',
-      created_at: 'y',
+      created_at: new Date(),
       issue: demoIssue,
       amount: { currency: 'USD', amount: 70000 },
       state: PledgeState.PENDING,
-      type: PledgeType.PAY_UPFRONT,
+      type: PledgeType.UPFRONT,
     },
   ]
 
@@ -87,9 +87,12 @@ const OnboardingAddDependency = () => {
         additions: 318,
         deletions: 186,
         state: 'yyy',
-        created_at: twoHoursAgo.toString(),
+        created_at: twoHoursAgo,
         is_draft: false,
-      } as PullRequestReference,
+        organization_name: 'x',
+        repository_name: 'x',
+        sha: 'xx',
+      },
     },
   ]
 

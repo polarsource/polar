@@ -5,8 +5,7 @@ import {
   useQuery,
 } from '@tanstack/react-query'
 import {
-  ApiError,
-  ListResource_Organization_,
+  ListResourceOrganization,
   OrganizationBadgeSettingsUpdate,
   OrganizationPrivateRead,
   Repository,
@@ -26,15 +25,13 @@ export * from './pledges'
 export * from './rewards'
 export * from './user'
 
-export const useListOrganizations: () => UseQueryResult<
-  ListResource_Organization_,
-  ApiError
-> = () =>
-  useQuery({
-    queryKey: ['user', 'organizations'],
-    queryFn: () => api.organizations.list(),
-    retry: defaultRetry,
-  })
+export const useListOrganizations: () => UseQueryResult<ListResourceOrganization> =
+  () =>
+    useQuery({
+      queryKey: ['user', 'organizations'],
+      queryFn: () => api.organizations.list(),
+      retry: defaultRetry,
+    })
 
 export const useListRepositories = () =>
   useQuery({
@@ -100,7 +97,7 @@ export const useNotificationsMarkRead: () => UseMutationResult<
   useMutation({
     mutationFn: (variables: { notification_id: string }) => {
       return api.notifications.markRead({
-        requestBody: {
+        notificationsMarkRead: {
           notification_id: variables.notification_id,
         },
       })
@@ -125,7 +122,7 @@ export const useUpdateOrganizationBadgeSettings = () =>
     }) => {
       return api.organizations.updateBadgeSettings({
         id: variables.id,
-        requestBody: variables.settings,
+        organizationBadgeSettingsUpdate: variables.settings,
       })
     },
     onSuccess: (result, variables, ctx) => {

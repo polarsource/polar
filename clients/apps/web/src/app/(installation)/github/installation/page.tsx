@@ -7,7 +7,7 @@ import GithubLoginButton from '@/components/Shared/GithubLoginButton'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from 'polarkit'
 import {
-  InstallationCreate,
+  InstallationCreatePlatformEnum,
   OrganizationPrivateRead,
   UserSignupType,
 } from 'polarkit/api/client'
@@ -39,12 +39,20 @@ export default function Page() {
       return
     }
 
-    const request = api.integrations.install({
-      requestBody: {
-        platform: InstallationCreate.platform.GITHUB,
-        external_id: parseInt(installationID),
+    const controller = new AbortController()
+    const signal = controller.signal
+
+    const request = api.integrations.install(
+      {
+        installationCreate: {
+          platform: InstallationCreatePlatformEnum.GITHUB,
+          external_id: parseInt(installationID),
+        },
       },
-    })
+      {
+        signal,
+      },
+    )
 
     setShowLogin(false)
     setError(null)
@@ -61,7 +69,7 @@ export default function Page() {
         }
         setError('Error installing organization')
       })
-    return request
+    return { request, controller }
   }
 
   useEffect(() => {
@@ -69,10 +77,12 @@ export default function Page() {
       return
     }
 
-    const request = install()
+    const i = install()
+
     return () => {
-      if (request) {
-        request.cancel()
+      if (i) {
+        const { controller } = i
+        controller.abort()
       }
     }
   }, [installationID])

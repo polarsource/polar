@@ -13,6 +13,18 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { ExternalGitHubCommitReference } from './ExternalGitHubCommitReference';
+import {
+    ExternalGitHubCommitReferenceFromJSON,
+    ExternalGitHubCommitReferenceFromJSONTyped,
+    ExternalGitHubCommitReferenceToJSON,
+} from './ExternalGitHubCommitReference';
+import type { ExternalGitHubPullRequestReference } from './ExternalGitHubPullRequestReference';
+import {
+    ExternalGitHubPullRequestReferenceFromJSON,
+    ExternalGitHubPullRequestReferenceFromJSONTyped,
+    ExternalGitHubPullRequestReferenceToJSON,
+} from './ExternalGitHubPullRequestReference';
 import type { IssueReferenceType } from './IssueReferenceType';
 import {
     IssueReferenceTypeFromJSON,
@@ -25,6 +37,12 @@ import {
     PayloadFromJSONTyped,
     PayloadToJSON,
 } from './Payload';
+import type { PullRequestReference } from './PullRequestReference';
+import {
+    PullRequestReferenceFromJSON,
+    PullRequestReferenceFromJSONTyped,
+    PullRequestReferenceToJSON,
+} from './PullRequestReference';
 
 /**
  * 
@@ -48,8 +66,27 @@ export interface IssueReferenceRead {
      * 
      * @type {Payload}
      * @memberof IssueReferenceRead
+     * @deprecated
      */
     payload: Payload;
+    /**
+     * 
+     * @type {PullRequestReference}
+     * @memberof IssueReferenceRead
+     */
+    pull_request_reference?: PullRequestReference;
+    /**
+     * 
+     * @type {ExternalGitHubPullRequestReference}
+     * @memberof IssueReferenceRead
+     */
+    external_git_hub_pull_request_reference?: ExternalGitHubPullRequestReference;
+    /**
+     * 
+     * @type {ExternalGitHubCommitReference}
+     * @memberof IssueReferenceRead
+     */
+    external_git_hub_commit_reference?: ExternalGitHubCommitReference;
 }
 
 /**
@@ -77,6 +114,9 @@ export function IssueReferenceReadFromJSONTyped(json: any, ignoreDiscriminator: 
         'id': json['id'],
         'type': IssueReferenceTypeFromJSON(json['type']),
         'payload': PayloadFromJSON(json['payload']),
+        'pull_request_reference': !exists(json, 'pullRequestReference') ? undefined : PullRequestReferenceFromJSON(json['pullRequestReference']),
+        'external_git_hub_pull_request_reference': !exists(json, 'externalGitHubPullRequestReference') ? undefined : ExternalGitHubPullRequestReferenceFromJSON(json['externalGitHubPullRequestReference']),
+        'external_git_hub_commit_reference': !exists(json, 'externalGitHubCommitReference') ? undefined : ExternalGitHubCommitReferenceFromJSON(json['externalGitHubCommitReference']),
     };
 }
 
@@ -92,6 +132,9 @@ export function IssueReferenceReadToJSON(value?: IssueReferenceRead | null): any
         'id': value.id,
         'type': IssueReferenceTypeToJSON(value.type),
         'payload': PayloadToJSON(value.payload),
+        'pullRequestReference': PullRequestReferenceToJSON(value.pull_request_reference),
+        'externalGitHubPullRequestReference': ExternalGitHubPullRequestReferenceToJSON(value.external_git_hub_pull_request_reference),
+        'externalGitHubCommitReference': ExternalGitHubCommitReferenceToJSON(value.external_git_hub_commit_reference),
     };
 }
 

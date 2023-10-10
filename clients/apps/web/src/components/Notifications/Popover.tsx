@@ -564,21 +564,25 @@ export const Notification = ({
 }) => {
   switch (n.type) {
     case NotificationType.MAINTAINER_PLEDGE_CREATED_NOTIFICATION:
-      return (
-        <MaintainerPledgeCreated
-          n={n}
-          payload={n.payload as MaintainerPledgeCreatedNotification}
-        />
-      )
+      if (n.maintainer_pledge_created) {
+        return (
+          <MaintainerPledgeCreated
+            n={n}
+            payload={n.maintainer_pledge_created}
+          />
+        )
+      }
 
     case NotificationType.MAINTAINER_PLEDGE_CONFIRMATION_PENDING_NOTIFICATION:
-      return (
-        <MaintainerPledgeConfirmationPendingWrapper
-          n={n}
-          payload={n.payload as MaintainerPledgeConfirmationPendingNotification}
-          setIsInNestedModal={setIsInNestedModal}
-        />
-      )
+      if (n.maintainer_pledge_confirmation_pending) {
+        return (
+          <MaintainerPledgeConfirmationPendingWrapper
+            n={n}
+            payload={n.maintainer_pledge_confirmation_pending}
+            setIsInNestedModal={setIsInNestedModal}
+          />
+        )
+      }
 
     case NotificationType.MAINTAINER_PLEDGED_ISSUE_CONFIRMATION_PENDING_NOTIFICATION:
       return (
@@ -592,37 +596,37 @@ export const Notification = ({
       )
 
     case NotificationType.MAINTAINER_PLEDGE_PENDING_NOTIFICATION:
-      return (
-        <MaintainerPledgePending
-          n={n}
-          payload={n.payload as MaintainerPledgePendingNotification}
-        />
-      )
+      if (n.maintainer_pledge_pending) {
+        return (
+          <MaintainerPledgePending
+            n={n}
+            payload={n.maintainer_pledge_pending}
+          />
+        )
+      }
 
     case NotificationType.MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION:
-      return (
-        <MaintainerPledgedIssuePending
-          n={n}
-          payload={n.payload as MaintainerPledgedIssuePendingNotification}
-        />
-      )
+      if (n.maintainer_pledged_issue_pending) {
+        return (
+          <MaintainerPledgedIssuePending
+            n={n}
+            payload={n.maintainer_pledged_issue_pending}
+          />
+        )
+      }
 
     case NotificationType.MAINTAINER_PLEDGE_PAID_NOTIFICATION:
-      return (
-        <MaintainerPledgePaid
-          n={n}
-          payload={n.payload as MaintainerPledgePaidNotification}
-        />
-      )
+      if (n.maintainer_pledge_paid) {
+        return <MaintainerPledgePaid n={n} payload={n.maintainer_pledge_paid} />
+      }
     case NotificationType.REWARD_PAID_NOTIFICATION:
-      return <RewardPaid n={n} payload={n.payload as RewardPaidNotification} />
+      if (n.reward_paid) {
+        return <RewardPaid n={n} payload={n.reward_paid} />
+      }
     case NotificationType.PLEDGER_PLEDGE_PENDING_NOTIFICATION:
-      return (
-        <PledgerPledgePending
-          n={n}
-          payload={n.payload as PledgerPledgePendingNotification}
-        />
-      )
+      if (n.pledger_pledge_pending) {
+        return <PledgerPledgePending n={n} payload={n.pledger_pledge_pending} />
+      }
   }
 
   return <></>

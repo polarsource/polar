@@ -5,10 +5,10 @@ import {
   useQuery,
 } from '@tanstack/react-query'
 import { api, queryClient } from '../../api'
-import { ApiError, UserRead, UserUpdateSettings } from '../../api/client'
+import { UserRead, UserUpdateSettings } from '../../api/client'
 import { defaultRetry } from './retry'
 
-export const useUser: () => UseQueryResult<UserRead, ApiError> = () =>
+export const useUser: () => UseQueryResult<UserRead> = () =>
   useQuery({
     queryKey: ['user'],
     queryFn: () => api.users.getAuthenticated(),
@@ -26,7 +26,7 @@ export const useUserPreferencesMutation: () => UseMutationResult<
   useMutation({
     mutationFn: (variables: { userUpdateSettings: UserUpdateSettings }) => {
       return api.users.updatePreferences({
-        requestBody: variables.userUpdateSettings,
+        userUpdateSettings: variables.userUpdateSettings,
       })
     },
     onSuccess: (result, variables, ctx) => {
@@ -45,7 +45,7 @@ export const useCreatePersonalAccessToken = () =>
   useMutation({
     mutationFn: (variables: { comment: string }) => {
       return api.personalAccessToken.create({
-        requestBody: {
+        createPersonalAccessToken: {
           comment: variables.comment,
         },
       })
@@ -58,7 +58,7 @@ export const useCreatePersonalAccessToken = () =>
 export const useDeletePersonalAccessToken = () =>
   useMutation({
     mutationFn: (variables: { id: string }) => {
-      return api.personalAccessToken.delete({
+      return api.personalAccessToken._delete({
         id: variables.id,
       })
     },

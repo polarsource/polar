@@ -1,4 +1,7 @@
-import { GithubBadgeRead } from 'polarkit/api/client'
+import {
+  GithubBadgeRead,
+  GithubBadgeReadBadgeTypeEnum,
+} from 'polarkit/api/client'
 import { Badge } from 'polarkit/components/badge'
 import { getCentsInDollarString } from 'polarkit/money'
 const { default: satori } = require('satori')
@@ -58,7 +61,7 @@ export async function GET(request: Request) {
   }
 
   const badge: GithubBadgeRead = {
-    badge_type: GithubBadgeRead.badge_type.PLEDGE,
+    badge_type: GithubBadgeReadBadgeTypeEnum.PLEDGE,
     amount,
     funding,
   }

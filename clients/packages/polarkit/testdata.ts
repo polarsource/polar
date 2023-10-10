@@ -1,6 +1,7 @@
 import {
   Issue,
   IssueFunding,
+  IssueStateEnum,
   MaintainerPledgeConfirmationPendingNotification,
   MaintainerPledgeCreatedNotification,
   MaintainerPledgePaidNotification,
@@ -23,7 +24,7 @@ import {
   RewardPaidNotification,
   UserRead,
   Visibility,
-} from 'polarkit/api/client'
+} from './src/api/client/models'
 
 export function addDays(date: Date, days: number) {
   var result = new Date(date)
@@ -51,13 +52,13 @@ export const orgPrivate: OrganizationPrivateRead = {
   ...org,
   is_personal: false,
   external_id: 123,
-  created_at: '2024',
+  created_at: new Date(),
   pledge_minimum_amount: 2000,
 }
 
 export const user: UserRead = {
-  created_at: '2023-01-01T00:00:00Z',
-  modified_at: '2023-01-01T09:00:00Z',
+  created_at: new Date('2023-01-01T00:00:00Z'),
+  modified_at: new Date('2023-01-01T09:00:00Z'),
   username: 'zegl',
   email: 'test@example.com',
   avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
@@ -111,9 +112,9 @@ export const issue: Issue = {
     total_count: 3,
     plus_one: 3,
   },
-  state: Issue.state.OPEN,
+  state: IssueStateEnum.OPEN,
   id: 'cc',
-  issue_created_at: addDays(new Date(), -7).toISOString(),
+  issue_created_at: addDays(new Date(), -7),
   repository: repo,
   funding: {},
   needs_confirmation_solved: false,
@@ -156,11 +157,11 @@ export const issueFunding: IssueFunding = {
 // PublicAPI
 export const pledgePublicAPI: Pledge = {
   id: 'pppp',
-  created_at: addDays(new Date(), -7).toISOString(),
+  created_at: addDays(new Date(), -7),
   issue: issue,
   amount: { currency: 'USD', amount: 3000 },
   state: PledgeState.CREATED,
-  type: PledgeType.PAY_UPFRONT,
+  type: PledgeType.UPFRONT,
   pledger: pledger,
 }
 
@@ -171,7 +172,7 @@ export const privateOrganization: OrganizationPrivateRead = {
   avatar_url: 'https://avatars.githubusercontent.com/u/105373340?s=400&v=4',
   external_id: 123,
   is_personal: false,
-  created_at: addDays(new Date(), -7).toISOString(),
+  created_at: addDays(new Date(), -7),
   pledge_minimum_amount: 2000,
 }
 
@@ -264,53 +265,91 @@ const maintainerPledgedIssueConfirmationPendingNotification: MaintainerPledgedIs
     maintainer_has_account: false,
   }
 
+// hack to fill in types, it's unused.
+export const notificationDummyPayload = {
+  paid_out_amount: '',
+  issue_url: '',
+  issue_title: '',
+  issue_org_name: '',
+  issue_repo_name: '',
+  issue_number: 0,
+  pledge_id: '',
+  pledger_name: '',
+  pledge_amount: '',
+  maintainer_has_stripe_account: false,
+  pledge_date: '',
+  issue_id: '',
+  pledge_amount_sum: '',
+  maintainer_has_account: false,
+}
+
 export const notification_maintainerPledgeCreatedNotification: NotificationRead =
   {
     id: 'x',
-    created_at: addDays(new Date(), -2).toISOString(),
+    created_at: addDays(new Date(), -2),
+    payload: notificationDummyPayload,
     type: NotificationType.MAINTAINER_PLEDGE_CREATED_NOTIFICATION,
-    payload: maintainerPledgeCreatedNotification,
+    maintainer_pledge_created: maintainerPledgeCreatedNotification,
   }
 
-export const notification_maintainerPledgeConfirmationPendingNotification = {
-  ...notification_maintainerPledgeCreatedNotification,
-  type: NotificationType.MAINTAINER_PLEDGE_CONFIRMATION_PENDING_NOTIFICATION,
-  payload: maintainerPledgeConfirmationPendingNotification,
-}
-
-export const notification_maintainerPledgePendingNotification = {
-  ...notification_maintainerPledgeCreatedNotification,
-  type: NotificationType.MAINTAINER_PLEDGE_PENDING_NOTIFICATION,
-  payload: maintainerPledgePendingNotification,
-}
-
-export const notification_maintainerPledgePaidNotification = {
-  ...notification_maintainerPledgeCreatedNotification,
-  type: NotificationType.MAINTAINER_PLEDGE_PAID_NOTIFICATION,
-  payload: maintainerPledgePaidNotification,
-}
-
-export const notification_pledgerPledgePendingNotification = {
-  ...notification_maintainerPledgeCreatedNotification,
-  type: NotificationType.PLEDGER_PLEDGE_PENDING_NOTIFICATION,
-  payload: pledgerPledgePendingNotification,
-}
-
-export const notification_rewardPaidNotification = {
-  ...notification_maintainerPledgeCreatedNotification,
-  type: NotificationType.REWARD_PAID_NOTIFICATION,
-  payload: rewardPaidNotification,
-}
-
-export const notification_maintainerPledgedIssuePendingNotification = {
-  ...notification_maintainerPledgeCreatedNotification,
-  type: NotificationType.MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION,
-  payload: maintainerPledgedIssuePendingNotification,
-}
-
-export const notification_maintainerPledgedIssueConfirmationPendingNotification =
+export const notification_maintainerPledgeConfirmationPendingNotification: NotificationRead =
   {
-    ...notification_maintainerPledgeCreatedNotification,
+    id: 'x',
+    created_at: addDays(new Date(), -2),
+    payload: notificationDummyPayload,
+    type: NotificationType.MAINTAINER_PLEDGE_CONFIRMATION_PENDING_NOTIFICATION,
+    maintainer_pledge_confirmation_pending:
+      maintainerPledgeConfirmationPendingNotification,
+  }
+
+export const notification_maintainerPledgePendingNotification: NotificationRead =
+  {
+    id: 'x',
+    created_at: addDays(new Date(), -2),
+    payload: notificationDummyPayload,
+    type: NotificationType.MAINTAINER_PLEDGE_PENDING_NOTIFICATION,
+    maintainer_pledge_pending: maintainerPledgePendingNotification,
+  }
+
+export const notification_maintainerPledgePaidNotification: NotificationRead = {
+  id: 'x',
+  created_at: addDays(new Date(), -2),
+  payload: notificationDummyPayload,
+  type: NotificationType.MAINTAINER_PLEDGE_PAID_NOTIFICATION,
+  maintainer_pledge_paid: maintainerPledgePaidNotification,
+}
+
+export const notification_pledgerPledgePendingNotification: NotificationRead = {
+  id: 'x',
+  created_at: addDays(new Date(), -2),
+  payload: notificationDummyPayload,
+  type: NotificationType.PLEDGER_PLEDGE_PENDING_NOTIFICATION,
+  pledger_pledge_pending: pledgerPledgePendingNotification,
+}
+
+export const notification_rewardPaidNotification: NotificationRead = {
+  id: 'x',
+  created_at: addDays(new Date(), -2),
+  payload: notificationDummyPayload,
+  type: NotificationType.REWARD_PAID_NOTIFICATION,
+  reward_paid: rewardPaidNotification,
+}
+
+export const notification_maintainerPledgedIssuePendingNotification: NotificationRead =
+  {
+    id: 'x',
+    created_at: addDays(new Date(), -2),
+    payload: notificationDummyPayload,
+    type: NotificationType.MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION,
+    maintainer_pledged_issue_pending: maintainerPledgedIssuePendingNotification,
+  }
+
+export const notification_maintainerPledgedIssueConfirmationPendingNotification: NotificationRead =
+  {
+    id: 'x',
+    created_at: addDays(new Date(), -2),
+    payload: notificationDummyPayload,
     type: NotificationType.MAINTAINER_PLEDGED_ISSUE_CONFIRMATION_PENDING_NOTIFICATION,
-    payload: maintainerPledgedIssueConfirmationPendingNotification,
+    maintainer_pledged_issue_confirmation_pending:
+      maintainerPledgedIssueConfirmationPendingNotification,
   }

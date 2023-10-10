@@ -3,8 +3,6 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from 'polarkit'
 import {
-  ExternalGitHubCommitReference,
-  ExternalGitHubPullRequestReference,
   IssueReferenceRead,
   IssueReferenceType,
   IssueStatus,
@@ -33,11 +31,11 @@ type Story = StoryObj<typeof IssueListItem>
 const pledges: Pledge[] = [
   {
     id: 'xx',
-    created_at: 'what',
+    created_at: new Date(),
     issue: issue,
     amount: { currency: 'USD', amount: 1234 },
     state: PledgeState.CREATED,
-    type: PledgeType.PAY_UPFRONT,
+    type: PledgeType.UPFRONT,
     pledger: {
       name: 'zz',
       avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
@@ -49,8 +47,8 @@ const pledgeDisputable: Pledge[] = [
   {
     ...pledges[0],
     state: PledgeState.PENDING,
-    type: PledgeType.PAY_UPFRONT,
-    scheduled_payout_at: addDays(new Date(), 7).toISOString(),
+    type: PledgeType.UPFRONT,
+    scheduled_payout_at: addDays(new Date(), 7),
     authed_can_admin_sender: true,
   },
 ]
@@ -59,8 +57,8 @@ const pledgeDisputableToday: Pledge[] = [
   {
     ...pledges[0],
     state: PledgeState.PENDING,
-    type: PledgeType.PAY_UPFRONT,
-    scheduled_payout_at: addHours(new Date(), 2).toISOString(),
+    type: PledgeType.UPFRONT,
+    scheduled_payout_at: addHours(new Date(), 2),
     authed_can_admin_sender: true,
   },
 ]
@@ -69,8 +67,8 @@ const pledgeDisputableYesterday: Pledge[] = [
   {
     ...pledges[0],
     state: PledgeState.PENDING,
-    type: PledgeType.PAY_UPFRONT,
-    scheduled_payout_at: addDays(new Date(), -1).toISOString(),
+    type: PledgeType.UPFRONT,
+    scheduled_payout_at: addDays(new Date(), -1),
     authed_can_admin_sender: true,
   },
 ]
@@ -79,7 +77,7 @@ const pledgeDisputed: Pledge[] = [
   {
     ...pledges[0],
     state: PledgeState.DISPUTED,
-    type: PledgeType.PAY_UPFRONT,
+    type: PledgeType.UPFRONT,
     authed_can_admin_sender: true,
   },
 ]
@@ -88,10 +86,27 @@ const pledgeDisputedByOther: Pledge[] = [
   {
     ...pledges[0],
     state: PledgeState.DISPUTED,
-    type: PledgeType.PAY_UPFRONT,
+    type: PledgeType.UPFRONT,
     authed_can_admin_received: true,
   },
 ]
+
+// urgh!
+const dummyPayload = {
+  id: '',
+  title: '',
+  author_login: '',
+  author_avatar: '',
+  number: 0,
+  additions: 0,
+  deletions: 0,
+  state: '',
+  created_at: new Date(),
+  is_draft: false,
+  organization_name: '',
+  repository_name: '',
+  sha: '',
+}
 
 const payload: PullRequestReference = {
   id: '11',
@@ -102,7 +117,7 @@ const payload: PullRequestReference = {
   additions: 10,
   deletions: 2,
   state: 'open',
-  created_at: '2023-04-08',
+  created_at: new Date('2023-04-08'),
   is_draft: false,
 }
 
@@ -110,7 +125,8 @@ const references: IssueReferenceRead[] = [
   {
     id: 'wha',
     type: IssueReferenceType.PULL_REQUEST,
-    payload,
+    payload: dummyPayload,
+    pull_request_reference: payload,
   },
 ]
 
@@ -118,7 +134,8 @@ const referencesDraft: IssueReferenceRead[] = [
   {
     id: 'wha',
     type: IssueReferenceType.PULL_REQUEST,
-    payload: {
+    payload: dummyPayload,
+    pull_request_reference: {
       ...payload,
       is_draft: true,
     },
@@ -129,11 +146,12 @@ const referencesMerged: IssueReferenceRead[] = [
   {
     id: 'wha',
     type: IssueReferenceType.PULL_REQUEST,
-    payload: {
+    payload: dummyPayload,
+    pull_request_reference: {
       ...payload,
       //is_draft: true,
       state: 'closed',
-      merged_at: '2024-05-01',
+      merged_at: new Date('2024-05-01'),
     },
   },
 ]
@@ -142,10 +160,11 @@ const referencesClosed: IssueReferenceRead[] = [
   {
     id: 'wha',
     type: IssueReferenceType.PULL_REQUEST,
-    payload: {
+    payload: dummyPayload,
+    pull_request_reference: {
       ...payload,
       state: 'closed',
-      closed_at: '2024-05-01',
+      closed_at: new Date('2024-05-01'),
     },
   },
 ]
@@ -154,12 +173,18 @@ const doubleReference: IssueReferenceRead[] = [
   {
     id: 'wha',
     type: IssueReferenceType.PULL_REQUEST,
-    payload,
+    payload: dummyPayload,
+    pull_request_reference: {
+      ...payload,
+    },
   },
   {
     id: 'wha',
     type: IssueReferenceType.PULL_REQUEST,
-    payload,
+    payload: dummyPayload,
+    pull_request_reference: {
+      ...payload,
+    },
   },
 ]
 
@@ -167,7 +192,8 @@ const referencesCommit: IssueReferenceRead[] = [
   {
     id: 'wha',
     type: IssueReferenceType.EXTERNAL_GITHUB_COMMIT,
-    payload: {
+    payload: dummyPayload,
+    external_git_hub_commit_reference: {
       author_login: 'petterheterjag',
       author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
       sha: '160a13da0ecedacb326de1b913186f448185ad9a',
@@ -175,19 +201,20 @@ const referencesCommit: IssueReferenceRead[] = [
       repository_name: 'polartest',
       message: 'What is this',
       branch_name: 'fix-1234',
-    } as ExternalGitHubCommitReference, // with branch name
+    }, // with branch name
   },
   {
     id: 'wha',
     type: IssueReferenceType.EXTERNAL_GITHUB_COMMIT,
-    payload: {
+    payload: dummyPayload,
+    external_git_hub_commit_reference: {
       author_login: 'petterheterjag',
       author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
       sha: '160a13da0ecedacb326de1b913186f448185ad9a',
       organization_name: 'petterheterjag',
       repository_name: 'polartest',
       message: 'What is this',
-    } as ExternalGitHubCommitReference, // without branch name
+    }, // without branch name
   },
 ]
 
@@ -361,34 +388,30 @@ export const AllReferences: Story = {
       {
         id: 'wha',
         type: IssueReferenceType.EXTERNAL_GITHUB_PULL_REQUEST,
-        payload: {
+        payload: dummyPayload,
+        external_git_hub_pull_request_reference: {
           author_login: 'petterheterjag',
           author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
-          sha: '160a13da0ecedacb326de1b913186f448185ad9a',
           organization_name: 'petterheterjag',
           repository_name: 'polartest',
-          message: 'What is this',
-          branch_name: 'fix-1234',
           title: 'foo',
           number: 23,
           state: 'open',
-        } as ExternalGitHubPullRequestReference,
+        },
       },
       {
         id: 'wha',
         type: IssueReferenceType.EXTERNAL_GITHUB_PULL_REQUEST,
-        payload: {
+        payload: dummyPayload,
+        external_git_hub_pull_request_reference: {
           author_login: 'petterheterjag',
           author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
-          sha: '160a13da0ecedacb326de1b913186f448185ad9a',
           organization_name: 'petterheterjag',
           repository_name: 'polartest',
-          message: 'What is this',
-          branch_name: 'fix-1234',
           title: 'foo',
           number: 23,
           state: 'closed',
-        } as ExternalGitHubPullRequestReference,
+        },
       },
     ],
   },
@@ -507,7 +530,7 @@ export const PledgeConfirmationPendingConfirmed: Story = {
     issue: {
       ...issueClosed,
       needs_confirmation_solved: false,
-      confirmed_solved_at: addDays(new Date(), -3).toISOString(),
+      confirmed_solved_at: addDays(new Date(), -3),
     },
     references: referencesMerged,
     pledges: [
@@ -526,7 +549,7 @@ export const PledgeMultipleTypes: Story = {
     pledges: [
       {
         ...pledgePublicAPI,
-        type: PledgeType.PAY_UPFRONT,
+        type: PledgeType.UPFRONT,
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
@@ -534,7 +557,7 @@ export const PledgeMultipleTypes: Story = {
       },
       {
         ...pledgePublicAPI,
-        type: PledgeType.PAY_UPFRONT,
+        type: PledgeType.UPFRONT,
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
@@ -542,7 +565,7 @@ export const PledgeMultipleTypes: Story = {
       },
       {
         ...pledgePublicAPI,
-        type: PledgeType.PAY_UPFRONT,
+        type: PledgeType.UPFRONT,
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
@@ -550,7 +573,7 @@ export const PledgeMultipleTypes: Story = {
       },
       {
         ...pledgePublicAPI,
-        type: PledgeType.PAY_UPFRONT,
+        type: PledgeType.UPFRONT,
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
@@ -558,7 +581,7 @@ export const PledgeMultipleTypes: Story = {
       },
       {
         ...pledgePublicAPI,
-        type: PledgeType.PAY_UPFRONT,
+        type: PledgeType.UPFRONT,
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
@@ -566,7 +589,7 @@ export const PledgeMultipleTypes: Story = {
       },
       {
         ...pledgePublicAPI,
-        type: PledgeType.PAY_UPFRONT,
+        type: PledgeType.UPFRONT,
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
@@ -575,7 +598,7 @@ export const PledgeMultipleTypes: Story = {
 
       {
         ...pledgePublicAPI,
-        type: PledgeType.PAY_ON_COMPLETION,
+        type: PledgeType.ON_COMPLETION,
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
@@ -768,7 +791,7 @@ export const RewardsStatusAll: Story = {
         amount: { currency: 'USD', amount: 3000 },
         pledge: {
           ...reward.pledge,
-          refunded_at: '2023-10-03',
+          refunded_at: new Date('2023-10-03'),
         },
       },
     ],

@@ -1,6 +1,9 @@
 'use client'
 
-import { BackofficeBadge, BackofficeBadgeResponse } from 'polarkit/api/client'
+import {
+  BackofficeBadgeActionEnum,
+  BackofficeBadgeResponse,
+} from 'polarkit/api/client'
 import { useBackofficeBadgeAction } from 'polarkit/hooks'
 import { useState } from 'react'
 
@@ -8,8 +11,8 @@ const Badge = () => {
   const [orgSlug, setOrgSlug] = useState('')
   const [repoSlug, setRepoSlug] = useState('')
   const [issueNumber, setIssueNumber] = useState(0)
-  const [action, setAction] = useState<BackofficeBadge.action>(
-    BackofficeBadge.action.EMBED,
+  const [action, setAction] = useState<BackofficeBadgeActionEnum>(
+    BackofficeBadgeActionEnum.EMBED,
   )
   const [successURL, setSuccessURL] = useState('')
 
@@ -35,7 +38,7 @@ const Badge = () => {
   return (
     <>
       {successURL && (
-        <div className="bg-green-200 py-2 px-4">
+        <div className="bg-green-200 px-4 py-2">
           <strong>Success!</strong>{' '}
           <a href={successURL} target="_blank">
             {successURL}
@@ -89,15 +92,15 @@ const Badge = () => {
           <select
             id="action"
             onChange={(e) => {
-              if (e.target.value == BackofficeBadge.action.REMOVE) {
-                return setAction(BackofficeBadge.action.REMOVE)
+              if (e.target.value == BackofficeBadgeActionEnum.REMOVE) {
+                return setAction(BackofficeBadgeActionEnum.REMOVE)
               }
-              setAction(BackofficeBadge.action.EMBED)
+              setAction(BackofficeBadgeActionEnum.EMBED)
             }}
             value={action}
           >
-            <option value={BackofficeBadge.action.EMBED}>Embed</option>
-            <option value={BackofficeBadge.action.REMOVE}>Remove</option>
+            <option value={BackofficeBadgeActionEnum.EMBED}>Embed</option>
+            <option value={BackofficeBadgeActionEnum.REMOVE}>Remove</option>
           </select>
         </div>
 

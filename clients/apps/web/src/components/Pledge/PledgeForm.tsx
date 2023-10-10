@@ -13,11 +13,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
 import {
-  ApiError,
   Issue,
   PaymentMethod,
+  PledgeStripePaymentIntentCreateSetupFutureUsageEnum,
   PledgeStripePaymentIntentMutationResponse,
-  PledgeStripePaymentIntentUpdate,
+  ResponseError,
 } from 'polarkit/api/client'
 import { MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
 import {
@@ -50,7 +50,7 @@ type PledgeSync = {
   amount: number
   email: string
   setup_future_usage:
-    | PledgeStripePaymentIntentUpdate.setup_future_usage
+    | PledgeStripePaymentIntentCreateSetupFutureUsageEnum
     | undefined
 }
 
@@ -298,7 +298,7 @@ const FundToday = ({
 
   const createPaymentIntent = useCallback(async (pledgeSync: PledgeSync) => {
     return await api.pledges.createPaymentIntent({
-      requestBody: {
+      pledgeStripePaymentIntentCreate: {
         issue_id: issue.id,
         amount: pledgeSync.amount,
         email: pledgeSync.email,
@@ -313,7 +313,7 @@ const FundToday = ({
 
     return await api.pledges.updatePaymentIntent({
       id: polarPaymentIntent.payment_intent_id,
-      requestBody: {
+      pledgeStripePaymentIntentUpdate: {
         amount: pledgeSync.amount,
         email: pledgeSync.email,
         setup_future_usage: pledgeSync.setup_future_usage,
@@ -373,12 +373,9 @@ const FundToday = ({
 
       lastPledgeSync.current = pledgeSync
     } catch (e) {
-      if (e instanceof ApiError) {
-        if (
-          e.message === 'Bad Request' &&
-          e.body &&
-          e.body.detail === 'Invalid Stripe Request'
-        ) {
+      if (e instanceof ResponseError) {
+        const body = await e.response.json()
+        if (body && body['detail'] === 'Invalid Stripe Request') {
           // Probably a invalid email according to Stripe. Ignore this error.
         } else {
           // We didn't handle this error, raise it again.
@@ -469,7 +466,7 @@ const FundToday = ({
       amount,
       email,
       setup_future_usage: savePaymentMethod
-        ? PledgeStripePaymentIntentUpdate.setup_future_usage.ON_SESSION
+        ? PledgeStripePaymentIntentCreateSetupFutureUsageEnum.ON_SESSION
         : undefined,
     }
   }
@@ -505,7 +502,7 @@ const FundToday = ({
     debouncedSync({
       ...getSyncVals(),
       setup_future_usage: save
-        ? PledgeStripePaymentIntentUpdate.setup_future_usage.ON_SESSION
+        ? PledgeStripePaymentIntentCreateSetupFutureUsageEnum.ON_SESSION
         : undefined,
     })
   }

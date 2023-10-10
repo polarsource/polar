@@ -15,27 +15,27 @@ const FakePullRequest = ({
   return (
     <div
       className={clsx(
-        'overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700/30',
+        'dark:bg-polar-700/30 dark:border-polar-600 overflow-hidden rounded-lg border border-gray-200 bg-gray-50',
         classNames,
       )}
     >
-      <div className="inline-flex w-full items-center space-x-2 border-b-[1px] border-gray-200 bg-gray-100 px-4 py-2 text-sm text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400">
+      <div className="dark:bg-polar-700 dark:border-polar-600 dark:text-polar-400 inline-flex w-full items-center space-x-2 border-b-[1px] border-gray-200 bg-gray-100 px-4 py-2 text-sm text-gray-500">
         <span>
-          <strong className="font-medium text-gray-700 dark:text-gray-300">
+          <strong className="dark:text-polar-300 font-medium text-gray-700">
             janedoe
           </strong>{' '}
           commented 2 days ago &mdash; edited by {CONFIG.GITHUB_APP_NAMESPACE}
         </span>
-        <div className="rounded-full border-[1px] border-gray-300 px-2 py-0.5 dark:border-gray-500">
+        <div className="dark:border-polar-500 rounded-full border-[1px] border-gray-300 px-2 py-0.5">
           bot
         </div>
       </div>
       <div className="flex flex-col space-y-3.5 p-4 pb-3">
-        <div className="h-4 w-full max-w-[250px] rounded-full bg-gray-200/75 dark:bg-gray-600/75"></div>
+        <div className="dark:bg-polar-600/75 h-4 w-full max-w-[250px] rounded-full bg-gray-200/75"></div>
         {large && (
-          <div className="h-4 w-full max-w-[500px] rounded-full bg-gray-200/75 dark:bg-gray-600/75"></div>
+          <div className="dark:bg-polar-600/75 h-4 w-full max-w-[500px] rounded-full bg-gray-200/75"></div>
         )}
-        <div className="h-4 w-full max-w-[400px] rounded-full bg-gray-200/75 dark:bg-gray-600/75"></div>
+        <div className="dark:bg-polar-600/75 h-4 w-full max-w-[400px] rounded-full bg-gray-200/75"></div>
         <PolarBadge showAmount={showAmount} />
       </div>
     </div>

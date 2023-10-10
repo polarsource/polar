@@ -25,11 +25,11 @@ const MaintainerSignup = () => {
   ]
 
   return (
-    <div className="flex w-full grow items-center justify-center bg-[#FEFDF9] px-4 dark:bg-gray-950 md:h-screen">
+    <div className="dark:bg-polar-950 flex w-full grow items-center justify-center bg-[#FEFDF9] px-4 md:h-screen">
       <div className="my-16 flex flex-col items-center  md:my-0">
         <LogoType70 className="mb-16 h-10" />
 
-        <div className="flex flex-col gap-8 overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800 dark:ring-1  dark:ring-gray-800 md:flex-row ">
+        <div className="dark:bg-polar-800 dark:ring-polar-800 flex flex-col gap-8 overflow-hidden rounded-lg bg-white shadow  dark:ring-1 md:flex-row ">
           <div className="flex flex-col gap-8 p-8 md:max-w-[320px] ">
             <h1 className="text-4xl font-light">Get a funded backlog</h1>
 
@@ -39,7 +39,7 @@ const MaintainerSignup = () => {
                   <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-blue-600 font-semibold text-blue-600">
                     <span>{s.num}</span>
                   </div>
-                  <div className="text-gray-600 dark:text-gray-400">
+                  <div className="dark:text-polar-400 text-gray-600">
                     {s.text}
                   </div>
                 </div>
@@ -130,7 +130,7 @@ const MaintainerSignup = () => {
                 <FakePullRequest
                   showAmount={false}
                   large={false}
-                  classNames="border border-[#3D54AB]/20 shadow-up dark:bg-gray-800"
+                  classNames="border border-[#3D54AB]/20 shadow-up dark:bg-polar-800"
                 />
               </div>
             </div>
@@ -140,14 +140,14 @@ const MaintainerSignup = () => {
         <div className="mt-8 text-sm text-gray-500">
           By using Polar you agree to our{' '}
           <a
-            className="text-gray-700 dark:text-gray-300"
+            className="dark:text-polar-300 text-gray-700"
             href="https://polar.sh/legal/terms"
           >
             Terms of Service
           </a>{' '}
           and understand our{' '}
           <a
-            className="text-gray-700 dark:text-gray-300"
+            className="dark:text-polar-300 text-gray-700"
             href="https://polar.sh/legal/privacy"
           >
             Privacy Policy

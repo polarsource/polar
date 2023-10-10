@@ -145,10 +145,10 @@ export const AddBadgeButton = (props: { issue: Issue }) => {
       <button
         onClick={click}
         className={classNames(
-          isBadged ? 'bg-white dark:bg-gray-800' : '',
+          isBadged ? 'dark:bg-polar-800 bg-white' : '',
           isBadged
             ? 'border-green-200 text-green-600 hover:border-green-300 dark:border-green-600'
-            : 'border-blue-200 bg-white text-blue-600 transition ease-in-out hover:border-blue-600 hover:bg-blue-600 hover:text-white dark:border-gray-600 dark:bg-transparent dark:text-gray-400 dark:hover:border-blue-600 dark:hover:bg-blue-600 dark:hover:text-white',
+            : 'dark:border-polar-600 dark:text-polar-400 border-blue-200 bg-white text-blue-600 transition ease-in-out hover:border-blue-600 hover:bg-blue-600 hover:text-white dark:bg-transparent dark:hover:border-blue-600 dark:hover:bg-blue-600 dark:hover:text-white',
           'cursor-pointer items-center justify-center space-x-1 rounded-md border px-2 py-1 text-sm',
           'flex overflow-hidden whitespace-nowrap',
         )}
@@ -222,7 +222,7 @@ export const BadgePromotionModal = (props: {
           {isBadged && (
             <button
               onClick={clickRemoveBadge}
-              className="text-gray flex cursor-pointer items-center rounded-full border border-gray-200 px-2 py-0.5 pr-3 text-sm text-gray-500 hover:bg-gray-100 dark:border-gray-500 dark:text-gray-400 dark:hover:bg-gray-700"
+              className="text-gray dark:border-polar-500 dark:text-polar-400 dark:hover:bg-polar-700 flex cursor-pointer items-center rounded-full border border-gray-200 px-2 py-0.5 pr-3 text-sm text-gray-500 hover:bg-gray-100"
             >
               <XIcon /> Remove
             </button>
@@ -239,28 +239,28 @@ export const BadgePromotionModal = (props: {
           <Tab
             value="funding"
             icon={
-              <HeartIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+              <HeartIcon className="dark:text-polar-300 h-6 w-6 text-gray-600" />
             }
             title="Funding"
           />
           <Tab
             value="rewards"
             icon={
-              <GiftIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+              <GiftIcon className="dark:text-polar-300 h-6 w-6 text-gray-600" />
             }
             title="Rewards"
           />
           <Tab
             value="promote"
             icon={
-              <MegaphoneIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+              <MegaphoneIcon className="dark:text-polar-300 h-6 w-6 text-gray-600" />
             }
             title="Promote"
           />
         </TabsList>
         <TabsContent
           value="funding"
-          className="bg-gray-75 -mt-[1px] border-t p-6 dark:border-gray-600 dark:bg-gray-900"
+          className="bg-gray-75 dark:bg-polar-900 dark:border-polar-600 -mt-[1px] border-t p-6"
         >
           <BadgeMessageForm
             value={
@@ -281,13 +281,13 @@ export const BadgePromotionModal = (props: {
         </TabsContent>
         <TabsContent
           value="rewards"
-          className="bg-gray-75 -mt-[1px] border-t p-6 dark:border-gray-600 dark:bg-gray-900"
+          className="bg-gray-75 dark:bg-polar-900 dark:border-polar-600 -mt-[1px] border-t p-6"
         >
           <RewardsTab {...props} />
         </TabsContent>
         <TabsContent
           value="promote"
-          className="bg-gray-75 -mt-[1px] border-t p-6 dark:border-gray-600 dark:bg-gray-900"
+          className="bg-gray-75 dark:bg-polar-900 dark:border-polar-600 -mt-[1px] border-t p-6"
         >
           <PromoteTab {...props} />
         </TabsContent>
@@ -334,7 +334,7 @@ const PostCommentForm = (props: {
       )}
       <div className="flex h-full flex-1 flex-col overflow-hidden rounded-md border ">
         <textarea
-          className="overflow-hiddens max-h-[10rem] w-full flex-1 border-0 px-4 py-2.5 text-gray-800 outline-0 dark:bg-gray-700 dark:text-white"
+          className="overflow-hiddens dark:bg-polar-700 max-h-[10rem] w-full flex-1 border-0 px-4 py-2.5 text-gray-800 outline-0 dark:text-white"
           value={message}
           disabled={posted || loading}
           onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
@@ -439,7 +439,7 @@ const Tab = ({
     <div className="flex w-full items-center gap-4 px-1 text-left">
       {icon}
       <div>
-        <div className='font-medium" text-sm text-gray-700 dark:text-gray-300'>
+        <div className='font-medium" dark:text-polar-300 text-sm text-gray-700'>
           {title}
         </div>
       </div>
@@ -499,7 +499,7 @@ const PromoteTab = (props: {
       <div className="flex flex-col">
         <div className="text-sm font-medium">Spread the word</div>
 
-        <div className="mb-1 mt-2 text-xs text-gray-500 dark:text-gray-400">
+        <div className="dark:text-polar-400 mb-1 mt-2 text-xs text-gray-500">
           Share link to the pledge page
         </div>
 
@@ -509,7 +509,7 @@ const PromoteTab = (props: {
           onCopy={() => onCopy('badge-page-link')}
         />
 
-        <div className="my-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <div className="dark:text-polar-400 my-2 flex items-center justify-between text-xs text-gray-500">
           <span>Embed badge on website</span>
 
           <select
@@ -664,10 +664,10 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
       <div className="flex w-full flex-col space-y-2">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm font-medium text-gray-900 dark:text-gray-300">
+            <div className="dark:text-polar-300 text-sm font-medium text-gray-900">
               Public rewards
             </div>
-            <div className="text-xs text-gray-600 dark:text-gray-500">
+            <div className="dark:text-polar-500 text-xs text-gray-600">
               Public & upfront rewards can attract contributors. You can also
               reward & adjust splits later too.
             </div>
@@ -685,18 +685,18 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
           <>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <UserIcon className="h-6 w-6 rounded-full bg-gray-50 p-1 dark:bg-gray-950" />
+                <UserIcon className="dark:bg-polar-950 h-6 w-6 rounded-full bg-gray-50 p-1" />
                 <div className="text-sm">Reserved for contributor(s)</div>
               </div>
-              <div className="flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5 dark:bg-gray-700">
+              <div className="dark:bg-polar-700 flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5">
                 <span className="flex-shrink-0 text-gray-500">%</span>
                 <div className="flex-1">
                   <input
                     className={classNames(
-                      'w-full bg-white dark:bg-gray-700 dark:outline-gray-700 ',
+                      'dark:bg-polar-700 w-full bg-white dark:outline-gray-700 ',
                       usePublicRewards
-                        ? 'font-medium text-black dark:text-gray-100'
-                        : 'text-gray-500 dark:text-gray-400',
+                        ? 'dark:text-polar-100 font-medium text-black'
+                        : 'dark:text-polar-400 text-gray-500',
                     )}
                     disabled={!usePublicRewards}
                     value={contributorsShare}
@@ -729,13 +729,13 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
                   Reviews, feedback & maintenance. Reward yourself too.
                 </div>
               </div>
-              <div className="flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5 dark:bg-gray-700">
+              <div className="dark:bg-polar-700 flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5">
                 <span className="flex-shrink-0 text-gray-500">%</span>
                 <div className="flex-1">
                   <input
                     className={classNames(
-                      'w-full bg-white dark:bg-gray-700 dark:outline-gray-700 ',
-                      'text-gray-500 dark:text-gray-400',
+                      'dark:bg-polar-700 w-full bg-white dark:outline-gray-700 ',
+                      'dark:text-polar-400 text-gray-500',
                     )}
                     disabled
                     value={maintainerShare}
@@ -754,10 +754,10 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
           <div className="flex w-full flex-col space-y-2">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-300">
+                <div className="dark:text-polar-300 text-sm font-medium text-gray-900">
                   Boost reward
                 </div>
-                <div className="text-xs text-gray-600 dark:text-gray-500">
+                <div className="dark:text-polar-500 text-xs text-gray-600">
                   You have pledged{' '}
                   <b>${getCentsInDollarString(selfSeededAmount)} </b>
                   to be paid on completion.

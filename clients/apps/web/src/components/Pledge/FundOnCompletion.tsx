@@ -78,7 +78,7 @@ const FundOnCompletion = ({
       <div>
         <label
           htmlFor="amount"
-          className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+          className="dark:text-polar-400 mb-2 text-sm font-medium text-gray-500"
         >
           Amount
         </label>
@@ -96,7 +96,7 @@ const FundOnCompletion = ({
           <p
             className={classNames(
               amount < organization.pledge_minimum_amount ? 'text-red-500' : '',
-              'w-2/5 text-xs text-gray-500 dark:text-gray-400',
+              'dark:text-polar-400 w-2/5 text-xs text-gray-500',
             )}
           >
             Minimum is $
@@ -117,7 +117,7 @@ const FundOnCompletion = ({
         <div className="grid gap-0 leading-none">
           <label
             htmlFor="payment_promise"
-            className="text-xs font-medium text-gray-500 dark:text-gray-400"
+            className="dark:text-polar-400 text-xs font-medium text-gray-500"
           >
             I promise to pay once the issue is completed
           </label>
@@ -150,9 +150,9 @@ export default FundOnCompletion
 
 const NotLoggedInBanner = () => {
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-red-200 px-4 py-4 dark:border-red-700 dark:bg-gray-900">
+    <div className="dark:bg-polar-900 flex flex-col gap-4 rounded-lg border border-red-200 px-4 py-4 dark:border-red-700">
       <div className="flex items-center justify-between">
-        <div className="text-base font-medium text-gray-700 dark:text-gray-400">
+        <div className="dark:text-polar-400 text-base font-medium text-gray-700">
           Sign in with GitHub
         </div>
         <div className="rounded-sm border border-red-200 bg-red-50 px-1 text-xs text-red-500 dark:border-red-700 dark:bg-red-900">
@@ -162,20 +162,20 @@ const NotLoggedInBanner = () => {
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <UserCircleIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-          <div className="text-xs font-semibold text-gray-600 dark:text-gray-500">
+          <UserCircleIcon className="dark:text-polar-400 h-5 w-5 text-gray-500" />
+          <div className="dark:text-polar-500 text-xs font-semibold text-gray-600">
             Show profile in connection with funding
           </div>
         </div>
         <div className="flex items-center gap-2">
           <BellIcon className="h-5 w-5 text-gray-500" />
-          <div className="text-xs text-gray-600 dark:text-gray-500">
+          <div className="dark:text-polar-500 text-xs text-gray-600">
             + Track funding on funded issue
           </div>
         </div>
         <div className="flex items-center gap-2">
           <LogoIcon className="h-5 w-5" />
-          <div className="text-xs text-gray-600 dark:text-gray-500">
+          <div className="dark:text-polar-500 text-xs text-gray-600">
             + Polar account for future funding & rewards
           </div>
         </div>
@@ -193,14 +193,14 @@ const NotLoggedInBanner = () => {
 }
 
 const NextSteps = () => (
-  <div className="flex flex-col gap-3 text-sm text-gray-600  dark:text-gray-400 ">
+  <div className="dark:text-polar-400 flex flex-col gap-3 text-sm  text-gray-600 ">
     <div className="flex items-center gap-4 font-medium ">
-      <ClockIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+      <ClockIcon className="dark:text-polar-400 h-6 w-6 text-gray-600" />
       <div>
-        <div className="text-gray-600 dark:text-gray-300">
+        <div className="dark:text-polar-300 text-gray-600">
           Fund on completion
         </div>
-        <div className="text-xs font-light text-gray-500 dark:text-gray-400">
+        <div className="dark:text-polar-400 text-xs font-light text-gray-500">
           Payment terms and how it works
         </div>
       </div>
@@ -225,7 +225,7 @@ const NextSteps = () => (
 )
 
 export const CircledNumber = ({ children }: { children: React.ReactNode }) => (
-  <div className="m-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-around rounded-full border border-gray-200 dark:border-gray-500">
+  <div className="dark:border-polar-500 m-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-around rounded-full border border-gray-200">
     <span className="text-sm">{children}</span>
   </div>
 )

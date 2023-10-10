@@ -4,7 +4,7 @@ import { type CardProperties } from './types'
 
 const WhiteCard = (props: CardProperties) => {
   const className = classNames(
-    'bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-gray-700',
+    'bg-white shadow dark:bg-polar-800 dark:ring-1 dark:ring-polar-700',
     props.className || '',
   )
 

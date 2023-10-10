@@ -4,9 +4,9 @@ import { PrimaryButton } from 'polarkit/components/ui/atoms'
 
 const OnboardingAddBadge = () => {
   return (
-    <div className="grid overflow-hidden rounded-xl bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-gray-700 lg:grid-cols-2">
+    <div className="dark:bg-polar-800 dark:ring-polar-700 grid overflow-hidden rounded-xl bg-white shadow dark:ring-1 lg:grid-cols-2">
       <div className="px-6 py-3">
-        <h2 className="font-medium text-gray-900 dark:text-gray-400">
+        <h2 className="dark:text-polar-400 font-medium text-gray-900">
           Add the Polar badge to an issue to promote funding.
         </h2>
         <p className="mt-4 flex flex-wrap items-center text-sm text-gray-500">

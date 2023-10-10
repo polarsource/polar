@@ -98,19 +98,19 @@ const IssuePledge = (props: Props) => {
           {showConfirmPledgeAction && (
             <>
               {isConfirmed && (
-                <div className="flex flex-row items-center gap-1 text-sm text-gray-700 dark:text-gray-400">
+                <div className="dark:text-polar-400 flex flex-row items-center gap-1 text-sm text-gray-700">
                   <CheckCircleIcon className="h-5 w-5 text-green-700 dark:text-green-500" />
                   <span>Completed</span>
                 </div>
               )}
               {confirmPledgeIsLoading && (
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-500">
+                <span className="dark:text-polar-500 text-sm font-medium text-gray-600">
                   Loading...
                 </span>
               )}
               {confirmable && (
                 <button
-                  className="flex items-center gap-2 rounded-md border border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 transition duration-100 hover:bg-gray-300/50 hover:text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-900"
+                  className="dark:bg-polar-700 dark:border-polar-600 dark:text-polar-400 dark:hover:bg-polar-900 flex items-center gap-2 rounded-md border border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 transition duration-100 hover:bg-gray-300/50 hover:text-gray-800"
                   onClick={props.onConfirmPledges}
                 >
                   <CheckCircleIcon className="h-6 w-6 text-green-600" />
@@ -125,7 +125,7 @@ const IssuePledge = (props: Props) => {
       {showSelfPledgesFor && selfContribution > 0 && (
         <div
           className={twMerge(
-            'border-t dark:border-gray-700',
+            'dark:border-polar-700 border-t',
             'flex flex-row items-center gap-4 bg-gray-50 bg-white px-4 py-2 dark:bg-transparent  ',
           )}
         >

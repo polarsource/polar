@@ -27,7 +27,7 @@ const AuthenticationMethod: React.FC<AuthenticationMethodProps> = ({
       <div>{icon}</div>
       <div className="grow">
         <div className="font-medium">{title}</div>
-        <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="dark:text-polar-400 text-sm text-gray-500">
           {subtitle}
         </div>
       </div>

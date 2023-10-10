@@ -40,7 +40,7 @@ export default function ClientPage() {
   return (
     <DashboardBody>
       <div className="relative z-0">
-        <div className="divide-y divide-gray-200 dark:divide-gray-800">
+        <div className="dark:divide-polar-800 divide-y divide-gray-200">
           {org && (
             <Section>
               <>
@@ -67,5 +67,5 @@ const Section = ({ children }: { children: ReactElement }) => {
 }
 
 const SectionDescription = ({ title }: { title: string }) => {
-  return <h2 className="text-lg text-gray-500 dark:text-gray-400">{title}</h2>
+  return <h2 className="dark:text-polar-400 text-lg text-gray-500">{title}</h2>
 }

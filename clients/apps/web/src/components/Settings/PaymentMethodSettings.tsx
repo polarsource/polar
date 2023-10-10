@@ -31,9 +31,9 @@ const PaymentMethodSettings = () => {
   }
 
   return (
-    <div className="flex w-full flex-col divide-y rounded-md border text-gray-900 dark:text-gray-200">
+    <div className="dark:text-polar-200 flex w-full flex-col divide-y rounded-md border text-gray-900">
       {paymentMethods.data?.items?.length === 0 && (
-        <div className="dark:text-gray:300 p-4 text-sm text-gray-500">
+        <div className="dark:text-polar:300 p-4 text-sm text-gray-500">
           You don&apos;t have any saved payment methods yet. You can add one
           when making your next payment.
         </div>
@@ -43,7 +43,7 @@ const PaymentMethodSettings = () => {
         <PaymentMethodItem key={pm.stripe_payment_method_id} pm={pm} />
       ))}
 
-      <div className="dark:text-gray:300 space-y-2 p-4 text-sm text-gray-500">
+      <div className="dark:text-polar:300 space-y-2 p-4 text-sm text-gray-500">
         <PrimaryButton
           fullWidth={false}
           classNames=""
@@ -79,10 +79,10 @@ const PaymentMethodItem = ({ pm }: { pm: PaymentMethod }) => {
       <div className="flex-1">
         {prettyCardName(pm.brand)} (****{pm.last4})
       </div>
-      <div className="text-sm text-gray-600 dark:text-gray-400">
+      <div className="dark:text-polar-400 text-sm text-gray-600">
         Expires {pm.exp_month.toString().padStart(2, '0')}/{pm.exp_year}
       </div>
-      <div className="text-sm text-gray-600 dark:text-gray-400">
+      <div className="dark:text-polar-400 text-sm text-gray-600">
         Connected June 22, 2023
       </div>
 
@@ -95,7 +95,7 @@ const PaymentMethodItem = ({ pm }: { pm: PaymentMethod }) => {
       {!isDetaching && (
         <div>
           <XMarkIcon
-            className="h-4 w-4 cursor-pointer text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+            className="dark:text-polar-400 h-4 w-4 cursor-pointer text-gray-600 hover:text-gray-700 dark:hover:text-gray-300"
             onClick={onDetach}
           />
         </div>

@@ -12,7 +12,7 @@ const Avatar = ({
     return (
       <img
         src={avatar_url}
-        className="h-6 w-6 flex-shrink-0 rounded-full border-2 border-white bg-white dark:border-gray-900 dark:bg-gray-900"
+        className="dark:bg-polar-900 dark:border-polar-900 h-6 w-6 flex-shrink-0 rounded-full border-2 border-white bg-white"
       />
     )
   }
@@ -20,7 +20,7 @@ const Avatar = ({
   const initials = getInitials(name)
 
   return (
-    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-white bg-white text-xs dark:border-gray-900 dark:bg-gray-900">
+    <div className="dark:bg-polar-900 dark:border-polar-900 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-white bg-white text-xs">
       <span>{initials}</span>
     </div>
   )

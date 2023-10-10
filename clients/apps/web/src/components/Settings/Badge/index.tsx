@@ -250,7 +250,7 @@ const BadgeSetup = ({
         initial={isSettingPage ? false : 'hidden'}
         animate="show"
       >
-        <div className="w-full rounded-xl bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-inset dark:ring-gray-700">
+        <div className="dark:bg-polar-800 dark:ring-polar-700 w-full rounded-xl bg-white shadow dark:ring-1 dark:ring-inset">
           <div className="flex flex-col space-y-4 p-5">
             <BadgeMessageForm
               value={settings.message || ''}
@@ -324,11 +324,11 @@ const BadgeSetup = ({
               </div>
             </div>
           </div>
-          <div className="flex flex-row items-center rounded-b-xl border-t border-gray-200 bg-gray-100/50 px-4 py-3 text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
+          <div className="dark:bg-polar-700 dark:border-polar-600 dark:text-polar-300 flex flex-row items-center rounded-b-xl border-t border-gray-200 bg-gray-100/50 px-4 py-3 text-gray-500">
             <QuestionMarkCircleIcon
               width={24}
               height={24}
-              className="text-gray-300 dark:text-gray-400"
+              className="dark:text-polar-400 text-gray-300"
             />
             <p className="ml-2 text-xs">
               <strong className="block font-semibold">
@@ -537,7 +537,7 @@ export const Controls = ({
   return (
     <>
       {hasRetroactiveChanges && (
-        <div className="flex flex-row space-x-8 rounded-xl border bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+        <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-row space-x-8 rounded-xl border bg-white p-4">
           <div className="w-1/2 items-center text-sm">
             <SettingsCheckbox
               id="retroactive_embed"
@@ -574,7 +574,7 @@ export const Controls = ({
 
           <span
             className={classNames(
-              'text-sm leading-6 text-gray-500 transition-all duration-500 dark:text-gray-400',
+              'dark:text-polar-400 text-sm leading-6 text-gray-500 transition-all duration-500',
               isSaved ? 'opacity-1' : 'opacity-0',
             )}
           >

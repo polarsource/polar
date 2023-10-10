@@ -13,7 +13,7 @@ const LabeledRadioButton = (props: {
   })
 
   return (
-    <div className="flex flex-row rounded-lg bg-gray-100 text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+    <div className="dark:bg-polar-800 dark:text-polar-400 flex flex-row rounded-lg bg-gray-100 text-sm text-gray-500">
       {vals.map((v) => {
         return (
           <div
@@ -21,9 +21,9 @@ const LabeledRadioButton = (props: {
             onClick={() => props.onSelected(v.label)}
             className={classNames(
               v.selected
-                ? 'rounded-lg bg-white text-gray-900 shadow dark:bg-gray-500 dark:text-gray-50'
+                ? 'dark:bg-polar-500 dark:text-polar-50 rounded-lg bg-white text-gray-900 shadow'
                 : '',
-              'cursor-pointer rounded-lg py-1.5 px-2.5',
+              'cursor-pointer rounded-lg px-2.5 py-1.5',
             )}
           >
             {v.label}

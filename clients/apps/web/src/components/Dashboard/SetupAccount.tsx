@@ -125,7 +125,7 @@ const SetupAccount = ({
                 id="account_type"
                 name="account_type"
                 onChange={onChangeAccountType}
-                className="font-display block w-full rounded-lg border-gray-200 bg-transparent px-4 py-2 pr-12 shadow-sm transition-colors focus:z-10 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-500"
+                className="font-display dark:border-polar-500 block w-full rounded-lg border-gray-200 bg-transparent px-4 py-2 pr-12 shadow-sm transition-colors focus:z-10 focus:border-blue-500 focus:ring-blue-500"
               >
                 {accountTypes.map((v: AccountType) => (
                   <option key={v} value={v} selected={v === accountType}>
@@ -144,7 +144,7 @@ const SetupAccount = ({
               <div>
                 <div className="relative mt-2">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <span className="font-display dark:text-gray-40 text-gray-500">
+                    <span className="font-display dark:text-polar-40 text-gray-500">
                       https://opencollective.com/
                     </span>
                   </div>
@@ -152,7 +152,7 @@ const SetupAccount = ({
                     type="text"
                     id="open_collective_slug"
                     name="open_collective_slug"
-                    className="font-display block w-full rounded-lg border-gray-200 bg-transparent py-2 pl-60 shadow-sm transition-colors focus:z-10 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-500"
+                    className="font-display dark:border-polar-500 block w-full rounded-lg border-gray-200 bg-transparent py-2 pl-60 shadow-sm transition-colors focus:z-10 focus:border-blue-500 focus:ring-blue-500"
                     value={openCollectiveSlug || ''}
                     onChange={onChangeOpenCollectiveSlug}
                     required
@@ -168,7 +168,7 @@ const SetupAccount = ({
 
             <div>
               <CountryPicker onSelectCountry={onChangeCountry} />
-              <p className="dark:text-gray-40 mt-2 text-justify text-xs font-medium text-gray-500">
+              <p className="dark:text-polar-40 mt-2 text-justify text-xs font-medium text-gray-500">
                 If this is a personal account, please select your country of
                 residence. If this is an organization or business, select the
                 country of tax residency.

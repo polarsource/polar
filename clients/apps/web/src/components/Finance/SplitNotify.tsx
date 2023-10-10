@@ -99,7 +99,7 @@ _If you already have a Polar account setup, you don't need to do anything._
             <Banner color="blue">Great! Your message has been posted.</Banner>
           )}
         </div>
-        <div className="bg-gray-75 flex items-center px-4 py-2 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+        <div className="bg-gray-75 dark:bg-polar-800 dark:text-polar-400 flex items-center px-4 py-2 text-gray-500">
           <div className="flex-1"></div>
           <div>
             <button className="mr-4 text-blue-600" onClick={props.onCancel}>

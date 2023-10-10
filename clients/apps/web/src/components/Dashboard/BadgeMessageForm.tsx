@@ -96,7 +96,7 @@ const BadgeMessageForm = (props: {
       <div
         className={classNames(
           props.innerClassNames,
-          'rounded-xl bg-white px-5 py-3.5 dark:bg-gray-800 dark:ring-1 dark:ring-gray-600',
+          'dark:bg-polar-800 dark:ring-polar-600 rounded-xl bg-white px-5 py-3.5 dark:ring-1',
         )}
       >
         {descriptionMode === 'View' && (
@@ -113,7 +113,7 @@ const BadgeMessageForm = (props: {
         {descriptionMode === 'Edit' && (
           <>
             <textarea
-              className="w-full rounded-md border-0 text-gray-800 dark:bg-gray-800 dark:text-white"
+              className="dark:bg-polar-800 w-full rounded-md border-0 text-gray-800 dark:text-white"
               rows={6}
               value={message}
               onChange={onChange}
@@ -138,7 +138,7 @@ const BadgeMessageForm = (props: {
               onBlur={onFundingGoalChange}
               placeholder={20000}
               value={fundingGoal}
-              className="bg-white dark:bg-gray-800"
+              className="dark:bg-polar-800 bg-white"
             />
           </div>
         )}

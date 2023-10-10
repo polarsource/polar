@@ -38,11 +38,11 @@ const List = (props: {
 
   return (
     <div>
-      <h2 className="px-2 font-medium text-gray-900 dark:text-gray-200">
+      <h2 className="dark:text-polar-200 px-2 font-medium text-gray-900">
         {title}
       </h2>
       <table className="w-full text-left">
-        <thead className="text-gray-900 dark:text-gray-500">
+        <thead className="dark:text-polar-500 text-gray-900">
           <tr>
             <th
               scope="col"
@@ -102,7 +102,7 @@ const List = (props: {
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 border-t border-gray-200 dark:divide-gray-800 dark:border-gray-800">
+        <tbody className="dark:border-polar-800 dark:divide-polar-800 divide-y divide-gray-200 border-t border-gray-200">
           {rewards &&
             rewards.map((t) => (
               <tr key={t.pledge.id}>

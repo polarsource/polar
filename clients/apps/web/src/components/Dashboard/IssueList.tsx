@@ -54,7 +54,7 @@ const IssueList = (props: {
   const canAddRemovePolarLabel = props.filters.tab === IssueListType.ISSUES
 
   return (
-    <div className="divide-y dark:divide-gray-800">
+    <div className="dark:divide-polar-800 divide-y">
       {props.dashboard && (
         <>
           {!props.loading && (
@@ -337,7 +337,7 @@ export const Header = (props: {
           type="text"
           name="query"
           id="query"
-          className="block w-full rounded-md border-0 bg-transparent py-2 pl-10 text-gray-900  placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700 sm:text-sm sm:leading-6"
+          className="dark:bg-polar-800 dark:text-polar-200 dark:ring-polar-700 block w-full rounded-md border-0 bg-transparent  py-2 pl-10 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
           placeholder="Search issues"
           onChange={onQueryChange}
           value={props.filters.q || ''}
@@ -348,7 +348,7 @@ export const Header = (props: {
         {canFilterByBadged && (
           <>
             <DropdownMenu>
-              <DropdownMenuTrigger className="inline-flex flex-shrink-0 items-center space-x-2 text-sm text-gray-900 dark:text-gray-100">
+              <DropdownMenuTrigger className="dark:text-polar-100 inline-flex flex-shrink-0 items-center space-x-2 text-sm text-gray-900">
                 <FunnelIcon className="h-4 w-4 text-black dark:text-white" />
                 <span className="font-medium">Filter</span>
               </DropdownMenuTrigger>
@@ -375,7 +375,7 @@ export const Header = (props: {
         )}
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex flex-shrink-0 items-center space-x-2 text-sm text-gray-900 dark:text-gray-100">
+          <DropdownMenuTrigger className="dark:text-polar-100 inline-flex flex-shrink-0 items-center space-x-2 text-sm text-gray-900">
             <ArrowsUpDownIcon className="h-4 w-4 text-black dark:text-white" />
             <span className="font-medium">
               {props.filters?.sort

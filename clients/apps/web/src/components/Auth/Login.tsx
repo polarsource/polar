@@ -10,7 +10,7 @@ const Login = ({ gotoUrl }: { gotoUrl?: string }) => {
   useLoginRedirect()
 
   return (
-    <div className="flex h-screen w-full grow items-center justify-center bg-[#FEFDF9] dark:bg-gray-950">
+    <div className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center bg-[#FEFDF9]">
       <div id="polar-bg-gradient"></div>
       <div className="flex w-80 flex-col items-center gap-6">
         <LogoType70 className="h-10" />
@@ -30,14 +30,14 @@ const Login = ({ gotoUrl }: { gotoUrl?: string }) => {
         <div className="mt-8 text-center text-sm text-gray-500">
           By using Polar you agree to our{' '}
           <a
-            className="text-gray-700 dark:text-gray-300"
+            className="dark:text-polar-300 text-gray-700"
             href="https://polar.sh/legal/terms"
           >
             Terms of Service
           </a>{' '}
           and understand our{' '}
           <a
-            className="text-gray-700 dark:text-gray-300"
+            className="dark:text-polar-300 text-gray-700"
             href="https://polar.sh/legal/privacy"
           >
             Privacy Policy

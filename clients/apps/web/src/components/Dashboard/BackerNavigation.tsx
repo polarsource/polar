@@ -26,8 +26,8 @@ const BackerNavigation = (props: { classNames?: string }) => {
             className={classNames(
               'flex items-center gap-2 rounded-xl px-5 py-3 hover:text-blue-700 dark:hover:text-gray-200',
               n.isActive
-                ? 'bg-blue-50 text-blue-600 dark:bg-gray-900'
-                : 'text-gray-900 dark:text-gray-500',
+                ? 'dark:bg-polar-900 bg-blue-50 text-blue-600'
+                : 'dark:text-polar-500 text-gray-900',
             )}
             href={n.link}
           >

@@ -24,7 +24,7 @@ const ThankYouUpsell = (props: {
           <h2 className="text-xl">
             Welcome! You now have an account with Polar 🎉
           </h2>
-          <p className="text-sm font-normal text-gray-500 dark:text-gray-400">
+          <p className="dark:text-polar-400 text-sm font-normal text-gray-500">
             Sign in anytime in the future by requesting a magic link to your
             inbox.
           </p>

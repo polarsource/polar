@@ -21,7 +21,7 @@ const CopyToClipboardInput = (props: {
     <div className="flex w-full overflow-hidden rounded-lg border">
       <input
         id={props.id}
-        className="flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600 dark:text-gray-400"
+        className="dark:text-polar-400 flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600"
         onClick={() => {
           copyToClipboard(props.id)
         }}

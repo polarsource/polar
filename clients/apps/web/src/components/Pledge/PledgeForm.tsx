@@ -105,7 +105,7 @@ const PledgeForm = ({
       <form className="flex flex-col">
         <label
           htmlFor="action"
-          className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+          className="dark:text-polar-400 mb-2 text-sm font-medium text-gray-500"
         >
           I want to&hellip;
         </label>
@@ -113,16 +113,16 @@ const PledgeForm = ({
         <Tabs defaultValue="fund" className="">
           <TabsList
             className={twMerge(
-              'grid h-fit w-full grid-cols-2 grid-rows-1 dark:bg-gray-700',
+              'dark:bg-polar-700 grid h-fit w-full grid-cols-2 grid-rows-1',
             )}
           >
             <TabsTrigger
               value="fund"
-              className="text-gray-500 data-[state=active]:text-red-600 dark:text-gray-300 dark:data-[state=active]:text-red-600"
+              className="dark:text-polar-300 text-gray-500 data-[state=active]:text-red-600 dark:data-[state=active]:text-red-600"
             >
               <div className="flex w-full items-center justify-center  gap-4 px-1 text-left">
                 <HeartIcon className="h-6 w-6" />
-                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <div className="dark:text-polar-300 text-sm font-medium text-gray-700">
                   Fund
                 </div>
               </div>
@@ -130,12 +130,12 @@ const PledgeForm = ({
 
             <TabsTrigger
               value="contribute"
-              className="data-[state=active]:text-gray-600 dark:text-gray-300 dark:data-[state=active]:text-green-400"
+              className="dark:text-polar-300 data-[state=active]:text-gray-600 dark:data-[state=active]:text-green-400"
             >
               <div className="flex w-full items-center justify-center  gap-4 px-1 text-left">
                 <CommandLineIcon className="h-6 w-6 " />
                 <div>
-                  <div className='font-medium" text-sm text-gray-700 dark:text-gray-300'>
+                  <div className='font-medium" dark:text-polar-300 text-sm text-gray-700'>
                     Contribute
                   </div>
                 </div>
@@ -174,7 +174,7 @@ const Fund = ({
       <div>
         <label
           htmlFor="funding_method"
-          className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+          className="dark:text-polar-400 mb-2 text-sm font-medium text-gray-500"
         >
           Funding method
         </label>
@@ -182,13 +182,13 @@ const Fund = ({
         <Tabs defaultValue="fund_today" className="">
           <TabsList
             className={twMerge(
-              'grid h-fit w-full grid-cols-1 grid-rows-2 dark:bg-gray-700',
+              'dark:bg-polar-700 grid h-fit w-full grid-cols-1 grid-rows-2',
             )}
           >
             <FundingMethodTab
               value="fund_today"
               icon={
-                <CurrencyDollarIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+                <CurrencyDollarIcon className="dark:text-polar-300 h-6 w-6 text-gray-600" />
               }
               title="Fund today"
               subtitle="Paid today. Held by Polar until completion."
@@ -196,7 +196,7 @@ const Fund = ({
             <FundingMethodTab
               value="fund_on_completion"
               icon={
-                <ClockIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+                <ClockIcon className="dark:text-polar-300 h-6 w-6 text-gray-600" />
               }
               title="Fund on completion"
               subtitle="Get an invoice when the issue is completed."
@@ -245,10 +245,10 @@ const FundingMethodTab = ({
     <div className="flex w-full items-center gap-4 px-1 text-left">
       {icon}
       <div>
-        <div className='font-medium" text-sm text-gray-700 dark:text-gray-300'>
+        <div className='font-medium" dark:text-polar-300 text-sm text-gray-700'>
           {title}
         </div>
-        <div className="text-xs font-normal text-gray-600 dark:text-gray-400">
+        <div className="dark:text-polar-400 text-xs font-normal text-gray-600">
           {subtitle}
         </div>
       </div>
@@ -538,7 +538,7 @@ const FundToday = ({
       <div>
         <label
           htmlFor="amount"
-          className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+          className="dark:text-polar-400 mb-2 text-sm font-medium text-gray-500"
         >
           Funding amount
         </label>
@@ -557,7 +557,7 @@ const FundToday = ({
           <p
             className={classNames(
               amount < organization.pledge_minimum_amount ? 'text-red-500' : '',
-              'w-2/5 text-xs text-gray-500 dark:text-gray-400',
+              'dark:text-polar-400 w-2/5 text-xs text-gray-500',
             )}
           >
             Minimum is $
@@ -569,7 +569,7 @@ const FundToday = ({
       <div>
         <label
           htmlFor="email"
-          className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+          className="dark:text-polar-400 mb-2 text-sm font-medium text-gray-500"
         >
           Contact details
         </label>
@@ -580,7 +580,7 @@ const FundToday = ({
             onChange={onEmailChange}
             onBlur={onEmailChange}
             value={email}
-            className="block w-full rounded-lg border-gray-200 bg-transparent px-3 py-2.5 pl-10 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
+            className="dark:border-polar-600 block w-full rounded-lg border-gray-200 bg-transparent px-3 py-2.5 pl-10 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
             onFocus={(event) => {
               event.target.select()
             }}
@@ -598,7 +598,7 @@ const FundToday = ({
           <div>
             <label
               htmlFor="payment_method"
-              className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400"
+              className="dark:text-polar-400 mb-2 text-sm font-medium text-gray-500"
             >
               Payment method
             </label>

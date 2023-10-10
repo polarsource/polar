@@ -27,7 +27,7 @@ const IssueRewards = ({ rewards }: { rewards: Reward[] }) => {
 
   return (
     <div
-      className={`flex divide-x divide-gray-100 border-t py-2 text-sm dark:divide-gray-700`}
+      className={`dark:divide-polar-700 flex divide-x divide-gray-100 border-t py-2 text-sm`}
     >
       {paidOutSum > 0 && (
         <Group>
@@ -40,7 +40,7 @@ const IssueRewards = ({ rewards }: { rewards: Reward[] }) => {
 
       {pendingSum > 0 && (
         <Group>
-          <Pill className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300">
+          <Pill className="dark:bg-polar-900 dark:text-polar-300 bg-gray-100 text-gray-800">
             ${getCentsInDollarString(pendingSum, false, true)}
           </Pill>
           <span>Pending</span>
@@ -63,7 +63,7 @@ export default IssueRewards
 
 const Group = (props: { children: React.ReactNode }) => (
   <div
-    className={`flex justify-between px-4 text-sm text-gray-700 dark:text-gray-400`}
+    className={`dark:text-polar-400 flex justify-between px-4 text-sm text-gray-700`}
   >
     <div className="flex w-full items-center justify-between gap-2">
       {props.children}

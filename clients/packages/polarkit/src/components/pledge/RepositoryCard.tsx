@@ -38,7 +38,7 @@ const RepositoryCard = ({
         </p>
         <div className="flex flex-row items-center justify-center space-x-4">
           {typeof repository.stars === 'number' && (
-            <p className="inline-flex items-center space-x-1 text-xs text-gray-600 dark:text-gray-400">
+            <p className="dark:text-polar-400 inline-flex items-center space-x-1 text-xs text-gray-600">
               <span className="font-medium">
                 {formatStarsNumber(repository.stars)}
               </span>
@@ -56,7 +56,7 @@ const RepositoryCard = ({
           )}
           {!repository.license && (
             <a
-              className="text-xs text-gray-600 dark:text-gray-400"
+              className="dark:text-polar-400 text-xs text-gray-600"
               href={repoURL}
             >
               Unknown license

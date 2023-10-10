@@ -41,7 +41,7 @@ export const Avatar = (props: { url: string }) => {
 
 export const Text = ({ children }: { children: React.ReactNode }) => {
   return (
-    <span className="overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+    <span className="dark:text-polar-200 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-900">
       {children}
     </span>
   )
@@ -57,8 +57,8 @@ export const Left = ({ children }: { children: React.ReactNode }) => {
 
 export const Badge = ({ children }: { children: React.ReactNode }) => {
   return (
-    <p className="inline-flex space-x-2 overflow-hidden text-xs text-gray-500 dark:text-gray-50">
-      <span className="rounded-full border border-gray-200 bg-gray-100 px-2 dark:border-gray-400/50 dark:bg-gray-500">
+    <p className="dark:text-polar-50 inline-flex space-x-2 overflow-hidden text-xs text-gray-500">
+      <span className="dark:bg-polar-500 dark:border-polar-400/50 rounded-full border border-gray-200 bg-gray-100 px-2">
         {children}
       </span>
     </p>
@@ -85,13 +85,13 @@ export const SelectedBox = ({
   return (
     <div
       className={clsx(
-        'flex h-full cursor-pointer items-center justify-between space-x-2 p-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700',
+        'dark:hover:bg-polar-700 flex h-full cursor-pointer items-center justify-between space-x-2 p-2 text-sm hover:bg-gray-100',
         classNames,
       )}
       onClick={onClick}
     >
       {children}
-      <ChevronUpDownIcon className="h-6 w-6 flex-shrink-0 text-gray-500 dark:text-gray-400" />
+      <ChevronUpDownIcon className="dark:text-polar-400 h-6 w-6 flex-shrink-0 text-gray-500" />
     </div>
   )
 }

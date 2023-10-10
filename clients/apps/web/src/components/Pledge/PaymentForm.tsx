@@ -217,7 +217,7 @@ const PaymentForm = ({
   }
 
   return (
-    <div className="flex flex-col gap-4 border-t pt-5 dark:border-gray-500">
+    <div className="dark:border-polar-500 flex flex-col gap-4 border-t pt-5">
       {!paymentMethod && (
         <PaymentElement
           onChange={onStripeFormChange}
@@ -244,7 +244,7 @@ const PaymentForm = ({
             <div className="grid leading-none">
               <label
                 htmlFor="save_payment_method"
-                className="text-sm font-medium text-gray-500 dark:text-gray-400"
+                className="dark:text-polar-400 text-sm font-medium text-gray-500"
               >
                 Save payment method on file
               </label>

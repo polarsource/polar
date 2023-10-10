@@ -57,11 +57,11 @@ const IssueCard = ({
 
   return (
     <>
-      <h1 className="mb-4 text-center text-4xl text-gray-900 dark:text-gray-300 sm:text-left">
+      <h1 className="dark:text-polar-300 mb-4 text-center text-4xl text-gray-900 sm:text-left">
         {generateMarkdownTitle(issue.title)}
       </h1>
       {/* Issue details */}
-      <div className="grid grid-cols-1 text-gray-600 dark:text-gray-400 sm:grid-cols-3">
+      <div className="dark:text-polar-400 grid grid-cols-1 text-gray-600 sm:grid-cols-3">
         {/* Left part */}
         <div className="col-span-1 flex	flex-row items-center justify-center gap-2 sm:col-span-2 sm:justify-start	">
           <div>
@@ -86,7 +86,7 @@ const IssueCard = ({
               </a>
             </div>
           )}
-          <div className="whitespace-nowrap text-gray-400 dark:text-gray-600">
+          <div className="dark:text-polar-600 whitespace-nowrap text-gray-400">
             <PolarTimeAgo date={new Date(issue.issue_created_at)} />
           </div>
         </div>
@@ -106,14 +106,14 @@ const IssueCard = ({
           )}
         </div>
       </div>
-      <hr className="my-4 dark:border-gray-600" />
+      <hr className="dark:border-polar-600 my-4" />
       {/* Funding goal */}
       <FundingGoal
         funding={issue.funding}
         pledgers={pledgers}
         currentPledgeAmount={currentPledgeAmount}
       />
-      <hr className="my-4 dark:border-gray-600" />
+      <hr className="dark:border-polar-600 my-4" />
       {/* Issue description */}
       <div className="hidden sm:block">
         <div className="relative max-h-80 overflow-hidden">
@@ -125,10 +125,10 @@ const IssueCard = ({
             Read more
           </a>
         </div>
-        <hr className="my-4 dark:border-gray-600" />
+        <hr className="dark:border-polar-600 my-4" />
       </div>
       {/* Repository */}
-      <div className="grid grid-cols-1 text-gray-600 dark:text-gray-400 sm:grid-cols-3">
+      <div className="dark:text-polar-400 grid grid-cols-1 text-gray-600 sm:grid-cols-3">
         {/* Name/description */}
         <div className="col-span-1 flex flex-row items-center gap-2 sm:col-span-2">
           <div className="min-w-max">
@@ -139,10 +139,10 @@ const IssueCard = ({
               className="h-8 w-8 rounded-full"
             />
           </div>
-          <div className="text-gray-400 dark:text-gray-600">
+          <div className="dark:text-polar-600 text-gray-400">
             <div>
               {organization.name}&nbsp;/&nbsp;
-              <span className="font-medium text-gray-600 dark:text-gray-400">
+              <span className="dark:text-polar-400 font-medium text-gray-600">
                 {repository.name}
               </span>
             </div>
@@ -241,9 +241,9 @@ const FundingGoal = ({
     <div className="grid grid-cols-1 sm:grid-cols-2">
       {/* Funding amount and goal */}
       <div className="flex flex-col items-center sm:items-start">
-        <div className="text-lg text-gray-900 dark:text-gray-300">
+        <div className="dark:text-polar-300 text-lg text-gray-900">
           ${getCentsInDollarString(pledges_sum?.amount || 0)}{' '}
-          <span className="text-gray-400 dark:text-gray-600">
+          <span className="dark:text-polar-600 text-gray-400">
             {!funding_goal && 'pledged'}
             {funding_goal &&
               `/ ${getCentsInDollarString(funding_goal.amount)} pledged`}
@@ -307,7 +307,7 @@ const Pull = ({ pr }: { pr: PullRequest }) => {
   const open = !merged && !closed
 
   return (
-    <div className="flex w-full items-center gap-2 overflow-hidden text-sm text-gray-600 dark:text-gray-400">
+    <div className="dark:text-polar-400 flex w-full items-center gap-2 overflow-hidden text-sm text-gray-600">
       <div
         className={twMerge(
           'h-6 w-6 rounded-lg border p-0.5',

@@ -15,10 +15,10 @@ const Recommended = () => {
       <ShadowBoxOnLg>
         <>
           <div className="space-y-2 pb-4">
-            <h1 className="text-lg text-gray-900 dark:text-gray-300">
+            <h1 className="dark:text-polar-300 text-lg text-gray-900">
               Recommended issues
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-500">
+            <p className="dark:text-polar-500 text-sm text-gray-500">
               Based on repositories that you&apos;ve starred and their
               popularity
             </p>
@@ -32,7 +32,7 @@ const Recommended = () => {
             </div>
           )}
 
-          <div className="divide-y divide-gray-100 border-y border-gray-100 dark:divide-gray-800 dark:border-gray-800 ">
+          <div className="dark:border-polar-800 dark:divide-polar-800 divide-y divide-gray-100 border-y border-gray-100 ">
             {issues.data?.items?.map((issue) => (
               <IssueListItem
                 issue={issue}

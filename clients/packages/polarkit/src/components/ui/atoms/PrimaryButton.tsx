@@ -21,7 +21,7 @@ type ButtonProps = {
 const LoadingSpinner = (props: { disabled: boolean; size: Size }) => {
   const classes = classNames(
     props.disabled
-      ? 'fill-gray-300 text-gray-200 dark:fill-gray-600 dark:text-gray-400'
+      ? 'fill-gray-300 text-gray-200 dark:fill-gray-600 dark:text-polar-400'
       : 'fill-white text-blue-300',
     props.size === 'normal' ? 'h-6 w-6' : 'h-4 w-4',
     'animate-spin',
@@ -53,7 +53,7 @@ const LoadingSpinner = (props: { disabled: boolean; size: Size }) => {
 
 const bg = (color: Color, loading: boolean, disabled: boolean) => {
   if (disabled) {
-    return 'bg-gray-200/75 dark:bg-gray-700/75'
+    return 'bg-gray-200/75 dark:bg-polar-700/75'
   }
 
   if (loading) {
@@ -87,7 +87,7 @@ const bg = (color: Color, loading: boolean, disabled: boolean) => {
 
 const text = (color: Color, loading: boolean, disabled: boolean) => {
   if (disabled) {
-    return 'text-gray-400 dark:text-gray-300'
+    return 'text-gray-400 dark:text-polar-300'
   }
   if (loading) {
     return 'text-gray-400'

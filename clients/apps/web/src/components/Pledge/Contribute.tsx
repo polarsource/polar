@@ -8,7 +8,7 @@ const Contribute = ({ issue }: { issue: Issue }) => {
       <div className="flex items-center gap-4">
         <WrenchScrewdriverIcon className="h-6 w-6" />
         <div>
-          <div className="font-medium text-gray-600 dark:text-gray-400 ">
+          <div className="dark:text-polar-400 font-medium text-gray-600 ">
             Contribution instructions
           </div>
           <div className="text-sm font-light text-gray-500">
@@ -21,7 +21,7 @@ const Contribute = ({ issue }: { issue: Issue }) => {
         <CircledNumber>1</CircledNumber>
         <div className="space-y-1">
           <Title>Fork & Commit</Title>
-          <div className="text-xs text-gray-600 dark:text-gray-400">
+          <div className="dark:text-polar-400 text-xs text-gray-600">
             Make an impact and get things ready for a pull request.
           </div>
 
@@ -38,7 +38,7 @@ const Contribute = ({ issue }: { issue: Issue }) => {
         <CircledNumber>2</CircledNumber>
         <div className="space-y-1">
           <Title>Create & Connect Pull Request</Title>
-          <div className="text-xs text-gray-600 dark:text-gray-400">
+          <div className="dark:text-polar-400 text-xs text-gray-600">
             Link the issue in the pull request like usual to ensure it&apos;s
             eligible for a potential reward once the issue is closed.
           </div>
@@ -60,7 +60,7 @@ const Contribute = ({ issue }: { issue: Issue }) => {
         <CircledNumber>3</CircledNumber>
         <div className="space-y-1">
           <Title>Sign up to receive rewards</Title>
-          <div className="text-xs text-gray-600 dark:text-gray-400">
+          <div className="dark:text-polar-400 text-xs text-gray-600">
             You need to have a Polar account with GitHub connected as well as
             having setup Stripe.
           </div>
@@ -80,7 +80,7 @@ const Contribute = ({ issue }: { issue: Issue }) => {
 export default Contribute
 
 const Title = ({ children }: { children: React.ReactNode }) => (
-  <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
+  <div className="dark:text-polar-400 text-sm font-medium text-gray-600">
     {children}
   </div>
 )

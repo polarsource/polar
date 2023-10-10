@@ -8,7 +8,7 @@ const BackerConnectUpsell = () => {
   )
 
   return (
-    <div className="flex items-center justify-between border-b border-blue-100 bg-blue-50 px-8 py-2 text-sm text-sm font-medium text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+    <div className="dark:bg-polar-900 dark:border-polar-800 dark:text-polar-300 flex items-center justify-between border-b border-blue-100 bg-blue-50 px-8 py-2 text-sm text-sm font-medium text-gray-700">
       <div className="flex flex-wrap">
         <span className="whitespace-nowrap pr-4">
           Get funding for your public repositories.

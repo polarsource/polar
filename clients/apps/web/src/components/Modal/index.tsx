@@ -57,7 +57,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
             <div className="flex-shrink-1 block h-[20%] w-2"></div>
             <div
               className={twMerge(
-                'h-content z-10 min-w-[800px] flex-shrink-0 overflow-hidden rounded-xl bg-white shadow dark:bg-gray-800',
+                'h-content dark:bg-polar-800 z-10 min-w-[800px] flex-shrink-0 overflow-hidden rounded-xl bg-white shadow',
                 className,
               )}
               onClick={onInnerClick}
@@ -81,13 +81,13 @@ export const ModalHeader = (props: {
   return (
     <div
       className={twMerge(
-        'flex w-full items-center justify-between border-b px-5 py-3 dark:bg-gray-800',
+        'dark:bg-polar-800 flex w-full items-center justify-between border-b px-5 py-3',
         props.className,
       )}
     >
       <div>{props.children}</div>
       <button
-        className="text-black hover:text-gray-800 dark:text-gray-100 dark:hover:text-gray-300"
+        className="dark:text-polar-100 text-black hover:text-gray-800 dark:hover:text-gray-300"
         onClick={() => props.hide()}
       >
         <XIcon />
@@ -126,7 +126,7 @@ export const ModalBox = ({
   return (
     <div
       className={twMerge(
-        'z-0 flex h-full w-full flex-col space-y-2 overflow-hidden rounded-2xl bg-white p-5 shadow-2xl dark:bg-gray-700',
+        'dark:bg-polar-700 z-0 flex h-full w-full flex-col space-y-2 overflow-hidden rounded-2xl bg-white p-5 shadow-2xl',
         className,
       )}
     >

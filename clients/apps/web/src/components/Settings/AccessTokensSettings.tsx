@@ -6,6 +6,7 @@ import {
 } from 'polarkit/api/client'
 import {
   CopyToClipboardInput,
+  FormattedDateTime,
   Input,
   PrimaryButton,
   ShadowListGroup,
@@ -86,7 +87,7 @@ const AccessToken = (
           <div className="gap-y flex flex-col">
             <h3 className="text-md">{props.comment}</h3>
             <p className="text-sm text-gray-500">
-              {new Date(props.created_at).toLocaleDateString()}
+              <FormattedDateTime datetime={props.created_at} dateStyle="long" />
             </p>
           </div>
         </div>{' '}
@@ -111,7 +112,7 @@ const AccessToken = (
             value={props.createdTokenJWT}
           />
           <Banner color="blue">
-            <span>
+            <span className="text-sm">
               Copy the access token and save it somewhere safe. You won’t be
               able to see it again.
             </span>
@@ -164,7 +165,7 @@ export const AccessTokensBox = (props: {
           })
         ) : (
           <ShadowListGroup.Item>
-            <p className="text-gray-500 dark:text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-500">
               You don&apos;t have any active Access Tokens.
             </p>
           </ShadowListGroup.Item>

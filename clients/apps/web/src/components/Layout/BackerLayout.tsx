@@ -3,10 +3,9 @@ import { useAuth } from '@/hooks/auth'
 import { LogoType } from 'polarkit/components/brand'
 import { useStore } from 'polarkit/store'
 import { classNames } from 'polarkit/utils'
-import { useMemo } from 'react'
 import BackerConnectUpsell from '../Dashboard/BackerConnectUpsell'
 import SidebarNavigation from '../Dashboard/BackerNavigation'
-import Topbar from '../Shared/Topbar'
+import DashboardTopbar from '../Shared/DashboardTopbar'
 
 const BackerLayout = (props: {
   children: React.ReactNode
@@ -20,10 +19,6 @@ const BackerLayout = (props: {
   const showBanner =
     !isBackerConnectUpsellSkiped && !props.disableOnboardingBanner
 
-  const fixedHeight = useMemo(() => {
-    return showBanner ? 127 : 90 // BackerConnectUpsell
-  }, [showBanner])
-
   if (!hydrated) {
     return <></>
   }
@@ -33,18 +28,24 @@ const BackerLayout = (props: {
       <aside className="h-screen w-[320px] flex-shrink-0 border-r border-r-gray-100 bg-white dark:border-r-gray-800 dark:bg-gray-900">
         <a
           href="/"
-          className="mt-10 flex-shrink-0 items-center space-x-2 px-9 font-semibold text-gray-700 md:inline-flex"
+          className="mt-8 flex-shrink-0 items-center space-x-2 px-9 font-semibold text-gray-700 md:inline-flex"
         >
           <LogoType />
         </a>
         <div className="mt-8 flex px-4 py-2">
-          {currentUser && <ProfileSelection useOrgFromURL={true} />}
+          {currentUser && (
+            <ProfileSelection
+              useOrgFromURL={true}
+              className="shadow-xl"
+              narrow={false}
+            />
+          )}
         </div>
         <SidebarNavigation />
       </aside>
 
       <div className="relative flex h-screen w-full translate-x-0 flex-row bg-gray-50 dark:bg-gray-950">
-        <Topbar isFixed={true} useOrgFromURL={false} />
+        <DashboardTopbar isFixed={true} useOrgFromURL={false} />
         <nav className="fixed z-10 w-full ">
           {showBanner && <BackerConnectUpsell />}
         </nav>
@@ -55,7 +56,7 @@ const BackerLayout = (props: {
               'relative mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-8',
             )}
             style={{
-              marginTop: `${fixedHeight}px`,
+              marginTop: `107px`,
             }}
           >
             {props.children}

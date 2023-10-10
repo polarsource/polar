@@ -1,7 +1,7 @@
 'use client'
 
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
-import { Issue, Label } from 'polarkit/api/client'
+import { Issue, IssueStateEnum, Label } from 'polarkit/api/client'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import { githubIssueUrl } from 'polarkit/github'
 import IconCounter from './IconCounter'
@@ -31,7 +31,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
     repository,
   } = issue
   const { organization } = repository
-  const isOpen = state === Issue.state.OPEN
+  const isOpen = state === IssueStateEnum.OPEN
 
   const createdAt = new Date(issue_created_at)
   const closedAt = new Date(issue_created_at)

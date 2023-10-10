@@ -5,7 +5,8 @@ import LoadingScreen, {
 } from '@/components/Dashboard/LoadingScreen'
 import { useAuth } from '@/hooks'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ApiError, api } from 'polarkit/api'
+import { api } from 'polarkit/api'
+import { ResponseError } from 'polarkit/api/client'
 import { useEffect, useRef, useState } from 'react'
 
 export default function Page() {
@@ -34,23 +35,27 @@ export default function Page() {
         })
 
         if (response.success) {
-          await session
-            .login((authenticated: boolean) => {
-              if (!authenticated) {
-                setError('Something went wrong logging in')
-              }
-            })
-            .then(() => {
-              router.push(response.goto_url || '/login/init')
-            })
+          const { request } = session.login((authenticated: boolean) => {
+            if (!authenticated) {
+              setError('Something went wrong logging in')
+            }
+          })
+
+          await request.then(() => {
+            router.push(response.goto_url || '/login/init')
+          })
         } else {
           setError('Invalid response')
         }
       } catch (err) {
         let errorMessage =
           'Something went wrong exchanging the OAuth code for a cookie'
-        if (err instanceof ApiError && err.body.detail) {
-          errorMessage = err.body.detail
+
+        if (err instanceof ResponseError) {
+          const body = await err.response.json()
+          if (body['detail']) {
+            errorMessage = body['detail']
+          }
         }
         setError(errorMessage)
       } finally {

@@ -26,12 +26,15 @@ import { Modal as ModernModal } from '../Modal'
 import { default as ListPledges } from './ListPledges'
 import ListRewards, { Column } from './ListRewards'
 
-const refundedStates = [PledgeState.REFUNDED, PledgeState.CHARGE_DISPUTED]
+const refundedStates: PledgeState[] = [
+  PledgeState.REFUNDED,
+  PledgeState.CHARGE_DISPUTED,
+]
 
-const paidStates = [PledgeState.PENDING]
+const paidStates: PledgeState[] = [PledgeState.PENDING]
 
 const isInReview = (pledge: Pledge): boolean => {
-  const inReviewStates = [PledgeState.DISPUTED]
+  const inReviewStates: PledgeState[] = [PledgeState.DISPUTED]
   if (inReviewStates.includes(pledge.state)) {
     return true
   }

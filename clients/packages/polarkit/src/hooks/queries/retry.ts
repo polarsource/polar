@@ -1,11 +1,11 @@
-import { ApiError } from '../../api/client'
+import { ResponseError } from '../../api/client'
 import { useStore } from '../../store'
 
 export const defaultRetry = (
   failureCount: number,
-  error: ApiError,
+  error: ResponseError,
 ): boolean => {
-  if (error.status === 401) {
+  if (error.response.status === 401) {
     // Empty Zustand store on unauthenticated errors
     const state = useStore.getState()
     if (state.resetState) {
@@ -14,7 +14,7 @@ export const defaultRetry = (
     return false
   }
 
-  if (error.status === 404) {
+  if (error.response.status === 404) {
     return false
   }
   if (failureCount > 2) {

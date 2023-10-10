@@ -124,13 +124,13 @@ const List = (props: {
                       <span>{t.pledger?.name || 'Anonymous'}</span>
                     </div>
 
-                    {t.type === PledgeType.PAY_ON_COMPLETION && (
+                    {t.type === PledgeType.ON_COMPLETION && (
                       <div className="text-sx w-fit whitespace-nowrap rounded-full bg-blue-200 px-1.5 py-0 text-blue-700 dark:bg-blue-800 dark:text-blue-200">
                         Pay on completion
                       </div>
                     )}
 
-                    {t.type === PledgeType.PAY_UPFRONT && (
+                    {t.type === PledgeType.UPFRONT && (
                       <div className="text-sx w-fit whitespace-nowrap rounded-full bg-blue-200 px-1.5 py-0 text-blue-700 dark:bg-blue-800 dark:text-blue-200">
                         Pay upfront
                       </div>
@@ -173,8 +173,7 @@ const List = (props: {
 
 export default List
 
-const formatDate = (str: string): string => {
-  const d = new Date(str)
+const formatDate = (d: Date): string => {
   return d.toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'long',

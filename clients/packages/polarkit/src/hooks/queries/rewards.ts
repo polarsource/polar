@@ -1,11 +1,11 @@
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { api } from '../../api'
-import { ListResource_Reward_ } from '../../api/client'
+import { ListResourceReward } from '../../api/client/models/ListResourceReward'
 import { defaultRetry } from './retry'
 
 export const useListRewards: (
   pledgesToOrganization?: string,
-) => UseQueryResult<ListResource_Reward_, Error> = (
+) => UseQueryResult<ListResourceReward, Error> = (
   pledgesToOrganization?: string,
 ) =>
   useQuery({

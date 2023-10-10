@@ -1,7 +1,6 @@
 import { StateCreator } from 'zustand'
 import { api } from '../api'
 import {
-  CancelablePromise,
   Pledge,
   Repository,
   type Organization,
@@ -11,10 +10,11 @@ import {
 export interface UserState {
   authenticated: boolean
   currentUser: UserRead | undefined
-  login: (
-    callback?: (authenticated: boolean) => void,
-  ) => CancelablePromise<UserRead>
-  logout: () => CancelablePromise<any>
+  login: (callback?: (authenticated: boolean) => void) => {
+    request: Promise<UserRead>
+    controller: AbortController
+  }
+  logout: () => Promise<any>
 }
 
 export interface OnboardingState {
@@ -79,8 +79,9 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
   ...emptyState,
   login: (
     callback?: (authenticated: boolean) => void,
-  ): CancelablePromise<UserRead> => {
-    const request = api.users.getAuthenticated()
+  ): { request: Promise<UserRead>; controller: AbortController } => {
+    const controller = new AbortController()
+    const request = api.users.getAuthenticated({ signal: controller.signal })
     request
       .then((user) => {
         set({ authenticated: true, currentUser: user })
@@ -96,9 +97,10 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
           }
         }
       })
-    return request
+
+    return { request, controller }
   },
-  logout: (): CancelablePromise<any> => {
+  logout: (): Promise<any> => {
     const request = api.users.logout()
     request.finally(() => {
       get().resetState()

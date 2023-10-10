@@ -6,7 +6,7 @@ import LoadingScreen, {
 import { useAuth } from '@/hooks'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from 'polarkit'
-import { ApiError } from 'polarkit/api'
+import { ResponseError } from 'polarkit/api/client'
 import { useEffect, useRef, useState } from 'react'
 
 export default function Page() {
@@ -31,22 +31,21 @@ export default function Page() {
     try {
       const response = await api.magicLink.authenticateMagicLink({ token })
       if (response.success) {
-        await session
-          .login((authenticated: boolean) => {
-            if (!authenticated) {
-              setError('Something went wrong logging in')
-            }
-          })
-          .then(() => {
-            router.push(response.goto_url || '/login/init')
-          })
+        const { request } = session.login((authenticated: boolean) => {
+          if (!authenticated) {
+            setError('Something went wrong logging in')
+          }
+        })
+        await request.then(() => {
+          router.push(response.goto_url || '/login/init')
+        })
       } else {
         setError('Invalid response')
       }
     } catch (err) {
-      if (err instanceof ApiError) {
-        if (err.status == 401) {
-          setError(err.body.detail)
+      if (err instanceof ResponseError) {
+        if (err.response.status == 401) {
+          setError((await err.response.json())['detail'])
         }
       }
     } finally {

@@ -4,11 +4,11 @@ import { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
 import { api } from 'polarkit'
 import {
-  ApiError,
   ListFundingSortBy,
-  ListResource_Repository_,
+  ListResourceRepository,
   Organization,
   Platforms,
+  ResponseError,
 } from 'polarkit/api/client'
 
 export async function generateMetadata(
@@ -20,7 +20,7 @@ export async function generateMetadata(
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
   let organization: Organization | undefined
-  let repositories: ListResource_Repository_ | undefined
+  let repositories: ListResourceRepository | undefined
 
   try {
     organization = await api.organizations.lookup({
@@ -33,7 +33,7 @@ export async function generateMetadata(
       organizationName: params.organization,
     })
   } catch (e) {
-    if (e instanceof ApiError && e.status === 404) {
+    if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
     }
   }

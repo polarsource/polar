@@ -1,5 +1,5 @@
 import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
-import { ListResource_Issue_ } from 'polarkit/api/client'
+import { ListResourceIssue } from 'polarkit/api/client'
 import { getServerURL } from 'polarkit/api/url'
 const { default: satori } = require('satori')
 
@@ -8,7 +8,7 @@ export const runtime = 'edge'
 const getData = async (
   org: string,
   repo?: string,
-): Promise<ListResource_Issue_> => {
+): Promise<ListResourceIssue> => {
   let url = `${getServerURL()}/api/v1/issues/search?platform=github&organization_name=${org}&sort=funding_goal_desc_and_most_positive_reactions&have_badge=true`
 
   if (repo) {

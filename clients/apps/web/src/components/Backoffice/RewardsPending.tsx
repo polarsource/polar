@@ -165,10 +165,10 @@ const Pledges = () => {
                   <div
                     className={classNames(
                       'flex items-center rounded-full px-2 text-sm text-white',
-                      p[0].pledge.type === PledgeType.PAY_UPFRONT
+                      p[0].pledge.type === PledgeType.UPFRONT
                         ? 'bg-green-700'
                         : '',
-                      p[0].pledge.type === PledgeType.PAY_ON_COMPLETION
+                      p[0].pledge.type === PledgeType.ON_COMPLETION
                         ? 'bg-red-700'
                         : '',
                     )}
@@ -176,7 +176,7 @@ const Pledges = () => {
                     type={p[0].pledge.type}
                   </div>
 
-                  {p[0].pledge.type === PledgeType.PAY_ON_COMPLETION && (
+                  {p[0].pledge.type === PledgeType.ON_COMPLETION && (
                     <>
                       {p[0].pledge.hosted_invoice_url ? (
                         <ThinButton
@@ -207,7 +207,8 @@ const Pledges = () => {
                   </ThinButton>
 
                   <div>
-                    scheduled_payout_at = {p[0].pledge.scheduled_payout_at}
+                    scheduled_payout_at ={' '}
+                    {p[0].pledge.scheduled_payout_at?.toString()}
                   </div>
                 </div>
 
@@ -242,7 +243,7 @@ const Pledges = () => {
                           color="blue"
                           onClick={async () => {
                             await api.backoffice.pledgeRewardTransfer({
-                              requestBody: {
+                              pledgeRewardTransfer: {
                                 pledge_id: r.pledge.id,
                                 issue_reward_id: r.issue_reward_id,
                               },
@@ -258,7 +259,7 @@ const Pledges = () => {
 
                     {r.paid_at && (
                       <div className="flex items-center rounded-full bg-green-400 px-2 text-sm text-white">
-                        Paid {r.paid_at}
+                        Paid {r.paid_at.toString()}
                       </div>
                     )}
                   </div>

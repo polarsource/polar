@@ -177,7 +177,7 @@ const List = (props: {
                 {showPaymentStatus && (
                   <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
                     <div className="flex flex-wrap items-center gap-2">
-                      {t.pledge.type === PledgeType.PAY_ON_COMPLETION &&
+                      {t.pledge.type === PledgeType.ON_COMPLETION &&
                         t.pledge.state === PledgeState.CREATED && (
                           <div className="w-fit whitespace-nowrap rounded-full bg-blue-200 px-1.5 py-0 text-blue-700 dark:bg-blue-800 dark:text-blue-200">
                             Pending payment from pledger
@@ -218,8 +218,7 @@ const List = (props: {
 
 export default List
 
-const formatDate = (str: string): string => {
-  const d = new Date(str)
+const formatDate = (d: Date): string => {
   return d.toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'long',

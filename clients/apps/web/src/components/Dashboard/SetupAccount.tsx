@@ -2,8 +2,13 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
 import { ACCOUNT_TYPE_DISPLAY_NAMES } from 'polarkit/account'
-import { Account, AccountType, ApiError } from 'polarkit/api/client'
-import { getValidationErrorsMap, isValidationError } from 'polarkit/api/errors'
+import {
+  Account,
+  AccountType,
+  ResponseError,
+  ValidationError,
+} from 'polarkit/api/client'
+import { getValidationErrorsMap } from 'polarkit/api/errors'
 import { CountryPicker, PrimaryButton } from 'polarkit/components/ui/atoms'
 import { ChangeEvent, useState } from 'react'
 import { ModalBox } from '../Modal'
@@ -60,7 +65,7 @@ const SetupAccount = ({
 
     try {
       const account = await api.accounts.create({
-        requestBody: {
+        accountCreate: {
           organization_id: forOrganizationId,
           user_id: forUserId,
           account_type: accountType,
@@ -73,11 +78,13 @@ const SetupAccount = ({
 
       await goToOnboarding(account)
     } catch (e) {
-      if (e instanceof ApiError) {
-        if (isValidationError(e)) {
-          setValidationErrors(getValidationErrorsMap(e.body.detail))
-        } else {
-          setErrorMessage(e.body.detail)
+      if (e instanceof ResponseError) {
+        const body = await e.response.json()
+        if (e.response.status === 422) {
+          const validationErrors = body['detail'] as ValidationError[]
+          setValidationErrors(getValidationErrorsMap(validationErrors))
+        } else if (body['detail']) {
+          setErrorMessage(body['detail'])
         }
       }
     } finally {

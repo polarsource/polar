@@ -2,7 +2,7 @@ import OpenGraphImage from '@/components/Organization/OpenGraphImage'
 import { ImageResponse, NextRequest } from 'next/server'
 import {
   Issue,
-  ListResource_Issue_,
+  ListResourceIssue,
   Organization,
   Repository,
 } from 'polarkit/api/client'
@@ -44,7 +44,7 @@ const renderOG = async (
 const listIssues = async (
   org: string,
   repo: string | null,
-): Promise<ListResource_Issue_> => {
+): Promise<ListResourceIssue> => {
   const params = new URLSearchParams()
   params.set('platform', 'github')
   params.set('organization_name', org)

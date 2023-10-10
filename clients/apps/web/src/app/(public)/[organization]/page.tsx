@@ -4,10 +4,10 @@ import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
 import { api } from 'polarkit/api'
 import {
-  ApiError,
   ListFundingSortBy,
   Organization,
   Platforms,
+  ResponseError,
 } from 'polarkit/api/client'
 
 export async function generateMetadata(
@@ -26,7 +26,7 @@ export async function generateMetadata(
       organizationName: params.organization,
     })
   } catch (e) {
-    if (e instanceof ApiError && e.status === 404) {
+    if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
     }
   }

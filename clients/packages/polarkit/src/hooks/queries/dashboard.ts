@@ -5,7 +5,6 @@ import {
 } from '@tanstack/react-query'
 import { api } from '../../api'
 import {
-  ApiError,
   IssueListResponse,
   IssueListType,
   IssueSortBy,
@@ -23,7 +22,7 @@ export const useDashboard = (
   sort?: IssueSortBy,
   onlyPledged?: boolean,
   onlyBadged?: boolean,
-): UseInfiniteQueryResult<InfiniteData<IssueListResponse, unknown>, ApiError> =>
+): UseInfiniteQueryResult<InfiniteData<IssueListResponse, unknown>> =>
   useInfiniteQuery({
     queryKey: [
       'dashboard',
@@ -52,7 +51,8 @@ export const useDashboard = (
       })
 
       signal?.addEventListener('abort', () => {
-        promise.cancel()
+        // TODO!
+        // promise.cancel()
       })
 
       return promise
@@ -96,7 +96,8 @@ export const usePersonalDashboard = (
       })
 
       signal?.addEventListener('abort', () => {
-        promise.cancel()
+        // TODO!
+        // promise.cancel()
       })
 
       return promise

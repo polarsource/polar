@@ -1,7 +1,7 @@
 import Status from '@/components/Pledge/Status'
 import { notFound } from 'next/navigation'
 import { api } from 'polarkit'
-import { ApiError, Pledge } from 'polarkit/api/client'
+import { Pledge, ResponseError } from 'polarkit/api/client'
 
 export default async function Page({
   searchParams,
@@ -24,13 +24,13 @@ export default async function Page({
 
   try {
     pledge = await api.pledges.create({
-      requestBody: {
+      createPledgeFromPaymentIntent: {
         payment_intent_id: paymentIntentId,
       },
     })
   } catch (e) {
-    if (e instanceof ApiError) {
-      if (e.status === 404) {
+    if (e instanceof ResponseError) {
+      if (e.response.status === 404) {
         notFound()
       }
     }

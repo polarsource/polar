@@ -23,14 +23,17 @@ const IssueReference = (props: {
 }) => {
   const { reference } = props
 
-  if (reference && reference.type === IssueReferenceType.PULL_REQUEST) {
-    const pr = reference.payload as PullRequestReference
+  if (
+    reference &&
+    reference.type === IssueReferenceType.PULL_REQUEST &&
+    reference.pull_request_reference
+  ) {
     return (
       <Box>
         <IssueReferencePullRequest
           orgName={props.orgName}
           repoName={props.repoName}
-          pr={pr}
+          pr={reference.pull_request_reference}
         />
       </Box>
     )
@@ -38,14 +41,14 @@ const IssueReference = (props: {
 
   if (
     reference &&
-    reference.type === IssueReferenceType.EXTERNAL_GITHUB_COMMIT
+    reference.type === IssueReferenceType.EXTERNAL_GITHUB_COMMIT &&
+    reference.external_git_hub_commit_reference
   ) {
-    const commit = reference.payload as ExternalGitHubCommitReference
     return (
       <Box>
         <IssueReferenceExternalGitHubCommit
           orgName={props.orgName}
-          commit={commit}
+          commit={reference.external_git_hub_commit_reference}
         />
       </Box>
     )
@@ -53,12 +56,14 @@ const IssueReference = (props: {
 
   if (
     reference &&
-    reference.type === IssueReferenceType.EXTERNAL_GITHUB_PULL_REQUEST
+    reference.type === IssueReferenceType.EXTERNAL_GITHUB_PULL_REQUEST &&
+    reference.external_git_hub_pull_request_reference
   ) {
-    const pr = reference.payload as ExternalGitHubPullRequestReference
     return (
       <Box>
-        <IssueReferenceExternalGitHubPullRequest pr={pr} />
+        <IssueReferenceExternalGitHubPullRequest
+          pr={reference.external_git_hub_pull_request_reference}
+        />
       </Box>
     )
   }
@@ -199,7 +204,7 @@ const RightSide = (props: { children: React.ReactNode }) => {
 
 interface PullRequestFormatting {
   label: 'opened' | 'closed' | 'merged'
-  timestamp: string
+  timestamp?: Date
   titleClasses: string
   iconClasses: string
 }
@@ -231,7 +236,7 @@ const IssueReferencePullRequest = (props: {
     isClosed = true
     formatting = {
       label: 'closed',
-      timestamp: pr.closed_at || '',
+      timestamp: pr.closed_at,
       titleClasses: '',
       iconClasses:
         'bg-red-100 border-red-200 text-red-500 dark:text-red-300 dark:bg-red-500/30 dark:border-red-500/30',
@@ -280,9 +285,7 @@ const IssueReferencePullRequest = (props: {
         </a>
         <span className="overflow-hidden whitespace-pre text-sm text-gray-500 dark:text-white/50">
           #{pr.number} {formatting.label}{' '}
-          {formatting.timestamp && (
-            <PolarTimeAgo date={new Date(formatting.timestamp)} />
-          )}
+          {formatting.timestamp && <PolarTimeAgo date={formatting.timestamp} />}
         </span>
       </LeftSide>
 

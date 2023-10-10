@@ -16,10 +16,10 @@ export default meta
 
 const pledge: Pledge = {
   id: 'xx',
-  created_at: '2023-06-29',
+  created_at: new Date('2023-06-29'),
   amount: { currency: 'USD', amount: 12300 },
   state: PledgeState.CREATED,
-  type: PledgeType.PAY_UPFRONT,
+  type: PledgeType.UPFRONT,
   scheduled_payout_at: undefined,
   issue: issue,
 }
@@ -65,7 +65,7 @@ export const Default: Story = {
       },
       {
         ...pledge,
-        type: PledgeType.PAY_ON_COMPLETION,
+        type: PledgeType.ON_COMPLETION,
         issue: {
           ...pledge.issue,
           title: `PAY_ON_COMPLETION`,
@@ -90,7 +90,7 @@ export const InReview: Story = {
       {
         ...pledge,
         state: PledgeState.PENDING,
-        scheduled_payout_at: '2023-07-14',
+        scheduled_payout_at: new Date('2023-07-14'),
       },
       {
         ...pledge,
@@ -108,7 +108,7 @@ export const Refunded: Story = {
       {
         ...pledge,
         state: PledgeState.REFUNDED,
-        scheduled_payout_at: '2023-07-14',
+        scheduled_payout_at: new Date('2023-07-14'),
       },
     ],
     columns: ['REFUNDED_DATE'],

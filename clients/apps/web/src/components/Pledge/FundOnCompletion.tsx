@@ -58,7 +58,7 @@ const FundOnCompletion = ({
     setErrorMessage('')
     try {
       await api.pledges.createPayOnCompletion({
-        requestBody: {
+        createPledgePayLater: {
           issue_id: issue.id,
           amount: amount,
         },

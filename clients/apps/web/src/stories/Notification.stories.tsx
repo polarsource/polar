@@ -4,10 +4,10 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from 'polarkit'
 import {
   MaintainerPledgedIssueConfirmationPendingNotification,
-  MaintainerPledgedIssuePendingNotification,
   NotificationType,
 } from 'polarkit/api/client'
 import {
+  notificationDummyPayload,
   notification_maintainerPledgeConfirmationPendingNotification,
   notification_maintainerPledgeCreatedNotification,
   notification_maintainerPledgePaidNotification,
@@ -62,7 +62,7 @@ export const MaintainerPledgeConfirmationPendingNotificationItem: StoryConfirmat
     args: {
       n: notification_maintainerPledgeConfirmationPendingNotification,
       payload:
-        notification_maintainerPledgeConfirmationPendingNotification.payload,
+        notification_maintainerPledgeConfirmationPendingNotification.maintainer_pledge_confirmation_pending,
       canMarkSolved: false,
       isMarkedSolved: false,
       onMarkSoved: async () => {},
@@ -104,9 +104,11 @@ export const RewardPaidNotificationItem: Story = {
 export const MaintainerPledgedIssuePendingNotificationItem: Story = {
   args: {
     n: {
-      ...notification_maintainerPledgeCreatedNotification,
+      id: 'x',
+      created_at: new Date(),
       type: NotificationType.MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION,
-      payload: {
+      payload: notificationDummyPayload,
+      maintainer_pledged_issue_pending: {
         pledge_amount_sum: '123.50',
         issue_url: '#',
         issue_title: 'Hello World',
@@ -115,7 +117,7 @@ export const MaintainerPledgedIssuePendingNotificationItem: Story = {
         issue_number: 123,
         issue_id: 'xx',
         maintainer_has_account: false,
-      } as MaintainerPledgedIssuePendingNotification,
+      },
     },
   },
 }
@@ -124,9 +126,11 @@ export const MaintainerPledgedIssueConfirmationPendingNotificationItem: StoryCon
   {
     args: {
       n: {
-        ...notification_maintainerPledgeCreatedNotification,
+        id: 'x',
+        created_at: new Date(),
         type: NotificationType.MAINTAINER_PLEDGED_ISSUE_CONFIRMATION_PENDING_NOTIFICATION,
-        payload: {
+        payload: notificationDummyPayload,
+        maintainer_pledged_issue_confirmation_pending: {
           pledge_amount_sum: '123.50',
           issue_url: '#',
           issue_title: 'Hello World',
@@ -135,7 +139,7 @@ export const MaintainerPledgedIssueConfirmationPendingNotificationItem: StoryCon
           issue_number: 123,
           issue_id: 'xx',
           maintainer_has_account: false,
-        } as MaintainerPledgedIssueConfirmationPendingNotification,
+        },
       },
       payload: {
         pledge_amount_sum: '123.50',

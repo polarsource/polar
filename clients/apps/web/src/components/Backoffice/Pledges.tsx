@@ -119,7 +119,7 @@ const Pledges = () => {
                   <div className="bg-red-700 p-2">
                     Reason: {p.dispute_reason}
                     <br />
-                    At: {p.disputed_at}
+                    At: {p.disputed_at.toString()}
                   </div>
                 )}
               </div>

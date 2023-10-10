@@ -4,10 +4,10 @@ import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { buildAPI } from 'polarkit/api'
 import {
-  ApiError,
   Issue,
   Pledger,
   PullRequest,
+  ResponseError,
   RewardsSummary,
 } from 'polarkit/api/client'
 
@@ -33,7 +33,7 @@ export async function generateMetadata(
       externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
     })
   } catch (e) {
-    if (e instanceof ApiError && e.status === 404) {
+    if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
     }
   }
@@ -101,7 +101,7 @@ export default async function Page({
     rewards = rewardsSummary
     pulls = pullRequests.items || []
   } catch (e) {
-    if (e instanceof ApiError && e.status === 404) {
+    if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
     }
   }

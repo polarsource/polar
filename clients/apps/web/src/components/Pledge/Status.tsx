@@ -58,7 +58,7 @@ export const Status = (props: {
 
     setEmailSigninLoading(true)
     try {
-      await api.magicLink.requestMagicLink({ requestBody: { email } })
+      await api.magicLink.requestMagicLink({ magicLinkRequest: { email } })
       const searchParams = new URLSearchParams({ email: email })
       router.push(`/login/magic-link/request?${searchParams}`)
     } catch (err) {

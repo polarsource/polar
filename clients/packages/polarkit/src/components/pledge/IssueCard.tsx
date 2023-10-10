@@ -294,7 +294,7 @@ const Assignees = ({ assignees }: { assignees: Assignee[] }) => (
 )
 
 const PullRequests = ({ pulls }: { pulls: PullRequest[] }) => (
-  <div className="space-y-2">
+  <div className="hidden space-y-2 sm:block">
     {pulls.map((pr) => (
       <Pull pr={pr} key={pr.id} />
     ))}

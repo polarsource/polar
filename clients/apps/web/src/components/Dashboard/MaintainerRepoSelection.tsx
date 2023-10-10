@@ -13,7 +13,7 @@ const MaintainerRepoSelection = (props: {
   }
 
   return (
-    <div className="relative flex h-14 w-full shrink-0 border-gray-100 dark:border-gray-800 lg:w-fit lg:border-r">
+    <div className="relative flex h-14 w-full shrink-0 border-gray-200 dark:border-gray-800 lg:w-fit lg:border-r">
       <RepoSelection
         selectedClassNames="pl-2"
         openClassNames="left-2 top-2"

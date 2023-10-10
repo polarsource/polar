@@ -81,14 +81,14 @@ const Pledgers: React.FC<PledgersProps> = ({
           <img
             key={pledger.name}
             src={pledger.avatar_url}
-            className={`rounded-full border border-gray-50 dark:border-gray-950 ${borderClasses}`}
+            className={`dark:border-polar-950 rounded-full border border-gray-50 ${borderClasses}`}
             alt={pledger.name}
           />
         </div>
       ))}
       {hiddenPledgersCount > 0 && (
         <div
-          className={`flex aspect-square items-center justify-center rounded-full border border-gray-50 bg-blue-600 text-blue-200 dark:border-gray-950 ${marginClasses} ${borderClasses} ${sizeClasses}`}
+          className={`dark:border-polar-950 flex aspect-square items-center justify-center rounded-full border border-gray-50 bg-blue-600 text-blue-200 ${marginClasses} ${borderClasses} ${sizeClasses}`}
         >
           +{hiddenPledgersCount}
         </div>

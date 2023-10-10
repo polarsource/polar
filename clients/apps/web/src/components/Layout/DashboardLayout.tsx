@@ -31,7 +31,7 @@ const DashboardLayout = (props: {
 
   return (
     <div className="relative flex w-full flex-row">
-      <aside className="flex h-screen w-[320px] flex-shrink-0 flex-col justify-between border-r border-r-gray-200 bg-white dark:border-r-gray-800 dark:bg-gray-950">
+      <aside className="dark:bg-polar-950 dark:border-r-polar-800 flex h-screen w-[320px] flex-shrink-0 flex-col justify-between border-r border-r-gray-200 bg-white">
         <div className="flex flex-col">
           <div className="relative z-10 mt-7 flex translate-x-0 flex-row items-center justify-between space-x-2 pl-9 pr-7">
             <a
@@ -56,7 +56,7 @@ const DashboardLayout = (props: {
         </div>
 
         {showConnectUsell && (
-          <div className="mx-4 my-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
+          <div className="dark:bg-polar-900 dark:border-polar-800 dark:text-polar-400 mx-4 my-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm">
             <p className="mb-2">Get funding for your public repositories.</p>
             <Link
               href={CONFIG.GITHUB_INSTALLATION_URL}
@@ -67,7 +67,7 @@ const DashboardLayout = (props: {
           </div>
         )}
       </aside>
-      <div className="relative flex h-screen w-full translate-x-0 flex-row bg-white dark:bg-gray-900">
+      <div className="dark:bg-polar-900 relative flex h-screen w-full translate-x-0 flex-row bg-white">
         <DashboardTopbar isFixed={true} useOrgFromURL={true} />
         <main className={classNames('relative h-full w-full overflow-y-auto')}>
           <Suspense>{props.children}</Suspense>
@@ -89,7 +89,7 @@ export const RepoPickerHeader = (props: {
   return (
     <>
       <form
-        className="flex flex-col justify-between space-y-2 border-b border-gray-200 bg-gray-100/50 bg-white p-2 !pr-2 backdrop-blur-none dark:border-gray-800 dark:bg-gray-950/50 lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0 lg:bg-transparent lg:p-0 lg:backdrop-blur"
+        className="dark:bg-polar-950/50 dark:border-polar-800 flex flex-col justify-between space-y-2 border-b border-gray-200 bg-gray-100/50 bg-white p-2 !pr-2 backdrop-blur-none lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0 lg:bg-transparent lg:p-0 lg:backdrop-blur"
         onSubmit={onSubmit}
       >
         <MaintainerRepoSelection

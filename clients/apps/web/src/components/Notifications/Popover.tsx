@@ -97,12 +97,12 @@ const Popover = ({ type = 'topbar' }: { type?: 'topbar' | 'dashboard' }) => {
     <>
       <div className="flex">
         <BellIcon
-          className="h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-100 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+          className="dark:text-polar-400 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-100 hover:text-gray-900 dark:hover:text-gray-200"
           aria-hidden="true"
           onMouseDown={clickBell}
         />
         {showBadge && (
-          <div className="-ml-3 h-3 w-3 rounded-full border-2 border-white bg-blue-500 dark:border-gray-800"></div>
+          <div className="dark:border-polar-800 -ml-3 h-3 w-3 rounded-full border-2 border-white bg-blue-500"></div>
         )}
       </div>
 
@@ -138,9 +138,9 @@ export const List = ({
   return (
     <div className="flex w-full flex-col items-center space-y-4 sm:items-end">
       <>
-        {/*<div className="z-10 mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white dark:bg-gray-700"></div>*/}
+        {/*<div className="z-10 mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white dark:bg-polar-700"></div>*/}
         <div className="z-20 h-full w-full max-w-md ">
-          <div className="pointer-events-auto w-full rounded-2xl bg-white shadow-lg dark:bg-gray-900">
+          <div className="dark:bg-polar-900 pointer-events-auto w-full rounded-2xl bg-white shadow-lg">
             <div className="h-full max-h-[800px] space-y-5 overflow-x-scroll p-5">
               {notifications.length === 0 && (
                 <div className="flex w-full flex-row items-center justify-center p-4 text-center text-sm text-black/60 dark:text-white/60">
@@ -178,7 +178,7 @@ const Item = ({
       <Icon classes={twMerge('mt-1 p-1', iconClasses)} icon={children.icon} />
       <div>
         <div>{children.text}</div>
-        <div className="text-gray-500 dark:text-gray-400/75">
+        <div className="dark:text-polar-400/75 text-gray-500">
           <PolarTimeAgo date={new Date(n.created_at)} />
         </div>
       </div>

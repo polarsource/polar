@@ -42,7 +42,7 @@ const PledgeByLink = ({
   return (
     <>
       <div className="mx-auto mt-12 w-full p-6 md:mt-24 md:w-[826px]">
-        <h1 className="text-center text-3xl font-normal text-gray-800 dark:text-gray-300 md:text-4xl">
+        <h1 className="dark:text-polar-300 text-center text-3xl font-normal text-gray-800 md:text-4xl">
           Back an issue
         </h1>
 
@@ -58,7 +58,7 @@ const PledgeByLink = ({
                   className="text mb-2 mt-4 text-sm font-medium"
                 >
                   GitHub issue link{' '}
-                  <span className="font-normal text-gray-500	 dark:text-gray-400 ">
+                  <span className="dark:text-polar-400 font-normal	 text-gray-500 ">
                     (e.g. https://github.com/
                     <wbr />
                     polarsource/
@@ -77,7 +77,7 @@ const PledgeByLink = ({
                   onChange={onLinkChange}
                   onBlur={onLinkChange}
                   value={link}
-                  className="block w-full rounded-lg border-gray-200 bg-transparent px-3 py-2.5 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
+                  className="dark:border-polar-600 block w-full rounded-lg border-gray-200 bg-transparent px-3 py-2.5 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
                 />
 
                 <div className="mt-6">

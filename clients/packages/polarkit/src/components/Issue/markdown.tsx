@@ -34,7 +34,7 @@ export const generateMarkdownTitle = (
     nodes.push(
       <span
         key={`1-${i}`}
-        className="rounded-md bg-gray-100 py-0.5 px-1.5 dark:bg-gray-700"
+        className="dark:bg-polar-700 rounded-md bg-gray-100 px-1.5 py-0.5"
       >
         {match[1]}
       </span>,

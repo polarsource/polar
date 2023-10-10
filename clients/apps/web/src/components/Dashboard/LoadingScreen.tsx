@@ -36,7 +36,7 @@ const LogoIcon = ({ animate }: { animate: boolean }) => {
       viewBox="0 0 40 40"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={'m-auto text-gray-50 dark:text-gray-950'}
+      className={'dark:text-polar-950 m-auto text-gray-50'}
       animate={{
         rotate: [0, 90, 180],
       }}
@@ -114,7 +114,7 @@ const LoadingScreen = ({ animate, children }: Props) => {
       <div className="flex grow items-center justify-center p-8 md:min-h-screen">
         <div className="flex-row">
           <LogoIcon animate={animate} />
-          <div className="mt-4 text-gray-500 dark:text-gray-400">
+          <div className="dark:text-polar-400 mt-4 text-gray-500">
             {children}
           </div>
         </div>

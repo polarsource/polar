@@ -36,7 +36,7 @@ const SettingsCheckbox = ({
           disabled={!!disabled}
           className={classNames(
             type === 'radio' ? 'rounded-full' : 'rounded',
-            'h-4 w-4 border-gray-300 p-2 text-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-blue-500 dark:checked:!border-blue-500 dark:checked:!bg-blue-500 dark:focus:ring-blue-500 dark:focus:ring-offset-gray-800',
+            'dark:bg-polar-800 dark:border-polar-600 h-4 w-4 border-gray-300 p-2 text-blue-500 focus:ring-blue-500 dark:text-blue-500 dark:checked:!border-blue-500 dark:checked:!bg-blue-500 dark:focus:ring-blue-500 dark:focus:ring-offset-gray-800',
           )}
         />
       </div>
@@ -45,7 +45,7 @@ const SettingsCheckbox = ({
         {description && (
           <span
             id={`${id}-description`}
-            className="inline-flex items-center space-x-1 text-gray-500 dark:text-gray-400"
+            className="dark:text-polar-400 inline-flex items-center space-x-1 text-gray-500"
           >
             <InformationCircleIcon className="h-6 w-6" />
             <span>{description}</span>

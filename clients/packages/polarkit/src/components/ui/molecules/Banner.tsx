@@ -17,10 +17,10 @@ const Banner = ({
       className={clsx(
         'flex items-center justify-between gap-2 rounded-lg px-3 py-2',
         color === 'default'
-          ? 'bg-white shadow dark:bg-gray-800 dark:ring-1 dark:ring-gray-700'
+          ? 'dark:bg-polar-800 dark:ring-polar-700 bg-white shadow dark:ring-1'
           : '',
         color === 'muted'
-          ? 'bg-gray-75 border text-gray-500 dark:border-gray-700/50  dark:bg-gray-900'
+          ? 'bg-gray-75 dark:bg-polar-900 dark:border-polar-700/50 border  text-gray-500'
           : '',
         color === 'red'
           ? 'border bg-red-100 text-red-600  dark:border-red-800 dark:bg-red-900 dark:text-red-600'

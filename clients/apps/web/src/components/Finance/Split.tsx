@@ -237,7 +237,7 @@ const Split = (props: {
               <div>
                 <img src={s.avatar_url} className="h-6 w-6 rounded-full" />
               </div>
-              <div className="flex flex-1 flex-col items-start text-gray-900 dark:text-gray-200">
+              <div className="dark:text-polar-200 flex flex-1 flex-col items-start text-gray-900">
                 <span>{s.username}</span>
                 {s.is_suggested_from_contributions && (
                   <div className="flex">
@@ -255,15 +255,15 @@ const Split = (props: {
                   true,
                 )}
               </div>
-              <div className="flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5 dark:bg-gray-700">
+              <div className="dark:bg-polar-700 flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5">
                 <span className="flex-shrink-0 text-gray-500">%</span>
                 <div className="flex-1">
                   <input
                     className={classNames(
-                      'w-full bg-white dark:bg-gray-700 dark:outline-gray-700 ',
+                      'dark:bg-polar-700 w-full bg-white dark:outline-gray-700 ',
                       s.is_fixed
-                        ? 'font-medium text-black dark:text-gray-100'
-                        : 'text-gray-500 dark:text-gray-400',
+                        ? 'dark:text-polar-100 font-medium text-black'
+                        : 'dark:text-polar-400 text-gray-500',
                     )}
                     value={prettifyNumber(s.raw_value || '')}
                     placeholder={prettifyNumber(
@@ -292,7 +292,7 @@ const Split = (props: {
               </button>
               <input
                 placeholder="Add a GitHub user..."
-                className="px-2 py-1 dark:bg-gray-900 dark:outline-gray-700"
+                className="dark:bg-polar-900 px-2 py-1 dark:outline-gray-700"
                 value={searchGithubUsername}
                 onChange={(e) => setSearchGithubUsername(e.target.value)}
               />
@@ -326,7 +326,7 @@ const Split = (props: {
             </Banner>
           )}
         </div>
-        <div className="bg-gray-75 flex items-center px-4 py-2 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+        <div className="bg-gray-75 dark:bg-polar-800 dark:text-polar-400 flex items-center px-4 py-2 text-gray-500">
           <InformationCircleIcon className="mr-2 h-6 w-6" />
           <div className="w-1-2 mr-4 flex-1 text-sm">
             Polar&apos;s fee of ${getCentsInDollarString(polarShare, true)} has

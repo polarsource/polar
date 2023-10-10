@@ -78,7 +78,7 @@ export const Status = (props: {
     <>
       <div className="mx-auto p-4 md:mt-24 md:w-[768px] md:p-0">
         <div className="flex flex-row items-center">
-          <h1 className="w-1/2 text-2xl font-normal text-gray-800 dark:text-gray-300">
+          <h1 className="dark:text-polar-300 w-1/2 text-2xl font-normal text-gray-800">
             <CheckCircleIcon className="inline-block h-10 w-10 text-blue-500" />{' '}
             Thank you!
           </h1>

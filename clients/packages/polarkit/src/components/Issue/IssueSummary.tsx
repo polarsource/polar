@@ -42,7 +42,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
   const markdownTitle = generateMarkdownTitle(title)
 
   return (
-    <div className="hover:bg-gray-75 group flex items-center justify-between gap-4 overflow-hidden px-2 py-4 pb-5 dark:hover:bg-gray-900/50">
+    <div className="hover:bg-gray-75 dark:hover:bg-polar-900/50 group flex items-center justify-between gap-4 overflow-hidden px-2 py-4 pb-5">
       <div className="flex flex-row items-center">
         {showLogo && (
           <div className="mr-3 flex-shrink-0 justify-center rounded-full bg-white p-[1px] shadow">

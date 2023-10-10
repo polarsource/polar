@@ -248,7 +248,7 @@ const IssueReferencePullRequest = (props: {
       timestamp: pr.created_at,
       titleClasses: '',
       iconClasses:
-        'bg-gray-100 border-gray-200 text-gray-500 dark:text-gray-300 dark:bg-gray-500/30 dark:border-gray-500/30',
+        'bg-gray-100 border-gray-200 text-gray-500 dark:text-polar-300 dark:bg-polar-500/30 dark:border-polar-500/30',
     }
   } else {
     isOpen = true
@@ -355,7 +355,7 @@ export const DiffStat = (props: {
       <span>
         {generateDiffBox('bg-green-200 dark:bg-green-400/50', additionBoxes)}
         {generateDiffBox('bg-red-200 dark:bg-red-400/50', deletionBoxes)}
-        {generateDiffBox('bg-gray-200 dark:bg-gray-400/50', emptyBoxes)}
+        {generateDiffBox('bg-gray-200 dark:bg-polar-400/50', emptyBoxes)}
       </span>
     </div>
   )

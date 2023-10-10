@@ -88,7 +88,7 @@ export const RepoPicker: Story = {
                 type="text"
                 name="query"
                 id="query"
-                className="block w-full rounded-md border-0 bg-transparent py-2 text-gray-900  placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700 sm:text-sm sm:leading-6"
+                className="dark:bg-polar-800 dark:text-polar-200 dark:ring-polar-700 block w-full rounded-md border-0  bg-transparent py-2 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
                 placeholder="Example"
               />
             </RepoPickerHeader>

@@ -24,15 +24,15 @@ export const BadgeRepositories = ({
       <h2
         className={classNames(
           isSettingPage ? 'text-left' : 'text-center',
-          'text-lg text-gray-500 dark:text-gray-400',
+          'dark:text-polar-400 text-lg text-gray-500',
         )}
       >
         Add badge to issues
       </h2>
-      <div className="flex w-full flex-row rounded-lg border border-gray-200 text-sm dark:border-gray-700">
-        <div className="w-1/2 border-r border-gray-200 px-6 py-3 dark:border-gray-700">
+      <div className="dark:border-polar-700 flex w-full flex-row rounded-lg border border-gray-200 text-sm">
+        <div className="dark:border-polar-700 w-1/2 border-r border-gray-200 px-6 py-3">
           <strong className="font-medium">By label</strong>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="dark:text-polar-400 text-gray-500">
             Issues with a{' '}
             <span className="flew-row inline-flex gap-1">
               {Array.from(badgeLabels).map((badgeLabel) => (
@@ -47,12 +47,12 @@ export const BadgeRepositories = ({
         </div>
         <div className="w-1/2 px-6 py-3">
           <strong className="font-medium">All</strong>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="dark:text-polar-400 text-gray-500">
             All new issues will get the Polar badge automatically.
           </p>
         </div>
       </div>
-      <ul className="mt-7 divide-y divide-gray-200 overflow-hidden rounded-xl shadow dark:divide-gray-700/75 dark:ring-1 dark:ring-gray-700">
+      <ul className="dark:ring-polar-700 dark:divide-polar-700/75 mt-7 divide-y divide-gray-200 overflow-hidden rounded-xl shadow dark:ring-1">
         {repos.map((repo, index) => {
           return (
             <li key={`badge-repo-${index}`}>

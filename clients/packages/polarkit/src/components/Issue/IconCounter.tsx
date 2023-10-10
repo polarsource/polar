@@ -10,7 +10,7 @@ const IconCounter = (props: { icon: Icon; count: number }) => {
           <ChatBubbleLeftIcon className="h-4 w-4" />
         )}
         {props.icon === 'thumbs_up' && <span className="text-lg">👍</span>}
-        <span className="text-sm text-gray-500 dark:text-gray-400">
+        <span className="dark:text-polar-400 text-sm text-gray-500">
           {props.count}
         </span>
       </div>

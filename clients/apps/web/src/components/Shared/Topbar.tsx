@@ -16,7 +16,7 @@ const Topbar = (props: {
 }) => {
   const className = classNames(
     props.isFixed !== false ? 'fixed z-20' : '',
-    'flex h-16 w-full items-center justify-between space-x-4 bg-white dark:bg-gray-900 px-4 drop-shadow dark:border-b dark:border-gray-800',
+    'flex h-16 w-full items-center justify-between space-x-4 bg-white dark:bg-polar-900 px-4 drop-shadow dark:border-b dark:border-polar-800',
   )
 
   const hideProfile = props?.hideProfile

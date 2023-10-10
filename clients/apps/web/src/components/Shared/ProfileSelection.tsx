@@ -21,7 +21,7 @@ const ProfileSelection = ({
   showBackerLinks = false,
 }) => {
   const classNames = clsx(
-    'relative flex w-full flex-col rounded-xl bg-white dark:bg-gray-900 hover:bg-gray-100/50 dark:shadow-none',
+    'relative flex w-full flex-col rounded-xl bg-white dark:bg-polar-900 hover:bg-gray-100/50 dark:shadow-none',
     className,
   )
   const { currentUser: loggedUser, logout } = useAuth()
@@ -84,14 +84,14 @@ const ProfileSelection = ({
             avatar_url={current.avatar_url}
             type={current.type}
           />
-          <ChevronUpDownIcon className="h-5 w-5 flex-shrink-0 text-gray-400 dark:text-gray-500" />
+          <ChevronUpDownIcon className="dark:text-polar-500 h-5 w-5 flex-shrink-0 text-gray-400" />
         </div>
 
         {isOpen && (
           <div
             ref={ref}
             className={clsx(
-              'absolute left-0 w-full overflow-hidden rounded-2xl bg-white py-2 shadow-xl dark:bg-gray-900',
+              'dark:bg-polar-900 absolute left-0 w-full overflow-hidden rounded-2xl bg-white py-2 shadow-xl',
               narrow ? '-top-2' : '-top-1',
             )}
           >
@@ -111,7 +111,7 @@ const ProfileSelection = ({
                   {backerRoutes.map((n) => {
                     return (
                       <LinkItem href={n.link} icon={n.icon}>
-                        <span className="mx-1.5 text-gray-600 dark:text-gray-400">
+                        <span className="dark:text-polar-400 mx-1.5 text-gray-600">
                           {n.title}
                         </span>
                       </LinkItem>
@@ -152,10 +152,10 @@ const ProfileSelection = ({
               <LinkItem
                 href={'https://polar.sh/faq'}
                 icon={
-                  <ContactSupportOutlined className="text-gray-600 dark:text-gray-400" />
+                  <ContactSupportOutlined className="dark:text-polar-400 text-gray-600" />
                 }
               >
-                <span className="mx-1.5  text-gray-600 dark:text-gray-400">
+                <span className="dark:text-polar-400  mx-1.5 text-gray-600">
                   Support
                 </span>
               </LinkItem>
@@ -163,10 +163,10 @@ const ProfileSelection = ({
               <TextItem
                 onClick={onLogout}
                 icon={
-                  <LogoutOutlined className="text-gray-600 dark:text-gray-400" />
+                  <LogoutOutlined className="dark:text-polar-400 text-gray-600" />
                 }
               >
-                <span className="mx-1.5  text-gray-600 dark:text-gray-400">
+                <span className="dark:text-polar-400  mx-1.5 text-gray-600">
                   Log out
                 </span>
               </TextItem>
@@ -212,7 +212,7 @@ const Profile = (props: {
               alt={props.name}
             />
           )}
-          <p className="ml-4 truncate text-gray-600 dark:text-gray-400 ">
+          <p className="dark:text-polar-400 ml-4 truncate text-gray-600 ">
             {props.name}
           </p>
         </div>

@@ -95,7 +95,7 @@ export function RepoSelection(props: {
               className={clsx(
                 width,
                 props.openClassNames,
-                '!absolute -top-10 z-10 w-max rounded-lg bg-white shadow-lg dark:border dark:border-gray-600 dark:bg-gray-700',
+                'dark:bg-polar-700 dark:border-polar-600 !absolute -top-10 z-10 w-max rounded-lg bg-white shadow-lg dark:border',
               )}
             >
               <div className="flex items-center px-2">
@@ -108,7 +108,7 @@ export function RepoSelection(props: {
                   onValueChange={onInputValueChange}
                 />
               </div>
-              <hr className="dark:border-gray-600" />
+              <hr className="dark:border-polar-600" />
               <Command.List
                 ref={listRef}
                 className="max-h-[500px] overflow-auto overscroll-contain px-2 pb-2"
@@ -160,7 +160,7 @@ const SelectedRepository = ({
       <div className="flex items-center justify-between space-x-2">
         <RepoIcon />
         <div className="flex items-center space-x-1 overflow-hidden ">
-          <span className="overflow-hidden text-ellipsis whitespace-nowrap text-gray-900 dark:text-gray-200">
+          <span className="dark:text-polar-200 overflow-hidden text-ellipsis whitespace-nowrap text-gray-900">
             {repository.name}
           </span>
         </div>

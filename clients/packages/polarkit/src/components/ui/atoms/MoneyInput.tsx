@@ -57,7 +57,7 @@ const MoneyInput = (props: Props) => {
           id={id}
           name={name}
           className={classNames(
-            'block w-full rounded-lg border-gray-200 bg-transparent px-4 py-2 pl-7 pr-16 text-lg placeholder-gray-400 shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:border-gray-600 dark:focus:border-blue-600 dark:focus:ring-blue-700/40',
+            'dark:border-polar-600 block w-full rounded-lg border-gray-200 bg-transparent px-4 py-2 pl-7 pr-16 text-lg placeholder-gray-400 shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:focus:border-blue-600 dark:focus:ring-blue-700/40',
             props.className ?? '',
           )}
           onChange={onChanged}

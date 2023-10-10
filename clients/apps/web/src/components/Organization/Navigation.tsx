@@ -16,7 +16,7 @@ const Navigation = ({
   const router = useRouter()
 
   return (
-    <div className="relative flex items-center text-black text-gray-900 dark:text-gray-200">
+    <div className="dark:text-polar-200 relative flex items-center text-black text-gray-900">
       <img src={organization.avatar_url} className="h-8 w-8 rounded-full" />
       <div className="ml-4 text-sm ">{organization.name}</div>
       <div className="ml-3 mr-1">/</div>

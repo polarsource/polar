@@ -76,7 +76,7 @@ export default function Page() {
 
         {totalCount !== undefined && totalCount > 0 && (
           <div>
-            <h1 className="text-lg text-gray-900 dark:text-gray-300">
+            <h1 className="dark:text-polar-300 text-lg text-gray-900">
               Funded issues
             </h1>
             <IssueList

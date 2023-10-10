@@ -7,6 +7,7 @@ import { classNames } from 'polarkit/utils'
 import { Suspense } from 'react'
 import SidebarNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
+import Popover from '../Notifications/Popover'
 import DashboardTopbar from '../Shared/DashboardTopbar'
 import ProfileSelection from '../Shared/ProfileSelection'
 
@@ -23,12 +24,16 @@ const DashboardLayout = (props: {
   return (
     <div className="relative flex w-full flex-row">
       <aside className="h-screen w-[320px] flex-shrink-0 border-r border-r-gray-100 bg-white dark:border-r-gray-800 dark:bg-gray-900">
-        <a
-          href="/"
-          className="mt-8 flex-shrink-0 items-center space-x-2 px-9 font-semibold text-gray-700 md:inline-flex"
-        >
-          <LogoType />
-        </a>
+        <div className="relative z-10 mt-8 flex translate-x-0 flex-row items-center justify-between space-x-2 pl-9 pr-7">
+          <a
+            href="/"
+            className="flex-shrink-0 items-center font-semibold text-gray-700"
+          >
+            <LogoType />
+          </a>
+
+          <Suspense>{currentUser && <Popover type="dashboard" />}</Suspense>
+        </div>
         <div className="mt-8 flex px-4 py-2">
           {currentUser && (
             <ProfileSelection

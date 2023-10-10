@@ -20,7 +20,7 @@ import {
   useNotifications,
   useNotificationsMarkRead,
 } from 'polarkit/hooks'
-import { useOutsideClick } from 'polarkit/utils'
+import { classNames, useOutsideClick } from 'polarkit/utils'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SplitRewardModal from '../Finance/SplitRewardModal'
@@ -29,7 +29,7 @@ import Icon from '../Icons/Icon'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 
-const Popover = () => {
+const Popover = ({ type = 'topbar' }: { type?: 'topbar' | 'dashboard' }) => {
   const [show, setShow] = useState(false)
   const [showBadge, setShowBadge] = useState(false)
 
@@ -59,6 +59,11 @@ const Popover = () => {
       setShow(false)
     }
   }
+
+  const notificationsContainerClassnames = classNames(
+    'pointer-events-none fixed z-40 flex items-end',
+    type === 'topbar' ? 'right-5 top-20' : 'right-4 top-12 left-2',
+  )
 
   const [inNestedModal, setIsInNestedModal] = useState(false)
 
@@ -104,7 +109,7 @@ const Popover = () => {
       {show && notifs.data && (
         <div
           aria-live="assertive"
-          className="pointer-events-none fixed right-6 top-12 z-40 flex items-end"
+          className={notificationsContainerClassnames}
           ref={ref}
           onClick={(e) => {
             e.preventDefault()
@@ -135,10 +140,10 @@ export const List = ({
       <>
         {/*<div className="z-10 mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white dark:bg-gray-700"></div>*/}
         <div className="z-20 h-full w-full max-w-md ">
-          <div className="pointer-events-auto w-full rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-700 dark:ring-gray-600">
+          <div className="pointer-events-auto w-full rounded-2xl bg-white shadow-lg dark:bg-gray-700">
             <div className="h-full max-h-[800px] space-y-5 overflow-x-scroll p-5">
               {notifications.length === 0 && (
-                <div className="p-4 text-black/60 dark:text-white/60">
+                <div className="flex w-full flex-row items-center justify-center p-4 text-center text-sm text-black/60 dark:text-white/60">
                   You don&apos;t have any notifications... yet!
                 </div>
               )}

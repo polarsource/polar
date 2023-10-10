@@ -55,7 +55,7 @@ const Topbar = (props: {
           </>
         )}
 
-        <div className="flex flex-shrink-0 items-center justify-end space-x-4 md:flex-1">
+        <div className="relative flex flex-shrink-0 items-center justify-end space-x-4 md:flex-1">
           {!hideProfile && (
             <Suspense>
               <TopbarRight useOrgFromURL={props.useOrgFromURL} />

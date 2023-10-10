@@ -1,5 +1,6 @@
 import ProfileSelection from '@/components/Shared/ProfileSelection'
 import { useAuth } from '@/hooks/auth'
+import Link from 'next/link'
 import { LogoType } from 'polarkit/components/brand'
 import { useStore } from 'polarkit/store'
 import { classNames } from 'polarkit/utils'
@@ -27,27 +28,39 @@ const BackerLayout = (props: {
 
   return (
     <div className="relative flex w-full flex-row">
-      <aside className="h-screen w-[320px] flex-shrink-0 border-r border-r-gray-100 bg-white dark:border-r-gray-800 dark:bg-gray-900">
-        <div className="relative z-10 mt-8 flex translate-x-0 flex-row items-center justify-between space-x-2 pl-9 pr-7">
-          <a
-            href="/"
-            className="flex-shrink-0 items-center font-semibold text-gray-700"
-          >
-            <LogoType />
-          </a>
+      <aside className="flex h-screen w-[320px] flex-shrink-0 flex-col justify-between border-r border-r-gray-100 bg-white dark:border-r-gray-800 dark:bg-gray-900">
+        <div className="flex flex-col">
+          <div className="relative z-10 mt-7 flex translate-x-0 flex-row items-center justify-between space-x-2 pl-9 pr-7">
+            <a
+              href="/"
+              className="flex-shrink-0 items-center font-semibold text-gray-700"
+            >
+              <LogoType />
+            </a>
 
-          <Suspense>{currentUser && <Popover type="dashboard" />}</Suspense>
+            <Suspense>{currentUser && <Popover type="dashboard" />}</Suspense>
+          </div>
+          <div className="mt-8 flex px-4 py-2">
+            {currentUser && (
+              <ProfileSelection
+                useOrgFromURL={true}
+                className="shadow-xl"
+                narrow={false}
+              />
+            )}
+          </div>
+          <SidebarNavigation />
         </div>
-        <div className="mt-8 flex px-4 py-2">
-          {currentUser && (
-            <ProfileSelection
-              useOrgFromURL={true}
-              className="shadow-xl"
-              narrow={false}
-            />
-          )}
+
+        <div className="mx-4 my-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm dark:border-blue-800 dark:bg-blue-900 dark:text-gray-300">
+          <p className="mb-2">Waiting for a bug to be fixed?</p>
+          <Link
+            href="/new"
+            className="font-medium text-blue-600 dark:text-blue-500"
+          >
+            Fund a Github issue
+          </Link>
         </div>
-        <SidebarNavigation />
       </aside>
 
       <div className="relative flex h-screen w-full translate-x-0 flex-row bg-gray-50 dark:bg-gray-950">

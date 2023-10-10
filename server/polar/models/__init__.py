@@ -14,6 +14,8 @@ from .pledge import Pledge
 from .pledge_transaction import PledgeTransaction
 from .pull_request import PullRequest
 from .repository import Repository
+from .subscription_group import SubscriptionGroup
+from .subscription_tier import SubscriptionTier
 from .user import OAuthAccount, User
 from .user_notification import UserNotification
 from .user_organization import UserOrganization
@@ -36,6 +38,8 @@ __all__ = [
     "PledgeTransaction",
     "PullRequest",
     "Repository",
+    "SubscriptionGroup",
+    "SubscriptionTier",
     "TimestampedModel",
     "User",
     "UserNotification",

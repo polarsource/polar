@@ -59,7 +59,7 @@ export default function RootLayout({
         <link href="/favicon.png" rel="icon"></link>
       </head>
 
-      <body className="h-full bg-gray-50 dark:bg-gray-950">
+      <body className="h-full bg-white dark:bg-gray-950">
         <PolarPostHogProvider>
           <PolarThemeProvider>
             <PolarQueryClientProvider>

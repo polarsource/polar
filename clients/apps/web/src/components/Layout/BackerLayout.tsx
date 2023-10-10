@@ -28,7 +28,7 @@ const BackerLayout = (props: {
 
   return (
     <div className="relative flex w-full flex-row">
-      <aside className="flex h-screen w-[320px] flex-shrink-0 flex-col justify-between border-r border-r-gray-100 bg-white dark:border-r-gray-800 dark:bg-gray-900">
+      <aside className="flex h-screen w-[320px] flex-shrink-0 flex-col justify-between border-r border-r-gray-200 bg-white dark:border-r-gray-800 dark:bg-gray-900">
         <div className="flex flex-col">
           <div className="relative z-10 mt-7 flex translate-x-0 flex-row items-center justify-between space-x-2 pl-9 pr-7">
             <a
@@ -63,7 +63,7 @@ const BackerLayout = (props: {
         </div>
       </aside>
 
-      <div className="relative flex h-screen w-full translate-x-0 flex-row bg-gray-50 dark:bg-gray-950">
+      <div className="relative flex h-screen w-full translate-x-0 flex-row bg-white dark:bg-gray-950">
         <DashboardTopbar isFixed={true} useOrgFromURL={false} />
         <nav className="fixed z-10 w-full ">
           {showBanner && <BackerConnectUpsell />}

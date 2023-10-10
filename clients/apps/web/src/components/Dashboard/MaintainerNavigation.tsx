@@ -23,7 +23,7 @@ const MaintainerNavigation = () => {
 
       const subs =
         ('subs' in n &&
-          n.subs.map((s) => {
+          n.subs?.map((s) => {
             return {
               ...s,
               isActive: pathname && pathname.startsWith(s.link),

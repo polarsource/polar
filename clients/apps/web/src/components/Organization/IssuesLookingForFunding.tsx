@@ -12,7 +12,11 @@ const IssuesLookingForFunding = ({
   issuesFunding: IssueFunding[]
 }) => {
   if (issuesFunding.length < 1) {
-    return <></>
+    return (
+      <>
+        <span>Hej</span>
+      </>
+    )
   }
 
   return (

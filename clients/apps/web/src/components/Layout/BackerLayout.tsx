@@ -52,7 +52,7 @@ const BackerLayout = (props: {
           <SidebarNavigation />
         </div>
 
-        <div className="mx-4 my-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm dark:border-blue-800 dark:bg-blue-900 dark:text-gray-300">
+        <div className="mx-4 my-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400">
           <p className="mb-2">Waiting for a bug to be fixed?</p>
           <Link
             href="/new"

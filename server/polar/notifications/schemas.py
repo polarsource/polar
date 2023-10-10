@@ -3,6 +3,8 @@ from enum import Enum
 from typing import Self, Union
 from uuid import UUID
 
+from pydantic import Field
+
 from polar.kit.schemas import Schema
 from polar.notifications.notification import (
     MaintainerPledgeConfirmationPendingNotification,
@@ -41,6 +43,7 @@ class NotificationRead(Schema):
     id: UUID
     type: NotificationType
     created_at: datetime
+
     payload: Union[
         MaintainerPledgePaidNotification,
         MaintainerPledgeConfirmationPendingNotification,
@@ -50,7 +53,22 @@ class NotificationRead(Schema):
         RewardPaidNotification,
         MaintainerPledgedIssueConfirmationPendingNotification,
         MaintainerPledgedIssuePendingNotification,
-    ]
+    ] = Field(deprecated=True)
+
+    maintainerPledgePaid: MaintainerPledgePaidNotification | None = None
+    maintainerPledgeConfirmationPending: MaintainerPledgeConfirmationPendingNotification | None = (  # noqa: E501
+        None
+    )
+    maintainerPledgePending: MaintainerPledgePendingNotification | None = None
+    maintainerPledgeCreated: MaintainerPledgeCreatedNotification | None = None
+    pledgerPledgePending: PledgerPledgePendingNotification | None = None
+    rewardPaid: RewardPaidNotification | None = None
+    maintainerPledgedIssueConfirmationPending: MaintainerPledgedIssueConfirmationPendingNotification | None = (  # noqa: E501
+        None
+    )
+    maintainerPledgedIssuePending: MaintainerPledgedIssuePendingNotification | None = (
+        None
+    )
 
 
 class NotificationsList(Schema):

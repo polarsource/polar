@@ -3,6 +3,16 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import UserRequiredAuth
 from polar.models.notification import Notification
+from polar.notifications.notification import (
+    MaintainerPledgeConfirmationPendingNotification,
+    MaintainerPledgeCreatedNotification,
+    MaintainerPledgedIssueConfirmationPendingNotification,
+    MaintainerPledgedIssuePendingNotification,
+    MaintainerPledgePaidNotification,
+    MaintainerPledgePendingNotification,
+    PledgerPledgePendingNotification,
+    RewardPaidNotification,
+)
 from polar.postgres import AsyncSession, get_db_session
 
 from .schemas import (
@@ -28,12 +38,34 @@ async def get(
 
     def decorate(n: Notification) -> NotificationRead | None:
         try:
-            return NotificationRead(
+            payload = notifications.parse_payload(n)
+            notif = NotificationRead(
                 id=n.id,
                 type=NotificationType.from_str(n.type),
                 created_at=n.created_at,
-                payload=notifications.parse_payload(n),
+                payload=payload,  # deprecated
             )
+
+            if isinstance(payload, MaintainerPledgeCreatedNotification):
+                notif.maintainerPledgeCreated = payload
+            if isinstance(payload, MaintainerPledgeConfirmationPendingNotification):
+                notif.maintainerPledgeConfirmationPending = payload
+            if isinstance(payload, MaintainerPledgePendingNotification):
+                notif.maintainerPledgePending = payload
+            if isinstance(payload, MaintainerPledgePaidNotification):
+                notif.maintainerPledgePaid = payload
+            if isinstance(payload, PledgerPledgePendingNotification):
+                notif.pledgerPledgePending = payload
+            if isinstance(payload, RewardPaidNotification):
+                notif.rewardPaid = payload
+            if isinstance(
+                payload, MaintainerPledgedIssueConfirmationPendingNotification
+            ):
+                notif.maintainerPledgedIssueConfirmationPending = payload
+            if isinstance(payload, MaintainerPledgedIssuePendingNotification):
+                notif.maintainerPledgedIssuePending = payload
+
+            return notif
         except Exception as e:
             log.error("failed to parse notification", e=e)
             return None

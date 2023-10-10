@@ -20,7 +20,7 @@ const ProfileSelection = ({
   showBackerLinks = false,
 }) => {
   const classNames = clsx(
-    'relative flex w-full flex-col rounded-xl bg-white dark:bg-gray-950 hover:bg-gray-100/50 dark:shadow-none',
+    'relative flex w-full flex-col rounded-xl bg-white dark:bg-gray-900 hover:bg-gray-100/50 dark:shadow-none',
     className,
   )
   const { currentUser: loggedUser, logout } = useAuth()
@@ -83,7 +83,7 @@ const ProfileSelection = ({
           <div
             ref={ref}
             className={clsx(
-              'absolute left-0 w-full overflow-hidden rounded-2xl bg-white py-2 shadow-xl dark:bg-gray-950',
+              'absolute left-0 w-full overflow-hidden rounded-2xl bg-white py-2 shadow-xl dark:bg-gray-900',
               narrow ? '-top-2' : '-top-1',
             )}
           >

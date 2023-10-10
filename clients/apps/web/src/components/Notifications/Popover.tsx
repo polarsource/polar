@@ -140,7 +140,7 @@ export const List = ({
       <>
         {/*<div className="z-10 mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white dark:bg-gray-700"></div>*/}
         <div className="z-20 h-full w-full max-w-md ">
-          <div className="pointer-events-auto w-full rounded-2xl bg-white shadow-lg dark:bg-gray-700">
+          <div className="pointer-events-auto w-full rounded-2xl bg-white shadow-lg dark:bg-gray-900">
             <div className="h-full max-h-[800px] space-y-5 overflow-x-scroll p-5">
               {notifications.length === 0 && (
                 <div className="flex w-full flex-row items-center justify-center p-4 text-center text-sm text-black/60 dark:text-white/60">

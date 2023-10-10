@@ -294,7 +294,7 @@ const IssueReferencePullRequest = (props: {
   )
 }
 
-const DiffStat = (props: {
+export const DiffStat = (props: {
   additions: number | undefined
   deletions: number | undefined
 }) => {

@@ -3,7 +3,13 @@ import { Metadata, ResolvingMetadata } from 'next'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { buildAPI } from 'polarkit/api'
-import { ApiError, Issue, Pledger, RewardsSummary } from 'polarkit/api/client'
+import {
+  ApiError,
+  Issue,
+  Pledger,
+  PullRequest,
+  RewardsSummary,
+} from 'polarkit/api/client'
 
 const authedApi = () => {
   const cookieStore = cookies()
@@ -74,22 +80,26 @@ export default async function Page({
   let issueHTMLBody: string | undefined
   let pledgers: Pledger[] = []
   let rewards: RewardsSummary | undefined
+  let pulls: PullRequest[] = []
 
   try {
     const api = authedApi()
     issue = await api.issues.lookup({
       externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
     })
-    const [bodyResponse, pledgeSummary, rewardsSummary] = await Promise.all([
-      api.issues.getBody({ id: issue.id }),
-      api.pledges.summary({ issueId: issue.id }),
-      api.rewards.summary({ issueId: issue.id }),
-    ])
+    const [bodyResponse, pledgeSummary, rewardsSummary, pullRequests] =
+      await Promise.all([
+        api.issues.getBody({ id: issue.id }),
+        api.pledges.summary({ issueId: issue.id }),
+        api.rewards.summary({ issueId: issue.id }),
+        api.pullRequests.search({ referencesIssueId: issue.id }),
+      ])
     issueHTMLBody = bodyResponse
     pledgers = pledgeSummary.pledges
       .map(({ pledger }) => pledger)
       .filter((p): p is Pledger => !!p)
     rewards = rewardsSummary
+    pulls = pullRequests.items || []
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) {
       notFound()
@@ -108,6 +118,7 @@ export default async function Page({
         pledgers={pledgers}
         rewards={rewards}
         gotoURL={undefined}
+        pullRequests={pulls}
       />
     </>
   )

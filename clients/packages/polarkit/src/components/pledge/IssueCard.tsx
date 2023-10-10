@@ -9,15 +9,21 @@ import {
 import { getCentsInDollarString } from 'polarkit/money'
 import { formatStarsNumber } from 'polarkit/utils'
 import { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { Pledgers } from '.'
 import {
   Assignee,
   Funding,
   Issue,
   Pledger,
+  PullRequest,
   RewardsSummary,
 } from '../../api/client'
 import { githubIssueUrl } from '../../github'
+import { DiffStat } from '../Issue/IssueReference'
+import GitMergeIcon from '../icons/GitMergeIcon'
+import GitPullRequestClosedIcon from '../icons/GitPullRequestClosedIcon'
+import GitPullRequestIcon from '../icons/GitPullRequestIcon'
 import Avatar from '../ui/atoms/Avatar'
 
 const IssueCard = ({
@@ -27,6 +33,7 @@ const IssueCard = ({
   currentPledgeAmount,
   className,
   rewards,
+  pullRequests,
 }: {
   issue: Issue
   htmlBody?: string
@@ -34,6 +41,7 @@ const IssueCard = ({
   currentPledgeAmount: number
   className?: string
   rewards?: RewardsSummary
+  pullRequests?: PullRequest[]
 }) => {
   const url = githubIssueUrl(
     issue.repository.organization.name,
@@ -42,6 +50,10 @@ const IssueCard = ({
   )
   const { repository } = issue
   const { organization } = repository
+
+  const haveRewards = rewards && rewards.receivers.length > 0
+  const haveAssignees = issue.assignees && issue.assignees.length > 0
+  const haveRewradsOrAssignees = haveRewards || haveAssignees
 
   return (
     <>
@@ -163,17 +175,19 @@ const IssueCard = ({
         </div>
       )}
 
-      <div className="my-4 hidden items-center space-x-4 sm:flex">
-        {/* Rewards Receivers Avatars */}
-        {rewards && rewards.receivers.length > 0 && (
-          <RewardsReceivers rewards={rewards} />
-        )}
+      {haveRewradsOrAssignees && (
+        <div className="my-4 hidden items-center space-x-4 sm:flex">
+          {/* Rewards Receivers Avatars */}
+          {haveRewards && <RewardsReceivers rewards={rewards} />}
 
-        {/* Assignees Avatars */}
-        {issue.assignees && issue.assignees.length > 0 && (
-          <Assignees assignees={issue.assignees} />
-        )}
-      </div>
+          {/* Assignees Avatars */}
+          {haveAssignees && <Assignees assignees={issue?.assignees || []} />}
+        </div>
+      )}
+
+      {pullRequests && pullRequests.length > 0 && (
+        <PullRequests pulls={pullRequests} />
+      )}
     </>
   )
 }
@@ -278,5 +292,52 @@ const Assignees = ({ assignees }: { assignees: Assignee[] }) => (
     </span>
   </div>
 )
+
+const PullRequests = ({ pulls }: { pulls: PullRequest[] }) => (
+  <div className="space-y-2">
+    {pulls.map((pr) => (
+      <Pull pr={pr} key={pr.id} />
+    ))}
+  </div>
+)
+
+const Pull = ({ pr }: { pr: PullRequest }) => {
+  const merged = pr.is_merged
+  const closed = pr.is_closed && !merged
+  const open = !merged && !closed
+
+  return (
+    <div className="flex w-full items-center gap-2 overflow-hidden text-sm text-gray-600 dark:text-gray-400">
+      <div
+        className={twMerge(
+          'h-6 w-6 rounded-lg border p-0.5',
+          merged
+            ? 'border-purple-200 bg-purple-100 text-purple-600 dark:border-purple-500/40 dark:bg-purple-500/40 dark:text-purple-200'
+            : '',
+          closed
+            ? 'border-red-200 bg-red-100 text-red-500 dark:border-red-500/30 dark:bg-red-500/30 dark:text-red-300'
+            : '',
+          open
+            ? 'border-green-200 bg-green-100 text-[#26A869] dark:border-green-500/30 dark:bg-green-500/30 dark:text-green-300'
+            : '',
+        )}
+      >
+        {merged && <GitMergeIcon />}
+        {closed && <GitPullRequestClosedIcon />}
+        {open && <GitPullRequestIcon />}
+      </div>
+      <div className="whitespace-nowrap font-bold ">#{pr.number}</div>
+      <div className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap ">
+        {pr.title}
+      </div>
+      <div className="flex-shrink-0">
+        <DiffStat additions={pr.additions} deletions={pr.deletions} />
+      </div>
+      {pr.author && (
+        <Avatar avatar_url={pr.author.avatar_url} name={pr.author.login} />
+      )}
+    </div>
+  )
+}
 
 export default IssueCard

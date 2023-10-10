@@ -10,8 +10,10 @@ import {
   DashboardHeader,
   RepoPickerHeader,
 } from '@/components/Layout/DashboardLayout'
+import EmptyLayout from '@/components/Layout/EmptyLayout'
 import OnboardingAddBadge from '@/components/Onboarding/OnboardingAddBadge'
 import { useToast } from '@/components/Toast/use-toast'
+import { HowToVoteOutlined } from '@mui/icons-material'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   IssueListType,
@@ -274,17 +276,28 @@ const OrganizationIssues = ({
         <div className="space-y-4">
           {showAddBadgeBanner && <OnboardingAddBadge />}
 
-          <IssueList
-            totalCount={totalCount}
-            loading={dashboardQuery.isLoading}
-            dashboard={dashboard}
-            filters={filters}
-            onSetFilters={onSetFilters}
-            isInitialLoading={dashboardQuery.isInitialLoading}
-            isFetchingNextPage={dashboardQuery.isFetchingNextPage}
-            hasNextPage={dashboardQuery.hasNextPage || false}
-            fetchNextPage={dashboardQuery.fetchNextPage}
-          />
+          {haveIssues ? (
+            <IssueList
+              totalCount={totalCount}
+              loading={dashboardQuery.isLoading}
+              dashboard={dashboard}
+              filters={filters}
+              onSetFilters={onSetFilters}
+              isInitialLoading={dashboardQuery.isInitialLoading}
+              isFetchingNextPage={dashboardQuery.isFetchingNextPage}
+              hasNextPage={dashboardQuery.hasNextPage || false}
+              fetchNextPage={dashboardQuery.fetchNextPage}
+            />
+          ) : (
+            <EmptyLayout>
+              <div className="flex flex-col items-center justify-center space-y-6 py-[20%] text-gray-400">
+                <span className="text-6xl">
+                  <HowToVoteOutlined fontSize="inherit" />
+                </span>
+                <h2 className="text-lg">You have no open issues</h2>
+              </div>
+            </EmptyLayout>
+          )}
         </div>
       </DashboardBody>
     </>

@@ -1,7 +1,7 @@
 import { InformationCircleIcon, PlusIcon } from '@heroicons/react/24/outline'
 import { XMarkIcon } from '@heroicons/react/24/solid'
+import { Issue, Pledge } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
-import { Issue, Pledge } from 'polarkit/api/client'
 import { PublicRewardPill } from 'polarkit/components/Issue'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'

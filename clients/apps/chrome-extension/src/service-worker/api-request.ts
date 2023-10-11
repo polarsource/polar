@@ -1,4 +1,4 @@
-import { Platforms } from 'polarkit/api/client'
+import { Platforms } from '@polar-sh/sdk'
 import api from '../api'
 
 const apiRequestDecoration = async (

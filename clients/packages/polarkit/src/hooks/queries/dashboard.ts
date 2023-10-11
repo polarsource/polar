@@ -1,16 +1,16 @@
 import {
-  InfiniteData,
-  useInfiniteQuery,
-  UseInfiniteQueryResult,
-} from '@tanstack/react-query'
-import { api } from '../../api'
-import {
   IssueListResponse,
   IssueListType,
   IssueSortBy,
   IssueStatus,
   Platforms,
-} from '../../api/client'
+} from '@polar-sh/sdk'
+import {
+  InfiniteData,
+  useInfiniteQuery,
+  UseInfiniteQueryResult,
+} from '@tanstack/react-query'
+import { api } from '../../api'
 import { defaultRetry } from './retry'
 
 export const useDashboard = (

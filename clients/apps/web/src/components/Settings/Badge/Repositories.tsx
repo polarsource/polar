@@ -1,4 +1,4 @@
-import { type RepositoryBadgeSettingsRead } from 'polarkit/api/client'
+import { type RepositoryBadgeSettingsRead } from '@polar-sh/sdk'
 
 import { IssueLabel } from 'polarkit/components/Issue'
 import { classNames } from 'polarkit/utils'

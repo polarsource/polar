@@ -1,6 +1,6 @@
 import { githubIssueLink } from '@/utils/github'
+import { ConfirmIssueSplit, Issue, Pledge, UserRead } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
-import { ConfirmIssueSplit, Issue, Pledge, UserRead } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { Textarea } from 'polarkit/components/ui/textarea'

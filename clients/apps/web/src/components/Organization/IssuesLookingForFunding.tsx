@@ -1,5 +1,5 @@
+import { IssueFunding } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { IssueFunding } from 'polarkit/api/client'
 import {
   IssueActivityBox,
   IssueFundingDetails,

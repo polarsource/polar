@@ -1,18 +1,18 @@
 'use client'
 
 import { useAuth } from '@/hooks/auth'
-import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
-import {
-  PaymentIntent,
-  StripePaymentElementChangeEvent,
-} from '@stripe/stripe-js'
 import {
   Issue,
   Organization,
   PaymentMethod,
   PledgeStripePaymentIntentMutationResponse,
   Repository,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
+import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
+import {
+  PaymentIntent,
+  StripePaymentElementChangeEvent,
+} from '@stripe/stripe-js'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import posthog from 'posthog-js'

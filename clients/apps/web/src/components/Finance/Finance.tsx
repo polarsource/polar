@@ -1,12 +1,5 @@
 import Icon from '@/components/Icons/Icon'
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
-import Link from 'next/link'
-import {
-  ACCOUNT_TYPE_DISPLAY_NAMES,
-  ACCOUNT_TYPE_ICON,
-  ALL_ACCOUNT_TYPES,
-} from 'polarkit/account'
-import { api } from 'polarkit/api'
 import {
   Account,
   AccountType,
@@ -15,7 +8,14 @@ import {
   PledgeState,
   Reward,
   RewardState,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
+import Link from 'next/link'
+import {
+  ACCOUNT_TYPE_DISPLAY_NAMES,
+  ACCOUNT_TYPE_ICON,
+  ALL_ACCOUNT_TYPES,
+} from 'polarkit/account'
+import { api } from 'polarkit/api'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { getCentsInDollarString } from 'polarkit/money'

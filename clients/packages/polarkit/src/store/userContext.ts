@@ -1,11 +1,11 @@
-import { StateCreator } from 'zustand'
-import { api } from '../api'
 import {
   Pledge,
   Repository,
   type Organization,
   type UserRead,
-} from '../api/client'
+} from '@polar-sh/sdk'
+import { StateCreator } from 'zustand'
+import { api } from '../api'
 
 export interface UserState {
   authenticated: boolean

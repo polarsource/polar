@@ -1,7 +1,7 @@
 import { useGitHubAccount, useRequireAuth } from '@/hooks'
 import { AtSymbolIcon } from '@heroicons/react/24/solid'
+import { OAuthAccountRead, UserRead } from '@polar-sh/sdk'
 import { api } from 'polarkit'
-import { OAuthAccountRead, UserRead } from 'polarkit/api/client'
 import {
   FormattedDateTime,
   PrimaryButton,

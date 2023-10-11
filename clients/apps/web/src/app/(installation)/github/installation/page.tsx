@@ -4,13 +4,13 @@ import LoadingScreen, {
   LoadingScreenError,
 } from '@/components/Dashboard/LoadingScreen'
 import GithubLoginButton from '@/components/Shared/GithubLoginButton'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { api } from 'polarkit'
 import {
   InstallationCreatePlatformEnum,
   OrganizationPrivateRead,
   UserSignupType,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { api } from 'polarkit'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { useEffect, useState } from 'react'
 

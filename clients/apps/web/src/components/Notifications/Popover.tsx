@@ -10,7 +10,7 @@ import {
   NotificationType,
   PledgerPledgePendingNotification,
   RewardPaidNotification,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
 import { GitMergeIcon } from 'polarkit/components/icons'
 import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui/atoms'
 import {

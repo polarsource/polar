@@ -8,8 +8,8 @@ import {
 import Recommended from '@/components/Feed/Recommended'
 import FundAGithubIssue from '@/components/Onboarding/FundAGithubIssue'
 import { useAuth, useGitHubAccount } from '@/hooks'
+import { IssueListType, IssueStatus } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { IssueListType, IssueStatus } from 'polarkit/api/client'
 import { Banner } from 'polarkit/components/ui/molecules'
 import {
   useListAccountsByUser,

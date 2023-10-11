@@ -1,4 +1,4 @@
-import { IssueExtensionRead } from 'polarkit/api/client'
+import { IssueExtensionRead } from '@polar-sh/sdk'
 import {
   IssueListItemDecoration,
   getExpectedHeight,

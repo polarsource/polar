@@ -1,3 +1,4 @@
+import { PaymentMethod, Platforms, Pledge } from '@polar-sh/sdk'
 import {
   UseMutationResult,
   UseQueryResult,
@@ -5,7 +6,6 @@ import {
   useQuery,
 } from '@tanstack/react-query'
 import { api, queryClient } from '../../api'
-import { PaymentMethod, Platforms, Pledge } from '../../api/client'
 import { defaultRetry } from './retry'
 
 export const useGetPledge: (

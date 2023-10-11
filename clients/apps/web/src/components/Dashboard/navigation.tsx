@@ -1,4 +1,4 @@
-import { Organization } from 'polarkit/api/client'
+import { Organization } from '@polar-sh/sdk'
 
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import { CubeIcon } from '@heroicons/react/24/outline'

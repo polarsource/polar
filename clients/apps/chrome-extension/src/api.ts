@@ -1,4 +1,4 @@
-import { IssueExtensionRead, Platforms } from 'polarkit/api/client'
+import { IssueExtensionRead, Platforms } from '@polar-sh/sdk'
 import { CONFIG } from './config'
 
 const extensionVersion = chrome.runtime.getManifest().version

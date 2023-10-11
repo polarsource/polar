@@ -1,8 +1,4 @@
-import {
-  CurrencyAmount,
-  Issue,
-  PledgesTypeSummaries,
-} from 'polarkit/api/client'
+import { CurrencyAmount, Issue, PledgesTypeSummaries } from '@polar-sh/sdk'
 import FundingPill from './FundingPill'
 import PledgeSummaryPill from './PledgeSummaryPill'
 import PublicRewardPill from './PublicRewardPill'

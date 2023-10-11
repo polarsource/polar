@@ -1,5 +1,5 @@
 import { useAuth } from '@/hooks'
-import { Author, ConfirmIssueSplit } from 'polarkit/api/client'
+import { Author, ConfirmIssueSplit } from '@polar-sh/sdk'
 import {
   useIssueMarkConfirmed,
   useListPledesForIssue,

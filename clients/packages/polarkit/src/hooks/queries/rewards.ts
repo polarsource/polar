@@ -1,6 +1,6 @@
+import { ListResourceReward } from '@polar-sh/sdk'
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { api } from '../../api'
-import { ListResourceReward } from '../../api/client/models/ListResourceReward'
 import { defaultRetry } from './retry'
 
 export const useListRewards: (

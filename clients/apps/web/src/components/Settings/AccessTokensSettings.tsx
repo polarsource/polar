@@ -3,7 +3,7 @@
 import {
   CreatePersonalAccessTokenResponse,
   PersonalAccessToken,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
 import {
   CopyToClipboardInput,
   FormattedDateTime,

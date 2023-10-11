@@ -1,12 +1,4 @@
 import {
-  InfiniteData,
-  UseMutationResult,
-  UseQueryResult,
-  useMutation,
-  useQuery,
-} from '@tanstack/react-query'
-import { api, queryClient } from '../../api'
-import {
   ConfirmIssueSplit,
   CurrencyAmount,
   Issue,
@@ -17,7 +9,15 @@ import {
   ListResourcePledge,
   Platforms,
   PostIssueComment,
-} from '../../api/client'
+} from '@polar-sh/sdk'
+import {
+  InfiniteData,
+  UseMutationResult,
+  UseQueryResult,
+  useMutation,
+  useQuery,
+} from '@tanstack/react-query'
+import { api, queryClient } from '../../api'
 import { defaultRetry } from './retry'
 
 export const useIssueAddPolarBadge: () => UseMutationResult<

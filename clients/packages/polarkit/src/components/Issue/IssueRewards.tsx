@@ -1,5 +1,5 @@
+import { Reward, RewardState } from '@polar-sh/sdk'
 import { twMerge } from 'tailwind-merge'
-import { Reward, RewardState } from '../../api/client'
 import { getCentsInDollarString } from '../../money'
 
 const IssueRewards = ({ rewards }: { rewards: Reward[] }) => {

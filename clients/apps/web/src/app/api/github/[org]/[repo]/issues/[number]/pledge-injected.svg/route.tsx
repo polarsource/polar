@@ -1,7 +1,4 @@
-import {
-  GithubBadgeRead,
-  GithubBadgeReadBadgeTypeEnum,
-} from 'polarkit/api/client'
+import { GithubBadgeRead, GithubBadgeReadBadgeTypeEnum } from '@polar-sh/sdk'
 import { Badge } from 'polarkit/components/badge'
 import { getCentsInDollarString } from 'polarkit/money'
 const { default: satori } = require('satori')

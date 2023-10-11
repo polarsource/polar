@@ -1,4 +1,4 @@
-import { Organization, Repository } from 'polarkit/api/client'
+import { Organization, Repository } from '@polar-sh/sdk'
 import { LogoType } from 'polarkit/components/brand'
 import Navigation from './Navigation'
 

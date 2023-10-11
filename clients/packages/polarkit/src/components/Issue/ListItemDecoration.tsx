@@ -7,7 +7,7 @@ import {
   PledgesTypeSummaries,
   Reward,
   UserRead,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
 import IssuePledge from './IssuePledge'

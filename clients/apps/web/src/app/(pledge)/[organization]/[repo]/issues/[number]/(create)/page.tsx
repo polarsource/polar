@@ -1,15 +1,15 @@
 import Pledge from '@/components/Pledge/Pledge'
-import { Metadata, ResolvingMetadata } from 'next'
-import { cookies } from 'next/headers'
-import { notFound } from 'next/navigation'
-import { buildAPI } from 'polarkit/api'
 import {
   Issue,
   Pledger,
   PullRequest,
   ResponseError,
   RewardsSummary,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
+import { Metadata, ResolvingMetadata } from 'next'
+import { cookies } from 'next/headers'
+import { notFound } from 'next/navigation'
+import { buildAPI } from 'polarkit/api'
 
 const authedApi = () => {
   const cookieStore = cookies()

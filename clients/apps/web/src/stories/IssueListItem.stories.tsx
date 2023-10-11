@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClient } from 'polarkit'
 import {
   IssueReferenceRead,
   IssueReferenceType,
@@ -12,7 +10,9 @@ import {
   PullRequestReference,
   Reward,
   RewardState,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from 'polarkit'
 import {
   addDays,
   addHours,

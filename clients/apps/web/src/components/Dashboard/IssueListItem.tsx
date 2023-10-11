@@ -2,7 +2,6 @@
 
 import { ModalBox, Modal as ModernModal } from '@/components/Modal'
 import { useToastLatestPledged } from '@/hooks/stripe'
-import { api } from 'polarkit/api'
 import {
   Issue,
   IssueReferenceRead,
@@ -12,7 +11,8 @@ import {
   Repository,
   Reward,
   UserRead,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
+import { api } from 'polarkit/api'
 import {
   IssueActivityBox,
   IssueListItemDecoration,

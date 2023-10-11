@@ -1,4 +1,4 @@
-import { Pledger } from '@/api/client'
+import { Pledger } from '@polar-sh/sdk'
 import type { Meta, StoryObj } from '@storybook/react'
 import PledgeSummaryPill from './PledgeSummaryPill'
 

@@ -11,7 +11,7 @@
  * So it's too early for us to use TailwindCSS in this component.
  */
 
-import { Funding } from '../../api/client'
+import { Funding } from '@polar-sh/sdk'
 import { getCentsInDollarString } from '../../money'
 
 export const Badge = ({

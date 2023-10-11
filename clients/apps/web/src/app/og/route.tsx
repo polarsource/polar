@@ -1,11 +1,11 @@
 import OpenGraphImage from '@/components/Organization/OpenGraphImage'
-import { ImageResponse, NextRequest } from 'next/server'
 import {
   Issue,
   ListResourceIssue,
   Organization,
   Repository,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
+import { ImageResponse, NextRequest } from 'next/server'
 
 import { Inter } from 'next/font/google'
 import { notFound } from 'next/navigation'

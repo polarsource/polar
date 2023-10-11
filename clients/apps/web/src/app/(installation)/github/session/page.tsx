@@ -4,9 +4,9 @@ import LoadingScreen, {
   LoadingScreenError,
 } from '@/components/Dashboard/LoadingScreen'
 import { useAuth } from '@/hooks'
+import { ResponseError } from '@polar-sh/sdk'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from 'polarkit/api'
-import { ResponseError } from 'polarkit/api/client'
 import { useEffect, useRef, useState } from 'react'
 
 export default function Page() {

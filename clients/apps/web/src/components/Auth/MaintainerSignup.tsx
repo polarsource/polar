@@ -1,6 +1,6 @@
 'use client'
 
-import { UserSignupType } from 'polarkit/api/client'
+import { UserSignupType } from '@polar-sh/sdk'
 import { LogoType70 } from 'polarkit/components/brand'
 import { Progress50 } from '../Dashboard/IssueProgress'
 import FakePullRequest from '../Settings/FakePullRequest'

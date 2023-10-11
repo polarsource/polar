@@ -14,14 +14,14 @@ import EmptyLayout from '@/components/Layout/EmptyLayout'
 import OnboardingAddBadge from '@/components/Onboarding/OnboardingAddBadge'
 import { useToast } from '@/components/Toast/use-toast'
 import { HowToVoteOutlined } from '@mui/icons-material'
-import { useRouter, useSearchParams } from 'next/navigation'
 import {
   IssueListType,
   IssueSortBy,
   IssueStatus,
   Organization,
   Repository,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useDashboard, useListRepositories, useSSE } from 'polarkit/hooks'
 import {
   Dispatch,

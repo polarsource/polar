@@ -1,8 +1,8 @@
 'use client'
 
+import { UserSignupType } from '@polar-sh/sdk'
 import { useSearchParams } from 'next/navigation'
 import { api } from 'polarkit'
-import { UserSignupType } from 'polarkit/api/client'
 import posthog from 'posthog-js'
 import { MouseEvent } from 'react'
 

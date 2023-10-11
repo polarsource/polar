@@ -290,7 +290,7 @@ const OrganizationIssues = ({
             />
           ) : (
             <EmptyLayout>
-              <div className="flex flex-col items-center justify-center space-y-6 py-[20%] text-gray-400">
+              <div className="dark:text-polar-500 flex flex-col items-center justify-center space-y-6 py-[20%] text-gray-400">
                 <span className="text-6xl">
                   <HowToVoteOutlined fontSize="inherit" />
                 </span>

@@ -86,7 +86,9 @@ const BadgeMessageForm = (props: {
   return (
     <div className="flex flex-col space-y-3">
       <div className="text-gray flex items-center justify-between">
-        <div className="text-sm font-medium">Customize embed</div>
+        <div className="dark:text-polar-50 text-sm font-medium">
+          Customize embed
+        </div>
         <LabeledRadioButton
           values={['View', 'Edit']}
           value={descriptionMode}
@@ -130,7 +132,7 @@ const BadgeMessageForm = (props: {
           <div className="flex max-w-[300px] items-center space-x-2">
             <label
               htmlFor="fundingGoal"
-              className="dark:text-polar-200 flex-shrink-0 text-sm"
+              className="dark:text-polar-400 flex-shrink-0 text-sm"
             >
               Set funding goal:{' '}
             </label>

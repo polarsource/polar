@@ -208,11 +208,11 @@ export const HeaderPill = (props: {
       className={classNames(
         props.active
           ? ' dark:bg-polar-800 dark:ring-polar-700 bg-white shadow dark:ring-1'
-          : ' dark:bg-polar-950 dark:hover:bg-polar-800/50 dark:ring-polar-700 border bg-transparent hover:bg-gray-100/50 dark:ring-1',
-        'transition-background relative flex w-full max-w-[300px] flex-col rounded-xl px-5  py-4 duration-200',
+          : ' dark:bg-polar-900 dark:hover:bg-polar-800/50 dark:ring-polar-700 border bg-transparent hover:bg-gray-100/50 dark:ring-1',
+        'transition-background relative flex w-full max-w-[300px] flex-col rounded-xl px-5 py-4 duration-200',
       )}
     >
-      <div className=" text-md dark:text-polar-400 flex-1 font-medium text-gray-500">
+      <div className="text-md dark:text-polar-400 flex-1 text-gray-500">
         {props.title}
       </div>
       <div className="dark:text-polar-200 text-3xl font-medium text-gray-900">

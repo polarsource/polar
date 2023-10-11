@@ -26,20 +26,20 @@ const OrganizationPublicPage = ({
     <>
       <Header organization={organization} repositories={repositories} />
 
-      <h1 className="dark:text-polar-300 text-center text-3xl font-normal text-gray-800 md:text-3xl">
+      <h1 className="dark:text-polar-100 text-center text-3xl font-normal text-gray-800 md:text-3xl">
         {organization.name} has {totalIssueCount > 0 ? totalIssueCount : 'no'}{' '}
         {totalIssueCount === 1 ? 'issue' : 'issues'} looking for funding
       </h1>
 
       {showMeta && (
-        <div className="flex flex-col  items-center space-y-4">
+        <div className="flex flex-col items-center space-y-4">
           {organization.bio && (
-            <div className="nowrap text-center text-gray-500">
+            <div className="nowrap dark:text-polar-500 text-center text-gray-500">
               {organization.bio}
             </div>
           )}
 
-          <div className="mt-2 flex w-full flex-wrap justify-center gap-4 text-sm text-gray-600">
+          <div className="dark:text-polar-400 mt-2 flex w-full flex-wrap justify-center gap-4 text-sm text-gray-600">
             {organization.company && <div>{organization.company}</div>}
 
             {organization.blog && (

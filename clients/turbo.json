@@ -4,11 +4,13 @@
   "globalEnv": ["NEXT_PUBLIC_API_URL", "NEXT_PUBLIC_STRIPE_KEY"],
   "pipeline": {
     "build": {
+      "dependsOn": ["^build"],
       "outputs": [".next/**", "dist/**"]
     },
     "lint": {},
     "test": {},
     "dev": {
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     }

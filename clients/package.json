@@ -3,9 +3,10 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "dev-web": "turbo run dev --filter=web",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "storybook": "cd apps/web && pnpm storybook",
+    "storybook": "turbo run build --filter=@polar-sh/sdk && cd apps/web && pnpm storybook",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "preinstall": "npx only-allow pnpm"
   },

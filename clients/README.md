@@ -9,6 +9,7 @@ This [Turborepo](https://turbo.build/) includes the following packages/apps:
 - `apps/web`: [polar.sh](https://polar.sh) – [Next.js](https://nextjs.org/) app
 - `apps/chrome-extension`: Polar Chrome Extension, built with webpack
 - `packages/polarkit`: Shared resources
+- `packages/sdk`: API types
 
 Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
 
@@ -26,10 +27,10 @@ To build all apps and packages, run the following command:
 pnpm build
 ```
 
-### Develop
+### Develop web
 
 ```bash
-pnpm dev
+pnpm dev-web
 ```
 
 ### Designing with Storybook

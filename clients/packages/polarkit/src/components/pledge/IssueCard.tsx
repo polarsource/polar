@@ -221,7 +221,7 @@ const FundingGoalProgress = ({
           style={{ width: `${currentPledgeProgress}%` }}
         ></div>
       )}
-      <div className="h-1 flex-1 bg-blue-200 dark:bg-blue-800"></div>
+      <div className="h-1 flex-1 bg-blue-200 dark:bg-blue-400/25"></div>
     </div>
   )
 }

@@ -109,9 +109,11 @@ async def update_subscription_group(
     if not await authz.can(auth.user, AccessType.write, subscription_group):
         raise NotPermitted()
 
-    return await subscription_group_service.update(
+    subscription_group = await subscription_group_service.update(
         session, subscription_group, subscription_group_update, exclude_unset=True
     )
+    await session.refresh(subscription_group, {"tiers"})
+    return subscription_group
 
 
 @router.post(

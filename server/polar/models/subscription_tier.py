@@ -29,5 +29,5 @@ class SubscriptionTier(RecordModel):
         nullable=False,
     )
     subscription_group: Mapped["SubscriptionGroup"] = relationship(
-        "SubscriptionGroup", lazy="raise"
+        "SubscriptionGroup", lazy="raise", back_populates="tiers"
     )

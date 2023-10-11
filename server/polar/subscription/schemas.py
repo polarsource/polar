@@ -5,6 +5,31 @@ from pydantic import UUID4, Field, root_validator
 from polar.kit.schemas import Schema, TimestampedSchema
 
 
+class SubscriptionTierCreate(Schema):
+    name: str
+    description: str | None = None
+    price_amount: int = Field(..., ge=0)
+    price_currency: str = Field("USD", regex="USD")
+    subscription_group_id: UUID4
+
+
+class SubscriptionTierUpdate(Schema):
+    name: str | None = None
+    description: str | None = None
+    price_amount: int | None = Field(None, ge=0)
+    price_currency: str | None = Field(None, regex="USD")
+
+
+class SubscriptionTier(TimestampedSchema):
+    id: UUID4
+    name: str
+    description: str | None = None
+    price_amount: int
+    price_currency: str
+    is_archived: bool
+    subscription_group_id: UUID4
+
+
 class SubscriptionGroupCreate(Schema):
     name: str
     order: int
@@ -41,28 +66,4 @@ class SubscriptionGroup(TimestampedSchema):
     order: int
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None
-
-
-class SubscriptionTierCreate(Schema):
-    name: str
-    description: str | None = None
-    price_amount: int = Field(..., ge=0)
-    price_currency: str = Field("USD", regex="USD")
-    subscription_group_id: UUID4
-
-
-class SubscriptionTierUpdate(Schema):
-    name: str | None = None
-    description: str | None = None
-    price_amount: int | None = Field(None, ge=0)
-    price_currency: str | None = Field(None, regex="USD")
-
-
-class SubscriptionTier(TimestampedSchema):
-    id: UUID4
-    name: str
-    description: str | None = None
-    price_amount: int
-    price_currency: str
-    is_archived: bool
-    subscription_group_id: UUID4
+    tiers: list[SubscriptionTier]

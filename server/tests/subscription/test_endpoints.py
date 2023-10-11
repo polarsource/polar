@@ -130,6 +130,31 @@ class TestSearchSubscriptionGroups:
         json = response.json()
         assert json["pagination"]["total_count"] == 0
 
+    async def test_included_subscription_tiers(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        subscription_groups: list[SubscriptionGroup],
+        subscription_tiers: list[SubscriptionTier],
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/groups/search",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+
+        items = json["items"]
+        assert len(items[0]["tiers"]) == 1
+        for tier in items[0]["tiers"]:
+            assert "id" in tier
+
 
 @pytest.mark.asyncio
 class TestCreateSubscriptionGroup:

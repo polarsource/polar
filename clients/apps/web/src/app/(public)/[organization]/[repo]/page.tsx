@@ -1,15 +1,15 @@
 import RepositoryPublicPage from '@/components/Organization/RepositoryPublicPage'
 import PageNotFound from '@/components/Shared/PageNotFound'
-import { Metadata, ResolvingMetadata } from 'next'
-import { notFound } from 'next/navigation'
-import { api } from 'polarkit'
 import {
   ListFundingSortBy,
   ListResourceRepository,
   Organization,
   Platforms,
   ResponseError,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
+import { Metadata, ResolvingMetadata } from 'next'
+import { notFound } from 'next/navigation'
+import { api } from 'polarkit'
 
 const cacheConfig = {
   next: {

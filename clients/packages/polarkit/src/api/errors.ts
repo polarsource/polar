@@ -1,4 +1,4 @@
-import { ValidationError } from './client/models/ValidationError'
+import { ValidationError } from '@polar-sh/sdk'
 
 type ValidationErrorsMap = Record<string, string[]>
 

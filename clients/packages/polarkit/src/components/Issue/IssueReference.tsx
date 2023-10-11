@@ -4,7 +4,7 @@ import {
   IssueReferenceRead,
   IssueReferenceType,
   type PullRequestReference,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
 import {
   GitBranchIcon,
   GitMergeIcon,

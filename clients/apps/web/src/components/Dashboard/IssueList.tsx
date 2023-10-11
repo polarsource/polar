@@ -4,14 +4,14 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
-import { InfiniteData } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
 import {
   IssueListResponse,
   IssueListType,
   IssueSortBy,
   UserRead,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
+import { InfiniteData } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
 import { IssueReadWithRelations } from 'polarkit/api/types'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import {

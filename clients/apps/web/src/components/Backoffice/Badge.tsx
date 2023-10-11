@@ -3,7 +3,7 @@
 import {
   BackofficeBadgeActionEnum,
   BackofficeBadgeResponse,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
 import { useBackofficeBadgeAction } from 'polarkit/hooks'
 import { useState } from 'react'
 

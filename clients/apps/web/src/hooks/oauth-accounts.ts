@@ -1,4 +1,4 @@
-import { OAuthAccountRead, Platforms } from 'polarkit/api/client'
+import { OAuthAccountRead, Platforms } from '@polar-sh/sdk'
 import { useMemo } from 'react'
 import { useRequireAuth } from '.'
 

@@ -123,6 +123,9 @@ importers:
       '@mui/material':
         specifier: ^5.14.12
         version: 5.14.12(@emotion/react@11.11.1)(@emotion/styled@11.11.0)(@types/react@18.2.21)(react-dom@18.2.0)(react@18.2.0)
+      '@polar-sh/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       '@radix-ui/react-dropdown-menu':
         specifier: ^2.0.5
         version: 2.0.5(@types/react-dom@18.2.7)(@types/react@18.2.21)(react-dom@18.2.0)(react@18.2.0)
@@ -346,6 +349,9 @@ importers:
       '@heroicons/react':
         specifier: ^2.0.16
         version: 2.0.16(react@18.2.0)
+      '@polar-sh/sdk':
+        specifier: workspace:*
+        version: link:../sdk
       '@radix-ui/react-checkbox':
         specifier: ^1.0.4
         version: 1.0.4(@types/react-dom@18.2.7)(@types/react@18.2.21)(react-dom@18.2.0)(react@18.2.0)

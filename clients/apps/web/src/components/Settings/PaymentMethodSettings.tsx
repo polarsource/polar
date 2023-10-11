@@ -3,8 +3,8 @@ import {
   CreditCardIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
+import { PaymentMethod } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
-import { PaymentMethod } from 'polarkit/api/client'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import {
   useDetachPaymentMethodMutation,

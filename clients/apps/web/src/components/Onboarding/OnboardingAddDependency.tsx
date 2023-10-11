@@ -1,4 +1,3 @@
-import { useRouter } from 'next/navigation'
 import {
   Issue,
   IssueReferenceRead,
@@ -11,7 +10,8 @@ import {
   PledgeType,
   Repository,
   Visibility,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
+import { useRouter } from 'next/navigation'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { CONFIG } from 'polarkit/config'
 import { parseGitHubIssueLink } from 'polarkit/github'

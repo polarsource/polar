@@ -1,7 +1,7 @@
 'use client'
 
+import { Repository } from '@polar-sh/sdk'
 import { Command } from 'cmdk'
-import { Repository } from 'polarkit/api/client'
 import { clsx, useOutsideClick } from 'polarkit/utils'
 import React, { useEffect, useRef, useState } from 'react'
 import { Item, Left, SelectedBox, Text } from '../Dropdown'

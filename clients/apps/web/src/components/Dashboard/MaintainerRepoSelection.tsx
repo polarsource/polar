@@ -1,5 +1,5 @@
+import { Repository } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
-import { Repository } from 'polarkit/api/client'
 import RepoSelection from '../Organization/RepoSelection'
 
 const MaintainerRepoSelection = (props: {

@@ -1,7 +1,7 @@
 'use client'
 
+import type { Organization, Repository } from '@polar-sh/sdk'
 import { useParams, useSearchParams } from 'next/navigation'
-import type { Organization, Repository } from 'polarkit/api/client'
 import { useListOrganizations, useListRepositories } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { useEffect, useState } from 'react'

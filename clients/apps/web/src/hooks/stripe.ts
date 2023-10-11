@@ -1,6 +1,6 @@
 import { useToast } from '@/components/Toast/use-toast'
+import { Pledge, PledgeState } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
-import { Pledge, PledgeState } from 'polarkit/api/client'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useStore } from 'polarkit/store'
 import { useEffect, useState } from 'react'

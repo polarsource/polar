@@ -5,7 +5,7 @@ import {
   Pledge,
   PledgesTypeSummaries,
   UserRead,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'

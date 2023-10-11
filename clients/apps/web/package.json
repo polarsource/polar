@@ -52,7 +52,8 @@
     "satori": "^0.10.1",
     "tailwind-merge": "^1.14.0",
     "tailwindcss-radix": "^2.8.0",
-    "yayson": "^3.0.0"
+    "yayson": "^3.0.0",
+    "@polar-sh/sdk": "workspace:*"
   },
   "devDependencies": {
     "@jest/globals": "^29.6.2",

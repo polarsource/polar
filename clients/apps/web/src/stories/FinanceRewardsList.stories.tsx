@@ -7,7 +7,7 @@ import {
   PledgeType,
   Reward,
   RewardState,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
 import { issue } from 'polarkit/testdata'
 
 type Story = StoryObj<typeof List>

@@ -1,5 +1,13 @@
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
 import { HeartIcon, StarIcon } from '@heroicons/react/24/solid'
+import {
+  Assignee,
+  Funding,
+  Issue,
+  Pledger,
+  PullRequest,
+  RewardsSummary,
+} from '@polar-sh/sdk'
 import { generateMarkdownTitle } from 'polarkit/components/Issue'
 import {
   Alert,
@@ -11,14 +19,6 @@ import { formatStarsNumber } from 'polarkit/utils'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Pledgers } from '.'
-import {
-  Assignee,
-  Funding,
-  Issue,
-  Pledger,
-  PullRequest,
-  RewardsSummary,
-} from '../../api/client'
 import { githubIssueUrl } from '../../github'
 import { DiffStat } from '../Issue/IssueReference'
 import GitMergeIcon from '../icons/GitMergeIcon'

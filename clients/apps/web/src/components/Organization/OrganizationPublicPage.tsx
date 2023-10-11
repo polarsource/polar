@@ -1,4 +1,4 @@
-import { IssueFunding, Organization, Repository } from 'polarkit/api/client'
+import { IssueFunding, Organization, Repository } from '@polar-sh/sdk'
 import { prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
 import Footer from './Footer'

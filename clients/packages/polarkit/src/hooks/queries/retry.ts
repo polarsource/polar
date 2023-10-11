@@ -1,4 +1,4 @@
-import { ResponseError } from '../../api/client'
+import { ResponseError } from '@polar-sh/sdk'
 import { useStore } from '../../store'
 
 export const defaultRetry = (

@@ -1,17 +1,17 @@
 import {
+  ListResourceOrganization,
+  OrganizationBadgeSettingsUpdate,
+  OrganizationPrivateRead,
+  Platforms,
+  Repository,
+} from '@polar-sh/sdk'
+import {
   UseMutationResult,
   UseQueryResult,
   useMutation,
   useQuery,
 } from '@tanstack/react-query'
-import {
-  ListResourceOrganization,
-  OrganizationBadgeSettingsUpdate,
-  OrganizationPrivateRead,
-  Repository,
-} from 'polarkit/api/client'
 import { api, queryClient } from '../../api'
-import { Platforms } from '../../api/client'
 import { defaultRetry } from './retry'
 
 export type RepoListItem = Repository & {

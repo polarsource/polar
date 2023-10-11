@@ -3,14 +3,14 @@ import {
   ExclamationCircleIcon,
   QuestionMarkCircleIcon,
 } from '@heroicons/react/24/outline'
-import { motion } from 'framer-motion'
-import { useRouter } from 'next/navigation'
 import {
   Organization,
   type OrganizationBadgeSettingsRead,
   type OrganizationBadgeSettingsUpdate,
   type RepositoryBadgeSettingsRead,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
+import { motion } from 'framer-motion'
+import { useRouter } from 'next/navigation'
 import { MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
 import {
   useOrganizationBadgeSettings,

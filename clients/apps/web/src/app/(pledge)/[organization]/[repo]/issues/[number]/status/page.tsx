@@ -1,7 +1,7 @@
 import Status from '@/components/Pledge/Status'
+import { Pledge, ResponseError } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 import { api } from 'polarkit'
-import { Pledge, ResponseError } from 'polarkit/api/client'
 
 export default async function Page({
   searchParams,

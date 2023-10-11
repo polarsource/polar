@@ -1,4 +1,4 @@
-import { IssueFunding, Organization, Repository } from 'polarkit/api/client'
+import { IssueFunding, Organization, Repository } from '@polar-sh/sdk'
 import { formatStarsNumber } from 'polarkit/utils'
 import { prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'

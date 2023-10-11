@@ -1,6 +1,6 @@
+import { CurrencyAmount, Funding } from '@polar-sh/sdk'
 import { Marked } from '@ts-stack/markdown'
 import { useTheme } from 'next-themes'
-import { CurrencyAmount, Funding } from 'polarkit/api/client'
 import { Badge } from 'polarkit/components/badge'
 import {
   LabeledRadioButton,

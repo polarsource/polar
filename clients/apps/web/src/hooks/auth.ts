@@ -1,6 +1,6 @@
+import { type UserRead } from '@polar-sh/sdk'
 import * as Sentry from '@sentry/nextjs'
 import { useRouter } from 'next/navigation'
-import { type UserRead } from 'polarkit/api/client'
 import { CONFIG } from 'polarkit/config'
 import { UserState, useStore } from 'polarkit/store'
 import posthog from 'posthog-js'

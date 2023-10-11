@@ -24,7 +24,7 @@ import {
   RewardPaidNotification,
   UserRead,
   Visibility,
-} from './src/api/client/models'
+} from '@polar-sh/sdk'
 
 export function addDays(date: Date, days: number) {
   var result = new Date(date)

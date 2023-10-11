@@ -1,9 +1,9 @@
 {
   "name": "@polar-sh/sdk",
   "version": "0.1.0",
-    "main": "./dist/index.js",
-    "module": "./dist/index.mjs",
-    "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js"
   },
@@ -11,7 +11,8 @@
     "dist/*"
   ],
   "scripts": {
-    "generate": "node scripts/generate-schema.js http://127.0.0.1:8000/openapi.json openapi/source.json openapi/updated.json && openapi --input openapi/updated.json --output src/client --client axios --name PolarSDK --useOptions --indent 2 --exportSchemas false",
+    "download": "node scripts/generate-schema.js http://127.0.0.1:8000/openapi.json openapi/source.json openapi/updated.json",
+    "generate": "pnpm download && ./generate",
     "build": "tsup src/index.ts --format cjs,esm --dts",
     "prepublishOnly": "pnpm run build"
   },

@@ -1,3 +1,4 @@
+import { UserRead, UserUpdateSettings } from '@polar-sh/sdk'
 import {
   UseMutationResult,
   UseQueryResult,
@@ -5,7 +6,6 @@ import {
   useQuery,
 } from '@tanstack/react-query'
 import { api, queryClient } from '../../api'
-import { UserRead, UserUpdateSettings } from '../../api/client'
 import { defaultRetry } from './retry'
 
 export const useUser: () => UseQueryResult<UserRead> = () =>

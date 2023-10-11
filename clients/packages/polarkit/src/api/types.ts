@@ -6,7 +6,7 @@ import {
   PledgesTypeSummaries,
   Repository,
   Reward,
-} from './client'
+} from '@polar-sh/sdk'
 
 export type IssueReadWithRelations = Issue & {
   references: IssueReferenceRead[]

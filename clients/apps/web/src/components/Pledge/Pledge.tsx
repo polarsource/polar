@@ -6,7 +6,7 @@ import {
   PullRequest,
   RewardsSummary,
   Visibility,
-} from 'polarkit/api/client'
+} from '@polar-sh/sdk'
 import { IssueCard } from 'polarkit/components/pledge'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
 import { Banner } from 'polarkit/components/ui/molecules'

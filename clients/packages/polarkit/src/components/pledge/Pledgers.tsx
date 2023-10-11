@@ -1,4 +1,4 @@
-import { Pledger } from 'polarkit/api/client'
+import { Pledger } from '@polar-sh/sdk'
 import { useMemo } from 'react'
 
 interface PledgersProps {

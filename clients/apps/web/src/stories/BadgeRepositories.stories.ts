@@ -1,6 +1,6 @@
 import BadgeRepositories from '@/components/Settings/Badge/Repositories'
+import { RepositoryBadgeSettingsRead } from '@polar-sh/sdk'
 import type { Meta, StoryObj } from '@storybook/react'
-import { RepositoryBadgeSettingsRead } from 'polarkit/api/client'
 
 const meta: Meta<typeof BadgeRepositories> = {
   title: 'Organisms/BadgeRepositories',

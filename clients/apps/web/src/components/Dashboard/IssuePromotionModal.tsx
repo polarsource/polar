@@ -6,9 +6,9 @@ import {
   MegaphoneIcon,
   UserIcon,
 } from '@heroicons/react/24/outline'
+import { CurrencyAmount, Issue, Pledge, UserRead } from '@polar-sh/sdk'
 import Image from 'next/image'
 import { api, queryClient } from 'polarkit/api'
-import { CurrencyAmount, Issue, Pledge, UserRead } from 'polarkit/api/client'
 import {
   CopyToClipboardInput,
   MoneyInput,

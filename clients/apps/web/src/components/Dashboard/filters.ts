@@ -1,4 +1,4 @@
-import { IssueListType, IssueSortBy } from 'polarkit/api/client'
+import { IssueListType, IssueSortBy } from '@polar-sh/sdk'
 
 export type DashboardFilters = {
   q: string

@@ -1,9 +1,9 @@
 'use client'
 
 import { useAuth } from '@/hooks/auth'
+import { Repository } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { CONFIG } from 'polarkit'
-import { Repository } from 'polarkit/api/client'
 import { LogoType } from 'polarkit/components/brand'
 import { useListOrganizations } from 'polarkit/hooks'
 import { classNames } from 'polarkit/utils'

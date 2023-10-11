@@ -7,9 +7,9 @@ import {
   BanknotesIcon,
   CurrencyDollarIcon,
 } from '@heroicons/react/20/solid'
+import { BackofficeReward, PledgeState, PledgeType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { api } from 'polarkit/api'
-import { BackofficeReward, PledgeState, PledgeType } from 'polarkit/api/client'
 import { ThinButton } from 'polarkit/components/ui/atoms'
 import {
   useBackofficePledgeCreateInvoice,

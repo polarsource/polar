@@ -6,6 +6,7 @@ import {
   LogoutOutlined,
 } from '@mui/icons-material'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { CONFIG } from 'polarkit/config'
 import { useListOrganizations } from 'polarkit/hooks'
 import { classNames, clsx, useOutsideClick } from 'polarkit/utils'
@@ -41,6 +42,13 @@ const ProfileSelection = ({
   const currentOrg = useMemo(() => {
     return currentOrgFromURL && useOrgFromURL ? currentOrgFromURL : undefined
   }, [currentOrgFromURL, useOrgFromURL])
+
+  const router = useRouter()
+
+  const onLogout = async () => {
+    await logout()
+    router.push('/')
+  }
 
   if (!loggedUser) {
     return <></>
@@ -153,7 +161,7 @@ const ProfileSelection = ({
               </LinkItem>
 
               <TextItem
-                onClick={logout}
+                onClick={onLogout}
                 icon={
                   <LogoutOutlined className="text-gray-600 dark:text-gray-400" />
                 }

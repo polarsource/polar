@@ -16,12 +16,7 @@
     "build": "tsup src/index.ts --format cjs,esm --dts",
     "prepublishOnly": "pnpm run build"
   },
-  "dependencies": {
-    "axios": "^0.27.2"
-  },
   "devDependencies": {
-    "form-data": "^4.0.0",
-    "openapi-typescript-codegen": "^0.23.0",
     "tsconfig": "workspace:*",
     "tsup": "^7.2.0",
     "typescript": "5.0.4"

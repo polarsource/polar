@@ -1,10 +1,10 @@
 name: Chromatic
- 
+
 on:
   push:
     paths:
       - clients/**
- 
+
 jobs:
   chromatic-deployment:
     name: "Publish 🎨"
@@ -25,12 +25,16 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: v18
-          cache: 'pnpm'
-          cache-dependency-path: 'clients/pnpm-lock.yaml'
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
 
       - name: Install dependencies
         working-directory: ./clients
         run: pnpm install
+
+      - name: Build SDK
+        working-directory: ./clients
+        run: pnpm turbo run build --filter=@polar-sh/sdk
 
       - name: Publish to Chromatic
         uses: chromaui/action@v1

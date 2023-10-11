@@ -57,11 +57,11 @@ const IssueCard = ({
 
   return (
     <>
-      <h1 className="dark:text-polar-300 mb-4 text-center text-4xl text-gray-900 sm:text-left">
+      <h1 className="dark:text-polar-50 mb-4 text-center text-4xl text-gray-900 sm:text-left">
         {generateMarkdownTitle(issue.title)}
       </h1>
       {/* Issue details */}
-      <div className="dark:text-polar-400 grid grid-cols-1 text-gray-600 sm:grid-cols-3">
+      <div className="dark:text-polar-500 grid grid-cols-1 text-gray-600 sm:grid-cols-3">
         {/* Left part */}
         <div className="col-span-1 flex	flex-row items-center justify-center gap-2 sm:col-span-2 sm:justify-start	">
           <div>
@@ -86,12 +86,12 @@ const IssueCard = ({
               </a>
             </div>
           )}
-          <div className="dark:text-polar-400 whitespace-nowrap text-gray-400">
+          <div className="dark:text-polar-500 whitespace-nowrap text-gray-400">
             <PolarTimeAgo date={new Date(issue.issue_created_at)} />
           </div>
         </div>
         {/* Right part */}
-        <div className="flex flex-row items-center justify-center gap-2 sm:justify-end">
+        <div className="flex flex-row items-center justify-center gap-4 sm:justify-end">
           {issue.comments !== undefined && (
             <div className="flex flex-row items-center gap-1">
               <ChatBubbleLeftIcon className="h-5 w-5" />
@@ -106,14 +106,14 @@ const IssueCard = ({
           )}
         </div>
       </div>
-      <hr className="dark:border-polar-600 my-4" />
+      <hr className="dark:border-polar-700 my-4" />
       {/* Funding goal */}
       <FundingGoal
         funding={issue.funding}
         pledgers={pledgers}
         currentPledgeAmount={currentPledgeAmount}
       />
-      <hr className="dark:border-polar-600 my-4" />
+      <hr className="dark:border-polar-700 my-4" />
       {/* Issue description */}
       <div className="hidden sm:block">
         <div className="relative max-h-80 overflow-hidden">
@@ -125,12 +125,12 @@ const IssueCard = ({
             Read more
           </a>
         </div>
-        <hr className="dark:border-polar-500 my-4" />
+        <hr className="dark:border-polar-700 my-4" />
       </div>
       {/* Repository */}
       <div className="dark:text-polar-400 grid grid-cols-1 text-gray-600 sm:grid-cols-3">
         {/* Name/description */}
-        <div className="col-span-1 flex flex-row items-center gap-2 sm:col-span-2">
+        <div className="col-span-1 flex flex-row items-center gap-4 sm:col-span-2">
           <div className="min-w-max">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -139,14 +139,16 @@ const IssueCard = ({
               className="h-8 w-8 rounded-full"
             />
           </div>
-          <div className="dark:text-polar-500 text-gray-400">
+          <div className="dark:text-polar-500 text-gray-500">
             <div>
               {organization.name}&nbsp;/&nbsp;
               <span className="dark:text-polar-200 font-medium text-gray-600">
                 {repository.name}
               </span>
             </div>
-            {repository.description && <div>{repository.description}</div>}
+            <div className="mt-2 text-sm">
+              {repository.description && <div>{repository.description}</div>}
+            </div>
           </div>
         </div>
         {/* Stars */}
@@ -243,7 +245,7 @@ const FundingGoal = ({
       <div className="flex flex-col items-center sm:items-start">
         <div className="dark:text-polar-300 text-lg text-gray-900">
           ${getCentsInDollarString(pledges_sum?.amount || 0)}{' '}
-          <span className="dark:text-polar-300 text-gray-400">
+          <span className="dark:text-polar-400 text-gray-400">
             {!funding_goal && 'pledged'}
             {funding_goal &&
               `/ ${getCentsInDollarString(funding_goal.amount)} pledged`}

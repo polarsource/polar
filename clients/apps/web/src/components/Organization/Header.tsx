@@ -13,15 +13,15 @@ const Header = ({
 }) => {
   return (
     <div className="flex flex-col-reverse items-center justify-between gap-4 md:flex-row">
+      <a href="/">
+        <LogoType />
+      </a>
+
       <Navigation
         organization={organization}
         repositories={repositories}
         repository={repository}
       ></Navigation>
-
-      <a href="/">
-        <LogoType />
-      </a>
     </div>
   )
 }

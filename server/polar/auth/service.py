@@ -116,14 +116,24 @@ class AuthService:
     ) -> User | None:
         try:
             decoded = jwt.decode(token=token, secret=settings.SECRET)
-            pat = await personal_access_token_service.get(
-                session, id=decoded["pat_id"], load_user=True
-            )
-            if pat is None:
-                return None
 
-            await personal_access_token_service.record_usage(session, id=pat.id)
-            return pat.user
+            # Authorization headers as when forwarded by NextJS serverside and edge.
+            # We're passing Cookie contents in the Authorization header.
+            if "user_id" in decoded:
+                return await user_service.get(session, id=decoded["user_id"])
+
+            # Personal Access Token in the Authorization header.
+            if "pat_id" in decoded:
+                pat = await personal_access_token_service.get(
+                    session, id=decoded["pat_id"], load_user=True
+                )
+                if pat is None:
+                    return None
+
+                await personal_access_token_service.record_usage(session, id=pat.id)
+                return pat.user
+
+            raise Exception("failed to decode token")
         except (KeyError, jwt.DecodeError, jwt.ExpiredSignatureError):
             return None
 

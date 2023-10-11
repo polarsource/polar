@@ -18,6 +18,7 @@ from polar.pledge.endpoints import router as pledge_router
 from polar.pull_request.endpoints import router as pull_requests_router
 from polar.repository.endpoints import router as repository_router
 from polar.reward.endpoints import router as rewards_router
+from polar.subscription.endpoints import router as subscription_router
 from polar.user.endpoints import router as user_router
 
 router = APIRouter(prefix="/api/v1")
@@ -62,3 +63,5 @@ router.include_router(pledge_router)
 router.include_router(stream_router)
 # /organizations
 router.include_router(organization_router)
+# /subscriptions
+router.include_router(subscription_router)

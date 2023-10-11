@@ -32,6 +32,9 @@ importers:
 
   apps/chrome-extension:
     dependencies:
+      '@polar-sh/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       '@types/jest':
         specifier: ^27.0.1
         version: 27.5.2

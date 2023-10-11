@@ -13,6 +13,124 @@ from polar.models import (
 
 
 @pytest.mark.asyncio
+class TestSearchSubscriptionGroups:
+    async def test_not_existing_organization(self, client: AsyncClient) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/groups/search",
+            params={"platform": "github", "organization_name": "not_existing"},
+        )
+
+        assert response.status_code == 404
+
+    async def test_not_existing_repository(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/groups/search",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+                "repository_name": "not_existing",
+            },
+        )
+
+        assert response.status_code == 404
+
+    async def test_anonymous_organization(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        subscription_groups: list[SubscriptionGroup],
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/groups/search",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+
+        items = json["items"]
+        assert items[0]["id"] == str(subscription_groups[0].id)
+
+    async def test_anonymous_indirect_organization(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        subscription_groups: list[SubscriptionGroup],
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/groups/search",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+                "direct_organization": False,
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
+
+        items = json["items"]
+        assert items[0]["id"] == str(subscription_groups[0].id)
+        assert items[1]["id"] == str(subscription_groups[1].id)
+
+    async def test_anonymous_public_repository(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        public_repository: Repository,
+        subscription_groups: list[SubscriptionGroup],
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/groups/search",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+                "repository_name": public_repository.name,
+                "direct_organization": False,
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+
+        items = json["items"]
+        assert items[0]["repository_id"] == str(public_repository.id)
+
+    async def test_anonymous_private_repository(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        repository: Repository,
+        subscription_groups: list[SubscriptionGroup],
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/groups/search",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+                "repository_name": repository.name,
+                "direct_organization": False,
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 0
+
+
+@pytest.mark.asyncio
 class TestCreateSubscriptionGroup:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(

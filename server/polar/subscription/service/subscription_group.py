@@ -1,13 +1,22 @@
 import uuid
+from collections.abc import Sequence
+from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import ColumnExpressionArgument, Select, or_, select
 from sqlalchemy.orm import joinedload
 
-from polar.authz.service import AccessType, Authz
+from polar.authz.service import AccessType, Authz, Subject
 from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
-from polar.models import SubscriptionGroup, User
+from polar.models import (
+    Organization,
+    Repository,
+    SubscriptionGroup,
+    User,
+    UserOrganization,
+)
 from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
 
@@ -35,6 +44,35 @@ class RepositoryDoesNotExist(SubscriptionGroupError):
 class SubscriptionGroupService(
     ResourceService[SubscriptionGroup, SubscriptionGroupCreate, SubscriptionGroupUpdate]
 ):
+    async def search(
+        self,
+        session: AsyncSession,
+        auth_subject: Subject,
+        *,
+        organization: Organization | None = None,
+        repository: Repository | None = None,
+        direct_organization: bool = True,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[SubscriptionGroup], int]:
+        statement = self._get_readable_subscription_group_statement(auth_subject)
+
+        if organization is not None:
+            clauses = [SubscriptionGroup.organization_id == organization.id]
+            if not direct_organization:
+                clauses.append(Repository.organization_id == organization.id)
+            statement = statement.where(or_(*clauses))
+
+        if repository is not None:
+            statement = statement.where(
+                SubscriptionGroup.repository_id == repository.id
+            )
+
+        statement = statement.order_by(SubscriptionGroup.created_at.asc())
+
+        results, count = await paginate(session, statement, pagination=pagination)
+
+        return results, count
+
     async def get_with_organization_or_repository(
         self, session: AsyncSession, id: uuid.UUID
     ) -> SubscriptionGroup | None:
@@ -75,6 +113,32 @@ class SubscriptionGroupService(
                 raise RepositoryDoesNotExist(create_schema.repository_id)
 
         return await super().create(session, create_schema)
+
+    def _get_readable_subscription_group_statement(
+        self, auth_subject: Subject
+    ) -> Select[Any]:
+        clauses: list[ColumnExpressionArgument[bool]] = [
+            SubscriptionGroup.repository_id.is_(None),
+            Repository.is_private.is_(False),
+        ]
+        if isinstance(auth_subject, User):
+            clauses.append(UserOrganization.user_id == auth_subject.id)
+
+        return (
+            select(SubscriptionGroup)
+            .join(SubscriptionGroup.repository, full=True)
+            .join(
+                Organization,
+                onclause=Organization.id == Repository.organization_id,
+                full=True,
+            )
+            .join(
+                UserOrganization,
+                onclause=UserOrganization.organization_id == Organization.id,
+                full=True,
+            )
+            .where(or_(*clauses))
+        )
 
 
 subscription_group = SubscriptionGroupService(SubscriptionGroup)

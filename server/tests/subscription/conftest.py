@@ -36,3 +36,23 @@ async def subscription_group_repository(
     session: AsyncSession, public_repository: Repository
 ) -> SubscriptionGroup:
     return await create_subscription_group(session, repository=public_repository)
+
+
+@pytest_asyncio.fixture
+async def subscription_group_private_repository(
+    session: AsyncSession, repository: Repository
+) -> SubscriptionGroup:
+    return await create_subscription_group(session, repository=repository)
+
+
+@pytest_asyncio.fixture
+async def subscription_groups(
+    subscription_group_organization: SubscriptionGroup,
+    subscription_group_repository: SubscriptionGroup,
+    subscription_group_private_repository: SubscriptionGroup,
+) -> list[SubscriptionGroup]:
+    return [
+        subscription_group_organization,
+        subscription_group_repository,
+        subscription_group_private_repository,
+    ]

@@ -41,8 +41,7 @@
   "scripts": {
     "lint": "TIMING=1 eslint \"**/*.ts*\"",
     "download": "node scripts/generate-schema.js http://127.0.0.1:8000/openapi.json openapi/source.json openapi/updated.json",
-    "generate": "pnpm download && openapi-generator generate -i openapi/updated.json -g typescript-fetch -o src/api/client --skip-validate-spec --additional-properties=modelPropertyNaming=snake_case --additional-properties=enumPropertyNaming=UPPERCASE --additional-properties=supportsES6=true --additional-properties=prefixParameterInterfaces=true",
-    "generate_x": "pnpm download && openapi --input openapi/updated.json --output src/api/client --client axios --name PolarAPI --useOptions --indent 2 --exportSchemas false",
+    "generate": "pnpm download && ./generate",
     "test": "jest"
   },
   "dependencies": {

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -euo pipefail
+
+SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+
+docker rm generate-api || true
+
+docker run \
+    --volume "${SCRIPTPATH}":/polarkit \
+    --name generate-api \
+    openapitools/openapi-generator-cli:v7.0.1 \
+    generate \
+    -i /polarkit/openapi/updated.json \
+    -g typescript-fetch \
+    -o /polarkit/src/api/client \
+    --skip-validate-spec \
+    --additional-properties=modelPropertyNaming=snake_case \
+    --additional-properties=enumPropertyNaming=UPPERCASE \
+    --additional-properties=supportsES6=true \
+    --additional-properties=prefixParameterInterfaces=true

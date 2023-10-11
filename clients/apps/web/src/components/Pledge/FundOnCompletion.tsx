@@ -82,7 +82,7 @@ const FundOnCompletion = ({
         >
           Amount
         </label>
-        <div className="flex flex-row items-center space-x-4">
+        <div className="mt-2 flex flex-row items-center space-x-4">
           <MoneyInput
             id="amount"
             name="amount"
@@ -96,7 +96,7 @@ const FundOnCompletion = ({
           <p
             className={classNames(
               amount < organization.pledge_minimum_amount ? 'text-red-500' : '',
-              'dark:text-polar-400 w-2/5 text-xs text-gray-500',
+              'dark:text-polar-400 text-xs text-gray-500',
             )}
           >
             Minimum is $

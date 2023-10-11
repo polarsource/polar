@@ -113,7 +113,7 @@ const PledgeForm = ({
         <Tabs defaultValue="fund" className="">
           <TabsList
             className={twMerge(
-              'dark:bg-polar-950 grid h-fit w-full grid-cols-2 grid-rows-1',
+              'dark:bg-polar-900 grid h-fit w-full grid-cols-2 grid-rows-1',
             )}
           >
             <TabsTrigger
@@ -179,10 +179,10 @@ const Fund = ({
           Funding method
         </label>
 
-        <Tabs defaultValue="fund_today" className="">
+        <Tabs defaultValue="fund_today" className="mt-2">
           <TabsList
             className={twMerge(
-              'dark:bg-polar-950 grid h-fit w-full grid-cols-1 grid-rows-2',
+              'dark:bg-polar-900 grid h-fit w-full grid-cols-1 grid-rows-2',
             )}
           >
             <FundingMethodTab
@@ -542,7 +542,7 @@ const FundToday = ({
         >
           Funding amount
         </label>
-        <div className="flex flex-row items-center space-x-4">
+        <div className="mt-2 flex flex-row items-center space-x-4">
           <MoneyInput
             id="amount"
             name="amount"
@@ -557,7 +557,7 @@ const FundToday = ({
           <p
             className={classNames(
               amount < organization.pledge_minimum_amount ? 'text-red-500' : '',
-              'dark:text-polar-400 w-2/5 text-xs text-gray-500',
+              'dark:text-polar-400 text-xs text-gray-500',
             )}
           >
             Minimum is $
@@ -573,7 +573,7 @@ const FundToday = ({
         >
           Contact details
         </label>
-        <div className="relative">
+        <div className="relative mt-2">
           <input
             type="email"
             id="email"

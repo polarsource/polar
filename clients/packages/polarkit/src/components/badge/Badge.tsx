@@ -70,7 +70,7 @@ export const Badge = ({
             : '1px solid rgba(0, 0, 0, 0.11)',
 
           overflow: 'hidden',
-          backgroundColor: darkmode ? '#13151D' /*gray-700*/ : 'white',
+          backgroundColor: darkmode ? '#1B1D29' /*gray-700*/ : 'white',
           fontFamily: 'Inter',
           // width: 'fit-content',
         }}
@@ -259,7 +259,7 @@ export const Badge = ({
                       width: 22,
                       borderRadius: 22,
                       border: darkmode
-                        ? '1px solid #13151D'
+                        ? '1px solid #1B1D29'
                         : '1px solid white',
                       marginLeft: idx > 0 ? '-6px' : '',
                       flexShrink: '0',
@@ -297,7 +297,7 @@ export const Badge = ({
             <div
               style={{
                 display: 'flex',
-                backgroundColor: darkmode ? '#1B1D29' /*polar-700*/ : '#FDFDFC', // gray-50
+                backgroundColor: darkmode ? '#343748' /*polar-600*/ : '#FDFDFC', // gray-50
                 height: 40,
                 flexDirection: 'row',
                 alignItems: 'center',

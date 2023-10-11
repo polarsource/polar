@@ -373,34 +373,31 @@ export const Badge = ({
             }}
           >
             <Heart />
+
+            <div
+              style={{
+                alignItems: 'center',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                fontWeight: 'bold',
+              }}
+            >
+              {`@${orgName}`}
+            </div>
+
             <div
               style={{
                 flexGrow: 1,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '1px',
                 overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                marginLeft: '-5px',
               }}
             >
-              <div
-                style={{
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                @{orgName}&nbsp;
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                }}
-              >
-                rewards contributors {upfront_split_to_contributors}% of
-                received funds
-              </div>
+              {`rewards contributors ${upfront_split_to_contributors}% of received
+              funds`}
             </div>
             <div
               style={{

@@ -18,6 +18,10 @@ const authedApi = () => {
   return api
 }
 
+const cacheConfig = {
+  cache: 'no-store',
+} as const
+
 export async function generateMetadata(
   {
     params,
@@ -29,9 +33,12 @@ export async function generateMetadata(
   let issue: Issue | undefined
 
   try {
-    issue = await authedApi().issues.lookup({
-      externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
-    })
+    issue = await authedApi().issues.lookup(
+      {
+        externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
+      },
+      cacheConfig,
+    )
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
@@ -84,15 +91,18 @@ export default async function Page({
 
   try {
     const api = authedApi()
-    issue = await api.issues.lookup({
-      externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
-    })
+    issue = await api.issues.lookup(
+      {
+        externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
+      },
+      cacheConfig,
+    )
     const [bodyResponse, pledgeSummary, rewardsSummary, pullRequests] =
       await Promise.all([
-        api.issues.getBody({ id: issue.id }),
-        api.pledges.summary({ issueId: issue.id }),
-        api.rewards.summary({ issueId: issue.id }),
-        api.pullRequests.search({ referencesIssueId: issue.id }),
+        api.issues.getBody({ id: issue.id }, { next: { revalidate: 60 } }), // Cache for 60s
+        api.pledges.summary({ issueId: issue.id }, cacheConfig),
+        api.rewards.summary({ issueId: issue.id }, cacheConfig),
+        api.pullRequests.search({ referencesIssueId: issue.id }, cacheConfig),
       ])
     issueHTMLBody = bodyResponse
     pledgers = pledgeSummary.pledges

@@ -11,6 +11,12 @@ import {
   ResponseError,
 } from 'polarkit/api/client'
 
+const cacheConfig = {
+  next: {
+    revalidate: 30, // 30 seconds
+  },
+}
+
 export async function generateMetadata(
   {
     params,
@@ -23,15 +29,21 @@ export async function generateMetadata(
   let repositories: ListResourceRepository | undefined
 
   try {
-    organization = await api.organizations.lookup({
-      platform: Platforms.GITHUB,
-      organizationName: params.organization,
-    })
+    organization = await api.organizations.lookup(
+      {
+        platform: Platforms.GITHUB,
+        organizationName: params.organization,
+      },
+      cacheConfig,
+    )
 
-    repositories = await api.repositories.search({
-      platform: Platforms.GITHUB,
-      organizationName: params.organization,
-    })
+    repositories = await api.repositories.search(
+      {
+        platform: Platforms.GITHUB,
+        organizationName: params.organization,
+      },
+      cacheConfig,
+    )
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
@@ -82,28 +94,37 @@ export default async function Page({
 }: {
   params: { organization: string; repo: string }
 }) {
-  const organization = await api.organizations.lookup({
-    platform: Platforms.GITHUB,
-    organizationName: params.organization,
-  })
+  const organization = await api.organizations.lookup(
+    {
+      platform: Platforms.GITHUB,
+      organizationName: params.organization,
+    },
+    cacheConfig,
+  )
 
-  const repositories = await api.repositories.search({
-    platform: Platforms.GITHUB,
-    organizationName: params.organization,
-  })
+  const repositories = await api.repositories.search(
+    {
+      platform: Platforms.GITHUB,
+      organizationName: params.organization,
+    },
+    cacheConfig,
+  )
 
-  const issuesFunding = await api.funding.search({
-    platform: Platforms.GITHUB,
-    organizationName: params.organization,
-    repositoryName: params.repo,
-    badged: true,
-    sorting: [
-      ListFundingSortBy.MOST_FUNDED,
-      ListFundingSortBy.MOST_ENGAGEMENT,
-      ListFundingSortBy.NEWEST,
-    ],
-    limit: 20,
-  })
+  const issuesFunding = await api.funding.search(
+    {
+      platform: Platforms.GITHUB,
+      organizationName: params.organization,
+      repositoryName: params.repo,
+      badged: true,
+      sorting: [
+        ListFundingSortBy.MOST_FUNDED,
+        ListFundingSortBy.MOST_ENGAGEMENT,
+        ListFundingSortBy.NEWEST,
+      ],
+      limit: 20,
+    },
+    cacheConfig,
+  )
 
   const totalIssueCount = issuesFunding.pagination.total_count
 

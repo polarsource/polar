@@ -91,7 +91,7 @@ const ProfileSelection = ({
           <div
             ref={ref}
             className={clsx(
-              'dark:bg-polar-700 absolute left-0 w-full overflow-hidden rounded-2xl bg-white py-2 shadow-xl',
+              'dark:bg-polar-700 dark:text-polar-400 absolute left-0 w-full overflow-hidden rounded-2xl bg-white py-2 shadow-xl',
               narrow ? '-top-2' : '-top-1',
             )}
           >
@@ -118,7 +118,7 @@ const ProfileSelection = ({
                     )
                   })}
 
-                  <hr className="my-2 ml-4 mr-4" />
+                  <hr className="dark:border-polar-600 my-2 ml-4 mr-4" />
                 </>
               )}
 
@@ -147,7 +147,7 @@ const ProfileSelection = ({
                 </LinkItem>
               )}
 
-              <hr className="my-2 ml-4 mr-4" />
+              <hr className="dark:border-polar-600 my-2 ml-4 mr-4" />
 
               <LinkItem
                 href={'https://polar.sh/faq'}
@@ -189,7 +189,7 @@ const ListItem = (props: {
     'animate-background duration-10 flex items-center gap-2 py-2 px-4 w-full',
     props.current
       ? 'bg-blue-50 dark:bg-white/5'
-      : 'hover:bg-gray-100/50 dark:hover:bg-white/5',
+      : 'hover:bg-gray-100/50 dark:hover:bg-polar-800',
     props.className ?? '',
   )
 

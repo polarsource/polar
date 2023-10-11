@@ -664,10 +664,10 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
       <div className="flex w-full flex-col space-y-2">
         <div className="flex items-center justify-between">
           <div>
-            <div className="dark:text-polar-200 text-sm font-medium text-gray-900">
+            <div className="dark:text-polar-100 text-sm font-medium text-gray-900">
               Public rewards
             </div>
-            <div className="dark:text-polar-400 text-xs text-gray-600">
+            <div className="dark:text-polar-400 mt-1 text-xs text-gray-600">
               Public & upfront rewards can attract contributors. You can also
               reward & adjust splits later too.
             </div>
@@ -686,7 +686,9 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <UserIcon className="dark:bg-polar-950 h-6 w-6 rounded-full bg-gray-50 p-1" />
-                <div className="text-sm">Reserved for contributor(s)</div>
+                <div className="dark:text-polar-100 text-sm">
+                  Reserved for contributor(s)
+                </div>
               </div>
               <div className="dark:bg-polar-700 flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5">
                 <span className="dark:text-polar-400 flex-shrink-0 text-gray-500">
@@ -717,7 +719,7 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm">
+              <div className="dark:text-polar-100 flex items-center gap-2 text-sm">
                 <img
                   src={props.issue.repository.organization.avatar_url}
                   className="h-6 w-6 rounded-full"
@@ -725,7 +727,6 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
                 <div>
                   {props.issue.repository.organization.pretty_name ||
                     props.issue.repository.organization.name}
-                  .
                 </div>
                 <div className="dark:text-polar-400 text-gray-500">
                   Reviews, feedback & maintenance. Reward yourself too.

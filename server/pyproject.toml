@@ -73,6 +73,10 @@ pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render
 [tool.poetry.scripts]
 verify_github_app = "polar.verify_github_app:main"
 
+[tool.pytest.ini_options]
+markers = ["authenticated"]
+asyncio_mode = "strict"
+
 [tool.ruff]
 target-version = "py311"
 ignore = [

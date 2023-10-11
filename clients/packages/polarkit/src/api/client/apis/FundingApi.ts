@@ -43,6 +43,7 @@ export interface FundingApiSearchRequest {
     platform: Platforms;
     repositoryName?: string;
     badged?: boolean;
+    closed?: boolean;
     sorting?: Array<ListFundingSortBy>;
     page?: number;
     limit?: number;
@@ -119,6 +120,10 @@ export class FundingApi extends runtime.BaseAPI {
 
         if (requestParameters.badged !== undefined) {
             queryParameters['badged'] = requestParameters.badged;
+        }
+
+        if (requestParameters.closed !== undefined) {
+            queryParameters['closed'] = requestParameters.closed;
         }
 
         if (requestParameters.sorting) {

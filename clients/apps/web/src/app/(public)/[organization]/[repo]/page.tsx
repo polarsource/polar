@@ -116,6 +116,7 @@ export default async function Page({
       organizationName: params.organization,
       repositoryName: params.repo,
       badged: true,
+      closed: false,
       sorting: [
         ListFundingSortBy.MOST_FUNDED,
         ListFundingSortBy.MOST_ENGAGEMENT,

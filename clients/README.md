@@ -33,6 +33,12 @@ pnpm build
 pnpm dev-web
 ```
 
+### Generate API definitions
+
+```bash
+pnpm generate
+```
+
 ### Designing with Storybook
 
 Polar uses [Storybook](https://storybook.js.org) to easier work with web components and their design.

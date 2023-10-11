@@ -1,6 +1,6 @@
 import pytest_asyncio
 
-from polar.models import Organization, Repository, SubscriptionGroup
+from polar.models import Organization, Repository, SubscriptionGroup, SubscriptionTier
 from polar.postgres import AsyncSession
 
 
@@ -10,7 +10,7 @@ async def create_subscription_group(
     name: str = "Subscription Group",
     order: int = 1,
     organization: Organization | None = None,
-    repository: Repository | None = None
+    repository: Repository | None = None,
 ) -> SubscriptionGroup:
     assert (organization is not None) != (repository is not None)
     subscription_group = SubscriptionGroup(
@@ -22,6 +22,23 @@ async def create_subscription_group(
     session.add(subscription_group)
     await session.commit()
     return subscription_group
+
+
+async def create_subscription_tier(
+    session: AsyncSession,
+    *,
+    subscription_group: SubscriptionGroup,
+    name: str = "Subscription Tier",
+) -> SubscriptionTier:
+    subscription_tier = SubscriptionTier(
+        name=name,
+        price_amount=1000,
+        price_currency="USD",
+        subscription_group_id=subscription_group.id,
+    )
+    session.add(subscription_tier)
+    await session.commit()
+    return subscription_tier
 
 
 @pytest_asyncio.fixture
@@ -56,3 +73,12 @@ async def subscription_groups(
         subscription_group_repository,
         subscription_group_private_repository,
     ]
+
+
+@pytest_asyncio.fixture
+async def subscription_tier_organization(
+    session: AsyncSession, subscription_group_organization: SubscriptionGroup
+) -> SubscriptionTier:
+    return await create_subscription_tier(
+        session, subscription_group=subscription_group_organization
+    )

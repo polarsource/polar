@@ -7,6 +7,7 @@ from polar.models import (
     Organization,
     Repository,
     SubscriptionGroup,
+    SubscriptionTier,
     User,
     UserOrganization,
 )
@@ -242,3 +243,111 @@ class TestUpdateSubscriptionGroup:
 
         json = response.json()
         assert json["name"] == "Updated Subscription Group"
+
+
+@pytest.mark.asyncio
+class TestCreateSubscriptionTier:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/api/v1/subscriptions/tiers/",
+            json={
+                "name": "Subscription Tier",
+                "price_amount": 1000,
+                "subscription_group_id": str(uuid.uuid4()),
+            },
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        subscription_group_organization: SubscriptionGroup,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/api/v1/subscriptions/tiers/",
+            json={
+                "name": "Subscription Tier",
+                "price_amount": 1000,
+                "subscription_group_id": str(subscription_group_organization.id),
+            },
+        )
+
+        assert response.status_code == 201
+
+
+@pytest.mark.asyncio
+class TestUpdateSubscriptionTier:
+    async def test_anonymous(
+        self, client: AsyncClient, subscription_tier_organization: SubscriptionTier
+    ) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}",
+            json={"name": "Updated Subscription Tier"},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/tiers/{uuid.uuid4()}",
+            json={"name": "Updated Subscription Tier"},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.authenticated
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        subscription_tier_organization: SubscriptionTier,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}",
+            json={"name": "Updated Subscription Tier"},
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["name"] == "Updated Subscription Tier"
+
+
+@pytest.mark.asyncio
+class TestArchiveSubscriptionTier:
+    async def test_anonymous(
+        self, client: AsyncClient, subscription_tier_organization: SubscriptionTier
+    ) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/archive"
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/tiers/{uuid.uuid4()}/archive"
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.authenticated
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        subscription_tier_organization: SubscriptionTier,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/archive"
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["is_archived"]

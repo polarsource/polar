@@ -6,7 +6,7 @@ from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.models import Repository, SubscriptionGroup
+from polar.models import Repository, SubscriptionGroup, SubscriptionTier
 from polar.organization.dependencies import OrganizationNameQuery
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -15,10 +15,17 @@ from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 
 from .schemas import SubscriptionGroup as SubscriptionGroupSchema
-from .schemas import SubscriptionGroupCreate, SubscriptionGroupUpdate
+from .schemas import (
+    SubscriptionGroupCreate,
+    SubscriptionGroupUpdate,
+    SubscriptionTierCreate,
+    SubscriptionTierUpdate,
+)
+from .schemas import SubscriptionTier as SubscriptionTierSchema
 from .service.subscription_group import subscription_group as subscription_group_service
+from .service.subscription_tier import subscription_tier as subscription_tier_service
 
-router = APIRouter(prefix="/subscriptions", tags=["subscription"])
+router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
 
 
 @router.get(
@@ -104,4 +111,58 @@ async def update_subscription_group(
 
     return await subscription_group_service.update(
         session, subscription_group, subscription_group_update, exclude_unset=True
+    )
+
+
+@router.post(
+    "/tiers/",
+    response_model=SubscriptionTierSchema,
+    status_code=201,
+    tags=[Tags.PUBLIC],
+)
+async def create_subscription_tier(
+    subscription_tier_create: SubscriptionTierCreate,
+    auth: UserRequiredAuth,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionTier:
+    return await subscription_tier_service.user_create(
+        session, authz, subscription_tier_create, auth.user
+    )
+
+
+@router.post("/tiers/{id}", response_model=SubscriptionTierSchema, tags=[Tags.PUBLIC])
+async def update_subscription_tier(
+    id: UUID4,
+    subscription_tier_update: SubscriptionTierUpdate,
+    auth: UserRequiredAuth,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionTier:
+    subscription_tier = await subscription_tier_service.get(session, id)
+
+    if subscription_tier is None:
+        raise ResourceNotFound()
+
+    return await subscription_tier_service.user_update(
+        session, authz, subscription_tier, subscription_tier_update, auth.user
+    )
+
+
+@router.post(
+    "/tiers/{id}/archive", response_model=SubscriptionTierSchema, tags=[Tags.PUBLIC]
+)
+async def archive_subscription_tier(
+    id: UUID4,
+    auth: UserRequiredAuth,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionTier:
+    subscription_tier = await subscription_tier_service.get(session, id)
+
+    if subscription_tier is None:
+        raise ResourceNotFound()
+
+    return await subscription_tier_service.archive(
+        session, authz, subscription_tier, auth.user
     )

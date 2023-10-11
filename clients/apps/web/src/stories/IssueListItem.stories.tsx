@@ -108,7 +108,7 @@ const dummyPayload = {
   sha: '',
 }
 
-const payload: PullRequestReference = {
+const pullRequestReference: PullRequestReference = {
   id: '11',
   title: 'Updated Readme.md',
   author_login: '33',
@@ -126,7 +126,7 @@ const references: IssueReferenceRead[] = [
     id: 'wha',
     type: IssueReferenceType.PULL_REQUEST,
     payload: dummyPayload,
-    pull_request_reference: payload,
+    pull_request_reference: pullRequestReference,
   },
 ]
 
@@ -136,7 +136,7 @@ const referencesDraft: IssueReferenceRead[] = [
     type: IssueReferenceType.PULL_REQUEST,
     payload: dummyPayload,
     pull_request_reference: {
-      ...payload,
+      ...pullRequestReference,
       is_draft: true,
     },
   },
@@ -148,7 +148,7 @@ const referencesMerged: IssueReferenceRead[] = [
     type: IssueReferenceType.PULL_REQUEST,
     payload: dummyPayload,
     pull_request_reference: {
-      ...payload,
+      ...pullRequestReference,
       //is_draft: true,
       state: 'closed',
       merged_at: new Date('2024-05-01'),
@@ -162,7 +162,7 @@ const referencesClosed: IssueReferenceRead[] = [
     type: IssueReferenceType.PULL_REQUEST,
     payload: dummyPayload,
     pull_request_reference: {
-      ...payload,
+      ...pullRequestReference,
       state: 'closed',
       closed_at: new Date('2024-05-01'),
     },
@@ -175,7 +175,7 @@ const doubleReference: IssueReferenceRead[] = [
     type: IssueReferenceType.PULL_REQUEST,
     payload: dummyPayload,
     pull_request_reference: {
-      ...payload,
+      ...pullRequestReference,
     },
   },
   {
@@ -183,7 +183,7 @@ const doubleReference: IssueReferenceRead[] = [
     type: IssueReferenceType.PULL_REQUEST,
     payload: dummyPayload,
     pull_request_reference: {
-      ...payload,
+      ...pullRequestReference,
     },
   },
 ]
@@ -615,8 +615,8 @@ export const StatusPullRequestNameHighlights: Story = {
     references: [
       {
         ...references[0],
-        payload: {
-          ...references[0].payload,
+        pull_request_reference: {
+          ...pullRequestReference,
           title: 'Wow! `Highlight!`',
         },
       },

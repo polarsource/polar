@@ -6,8 +6,8 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.app import app
+from polar.config import settings
 from polar.postgres import AsyncSession, get_db_session
-
 
 # We used to use anyio, but it was causing garbage collection issues
 # with SQLAlchemy (known issue - https://stackoverflow.com/a/74221652)
@@ -27,8 +27,15 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
 
 
 @pytest_asyncio.fixture()
-async def client(session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+async def client(
+    request: pytest.FixtureRequest, session: AsyncSession, auth_jwt: str
+) -> AsyncGenerator[AsyncClient, None]:
     app.dependency_overrides[get_db_session] = lambda: session
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    cookies = {}
+    authenticated_marker = request.node.get_closest_marker("authenticated")
+    if authenticated_marker is not None:
+        cookies[settings.AUTH_COOKIE_KEY] = auth_jwt
+
+    async with AsyncClient(app=app, base_url="http://test", cookies=cookies) as client:
         yield client

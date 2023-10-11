@@ -21,7 +21,7 @@ const ProfileSelection = ({
   showBackerLinks = false,
 }) => {
   const classNames = clsx(
-    'relative flex w-full flex-col rounded-xl bg-white dark:bg-polar-900 hover:bg-gray-100/50 dark:shadow-none',
+    'relative flex w-full flex-col rounded-xl bg-white dark:bg-polar-700 hover:bg-gray-100/50 dark:shadow-none dark:hover:bg-polar-800',
     className,
   )
   const { currentUser: loggedUser, logout } = useAuth()
@@ -91,7 +91,7 @@ const ProfileSelection = ({
           <div
             ref={ref}
             className={clsx(
-              'dark:bg-polar-900 absolute left-0 w-full overflow-hidden rounded-2xl bg-white py-2 shadow-xl',
+              'dark:bg-polar-700 absolute left-0 w-full overflow-hidden rounded-2xl bg-white py-2 shadow-xl',
               narrow ? '-top-2' : '-top-1',
             )}
           >
@@ -212,7 +212,7 @@ const Profile = (props: {
               alt={props.name}
             />
           )}
-          <p className="dark:text-polar-400 ml-4 truncate text-gray-600 ">
+          <p className="dark:text-polar-300 ml-4 truncate text-gray-600 ">
             {props.name}
           </p>
         </div>

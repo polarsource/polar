@@ -21,7 +21,7 @@ const LabeledRadioButton = (props: {
             onClick={() => props.onSelected(v.label)}
             className={classNames(
               v.selected
-                ? 'dark:bg-polar-500 dark:text-polar-50 rounded-lg bg-white text-gray-900 shadow'
+                ? 'dark:bg-polar-600 dark:text-polar-50 rounded-lg bg-white text-gray-900 shadow'
                 : '',
               'cursor-pointer rounded-lg px-2.5 py-1.5',
             )}

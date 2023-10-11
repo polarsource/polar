@@ -103,7 +103,7 @@ export function RepoSelection(props: {
                   ref={inputRef}
                   autoFocus
                   placeholder={'Select a repository'}
-                  className="m-0 px-2 py-3 !text-sm !text-gray-900 focus:border-0 focus:ring-0 dark:!text-gray-200"
+                  className="dark:!text-polar-200 dark:placeholder:text-polar-400 m-0 px-2 py-3 !text-sm !text-gray-900 focus:border-0 focus:ring-0"
                   value={inputValue}
                   onValueChange={onInputValueChange}
                 />
@@ -113,7 +113,7 @@ export function RepoSelection(props: {
                 ref={listRef}
                 className="max-h-[500px] overflow-auto overscroll-contain px-2 pb-2"
               >
-                <Command.Empty className="p !h-auto !justify-start !p-2 !pt-3">
+                <Command.Empty className="p dark:text-polar-400 !h-auto !justify-start !p-2 !pt-3">
                   No results found.
                 </Command.Empty>
 
@@ -178,7 +178,7 @@ const SelectedEmpty = ({
 }) => {
   return (
     <SelectedBox onClick={onClick} classNames={classNames}>
-      <div className="flex items-center gap-2 text-gray-500">
+      <div className="dark:text-polar-300 flex items-center gap-2 text-gray-500">
         <RepoIcon />
         <span>All repositories</span>
       </div>
@@ -189,6 +189,7 @@ const SelectedEmpty = ({
 const RepoIcon = () => {
   return (
     <svg
+      className="dark:text-polar-500 text-gray-400"
       width="17"
       height="18"
       viewBox="0 0 17 18"
@@ -197,14 +198,14 @@ const RepoIcon = () => {
     >
       <path
         d="M2.75 14.5208C2.75 14.0512 2.93931 13.6008 3.27629 13.2687C3.61327 12.9366 4.07031 12.75 4.54688 12.75H14.25"
-        stroke="#727374"
+        stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M4.54688 1.75H14.25V16.25H4.54688C4.07031 16.25 3.61327 16.059 3.27629 15.7191C2.93931 15.3792 2.75 14.9182 2.75 14.4375V3.5625C2.75 3.0818 2.93931 2.62078 3.27629 2.28087C3.61327 1.94096 4.07031 1.75 4.54688 1.75Z"
-        stroke="#727374"
+        stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"

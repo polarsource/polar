@@ -86,22 +86,22 @@ export default function ClientPage() {
 
       <DashboardBody>
         <div className="space-y-4">
-          <h2 className="dark:text-polar-400 text-lg text-gray-900">
+          <h2 className="dark:text-polar-200 text-lg text-gray-900">
             Github Sponsors
           </h2>
-          <p className="text-sm text-gray-500">
+          <p className="dark:text-polar-400 text-sm text-gray-500">
             Make sure to link to your public funding page from Github&apos;s
             Sponsor section.
           </p>
           <ShadowBox>
             <div className="flex flex-col gap-4">
-              <h3 className="font-medium text-gray-500">
+              <h3 className="dark:text-polar-200 font-medium text-gray-500">
                 Link to your Polar funding page
               </h3>
               <div className="max-w-[600px]">
                 <CopyToClipboardInput id="github-funding" value={fundingYAML} />
               </div>
-              <div className="dark:text-polar-400 rounded-md border border-blue-100 bg-blue-50 px-4 py-2 text-gray-700 dark:border-blue-700/50 dark:bg-blue-800/50">
+              <div className="rounded-md border border-blue-100 bg-blue-50 px-4 py-2 text-sm text-blue-500 dark:border-blue-700/50 dark:bg-blue-800/50">
                 Follow the instructions{' '}
                 <a
                   className="font-bold text-blue-500"
@@ -113,17 +113,19 @@ export default function ClientPage() {
               </div>
             </div>
           </ShadowBox>
-          <h2 className="dark:text-polar-400 pt-8 text-lg text-gray-900">
+          <h2 className="dark:text-polar-200 pt-8 text-lg text-gray-900">
             Readme embeds
           </h2>
-          <p className="text-sm text-gray-500">
+          <p className="dark:text-polar-400 text-sm text-gray-500">
             Embed the Polar SVG in your README or on your website to showcase
             issues that you&apos;re seeking funding for.
           </p>
           <ShadowBox>
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium text-gray-500">Preview</h3>
+                <h3 className="dark:text-polar-200 font-medium text-gray-500">
+                  Preview
+                </h3>
 
                 <LabeledRadioButton
                   values={['Issues', 'Shield']}
@@ -132,11 +134,13 @@ export default function ClientPage() {
                 />
               </div>
 
-              <div className="dark:bg-polar-700 dark:border-polar-800 flex w-full justify-center rounded-md border border-gray-200 bg-gray-50 p-8">
+              <div className="dark:bg-polar-700 dark:border-polar-600 flex w-full justify-center rounded-md border border-gray-200 bg-gray-50 p-8">
                 {previews[currentEmbedTab] || <></>}
               </div>
 
-              <h3 className="font-medium text-gray-500">Embed code</h3>
+              <h3 className="dark:text-polar-200 font-medium text-gray-500">
+                Embed code
+              </h3>
               <div className="max-w-[600px]">
                 <CopyToClipboardInput
                   id="embed-svg"

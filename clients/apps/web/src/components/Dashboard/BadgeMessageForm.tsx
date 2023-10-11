@@ -128,7 +128,10 @@ const BadgeMessageForm = (props: {
 
         {props.canSetFundingGoal && (
           <div className="flex max-w-[300px] items-center space-x-2">
-            <label htmlFor="fundingGoal" className="flex-shrink-0">
+            <label
+              htmlFor="fundingGoal"
+              className="dark:text-polar-200 flex-shrink-0 text-sm"
+            >
               Set funding goal:{' '}
             </label>
             <MoneyInput

@@ -434,7 +434,7 @@ const Tab = ({
 }) => (
   <TabsTrigger
     value={value}
-    className="data-[state=active]:bg-gray-75 rounded-none rounded-t-lg border !border-b-0 border-transparent bg-transparent !shadow-none outline-0 ring-0 hover:bg-gray-500/10 data-[state=active]:border-gray-200   dark:data-[state=active]:border-gray-600 dark:data-[state=active]:bg-gray-900"
+    className="data-[state=active]:bg-gray-75 dark:data-[state=active]:bg-polar-900 dark:hover:bg-polar-white/10 dark:data-[state=active]:border-polar-600 rounded-none rounded-t-lg border !border-b-0 border-transparent bg-transparent !shadow-none outline-0 ring-0 hover:bg-gray-500/10 data-[state=active]:border-gray-200"
   >
     <div className="flex w-full items-center gap-4 px-1 text-left">
       {icon}
@@ -664,10 +664,10 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
       <div className="flex w-full flex-col space-y-2">
         <div className="flex items-center justify-between">
           <div>
-            <div className="dark:text-polar-300 text-sm font-medium text-gray-900">
+            <div className="dark:text-polar-200 text-sm font-medium text-gray-900">
               Public rewards
             </div>
-            <div className="dark:text-polar-500 text-xs text-gray-600">
+            <div className="dark:text-polar-400 text-xs text-gray-600">
               Public & upfront rewards can attract contributors. You can also
               reward & adjust splits later too.
             </div>
@@ -689,7 +689,9 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
                 <div className="text-sm">Reserved for contributor(s)</div>
               </div>
               <div className="dark:bg-polar-700 flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5">
-                <span className="flex-shrink-0 text-gray-500">%</span>
+                <span className="dark:text-polar-400 flex-shrink-0 text-gray-500">
+                  %
+                </span>
                 <div className="flex-1">
                   <input
                     className={classNames(
@@ -725,12 +727,14 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
                     props.issue.repository.organization.name}
                   .
                 </div>
-                <div className="text-gray-500">
+                <div className="dark:text-polar-400 text-gray-500">
                   Reviews, feedback & maintenance. Reward yourself too.
                 </div>
               </div>
               <div className="dark:bg-polar-700 flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5">
-                <span className="flex-shrink-0 text-gray-500">%</span>
+                <span className="dark:text-polar-400 flex-shrink-0 text-gray-500">
+                  %
+                </span>
                 <div className="flex-1">
                   <input
                     className={classNames(
@@ -749,15 +753,15 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
 
       {usePublicRewards && (
         <>
-          <hr className="bg-gray-500" />
+          <hr className="dark:bg-polar-500 bg-gray-500" />
 
           <div className="flex w-full flex-col space-y-2">
             <div className="flex items-center justify-between">
               <div>
-                <div className="dark:text-polar-300 text-sm font-medium text-gray-900">
+                <div className="dark:text-polar-200 text-sm font-medium text-gray-900">
                   Boost reward
                 </div>
-                <div className="dark:text-polar-500 text-xs text-gray-600">
+                <div className="dark:text-polar-400 text-xs text-gray-600">
                   You have pledged{' '}
                   <b>${getCentsInDollarString(selfSeededAmount)} </b>
                   to be paid on completion.
@@ -794,7 +798,7 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
             </div>
           </div>
 
-          <hr className="bg-gray-500" />
+          <hr className="dark:bg-polar-500 bg-gray-500" />
         </>
       )}
 

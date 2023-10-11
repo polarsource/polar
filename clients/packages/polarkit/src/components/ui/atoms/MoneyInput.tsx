@@ -57,7 +57,7 @@ const MoneyInput = (props: Props) => {
           id={id}
           name={name}
           className={classNames(
-            'dark:border-polar-600 block w-full rounded-lg border-gray-200 bg-transparent px-4 py-2 pl-7 pr-16 text-lg placeholder-gray-400 shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:focus:border-blue-600 dark:focus:ring-blue-700/40',
+            'dark:border-polar-600 dark:placeholder:text-polar-300 block w-full rounded-lg border-gray-200 bg-transparent px-4 py-2 pl-7 pr-16 text-lg placeholder-gray-400 shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:focus:border-blue-600 dark:focus:ring-blue-700/40',
             props.className ?? '',
           )}
           onChange={onChanged}
@@ -65,10 +65,10 @@ const MoneyInput = (props: Props) => {
           {...other}
         />
         <div className="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-3 text-lg">
-          <span className="text-gray-500">$</span>
+          <span className="dark:text-polar-400 text-gray-500">$</span>
         </div>
         <div className="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center pr-4 text-sm">
-          <span className="text-gray-500">USD</span>
+          <span className="dark:text-polar-400 text-gray-500">USD</span>
         </div>
       </div>
     </>

@@ -8,7 +8,7 @@ import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
 export default function Page() {
   return (
     <div className="relative z-0">
-      <div className="dark:divide-polar-800 divide-y divide-gray-200">
+      <div className="dark:divide-polar-700 divide-y divide-gray-200">
         <Section>
           <SectionDescription title="Payment methods" />
           <PaymentMethodSettings />
@@ -61,7 +61,7 @@ const SectionDescription = ({
     <div className="flex-shrink-0 xl:ml-8 xl:w-60">
       <h2 className="mb-2 font-medium">{title}</h2>
       {description && (
-        <p className="dark:text-polar-400 text-sm text-gray-500">
+        <p className="dark:text-polar-500 text-sm text-gray-500">
           {description}
         </p>
       )}

@@ -24,13 +24,13 @@ export const BadgeRepositories = ({
       <h2
         className={classNames(
           isSettingPage ? 'text-left' : 'text-center',
-          'dark:text-polar-400 text-lg text-gray-500',
+          'dark:text-polar-200 text-lg text-gray-500',
         )}
       >
         Add badge to issues
       </h2>
-      <div className="dark:border-polar-700 flex w-full flex-row rounded-lg border border-gray-200 text-sm">
-        <div className="dark:border-polar-700 w-1/2 border-r border-gray-200 px-6 py-3">
+      <div className="dark:border-polar-600 flex w-full flex-row rounded-xl border border-gray-200 text-sm">
+        <div className="dark:border-polar-600 w-1/2 border-r border-gray-200 px-6 py-3">
           <strong className="font-medium">By label</strong>
           <p className="dark:text-polar-400 text-gray-500">
             Issues with a{' '}
@@ -52,7 +52,7 @@ export const BadgeRepositories = ({
           </p>
         </div>
       </div>
-      <ul className="dark:ring-polar-700 dark:divide-polar-700/75 mt-7 divide-y divide-gray-200 overflow-hidden rounded-xl shadow dark:ring-1">
+      <ul className="dark:ring-polar-700 dark:divide-polar-700 mt-7 divide-y divide-gray-200 overflow-hidden rounded-xl shadow dark:ring-1">
         {repos.map((repo, index) => {
           return (
             <li key={`badge-repo-${index}`}>

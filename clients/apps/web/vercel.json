@@ -1,0 +1,3 @@
+{
+  "buildCommand": "cd ../.. && turbo run build --filter=web"
+}

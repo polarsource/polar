@@ -29,6 +29,7 @@ async def search(
     organization_name: OrganizationNameQuery,
     repository_name: OptionalRepositoryNameQuery = None,
     badged: bool | None = Query(None),
+    closed: bool | None = Query(None),
     sorting: ListFundingSorting = [ListFundingSortBy.newest],
     platform: Platforms = Query(...),
     session: AsyncSession = Depends(get_db_session),
@@ -54,6 +55,7 @@ async def search(
         organization=organization,
         repository=repository,
         badged=badged,
+        closed=closed,
         sorting=sorting,
         pagination=pagination,
     )

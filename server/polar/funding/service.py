@@ -33,6 +33,7 @@ class FundingService:
         organization: Organization | None = None,
         repository: Repository | None = None,
         badged: bool | None = None,
+        closed: bool | None = None,
         sorting: list[ListFundingSortBy] = [ListFundingSortBy.oldest],
         issue_ids: list[UUID] | None = None,
         pagination: PaginationParams,
@@ -60,6 +61,10 @@ class FundingService:
             count_statement = count_statement.where(
                 Issue.pledge_badge_currently_embedded == badged
             )
+
+        if closed is not None:
+            statement = statement.where(Issue.closed == closed)
+            count_statement = count_statement.where(Issue.closed == closed)
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion in sorting:

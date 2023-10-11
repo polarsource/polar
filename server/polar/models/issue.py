@@ -271,6 +271,15 @@ class Issue(IssueFields, RecordModel):
         )
 
     @hybrid_property
+    def closed(self) -> bool:
+        return self.issue_closed_at is not None
+
+    @closed.inplace.expression
+    @classmethod
+    def _closed_expression(cls) -> ColumnElement[bool]:
+        return type_coerce(cls.issue_closed_at != None, Boolean)  # noqa: E711
+
+    @hybrid_property
     def pledge_badge_currently_embedded(self) -> bool:
         return self.pledge_badge_embedded_at is not None
 

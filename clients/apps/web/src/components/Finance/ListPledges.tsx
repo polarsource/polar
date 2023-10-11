@@ -48,7 +48,7 @@ const List = (props: {
         {title}
       </h2>
       <table className="w-full text-left">
-        <thead className="dark:text-polar-500 text-gray-900">
+        <thead className="dark:text-polar-400 text-gray-900">
           <tr>
             <th
               scope="col"
@@ -93,11 +93,11 @@ const List = (props: {
             </th>
           </tr>
         </thead>
-        <tbody className="dark:border-polar-800 dark:divide-polar-800 divide-y divide-gray-200 border-t border-gray-200">
+        <tbody className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-t border-gray-200">
           {pledges &&
             pledges.map((t) => (
               <tr key={t.id}>
-                <td className="px-2 py-3 text-sm text-gray-500">
+                <td className="dark:text-polar-400 px-2 py-3 text-sm text-gray-500 ">
                   <div className="flex items-center gap-2">
                     {icon(t)}
                     <span className="inline-flex flex-col">
@@ -112,7 +112,7 @@ const List = (props: {
                     </span>
                   </div>
                 </td>
-                <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
+                <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1 ">
                       {t.pledger?.avatar_url && (
@@ -138,12 +138,12 @@ const List = (props: {
                   </div>
                 </td>
 
-                <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
+                <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
                   {formatDate(t.created_at)}
                 </td>
 
                 {showEstimatedPayoutDate && (
-                  <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
+                  <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
                     <div>
                       {(t.scheduled_payout_at &&
                         formatDate(t.scheduled_payout_at)) ||
@@ -153,13 +153,13 @@ const List = (props: {
                 )}
 
                 {showRefundedDate && (
-                  <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
+                  <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
                     {(t.refunded_at && formatDate(t.refunded_at)) || 'Unknown'}
                   </td>
                 )}
 
                 <td className="whitespace-nowrap py-3 pr-3 text-sm">
-                  <div className="text-right text-gray-500">
+                  <div className="dark:text-polar-400 text-right text-gray-500">
                     ${getCentsInDollarString(t.amount.amount, true, true)}
                   </div>
                 </td>

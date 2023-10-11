@@ -248,7 +248,7 @@ const Split = (props: {
                 )}
               </div>
 
-              <div className="text-gray-500">
+              <div className="dark:text-polar-400 text-gray-500">
                 Est. $
                 {getCentsInDollarString(
                   Math.round(s.est_amount * 100) / 100,
@@ -256,11 +256,13 @@ const Split = (props: {
                 )}
               </div>
               <div className="dark:bg-polar-700 flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5">
-                <span className="flex-shrink-0 text-gray-500">%</span>
+                <span className="dark:text-polar-400 flex-shrink-0 text-gray-500">
+                  %
+                </span>
                 <div className="flex-1">
                   <input
                     className={classNames(
-                      'dark:bg-polar-700 w-full bg-white dark:outline-gray-700 ',
+                      'dark:bg-polar-700 dark:placeholder:text-polar-400 w-full bg-white dark:outline-gray-700 ',
                       s.is_fixed
                         ? 'dark:text-polar-100 font-medium text-black'
                         : 'dark:text-polar-400 text-gray-500',
@@ -274,7 +276,7 @@ const Split = (props: {
                 </div>
                 {s.is_fixed && (
                   <XMarkIcon
-                    className="h-6 w-6 flex-shrink-0 cursor-pointer text-gray-500 hover:text-gray-600"
+                    className="hover:text-polar-600 h-6 w-6 flex-shrink-0 cursor-pointer text-gray-500"
                     onClick={() => onUpdate(s.username, '')}
                   />
                 )}
@@ -292,7 +294,7 @@ const Split = (props: {
               </button>
               <input
                 placeholder="Add a GitHub user..."
-                className="dark:bg-polar-900 px-2 py-1 dark:outline-gray-700"
+                className="dark:bg-polar-900 dark:placeholder:text-polar-400 px-2 py-1 dark:outline-gray-700"
                 value={searchGithubUsername}
                 onChange={(e) => setSearchGithubUsername(e.target.value)}
               />
@@ -326,7 +328,7 @@ const Split = (props: {
             </Banner>
           )}
         </div>
-        <div className="bg-gray-75 dark:bg-polar-800 dark:text-polar-400 flex items-center px-4 py-2 text-gray-500">
+        <div className="bg-gray-75 dark:bg-polar-800 dark:text-polar-300 flex items-center px-4 py-2 text-gray-500">
           <InformationCircleIcon className="mr-2 h-6 w-6" />
           <div className="w-1-2 mr-4 flex-1 text-sm">
             Polar&apos;s fee of ${getCentsInDollarString(polarShare, true)} has

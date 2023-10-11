@@ -31,7 +31,7 @@ const DashboardLayout = (props: {
 
   return (
     <div className="relative flex w-full flex-row">
-      <aside className="dark:bg-polar-950 dark:border-r-polar-800 flex h-screen w-[320px] flex-shrink-0 flex-col justify-between border-r border-r-gray-200 bg-white">
+      <aside className="dark:bg-polar-900 dark:border-r-polar-700 flex h-screen w-[320px] flex-shrink-0 flex-col justify-between border-r border-r-gray-200 bg-white">
         <div className="flex flex-col">
           <div className="relative z-10 mt-7 flex translate-x-0 flex-row items-center justify-between space-x-2 pl-9 pr-7">
             <a
@@ -56,11 +56,11 @@ const DashboardLayout = (props: {
         </div>
 
         {showConnectUsell && (
-          <div className="dark:bg-polar-900 dark:border-polar-800 dark:text-polar-400 mx-4 my-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm">
+          <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 mx-4 my-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm">
             <p className="mb-2">Get funding for your public repositories.</p>
             <Link
               href={CONFIG.GITHUB_INSTALLATION_URL}
-              className="font-medium text-blue-600 dark:text-blue-500"
+              className="font-medium text-blue-600"
             >
               Connect repositories
             </Link>
@@ -89,7 +89,7 @@ export const RepoPickerHeader = (props: {
   return (
     <>
       <form
-        className="dark:bg-polar-950/50 dark:border-polar-800 flex flex-col justify-between space-y-2 border-b border-gray-200 bg-gray-100/50 bg-white p-2 !pr-2 backdrop-blur-none lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0 lg:bg-transparent lg:p-0 lg:backdrop-blur"
+        className="dark:bg-polar-900/50 dark:border-polar-700 flex flex-col justify-between space-y-2 border-b border-gray-200 bg-gray-100/50 bg-white p-2 !pr-2 backdrop-blur-none lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0 lg:bg-transparent lg:p-0 lg:backdrop-blur"
         onSubmit={onSubmit}
       >
         <MaintainerRepoSelection

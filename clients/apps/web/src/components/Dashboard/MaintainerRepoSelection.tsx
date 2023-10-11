@@ -13,9 +13,9 @@ const MaintainerRepoSelection = (props: {
   }
 
   return (
-    <div className="dark:border-polar-800 relative flex h-14 w-full shrink-0 border-gray-200 lg:w-fit lg:border-r">
+    <div className="dark:border-polar-700 relative flex h-14 w-full shrink-0 border-gray-200 lg:w-fit lg:border-r">
       <RepoSelection
-        selectedClassNames="pl-2"
+        selectedClassNames="pl-8 pr-8"
         openClassNames="left-2 top-2"
         repositories={props.repositories}
         onSelectAll={() => {

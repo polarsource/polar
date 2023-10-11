@@ -8,10 +8,10 @@ const Contribute = ({ issue }: { issue: Issue }) => {
       <div className="flex items-center gap-4">
         <WrenchScrewdriverIcon className="h-6 w-6" />
         <div>
-          <div className="dark:text-polar-400 font-medium text-gray-600 ">
+          <div className="dark:text-polar-200 font-medium text-gray-600 ">
             Contribution instructions
           </div>
-          <div className="text-sm font-light text-gray-500">
+          <div className="dark:text-polar-400 text-sm font-light text-gray-500">
             Rewards are not guaranteed, but do require these steps
           </div>
         </div>
@@ -80,13 +80,13 @@ const Contribute = ({ issue }: { issue: Issue }) => {
 export default Contribute
 
 const Title = ({ children }: { children: React.ReactNode }) => (
-  <div className="dark:text-polar-400 text-sm font-medium text-gray-600">
+  <div className="dark:text-polar-200 text-sm font-medium text-gray-600">
     {children}
   </div>
 )
 
 const Hashtag = ({ children }: { children: React.ReactNode }) => (
-  <div className="whitespace-nowrap rounded-sm border p-1 font-mono text-xs text-gray-400">
+  <div className="dark:text-polar-400 whitespace-nowrap rounded-sm border px-2 py-1 font-mono text-xs text-gray-400">
     {children}
   </div>
 )

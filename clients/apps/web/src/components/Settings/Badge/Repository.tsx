@@ -71,7 +71,7 @@ const EmbedSetting = ({
   const getTabClasses = (active: boolean) => {
     return classNames(
       active
-        ? 'bg-white rounded-lg text-gray-900 shadow dark:bg-polar-500 dark:text-polar-50'
+        ? 'bg-white rounded-lg text-gray-900 shadow dark:bg-polar-600 dark:text-polar-50'
         : '',
       'cursor-pointer py-1.5 px-2.5 rounded-lg',
     )
@@ -81,7 +81,7 @@ const EmbedSetting = ({
 
   return (
     <>
-      <div className="dark:bg-polar-700 dark:text-polar-400 flex flex-row rounded-lg bg-gray-100 text-sm text-gray-500">
+      <div className="dark:bg-polar-900 dark:text-polar-400 flex flex-row rounded-lg bg-gray-100 text-sm text-gray-500">
         <div
           className={getTabClasses(!isAutoEnabled)}
           onClick={() => {

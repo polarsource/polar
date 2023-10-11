@@ -42,7 +42,7 @@ const List = (props: {
         {title}
       </h2>
       <table className="w-full text-left">
-        <thead className="dark:text-polar-500 text-gray-900">
+        <thead className="dark:text-polar-400 text-gray-900">
           <tr>
             <th
               scope="col"
@@ -102,11 +102,11 @@ const List = (props: {
             </th>
           </tr>
         </thead>
-        <tbody className="dark:border-polar-800 dark:divide-polar-800 divide-y divide-gray-200 border-t border-gray-200">
+        <tbody className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-200 border-t border-gray-200">
           {rewards &&
             rewards.map((t) => (
               <tr key={t.pledge.id}>
-                <td className="px-2 py-3 text-sm text-gray-500">
+                <td className="dark:text-polar-400 px-2 py-3 text-sm text-gray-500">
                   <div className="flex items-center gap-2">
                     {icon(t)}
                     <span className="inline-flex flex-col">
@@ -123,7 +123,7 @@ const List = (props: {
                 </td>
 
                 {showReceiver && (
-                  <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
+                  <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
                     <div className="flex items-center gap-1 ">
                       {t.user?.avatar_url && (
                         <img
@@ -142,7 +142,7 @@ const List = (props: {
                 )}
 
                 {showBacker && (
-                  <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
+                  <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
                     <div className="flex items-center gap-1 ">
                       {t.pledge.pledger?.avatar_url && (
                         <img
@@ -165,12 +165,12 @@ const List = (props: {
                   </td>
                 )}
 
-                <td className="hidden whitespace-nowrap py-3 pr-3 text-sm text-gray-500 md:table-cell">
+                <td className="dark:text-polar-400 hidden whitespace-nowrap py-3 pr-3 text-sm text-gray-500 md:table-cell">
                   {formatDate(t.pledge.created_at)}
                 </td>
 
                 {showPaymentStatus && (
-                  <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
+                  <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
                     <div className="flex flex-wrap items-center gap-2">
                       {t.pledge.type === PledgeType.ON_COMPLETION &&
                         t.pledge.state === PledgeState.CREATED && (
@@ -189,15 +189,15 @@ const List = (props: {
                 )}
 
                 {showPaidOutDate && (
-                  <td className="whitespace-nowrap py-3 pr-3 text-sm text-gray-500 ">
+                  <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
                     {(t.paid_at && formatDate(t.paid_at)) || 'Unknown'}
                   </td>
                 )}
 
-                <td className="whitespace-nowrap py-3 pr-3 text-right text-sm text-gray-500">
+                <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-right text-sm text-gray-500">
                   ${getCentsInDollarString(t.amount.amount, true, true)}
                   <br />
-                  <span className="text-gray-400">
+                  <span className="dark:text-polar-300 text-gray-400">
                     (of $
                     {getCentsInDollarString(t.pledge.amount.amount, true, true)}
                     )

@@ -81,13 +81,13 @@ export const ModalHeader = (props: {
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-800 flex w-full items-center justify-between border-b px-5 py-3',
+        'dark:bg-polar-800 dark:text-polar-100 flex w-full items-center justify-between border-b px-5 py-3',
         props.className,
       )}
     >
       <div>{props.children}</div>
       <button
-        className="dark:text-polar-100 text-black hover:text-gray-800 dark:hover:text-gray-300"
+        className="dark:text-polar-100 dark:hover:text-polar-300 text-black hover:text-gray-800"
         onClick={() => props.hide()}
       >
         <XIcon />

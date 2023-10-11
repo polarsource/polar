@@ -54,7 +54,7 @@ const IssueList = (props: {
   const canAddRemovePolarLabel = props.filters.tab === IssueListType.ISSUES
 
   return (
-    <div className="dark:divide-polar-800 divide-y">
+    <div className="dark:divide-polar-700 divide-y">
       {props.dashboard && (
         <>
           {!props.loading && (
@@ -324,11 +324,11 @@ export const Header = (props: {
   return (
     <div className="flex w-full flex-col items-center justify-normal pr-4 lg:flex-row lg:justify-between">
       <div className="relative w-fit w-full py-2 lg:max-w-[500px]">
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 ">
+        <div className="dark:text-500 pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
           {props.spinner && <Spinner />}
           {!props.spinner && (
             <MagnifyingGlassIcon
-              className="h-5 w-5 text-gray-500"
+              className="dark:text-polar-500 h-5 w-5 text-gray-500"
               aria-hidden="true"
             />
           )}
@@ -337,23 +337,23 @@ export const Header = (props: {
           type="text"
           name="query"
           id="query"
-          className="dark:bg-polar-800 dark:text-polar-200 dark:ring-polar-700 block w-full rounded-md border-0 bg-transparent  py-2 pl-10 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+          className="dark:bg-polar-700 dark:text-polar-200 dark:ring-polar-700 dark:placeholder:text-polar-400 block w-full rounded-md border-0 bg-transparent py-2 pl-10 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
           placeholder="Search issues"
           onChange={onQueryChange}
           value={props.filters.q || ''}
         />
       </div>
 
-      <div className="flex w-full flex-shrink-0 items-center justify-center space-x-12 lg:w-fit lg:justify-start lg:space-x-6 lg:space-y-0 lg:space-y-0 ">
+      <div className="flex w-full flex-shrink-0 items-center justify-center space-x-12 lg:w-fit lg:justify-start lg:space-x-6 lg:space-y-0">
         {canFilterByBadged && (
           <>
             <DropdownMenu>
-              <DropdownMenuTrigger className="dark:text-polar-100 inline-flex flex-shrink-0 items-center space-x-2 text-sm text-gray-900">
-                <FunnelIcon className="h-4 w-4 text-black dark:text-white" />
-                <span className="font-medium">Filter</span>
+              <DropdownMenuTrigger className="dark:text-polar-300 inline-flex flex-shrink-0 items-center space-x-2 text-sm text-gray-900">
+                <FunnelIcon className="dark:text-polar-300 h-4 w-4 text-black" />
+                <span>Filter</span>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent>
+              <DropdownMenuContent className="dark:bg-polar-700">
                 <DropdownMenuLabel>Filter</DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
@@ -375,16 +375,16 @@ export const Header = (props: {
         )}
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="dark:text-polar-100 inline-flex flex-shrink-0 items-center space-x-2 text-sm text-gray-900">
-            <ArrowsUpDownIcon className="h-4 w-4 text-black dark:text-white" />
-            <span className="font-medium">
+          <DropdownMenuTrigger className="dark:text-polar-300 inline-flex flex-shrink-0 items-center space-x-2 text-sm text-gray-900">
+            <ArrowsUpDownIcon className="dark:text-polar-300 h-4 w-4 text-black" />
+            <span>
               {props.filters?.sort
                 ? getTitle(props.filters?.sort)
                 : 'Most wanted'}
             </span>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent>
+          <DropdownMenuContent className="dark:bg-polar-700">
             <DropdownMenuLabel>Sort issues by</DropdownMenuLabel>
             <DropdownMenuSeparator />
 

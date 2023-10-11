@@ -82,13 +82,14 @@ _If you already have a Polar account setup, you don't need to do anything._
       <div className="space-y-4 pt-4">
         <div className="flex flex-col gap-4 px-4">
           <Textarea
+            className="dark:text-polar-200"
             value={value}
             onChange={(e) => setValue(e.target.value)}
             rows={14}
           ></Textarea>
           <div className="flex flex-row items-center gap-4">
             <img src={props.user.avatar_url} className="h-8 w-8 rounded-full" />
-            <span className="text-gray-500">
+            <span className="dark:text-polar-200 text-gray-500">
               Comment will be posted on your behalf to issue{' '}
               <a href={githubIssueLink(props.issue)} className="font-medium">
                 #{props.issue.number}

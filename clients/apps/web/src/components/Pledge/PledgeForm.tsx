@@ -105,7 +105,7 @@ const PledgeForm = ({
       <form className="flex flex-col">
         <label
           htmlFor="action"
-          className="dark:text-polar-400 mb-2 text-sm font-medium text-gray-500"
+          className="dark:text-polar-200 mb-2 text-sm font-medium text-gray-500"
         >
           I want to&hellip;
         </label>
@@ -113,14 +113,14 @@ const PledgeForm = ({
         <Tabs defaultValue="fund" className="">
           <TabsList
             className={twMerge(
-              'dark:bg-polar-700 grid h-fit w-full grid-cols-2 grid-rows-1',
+              'dark:bg-polar-950 grid h-fit w-full grid-cols-2 grid-rows-1',
             )}
           >
             <TabsTrigger
               value="fund"
-              className="dark:text-polar-300 text-gray-500 data-[state=active]:text-red-600 dark:data-[state=active]:text-red-600"
+              className="dark:text-polar-300 dark:data-[state=active]:bg-polar-700 text-gray-500 data-[state=active]:text-red-600 dark:data-[state=active]:text-red-600"
             >
-              <div className="flex w-full items-center justify-center  gap-4 px-1 text-left">
+              <div className="flex w-full items-center justify-center gap-4 px-1 text-left">
                 <HeartIcon className="h-6 w-6" />
                 <div className="dark:text-polar-300 text-sm font-medium text-gray-700">
                   Fund
@@ -130,7 +130,7 @@ const PledgeForm = ({
 
             <TabsTrigger
               value="contribute"
-              className="dark:text-polar-300 data-[state=active]:text-gray-600 dark:data-[state=active]:text-green-400"
+              className="dark:text-polar-300 dark:data-[state=active]:bg-polar-700 data-[state=active]:text-gray-600 dark:data-[state=active]:text-green-400"
             >
               <div className="flex w-full items-center justify-center  gap-4 px-1 text-left">
                 <CommandLineIcon className="h-6 w-6 " />
@@ -174,7 +174,7 @@ const Fund = ({
       <div>
         <label
           htmlFor="funding_method"
-          className="dark:text-polar-400 mb-2 text-sm font-medium text-gray-500"
+          className="dark:text-polar-200 mb-2 text-sm font-medium text-gray-500"
         >
           Funding method
         </label>
@@ -182,7 +182,7 @@ const Fund = ({
         <Tabs defaultValue="fund_today" className="">
           <TabsList
             className={twMerge(
-              'dark:bg-polar-700 grid h-fit w-full grid-cols-1 grid-rows-2',
+              'dark:bg-polar-950 grid h-fit w-full grid-cols-1 grid-rows-2',
             )}
           >
             <FundingMethodTab
@@ -215,7 +215,7 @@ const Fund = ({
         </Tabs>
       </div>
 
-      <p className="text-sm text-gray-600">
+      <p className="dark:text-polar-500 text-sm text-gray-600">
         By funding this issue, you agree to our{' '}
         <Link href="https://polar.sh/legal/terms" className="underline">
           Terms of Service
@@ -241,11 +241,11 @@ const FundingMethodTab = ({
   title: string
   subtitle: string
 }) => (
-  <TabsTrigger value={value}>
+  <TabsTrigger value={value} className="dark:data-[state=active]:bg-polar-700">
     <div className="flex w-full items-center gap-4 px-1 text-left">
       {icon}
       <div>
-        <div className='font-medium" dark:text-polar-300 text-sm text-gray-700'>
+        <div className='font-medium" dark:text-polar-100 text-sm text-gray-700'>
           {title}
         </div>
         <div className="dark:text-polar-400 text-xs font-normal text-gray-600">
@@ -538,7 +538,7 @@ const FundToday = ({
       <div>
         <label
           htmlFor="amount"
-          className="dark:text-polar-400 mb-2 text-sm font-medium text-gray-500"
+          className="dark:text-polar-200 mb-2 text-sm font-medium text-gray-500"
         >
           Funding amount
         </label>
@@ -569,7 +569,7 @@ const FundToday = ({
       <div>
         <label
           htmlFor="email"
-          className="dark:text-polar-400 mb-2 text-sm font-medium text-gray-500"
+          className="dark:text-polar-200 mb-2 text-sm font-medium text-gray-500"
         >
           Contact details
         </label>
@@ -586,7 +586,7 @@ const FundToday = ({
             }}
           />
           <div className="pointer-events-none absolute inset-y-0 left-0 z-20 flex items-center pl-3 text-lg">
-            <span className="text-gray-500">
+            <span className="dark:text-polar-500 text-gray-500">
               <EnvelopeIcon className="h-6 w-6" />
             </span>
           </div>

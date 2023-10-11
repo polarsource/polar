@@ -17,7 +17,7 @@ export const Item = ({
     <Command.Item
       value={value}
       onSelect={onSelect}
-      className="py-4rounded-md flex h-10 cursor-pointer select-none items-center rounded-md p-2 transition-colors duration-100 first:mt-2 aria-selected:bg-gray-100 dark:aria-selected:bg-gray-600"
+      className="py-4rounded-md dark:aria-selected:bg-polar-600 flex h-10 cursor-pointer select-none items-center rounded-md p-2 transition-colors duration-100 first:mt-2 aria-selected:bg-gray-100"
     >
       <div className="flex w-full max-w-full items-center justify-between space-x-2">
         {children}
@@ -91,7 +91,7 @@ export const SelectedBox = ({
       onClick={onClick}
     >
       {children}
-      <ChevronUpDownIcon className="dark:text-polar-400 h-6 w-6 flex-shrink-0 text-gray-500" />
+      <ChevronUpDownIcon className="dark:text-polar-300 h-6 w-6 flex-shrink-0 text-gray-500" />
     </div>
   )
 }

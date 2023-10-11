@@ -111,11 +111,13 @@ const IssueReferenceExternalGitHubCommit = (props: {
   return (
     <>
       <LeftSide>
-        <GitBranchIcon />
+        <span className="dark:text-polar-200">
+          <GitBranchIcon />
+        </span>
         <span className="inline-flex space-x-2">
           {commit.branch_name && (
             <a
-              className="font-mono"
+              className="dark:text-polar-100 font-mono"
               href={`${baseHref}/tree/${commit.branch_name}`}
             >
               {isFork && (
@@ -129,7 +131,10 @@ const IssueReferenceExternalGitHubCommit = (props: {
           )}
 
           {!commit.branch_name && (
-            <a className="font-mono text-gray-500" href={commitHref}>
+            <a
+              className="dark:text-polar-400 font-mono text-gray-500"
+              href={commitHref}
+            >
               {commit.sha.substring(0, 6)}
             </a>
           )}
@@ -283,7 +288,7 @@ const IssueReferencePullRequest = (props: {
         >
           {markdownTitle}
         </a>
-        <span className="overflow-hidden whitespace-pre text-sm text-gray-500 dark:text-white/50">
+        <span className="dark:text-polar-400 overflow-hidden whitespace-pre text-sm text-gray-500">
           #{pr.number} {formatting.label}{' '}
           {formatting.timestamp && <PolarTimeAgo date={formatting.timestamp} />}
         </span>

@@ -66,11 +66,11 @@ export const Badge = ({
           borderRadius: 11,
           boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.06)',
           border: darkmode
-            ? '1px solid rgba(255, 255, 255, 0.08)'
+            ? '1px solid rgba(255, 255, 255, 0.05)'
             : '1px solid rgba(0, 0, 0, 0.11)',
 
           overflow: 'hidden',
-          backgroundColor: darkmode ? '#3E3F42' /*gray-700*/ : 'white',
+          backgroundColor: darkmode ? '#13151D' /*gray-700*/ : 'white',
           fontFamily: 'Inter',
           // width: 'fit-content',
         }}
@@ -92,7 +92,7 @@ export const Badge = ({
           >
             <div
               style={{
-                backgroundColor: darkmode ? '#5A82D7' /*blue-500*/ : '#4667CA', // blue-600
+                backgroundColor: darkmode ? '#4667CA' /*blue-500*/ : '#4667CA', // blue-600
                 color: 'white',
                 padding: 4,
                 marginLeft: 6,
@@ -119,7 +119,7 @@ export const Badge = ({
                   fontWeight: 500,
                   fontSize: 13,
                   lineHeight: 20,
-                  color: darkmode ? '#FDFDFC' : '#3E3F42', // gray-700
+                  color: darkmode ? '#D7D9E5' : '#3E3F42', // gray-700
                 }}
               >
                 <div
@@ -141,7 +141,7 @@ export const Badge = ({
                   </span>
                   <span
                     style={{
-                      color: darkmode ? '#A3A3A3' : '#727374',
+                      color: darkmode ? '#9499AF' : '#727374',
                       fontWeight: 400,
                     }}
                   >
@@ -169,7 +169,7 @@ export const Badge = ({
                   <div
                     style={{
                       display: 'flex',
-                      color: darkmode ? '#D1D1CC' : '#727374', // gray-500
+                      color: darkmode ? '#9499AF' : '#727374', // gray-500
                       gap: '2px',
                       flexShrink: '0',
                     }}
@@ -177,7 +177,7 @@ export const Badge = ({
                     <span
                       style={{
                         fontWeight: 'medium',
-                        color: darkmode ? '#FDFDFC' : '#3E3F42', // gray-700
+                        color: darkmode ? '#D7D9E5' : '#3E3F42', // gray-700
                         flexShrink: '0',
                       }}
                     >
@@ -259,7 +259,7 @@ export const Badge = ({
                       width: 22,
                       borderRadius: 22,
                       border: darkmode
-                        ? '1px solid #3E3F43'
+                        ? '1px solid #13151D'
                         : '1px solid white',
                       marginLeft: idx > 0 ? '-6px' : '',
                       flexShrink: '0',
@@ -280,7 +280,7 @@ export const Badge = ({
                       fontSize: '8px',
                       lineHeight: '20px',
                       border: darkmode
-                        ? '1px solid #3E3F43'
+                        ? '1px solid #13151D'
                         : '1px solid white',
                       display: 'flex',
                       alignItems: 'center',
@@ -297,13 +297,15 @@ export const Badge = ({
             <div
               style={{
                 display: 'flex',
-                backgroundColor: darkmode ? '#505153' /*gray-600*/ : '#FDFDFC', // gray-50
+                backgroundColor: darkmode ? '#1B1D29' /*polar-700*/ : '#FDFDFC', // gray-50
                 height: 40,
                 flexDirection: 'row',
                 alignItems: 'center',
                 paddingLeft: 12,
                 paddingRight: 12,
-                borderLeft: darkmode ? 'none' : '1px solid rgba(0, 0, 0, 0.05)',
+                borderLeft: darkmode
+                  ? '1px solid rgba(255, 255, 255, 0.05)'
+                  : '1px solid rgba(0, 0, 0, 0.05)',
                 flexShrink: '0',
               }}
             >
@@ -403,8 +405,8 @@ export const Badge = ({
             <div
               style={{
                 color: darkmode ? '#a6c7ea' : '#4667CA',
-                background: darkmode ? '#3E3F42' : 'white',
-                border: darkmode ? '1px solid #505153' : '1px solid #C9DBF4',
+                background: darkmode ? '#464B64' : 'white',
+                border: darkmode ? '1px solid #5E637D' : '1px solid #C9DBF4',
                 borderRadius: 8,
                 padding: '4px 8px',
                 display: 'flex',

@@ -57,7 +57,7 @@ export default function Page() {
 
   return (
     <div className="mt-2 space-y-10">
-      <div className="space-y-10 lg:px-5">
+      <div className="space-y-10">
         {showPendingRewardsBanner && (
           <Banner color="blue">
             <div className="flex w-full items-center justify-between">

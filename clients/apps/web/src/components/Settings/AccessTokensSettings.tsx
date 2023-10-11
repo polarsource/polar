@@ -86,14 +86,14 @@ const AccessToken = (
         <div className="flex flex-row">
           <div className="gap-y flex flex-col">
             <h3 className="text-md">{props.comment}</h3>
-            <p className="text-sm text-gray-500">
+            <p className="dark:text-polar-400 text-sm text-gray-500">
               <FormattedDateTime datetime={props.created_at} dateStyle="long" />
             </p>
           </div>
         </div>{' '}
-        <div className="dark:text-polar-500 flex flex-row items-center space-x-4 text-gray-500">
+        <div className="dark:text-polar-400 flex flex-row items-center space-x-4 text-gray-500">
           {props.last_used_at && (
-            <span>{new Date(props.last_used_at).toLocaleDateString()}</span>
+            <FormattedDateTime datetime={props.last_used_at} dateStyle="long" />
           )}
           <ThinButton
             color="red"
@@ -165,7 +165,7 @@ export const AccessTokensBox = (props: {
           })
         ) : (
           <ShadowListGroup.Item>
-            <p className="dark:text-polar-500 text-sm text-gray-500">
+            <p className="dark:text-polar-400 text-sm text-gray-500">
               You don&apos;t have any active Access Tokens.
             </p>
           </ShadowListGroup.Item>

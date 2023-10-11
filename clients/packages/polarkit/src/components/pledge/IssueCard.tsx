@@ -86,7 +86,7 @@ const IssueCard = ({
               </a>
             </div>
           )}
-          <div className="dark:text-polar-600 whitespace-nowrap text-gray-400">
+          <div className="dark:text-polar-400 whitespace-nowrap text-gray-400">
             <PolarTimeAgo date={new Date(issue.issue_created_at)} />
           </div>
         </div>
@@ -125,7 +125,7 @@ const IssueCard = ({
             Read more
           </a>
         </div>
-        <hr className="dark:border-polar-600 my-4" />
+        <hr className="dark:border-polar-500 my-4" />
       </div>
       {/* Repository */}
       <div className="dark:text-polar-400 grid grid-cols-1 text-gray-600 sm:grid-cols-3">
@@ -139,10 +139,10 @@ const IssueCard = ({
               className="h-8 w-8 rounded-full"
             />
           </div>
-          <div className="dark:text-polar-600 text-gray-400">
+          <div className="dark:text-polar-500 text-gray-400">
             <div>
               {organization.name}&nbsp;/&nbsp;
-              <span className="dark:text-polar-400 font-medium text-gray-600">
+              <span className="dark:text-polar-200 font-medium text-gray-600">
                 {repository.name}
               </span>
             </div>
@@ -243,7 +243,7 @@ const FundingGoal = ({
       <div className="flex flex-col items-center sm:items-start">
         <div className="dark:text-polar-300 text-lg text-gray-900">
           ${getCentsInDollarString(pledges_sum?.amount || 0)}{' '}
-          <span className="dark:text-polar-600 text-gray-400">
+          <span className="dark:text-polar-300 text-gray-400">
             {!funding_goal && 'pledged'}
             {funding_goal &&
               `/ ${getCentsInDollarString(funding_goal.amount)} pledged`}

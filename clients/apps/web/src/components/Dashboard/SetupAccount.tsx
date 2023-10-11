@@ -113,7 +113,7 @@ const SetupAccount = ({
         <div className="flex w-full items-start justify-between">
           <h1 className="text-2xl font-normal">Receive payments</h1>
           <XMarkIcon
-            className="h-6 w-6 cursor-pointer hover:text-gray-500 dark:hover:text-gray-400"
+            className="dark:hover:text-polar-400 h-6 w-6 cursor-pointer hover:text-gray-500"
             onClick={onClose}
           />
         </div>

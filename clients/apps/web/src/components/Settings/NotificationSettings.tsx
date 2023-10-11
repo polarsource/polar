@@ -88,8 +88,8 @@ export const NotificationSettingsBox = (props: {
             })
           }}
         />
-        <span className="inline-flex items-center space-x-1 text-gray-500">
-          <InformationCircleIcon className="h-5 w-5 text-gray-400" />
+        <span className="dark:text-polar-400 inline-flex items-center space-x-1 text-sm text-gray-500">
+          <InformationCircleIcon className="dark:text-polar-400 h-5 w-5 text-gray-400" />
           <span>
             You&apos;ll always receive emails about pledges and transactions
           </span>

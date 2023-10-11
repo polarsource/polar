@@ -31,7 +31,7 @@ const PaymentMethodSettings = () => {
   }
 
   return (
-    <div className="dark:text-polar-200 flex w-full flex-col divide-y rounded-md border text-gray-900">
+    <div className="dark:text-polar-200 dark:border-polar-600 flex w-full flex-col divide-y rounded-xl border text-gray-900">
       {paymentMethods.data?.items?.length === 0 && (
         <div className="dark:text-polar:300 p-4 text-sm text-gray-500">
           You don&apos;t have any saved payment methods yet. You can add one
@@ -95,7 +95,7 @@ const PaymentMethodItem = ({ pm }: { pm: PaymentMethod }) => {
       {!isDetaching && (
         <div>
           <XMarkIcon
-            className="dark:text-polar-400 h-4 w-4 cursor-pointer text-gray-600 hover:text-gray-700 dark:hover:text-gray-300"
+            className="dark:text-polar-400 dark:hover:text-polar-300 h-4 w-4 cursor-pointer text-gray-600 hover:text-gray-700"
             onClick={onDetach}
           />
         </div>

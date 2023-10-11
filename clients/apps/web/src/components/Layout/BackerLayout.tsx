@@ -28,7 +28,7 @@ const BackerLayout = (props: {
 
   return (
     <div className="relative flex w-full flex-row">
-      <aside className="dark:bg-polar-950 dark:border-r-polar-800 flex h-screen w-[320px] flex-shrink-0 flex-col justify-between border-r border-r-gray-200 bg-white">
+      <aside className="dark:bg-polar-900 dark:border-r-polar-700 flex h-screen w-[320px] flex-shrink-0 flex-col justify-between border-r border-r-gray-200 bg-white">
         <div className="flex flex-col">
           <div className="relative z-10 mt-7 flex translate-x-0 flex-row items-center justify-between space-x-2 pl-9 pr-7">
             <a
@@ -52,12 +52,9 @@ const BackerLayout = (props: {
           <SidebarNavigation />
         </div>
 
-        <div className="dark:bg-polar-900 dark:border-polar-800 dark:text-polar-400 mx-4 my-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm">
+        <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 mx-4 my-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm">
           <p className="mb-2">Waiting for a bug to be fixed?</p>
-          <Link
-            href="/new"
-            className="font-medium text-blue-600 dark:text-blue-500"
-          >
+          <Link href="/new" className="font-medium text-blue-600">
             Fund a Github issue
           </Link>
         </div>

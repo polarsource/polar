@@ -71,7 +71,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
                 return <IssueLabel label={label} key={label.name} />
               })}
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="dark:text-polar-400 text-xs text-gray-500">
             <p>
               #{number}{' '}
               {isOpen ? (
@@ -91,10 +91,10 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-6">
           {showStatus && (
-            <div className="flex flex-row items-center gap-2 text-sm text-gray-500">
+            <div className="dark:text-polar-400 flex flex-row items-center gap-2 text-sm text-gray-500">
               {isOpen ? (
                 <>
-                  <div className="h-4 w-4 rounded-full border border-gray-500"></div>
+                  <div className="dark:border-polar-500 h-4 w-4 rounded-full border border-gray-500"></div>
                   <span>Open</span>
                 </>
               ) : (

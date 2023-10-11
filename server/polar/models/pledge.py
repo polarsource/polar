@@ -97,12 +97,24 @@ class Pledge(RecordModel):
         default=None,
     )
 
+    on_behalf_of_organization_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("organizations.id"),
+        nullable=True,
+        index=True,
+        default=None,
+    )
+
     user: Mapped[User | None] = relationship(
         "User", foreign_keys=[by_user_id], lazy="raise"
     )
 
     by_organization: Mapped[Organization] = relationship(
         "Organization", foreign_keys=[by_organization_id], lazy="raise"
+    )
+
+    on_behalf_of_organization: Mapped[Organization] = relationship(
+        "Organization", foreign_keys=[on_behalf_of_organization_id], lazy="raise"
     )
 
     to_repository: Mapped[Repository] = relationship(

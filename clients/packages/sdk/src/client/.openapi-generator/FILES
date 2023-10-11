@@ -18,7 +18,6 @@ apis/RewardsApi.ts
 apis/StreamApi.ts
 apis/UsersApi.ts
 apis/index.ts
-index.ts
 models/Account.ts
 models/AccountCreate.ts
 models/AccountLink.ts

@@ -7,6 +7,7 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "storybook": "turbo run build --filter=@polar-sh/sdk && cd apps/web && pnpm storybook",
+    "generate": "cd packages/sdk && pnpm generate",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "preinstall": "npx only-allow pnpm"
   },

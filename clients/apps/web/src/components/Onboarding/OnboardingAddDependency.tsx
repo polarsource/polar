@@ -24,7 +24,7 @@ const OnboardingAddDependency = () => {
     id: '',
     avatar_url: 'https://avatars.githubusercontent.com/u/110818415?s=200&v=4',
     platform: Platforms.GITHUB,
-    name: 'x',
+    name: 'demo',
     pledge_minimum_amount: 2000,
     pledge_badge_show_amount: true,
   }
@@ -32,7 +32,7 @@ const OnboardingAddDependency = () => {
     platform: Platforms.GITHUB,
     id: 'x',
     visibility: Visibility.PUBLIC,
-    name: 'x',
+    name: 'repo',
     organization: demoOrg,
   }
   const demoIssue: Issue = {
@@ -92,6 +92,18 @@ const OnboardingAddDependency = () => {
         organization_name: 'x',
         repository_name: 'x',
         sha: 'xx',
+      },
+      pull_request_reference: {
+        id: 'x',
+        title: 'Add UserInfo endpoint',
+        author_login: 'x',
+        author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+        number: 2341,
+        additions: 318,
+        deletions: 186,
+        state: 'yyy',
+        created_at: twoHoursAgo,
+        is_draft: false,
       },
     },
   ]

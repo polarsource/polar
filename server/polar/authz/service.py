@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import Depends
 
 from polar.issue.service import issue as issue_service
+from polar.models import SubscriptionGroup
 from polar.models.account import Account
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
@@ -31,7 +32,16 @@ class AccessType(str, Enum):
     write = "write"
 
 
-Object = User | Organization | Repository | Account | IssueReward | Issue | Pledge
+Object = (
+    User
+    | Organization
+    | Repository
+    | Account
+    | IssueReward
+    | Issue
+    | Pledge
+    | SubscriptionGroup
+)
 
 
 class Authz:
@@ -172,6 +182,21 @@ class Authz:
             and isinstance(object, Pledge)
         ):
             return await self._can_user_write_pledge(subject, object)
+
+        #
+        # SubscriptionGroup
+        #
+        if (
+            isinstance(subject, User)
+            and accessType == AccessType.write
+            and isinstance(object, SubscriptionGroup)
+        ):
+            if object.organization:
+                return await self._can_user_write_organization(
+                    subject, object.organization
+                )
+            if object.repository:
+                return await self._can_user_write_repository(subject, object.repository)
 
         raise Exception(
             f"Unknown subject/action/object combination. subject={type(subject)} access={accessType} object={type(object)}"  # noqa: E501

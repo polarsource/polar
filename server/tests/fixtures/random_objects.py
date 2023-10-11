@@ -284,6 +284,20 @@ async def user_organization(
 
 
 @pytest_asyncio.fixture(scope="function")
+async def user_organization_admin(
+    session: AsyncSession,
+    organization: Organization,
+    user: User,
+) -> UserOrganization:
+    a = await UserOrganization.create(
+        session=session, user_id=user.id, organization_id=organization.id, is_admin=True
+    )
+
+    await session.commit()
+    return a
+
+
+@pytest_asyncio.fixture(scope="function")
 async def user_organization_second(
     session: AsyncSession,
     organization: Organization,

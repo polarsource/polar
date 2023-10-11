@@ -1,4 +1,3 @@
-const axios = require('axios')
 const fs = require('fs')
 
 const OVERRIDE_MAPPING = {}
@@ -63,8 +62,8 @@ const convert = (schema) => {
 }
 
 const getOpenAPISchema = async (schemaUrl) => {
-  const schema = await axios.get(schemaUrl).then((response) => {
-    return response.data
+  const schema = await fetch(schemaUrl).then((response) => {
+    return response.json()
   })
   return schema
 }

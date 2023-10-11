@@ -8,7 +8,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import Organization, Repository
+    from polar.models import Organization, Repository, SubscriptionTier
 
 
 class SubscriptionGroup(RecordModel):
@@ -32,3 +32,7 @@ class SubscriptionGroup(RecordModel):
         nullable=True,
     )
     repository: Mapped["Repository | None"] = relationship("Repository", lazy="raise")
+
+    tiers: Mapped[list["SubscriptionTier"]] = relationship(
+        "SubscriptionTier", lazy="raise", back_populates="subscription_group"
+    )

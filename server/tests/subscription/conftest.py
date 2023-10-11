@@ -82,3 +82,12 @@ async def subscription_tier_organization(
     return await create_subscription_tier(
         session, subscription_group=subscription_group_organization
     )
+
+
+@pytest_asyncio.fixture
+async def subscription_tiers(
+    subscription_tier_organization: SubscriptionTier,
+) -> list[SubscriptionTier]:
+    return [
+        subscription_tier_organization,
+    ]

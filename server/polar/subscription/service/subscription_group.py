@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from sqlalchemy import ColumnExpressionArgument, Select, or_, select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.authz.service import AccessType, Authz, Subject
 from polar.exceptions import PolarError
@@ -55,6 +55,8 @@ class SubscriptionGroupService(
         pagination: PaginationParams,
     ) -> tuple[Sequence[SubscriptionGroup], int]:
         statement = self._get_readable_subscription_group_statement(auth_subject)
+
+        statement = statement.options(selectinload(SubscriptionGroup.tiers))
 
         if organization is not None:
             clauses = [SubscriptionGroup.organization_id == organization.id]
@@ -112,7 +114,7 @@ class SubscriptionGroupService(
             ):
                 raise RepositoryDoesNotExist(create_schema.repository_id)
 
-        return await super().create(session, create_schema)
+        return await self.model.create(session, **create_schema.dict(), tiers=[])
 
     def _get_readable_subscription_group_statement(
         self, auth_subject: Subject

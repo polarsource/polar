@@ -2,7 +2,7 @@ from typing import Any
 
 from pydantic import UUID4, root_validator
 
-from polar.kit.schemas import Schema
+from polar.kit.schemas import Schema, TimestampedSchema
 
 
 class SubscriptionGroupCreate(Schema):
@@ -35,7 +35,8 @@ class SubscriptionGroupUpdate(Schema):
     order: int | None = None
 
 
-class SubscriptionGroup(Schema):
+class SubscriptionGroup(TimestampedSchema):
+    id: UUID4
     name: str
     order: int
     organization_id: UUID4 | None = None

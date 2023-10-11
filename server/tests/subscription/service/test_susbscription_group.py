@@ -2,7 +2,8 @@ import uuid
 
 import pytest
 
-from polar.authz.service import Authz
+from polar.authz.service import Anonymous, Authz
+from polar.kit.pagination import PaginationParams
 from polar.models import (
     Organization,
     Repository,
@@ -24,6 +25,102 @@ from polar.subscription.service.subscription_group import (
 @pytest.fixture
 def authz(session: AsyncSession) -> Authz:
     return Authz(session)
+
+
+@pytest.mark.asyncio
+class TestSearch:
+    async def test_anonymous(
+        self, session: AsyncSession, subscription_groups: list[SubscriptionGroup]
+    ) -> None:
+        results, count = await subscription_group_service.search(
+            session, Anonymous(), pagination=PaginationParams(1, 10)
+        )
+
+        assert count == 2
+        assert len(results) == 2
+        assert results[0].id == subscription_groups[0].id
+        assert results[1].id == subscription_groups[1].id
+
+    async def test_user(
+        self,
+        session: AsyncSession,
+        subscription_groups: list[SubscriptionGroup],
+        user: User,
+    ) -> None:
+        results, count = await subscription_group_service.search(
+            session, user, pagination=PaginationParams(1, 10)
+        )
+
+        assert count == 2
+        assert len(results) == 2
+        assert results[0].id == subscription_groups[0].id
+        assert results[1].id == subscription_groups[1].id
+
+    async def test_user_organization(
+        self,
+        session: AsyncSession,
+        user: User,
+        subscription_groups: list[SubscriptionGroup],
+        user_organization: UserOrganization,
+    ) -> None:
+        results, count = await subscription_group_service.search(
+            session, user, pagination=PaginationParams(1, 10)
+        )
+
+        assert count == 3
+        assert len(results) == 3
+
+    async def test_filter_organization_direct(
+        self,
+        session: AsyncSession,
+        user: User,
+        organization: Organization,
+        subscription_groups: list[SubscriptionGroup],
+        subscription_group_organization: SubscriptionGroup,
+    ) -> None:
+        results, count = await subscription_group_service.search(
+            session, user, organization=organization, pagination=PaginationParams(1, 10)
+        )
+
+        assert count == 1
+        assert len(results) == 1
+        assert results[0].id == subscription_group_organization.id
+
+    async def test_filter_organization_indirect(
+        self,
+        session: AsyncSession,
+        user: User,
+        organization: Organization,
+        subscription_groups: list[SubscriptionGroup],
+        user_organization: UserOrganization,
+    ) -> None:
+        results, count = await subscription_group_service.search(
+            session,
+            user,
+            organization=organization,
+            direct_organization=False,
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert count == 3
+        assert len(results) == 3
+
+    async def test_filter_repository(
+        self,
+        session: AsyncSession,
+        user: User,
+        repository: Repository,
+        subscription_groups: list[SubscriptionGroup],
+        subscription_group_private_repository: SubscriptionGroup,
+        user_organization: UserOrganization,
+    ) -> None:
+        results, count = await subscription_group_service.search(
+            session, user, repository=repository, pagination=PaginationParams(1, 10)
+        )
+
+        assert count == 1
+        assert len(results) == 1
+        assert results[0].id == subscription_group_private_repository.id
 
 
 @pytest.mark.asyncio

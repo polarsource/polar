@@ -77,6 +77,12 @@ verify_github_app = "polar.verify_github_app:main"
 markers = ["authenticated"]
 asyncio_mode = "strict"
 
+[tool.coverage.run]
+concurrency = ["greenlet"]
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]  # See: https://github.com/nedbat/coveragepy/issues/831
+
 [tool.ruff]
 target-version = "py311"
 ignore = [

@@ -12,14 +12,11 @@
   ],
   "scripts": {
     "download": "node scripts/generate-schema.js http://127.0.0.1:8000/openapi.json openapi/source.json openapi/updated.json",
-    "generate:schema": "pnpm download && ./generate",
-    "generate:docs": "openapi-to-md ./openapi/updated.json README.md",
-    "generate": "pnpm run generate:schema && pnpm run generate:docs",
+    "generate": "pnpm download && ./generate",
     "build": "tsup src/index.ts --format cjs,esm --dts",
     "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {
-    "openapi-to-md": "^1.0.24",
     "tsconfig": "workspace:*",
     "tsup": "^7.2.0",
     "typescript": "5.0.4"

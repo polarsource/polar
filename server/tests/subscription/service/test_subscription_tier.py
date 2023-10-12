@@ -8,11 +8,18 @@ from polar.auth.dependencies import AuthMethod
 from polar.authz.service import Anonymous, Authz
 from polar.exceptions import NotPermitted
 from polar.integrations.stripe.service import StripeError
-from polar.models import SubscriptionGroup, SubscriptionTier, User, UserOrganization
+from polar.models import (
+    Account,
+    SubscriptionGroup,
+    SubscriptionTier,
+    User,
+    UserOrganization,
+)
 from polar.postgres import AsyncSession
 from polar.subscription.schemas import SubscriptionTierCreate, SubscriptionTierUpdate
 from polar.subscription.service.subscription_tier import (
     ArchivedSubscriptionTier,
+    NoAssociatedPayoutAccount,
     NotAddedToStripeSubscriptionTier,
     SubscriptionGroupDoesNotExist,
 )
@@ -225,30 +232,52 @@ class TestArchive:
 @pytest.mark.asyncio
 class TestGetCheckoutSessionURL:
     async def test_archived_subscription_tier(
-        self, subscription_tier_organization: SubscriptionTier
+        self, session: AsyncSession, subscription_tier_organization: SubscriptionTier
     ) -> None:
         subscription_tier_organization.is_archived = True
 
         with pytest.raises(ArchivedSubscriptionTier):
             await subscription_tier_service.get_checkout_session_url(
-                subscription_tier_organization, "SUCCESS_URL", Anonymous(), None
+                session,
+                subscription_tier_organization,
+                "SUCCESS_URL",
+                Anonymous(),
+                None,
             )
 
     async def test_not_added_to_stripe_subscription_tier(
-        self, subscription_tier_organization: SubscriptionTier
+        self, session: AsyncSession, subscription_tier_organization: SubscriptionTier
     ) -> None:
         subscription_tier_organization.stripe_product_id = None
         subscription_tier_organization.stripe_price_id = None
 
         with pytest.raises(NotAddedToStripeSubscriptionTier):
             await subscription_tier_service.get_checkout_session_url(
-                subscription_tier_organization, "SUCCESS_URL", Anonymous(), None
+                session,
+                subscription_tier_organization,
+                "SUCCESS_URL",
+                Anonymous(),
+                None,
+            )
+
+    async def test_no_associated_payout_account_subscription_tier(
+        self, session: AsyncSession, subscription_tier_organization: SubscriptionTier
+    ) -> None:
+        with pytest.raises(NoAssociatedPayoutAccount):
+            await subscription_tier_service.get_checkout_session_url(
+                session,
+                subscription_tier_organization,
+                "SUCCESS_URL",
+                Anonymous(),
+                None,
             )
 
     async def test_valid_anonymous(
         self,
+        session: AsyncSession,
         subscription_tier_organization: SubscriptionTier,
         mock_stripe_service: MagicMock,
+        organization_account: Account,
     ) -> None:
         create_subscription_checkout_session_mock: MagicMock = (
             mock_stripe_service.create_subscription_checkout_session
@@ -258,7 +287,7 @@ class TestGetCheckoutSessionURL:
         )
 
         url = await subscription_tier_service.get_checkout_session_url(
-            subscription_tier_organization, "SUCCESS_URL", Anonymous(), None
+            session, subscription_tier_organization, "SUCCESS_URL", Anonymous(), None
         )
 
         assert url == "STRIPE_URL"
@@ -269,9 +298,11 @@ class TestGetCheckoutSessionURL:
 
     async def test_valid_user_cookie(
         self,
+        session: AsyncSession,
         subscription_tier_organization: SubscriptionTier,
         mock_stripe_service: MagicMock,
         user: User,
+        organization_account: Account,
     ) -> None:
         user.stripe_customer_id = "STRIPE_CUSTOMER_ID"
 
@@ -283,7 +314,11 @@ class TestGetCheckoutSessionURL:
         )
 
         url = await subscription_tier_service.get_checkout_session_url(
-            subscription_tier_organization, "SUCCESS_URL", user, AuthMethod.COOKIE
+            session,
+            subscription_tier_organization,
+            "SUCCESS_URL",
+            user,
+            AuthMethod.COOKIE,
         )
 
         assert url == "STRIPE_URL"
@@ -296,9 +331,11 @@ class TestGetCheckoutSessionURL:
 
     async def test_valid_pat(
         self,
+        session: AsyncSession,
         subscription_tier_organization: SubscriptionTier,
         mock_stripe_service: MagicMock,
         user: User,
+        organization_account: Account,
     ) -> None:
         user.stripe_customer_id = "STRIPE_CUSTOMER_ID"
 
@@ -310,6 +347,7 @@ class TestGetCheckoutSessionURL:
         )
 
         url = await subscription_tier_service.get_checkout_session_url(
+            session,
             subscription_tier_organization,
             "SUCCESS_URL",
             user,
@@ -325,9 +363,11 @@ class TestGetCheckoutSessionURL:
 
     async def test_valid_pat_customer_email(
         self,
+        session: AsyncSession,
         subscription_tier_organization: SubscriptionTier,
         mock_stripe_service: MagicMock,
         user: User,
+        organization_account: Account,
     ) -> None:
         user.stripe_customer_id = "STRIPE_CUSTOMER_ID"
 
@@ -339,6 +379,7 @@ class TestGetCheckoutSessionURL:
         )
 
         url = await subscription_tier_service.get_checkout_session_url(
+            session,
             subscription_tier_organization,
             "SUCCESS_URL",
             user,

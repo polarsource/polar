@@ -6,6 +6,7 @@ import pytest
 from httpx import AsyncClient
 
 from polar.models import (
+    Account,
     Organization,
     Repository,
     SubscriptionGroup,
@@ -429,11 +430,22 @@ class TestGetSubscriptionTierSubscribeURL:
 
         assert response.status_code == 422
 
+    async def test_no_payout_account(
+        self, client: AsyncClient, subscription_tier_organization: SubscriptionTier
+    ) -> None:
+        response = await client.get(
+            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/subscribe",
+            params={"success_url": "https://polar.sh"},
+        )
+
+        assert response.status_code == 400
+
     async def test_anonymous(
         self,
         client: AsyncClient,
         subscription_tier_organization: SubscriptionTier,
         mock_stripe_service: MagicMock,
+        organization_account: Account,
     ) -> None:
         create_subscription_checkout_session_mock: MagicMock = (
             mock_stripe_service.create_subscription_checkout_session

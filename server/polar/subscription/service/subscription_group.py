@@ -5,12 +5,14 @@ from typing import Any
 from sqlalchemy import ColumnExpressionArgument, Select, or_, select
 from sqlalchemy.orm import joinedload, selectinload
 
+from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz, Subject
 from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.models import (
+    Account,
     Organization,
     Repository,
     SubscriptionGroup,
@@ -115,6 +117,13 @@ class SubscriptionGroupService(
                 raise RepositoryDoesNotExist(create_schema.repository_id)
 
         return await self.model.create(session, **create_schema.dict(), tiers=[])
+
+    async def get_managing_organization_account(
+        self, session: AsyncSession, subscription_group: SubscriptionGroup
+    ) -> Account | None:
+        return await account_service.get_by_org(
+            session, subscription_group.managing_organization_id
+        )
 
     def _get_readable_subscription_group_statement(
         self, auth_subject: Subject

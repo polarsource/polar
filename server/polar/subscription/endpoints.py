@@ -189,6 +189,7 @@ async def get_subscription_tier_subscribe_url(
         raise ResourceNotFound()
 
     url = await subscription_tier_service.get_checkout_session_url(
+        session,
         subscription_tier,
         success_url,
         auth.subject,

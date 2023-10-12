@@ -33,7 +33,7 @@ class Repository(RecordModel):
 
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
     external_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
-    organization_id: Mapped[UUID | None] = mapped_column(
+    organization_id: Mapped[UUID] = mapped_column(
         PostgresUUID, ForeignKey("organizations.id"), nullable=False
     )
 

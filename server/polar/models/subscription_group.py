@@ -36,3 +36,11 @@ class SubscriptionGroup(RecordModel):
     tiers: Mapped[list["SubscriptionTier"]] = relationship(
         "SubscriptionTier", lazy="raise", back_populates="subscription_group"
     )
+
+    @property
+    def managing_organization_id(self) -> UUID:
+        if self.organization_id is not None:
+            return self.organization_id
+        if self.repository is not None:
+            return self.repository.organization_id
+        raise RuntimeError()

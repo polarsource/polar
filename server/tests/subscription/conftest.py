@@ -5,7 +5,14 @@ import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.integrations.stripe.service import StripeService
-from polar.models import Organization, Repository, SubscriptionGroup, SubscriptionTier
+from polar.models import (
+    Account,
+    Organization,
+    Repository,
+    SubscriptionGroup,
+    SubscriptionTier,
+    User,
+)
 from polar.postgres import AsyncSession
 
 
@@ -106,3 +113,20 @@ async def subscription_tiers(
     return [
         subscription_tier_organization,
     ]
+
+
+@pytest_asyncio.fixture
+async def organization_account(
+    session: AsyncSession, organization: Organization, user: User
+) -> Account:
+    return await Account.create(
+        session,
+        account_type="stripe",
+        organization_id=organization.id,
+        admin_id=user.id,
+        country="US",
+        currency="USD",
+        is_details_submitted=True,
+        is_charges_enabled=True,
+        is_payouts_enabled=True,
+    )

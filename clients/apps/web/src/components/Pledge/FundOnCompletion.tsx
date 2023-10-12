@@ -4,7 +4,7 @@ import {
   ClockIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline'
-import { Issue, UserSignupType } from '@polar-sh/sdk'
+import { Issue, Organization, UserSignupType } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
 import { LogoIcon } from 'polarkit/components/brand'
@@ -12,8 +12,9 @@ import { MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import GithubLoginButton from '../Shared/GithubLoginButton'
+import OnBehalfOf from './OnBehalfOf'
 
 const FundOnCompletion = ({
   issue,
@@ -23,30 +24,27 @@ const FundOnCompletion = ({
   gotoURL?: string
 }) => {
   const organization = issue.repository.organization
-  const [amount, setAmount] = useState<number>(
-    issue.repository.organization.pledge_minimum_amount,
-  )
-  const [email, setEmail] = useState('')
+
+  const [formState, setFormState] = useState<{
+    amount: number
+    on_behalf_of_organization_id: string | undefined
+  }>({
+    amount: issue.repository.organization.pledge_minimum_amount,
+    on_behalf_of_organization_id: undefined,
+  })
+
   const [errorMessage, setErrorMessage] = useState<string>('')
 
   const { currentUser } = useAuth()
 
   const router = useRouter()
 
-  const didFirstUserEmailSync = useRef(false)
-  useEffect(() => {
-    if (currentUser && currentUser.email && !didFirstUserEmailSync.current) {
-      didFirstUserEmailSync.current = true
-      setEmail(currentUser.email)
-    }
-  }, [currentUser])
-
   const [isLoading, setIsLoading] = useState(false)
 
   const [paymentPromise, setPaymentPromise] = useState(false)
 
   const hasValidDetails =
-    amount >= issue.repository.organization.pledge_minimum_amount &&
+    formState.amount >= issue.repository.organization.pledge_minimum_amount &&
     !!currentUser &&
     paymentPromise
 
@@ -60,7 +58,8 @@ const FundOnCompletion = ({
       await api.pledges.createPayOnCompletion({
         createPledgePayLater: {
           issue_id: issue.id,
-          amount: amount,
+          amount: formState.amount,
+          on_behalf_of_organization_id: formState.on_behalf_of_organization_id,
         },
       })
 
@@ -69,6 +68,20 @@ const FundOnCompletion = ({
       setErrorMessage('Something went wrong, please try again.')
       setIsLoading(false)
     }
+  }
+
+  const onAmountChange = (amount: number) => {
+    setFormState({
+      ...formState,
+      amount,
+    })
+  }
+
+  const onChangeOnBehalfOf = (org: Organization | undefined) => {
+    setFormState({
+      ...formState,
+      on_behalf_of_organization_id: org ? org.id : undefined,
+    })
   }
 
   return (
@@ -86,16 +99,18 @@ const FundOnCompletion = ({
           <MoneyInput
             id="amount"
             name="amount"
-            onAmountChangeInCents={setAmount}
+            onAmountChangeInCents={onAmountChange}
             placeholder={organization.pledge_minimum_amount}
-            value={amount}
+            value={formState.amount}
             onFocus={(event) => {
               event.target.select()
             }}
           />
           <p
             className={classNames(
-              amount < organization.pledge_minimum_amount ? 'text-red-500' : '',
+              formState.amount < organization.pledge_minimum_amount
+                ? 'text-red-500'
+                : '',
               'dark:text-polar-400 text-xs text-gray-500',
             )}
           >
@@ -104,6 +119,8 @@ const FundOnCompletion = ({
           </p>
         </div>
       </div>
+
+      {currentUser && <OnBehalfOf onChange={onChangeOnBehalfOf} />}
 
       <NextSteps />
 

@@ -21,18 +21,6 @@ import type {
   ListResourcePersonalAccessToken,
   PersonalAccessToken,
 } from '../models/index';
-import {
-    CreatePersonalAccessTokenFromJSON,
-    CreatePersonalAccessTokenToJSON,
-    CreatePersonalAccessTokenResponseFromJSON,
-    CreatePersonalAccessTokenResponseToJSON,
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    ListResourcePersonalAccessTokenFromJSON,
-    ListResourcePersonalAccessTokenToJSON,
-    PersonalAccessTokenFromJSON,
-    PersonalAccessTokenToJSON,
-} from '../models/index';
 
 export interface PersonalAccessTokenApiDeleteRequest {
     id: string;
@@ -75,7 +63,7 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PersonalAccessTokenFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -115,10 +103,10 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: CreatePersonalAccessTokenToJSON(requestParameters.createPersonalAccessToken),
+            body: requestParameters.createPersonalAccessToken,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => CreatePersonalAccessTokenResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -154,7 +142,7 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ListResourcePersonalAccessTokenFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**

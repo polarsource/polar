@@ -25,26 +25,6 @@ import type {
   OrganizationPrivateRead,
   PledgeRewardTransfer,
 } from '../models/index';
-import {
-    BackofficeBadgeFromJSON,
-    BackofficeBadgeToJSON,
-    BackofficeBadgeResponseFromJSON,
-    BackofficeBadgeResponseToJSON,
-    BackofficePledgeFromJSON,
-    BackofficePledgeToJSON,
-    BackofficeRewardFromJSON,
-    BackofficeRewardToJSON,
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    IssueFromJSON,
-    IssueToJSON,
-    ListResourceBackofficeRewardFromJSON,
-    ListResourceBackofficeRewardToJSON,
-    OrganizationPrivateReadFromJSON,
-    OrganizationPrivateReadToJSON,
-    PledgeRewardTransferFromJSON,
-    PledgeRewardTransferToJSON,
-} from '../models/index';
 
 export interface BackofficeApiIssueRequest {
     id: string;
@@ -106,7 +86,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => IssueFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -144,10 +124,10 @@ export class BackofficeApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: BackofficeBadgeToJSON(requestParameters.backofficeBadge),
+            body: requestParameters.backofficeBadge,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => BackofficeBadgeResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -185,7 +165,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => OrganizationPrivateReadFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -223,7 +203,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => BackofficePledgeFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -261,7 +241,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => BackofficePledgeFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -299,10 +279,10 @@ export class BackofficeApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: PledgeRewardTransferToJSON(requestParameters.pledgeRewardTransfer),
+            body: requestParameters.pledgeRewardTransfer,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => BackofficeRewardFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -336,7 +316,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(BackofficePledgeFromJSON));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -374,7 +354,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ListResourceBackofficeRewardFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -408,7 +388,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ListResourceBackofficeRewardFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**

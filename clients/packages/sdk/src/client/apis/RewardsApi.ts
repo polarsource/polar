@@ -19,14 +19,6 @@ import type {
   ListResourceReward,
   RewardsSummary,
 } from '../models/index';
-import {
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    ListResourceRewardFromJSON,
-    ListResourceRewardToJSON,
-    RewardsSummaryFromJSON,
-    RewardsSummaryToJSON,
-} from '../models/index';
 
 export interface RewardsApiSearchRequest {
     pledgesToOrganization?: string;
@@ -79,7 +71,7 @@ export class RewardsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ListResourceRewardFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -123,7 +115,7 @@ export class RewardsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => RewardsSummaryFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**

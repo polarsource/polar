@@ -19,14 +19,6 @@ import type {
   ListResourcePaymentMethod,
   PaymentMethod,
 } from '../models/index';
-import {
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    ListResourcePaymentMethodFromJSON,
-    ListResourcePaymentMethodToJSON,
-    PaymentMethodFromJSON,
-    PaymentMethodToJSON,
-} from '../models/index';
 
 export interface PaymentMethodsApiDetachRequest {
     id: string;
@@ -64,7 +56,7 @@ export class PaymentMethodsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PaymentMethodFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -98,7 +90,7 @@ export class PaymentMethodsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ListResourcePaymentMethodFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**

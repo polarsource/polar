@@ -22,20 +22,6 @@ import type {
   OrganizationBadgeSettingsUpdate,
   Platforms,
 } from '../models/index';
-import {
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    ListResourceOrganizationFromJSON,
-    ListResourceOrganizationToJSON,
-    OrganizationFromJSON,
-    OrganizationToJSON,
-    OrganizationBadgeSettingsReadFromJSON,
-    OrganizationBadgeSettingsReadToJSON,
-    OrganizationBadgeSettingsUpdateFromJSON,
-    OrganizationBadgeSettingsUpdateToJSON,
-    PlatformsFromJSON,
-    PlatformsToJSON,
-} from '../models/index';
 
 export interface OrganizationsApiGetRequest {
     id: string;
@@ -93,7 +79,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => OrganizationFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -132,7 +118,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => OrganizationBadgeSettingsReadFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -167,7 +153,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ListResourceOrganizationFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -211,7 +197,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => OrganizationFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -255,7 +241,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ListResourceOrganizationFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -298,10 +284,10 @@ export class OrganizationsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: OrganizationBadgeSettingsUpdateToJSON(requestParameters.organizationBadgeSettingsUpdate),
+            body: requestParameters.organizationBadgeSettingsUpdate,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => OrganizationBadgeSettingsUpdateFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**

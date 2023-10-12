@@ -18,12 +18,6 @@ import type {
   HTTPValidationError,
   ListResourcePullRequest,
 } from '../models/index';
-import {
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    ListResourcePullRequestFromJSON,
-    ListResourcePullRequestToJSON,
-} from '../models/index';
 
 export interface PullRequestsApiSearchRequest {
     referencesIssueId?: string;
@@ -62,7 +56,7 @@ export class PullRequestsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ListResourcePullRequestFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**

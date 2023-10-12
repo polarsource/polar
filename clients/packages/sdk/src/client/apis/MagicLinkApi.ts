@@ -19,14 +19,6 @@ import type {
   LoginResponse,
   MagicLinkRequest,
 } from '../models/index';
-import {
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    LoginResponseFromJSON,
-    LoginResponseToJSON,
-    MagicLinkRequestFromJSON,
-    MagicLinkRequestToJSON,
-} from '../models/index';
 
 export interface MagicLinkApiAuthenticateMagicLinkRequest {
     token: string;
@@ -72,7 +64,7 @@ export class MagicLinkApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => LoginResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -110,7 +102,7 @@ export class MagicLinkApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: MagicLinkRequestToJSON(requestParameters.magicLinkRequest),
+            body: requestParameters.magicLinkRequest,
         }, initOverrides);
 
         if (this.isJsonMime(response.headers.get('content-type'))) {

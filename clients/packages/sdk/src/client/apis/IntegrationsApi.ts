@@ -27,30 +27,6 @@ import type {
   PolarIntegrationsStripeEndpointsWebhookResponse,
   UserSignupType,
 } from '../models/index';
-import {
-    AuthorizationResponseFromJSON,
-    AuthorizationResponseToJSON,
-    GithubBadgeReadFromJSON,
-    GithubBadgeReadToJSON,
-    GithubUserFromJSON,
-    GithubUserToJSON,
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    InstallationCreateFromJSON,
-    InstallationCreateToJSON,
-    LoginResponseFromJSON,
-    LoginResponseToJSON,
-    LookupUserRequestFromJSON,
-    LookupUserRequestToJSON,
-    OrganizationPrivateReadFromJSON,
-    OrganizationPrivateReadToJSON,
-    PolarIntegrationsGithubEndpointsWebhookResponseFromJSON,
-    PolarIntegrationsGithubEndpointsWebhookResponseToJSON,
-    PolarIntegrationsStripeEndpointsWebhookResponseFromJSON,
-    PolarIntegrationsStripeEndpointsWebhookResponseToJSON,
-    UserSignupTypeFromJSON,
-    UserSignupTypeToJSON,
-} from '../models/index';
 
 export interface IntegrationsApiGetBadgeSettingsRequest {
     org: string;
@@ -128,7 +104,7 @@ export class IntegrationsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => GithubBadgeReadFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -174,7 +150,7 @@ export class IntegrationsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => AuthorizationResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -224,7 +200,7 @@ export class IntegrationsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => LoginResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -262,10 +238,10 @@ export class IntegrationsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: InstallationCreateToJSON(requestParameters.installationCreate),
+            body: requestParameters.installationCreate,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => OrganizationPrivateReadFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -303,10 +279,10 @@ export class IntegrationsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: LookupUserRequestToJSON(requestParameters.lookupUserRequest),
+            body: requestParameters.lookupUserRequest,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => GithubUserFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -340,7 +316,7 @@ export class IntegrationsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PolarIntegrationsStripeEndpointsWebhookResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -420,7 +396,7 @@ export class IntegrationsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PolarIntegrationsGithubEndpointsWebhookResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -454,7 +430,7 @@ export class IntegrationsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PolarIntegrationsStripeEndpointsWebhookResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**

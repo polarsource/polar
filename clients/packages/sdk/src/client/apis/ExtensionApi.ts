@@ -19,14 +19,6 @@ import type {
   IssueExtensionRead,
   Platforms,
 } from '../models/index';
-import {
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    IssueExtensionReadFromJSON,
-    IssueExtensionReadToJSON,
-    PlatformsFromJSON,
-    PlatformsToJSON,
-} from '../models/index';
 
 export interface ExtensionApiListIssuesForExtensionRequest {
     platform: Platforms;
@@ -83,7 +75,7 @@ export class ExtensionApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(IssueExtensionReadFromJSON));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**

@@ -26,28 +26,6 @@ import type {
   PledgeStripePaymentIntentMutationResponse,
   PledgeStripePaymentIntentUpdate,
 } from '../models/index';
-import {
-    CreatePledgeFromPaymentIntentFromJSON,
-    CreatePledgeFromPaymentIntentToJSON,
-    CreatePledgePayLaterFromJSON,
-    CreatePledgePayLaterToJSON,
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    ListResourcePledgeFromJSON,
-    ListResourcePledgeToJSON,
-    PlatformsFromJSON,
-    PlatformsToJSON,
-    PledgeFromJSON,
-    PledgeToJSON,
-    PledgePledgesSummaryFromJSON,
-    PledgePledgesSummaryToJSON,
-    PledgeStripePaymentIntentCreateFromJSON,
-    PledgeStripePaymentIntentCreateToJSON,
-    PledgeStripePaymentIntentMutationResponseFromJSON,
-    PledgeStripePaymentIntentMutationResponseToJSON,
-    PledgeStripePaymentIntentUpdateFromJSON,
-    PledgeStripePaymentIntentUpdateToJSON,
-} from '../models/index';
 
 export interface PledgesApiCreateRequest {
     createPledgeFromPaymentIntent: CreatePledgeFromPaymentIntent;
@@ -123,10 +101,10 @@ export class PledgesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: CreatePledgeFromPaymentIntentToJSON(requestParameters.createPledgeFromPaymentIntent),
+            body: requestParameters.createPledgeFromPaymentIntent,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PledgeFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -166,7 +144,7 @@ export class PledgesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PledgeFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -206,10 +184,10 @@ export class PledgesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: CreatePledgePayLaterToJSON(requestParameters.createPledgePayLater),
+            body: requestParameters.createPledgePayLater,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PledgeFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -248,10 +226,10 @@ export class PledgesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: PledgeStripePaymentIntentCreateToJSON(requestParameters.pledgeStripePaymentIntentCreate),
+            body: requestParameters.pledgeStripePaymentIntentCreate,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PledgeStripePaymentIntentMutationResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -297,7 +275,7 @@ export class PledgesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PledgeFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -336,7 +314,7 @@ export class PledgesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PledgeFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -388,7 +366,7 @@ export class PledgesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ListResourcePledgeFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -432,7 +410,7 @@ export class PledgesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PledgePledgesSummaryFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -475,10 +453,10 @@ export class PledgesApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: PledgeStripePaymentIntentUpdateToJSON(requestParameters.pledgeStripePaymentIntentUpdate),
+            body: requestParameters.pledgeStripePaymentIntentUpdate,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PledgeStripePaymentIntentMutationResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**

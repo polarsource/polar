@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, Query
-from pydantic import UUID4
+from pydantic import UUID4, AnyHttpUrl, EmailStr
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.models import Repository, SubscriptionGroup, SubscriptionTier
+from polar.models import Repository, SubscriptionGroup, SubscriptionTier, User
 from polar.organization.dependencies import OrganizationNameQuery
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -19,6 +19,7 @@ from .schemas import (
     SubscriptionGroupCreate,
     SubscriptionGroupUpdate,
     SubscriptionTierCreate,
+    SubscriptionTierSubscribeURL,
     SubscriptionTierUpdate,
 )
 from .schemas import SubscriptionTier as SubscriptionTierSchema
@@ -168,3 +169,30 @@ async def archive_subscription_tier(
     return await subscription_tier_service.archive(
         session, authz, subscription_tier, auth.user
     )
+
+
+@router.get(
+    "/tiers/{id}/subscribe",
+    tags=[Tags.PUBLIC],
+    response_model=SubscriptionTierSubscribeURL,
+)
+async def get_subscription_tier_subscribe_url(
+    id: UUID4,
+    success_url: AnyHttpUrl,
+    customer_email: EmailStr | None = Query(None),
+    auth: Auth = Depends(Auth.optional_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionTierSubscribeURL:
+    subscription_tier = await subscription_tier_service.get(session, id)
+
+    if subscription_tier is None:
+        raise ResourceNotFound()
+
+    url = await subscription_tier_service.get_checkout_session_url(
+        subscription_tier,
+        success_url,
+        auth.subject,
+        auth.auth_method,
+        customer_email=customer_email,
+    )
+    return SubscriptionTierSubscribeURL(url=url)

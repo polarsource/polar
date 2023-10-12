@@ -386,3 +386,68 @@ class TestArchiveSubscriptionTier:
 
         json = response.json()
         assert json["is_archived"]
+
+
+@pytest.mark.asyncio
+class TestGetSubscriptionTierSubscribeURL:
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.get(
+            f"/api/v1/subscriptions/tiers/{uuid.uuid4()}/subscribe",
+            params={"success_url": "https://polar.sh"},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.parametrize("success_url", [None, "INVALID_URL"])
+    async def test_missing_invalid_success_url(
+        self,
+        success_url: str | None,
+        client: AsyncClient,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        params = {}
+        if success_url is not None:
+            params["success_url"] = success_url
+
+        response = await client.get(
+            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/subscribe",
+            params=params,
+        )
+
+        assert response.status_code == 422
+
+    async def test_invalid_customer_email(
+        self, client: AsyncClient, subscription_tier_organization: SubscriptionTier
+    ) -> None:
+        response = await client.get(
+            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/subscribe",
+            params={
+                "success_url": "https://polar.sh",
+                "customer_email": "INVALID_EMAIL",
+            },
+        )
+
+        assert response.status_code == 422
+
+    async def test_anonymous(
+        self,
+        client: AsyncClient,
+        subscription_tier_organization: SubscriptionTier,
+        mock_stripe_service: MagicMock,
+    ) -> None:
+        create_subscription_checkout_session_mock: MagicMock = (
+            mock_stripe_service.create_subscription_checkout_session
+        )
+        create_subscription_checkout_session_mock.return_value = SimpleNamespace(
+            url="STRIPE_URL"
+        )
+
+        response = await client.get(
+            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/subscribe",
+            params={"success_url": "https://polar.sh"},
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json == {"url": "STRIPE_URL"}

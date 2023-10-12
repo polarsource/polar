@@ -338,5 +338,27 @@ Thank you for your support!
     def archive_price(self, id: str) -> stripe_lib.Price:
         return stripe_lib.Price.modify(id, active=False)
 
+    def create_subscription_checkout_session(
+        self,
+        price: str,
+        success_url: str,
+        *,
+        customer: str | None = None,
+        customer_email: str | None = None,
+    ) -> stripe_lib.checkout.Session:
+        return stripe_lib.checkout.Session.create(
+            success_url=success_url,
+            line_items=[
+                {
+                    "price": price,
+                    "quantity": 1,
+                },
+            ],
+            mode="subscription",
+            automatic_tax={"enabled": True},
+            customer=customer,
+            customer_email=customer_email,
+        )
+
 
 stripe = StripeService()

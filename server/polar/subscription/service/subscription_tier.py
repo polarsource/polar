@@ -1,6 +1,7 @@
 import uuid
 
-from polar.authz.service import AccessType, Authz
+from polar.auth.dependencies import AuthMethod
+from polar.authz.service import AccessType, Authz, Subject
 from polar.exceptions import NotPermitted, PolarError
 from polar.integrations.stripe.service import StripeError
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -21,6 +22,20 @@ class SubscriptionGroupDoesNotExist(SubscriptionTierError):
         self.subscription_group_id = subscription_group_id
         message = f"Subscription Group with id {subscription_group_id} does not exist."
         super().__init__(message, 422)
+
+
+class ArchivedSubscriptionTier(SubscriptionTierError):
+    def __init__(self, subscription_tier_id: uuid.UUID) -> None:
+        self.subscription_tier_id = subscription_tier_id
+        message = "This subscription tier is archived."
+        super().__init__(message, 404)
+
+
+class NotAddedToStripeSubscriptionTier(SubscriptionTierError):
+    def __init__(self, subscription_tier_id: uuid.UUID) -> None:
+        self.subscription_tier_id = subscription_tier_id
+        message = "This subscription tier has not beed synced with Stripe."
+        super().__init__(message, 500)
 
 
 class SubscriptionTierService(
@@ -137,6 +152,40 @@ class SubscriptionTierService(
             stripe_service.archive_product(subscription_tier.stripe_product_id)
 
         return await subscription_tier.update(session, is_archived=True)
+
+    async def get_checkout_session_url(
+        self,
+        subscription_tier: SubscriptionTier,
+        success_url: str,
+        auth_subject: Subject,
+        auth_method: AuthMethod | None,
+        *,
+        customer_email: str | None = None,
+    ) -> str:
+        if subscription_tier.is_archived:
+            raise ArchivedSubscriptionTier(subscription_tier.id)
+
+        if subscription_tier.stripe_price_id is None:
+            raise NotAddedToStripeSubscriptionTier(subscription_tier.id)
+
+        customer_options: dict[str, str] = {}
+        # Set the customer only from a cookie-based authentication!
+        # With the PAT, it's probably a call from the maintainer who wants to redirect
+        # the backer they bring from their own website.
+        if (
+            auth_method == AuthMethod.COOKIE
+            and isinstance(auth_subject, User)
+            and auth_subject.stripe_customer_id is not None
+        ):
+            customer_options["customer"] = auth_subject.stripe_customer_id
+        elif customer_email is not None:
+            customer_options["customer_email"] = customer_email
+
+        checkout_session = stripe_service.create_subscription_checkout_session(
+            subscription_tier.stripe_price_id, success_url, **customer_options
+        )
+
+        return checkout_session.url
 
 
 subscription_tier = SubscriptionTierService(SubscriptionTier)

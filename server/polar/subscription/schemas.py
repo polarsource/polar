@@ -30,6 +30,16 @@ class SubscriptionTier(TimestampedSchema):
     subscription_group_id: UUID4
 
 
+class SubscriptionTierSubscribeURL(Schema):
+    url: str = Field(
+        ...,
+        description=(
+            "URL where you should redirect your customer "
+            "so they can subscribe to the selected tier."
+        ),
+    )
+
+
 class SubscriptionGroupCreate(Schema):
     name: str
     order: int

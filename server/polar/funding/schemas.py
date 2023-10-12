@@ -40,14 +40,9 @@ class IssueFunding(Schema):
             pledge_type: [] for pledge_type in PledgeType
         }
         for pledge in issue.pledges:
-            if pledge.by_organization:
-                pledgers[cast(PledgeType, pledge.type)].append(
-                    Pledger.from_organization(pledge.by_organization)
-                )
-            elif pledge.user:
-                pledgers[cast(PledgeType, pledge.type)].append(
-                    Pledger.from_user(pledge.user)
-                )
+            pledger = Pledger.from_pledge(pledge)
+            if pledger:
+                pledgers[cast(PledgeType, pledge.type)].append(pledger)
 
         pay_upfront_summary = PledgesSummary(
             total=CurrencyAmount(currency="USD", amount=int(pay_upfront_total)),

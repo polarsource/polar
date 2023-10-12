@@ -136,6 +136,7 @@ async def search(
         repository_ids=list_by_repos,
         issue_ids=list_by_issues,
         load_issue=True,
+        load_pledger=True,
     )
 
     items = [
@@ -256,6 +257,7 @@ async def create_pay_on_completion(
         issue_id=create.issue_id,
         amount=create.amount,
         by_user=auth.user,
+        on_behalf_of_organization_id=create.on_behalf_of_organization_id,
     )
 
     ret = await pledge_service.get_with_loaded(session, pledge.id)

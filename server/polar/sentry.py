@@ -11,7 +11,7 @@ from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.scope import add_global_event_processor
 from sentry_sdk.utils import Dsn
 
-from polar.auth.dependencies import current_user_optional
+from polar.auth.dependencies import Auth
 from polar.config import settings
 from polar.models import User
 from polar.posthog import posthog
@@ -110,13 +110,13 @@ def configure_sentry() -> None:
     )
 
 
-async def set_sentry_user(user: User | None = Depends(current_user_optional)) -> None:
-    if user is not None:
+async def set_sentry_user(auth: Auth = Depends(Auth.optional_user)) -> None:
+    if auth.user is not None:
         sentry_sdk.set_user(
             {
-                "id": str(user.id),
-                "email": user.email,
-                "username": user.username,
+                "id": str(auth.user.id),
+                "email": auth.user.email,
+                "username": auth.user.username,
             }
         )
-        sentry_sdk.set_tag(POSTHOG_ID_TAG, user.posthog_distinct_id)
+        sentry_sdk.set_tag(POSTHOG_ID_TAG, auth.user.posthog_distinct_id)

@@ -22,7 +22,7 @@ export default meta
 
 const pledge: Pledge = {
   id: 'xx',
-  created_at: new Date('2023-06-29'),
+  created_at: new Date('2023-06-29').toISOString(),
   amount: { currency: 'USD', amount: 12300 },
   state: PledgeState.CREATED,
   type: PledgeType.UPFRONT,
@@ -80,7 +80,7 @@ export const Default: Story = {
           state: PledgeState.PENDING,
         },
         state: RewardState.PAID,
-        paid_at: new Date('2023-08-31'),
+        paid_at: new Date('2023-08-31').toISOString(),
       },
     ],
     columns: ['PAID_OUT_DATE', 'RECEIVER', 'BACKER', 'PAYMENT_STATUS'],

@@ -31,7 +31,7 @@ type Story = StoryObj<typeof IssueListItem>
 const pledges: Pledge[] = [
   {
     id: 'xx',
-    created_at: new Date(),
+    created_at: new Date().toISOString(),
     issue: issue,
     amount: { currency: 'USD', amount: 1234 },
     state: PledgeState.CREATED,
@@ -48,7 +48,7 @@ const pledgeDisputable: Pledge[] = [
     ...pledges[0],
     state: PledgeState.PENDING,
     type: PledgeType.UPFRONT,
-    scheduled_payout_at: addDays(new Date(), 7),
+    scheduled_payout_at: addDays(new Date(), 7).toISOString(),
     authed_can_admin_sender: true,
   },
 ]
@@ -58,7 +58,7 @@ const pledgeDisputableToday: Pledge[] = [
     ...pledges[0],
     state: PledgeState.PENDING,
     type: PledgeType.UPFRONT,
-    scheduled_payout_at: addHours(new Date(), 2),
+    scheduled_payout_at: addHours(new Date(), 2).toISOString(),
     authed_can_admin_sender: true,
   },
 ]
@@ -68,7 +68,7 @@ const pledgeDisputableYesterday: Pledge[] = [
     ...pledges[0],
     state: PledgeState.PENDING,
     type: PledgeType.UPFRONT,
-    scheduled_payout_at: addDays(new Date(), -1),
+    scheduled_payout_at: addDays(new Date(), -1).toISOString(),
     authed_can_admin_sender: true,
   },
 ]
@@ -91,6 +91,11 @@ const pledgeDisputedByOther: Pledge[] = [
   },
 ]
 
+// TODO(zegl): remove when we enable strict OpenAPI type checking again
+const dateConv = (input: Date): string => {
+  return input.toISOString()
+}
+
 // urgh!
 const dummyPayload = {
   id: '',
@@ -101,7 +106,7 @@ const dummyPayload = {
   additions: 0,
   deletions: 0,
   state: '',
-  created_at: new Date(),
+  created_at: dateConv(new Date()),
   is_draft: false,
   organization_name: '',
   repository_name: '',
@@ -117,7 +122,7 @@ const pullRequestReference: PullRequestReference = {
   additions: 10,
   deletions: 2,
   state: 'open',
-  created_at: new Date('2023-04-08'),
+  created_at: dateConv(new Date('2023-04-08')),
   is_draft: false,
 }
 
@@ -151,7 +156,7 @@ const referencesMerged: IssueReferenceRead[] = [
       ...pullRequestReference,
       //is_draft: true,
       state: 'closed',
-      merged_at: new Date('2024-05-01'),
+      merged_at: dateConv(new Date('2024-05-01')),
     },
   },
 ]
@@ -164,7 +169,7 @@ const referencesClosed: IssueReferenceRead[] = [
     pull_request_reference: {
       ...pullRequestReference,
       state: 'closed',
-      closed_at: new Date('2024-05-01'),
+      closed_at: dateConv(new Date('2024-05-01')),
     },
   },
 ]
@@ -530,7 +535,7 @@ export const PledgeConfirmationPendingConfirmed: Story = {
     issue: {
       ...issueClosed,
       needs_confirmation_solved: false,
-      confirmed_solved_at: addDays(new Date(), -3),
+      confirmed_solved_at: dateConv(addDays(new Date(), -3)),
     },
     references: referencesMerged,
     pledges: [
@@ -805,7 +810,7 @@ export const RewardsStatusAll: Story = {
         amount: { currency: 'USD', amount: 3000 },
         pledge: {
           ...reward.pledge,
-          refunded_at: new Date('2023-10-03'),
+          refunded_at: dateConv(new Date('2023-10-03')),
         },
       },
     ],

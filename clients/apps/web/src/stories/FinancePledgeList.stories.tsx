@@ -16,7 +16,7 @@ export default meta
 
 const pledge: Pledge = {
   id: 'xx',
-  created_at: new Date('2023-06-29'),
+  created_at: new Date('2023-06-29').toISOString(),
   amount: { currency: 'USD', amount: 12300 },
   state: PledgeState.CREATED,
   type: PledgeType.UPFRONT,
@@ -90,7 +90,7 @@ export const InReview: Story = {
       {
         ...pledge,
         state: PledgeState.PENDING,
-        scheduled_payout_at: new Date('2023-07-14'),
+        scheduled_payout_at: new Date('2023-07-14').toISOString(),
       },
       {
         ...pledge,
@@ -108,7 +108,7 @@ export const Refunded: Story = {
       {
         ...pledge,
         state: PledgeState.REFUNDED,
-        scheduled_payout_at: new Date('2023-07-14'),
+        scheduled_payout_at: new Date('2023-07-14').toISOString(),
       },
     ],
     columns: ['REFUNDED_DATE'],

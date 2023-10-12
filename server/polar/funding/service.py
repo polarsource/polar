@@ -134,6 +134,11 @@ class FundingService:
             .options(
                 issue_pledges_eager_loading_clause.joinedload(Pledge.by_organization)
             )
+            .options(
+                issue_pledges_eager_loading_clause.joinedload(
+                    Pledge.on_behalf_of_organization
+                )
+            )
             .add_columns(total_column)
         )
 

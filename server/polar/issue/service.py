@@ -296,6 +296,9 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 .joinedload(Pledge.issue)
                 .joinedload(Issue.repository)
                 .joinedload(Repository.organization),
+                contains_eager(Issue.pledges).joinedload(
+                    Pledge.on_behalf_of_organization
+                ),
             )
             statement = statement.group_by(
                 Issue.id,

@@ -86,6 +86,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             .options(
                 joinedload(Pledge.user),
                 joinedload(Pledge.by_organization),
+                joinedload(Pledge.on_behalf_of_organization),
                 joinedload(Pledge.issue).joinedload(Issue.organization),
                 joinedload(Pledge.issue)
                 .joinedload(Issue.repository)
@@ -107,10 +108,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         load_pledger: bool = False,
         all_states: bool = False,
     ) -> Sequence[Pledge]:
-        statement = sql.select(Pledge).options(
-            joinedload(Pledge.user),
-            joinedload(Pledge.by_organization),
-        )
+        statement = sql.select(Pledge)
 
         if not all_states:
             statement = statement.where(
@@ -139,7 +137,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         if load_pledger:
             statement = statement.options(
-                joinedload(Pledge.by_organization), joinedload(Pledge.user)
+                joinedload(Pledge.by_organization),
+                joinedload(Pledge.user),
+                joinedload(Pledge.on_behalf_of_organization),
             )
 
         statement = statement.order_by(Pledge.created_at)
@@ -176,6 +176,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 .joinedload(Repository.organization),
                 joinedload(Pledge.to_repository).joinedload(Repository.organization),
                 joinedload(Pledge.to_organization),
+                joinedload(Pledge.on_behalf_of_organization),
             )
         )
         res = await session.execute(statement)
@@ -193,6 +194,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             .options(
                 joinedload(Pledge.user),
                 joinedload(Pledge.by_organization),
+                joinedload(Pledge.on_behalf_of_organization),
             )
             .filter(
                 Pledge.issue_id.in_(issue_ids),
@@ -899,6 +901,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         issue_id: UUID,
         by_user: User,
         amount: int,
+        on_behalf_of_organization_id: UUID | None,
     ) -> Pledge:
         issue = await issue_service.get(session, issue_id)
         if not issue:
@@ -914,6 +917,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             state=PledgeState.created,
             type=PledgeType.pay_on_completion,
             by_user_id=by_user.id,
+            on_behalf_of_organization_id=on_behalf_of_organization_id,
         )
 
         await loops_service.user_update(by_user, isBacker=True)
@@ -1050,7 +1054,11 @@ class PledgeService(ResourceServiceReader[Pledge]):
     async def issues_pledge_summary(
         self, session: AsyncSession, issues: Sequence[Issue]
     ) -> dict[UUID, PledgePledgesSummary]:
-        all_pledges = await self.list_by(session, issue_ids=[i.id for i in issues])
+        all_pledges = await self.list_by(
+            session,
+            issue_ids=[i.id for i in issues],
+            load_pledger=True,
+        )
 
         res: dict[UUID, PledgePledgesSummary] = {}
 
@@ -1094,25 +1102,12 @@ class PledgeService(ResourceServiceReader[Pledge]):
         for i in issues:
             pledges = pledges_by_issue.get(i.id, [])
 
-            def pledger(p: Pledge) -> Pledger | None:
-                if p.user:
-                    return Pledger(
-                        name=p.user.username,
-                        github_username=p.user.username,
-                        avatar_url=p.user.avatar_url,
-                    )
-                if p.by_organization:
-                    return Pledger(
-                        name=p.by_organization.pretty_name or p.by_organization.name,
-                        github_username=p.by_organization.name,
-                        avatar_url=p.by_organization.avatar_url,
-                    )
-                return None
-
             def summary(type: PledgeType) -> FundingPledgesSummary:
                 pledges_of_type = [p for p in pledges if p.type == type]
                 amount = sum([p.amount for p in pledges_of_type])
-                pledgers = [p for p in [pledger(p) for p in pledges_of_type] if p]
+                pledgers = [
+                    p for p in [Pledger.from_pledge(p) for p in pledges_of_type] if p
+                ]
 
                 return FundingPledgesSummary(
                     total=CurrencyAmount(currency="USD", amount=amount),

@@ -128,6 +128,32 @@ class Pledger(Schema):
     avatar_url: str | None
 
     @classmethod
+    def from_pledge(cls, p: PledgeModel) -> Self | None:
+        if p.on_behalf_of_organization:
+            return cls(
+                name=p.on_behalf_of_organization.pretty_name
+                or p.on_behalf_of_organization.name,
+                github_username=p.on_behalf_of_organization.name,
+                avatar_url=p.on_behalf_of_organization.avatar_url,
+            )
+
+        if p.user:
+            return cls(
+                name=p.user.username,
+                github_username=p.user.username,
+                avatar_url=p.user.avatar_url,
+            )
+
+        if p.by_organization:
+            return cls(
+                name=p.by_organization.pretty_name or p.by_organization.name,
+                github_username=p.by_organization.name,
+                avatar_url=p.by_organization.avatar_url,
+            )
+
+        return None
+
+    @classmethod
     def from_user(cls, user: User) -> Self:
         return cls(
             name=user.username,
@@ -180,21 +206,6 @@ class Pledge(Schema):
 
     @classmethod
     def from_db(cls, o: PledgeModel, include_admin_fields: bool = False) -> Pledge:
-        pledger: Pledger | None = None
-
-        if o.by_organization:
-            pledger = Pledger(
-                name=o.by_organization.name,
-                github_username=o.by_organization.name,
-                avatar_url=o.by_organization.avatar_url,
-            )
-        elif o.user:
-            pledger = Pledger(
-                name=o.user.username,
-                github_username=o.user.username,
-                avatar_url=o.user.avatar_url,
-            )
-
         return Pledge(
             id=o.id,
             created_at=o.created_at,
@@ -204,7 +215,7 @@ class Pledge(Schema):
             refunded_at=o.refunded_at if include_admin_fields else None,
             scheduled_payout_at=o.scheduled_payout_at if include_admin_fields else None,
             issue=Issue.from_db(o.issue),
-            pledger=pledger,
+            pledger=Pledger.from_pledge(o),
             hosted_invoice_url=o.invoice_hosted_url if include_admin_fields else None,
         )
 
@@ -215,24 +226,9 @@ class SummaryPledge(Schema):
 
     @classmethod
     def from_db(cls, o: PledgeModel) -> SummaryPledge:
-        pledger: Pledger | None = None
-
-        if o.by_organization:
-            pledger = Pledger(
-                name=o.by_organization.name,
-                github_username=o.by_organization.name,
-                avatar_url=o.by_organization.avatar_url,
-            )
-        elif o.user:
-            pledger = Pledger(
-                name=o.user.username,
-                github_username=o.user.username,
-                avatar_url=o.user.avatar_url,
-            )
-
         return SummaryPledge(
             type=PledgeType.from_str(o.type),
-            pledger=pledger,
+            pledger=Pledger.from_pledge(o),
         )
 
 
@@ -251,6 +247,7 @@ class CreatePledgeFromPaymentIntent(Schema):
 class CreatePledgePayLater(Schema):
     issue_id: UUID
     amount: int
+    on_behalf_of_organization_id: UUID | None
 
 
 class PledgeTransactionType(str, Enum):
@@ -265,12 +262,14 @@ class PledgeStripePaymentIntentCreate(Schema):
     email: str
     amount: int
     setup_future_usage: Literal["on_session"] | None
+    on_behalf_of_organization_id: UUID | None
 
 
 class PledgeStripePaymentIntentUpdate(Schema):
     email: str
     amount: int
     setup_future_usage: Literal["on_session"] | None
+    on_behalf_of_organization_id: UUID | None
 
 
 class PledgeStripePaymentIntentMutationResponse(Schema):

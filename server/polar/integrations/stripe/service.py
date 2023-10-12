@@ -1,4 +1,5 @@
 from typing import Literal, Tuple
+from uuid import UUID
 
 import stripe as stripe_lib
 
@@ -43,25 +44,29 @@ class StripeService:
         transfer_group: str,
         issue: Issue,
         user: User,
+        on_behalf_of_organization_id: UUID | None = None,
     ) -> stripe_lib.PaymentIntent:
         customer = await self.get_or_create_user_customer(session, user)
         if not customer:
             raise Exception("failed to get/create customer")
 
         metadata = PaymentIntentMetadata(
-            issue_id=str(issue.id),
+            issue_id=issue.id,
             issue_title=issue.title,
-            user_id=str(user.id),
+            user_id=user.id,
             user_username=user.username,
             user_email=user.email,
         )
+
+        if on_behalf_of_organization_id:
+            metadata.on_behalf_of_organization_id = on_behalf_of_organization_id
 
         return stripe_lib.PaymentIntent.create(
             amount=amount,
             currency="USD",
             transfer_group=transfer_group,
             customer=customer.id,
-            metadata=metadata.dict(exclude_unset=True),
+            metadata=metadata.dict(exclude_none=True),
             receipt_email=user.email,
         )
 
@@ -74,12 +79,12 @@ class StripeService:
         user: User,
     ) -> stripe_lib.PaymentIntent:
         metadata = PaymentIntentMetadata(
-            issue_id=str(issue.id),
+            issue_id=issue.id,
             issue_title=issue.title,
-            user_id=str(user.id),
+            user_id=user.id,
             user_username=user.username,
             user_email=user.email,
-            organization_id=str(organization.id),
+            organization_id=organization.id,
             organization_name=organization.name,
         )
 
@@ -87,7 +92,7 @@ class StripeService:
             amount=amount,
             currency="USD",
             transfer_group=transfer_group,
-            metadata=metadata.dict(exclude_unset=True),
+            metadata=metadata.dict(exclude_none=True),
             receipt_email=user.email,
         )
 
@@ -97,12 +102,22 @@ class StripeService:
         amount: int,
         receipt_email: str,
         setup_future_usage: Literal["off_session", "on_session"] | None,
+        on_behalf_of_organization_id: UUID | None = None,
     ) -> stripe_lib.PaymentIntent:
+        metadata = PaymentIntentMetadata(
+            on_behalf_of_organization_id=on_behalf_of_organization_id
+            if on_behalf_of_organization_id
+            else "",  # Set to empty string to unset the value on Stripe.
+        )
+
+        print(metadata.dict(exclude_none=True))
+
         return stripe_lib.PaymentIntent.modify(
             id,
             amount=amount,
             receipt_email=receipt_email,
             setup_future_usage=setup_future_usage,
+            metadata=metadata.dict(exclude_none=True),
         )
 
     def retrieve_intent(self, id: str) -> stripe_lib.PaymentIntent:

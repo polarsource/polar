@@ -7,6 +7,7 @@ import structlog
 
 from polar.exceptions import NotPermitted, ResourceNotFound, StripeError
 from polar.integrations.loops.service import loops as loops_service
+from polar.integrations.stripe.schemas import PaymentIntentMetadata
 from polar.integrations.stripe.service import stripe
 from polar.issue.service import issue as issue_service
 from polar.models.issue import Issue
@@ -123,6 +124,7 @@ class PaymentIntentService:
             amount=amount_including_fee,
             receipt_email=updates.email,
             setup_future_usage=updates.setup_future_usage,
+            on_behalf_of_organization_id=updates.on_behalf_of_organization_id,
         )
 
         return PledgeStripePaymentIntentMutationResponse(
@@ -150,7 +152,11 @@ class PaymentIntentService:
         if not intent:
             raise ResourceNotFound()
 
-        issue_id = intent["metadata"]["issue_id"]
+        metadata = PaymentIntentMetadata.parse_obj(intent["metadata"])
+
+        issue_id = metadata.issue_id
+        if not issue_id:
+            raise ResourceNotFound("issue_id is not set")
 
         issue = await issue_service.get(session, issue_id)
         if not issue:
@@ -166,7 +172,8 @@ class PaymentIntentService:
 
         email = intent["receipt_email"]
         amount = intent["amount"]
-        user_id = intent["metadata"].get("user_id", None)
+
+        user_id = metadata.user_id
 
         # Create an account automatically for anonymous pledges
         if user_id is None:
@@ -195,6 +202,7 @@ class PaymentIntentService:
             type=PledgeType.pay_upfront,
             by_user_id=user_id,
             by_organization_id=None,
+            on_behalf_of_organization_id=metadata.on_behalf_of_organization_id,
         )
 
         if state == PledgeState.created:

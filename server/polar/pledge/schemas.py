@@ -273,9 +273,7 @@ class PledgeStripePaymentIntentUpdate(Schema):
 
 
 class PledgeStripePaymentIntentMutationResponse(Schema):
-    # pledge_id: UUID
     payment_intent_id: str
-    # state: PledgeState
     amount: int
     fee: int
     amount_including_fee: int

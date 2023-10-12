@@ -4,6 +4,7 @@ import stripe as stripe_lib
 
 from polar.account.schemas import AccountCreate
 from polar.config import settings
+from polar.integrations.stripe.schemas import PaymentIntentMetadata
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
@@ -47,18 +48,20 @@ class StripeService:
         if not customer:
             raise Exception("failed to get/create customer")
 
+        metadata = PaymentIntentMetadata(
+            issue_id=str(issue.id),
+            issue_title=issue.title,
+            user_id=str(user.id),
+            user_username=user.username,
+            user_email=user.email,
+        )
+
         return stripe_lib.PaymentIntent.create(
             amount=amount,
             currency="USD",
             transfer_group=transfer_group,
             customer=customer.id,
-            metadata={
-                "issue_id": issue.id,
-                "issue_title": issue.title,
-                "user_id": user.id,
-                "user_username": user.username,
-                "user_email": user.email,
-            },
+            metadata=metadata.dict(exclude_unset=True),
             receipt_email=user.email,
         )
 
@@ -70,19 +73,21 @@ class StripeService:
         organization: Organization,
         user: User,
     ) -> stripe_lib.PaymentIntent:
+        metadata = PaymentIntentMetadata(
+            issue_id=str(issue.id),
+            issue_title=issue.title,
+            user_id=str(user.id),
+            user_username=user.username,
+            user_email=user.email,
+            organization_id=str(organization.id),
+            organization_name=organization.name,
+        )
+
         return stripe_lib.PaymentIntent.create(
             amount=amount,
             currency="USD",
             transfer_group=transfer_group,
-            metadata={
-                "issue_id": issue.id,
-                "issue_title": issue.title,
-                "user_id": user.id,
-                "user_username": user.username,
-                "user_email": user.email,
-                "organization_id": organization.id,
-                "organization_name": organization.name,
-            },
+            metadata=metadata.dict(exclude_unset=True),
             receipt_email=user.email,
         )
 

@@ -1,7 +1,20 @@
-import pytest_asyncio
+from unittest.mock import MagicMock
 
+import pytest
+import pytest_asyncio
+from pytest_mock import MockerFixture
+
+from polar.integrations.stripe.service import StripeService
 from polar.models import Organization, Repository, SubscriptionGroup, SubscriptionTier
 from polar.postgres import AsyncSession
+
+
+@pytest.fixture(autouse=True)
+def mock_stripe_service(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch(
+        "polar.subscription.service.subscription_tier.stripe_service",
+        spec=StripeService,
+    )
 
 
 async def create_subscription_group(
@@ -35,6 +48,8 @@ async def create_subscription_tier(
         price_amount=1000,
         price_currency="USD",
         subscription_group_id=subscription_group.id,
+        stripe_product_id="PRODUCT_ID",
+        stripe_price_id="PRICE_ID",
     )
     session.add(subscription_tier)
     await session.commit()

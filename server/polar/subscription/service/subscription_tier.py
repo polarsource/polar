@@ -2,6 +2,8 @@ import uuid
 
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, PolarError
+from polar.integrations.stripe.service import StripeError
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.services import ResourceService
 from polar.models import SubscriptionTier, User
@@ -41,9 +43,41 @@ class SubscriptionTierService(
         ):
             raise SubscriptionGroupDoesNotExist(create_schema.subscription_group_id)
 
-        # TODO: Stripe integration here
+        nested = await session.begin_nested()
+        subscription_tier = await self.model.create(
+            session, **create_schema.dict(), autocommit=False
+        )
+        await session.flush()
+        assert subscription_tier.id is not None
 
-        return await super().create(session, create_schema)
+        try:
+            product = stripe_service.create_product_with_price(
+                create_schema.name,
+                price_amount=create_schema.price_amount,
+                price_currency=create_schema.price_currency,
+                description=create_schema.description,
+                metadata={
+                    "subscription_tier_id": str(subscription_tier.id),
+                    "subscription_group_id": str(subscription_group.id),
+                    "organization_id": str(subscription_group.organization_id),
+                    "organization_name": subscription_group.organization.name
+                    if subscription_group.organization is not None
+                    else None,
+                    "repository_id": str(subscription_group.repository_id),
+                    "repository_name": subscription_group.repository.name
+                    if subscription_group.repository is not None
+                    else None,
+                },
+            )
+        except StripeError:
+            await nested.rollback()
+            raise
+
+        subscription_tier.stripe_product_id = product.stripe_id
+        subscription_tier.stripe_price_id = product.default_price
+
+        await session.commit()
+        return subscription_tier
 
     async def user_update(
         self,
@@ -65,12 +99,21 @@ class SubscriptionTierService(
 
         if (
             update_schema.price_amount is not None
+            and subscription_tier.stripe_product_id is not None
+            and subscription_tier.stripe_price_id is not None
             and update_schema.price_amount != subscription_tier.price_amount
         ):
-            """TODO: Archive price in Stripe and create a new one"""
+            new_price = stripe_service.create_price_for_product(
+                subscription_tier.stripe_product_id,
+                update_schema.price_amount,
+                subscription_tier.price_currency,
+                set_default=True,
+            )
+            stripe_service.archive_price(subscription_tier.stripe_price_id)
+            subscription_tier.stripe_price_id = new_price.stripe_id
 
-        return await self.update(
-            session, subscription_tier, update_schema, exclude_unset=True
+        return await subscription_tier.update(
+            session, **update_schema.dict(exclude_unset=True)
         )
 
     async def archive(
@@ -90,7 +133,8 @@ class SubscriptionTierService(
         ):
             raise NotPermitted()
 
-        # TODO: Archive product and price in Stripe
+        if subscription_tier.stripe_product_id is not None:
+            stripe_service.archive_product(subscription_tier.stripe_product_id)
 
         return await subscription_tier.update(session, is_archived=True)
 

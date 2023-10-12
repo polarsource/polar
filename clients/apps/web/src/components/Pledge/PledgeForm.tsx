@@ -7,6 +7,7 @@ import {
 import { CommandLineIcon, HeartIcon } from '@heroicons/react/24/solid'
 import {
   Issue,
+  Organization,
   PaymentMethod,
   PledgeStripePaymentIntentCreateSetupFutureUsageEnum,
   PledgeStripePaymentIntentMutationResponse,
@@ -41,17 +42,19 @@ import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Contribute from './Contribute'
 import FundOnCompletion from './FundOnCompletion'
+import OnBehalfOf from './OnBehalfOf'
 import PaymentForm from './PaymentForm'
 import { prettyCardName, validateEmail } from './payment'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
-type PledgeSync = {
+type PledgeFormState = {
   amount: number
   email: string
   setup_future_usage:
     | PledgeStripePaymentIntentCreateSetupFutureUsageEnum
     | undefined
+  on_behalf_of_organization_id: string | undefined
 }
 
 const generateRedirectURL = (
@@ -267,10 +270,14 @@ const FundToday = ({
 }) => {
   const [polarPaymentIntent, setPolarPaymentIntent] =
     useState<PledgeStripePaymentIntentMutationResponse | null>(null)
-  const [amount, setAmount] = useState<number>(
-    issue.repository.organization.pledge_minimum_amount,
-  )
-  const [email, setEmail] = useState('')
+
+  const [formState, setFormState] = useState<PledgeFormState>({
+    amount: issue.repository.organization.pledge_minimum_amount,
+    email: '',
+    setup_future_usage: undefined,
+    on_behalf_of_organization_id: undefined,
+  })
+
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [isSyncing, setSyncing] = useState(false)
 
@@ -279,12 +286,14 @@ const FundToday = ({
   const savedPaymentMethods = useListPaymentMethods()
 
   const hasValidDetails = () => {
-    let isValidEmail = validateEmail(email)
+    let isValidEmail = validateEmail(formState.email)
     if (!isValidEmail) {
       return false
     }
 
-    return amount >= issue.repository.organization.pledge_minimum_amount
+    return (
+      formState.amount >= issue.repository.organization.pledge_minimum_amount
+    )
   }
 
   // Redirect to personal dashboard if authenticated unless gotoURL is set
@@ -294,34 +303,42 @@ const FundToday = ({
 
   const { resolvedTheme } = useTheme()
 
-  const lastPledgeSync = useRef<PledgeSync | undefined>()
+  const lastPledgeSync = useRef<PledgeFormState | undefined>()
 
-  const createPaymentIntent = useCallback(async (pledgeSync: PledgeSync) => {
-    return await api.pledges.createPaymentIntent({
-      pledgeStripePaymentIntentCreate: {
-        issue_id: issue.id,
-        amount: pledgeSync.amount,
-        email: pledgeSync.email,
-      },
-    })
-  }, [])
+  const createPaymentIntent = useCallback(
+    async (pledgeSync: PledgeFormState) => {
+      return await api.pledges.createPaymentIntent({
+        pledgeStripePaymentIntentCreate: {
+          issue_id: issue.id,
+          amount: pledgeSync.amount,
+          email: pledgeSync.email,
+          on_behalf_of_organization_id: pledgeSync.on_behalf_of_organization_id,
+        },
+      })
+    },
+    [],
+  )
 
-  const updatePaymentIntent = useCallback(async (pledgeSync: PledgeSync) => {
-    if (!polarPaymentIntent) {
-      throw new Error('no payment intent to update')
-    }
+  const updatePaymentIntent = useCallback(
+    async (pledgeSync: PledgeFormState) => {
+      if (!polarPaymentIntent) {
+        throw new Error('no payment intent to update')
+      }
 
-    return await api.pledges.updatePaymentIntent({
-      id: polarPaymentIntent.payment_intent_id,
-      pledgeStripePaymentIntentUpdate: {
-        amount: pledgeSync.amount,
-        email: pledgeSync.email,
-        setup_future_usage: pledgeSync.setup_future_usage,
-      },
-    })
-  }, [])
+      return await api.pledges.updatePaymentIntent({
+        id: polarPaymentIntent.payment_intent_id,
+        pledgeStripePaymentIntentUpdate: {
+          amount: pledgeSync.amount,
+          email: pledgeSync.email,
+          setup_future_usage: pledgeSync.setup_future_usage,
+          on_behalf_of_organization_id: pledgeSync.on_behalf_of_organization_id,
+        },
+      })
+    },
+    [],
+  )
 
-  const shouldSynchronizePledge = useCallback((pledgeSync: PledgeSync) => {
+  const shouldSynchronizePledge = useCallback((pledgeSync: PledgeFormState) => {
     if (
       pledgeSync.amount < issue.repository.organization.pledge_minimum_amount
     ) {
@@ -340,7 +357,9 @@ const FundToday = ({
       lastPledgeSync.current.amount !== pledgeSync.amount ||
       lastPledgeSync.current.email !== pledgeSync.email ||
       lastPledgeSync.current.setup_future_usage !==
-        pledgeSync.setup_future_usage
+        pledgeSync.setup_future_usage ||
+      lastPledgeSync.current.on_behalf_of_organization_id !==
+        pledgeSync.on_behalf_of_organization_id
     ) {
       return true
     }
@@ -348,7 +367,7 @@ const FundToday = ({
     return false
   }, [])
 
-  const synchronizePledge = useCallback(async (pledgeSync: PledgeSync) => {
+  const synchronizePledge = useCallback(async (pledgeSync: PledgeFormState) => {
     if (!shouldSynchronizePledge(pledgeSync)) {
       return
     }
@@ -392,14 +411,15 @@ const FundToday = ({
   useEffect(() => {
     if (currentUser && currentUser.email && !didFirstUserEmailSync.current) {
       didFirstUserEmailSync.current = true
-      setEmail(currentUser.email)
-      synchronizePledge({
-        amount,
+
+      const n = {
+        ...formState,
         email: currentUser.email,
-        setup_future_usage: lastPledgeSync.current?.setup_future_usage,
-      })
+      }
+      setFormState(n)
+      synchronizePledge(n)
     }
-  }, [currentUser, amount, synchronizePledge])
+  }, [currentUser, formState, synchronizePledge])
 
   const onAmountChange = (event: ChangeEvent<HTMLInputElement>) => {
     let newAmount = parseInt(event.target.value)
@@ -408,7 +428,9 @@ const FundToday = ({
     }
     const amountInCents = newAmount * 100
 
-    if (amount === issue.repository.organization.pledge_minimum_amount) {
+    if (
+      formState.amount === issue.repository.organization.pledge_minimum_amount
+    ) {
       posthog.capture('Pledge amount changed', {
         Amount: newAmount,
         'Organization ID': issue.repository.organization.id,
@@ -424,18 +446,18 @@ const FundToday = ({
       onAmountChangeProp(amountInCents)
     }
 
-    setAmount(amountInCents)
-
-    debouncedSync({
-      ...getSyncVals(),
+    const n = {
+      ...formState,
       amount: amountInCents,
-    })
+    }
+    setFormState(n)
+    debouncedSync(n)
   }
 
   type Timeout = ReturnType<typeof setTimeout>
   const syncTimeout = useRef<Timeout | null>(null)
 
-  const debouncedSync = (pledgeSync: PledgeSync) => {
+  const debouncedSync = (pledgeSync: PledgeFormState) => {
     syncTimeout.current && clearTimeout(syncTimeout.current)
     syncTimeout.current = setTimeout(() => synchronizePledge(pledgeSync), 500)
   }
@@ -443,7 +465,7 @@ const FundToday = ({
   const onEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
     const newEmail = event.target.value
 
-    if (email === '') {
+    if (formState.email === '') {
       posthog.capture('Pledge email entered', {
         'Organization ID': issue.repository.organization.id,
         'Organization Name': issue.repository.organization.name,
@@ -454,21 +476,12 @@ const FundToday = ({
       })
     }
 
-    setEmail(newEmail)
-    debouncedSync({
-      ...getSyncVals(),
+    const n = {
+      ...formState,
       email: newEmail,
-    })
-  }
-
-  const getSyncVals = (): PledgeSync => {
-    return {
-      amount,
-      email,
-      setup_future_usage: savePaymentMethod
-        ? PledgeStripePaymentIntentCreateSetupFutureUsageEnum.ON_SESSION
-        : undefined,
     }
+    setFormState(n)
+    debouncedSync(n)
   }
 
   const router = useRouter()
@@ -484,7 +497,11 @@ const FundToday = ({
       throw new Error('got payment success but no pledge')
     }
 
-    const location = generateRedirectURL(gotoURL, paymentIntent, email)
+    const location = generateRedirectURL(
+      gotoURL,
+      paymentIntent,
+      formState.email,
+    )
     router.push(location)
   }
 
@@ -495,16 +512,16 @@ const FundToday = ({
   const organization = issue.repository.organization
   const repository = issue.repository
 
-  const [savePaymentMethod, setSavePaymentMethod] = useState(false)
-
   const onSavePaymentMethodChanged = (save: boolean) => {
-    setSavePaymentMethod(save)
-    debouncedSync({
-      ...getSyncVals(),
+    const n = {
+      ...formState,
       setup_future_usage: save
         ? PledgeStripePaymentIntentCreateSetupFutureUsageEnum.ON_SESSION
         : undefined,
-    })
+    }
+
+    setFormState(n)
+    debouncedSync(n)
   }
 
   const onPaymentMethodChange = (id: string) => {
@@ -533,6 +550,16 @@ const FundToday = ({
     didSetPaymentMethodOnLoad.current = true
   }, [savedPaymentMethods.isFetched, savedPaymentMethods.data])
 
+  const onChangeOnBehalfOf = (org: Organization | undefined) => {
+    const n = {
+      ...formState,
+      on_behalf_of_organization_id: org ? org.id : undefined,
+    }
+    setFormState(n)
+    debouncedSync(n)
+    console.log('changed', { ...n })
+  }
+
   return (
     <div className="flex flex-col space-y-4 py-4">
       <div>
@@ -549,14 +576,16 @@ const FundToday = ({
             onChange={onAmountChange}
             onBlur={onAmountChange}
             placeholder={organization.pledge_minimum_amount}
-            value={amount}
+            value={formState.amount}
             onFocus={(event) => {
               event.target.select()
             }}
           />
           <p
             className={classNames(
-              amount < organization.pledge_minimum_amount ? 'text-red-500' : '',
+              formState.amount < organization.pledge_minimum_amount
+                ? 'text-red-500'
+                : '',
               'dark:text-polar-400 text-xs text-gray-500',
             )}
           >
@@ -579,7 +608,7 @@ const FundToday = ({
             id="email"
             onChange={onEmailChange}
             onBlur={onEmailChange}
-            value={email}
+            value={formState.email}
             className="dark:border-polar-600 block w-full rounded-lg border-gray-200 bg-transparent px-3 py-2.5 pl-10 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
             onFocus={(event) => {
               event.target.select()
@@ -621,7 +650,10 @@ const FundToday = ({
 
               <SelectContent>
                 {savedPaymentMethods.data.items.map((pm) => (
-                  <SelectItem value={pm.stripe_payment_method_id}>
+                  <SelectItem
+                    value={pm.stripe_payment_method_id}
+                    key={pm.stripe_payment_method_id}
+                  >
                     {prettyCardName(pm.brand)} (****{pm.last4}){' '}
                     {pm.exp_month.toString().padStart(2, '0')}/{pm.exp_year}
                   </SelectItem>
@@ -631,6 +663,8 @@ const FundToday = ({
             </Select>
           </div>
         )}
+
+      <OnBehalfOf onChange={onChangeOnBehalfOf} />
 
       {showStripeForm && polarPaymentIntent && (
         <Elements

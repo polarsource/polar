@@ -18,15 +18,10 @@ Once installed, you may import the SDK like you usually would:
 ```typescript
 import { Configuration, PolarAPI } from '@polar-sh/sdk';
 
-const api = new PolarAPI(
-    new Configuration({
-        credentials: 'include'
-    })
-);
+const api = new PolarAPI();
 
 const authedApi = new PolarAPI(
     new Configuration({
-        credentials: 'include',
         accessToken: '<MY_ACCESS_TOKEN>'
     })
 );
@@ -43,13 +38,9 @@ You can acquire an access token through your [Settings page](https://polar.sh/se
 You can easily retrieve issues looking for funding using the Funding-service.
 
 ```typescript
-import { Configuration, PolarAPI, Platforms, ListFundingSortBy } from '@polar-sh/sdk';
+import { PolarAPI, Platforms, ListFundingSortBy } from '@polar-sh/sdk';
 
-const api = new PolarAPI(
-    new Configuration({
-        credentials: 'include'
-    })
-);
+const api = new PolarAPI();
 
 const issuesFunding = await api.funding.search(
     {
@@ -73,13 +64,9 @@ const issuesFunding = await api.funding.search(
 Retrieve Polar data about a given GitHub issue.
 
 ```typescript
-import { Configuration, PolarAPI } from '@polar-sh/sdk';
+import { PolarAPI } from '@polar-sh/sdk';
 
-const api = new PolarAPI(
-    new Configuration({
-        credentials: 'include'
-    })
-);
+const api = new PolarAPI();
 
 const params = {
     organization: 'polarsource',
@@ -103,7 +90,6 @@ import { Configuration, PolarAPI } from '@polar-sh/sdk';
 
 const api = new PolarAPI(
     new Configuration({
-        credentials: 'include',
         accessToken: '<MY_ACCESS_TOKEN>'
     })
 );

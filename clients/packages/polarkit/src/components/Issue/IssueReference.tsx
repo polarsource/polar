@@ -174,7 +174,7 @@ const IssueReferenceExternalGitHubPullRequest = (props: {
             !isMerged
               ? 'border-red-200 bg-red-100 text-red-500 dark:border-red-500/30 dark:bg-red-500/30 dark:text-red-300'
               : '',
-            'h-5 w-5 rounded-lg border p-0.5',
+            'h-6 w-6 rounded-lg border p-0.5',
           )}
         >
           {isMerged && <GitMergeIcon />}
@@ -275,7 +275,7 @@ const IssueReferencePullRequest = (props: {
         <span
           className={classNames(
             formatting.iconClasses,
-            'h-5 w-5 rounded-lg border p-0.5',
+            'h-6 w-6 rounded-lg border p-0.5',
           )}
         >
           {isMerged && <GitMergeIcon />}

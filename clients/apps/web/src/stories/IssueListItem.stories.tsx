@@ -658,7 +658,9 @@ export const SelfSummaryFundingGoal: Story = {
         pledger: {
           name: user.username,
           github_username: user.username,
+          avatar_url: user.avatar_url,
         },
+        authed_can_admin_sender: true,
       },
       {
         ...pledgePublicAPI,
@@ -666,12 +668,12 @@ export const SelfSummaryFundingGoal: Story = {
           name: user.username,
           github_username: user.username,
         },
+        authed_can_admin_sender: true,
       },
       {
         ...pledgePublicAPI,
       },
     ],
-    showSelfPledgesFor: user,
 
     pledgesSummary: {
       ...pledgesSummaries,
@@ -701,7 +703,19 @@ export const SelfSummaryNoGoal: Story = {
         pledger: {
           name: user.username,
           github_username: user.username,
+          avatar_url: user.avatar_url,
         },
+        authed_can_admin_sender: true,
+      },
+      {
+        ...pledgePublicAPI,
+        pledger: {
+          name: 'BigCo',
+          github_username: 'polarsource',
+          avatar_url:
+            'https://avatars.githubusercontent.com/u/13629408?s=200&v=4',
+        },
+        authed_can_admin_sender: true,
       },
       {
         ...pledgePublicAPI,
@@ -709,13 +723,13 @@ export const SelfSummaryNoGoal: Story = {
           name: user.username,
           github_username: user.username,
         },
+        authed_can_admin_sender: true,
       },
 
       {
         ...pledgePublicAPI,
       },
     ],
-    showSelfPledgesFor: user,
 
     pledgesSummary: {
       ...pledgesSummaries,

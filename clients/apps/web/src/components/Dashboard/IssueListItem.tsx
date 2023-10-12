@@ -10,7 +10,6 @@ import {
   PledgesTypeSummaries,
   Repository,
   Reward,
-  UserRead,
 } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
 import {
@@ -36,7 +35,6 @@ const IssueListItem = (props: {
   canAddRemovePolarLabel: boolean
   showPledgeAction: boolean
   right?: React.ReactElement
-  showSelfPledgesFor?: UserRead
   className?: string
   showLogo?: boolean
   showIssueOpenClosedStatus?: boolean
@@ -114,7 +112,6 @@ const IssueListItem = (props: {
               onConfirmPledges={onConfirmPledge}
               confirmPledgeIsLoading={false}
               funding={props.issue.funding}
-              showSelfPledgesFor={props.showSelfPledgesFor}
               rewards={props.rewards}
             />
           </IssueActivityBox>

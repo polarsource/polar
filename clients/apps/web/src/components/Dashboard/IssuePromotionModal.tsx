@@ -605,7 +605,7 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
   const issuePledges = useListPledesForIssue(props.issue.id)
 
   const selfSeededAmount = (issuePledges.data?.items || [])
-    .filter((p) => p.pledger?.github_username === props.user.username)
+    .filter((p) => p.authed_can_admin_sender)
     .map((p) => p.amount.amount)
     .reduce((a, b) => a + b, 0)
 

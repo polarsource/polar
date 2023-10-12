@@ -6,7 +6,6 @@ import {
   PledgeState,
   PledgesTypeSummaries,
   Reward,
-  UserRead,
 } from '@polar-sh/sdk'
 import { getCentsInDollarString } from 'polarkit/money'
 import { classNames } from 'polarkit/utils'
@@ -41,7 +40,6 @@ const IssueListItemDecoration = ({
   showConfirmPledgeAction,
   confirmPledgeIsLoading,
   funding,
-  showSelfPledgesFor,
   issue,
   rewards,
 }: {
@@ -57,7 +55,6 @@ const IssueListItemDecoration = ({
   showConfirmPledgeAction: boolean
   confirmPledgeIsLoading: boolean
   funding: Funding
-  showSelfPledgesFor?: UserRead
   issue: Issue
   rewards?: Reward[]
 }) => {
@@ -146,7 +143,6 @@ const IssueListItemDecoration = ({
             showConfirmPledgeAction={showConfirmPledgeAction}
             confirmPledgeIsLoading={confirmPledgeIsLoading}
             funding={funding}
-            showSelfPledgesFor={showSelfPledgesFor}
           />
         )}
 

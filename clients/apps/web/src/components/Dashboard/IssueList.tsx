@@ -4,12 +4,7 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
-import {
-  IssueListResponse,
-  IssueListType,
-  IssueSortBy,
-  UserRead,
-} from '@polar-sh/sdk'
+import { IssueListResponse, IssueListType, IssueSortBy } from '@polar-sh/sdk'
 import { InfiniteData } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { IssueReadWithRelations } from 'polarkit/api/types'
@@ -47,7 +42,6 @@ const IssueList = (props: {
   hasNextPage: boolean
   isInitialLoading: boolean
   isFetchingNextPage: boolean
-  showSelfPledgesFor?: UserRead
 }) => {
   const { fetchNextPage, hasNextPage, isFetchingNextPage } = props
 
@@ -64,7 +58,6 @@ const IssueList = (props: {
                   page={group}
                   key={i}
                   canAddRemovePolarLabel={canAddRemovePolarLabel}
-                  showSelfPledgesFor={props.showSelfPledgesFor}
                 />
               ))}
             </>
@@ -99,7 +92,6 @@ export default IssueList
 const IssueListPage = (props: {
   page: IssueListResponse
   canAddRemovePolarLabel: boolean
-  showSelfPledgesFor?: UserRead
 }) => {
   const [issues, setIssues] = useState<IssueReadWithRelations[]>()
 
@@ -135,7 +127,6 @@ const IssueListPage = (props: {
           canAddRemovePolarLabel={props.canAddRemovePolarLabel}
           showPledgeAction={true}
           showIssueOpenClosedStatus={true}
-          showSelfPledgesFor={props.showSelfPledgesFor}
         />
       ))}
     </>

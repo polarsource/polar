@@ -43,7 +43,6 @@ const Recommended = () => {
                 key={issue.id}
                 canAddRemovePolarLabel={false}
                 showPledgeAction={true}
-                showSelfPledgesFor={currentUser}
                 showLogo={true}
                 className="py-3"
                 right={

@@ -5,6 +5,7 @@ import Icon from '@/components/Icons/Icon'
 import { githubIssueLink } from '@/utils/github'
 import { PledgeState, PledgeType, Reward, RewardState } from '@polar-sh/sdk'
 import { getCentsInDollarString } from 'polarkit/money'
+import { dateOrString } from 'polarkit/utils'
 
 export type Column = 'PAID_OUT_DATE' | 'RECEIVER' | 'BACKER' | 'PAYMENT_STATUS'
 
@@ -166,7 +167,7 @@ const List = (props: {
                 )}
 
                 <td className="dark:text-polar-400 hidden whitespace-nowrap py-3 pr-3 text-sm text-gray-500 md:table-cell">
-                  {formatDate(t.pledge.created_at)}
+                  {formatDate(dateOrString(t.pledge.created_at))}
                 </td>
 
                 {showPaymentStatus && (
@@ -190,7 +191,8 @@ const List = (props: {
 
                 {showPaidOutDate && (
                   <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
-                    {(t.paid_at && formatDate(t.paid_at)) || 'Unknown'}
+                    {(t.paid_at && formatDate(dateOrString(t.paid_at))) ||
+                      'Unknown'}
                   </td>
                 )}
 

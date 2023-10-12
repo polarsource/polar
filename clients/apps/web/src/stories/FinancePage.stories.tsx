@@ -25,7 +25,7 @@ export default meta
 
 const pledge: Pledge = {
   id: 'xx',
-  created_at: new Date('2023-06-29'),
+  created_at: new Date('2023-06-29').toISOString(),
   // issue_id: 'xx',
   amount: { currency: 'USD', amount: 12300 },
   // repository_id: 'xx',
@@ -35,8 +35,8 @@ const pledge: Pledge = {
   // pledger_name: 'Google',
   // pledger_avatar: 'https://avatars.githubusercontent.com/u/1342004?s=200&v=4',
   // authed_user_can_admin: false,
-  scheduled_payout_at: new Date('2023-08-02'),
-  refunded_at: new Date('2023-06-28'),
+  scheduled_payout_at: new Date('2023-08-02').toISOString(),
+  refunded_at: new Date('2023-06-28').toISOString(),
   // authed_user_can_admin_sender: false,
   // authed_user_can_admin_received: false,
   issue: issue,

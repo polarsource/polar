@@ -13,7 +13,7 @@ import {
 } from 'polarkit/components/icons'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import { githubPullReqeustUrl } from 'polarkit/github'
-import { classNames } from 'polarkit/utils'
+import { classNames, dateOrString } from 'polarkit/utils'
 import { generateMarkdownTitle } from './markdown'
 
 const IssueReference = (props: {
@@ -232,7 +232,7 @@ const IssueReferencePullRequest = (props: {
     isMerged = true
     formatting = {
       label: 'merged',
-      timestamp: pr.merged_at,
+      timestamp: dateOrString(pr.merged_at),
       titleClasses: '',
       iconClasses:
         'bg-purple-100 border-purple-200 text-purple-600 dark:bg-purple-500/40 dark:border-purple-500/40 dark:text-purple-200',
@@ -241,7 +241,7 @@ const IssueReferencePullRequest = (props: {
     isClosed = true
     formatting = {
       label: 'closed',
-      timestamp: pr.closed_at,
+      timestamp: pr.closed_at ? dateOrString(pr.closed_at) : undefined,
       titleClasses: '',
       iconClasses:
         'bg-red-100 border-red-200 text-red-500 dark:text-red-300 dark:bg-red-500/30 dark:border-red-500/30',
@@ -250,7 +250,7 @@ const IssueReferencePullRequest = (props: {
     isOpen = true
     formatting = {
       label: 'opened',
-      timestamp: pr.created_at,
+      timestamp: dateOrString(pr.created_at),
       titleClasses: '',
       iconClasses:
         'bg-gray-100 border-gray-200 text-gray-500 dark:text-polar-300 dark:bg-polar-500/30 dark:border-polar-500/30',
@@ -259,7 +259,7 @@ const IssueReferencePullRequest = (props: {
     isOpen = true
     formatting = {
       label: 'opened',
-      timestamp: pr.created_at,
+      timestamp: dateOrString(pr.created_at),
       titleClasses: '',
       iconClasses:
         'bg-green-100 border-green-200 text-[#26A869] dark:bg-green-500/30 dark:border-green-500/30 dark:text-green-300',

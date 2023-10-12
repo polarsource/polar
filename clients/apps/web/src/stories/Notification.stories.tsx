@@ -105,7 +105,7 @@ export const MaintainerPledgedIssuePendingNotificationItem: Story = {
   args: {
     n: {
       id: 'x',
-      created_at: new Date(),
+      created_at: new Date().toISOString(),
       type: NotificationType.MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION,
       payload: notificationDummyPayload,
       maintainer_pledged_issue_pending: {
@@ -127,7 +127,7 @@ export const MaintainerPledgedIssueConfirmationPendingNotificationItem: StoryCon
     args: {
       n: {
         id: 'x',
-        created_at: new Date(),
+        created_at: new Date().toISOString(),
         type: NotificationType.MAINTAINER_PLEDGED_ISSUE_CONFIRMATION_PENDING_NOTIFICATION,
         payload: notificationDummyPayload,
         maintainer_pledged_issue_confirmation_pending: {

@@ -38,10 +38,12 @@ export const IssueToday: Story = {
     issue_count: 15,
     avatar: org.avatar_url,
     issues: [
-      { ...issue, issue_created_at: new Date() },
+      { ...issue, issue_created_at: new Date().toISOString() },
       {
         ...issue,
-        issue_created_at: new Date(new Date().getTime() - 60 * 60 * 24 * 1000),
+        issue_created_at: new Date(
+          new Date().getTime() - 60 * 60 * 24 * 1000,
+        ).toISOString(),
         reactions: {
           ...(issue.reactions as Reactions),
           plus_one: 0,

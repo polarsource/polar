@@ -5,6 +5,7 @@ import RefundIcon from '@/components/Icons/RefundIcon'
 import { githubIssueLink } from '@/utils/github'
 import { Pledge, PledgeState, PledgeType } from '@polar-sh/sdk'
 import { getCentsInDollarString } from 'polarkit/money'
+import { dateOrString } from 'polarkit/utils'
 
 export type Column = 'ESTIMATED_PAYOUT_DATE' | 'REFUNDED_DATE'
 
@@ -139,14 +140,14 @@ const List = (props: {
                 </td>
 
                 <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
-                  {formatDate(t.created_at)}
+                  {formatDate(dateOrString(t.created_at))}
                 </td>
 
                 {showEstimatedPayoutDate && (
                   <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
                     <div>
                       {(t.scheduled_payout_at &&
-                        formatDate(t.scheduled_payout_at)) ||
+                        formatDate(dateOrString(t.scheduled_payout_at))) ||
                         'Unknown'}
                     </div>
                   </td>
@@ -154,7 +155,9 @@ const List = (props: {
 
                 {showRefundedDate && (
                   <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
-                    {(t.refunded_at && formatDate(t.refunded_at)) || 'Unknown'}
+                    {(t.refunded_at &&
+                      formatDate(dateOrString(t.refunded_at))) ||
+                      'Unknown'}
                   </td>
                 )}
 

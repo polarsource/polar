@@ -16,3 +16,10 @@ export const formatStarsNumber = (stars: number): string => {
   stars /= 1000
   return stars.toFixed(1) + 'k'
 }
+
+export const dateOrString = (input: Date | string): Date => {
+  if (typeof input === 'string') {
+    return new Date(input)
+  }
+  return input
+}

@@ -1,7 +1,8 @@
-from typing import Literal, Tuple
+from typing import Any, Literal, Tuple
 from uuid import UUID
 
 import stripe as stripe_lib
+from stripe import error as stripe_lib_error
 
 from polar.account.schemas import AccountCreate
 from polar.config import settings
@@ -14,6 +15,8 @@ from polar.models.user import User
 from polar.postgres import AsyncSession, sql
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
+
+StripeError = stripe_lib_error.StripeError
 
 
 class StripeService:
@@ -291,6 +294,49 @@ Thank you for your support!
             customer=customer.id,
             return_url=f"{settings.FRONTEND_BASE_URL}/settings",
         )
+
+    def create_product_with_price(
+        self,
+        name: str,
+        *,
+        price_amount: int,
+        price_currency: str,
+        description: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> stripe_lib.Product:
+        default_price_data = {
+            "currency": price_currency,
+            "unit_amount": price_amount,
+            "recurring": {"interval": "month"},
+        }
+        product = stripe_lib.Product.create(
+            name=name,
+            description=description,
+            default_price_data=default_price_data,
+            metadata=metadata or {},
+        )
+        return product
+
+    def create_price_for_product(
+        self,
+        product: str,
+        price_amount: int,
+        price_currency: str,
+        *,
+        set_default: bool = False,
+    ) -> stripe_lib.Price:
+        price = stripe_lib.Price.create(
+            currency=price_currency, product=product, unit_amount=price_amount
+        )
+        if set_default:
+            stripe_lib.Product.modify(product, default_price=price.stripe_id)
+        return price
+
+    def archive_product(self, id: str) -> stripe_lib.Product:
+        return stripe_lib.Product.modify(id, active=False)
+
+    def archive_price(self, id: str) -> stripe_lib.Price:
+        return stripe_lib.Price.modify(id, active=False)
 
 
 stripe = StripeService()

@@ -1,4 +1,6 @@
 import uuid
+from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 import pytest
 from httpx import AsyncClient
@@ -290,7 +292,15 @@ class TestCreateSubscriptionTier:
         client: AsyncClient,
         subscription_group_organization: SubscriptionGroup,
         user_organization_admin: UserOrganization,
+        mock_stripe_service: MagicMock,
     ) -> None:
+        create_product_with_price_mock: MagicMock = (
+            mock_stripe_service.create_product_with_price
+        )
+        create_product_with_price_mock.return_value = SimpleNamespace(
+            stripe_id="PRODUCT_ID", default_price="PRICE_ID"
+        )
+
         response = await client.post(
             "/api/v1/subscriptions/tiers/",
             json={

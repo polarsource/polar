@@ -3,12 +3,13 @@ import {
   Funding,
   Issue,
   Pledge,
+  PledgeType,
   PledgesTypeSummaries,
-  UserRead,
 } from '@polar-sh/sdk'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { Avatar, FormattedDateTime } from '../ui/atoms'
 import FundingPill from './FundingPill'
 import PledgeSummaryPill from './PledgeSummaryPill'
 import PublicRewardPill from './PublicRewardPill'
@@ -19,19 +20,14 @@ interface Props {
   showConfirmPledgeAction: boolean
   confirmPledgeIsLoading: boolean
   funding: Funding
-  showSelfPledgesFor?: UserRead
+
   issue: Issue
   pledgesSummary: PledgesTypeSummaries
 }
 
 const IssuePledge = (props: Props) => {
-  const {
-    pledges,
-    showConfirmPledgeAction,
-    confirmPledgeIsLoading,
-    showSelfPledgesFor,
-    issue,
-  } = props
+  const { pledges, showConfirmPledgeAction, confirmPledgeIsLoading, issue } =
+    props
 
   const totalPledgeAmount = Math.max(
     issue.funding.pledges_sum?.amount ?? 0,
@@ -53,18 +49,7 @@ const IssuePledge = (props: Props) => {
   const showFundingGoal =
     props.funding?.funding_goal?.amount && props.funding.funding_goal.amount > 0
 
-  const currentUserPledges = showSelfPledgesFor
-    ? pledges.filter((p) => {
-        if (p.pledger?.github_username === showSelfPledgesFor.username) {
-          return true
-        }
-      })
-    : []
-
-  const selfContribution = currentUserPledges.reduce(
-    (a, b) => a + b.amount.amount,
-    0,
-  )
+  const selfMadePledges = pledges.filter((p) => p.authed_can_admin_sender)
 
   return (
     <>
@@ -122,26 +107,41 @@ const IssuePledge = (props: Props) => {
         </div>
       </div>
 
-      {showSelfPledgesFor && selfContribution > 0 && (
+      {selfMadePledges.map((p) => (
         <div
           className={twMerge(
             'dark:border-polar-700 border-t',
-            'flex flex-row items-center gap-4 bg-gray-50 bg-white px-4 py-2 dark:bg-transparent  ',
+            'flex flex-row items-center gap-2 bg-gray-50 bg-white px-4 py-2 dark:bg-transparent  ',
           )}
         >
-          <img
-            src={showSelfPledgesFor?.avatar_url}
-            className="h-6 w-6 rounded-full"
+          <Avatar
+            name={p.pledger?.name || ''}
+            avatar_url={p.pledger?.avatar_url}
           />
           <div className="text-sm ">
-            You&apos;ve contributed $
-            {getCentsInDollarString(selfContribution, false, true)} to this
-            issue
+            {p.pledger?.name} {pledgeVerb(p)} $
+            {getCentsInDollarString(p.amount.amount, false, true)} to this issue
+            on <FormattedDateTime datetime={p.created_at} dateStyle="long" />
           </div>
         </div>
-      )}
+      ))}
     </>
   )
+}
+
+const pledgeVerb = (p: Pledge) => {
+  switch (p.type) {
+    case PledgeType.UPFRONT:
+      return 'contributed'
+    case PledgeType.ON_COMPLETION:
+      return 'pledged'
+    case PledgeType.DIRECTLY:
+      return 'gifted'
+    default:
+      // TS compile time check that all cases are covered
+      const exhaustiveCheck: never = p.type
+      throw new Error(`Unhandled case: ${exhaustiveCheck}`)
+  }
 }
 
 export default IssuePledge

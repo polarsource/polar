@@ -89,7 +89,6 @@ export default function Page() {
               isFetchingNextPage={dashboardQuery.isFetchingNextPage}
               hasNextPage={dashboardQuery.hasNextPage || false}
               fetchNextPage={dashboardQuery.fetchNextPage}
-              showSelfPledgesFor={currentUser}
             />
           </div>
         )}

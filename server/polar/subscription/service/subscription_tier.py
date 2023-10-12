@@ -38,6 +38,16 @@ class NotAddedToStripeSubscriptionTier(SubscriptionTierError):
         super().__init__(message, 500)
 
 
+class NoAssociatedPayoutAccount(SubscriptionTierError):
+    def __init__(self, organization_id: uuid.UUID) -> None:
+        self.organization = organization_id
+        message = (
+            "A payout account should be configured for this organization "
+            "before being able to accept subscriptions."
+        )
+        super().__init__(message, 400)
+
+
 class SubscriptionTierService(
     ResourceService[SubscriptionTier, SubscriptionTierCreate, SubscriptionTierUpdate]
 ):
@@ -155,6 +165,7 @@ class SubscriptionTierService(
 
     async def get_checkout_session_url(
         self,
+        session: AsyncSession,
         subscription_tier: SubscriptionTier,
         success_url: str,
         auth_subject: Subject,
@@ -167,6 +178,18 @@ class SubscriptionTierService(
 
         if subscription_tier.stripe_price_id is None:
             raise NotAddedToStripeSubscriptionTier(subscription_tier.id)
+
+        subscription_group = (
+            await subscription_group_service.get_with_organization_or_repository(
+                session, subscription_tier.subscription_group_id
+            )
+        )
+        assert subscription_group is not None
+        account = await subscription_group_service.get_managing_organization_account(
+            session, subscription_group
+        )
+        if account is None:
+            raise NoAssociatedPayoutAccount(subscription_group.managing_organization_id)
 
         customer_options: dict[str, str] = {}
         # Set the customer only from a cookie-based authentication!

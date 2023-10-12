@@ -323,6 +323,16 @@ async def create_payment_intent(
     if not await authz.can(auth.subject, AccessType.read, issue):
         raise Unauthorized()
 
+    # If on behalf of org, check that user is member of this org.
+    if intent.on_behalf_of_organization_id:
+        if not auth.user:
+            raise Unauthorized()
+        member = await user_organization_service.get_by_user_and_org(
+            session, auth.user.id, intent.on_behalf_of_organization_id
+        )
+        if not member:
+            raise Unauthorized()
+
     return await payment_intent_service.create_payment_intent(
         session=session,
         user=auth.user,
@@ -338,7 +348,19 @@ async def create_payment_intent(
 async def update_payment_intent(
     id: str,
     updates: PledgeStripePaymentIntentUpdate,
+    session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.optional_user),
 ) -> PledgeStripePaymentIntentMutationResponse:
+    # If on behalf of org, check that user is member of this org.
+    if updates.on_behalf_of_organization_id:
+        if not auth.user:
+            raise Unauthorized()
+        member = await user_organization_service.get_by_user_and_org(
+            session, auth.user.id, updates.on_behalf_of_organization_id
+        )
+        if not member:
+            raise Unauthorized()
+
     return await payment_intent_service.update_payment_intent(
         payment_intent_id=id,
         updates=updates,

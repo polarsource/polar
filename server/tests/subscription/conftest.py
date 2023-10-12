@@ -1,9 +1,11 @@
+from collections.abc import Iterator
 from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
 from pytest_mock import MockerFixture
 
+from polar.app import app
 from polar.integrations.stripe.service import StripeService
 from polar.models import (
     Account,
@@ -14,6 +16,7 @@ from polar.models import (
     User,
 )
 from polar.postgres import AsyncSession
+from polar.subscription.endpoints import is_feature_flag_enabled
 
 
 @pytest.fixture(autouse=True)
@@ -22,6 +25,15 @@ def mock_stripe_service(mocker: MockerFixture) -> MagicMock:
         "polar.subscription.service.subscription_tier.stripe_service",
         spec=StripeService,
     )
+
+
+@pytest.fixture(autouse=True, scope="package")
+def override_is_feature_flag_enabled() -> Iterator[None]:
+    app.dependency_overrides[is_feature_flag_enabled] = lambda: True
+
+    yield
+
+    app.dependency_overrides.pop(is_feature_flag_enabled)
 
 
 async def create_subscription_group(

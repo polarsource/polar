@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import UUID4, AnyHttpUrl, EmailStr
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
@@ -10,6 +10,7 @@ from polar.models import Repository, SubscriptionGroup, SubscriptionTier, User
 from polar.organization.dependencies import OrganizationNameQuery
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
+from polar.posthog import posthog
 from polar.repository.dependencies import OptionalRepositoryNameQuery
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
@@ -26,7 +27,19 @@ from .schemas import SubscriptionTier as SubscriptionTierSchema
 from .service.subscription_group import subscription_group as subscription_group_service
 from .service.subscription_tier import subscription_tier as subscription_tier_service
 
-router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
+
+async def is_feature_flag_enabled(auth: UserRequiredAuth) -> None:
+    if posthog.client and not posthog.client.feature_enabled(
+        "subscriptions", auth.user.posthog_distinct_id
+    ):
+        raise HTTPException(403, "You don't have access to this feature.")
+
+
+router = APIRouter(
+    prefix="/subscriptions",
+    tags=["subscriptions"],
+    dependencies=[Depends(is_feature_flag_enabled)],
+)
 
 
 @router.get(

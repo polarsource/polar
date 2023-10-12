@@ -20,16 +20,6 @@ import type {
   Platforms,
   Repository,
 } from '../models/index';
-import {
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    ListResourceRepositoryFromJSON,
-    ListResourceRepositoryToJSON,
-    PlatformsFromJSON,
-    PlatformsToJSON,
-    RepositoryFromJSON,
-    RepositoryToJSON,
-} from '../models/index';
 
 export interface RepositoriesApiGetRequest {
     id: string;
@@ -80,7 +70,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => RepositoryFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -116,7 +106,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ListResourceRepositoryFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -176,7 +166,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => RepositoryFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -232,7 +222,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ListResourceRepositoryFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**

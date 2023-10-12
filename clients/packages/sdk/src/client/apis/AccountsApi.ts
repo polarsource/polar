@@ -21,18 +21,6 @@ import type {
   HTTPValidationError,
   ListResourceAccount,
 } from '../models/index';
-import {
-    AccountFromJSON,
-    AccountToJSON,
-    AccountCreateFromJSON,
-    AccountCreateToJSON,
-    AccountLinkFromJSON,
-    AccountLinkToJSON,
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    ListResourceAccountFromJSON,
-    ListResourceAccountToJSON,
-} from '../models/index';
 
 export interface AccountsApiCreateRequest {
     accountCreate: AccountCreate;
@@ -87,10 +75,10 @@ export class AccountsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: AccountCreateToJSON(requestParameters.accountCreate),
+            body: requestParameters.accountCreate,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => AccountFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -128,7 +116,7 @@ export class AccountsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => AccountLinkFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -166,7 +154,7 @@ export class AccountsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => AccountFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -204,7 +192,7 @@ export class AccountsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => AccountLinkFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -246,7 +234,7 @@ export class AccountsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ListResourceAccountFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**

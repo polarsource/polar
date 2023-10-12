@@ -21,18 +21,6 @@ import type {
   ListResourceIssueFunding,
   Platforms,
 } from '../models/index';
-import {
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    IssueFundingFromJSON,
-    IssueFundingToJSON,
-    ListFundingSortByFromJSON,
-    ListFundingSortByToJSON,
-    ListResourceIssueFundingFromJSON,
-    ListResourceIssueFundingToJSON,
-    PlatformsFromJSON,
-    PlatformsToJSON,
-} from '../models/index';
 
 export interface FundingApiLookupRequest {
     issueId: string;
@@ -85,7 +73,7 @@ export class FundingApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => IssueFundingFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -159,7 +147,7 @@ export class FundingApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ListResourceIssueFundingFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**

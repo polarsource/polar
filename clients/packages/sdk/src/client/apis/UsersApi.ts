@@ -22,20 +22,6 @@ import type {
   UserStripePortalSession,
   UserUpdateSettings,
 } from '../models/index';
-import {
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    LoginResponseFromJSON,
-    LoginResponseToJSON,
-    LogoutResponseFromJSON,
-    LogoutResponseToJSON,
-    UserReadFromJSON,
-    UserReadToJSON,
-    UserStripePortalSessionFromJSON,
-    UserStripePortalSessionToJSON,
-    UserUpdateSettingsFromJSON,
-    UserUpdateSettingsToJSON,
-} from '../models/index';
 
 export interface UsersApiUpdatePreferencesRequest {
     userUpdateSettings: UserUpdateSettings;
@@ -69,7 +55,7 @@ export class UsersApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => UserStripePortalSessionFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -103,7 +89,7 @@ export class UsersApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => LoginResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -137,7 +123,7 @@ export class UsersApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => UserReadFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -171,7 +157,7 @@ export class UsersApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => LogoutResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -209,10 +195,10 @@ export class UsersApi extends runtime.BaseAPI {
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
-            body: UserUpdateSettingsToJSON(requestParameters.userUpdateSettings),
+            body: requestParameters.userUpdateSettings,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => UserReadFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**

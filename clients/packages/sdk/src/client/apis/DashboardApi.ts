@@ -23,22 +23,6 @@ import type {
   Platforms,
   PledgesTypeSummaries,
 } from '../models/index';
-import {
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    IssueListResponseFromJSON,
-    IssueListResponseToJSON,
-    IssueListTypeFromJSON,
-    IssueListTypeToJSON,
-    IssueSortByFromJSON,
-    IssueSortByToJSON,
-    IssueStatusFromJSON,
-    IssueStatusToJSON,
-    PlatformsFromJSON,
-    PlatformsToJSON,
-    PledgesTypeSummariesFromJSON,
-    PledgesTypeSummariesToJSON,
-} from '../models/index';
 
 export interface DashboardApiGetDashboardRequest {
     platform: Platforms;
@@ -91,7 +75,7 @@ export class DashboardApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => PledgesTypeSummariesFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -165,7 +149,7 @@ export class DashboardApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => IssueListResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -227,7 +211,7 @@ export class DashboardApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => IssueListResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**

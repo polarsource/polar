@@ -25,26 +25,6 @@ import type {
   PostIssueComment,
   UpdateIssue,
 } from '../models/index';
-import {
-    ConfirmIssueFromJSON,
-    ConfirmIssueToJSON,
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    IssueFromJSON,
-    IssueToJSON,
-    IssueSortByFromJSON,
-    IssueSortByToJSON,
-    IssueUpdateBadgeMessageFromJSON,
-    IssueUpdateBadgeMessageToJSON,
-    ListResourceIssueFromJSON,
-    ListResourceIssueToJSON,
-    PlatformsFromJSON,
-    PlatformsToJSON,
-    PostIssueCommentFromJSON,
-    PostIssueCommentToJSON,
-    UpdateIssueFromJSON,
-    UpdateIssueToJSON,
-} from '../models/index';
 
 export interface IssuesApiAddIssueCommentRequest {
     id: string;
@@ -132,10 +112,10 @@ export class IssuesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: PostIssueCommentToJSON(requestParameters.postIssueComment),
+            body: requestParameters.postIssueComment,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => IssueFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -173,7 +153,7 @@ export class IssuesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => IssueFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -215,10 +195,10 @@ export class IssuesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: IssueUpdateBadgeMessageToJSON(requestParameters.issueUpdateBadgeMessage),
+            body: requestParameters.issueUpdateBadgeMessage,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => IssueFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -261,10 +241,10 @@ export class IssuesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: ConfirmIssueToJSON(requestParameters.confirmIssue),
+            body: requestParameters.confirmIssue,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => IssueFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -299,7 +279,7 @@ export class IssuesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ListResourceIssueFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -338,7 +318,7 @@ export class IssuesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => IssueFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -419,7 +399,7 @@ export class IssuesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => IssueFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -457,7 +437,7 @@ export class IssuesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => IssueFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -528,7 +508,7 @@ export class IssuesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ListResourceIssueFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -572,10 +552,10 @@ export class IssuesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: UpdateIssueToJSON(requestParameters.updateIssue),
+            body: requestParameters.updateIssue,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => IssueFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**

@@ -19,14 +19,6 @@ import type {
   NotificationsList,
   NotificationsMarkRead,
 } from '../models/index';
-import {
-    HTTPValidationErrorFromJSON,
-    HTTPValidationErrorToJSON,
-    NotificationsListFromJSON,
-    NotificationsListToJSON,
-    NotificationsMarkReadFromJSON,
-    NotificationsMarkReadToJSON,
-} from '../models/index';
 
 export interface NotificationsApiMarkReadRequest {
     notificationsMarkRead: NotificationsMarkRead;
@@ -60,7 +52,7 @@ export class NotificationsApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => NotificationsListFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
@@ -98,7 +90,7 @@ export class NotificationsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: NotificationsMarkReadToJSON(requestParameters.notificationsMarkRead),
+            body: requestParameters.notificationsMarkRead,
         }, initOverrides);
 
         if (this.isJsonMime(response.headers.get('content-type'))) {

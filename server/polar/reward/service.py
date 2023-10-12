@@ -78,6 +78,7 @@ class RewardService:
             .joinedload(Repository.organization),
             joinedload(Pledge.by_organization),
             joinedload(Pledge.user),
+            joinedload(Pledge.on_behalf_of_organization),
         )
 
         res = await session.execute(statement)
@@ -118,6 +119,7 @@ class RewardService:
             .joinedload(Repository.organization),
             joinedload(Pledge.by_organization),
             joinedload(Pledge.user),
+            joinedload(Pledge.on_behalf_of_organization),
         )
 
         res = await session.execute(statement)

@@ -1089,7 +1089,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
     async def issues_pledge_type_summary(
         self, session: AsyncSession, issues: Sequence[Issue]
     ) -> dict[UUID, PledgesTypeSummaries]:
-        all_pledges = await self.list_by(session, issue_ids=[i.id for i in issues])
+        all_pledges = await self.list_by(
+            session, issue_ids=[i.id for i in issues], load_pledger=True
+        )
 
         res: dict[UUID, PledgesTypeSummaries] = {}
 

@@ -55,18 +55,18 @@ class NotificationRead(Schema):
         MaintainerPledgedIssuePendingNotification,
     ] = Field(deprecated=True)
 
-    maintainerPledgePaid: MaintainerPledgePaidNotification | None = None
-    maintainerPledgeConfirmationPending: MaintainerPledgeConfirmationPendingNotification | None = (  # noqa: E501
+    maintainer_pledge_paid: MaintainerPledgePaidNotification | None = None
+    maintainer_pledge_confirmation_pending: MaintainerPledgeConfirmationPendingNotification | None = (  # noqa: E501
         None
     )
-    maintainerPledgePending: MaintainerPledgePendingNotification | None = None
-    maintainerPledgeCreated: MaintainerPledgeCreatedNotification | None = None
-    pledgerPledgePending: PledgerPledgePendingNotification | None = None
-    rewardPaid: RewardPaidNotification | None = None
-    maintainerPledgedIssueConfirmationPending: MaintainerPledgedIssueConfirmationPendingNotification | None = (  # noqa: E501
+    maintainer_pledge_pending: MaintainerPledgePendingNotification | None = None
+    maintainer_pledge_created: MaintainerPledgeCreatedNotification | None = None
+    pledger_pledge_pending: PledgerPledgePendingNotification | None = None
+    reward_paid: RewardPaidNotification | None = None
+    maintainer_pledged_issue_confirmation_pending: MaintainerPledgedIssueConfirmationPendingNotification | None = (  # noqa: E501
         None
     )
-    maintainerPledgedIssuePending: MaintainerPledgedIssuePendingNotification | None = (
+    maintainer_pledged_issue_pending: MaintainerPledgedIssuePendingNotification | None = (  # noqa: E501
         None
     )
 

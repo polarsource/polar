@@ -1,5 +1,6 @@
 import { useAuth } from '@/hooks'
 import { Organization } from '@polar-sh/sdk'
+import { Avatar } from 'polarkit/components/ui/atoms'
 import {
   Select,
   SelectContent,
@@ -48,6 +49,7 @@ const OnBehalfOf = ({
 
           <Select
             onValueChange={onAttributePledgeChange}
+            value={attributePledgeTo?.id ?? ''}
             name="attribute_pledge"
           >
             <SelectTrigger className="w-full">
@@ -65,11 +67,22 @@ const OnBehalfOf = ({
             <SelectContent>
               {canAttributeAsOrganizations.map((o) => (
                 <SelectItem value={o.id} key={o.id}>
-                  {o.name}
+                  <div className="flex items-center space-x-2">
+                    <Avatar avatar_url={o.avatar_url} name={o.name} />
+                    <span>{o.name}</span>
+                  </div>
                 </SelectItem>
               ))}
               <SelectItem value="">
-                Yourself ({currentUser?.username || currentUser?.email})
+                <div className="flex items-center space-x-2">
+                  <Avatar
+                    avatar_url={currentUser?.avatar_url}
+                    name={currentUser?.username ?? ''}
+                  />
+                  <span>
+                    Yourself ({currentUser?.username || currentUser?.email})
+                  </span>
+                </div>
               </SelectItem>
             </SelectContent>
           </Select>

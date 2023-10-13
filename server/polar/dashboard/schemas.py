@@ -9,10 +9,13 @@ from pydantic.generics import GenericModel
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.funding.funding_schema import Funding
+from polar.funding.schemas import PledgesTypeSummaries
 from polar.issue.schemas import Issue as IssueSchema
-from polar.issue.schemas import Label, Reactions
+from polar.issue.schemas import IssueReferenceRead, Label, Reactions
 from polar.kit.schemas import Schema
 from polar.models.issue import Issue
+from polar.pledge.schemas import Pledge
+from polar.reward.schemas import Reward
 from polar.types import JSONAny
 
 
@@ -75,6 +78,11 @@ class Entry(GenericModel, Generic[DataT]):
     attributes: DataT
     relationships: IssueRelationship | None = None
 
+    rewards: list[Reward] | None = None
+    pledges_summary: PledgesTypeSummaries | None = None
+    references: list[IssueReferenceRead] | None = None
+    pledges: list[Pledge] | None = None
+
 
 class ListResponse(GenericModel, Generic[DataT]):
     data: List[Entry[DataT]]
@@ -84,31 +92,6 @@ class ListResponse(GenericModel, Generic[DataT]):
 class SingleResponse(GenericModel, Generic[DataT]):
     data: Entry[DataT]
     included: List[Entry[Any]] = []
-
-
-def issue_progress(issue: Issue) -> IssueStatus:
-    # closed
-    if issue.issue_closed_at:
-        return IssueStatus.closed
-
-    # pull_request
-    for r in issue.references:
-        if r.pull_request and not r.pull_request.is_draft:
-            return IssueStatus.pull_request
-
-    # building
-    for r in issue.references:
-        if r.pull_request and r.pull_request.is_draft:
-            return IssueStatus.in_progress
-    if issue.references:
-        return IssueStatus.in_progress
-
-    # triaged
-    if issue.assignee or issue.assignees:
-        return IssueStatus.triaged
-
-    # backlog
-    return IssueStatus.backlog
 
 
 class PaginationResponse(Schema):

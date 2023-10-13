@@ -1,11 +1,13 @@
+from decimal import Decimal
 from typing import Self, cast
 
 from polar.currency.schemas import CurrencyAmount
 from polar.issue.schemas import Issue
 from polar.kit.schemas import Schema
+from polar.models import Issue as IssueModel
 from polar.pledge.schemas import Pledger, PledgeType
 
-from .service import FundingResultType
+FundingResultType = tuple[IssueModel, Decimal, Decimal, Decimal, Decimal]
 
 
 # Public API

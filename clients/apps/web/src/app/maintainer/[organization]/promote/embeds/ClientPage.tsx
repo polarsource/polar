@@ -4,9 +4,9 @@ import { FundOurBacklog } from '@/components/Embed/FundOurBacklog'
 import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
 import {
   DashboardBody,
-  DashboardHeader,
   RepoPickerHeader,
 } from '@/components/Layout/DashboardLayout'
+import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import {
   CopyToClipboardInput,
@@ -77,13 +77,12 @@ export default function ClientPage() {
 
   return (
     <>
-      <DashboardHeader>
+      <DashboardTopbar isFixed useOrgFromURL>
         <RepoPickerHeader
           currentRepository={currentRepo}
           repositories={allOrgRepositories}
         />
-      </DashboardHeader>
-
+      </DashboardTopbar>
       <DashboardBody>
         <div className="space-y-4">
           <h2 className="dark:text-polar-200 text-lg text-gray-900">

@@ -21,7 +21,7 @@ const Navigation = ({
       <div className="ml-4 text-sm ">{organization.name}</div>
       <div className="ml-3 mr-1">/</div>
       <RepoSelection
-        selectedClassNames="rounded-lg"
+        selectedClassNames="rounded-lg ml-1"
         openClassNames="top-0"
         repositories={repositories}
         value={repository}

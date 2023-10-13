@@ -11,13 +11,9 @@ import { Suspense } from 'react'
 import SidebarNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import Popover from '../Notifications/Popover'
-import DashboardTopbar from '../Shared/DashboardTopbar'
 import ProfileSelection from '../Shared/ProfileSelection'
 
-const DashboardLayout = (props: {
-  children: React.ReactNode
-  header?: React.ReactNode
-}) => {
+const DashboardLayout = (props: { children: React.ReactNode }) => {
   const { currentUser, hydrated } = useAuth()
 
   const listOrganizationQuery = useListOrganizations()
@@ -68,7 +64,6 @@ const DashboardLayout = (props: {
         )}
       </aside>
       <div className="dark:bg-polar-900 relative flex h-screen w-full translate-x-0 flex-row bg-white">
-        <DashboardTopbar isFixed={true} useOrgFromURL={true} />
         <main className={classNames('relative h-full w-full overflow-y-auto')}>
           <Suspense>{props.children}</Suspense>
         </main>
@@ -89,7 +84,7 @@ export const RepoPickerHeader = (props: {
   return (
     <>
       <form
-        className="dark:bg-polar-900/50 dark:border-polar-700 flex flex-col justify-between space-y-2 border-b border-gray-200 bg-gray-100/50 bg-white p-2 !pr-2 backdrop-blur-none lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0 lg:bg-transparent lg:p-0 lg:backdrop-blur"
+        className="dark:border-polar-700 flex flex-row items-center justify-between space-x-4 space-y-0 bg-transparent"
         onSubmit={onSubmit}
       >
         <MaintainerRepoSelection

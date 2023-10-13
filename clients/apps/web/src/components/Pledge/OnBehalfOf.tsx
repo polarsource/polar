@@ -44,7 +44,7 @@ const OnBehalfOf = ({
             htmlFor="attribute_pledge"
             className="dark:text-polar-400 mb-2 text-sm font-medium text-gray-500"
           >
-            Attribute pledge to
+            Fund on behalf of
           </label>
 
           <Select
@@ -79,9 +79,7 @@ const OnBehalfOf = ({
                     avatar_url={currentUser?.avatar_url}
                     name={currentUser?.username ?? ''}
                   />
-                  <span>
-                    Yourself ({currentUser?.username || currentUser?.email})
-                  </span>
+                  <span>{currentUser?.username || currentUser?.email}</span>
                 </div>
               </SelectItem>
             </SelectContent>

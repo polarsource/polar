@@ -1,6 +1,7 @@
 import {
   Pledge,
   Repository,
+  ResponseError,
   type Organization,
   type UserRead,
 } from '@polar-sh/sdk'
@@ -90,10 +91,12 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
         }
       })
       .catch((err) => {
-        if (err.status && err.status === 401) {
-          set({ authenticated: false, currentUser: undefined })
-          if (callback) {
-            callback(false)
+        if (err instanceof ResponseError) {
+          if (err.response.status === 401) {
+            set({ authenticated: false, currentUser: undefined })
+            if (callback) {
+              callback(false)
+            }
           }
         }
       })

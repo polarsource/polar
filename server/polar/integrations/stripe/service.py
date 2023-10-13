@@ -326,7 +326,10 @@ Thank you for your support!
         set_default: bool = False,
     ) -> stripe_lib.Price:
         price = stripe_lib.Price.create(
-            currency=price_currency, product=product, unit_amount=price_amount
+            currency=price_currency,
+            product=product,
+            unit_amount=price_amount,
+            recurring={"interval": "month"},
         )
         if set_default:
             stripe_lib.Product.modify(product, default_price=price.stripe_id)

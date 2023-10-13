@@ -111,7 +111,7 @@ class AuthService:
             return None
 
     @classmethod
-    async def get_user_from_personal_access_token(
+    async def get_user_from_auth_header(
         cls, session: AsyncSession, *, token: str
     ) -> User | None:
         try:

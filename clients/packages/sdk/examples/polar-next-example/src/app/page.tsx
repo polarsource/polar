@@ -50,13 +50,19 @@ export default async function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <div className="flex w-full max-w-5xl flex-col justify-between text-sm">
-        <h3 className="text-lg font-medium">Issues looking for funding</h3>
+        <h2 className="mb-4 text-xl font-medium">Issues looking for funding</h2>
         {issues.items?.map(({ issue, funding_goal, total }) => (
           <div
             className="flex flex-row items-center justify-between py-2"
             key={issue.id}
           >
-            <h4 className="text-md">{issue.title}</h4>
+            <a
+              target="_blank"
+              className="text-md text-blue-500 underline"
+              href={`https://github.com/${issue.repository.organization.name}/${issue.repository.name}/issues/${issue.number}`}
+            >
+              {issue.title}
+            </a>
             <span className="text-sm">
               ${getCentsInDollarString(total?.amount ?? 0)} / $
               {getCentsInDollarString(funding_goal?.amount ?? 0)}

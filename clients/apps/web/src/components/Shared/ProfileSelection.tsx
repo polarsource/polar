@@ -21,7 +21,7 @@ const ProfileSelection = ({
   showBackerLinks = false,
 }) => {
   const classNames = clsx(
-    'relative flex w-full flex-col rounded-xl bg-white dark:bg-polar-700 hover:bg-gray-100/50 dark:shadow-none dark:hover:bg-polar-800',
+    'relative flex w-full flex-col rounded-xl bg-white dark:bg-polar-800 hover:bg-gray-100/50 dark:shadow-none dark:hover:bg-polar-700',
     className,
   )
   const { currentUser: loggedUser, logout } = useAuth()

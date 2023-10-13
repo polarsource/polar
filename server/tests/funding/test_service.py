@@ -3,7 +3,8 @@ import uuid
 import pytest
 
 from polar.authz.service import Anonymous
-from polar.funding.service import FundingResultType, ListFundingSortBy
+from polar.funding.schemas import FundingResultType
+from polar.funding.service import ListFundingSortBy
 from polar.funding.service import funding as funding_service
 from polar.kit.pagination import PaginationParams
 from polar.models import Issue, Organization, Pledge, User, UserOrganization

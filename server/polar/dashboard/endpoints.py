@@ -36,6 +36,7 @@ from polar.postgres import AsyncSession, get_db_session, sql
 from polar.repository.schemas import Repository as RepositorySchema
 from polar.repository.service import repository
 from polar.reward.endpoints import to_resource
+from polar.reward.schemas import Reward
 from polar.reward.service import reward_service
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -225,34 +226,6 @@ async def dashboard(
         offset=offset,
     )
 
-    issue_organizations = list(
-        (
-            await session.execute(
-                sql.select(Organization).where(
-                    Organization.id.in_(list(set([i.organization_id for i in issues])))
-                )
-            )
-        )
-        .scalars()
-        .unique()
-        .all()
-    )
-    if for_org:
-        issue_organizations.append(for_org)
-
-    issue_repositories = list(
-        (
-            await session.execute(
-                sql.select(Repository)
-                .where(Repository.id.in_(list(set([i.repository_id for i in issues]))))
-                .options(joinedload(Repository.organization))
-            )
-        )
-        .scalars()
-        .unique()
-        .all()
-    ) + list(in_repos)
-
     included: dict[str, Entry[Any]] = {}
 
     # start building issue relationships with pledges
@@ -278,6 +251,7 @@ async def dashboard(
         )
 
     # add pledges to included
+    issue_pledges: dict[UUID, list[PledgeSchema]] = {}
     for i in issues:
         for pled in i.pledges:
             # Filter out invalid pledges
@@ -310,7 +284,12 @@ async def dashboard(
                     RelationshipData(type="pledge", id=pled.id)
                 )
 
+            irefs = issue_pledges.get(i.id, [])
+            irefs.append(pledge_schema)
+            issue_pledges[i.id] = irefs
+
     # get linked pull requests
+    issue_references: dict[UUID, list[IssueReferenceRead]] = {}
     for i in issues:
         refs = i.references
         for ref in refs:
@@ -324,11 +303,16 @@ async def dashboard(
             if isinstance(ir.data, list):  # it always is
                 ir.data.append(RelationshipData(type="reference", id=ref.external_id))
 
+            issue_refs = issue_references.get(ref.issue_id, [])
+            issue_refs.append(IssueReferenceRead.from_model(ref))
+            issue_references[ref.issue_id] = issue_refs
+
     # get pledge summary (public data, vs pledges who are dependent on who you are)
     pledge_summaries = await pledge_service.issues_pledge_type_summary(
         session,
         issues=issues,
     )
+    issue_pledge_summaries: dict[UUID, PledgesTypeSummaries] = {}
     for issue_id, summary in pledge_summaries.items():
         key = f"ps_{issue_id}"
         included[key] = Entry(
@@ -337,11 +321,16 @@ async def dashboard(
             attributes=summary,
         )
 
+        # JSON:API
         issue_relationship(
             issue_id, "pledge_summary", RelationshipData(type="pledge_summary", id=key)
         )
 
+        # Non JSON:API
+        issue_pledge_summaries[issue_id] = summary
+
     # get rewards
+    issue_rewards: dict[UUID, list[Reward]] = {}
     if for_org:
         rewards = await reward_service.list(session, issue_ids=[i.id for i in issues])
         for pledge, reward, transaction in rewards:
@@ -361,9 +350,15 @@ async def dashboard(
                 attributes=reward_resource,
             )
 
+            # JSON:API
             ir = issue_relationship(pledge.issue_id, "rewards", [])
             if isinstance(ir.data, list):  # it always is
                 ir.data.append(RelationshipData(type="reward", id=key))
+
+            # Non JSON:API
+            ir2 = issue_rewards.get(pledge.issue_id, [])
+            ir2.append(reward_resource)
+            issue_rewards[pledge.issue_id] = ir2
 
     next_page = page + 1 if total_issue_count > page * limit else None
 
@@ -373,6 +368,10 @@ async def dashboard(
             type="issue",
             attributes=IssueSchema.from_db(i),
             relationships=issue_relationships.get(i.id, None),
+            rewards=issue_rewards.get(i.id, None),
+            pledges_summary=issue_pledge_summaries.get(i.id, None),
+            references=issue_references.get(i.id, None),
+            pledges=issue_pledges.get(i.id, None),
         )
         for i in issues
     ]

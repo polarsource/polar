@@ -8,6 +8,7 @@ from sqlalchemy import Select, UnaryExpression, and_, desc, func, or_, select, t
 from sqlalchemy.orm import contains_eager
 
 from polar.authz.service import Anonymous, Subject
+from polar.funding.schemas import FundingResultType
 from polar.kit.pagination import PaginationParams, paginate
 from polar.models import Issue, Organization, Pledge, Repository, UserOrganization
 from polar.pledge.schemas import PledgeState, PledgeType
@@ -19,9 +20,6 @@ class ListFundingSortBy(StrEnum):
     newest = "newest"
     most_funded = "most_funded"
     most_engagement = "most_engagement"
-
-
-FundingResultType = tuple[Issue, Decimal, Decimal, Decimal, Decimal]
 
 
 class FundingService:

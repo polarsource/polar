@@ -222,9 +222,6 @@ importers:
       tailwindcss-radix:
         specifier: ^2.8.0
         version: 2.8.0
-      yayson:
-        specifier: ^3.0.0
-        version: 3.0.0
     devDependencies:
       '@jest/globals':
         specifier: ^29.6.2
@@ -280,9 +277,6 @@ importers:
       '@types/react-timeago':
         specifier: ^4.1.3
         version: 4.1.3
-      '@types/yayson':
-        specifier: ^2.0.2
-        version: 2.0.2
       autoprefixer:
         specifier: ^10.4.13
         version: 10.4.13(postcss@8.4.21)
@@ -7812,10 +7806,6 @@ packages:
     resolution: {integrity: sha512-6i0aC7jV6QzQB8ne1joVZ0eSFIstHsCrobmOtghM11yGlH0j43FKL2UhWdELkyps0zuf7qVTUVCCR+tgSlyLLw==}
     dependencies:
       '@types/yargs-parser': 21.0.0
-
-  /@types/yayson@2.0.2:
-    resolution: {integrity: sha512-9Dr0y3B1b5V7PhueISsFKAbyFipoyYFPMM4wzorIvxmboznKTlv5eG55hLeGInz3nzYvOpSExsE8KgKjfbPJrg==}
-    dev: true
 
   /@typescript-eslint/parser@5.53.0(eslint@7.32.0)(typescript@4.8.3):
     resolution: {integrity: sha512-MKBw9i0DLYlmdOb3Oq/526+al20AJZpANdT6Ct9ffxcV8nKCHz63t/S0IhlTFNsBIHJv+GY5SFJ0XfqVeydQrQ==}
@@ -17548,11 +17538,6 @@ packages:
       buffer-crc32: 0.2.13
       fd-slicer: 1.1.0
     dev: true
-
-  /yayson@3.0.0:
-    resolution: {integrity: sha512-r3og9+qCtj7afqAQWOFzos369EaZqjJMxtkAXfn3kgjEwWcB1Z9Wm+6dcKU7fGA+MMdYUg/T7OZDA01Jp/cBcg==}
-    engines: {node: '>=14', npm: '>=6'}
-    dev: false
 
   /yn@3.1.1:
     resolution: {integrity: sha512-Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q==}

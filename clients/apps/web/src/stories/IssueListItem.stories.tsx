@@ -17,11 +17,9 @@ import {
   addDays,
   addHours,
   issue,
-  org,
   pledgePublicAPI,
   pledger,
   pledgesSummaries,
-  repo,
   user,
 } from 'polarkit/testdata'
 import IssueListItem from '../components/Dashboard/IssueListItem'
@@ -299,26 +297,10 @@ const meta: Meta<typeof IssueListItem> = {
       },
       defaultValue: pledges,
     },
-    repo: {
-      options: ['Repo'],
-      mapping: {
-        Repo: repo,
-      },
-      defaultValue: repo,
-    },
-    org: {
-      options: ['Org'],
-      mapping: {
-        Repo: org,
-      },
-      defaultValue: org,
-    },
   },
   args: {
     pledges: pledges,
     references: references,
-    repo: repo,
-    org: org,
     issue: issue,
     pledgesSummary: {
       ...pledgesSummaries,

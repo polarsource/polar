@@ -68,9 +68,6 @@ const CachedIssueListItemDecoration = ({
                 {/* open all links in the parent frame */}
                 <base target="_parent"></base>
                 <IssueListItemDecoration
-                  orgName={orgName}
-                  repoName={repoName}
-                  issueNumber={number}
                   pledges={value.pledges}
                   references={value.references}
                   showConfirmPledgeAction={false}

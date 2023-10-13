@@ -5,10 +5,8 @@ import { useToastLatestPledged } from '@/hooks/stripe'
 import {
   Issue,
   IssueReferenceRead,
-  Organization,
   Pledge,
   PledgesTypeSummaries,
-  Repository,
   Reward,
 } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
@@ -25,8 +23,6 @@ import { useModal } from '../Modal/useModal'
 import { AddBadgeButton } from './IssuePromotionModal'
 
 const IssueListItem = (props: {
-  org: Organization
-  repo: Repository
   issue: Issue
   references: IssueReferenceRead[]
   pledges: Array<Pledge>
@@ -40,10 +36,13 @@ const IssueListItem = (props: {
   showIssueOpenClosedStatus?: boolean
   rewards?: Reward[]
 }) => {
+  const org = props.issue.repository.organization
+  const repo = props.issue.repository
+
   const mergedPledges = props.pledges || []
   const latestPledge = useToastLatestPledged(
-    props.org.id,
-    props.repo.id,
+    org.id,
+    repo.id,
     props.issue.id,
     props.checkJustPledged,
   )
@@ -100,9 +99,6 @@ const IssueListItem = (props: {
           <IssueActivityBox>
             <IssueListItemDecoration
               issue={props.issue}
-              orgName={props.org.name}
-              repoName={props.repo.name}
-              issueNumber={props.issue.number}
               pledges={mergedPledges}
               pledgesSummary={props.pledgesSummary}
               references={props.references}

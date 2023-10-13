@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
 from polar.enums import Platforms
+from polar.exceptions import ResourceNotFound
 from polar.integrations.github.service.issue import github_issue
 from polar.integrations.github.service.organization import (
     github_organization as github_organization_service,
@@ -24,6 +25,7 @@ from polar.organization.endpoints import OrganizationPrivateRead
 from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
+from polar.repository.service import repository as repository_service
 from polar.reward.endpoints import to_resource as reward_to_resource
 from polar.reward.service import reward_service
 from polar.tags.api import Tags
@@ -233,13 +235,23 @@ async def manage_badge(
 
     log.info("backoffice.badge", badge=badge.dict(), admin=auth.user.username)
 
-    org, repo, issue = await organization_service.get_with_repo_and_issue(
-        session,
-        platform=Platforms.github,
-        org_name=badge.org_slug,
-        repo_name=badge.repo_slug,
-        issue=badge.issue_number,
+    org = await organization_service.get_by_name(
+        session, Platforms.github, badge.org_slug
     )
+    if not org:
+        raise ResourceNotFound()
+
+    repo = await repository_service.get_by_org_and_name(
+        session, org.id, badge.repo_slug
+    )
+    if not repo:
+        raise ResourceNotFound()
+
+    issue = await issue_service.get_by_number(
+        session, Platforms.github, org.id, repo.id, badge.issue_number
+    )
+    if not issue:
+        raise ResourceNotFound()
 
     if repo.pledge_badge_auto_embed:
         raise HTTPException(403)

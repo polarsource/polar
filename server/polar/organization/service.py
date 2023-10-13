@@ -3,16 +3,13 @@ from typing import Sequence
 from uuid import UUID
 
 import structlog
-from sqlalchemy import ColumnElement, and_
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import InstrumentedAttribute, contains_eager
+from sqlalchemy.orm import contains_eager
 
 from polar.enums import Platforms
-from polar.exceptions import ResourceNotFound
 from polar.integrations.loops.service import loops as loops_service
-from polar.issue.service import issue as issue_service
 from polar.kit.services import ResourceService
-from polar.models import Issue, Organization, Repository, User, UserOrganization
+from polar.models import Organization, Repository, User, UserOrganization
 from polar.postgres import AsyncSession, sql
 from polar.repository.service import repository as repository_service
 
@@ -77,170 +74,6 @@ class OrganizationService(
         )
         res = await session.execute(statement)
         return res.scalars().unique().all()
-
-    async def _get_protected(
-        self,
-        session: AsyncSession,
-        *,
-        platform: Platforms | None = None,
-        org_name: str | None = None,
-        org_id: UUID | None = None,
-        repo_name: str | None = None,
-        user_id: UUID | None = None,
-    ) -> Organization | None:
-        if not user_id and not repo_name:
-            raise ValueError(
-                "Must provide at least one relationship (user_id or repo_name)"
-            )
-
-        if not org_id and not org_name:
-            raise ValueError(
-                "Must provide at least one relationship (org_id or org_name)"
-            )
-
-        if org_name and not platform:
-            raise ValueError("If org_name is set platform must be provided")
-
-        query = sql.select(Organization)
-        filters: list[ColumnElement[bool]] = [
-            Organization.deleted_at.is_(None),
-        ]
-
-        if platform:
-            filters.append(Organization.platform == platform)
-
-        if org_id:
-            filters.append(Organization.id == org_id)
-        if org_name:
-            filters.append(Organization.name == org_name)
-
-        if user_id:
-            query = query.join(UserOrganization)
-            filters.append(UserOrganization.user_id == user_id)
-
-        if repo_name:
-            query = query.join(Organization.repos)
-            # Need to do contains_eager to load a custom filtered collection of repo
-            query = query.options(contains_eager(Organization.repos))
-            filters.append(Repository.name == repo_name)
-            filters.append(Repository.deleted_at.is_(None))
-
-        query = query.where(and_(*filters))
-        res = await session.execute(query)
-        return org if (org := res.scalars().unique().first()) else None
-
-    async def get_for_user(
-        self,
-        session: AsyncSession,
-        *,
-        platform: Platforms,
-        org_name: str,
-        user_id: UUID | None = None,
-    ) -> Organization | None:
-        org = await self._get_protected(
-            session,
-            platform=platform,
-            org_name=org_name,
-            user_id=user_id,
-        )
-        return org or None
-
-    async def get_by_id_for_user(
-        self,
-        session: AsyncSession,
-        *,
-        org_id: UUID,
-        user_id: UUID,
-    ) -> Organization | None:
-        org = await self._get_protected(
-            session,
-            org_id=org_id,
-            user_id=user_id,
-        )
-        return org or None
-
-    async def get_with_repo_for_user(
-        self,
-        session: AsyncSession,
-        *,
-        platform: Platforms,
-        org_name: str,
-        repo_name: str,
-        user_id: UUID,
-    ) -> tuple[Organization, Repository]:
-        org = await self._get_protected(
-            session,
-            platform=platform,
-            org_name=org_name,
-            repo_name=repo_name,
-            user_id=user_id,
-        )
-        if not org:
-            raise ResourceNotFound(
-                "Organization/repository combination not found for user"
-            )
-
-        # Return a tuple of (org, repo) for intuititive usage (unpacking)
-        # versus having to do org.repos[0] in the caller.
-        return (org, org.repos[0])
-
-    async def get_with_repo(
-        self,
-        session: AsyncSession,
-        *,
-        platform: Platforms,
-        org_name: str,
-        repo_name: str,
-    ) -> tuple[Organization, Repository]:
-        org = await self._get_protected(
-            session,
-            platform=platform,
-            org_name=org_name,
-            repo_name=repo_name,
-        )
-        if not org:
-            raise ResourceNotFound()
-
-        # Return a tuple of (org, repo) for intuititive usage (unpacking)
-        # versus having to do org.repos[0] in the caller.
-        return (org, org.repos[0])
-
-    async def get_with_repo_and_issue(
-        self,
-        session: AsyncSession,
-        *,
-        platform: Platforms,
-        org_name: str,
-        repo_name: str,
-        issue: int | UUID,
-    ) -> tuple[Organization, Repository, Issue]:
-        org_and_repo = await self.get_with_repo(
-            session,
-            platform=platform,
-            org_name=org_name,
-            repo_name=repo_name,
-        )
-        if not org_and_repo:
-            raise ResourceNotFound("Organization and repo combination not found")
-
-        organization, repository = org_and_repo
-        if isinstance(issue, int):
-            issue_obj = await issue_service.get_by_number(
-                session,
-                platform=platform,
-                organization_id=organization.id,
-                repository_id=repository.id,
-                number=issue,
-            )
-        else:
-            issue_obj = await issue_service.get(
-                session,
-                id=issue,
-            )
-        if not issue_obj:
-            raise ResourceNotFound("Issue not found")
-
-        return (organization, repository, issue_obj)
 
     async def add_user(
         self,
@@ -310,6 +143,11 @@ class OrganizationService(
 
         await organization.save(session)
 
+        # TODO: refactor this. the organization service should not depend
+        # repositoriy service.
+        #
+        # We should try to keep the dependency graph the same in the services as
+        # in the API schemas.
         repositories = await repository_service.list_by_ids_and_organization(
             session, [r.id for r in settings.repositories], organization.id
         )

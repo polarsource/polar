@@ -59,7 +59,7 @@ async def test_get_no_member(
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == 401
 
 
 @pytest.mark.asyncio

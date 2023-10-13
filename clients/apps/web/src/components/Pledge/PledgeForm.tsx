@@ -595,6 +595,8 @@ const FundToday = ({
         </div>
       </div>
 
+      <OnBehalfOf onChange={onChangeOnBehalfOf} />
+
       <div>
         <label
           htmlFor="email"
@@ -663,8 +665,6 @@ const FundToday = ({
             </Select>
           </div>
         )}
-
-      <OnBehalfOf onChange={onChangeOnBehalfOf} />
 
       {showStripeForm && polarPaymentIntent && (
         <Elements

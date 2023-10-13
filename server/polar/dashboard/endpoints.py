@@ -265,36 +265,6 @@ async def dashboard(
             key, Relationship(data=default)
         )
 
-    # Add repository and organization relationships to issues, and to included data
-    for i in issues:
-        # add org to included
-        included[str(i.organization_id)] = Entry(
-            id=i.organization_id,
-            type="organization",
-            attributes=OrganizationSchema.from_db(
-                [o for o in issue_organizations if o.id == i.organization_id][0]
-            ),
-        )
-
-        # add repos to included
-        included[str(i.repository_id)] = Entry(
-            id=i.repository_id,
-            type="repository",
-            attributes=RepositorySchema.from_db(
-                [r for r in issue_repositories if r.id == i.repository_id][0]
-            ),
-        )
-
-        org_data = RelationshipData(type="organization", id=i.organization_id)
-        issue_relationship(i.id, "organization", org_data)
-
-        if i.repository_id:
-            issue_relationship(
-                i.id,
-                "repository",
-                RelationshipData(type="repository", id=i.repository_id),
-            )
-
     pledge_statuses = list(
         set(PledgeState.active_states()) | set([PledgeState.disputed])
     )

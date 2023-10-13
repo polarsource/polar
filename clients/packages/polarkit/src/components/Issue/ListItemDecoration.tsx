@@ -145,7 +145,6 @@ const IssueListItemDecoration = ({
             funding={funding}
           />
         )}
-
         {haveReferences && (
           <div
             className={classNames(
@@ -165,7 +164,6 @@ const IssueListItemDecoration = ({
               })}
           </div>
         )}
-
         {rewards && rewards?.length > 0 && <IssueRewards rewards={rewards} />}
       </div>
 

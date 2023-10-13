@@ -42,13 +42,13 @@ const IssueReference = (props: {
   if (
     reference &&
     reference.type === IssueReferenceType.EXTERNAL_GITHUB_COMMIT &&
-    reference.external_git_hub_commit_reference
+    reference.external_github_commit_reference
   ) {
     return (
       <Box>
         <IssueReferenceExternalGitHubCommit
           orgName={props.orgName}
-          commit={reference.external_git_hub_commit_reference}
+          commit={reference.external_github_commit_reference}
         />
       </Box>
     )
@@ -57,12 +57,12 @@ const IssueReference = (props: {
   if (
     reference &&
     reference.type === IssueReferenceType.EXTERNAL_GITHUB_PULL_REQUEST &&
-    reference.external_git_hub_pull_request_reference
+    reference.external_github_pull_request_reference
   ) {
     return (
       <Box>
         <IssueReferenceExternalGitHubPullRequest
-          pr={reference.external_git_hub_pull_request_reference}
+          pr={reference.external_github_pull_request_reference}
         />
       </Box>
     )

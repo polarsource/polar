@@ -424,9 +424,11 @@ class IssueReferenceRead(Schema):
         ExternalGitHubCommitReference,
     ] = Field(deprecated=True)
 
-    pullRequestReference: PullRequestReference | None = None
-    externalGitHubPullRequestReference: ExternalGitHubPullRequestReference | None = None
-    externalGitHubCommitReference: ExternalGitHubCommitReference | None = None
+    pull_request_reference: PullRequestReference | None = None
+    external_github_pull_request_reference: ExternalGitHubPullRequestReference | None = (  # noqa: E501
+        None
+    )
+    external_github_commit_reference: ExternalGitHubCommitReference | None = None
 
     @classmethod
     def from_model(cls, m: IssueReference) -> IssueReferenceRead:
@@ -472,7 +474,7 @@ class IssueReferenceRead(Schema):
                         id=m.external_id,
                         type=IssueReferenceType.pull_request,
                         payload=pr_ref,
-                        pullRequestReference=pr_ref,
+                        pull_request_reference=pr_ref,
                     )
 
             case ReferenceType.EXTERNAL_GITHUB_PULL_REQUEST:
@@ -493,7 +495,7 @@ class IssueReferenceRead(Schema):
                         id=m.external_id,
                         type=IssueReferenceType.external_github_pull_request,
                         payload=ext_pr_ref,
-                        externalGitHubPullRequestReference=ext_pr_ref,
+                        external_github_pull_request_reference=ext_pr_ref,
                     )
 
             case ReferenceType.EXTERNAL_GITHUB_COMMIT:
@@ -514,7 +516,7 @@ class IssueReferenceRead(Schema):
                         id=m.external_id,
                         type=IssueReferenceType.external_github_commit,
                         payload=ext_commit_ref,
-                        externalGitHubCommitReference=ext_commit_ref,
+                        external_github_commit_reference=ext_commit_ref,
                     )
 
         raise Exception("unable to convert IssueReference to IssueReferenceRead")

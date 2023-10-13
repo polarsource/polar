@@ -1175,13 +1175,13 @@ export interface IssueReferenceRead {
      * @type {ExternalGitHubPullRequestReference}
      * @memberof IssueReferenceRead
      */
-    external_git_hub_pull_request_reference?: ExternalGitHubPullRequestReference;
+    external_github_pull_request_reference?: ExternalGitHubPullRequestReference;
     /**
      * 
      * @type {ExternalGitHubCommitReference}
      * @memberof IssueReferenceRead
      */
-    external_git_hub_commit_reference?: ExternalGitHubCommitReference;
+    external_github_commit_reference?: ExternalGitHubCommitReference;
 }
 
 /**

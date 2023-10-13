@@ -38,9 +38,9 @@ You can acquire an access token through your [Settings page](https://polar.sh/se
 You can easily retrieve issues looking for funding using the Funding-service.
 
 ```typescript
-import { PolarAPI, Platforms, ListFundingSortBy } from '@polar-sh/sdk';
+import { Configuration, PolarAPI, Platforms, ListFundingSortBy } from '@polar-sh/sdk';
 
-const api = new PolarAPI();
+const api = new PolarAPI(new Configuration());
 
 const issuesFunding = await api.funding.search(
     {
@@ -64,9 +64,9 @@ const issuesFunding = await api.funding.search(
 Retrieve Polar data about a given GitHub issue.
 
 ```typescript
-import { PolarAPI } from '@polar-sh/sdk';
+import { Configuration, PolarAPI } from '@polar-sh/sdk';
 
-const api = new PolarAPI();
+const api = new PolarAPI(new Configuration());
 
 const params = {
     organization: 'polarsource',

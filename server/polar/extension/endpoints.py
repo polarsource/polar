@@ -1,19 +1,25 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 
 from polar.auth.dependencies import Auth
 from polar.enums import Platforms
+from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.extension.schemas import IssueExtensionRead
 from polar.issue.schemas import Issue, IssueReferenceRead
 from polar.issue.service import issue as issue_service
 from polar.kit import utils
 from polar.models.issue_reference import IssueReference
 from polar.models.pledge import Pledge
+from polar.organization.service import organization as organization_service
 from polar.pledge.schemas import Pledge as PledgeSchema
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
+from polar.repository.service import repository as repository_service
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 
 router = APIRouter(tags=["extension"])
 
@@ -28,11 +34,29 @@ async def list_issues_for_extension(
     org_name: str,
     repo_name: str,
     numbers: str,
-    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
+    auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> list[IssueExtensionRead]:
     if not auth.user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise Unauthorized()
+
+    org = await organization_service.get_by_name(session, platform, org_name)
+    if not org:
+        raise ResourceNotFound()
+
+    # only if user is a member of this org
+    if not await user_organization_service.get_by_user_and_org(
+        session,
+        auth.user.id,
+        organization_id=org.id,
+    ):
+        raise Unauthorized()
+
+    repo = await repository_service.get_by_org_and_name(
+        session, organization_id=org.id, name=repo_name
+    )
+    if not repo:
+        raise ResourceNotFound()
 
     # Update when we last saw this user and on which extension version
     version = "unknown"
@@ -57,7 +81,7 @@ async def list_issues_for_extension(
 
     issue_numbers = [int(number) for number in numbers.split(",")]
     issues = await issue_service.list_by_repository_and_numbers(
-        session=session, repository_id=auth.repository.id, numbers=issue_numbers
+        session=session, repository_id=repo.id, numbers=issue_numbers
     )
 
     issue_ids = [issue.id for issue in issues]

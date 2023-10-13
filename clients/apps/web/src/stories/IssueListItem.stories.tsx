@@ -198,7 +198,7 @@ const referencesCommit: IssueReferenceRead[] = [
     id: 'wha',
     type: IssueReferenceType.EXTERNAL_GITHUB_COMMIT,
     payload: dummyPayload,
-    external_git_hub_commit_reference: {
+    external_github_commit_reference: {
       author_login: 'petterheterjag',
       author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
       sha: '160a13da0ecedacb326de1b913186f448185ad9a',
@@ -212,7 +212,7 @@ const referencesCommit: IssueReferenceRead[] = [
     id: 'wha',
     type: IssueReferenceType.EXTERNAL_GITHUB_COMMIT,
     payload: dummyPayload,
-    external_git_hub_commit_reference: {
+    external_github_commit_reference: {
       author_login: 'petterheterjag',
       author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
       sha: '160a13da0ecedacb326de1b913186f448185ad9a',
@@ -394,7 +394,7 @@ export const AllReferences: Story = {
         id: 'wha',
         type: IssueReferenceType.EXTERNAL_GITHUB_PULL_REQUEST,
         payload: dummyPayload,
-        external_git_hub_pull_request_reference: {
+        external_github_pull_request_reference: {
           author_login: 'petterheterjag',
           author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
           organization_name: 'petterheterjag',
@@ -408,7 +408,7 @@ export const AllReferences: Story = {
         id: 'wha',
         type: IssueReferenceType.EXTERNAL_GITHUB_PULL_REQUEST,
         payload: dummyPayload,
-        external_git_hub_pull_request_reference: {
+        external_github_pull_request_reference: {
           author_login: 'petterheterjag',
           author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
           organization_name: 'petterheterjag',

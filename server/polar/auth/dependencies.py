@@ -17,7 +17,7 @@ class AuthMethod(Enum):
     PERSONAL_ACCESS_TOKEN = auto()
 
 
-personal_access_token_scheme = HTTPBearer(
+auth_header_scheme = HTTPBearer(
     auto_error=False,
     description="You can generate a **Personal Access Token** from your [settings](https://polar.sh/settings).",
 )
@@ -29,8 +29,7 @@ async def _get_cookie_token(request: Request) -> str | None:
 
 async def _current_user_optional(
     cookie_token: str | None = Depends(_get_cookie_token),
-    personal_access_token: HTTPAuthorizationCredentials
-    | None = Depends(personal_access_token_scheme),
+    auth_header: HTTPAuthorizationCredentials | None = Depends(auth_header_scheme),
     session: AsyncSession = Depends(get_db_session),
 ) -> tuple[User | None, AuthMethod | None]:
     if cookie_token is not None:
@@ -38,13 +37,17 @@ async def _current_user_optional(
             await AuthService.get_user_from_cookie(session, cookie=cookie_token),
             AuthMethod.COOKIE,
         )
-    elif personal_access_token is not None:
+
+    # Authorization header.
+    # Can contain both a PAT and a forwarded cookie value (via Next/Vercel)
+    if auth_header is not None:
         return (
-            await AuthService.get_user_from_personal_access_token(
-                session, token=personal_access_token.credentials
+            await AuthService.get_user_from_auth_header(
+                session, token=auth_header.credentials
             ),
             AuthMethod.PERSONAL_ACCESS_TOKEN,
         )
+
     return None, None
 
 

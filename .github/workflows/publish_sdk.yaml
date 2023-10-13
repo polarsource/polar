@@ -30,6 +30,6 @@ jobs:
 
         - name: Publish SDK
           working-directory: ./clients/packages/sdk
-          run: pnpm publish
+          run: pnpm publish --publish-branch main
           env:
             NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -4,6 +4,7 @@ import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import { CubeIcon } from '@heroicons/react/24/outline'
 import {
   AttachMoneyOutlined,
+  Bolt,
   CardGiftcardOutlined,
   FavoriteBorderOutlined,
   HowToVoteOutlined,
@@ -38,6 +39,28 @@ export const maintainerRoutes = (
     link: `/maintainer/${org?.name}/issues`,
     if: org && isLoaded,
     subs: undefined,
+  },
+  {
+    id: 'org-subscriptions',
+    title: 'Subscriptions',
+    icon: <Bolt className="h-6 w-6" />,
+    postIcon: undefined,
+    link: `/maintainer/${org?.name}/subscriptions`,
+    if: org && isLoaded,
+    subs: [
+      {
+        title: 'Overview',
+        link: `/maintainer/${org?.name}/subscriptions`,
+      },
+      {
+        title: 'Tiers',
+        link: `/maintainer/${org?.name}/subscriptions/tiers`,
+      },
+      {
+        title: 'Subscribers',
+        link: `/maintainer/${org?.name}/subscriptions/subscribers`,
+      },
+    ],
   },
   {
     id: 'org-finance',

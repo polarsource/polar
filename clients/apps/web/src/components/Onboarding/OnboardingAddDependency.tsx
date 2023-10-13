@@ -143,8 +143,6 @@ const OnboardingAddDependency = () => {
 
         <div className="relative mt-8 select-none">
           <IssueListItem
-            org={demoOrg}
-            repo={demoRepo}
             issue={demoIssue}
             pledges={demoPledges}
             canAddRemovePolarLabel={false}

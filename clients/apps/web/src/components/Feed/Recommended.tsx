@@ -1,6 +1,5 @@
 'use client'
 
-import { useAuth } from '@/hooks'
 import Link from 'next/link'
 import { ShadowBoxOnLg } from 'polarkit/components/ui/atoms'
 import { useListForYouIssues } from 'polarkit/hooks'
@@ -8,7 +7,6 @@ import IssueListItem from '../Dashboard/IssueListItem'
 
 const Recommended = () => {
   const issues = useListForYouIssues()
-  const { currentUser } = useAuth()
 
   return (
     <>
@@ -38,8 +36,6 @@ const Recommended = () => {
                 issue={issue}
                 references={[]}
                 pledges={[]}
-                org={issue.repository.organization}
-                repo={issue.repository}
                 key={issue.id}
                 canAddRemovePolarLabel={false}
                 showPledgeAction={true}

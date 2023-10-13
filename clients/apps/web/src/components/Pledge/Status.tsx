@@ -90,8 +90,6 @@ export const Status = (props: {
         <GrayCard className="mt-6">
           <IssueListItem
             issue={pledge.issue}
-            org={pledge.issue.repository.organization}
-            repo={pledge.issue.repository}
             pledges={[pledge]}
             references={[]}
             checkJustPledged={false}

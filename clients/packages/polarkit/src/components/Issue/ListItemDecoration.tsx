@@ -28,9 +28,6 @@ export const getExpectedHeight = ({
 }
 
 const IssueListItemDecoration = ({
-  orgName,
-  repoName,
-  issueNumber,
   pledges,
   pledgesSummary,
   references,
@@ -43,9 +40,6 @@ const IssueListItemDecoration = ({
   issue,
   rewards,
 }: {
-  orgName: string
-  repoName: string
-  issueNumber: number
   pledges: Array<Pledge>
   pledgesSummary?: PledgesTypeSummaries
   references: IssueReferenceRead[]
@@ -155,8 +149,8 @@ const IssueListItemDecoration = ({
               references.map((r: IssueReferenceRead) => {
                 return (
                   <IssueReference
-                    orgName={orgName}
-                    repoName={repoName}
+                    orgName={issue.repository.organization.name}
+                    repoName={issue.repository.name}
                     reference={r}
                     key={r.id}
                   />

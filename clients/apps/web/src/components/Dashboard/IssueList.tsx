@@ -7,7 +7,6 @@ import {
 import { IssueListResponse, IssueListType, IssueSortBy } from '@polar-sh/sdk'
 import { InfiniteData } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { IssueReadWithRelations } from 'polarkit/api/types'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import {
   DropdownMenu,
@@ -24,11 +23,8 @@ import React, {
   Dispatch,
   FormEvent,
   SetStateAction,
-  useEffect,
   useMemo,
-  useState,
 } from 'react'
-import yayson from 'yayson'
 import Spinner from '../Shared/Spinner'
 import IssueListItem from './IssueListItem'
 
@@ -93,35 +89,16 @@ const IssueListPage = (props: {
   page: IssueListResponse
   canAddRemovePolarLabel: boolean
 }) => {
-  const [issues, setIssues] = useState<IssueReadWithRelations[]>()
-
-  const { page } = props
-
-  useEffect(() => {
-    if (page) {
-      const y = yayson({ adapter: 'default' })
-      const store = new y.Store()
-      const issues: IssueReadWithRelations[] = store.sync(page)
-      setIssues(issues)
-    } else {
-      setIssues([])
-    }
-  }, [page])
-
-  if (!issues) {
-    return <></>
-  }
-
   return (
     <>
-      {issues.map((issue) => (
+      {props.page.data.map((issue) => (
         <IssueListItem
-          issue={issue}
-          references={issue.references}
-          pledges={issue.pledges}
-          pledgesSummary={issue.pledge_summary}
+          issue={issue.attributes}
+          references={issue.references || []}
+          pledges={issue.pledges || []}
+          pledgesSummary={issue.pledges_summary}
           rewards={issue.rewards}
-          key={issue.id}
+          key={issue.attributes.id}
           canAddRemovePolarLabel={props.canAddRemovePolarLabel}
           showPledgeAction={true}
           showIssueOpenClosedStatus={true}

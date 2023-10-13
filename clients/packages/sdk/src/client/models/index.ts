@@ -645,6 +645,30 @@ export interface EntryAny {
      * @memberof EntryAny
      */
     relationships?: { [key: string]: Relationship; };
+    /**
+     * 
+     * @type {Array<Reward>}
+     * @memberof EntryAny
+     */
+    rewards?: Array<Reward>;
+    /**
+     * 
+     * @type {PledgesTypeSummaries}
+     * @memberof EntryAny
+     */
+    pledges_summary?: PledgesTypeSummaries;
+    /**
+     * 
+     * @type {Array<IssueReferenceRead>}
+     * @memberof EntryAny
+     */
+    references?: Array<IssueReferenceRead>;
+    /**
+     * 
+     * @type {Array<Pledge>}
+     * @memberof EntryAny
+     */
+    pledges?: Array<Pledge>;
 }
 /**
  * 
@@ -676,6 +700,30 @@ export interface EntryIssue {
      * @memberof EntryIssue
      */
     relationships?: { [key: string]: Relationship; };
+    /**
+     * 
+     * @type {Array<Reward>}
+     * @memberof EntryIssue
+     */
+    rewards?: Array<Reward>;
+    /**
+     * 
+     * @type {PledgesTypeSummaries}
+     * @memberof EntryIssue
+     */
+    pledges_summary?: PledgesTypeSummaries;
+    /**
+     * 
+     * @type {Array<IssueReferenceRead>}
+     * @memberof EntryIssue
+     */
+    references?: Array<IssueReferenceRead>;
+    /**
+     * 
+     * @type {Array<Pledge>}
+     * @memberof EntryIssue
+     */
+    pledges?: Array<Pledge>;
 }
 /**
  * 

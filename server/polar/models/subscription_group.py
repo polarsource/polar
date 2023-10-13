@@ -34,7 +34,10 @@ class SubscriptionGroup(RecordModel):
     repository: Mapped["Repository | None"] = relationship("Repository", lazy="raise")
 
     tiers: Mapped[list["SubscriptionTier"]] = relationship(
-        "SubscriptionTier", lazy="raise", back_populates="subscription_group"
+        "SubscriptionTier",
+        lazy="raise",
+        back_populates="subscription_group",
+        order_by="SubscriptionTier.price_amount",
     )
 
     @property

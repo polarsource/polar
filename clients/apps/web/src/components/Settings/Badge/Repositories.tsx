@@ -24,7 +24,7 @@ export const BadgeRepositories = ({
       <h2
         className={classNames(
           isSettingPage ? 'text-left' : 'text-center',
-          'dark:text-polar-200 text-lg text-gray-500',
+          'dark:text-polar-100 text-lg text-gray-500',
         )}
       >
         Add badge to issues

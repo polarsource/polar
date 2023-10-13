@@ -1,8 +1,6 @@
 import BadgeMessageForm from '@/components/Dashboard/BadgeMessageForm'
-import {
-  ExclamationCircleIcon,
-  QuestionMarkCircleIcon,
-} from '@heroicons/react/24/outline'
+import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
+import { InfoOutlined } from '@mui/icons-material'
 import {
   Organization,
   type OrganizationBadgeSettingsRead,
@@ -325,13 +323,13 @@ const BadgeSetup = ({
             </div>
           </div>
           <div className="dark:bg-polar-700 dark:border-polar-600 dark:text-polar-300 flex flex-row items-center rounded-b-xl border-t border-gray-200 bg-gray-100/50 px-4 py-3 text-gray-500">
-            <QuestionMarkCircleIcon
+            <InfoOutlined
               width={24}
               height={24}
               className="dark:text-polar-400 text-gray-300"
             />
-            <p className="ml-2 text-xs">
-              <strong className="block font-semibold">
+            <p className="text-polar-400 ml-4 text-xs">
+              <strong className="text-polar-100 mb-1 block font-medium">
                 How is the Polar section added?
               </strong>
               Polar edits the issue description to add your custom promotion

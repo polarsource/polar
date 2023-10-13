@@ -1,10 +1,6 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
-import {
-  AddOutlined,
-  ContactSupportOutlined,
-  LogoutOutlined,
-} from '@mui/icons-material'
+import { AddOutlined, InfoOutlined, LogoutOutlined } from '@mui/icons-material'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { CONFIG } from 'polarkit/config'
@@ -21,7 +17,7 @@ const ProfileSelection = ({
   showBackerLinks = false,
 }) => {
   const classNames = clsx(
-    'relative flex w-full flex-col rounded-xl bg-white dark:bg-polar-800 hover:bg-gray-100/50 dark:shadow-none dark:hover:bg-polar-700',
+    'relative flex w-full flex-col rounded-xl bg-white dark:bg-polar-800 hover:bg-gray-100/50 dark:shadow-none dark:hover:bg-polar-700 dark:border dark:border-polar-700',
     className,
   )
   const { currentUser: loggedUser, logout } = useAuth()
@@ -152,7 +148,7 @@ const ProfileSelection = ({
               <LinkItem
                 href={'https://polar.sh/faq'}
                 icon={
-                  <ContactSupportOutlined className="dark:text-polar-400 text-gray-600" />
+                  <InfoOutlined className="dark:text-polar-400 text-gray-600" />
                 }
               >
                 <span className="dark:text-polar-400  mx-1.5 text-gray-600">

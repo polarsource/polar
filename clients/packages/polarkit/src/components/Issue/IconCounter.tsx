@@ -5,7 +5,7 @@ type Icon = 'thumbs_up' | 'comments'
 const IconCounter = (props: { icon: Icon; count: number }) => {
   return (
     <>
-      <div className="inline-flex items-center gap-1 text-[#7E7E7E]">
+      <div className="dark:text-polar-500 inline-flex items-center gap-1 text-[#7E7E7E]">
         {props.icon === 'comments' && (
           <ChatBubbleLeftIcon className="h-4 w-4" />
         )}

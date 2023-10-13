@@ -2,13 +2,20 @@ import asyncio
 from typing import Any, AsyncGenerator
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from redis.exceptions import ConnectionError
 from sse_starlette.sse import EventSourceResponse
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.enums import Platforms
+from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.organization.service import organization as organization_service
+from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
+from polar.repository.service import repository as repository_service
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 
 from .service import Receivers
 
@@ -61,13 +68,26 @@ async def user_org_stream(
     platform: Platforms,
     org_name: str,
     request: Request,
-    auth: Auth = Depends(Auth.user_with_org_access),
+    auth: Auth = Depends(Auth.current_user),
     redis: Redis = Depends(get_redis),
+    session: AsyncSession = Depends(get_db_session),
 ) -> EventSourceResponse:
     if not auth.user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise Unauthorized()
 
-    receivers = Receivers(user_id=auth.user.id, organization_id=auth.organization.id)
+    org = await organization_service.get_by_name(session, platform, org_name)
+    if not org:
+        raise ResourceNotFound()
+
+    # only if user is a member of this org
+    if not await user_organization_service.get_by_user_and_org(
+        session,
+        auth.user.id,
+        organization_id=org.id,
+    ):
+        raise Unauthorized()
+
+    receivers = Receivers(user_id=auth.user.id, organization_id=org.id)
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))
 
 
@@ -77,15 +97,34 @@ async def user_org_repo_stream(
     org_name: str,
     repo_name: str,
     request: Request,
-    auth: Auth = Depends(Auth.user_with_org_and_repo_access),
+    auth: Auth = Depends(Auth.current_user),
     redis: Redis = Depends(get_redis),
+    session: AsyncSession = Depends(get_db_session),
 ) -> EventSourceResponse:
     if not auth.user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise Unauthorized()
+
+    org = await organization_service.get_by_name(session, platform, org_name)
+    if not org:
+        raise ResourceNotFound()
+
+    # only if user is a member of this org
+    if not await user_organization_service.get_by_user_and_org(
+        session,
+        auth.user.id,
+        organization_id=org.id,
+    ):
+        raise Unauthorized()
+
+    repo = await repository_service.get_by_org_and_name(
+        session, organization_id=org.id, name=repo_name
+    )
+    if not repo:
+        raise ResourceNotFound()
 
     receivers = Receivers(
         user_id=auth.user.id,
-        organization_id=auth.organization.id,
-        repository_id=auth.repository.id,
+        organization_id=org.id,
+        repository_id=repo.id,
     )
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))

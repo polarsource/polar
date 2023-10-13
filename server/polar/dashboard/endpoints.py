@@ -28,6 +28,7 @@ from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import Organization as OrganizationSchema
+from polar.organization.service import organization as organization_service
 from polar.pledge.schemas import Pledge as PledgeSchema
 from polar.pledge.schemas import PledgeState
 from polar.pledge.service import pledge as pledge_service
@@ -93,18 +94,22 @@ async def get_dashboard(
     only_pledged: bool = Query(default=False),
     only_badged: bool = Query(default=False),
     page: int = Query(default=1),
-    auth: Auth = Depends(Auth.user_with_org_access),
+    auth: Auth = Depends(Auth.current_user),
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> IssueListResponse:
     if not auth.user:
         raise Unauthorized()
 
+    org = await organization_service.get_by_name(session, platform, org_name)
+    if not org:
+        raise ResourceNotFound()
+
     # only if user is a member of this org
     if not await user_organization_service.get_by_user_and_org(
         session,
         auth.user.id,
-        organization_id=auth.organization.id,
+        organization_id=org.id,
     ):
         raise Unauthorized()
 
@@ -114,7 +119,7 @@ async def get_dashboard(
     if repo_name:
         repo = await repository.get_by_org_and_name(
             session,
-            organization_id=auth.organization.id,
+            organization_id=org.id,
             name=repo_name,
             load_organization=True,
         )
@@ -127,7 +132,7 @@ async def get_dashboard(
     else:
         repositories = await repository.list_by(
             session,
-            org_ids=[auth.organization.id],
+            org_ids=[org.id],
             load_organization=True,
         )
 
@@ -149,7 +154,7 @@ async def get_dashboard(
         in_repos=repositories,
         q=q,
         sort=sort,
-        for_org=auth.organization,
+        for_org=org,
         only_pledged=only_pledged,
         only_badged=only_badged,
         show_closed=status is not None and IssueStatus.closed in status,

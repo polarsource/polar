@@ -143,23 +143,6 @@ async def resync_issues(org_name: str) -> None:
 
 @cli.command()
 @typer_async
-async def resync_issue(org_name: str, repo_name: str, issue_number: int) -> None:
-    async with AsyncSessionLocal() as session:
-        org, repo, issue = await github_organization.get_with_repo_and_issue(
-            session,
-            platform=Platforms.github,
-            org_name=org_name,
-            repo_name=repo_name,
-            issue=issue_number,
-        )
-        if not org:
-            raise RuntimeError(f"Organization {org_name} not found")
-
-        await trigger_issue_sync(session, org, repo, issue)
-
-
-@cli.command()
-@typer_async
 async def sync_references(org_name: str) -> None:
     async with AsyncSessionLocal() as session:
         org = await github_organization.get_by_name(session, Platforms.github, org_name)

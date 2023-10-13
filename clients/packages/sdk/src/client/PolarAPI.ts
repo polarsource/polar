@@ -47,18 +47,6 @@ export class PolarAPI {
   public readonly users: UsersApi
 
   constructor(config: Configuration) {
-    // this.request = new HttpRequest({
-    //   BASE: config?.BASE ?? 'https://api.polar.sh',
-    //   VERSION: config?.VERSION ?? '0.1.0',
-    //   WITH_CREDENTIALS: config?.WITH_CREDENTIALS ?? false,
-    //   CREDENTIALS: config?.CREDENTIALS ?? 'include',
-    //   TOKEN: config?.TOKEN,
-    //   USERNAME: config?.USERNAME,
-    //   PASSWORD: config?.PASSWORD,
-    //   HEADERS: config?.HEADERS,
-    //   ENCODE_PATH: config?.ENCODE_PATH,
-    // })
-
     this.accounts = new AccountsApi(config)
     this.backoffice = new BackofficeApi(config)
     this.dashboard = new DashboardApi(config)

@@ -260,7 +260,7 @@ export const BadgePromotionModal = (props: {
         </TabsList>
         <TabsContent
           value="funding"
-          className="bg-gray-75 dark:bg-polar-900 dark:border-polar-600 -mt-[1px] border-t p-6"
+          className="bg-gray-75 dark:bg-polar-800 dark:border-polar-600 -mt-[1px] border-t p-6"
         >
           <BadgeMessageForm
             value={
@@ -281,13 +281,13 @@ export const BadgePromotionModal = (props: {
         </TabsContent>
         <TabsContent
           value="rewards"
-          className="bg-gray-75 dark:bg-polar-900 dark:border-polar-600 -mt-[1px] border-t p-6"
+          className="bg-gray-75 dark:bg-polar-800 dark:border-polar-600 -mt-[1px] border-t p-6"
         >
           <RewardsTab {...props} />
         </TabsContent>
         <TabsContent
           value="promote"
-          className="bg-gray-75 dark:bg-polar-900 dark:border-polar-600 -mt-[1px] border-t p-6"
+          className="bg-gray-75 dark:bg-polar-800 dark:border-polar-600 -mt-[1px] border-t p-6"
         >
           <PromoteTab {...props} />
         </TabsContent>
@@ -434,7 +434,7 @@ const Tab = ({
 }) => (
   <TabsTrigger
     value={value}
-    className="data-[state=active]:bg-gray-75 dark:data-[state=active]:bg-polar-900 dark:hover:bg-polar-white/10 dark:data-[state=active]:border-polar-600 rounded-none rounded-t-lg border !border-b-0 border-transparent bg-transparent !shadow-none outline-0 ring-0 hover:bg-gray-500/10 data-[state=active]:border-gray-200"
+    className="data-[state=active]:bg-gray-75 dark:data-[state=active]:bg-polar-800 dark:hover:bg-polar-white/10 dark:data-[state=active]:border-polar-600 rounded-none rounded-t-lg border !border-b-0 border-transparent bg-transparent !shadow-none outline-0 ring-0 hover:bg-gray-500/10 data-[state=active]:border-gray-200"
   >
     <div className="flex w-full items-center gap-4 px-1 text-left">
       {icon}

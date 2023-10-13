@@ -303,9 +303,7 @@ export const Badge = ({
                 alignItems: 'center',
                 paddingLeft: 12,
                 paddingRight: 12,
-                borderLeft: darkmode
-                  ? '1px solid rgba(255, 255, 255, 0.05)'
-                  : '1px solid rgba(0, 0, 0, 0.05)',
+                borderLeft: darkmode ? 'none' : '1px solid rgba(0, 0, 0, 0.05)',
                 flexShrink: '0',
               }}
             >

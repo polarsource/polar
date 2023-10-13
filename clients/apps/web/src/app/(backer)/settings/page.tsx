@@ -44,7 +44,7 @@ export default function Page() {
 
 const Section = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="mb-4 flex flex-col space-x-12 space-y-4 pt-4 xl:flex-row xl:space-y-0">
+    <div className="mb-8 flex flex-col space-x-12 space-y-4 pt-8 xl:flex-row xl:space-y-0">
       {children}
     </div>
   )

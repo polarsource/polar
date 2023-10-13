@@ -98,7 +98,7 @@ const BadgeMessageForm = (props: {
       <div
         className={classNames(
           props.innerClassNames,
-          'dark:bg-polar-800 dark:ring-polar-600 rounded-xl bg-white px-5 py-3.5 dark:ring-1',
+          'dark:bg-polar-800 dark:ring-polar-700 rounded-xl bg-white px-5 py-3.5 dark:ring-1',
         )}
       >
         {descriptionMode === 'View' && (

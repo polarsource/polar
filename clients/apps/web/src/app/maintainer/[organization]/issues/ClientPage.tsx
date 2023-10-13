@@ -7,11 +7,11 @@ import {
 } from '@/components/Dashboard/filters'
 import {
   DashboardBody,
-  DashboardHeader,
   RepoPickerHeader,
 } from '@/components/Layout/DashboardLayout'
 import EmptyLayout from '@/components/Layout/EmptyLayout'
 import OnboardingAddBadge from '@/components/Onboarding/OnboardingAddBadge'
+import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import { useToast } from '@/components/Toast/use-toast'
 import { HowToVoteOutlined } from '@mui/icons-material'
 import {
@@ -247,21 +247,22 @@ const OrganizationIssues = ({
   // Get all repositories
   const listRepositoriesQuery = useListRepositories()
   const allRepositories = listRepositoriesQuery?.data?.items
+
+  // Filter repos by current org & normalize for our select
+  const allOrgRepositories = allRepositories?.filter(
+    (r) => r?.organization?.id === currentOrg?.id,
+  )
+
   if (!currentOrg || !allRepositories) {
     return <></>
   }
 
-  // Filter repos by current org & normalize for our select
-  const allOrgRepositories = allRepositories.filter(
-    (r) => r?.organization?.id === currentOrg.id,
-  )
-
   return (
     <>
-      <DashboardHeader>
+      <DashboardTopbar isFixed useOrgFromURL>
         <RepoPickerHeader
           currentRepository={currentRepo}
-          repositories={allOrgRepositories}
+          repositories={allOrgRepositories ?? []}
         >
           <Header
             totalCount={totalCount}
@@ -270,8 +271,7 @@ const OrganizationIssues = ({
             spinner={dashboardQuery.isInitialLoading}
           />
         </RepoPickerHeader>
-      </DashboardHeader>
-
+      </DashboardTopbar>
       <DashboardBody>
         <div className="space-y-4">
           {showAddBadgeBanner && <OnboardingAddBadge />}
@@ -290,7 +290,7 @@ const OrganizationIssues = ({
             />
           ) : (
             <EmptyLayout>
-              <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-[20%] text-gray-400">
+              <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
                 <span className="text-6xl">
                   <HowToVoteOutlined fontSize="inherit" />
                 </span>

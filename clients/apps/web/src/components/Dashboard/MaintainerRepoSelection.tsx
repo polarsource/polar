@@ -13,10 +13,10 @@ const MaintainerRepoSelection = (props: {
   }
 
   return (
-    <div className="dark:border-polar-700 relative flex h-14 w-full shrink-0 border-gray-200 lg:w-fit lg:border-r">
+    <div className="relative flex w-fit shrink-0">
       <RepoSelection
-        selectedClassNames="pl-8 pr-8"
-        openClassNames="left-2 top-2"
+        selectedClassNames="px-4"
+        openClassNames="right-0 top-2"
         repositories={props.repositories}
         onSelectAll={() => {
           const currentURL = new URL(window.location.href)

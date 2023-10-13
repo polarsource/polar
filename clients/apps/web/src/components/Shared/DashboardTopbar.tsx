@@ -4,7 +4,7 @@ import { useAuth, useCurrentOrgAndRepoFromURL } from '@/hooks'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { classNames } from 'polarkit/utils'
-import { useMemo } from 'react'
+import { PropsWithChildren, useMemo } from 'react'
 import {
   SubRoute,
   backerRoutes,
@@ -35,13 +35,14 @@ const SubNav = (props: { items: (SubRoute & { active: boolean })[] }) => {
 }
 
 const DashboardTopbar = ({
+  children,
   hideProfile,
   ...props
-}: {
+}: PropsWithChildren<{
   useOrgFromURL: boolean
   hideProfile?: boolean
   isFixed?: boolean
-}) => {
+}>) => {
   const { org: currentOrgFromURL, isLoaded } = useCurrentOrgAndRepoFromURL()
   const { currentUser, hydrated } = useAuth()
 
@@ -73,7 +74,7 @@ const DashboardTopbar = ({
   return (
     <>
       <div className={className}>
-        <div className="relative flex w-full flex-row items-center justify-between px-4 sm:px-6 md:px-8">
+        <div className="relative mx-auto flex w-full max-w-screen-2xl flex-row items-center justify-between px-4 sm:px-6 md:px-8">
           <div className="flex flex-row items-center gap-x-24">
             <h4 className="dark:text-polar-100 text-lg font-medium">
               {currentRoute?.title}
@@ -91,7 +92,7 @@ const DashboardTopbar = ({
                 />
               )}
           </div>
-          <div className="flex flex-row items-center gap-x-6"></div>
+          <div className="flex flex-row items-center gap-x-6">{children}</div>
         </div>
       </div>
     </>

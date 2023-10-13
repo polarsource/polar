@@ -95,7 +95,7 @@ export function RepoSelection(props: {
               className={clsx(
                 width,
                 props.openClassNames,
-                'dark:bg-polar-700 dark:border-polar-600 !absolute -top-10 z-10 w-max rounded-lg bg-white shadow-lg dark:border',
+                'dark:bg-polar-800 dark:border-polar-700 !absolute -top-10 z-10 w-max rounded-lg bg-white shadow-lg dark:border',
               )}
             >
               <div className="flex items-center px-2">
@@ -108,7 +108,7 @@ export function RepoSelection(props: {
                   onValueChange={onInputValueChange}
                 />
               </div>
-              <hr className="dark:border-polar-600" />
+              <hr className="dark:border-polar-700" />
               <Command.List
                 ref={listRef}
                 className="max-h-[500px] overflow-auto overscroll-contain px-2 pb-2"

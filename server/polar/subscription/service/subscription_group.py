@@ -71,7 +71,11 @@ class SubscriptionGroupService(
                 SubscriptionGroup.repository_id == repository.id
             )
 
-        statement = statement.order_by(SubscriptionGroup.created_at.asc())
+        statement = statement.order_by(
+            SubscriptionGroup.organization_id,
+            SubscriptionGroup.repository_id,
+            SubscriptionGroup.order,
+        )
 
         results, count = await paginate(session, statement, pagination=pagination)
 

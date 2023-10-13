@@ -1,8 +1,7 @@
-from typing import Any, Dict, List, Sequence, Union
+from typing import List, Sequence, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import joinedload
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
@@ -10,12 +9,9 @@ from polar.dashboard.schemas import (
     Entry,
     IssueListResponse,
     IssueListType,
-    IssueRelationship,
     IssueSortBy,
     IssueStatus,
     PaginationResponse,
-    Relationship,
-    RelationshipData,
 )
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
@@ -27,13 +23,11 @@ from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
-from polar.organization.schemas import Organization as OrganizationSchema
 from polar.organization.service import organization as organization_service
 from polar.pledge.schemas import Pledge as PledgeSchema
 from polar.pledge.schemas import PledgeState
 from polar.pledge.service import pledge as pledge_service
-from polar.postgres import AsyncSession, get_db_session, sql
-from polar.repository.schemas import Repository as RepositorySchema
+from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository
 from polar.reward.endpoints import to_resource
 from polar.reward.schemas import Reward
@@ -226,18 +220,6 @@ async def dashboard(
         offset=offset,
     )
 
-    included: dict[str, Entry[Any]] = {}
-
-    # start building issue relationships with pledges
-    issue_relationships: Dict[UUID, IssueRelationship] = {}
-
-    def issue_relationship(
-        issue_id: UUID, key: str, default: RelationshipData | List[RelationshipData]
-    ) -> Relationship:
-        return issue_relationships.setdefault(issue_id, IssueRelationship()).setdefault(
-            key, Relationship(data=default)
-        )
-
     pledge_statuses = list(
         set(PledgeState.active_states()) | set([PledgeState.disputed])
     )
@@ -273,17 +255,6 @@ async def dashboard(
                     )
                 )
 
-            included[str(pled.id)] = Entry(
-                id=pled.id, type="pledge", attributes=pledge_schema
-            )
-
-            # inject relationships
-            pledge_relationship = issue_relationship(pled.issue_id, "pledges", [])
-            if isinstance(pledge_relationship.data, list):  # it always is
-                pledge_relationship.data.append(
-                    RelationshipData(type="pledge", id=pled.id)
-                )
-
             irefs = issue_pledges.get(i.id, [])
             irefs.append(pledge_schema)
             issue_pledges[i.id] = irefs
@@ -293,16 +264,6 @@ async def dashboard(
     for i in issues:
         refs = i.references
         for ref in refs:
-            included[ref.external_id] = Entry(
-                id=ref.external_id,
-                type="reference",
-                attributes=IssueReferenceRead.from_model(ref),
-            )
-
-            ir = issue_relationship(ref.issue_id, "references", [])
-            if isinstance(ir.data, list):  # it always is
-                ir.data.append(RelationshipData(type="reference", id=ref.external_id))
-
             issue_refs = issue_references.get(ref.issue_id, [])
             issue_refs.append(IssueReferenceRead.from_model(ref))
             issue_references[ref.issue_id] = issue_refs
@@ -314,19 +275,6 @@ async def dashboard(
     )
     issue_pledge_summaries: dict[UUID, PledgesTypeSummaries] = {}
     for issue_id, summary in pledge_summaries.items():
-        key = f"ps_{issue_id}"
-        included[key] = Entry(
-            id=key,
-            type="pledge_summary",
-            attributes=summary,
-        )
-
-        # JSON:API
-        issue_relationship(
-            issue_id, "pledge_summary", RelationshipData(type="pledge_summary", id=key)
-        )
-
-        # Non JSON:API
         issue_pledge_summaries[issue_id] = summary
 
     # get rewards
@@ -343,31 +291,17 @@ async def dashboard(
                 ),
             )
 
-            key = f"reward_{pledge.id}_{reward.id}"
-            included[key] = Entry(
-                id=key,
-                type="reward",
-                attributes=reward_resource,
-            )
-
-            # JSON:API
-            ir = issue_relationship(pledge.issue_id, "rewards", [])
-            if isinstance(ir.data, list):  # it always is
-                ir.data.append(RelationshipData(type="reward", id=key))
-
-            # Non JSON:API
             ir2 = issue_rewards.get(pledge.issue_id, [])
             ir2.append(reward_resource)
             issue_rewards[pledge.issue_id] = ir2
 
     next_page = page + 1 if total_issue_count > page * limit else None
 
-    data: List[Entry[IssueSchema]] = [
-        Entry[IssueSchema](
+    data: List[Entry] = [
+        Entry(
             id=i.id,
             type="issue",
             attributes=IssueSchema.from_db(i),
-            relationships=issue_relationships.get(i.id, None),
             rewards=issue_rewards.get(i.id, None),
             pledges_summary=issue_pledge_summaries.get(i.id, None),
             references=issue_references.get(i.id, None),
@@ -377,8 +311,7 @@ async def dashboard(
     ]
 
     return IssueListResponse(
-        data=data,  # type: ignore
-        included=list(included.values()),
+        data=data,
         pagination=PaginationResponse(
             total_count=total_issue_count,
             page=page,

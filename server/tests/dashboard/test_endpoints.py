@@ -84,18 +84,14 @@ async def test_get_with_pledge_from_org(
 
     assert len(res["data"]) == 1
     assert res["data"][0]["id"] == str(issue.id)
-    assert len(res["data"][0]["relationships"]["pledges"]["data"]) == 1
-    rel_pledged = res["data"][0]["relationships"]["pledges"]["data"][0]
+    assert len(res["data"][0]["pledges"]) == 1
+    rel_pledge = res["data"][0]["pledges"][0]
 
-    pledges = [x for x in res["included"] if x["type"] == "pledge"]
-    assert len(pledges) == 1
-    assert pledges[0]["id"] == rel_pledged["id"]
-    assert pledges[0]["attributes"]["pledger"]["name"] == pledging_organization.name
+    assert rel_pledge["pledger"]["name"] == pledging_organization.name
 
-    summaries = [x for x in res["included"] if x["type"] == "pledge_summary"]
-    assert len(summaries) == 1
-    assert summaries[0]["attributes"]["pay_upfront"]["total"]["amount"] == pledge.amount
-    assert len(summaries[0]["attributes"]["pay_upfront"]["pledgers"]) == 1
+    summary = res["data"][0]["pledges_summary"]
+    assert summary["pay_upfront"]["total"]["amount"] == pledge.amount
+    assert len(summary["pay_upfront"]["pledgers"]) == 1
 
 
 @pytest.mark.asyncio
@@ -120,21 +116,14 @@ async def test_get_with_pledge_from_user(
 
     assert len(res["data"]) == 1
     assert res["data"][0]["id"] == str(issue.id)
-    assert len(res["data"][0]["relationships"]["pledges"]["data"]) == 1
-    rel_pledged = res["data"][0]["relationships"]["pledges"]["data"][0]
+    assert len(res["data"][0]["pledges"]) == 1
+    rel_pledge = res["data"][0]["pledges"][0]
 
-    pledges = [x for x in res["included"] if x["type"] == "pledge"]
-    assert len(pledges) == 1
-    assert pledges[0]["id"] == rel_pledged["id"]
-    assert str(pledges[0]["attributes"]["pledger"]["name"]).startswith("testuser")
+    assert str(rel_pledge["pledger"]["name"]).startswith("testuser")
 
-    summaries = [x for x in res["included"] if x["type"] == "pledge_summary"]
-    assert len(summaries) == 1
-    assert (
-        summaries[0]["attributes"]["pay_upfront"]["total"]["amount"]
-        == pledge_by_user.amount
-    )
-    assert len(summaries[0]["attributes"]["pay_upfront"]["pledgers"]) == 1
+    summary = res["data"][0]["pledges_summary"]
+    assert summary["pay_upfront"]["total"]["amount"] == pledge_by_user.amount
+    assert len(summary["pay_upfront"]["pledgers"]) == 1
 
 
 @pytest.mark.asyncio
@@ -165,10 +154,7 @@ async def test_get_with_pledge_initiated(
     assert len(res["data"]) == 1
     assert res["data"][0]["id"] == str(issue.id)
 
-    assert "pledges" not in res["data"][0]["relationships"]
-
-    pledges = [x for x in res["included"] if x["type"] == "pledge"]
-    assert len(pledges) == 0
+    assert res["data"][0]["pledges"] is None
 
 
 @pytest.mark.asyncio
@@ -193,13 +179,12 @@ async def test_get_only_pledged_with_pledge(
 
     assert len(res["data"]) == 1
     assert res["data"][0]["id"] == str(issue.id)
-    assert len(res["data"][0]["relationships"]["pledges"]["data"]) == 1
-    rel_pledged = res["data"][0]["relationships"]["pledges"]["data"][0]
 
-    pledges = [x for x in res["included"] if x["type"] == "pledge"]
+    pledges = res["data"][0]["pledges"]
     assert len(pledges) == 1
-    assert pledges[0]["id"] == rel_pledged["id"]
-    assert pledges[0]["attributes"]["pledger"]["name"] == pledging_organization.name
+    res_pledge = pledges[0]
+
+    assert res_pledge["pledger"]["name"] == pledging_organization.name
 
 
 @pytest.mark.asyncio
@@ -223,8 +208,6 @@ async def test_get_only_pledged_no_pledge(
     res = response.json()
 
     assert len(res["data"]) == 0
-    pledges = [x for x in res["included"] if x["type"] == "pledge"]
-    assert len(pledges) == 0
 
 
 @pytest.mark.asyncio

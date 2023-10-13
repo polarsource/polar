@@ -1,19 +1,11 @@
-from datetime import datetime
 from enum import Enum
-from typing import Any, Generic, List, Literal, Self, TypeVar
+from typing import List
 from uuid import UUID
 
-from pydantic import Field, parse_obj_as
-from pydantic.generics import GenericModel
-
-from polar.currency.schemas import CurrencyAmount
-from polar.enums import Platforms
-from polar.funding.funding_schema import Funding
 from polar.funding.schemas import PledgesTypeSummaries
 from polar.issue.schemas import Issue as IssueSchema
-from polar.issue.schemas import IssueReferenceRead, Label, Reactions
+from polar.issue.schemas import IssueReferenceRead
 from polar.kit.schemas import Schema
-from polar.models.issue import Issue
 from polar.pledge.schemas import Pledge
 from polar.reward.schemas import Reward
 from polar.types import JSONAny
@@ -53,30 +45,10 @@ class IssueSortBy(str, Enum):
     )
 
 
-# JSON:API types below
-# TODO: Move this to a separate package if we use it elsewhere
-
-DataT = TypeVar("DataT")
-
-
-class RelationshipData(Schema):
+class Entry(Schema):
     type: str
     id: str | UUID
-
-
-class Relationship(Schema):
-    # TODO: links?
-    data: RelationshipData | List[RelationshipData]
-
-
-IssueRelationship = dict[str, Relationship]
-
-
-class Entry(GenericModel, Generic[DataT]):
-    type: str
-    id: str | UUID
-    attributes: DataT
-    relationships: IssueRelationship | None = None
+    attributes: IssueSchema
 
     rewards: list[Reward] | None = None
     pledges_summary: PledgesTypeSummaries | None = None
@@ -84,14 +56,8 @@ class Entry(GenericModel, Generic[DataT]):
     pledges: list[Pledge] | None = None
 
 
-class ListResponse(GenericModel, Generic[DataT]):
-    data: List[Entry[DataT]]
-    included: List[Entry[Any]] = []
-
-
-class SingleResponse(GenericModel, Generic[DataT]):
-    data: Entry[DataT]
-    included: List[Entry[Any]] = []
+class ListResponse(Schema):
+    data: List[Entry]
 
 
 class PaginationResponse(Schema):
@@ -100,5 +66,5 @@ class PaginationResponse(Schema):
     next_page: int | None
 
 
-class IssueListResponse(ListResponse[IssueSchema]):
+class IssueListResponse(ListResponse):
     pagination: PaginationResponse

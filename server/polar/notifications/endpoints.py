@@ -47,23 +47,23 @@ async def get(
             )
 
             if isinstance(payload, MaintainerPledgeCreatedNotification):
-                notif.maintainerPledgeCreated = payload
+                notif.maintainer_pledge_created = payload
             if isinstance(payload, MaintainerPledgeConfirmationPendingNotification):
-                notif.maintainerPledgeConfirmationPending = payload
+                notif.maintainer_pledge_confirmation_pending = payload
             if isinstance(payload, MaintainerPledgePendingNotification):
-                notif.maintainerPledgePending = payload
+                notif.maintainer_pledge_pending = payload
             if isinstance(payload, MaintainerPledgePaidNotification):
-                notif.maintainerPledgePaid = payload
+                notif.maintainer_pledge_paid = payload
             if isinstance(payload, PledgerPledgePendingNotification):
-                notif.pledgerPledgePending = payload
+                notif.pledger_pledge_pending = payload
             if isinstance(payload, RewardPaidNotification):
-                notif.rewardPaid = payload
+                notif.reward_paid = payload
             if isinstance(
                 payload, MaintainerPledgedIssueConfirmationPendingNotification
             ):
-                notif.maintainerPledgedIssueConfirmationPending = payload
+                notif.maintainer_pledged_issue_confirmation_pending = payload
             if isinstance(payload, MaintainerPledgedIssuePendingNotification):
-                notif.maintainerPledgedIssuePending = payload
+                notif.maintainer_pledged_issue_pending = payload
 
             return notif
         except Exception as e:

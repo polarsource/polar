@@ -616,7 +616,7 @@ const FundToday = ({
               event.target.select()
             }}
           />
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-20 flex items-center pl-3 text-lg">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-lg">
             <span className="dark:text-polar-500 text-gray-500">
               <EnvelopeIcon className="h-6 w-6" />
             </span>

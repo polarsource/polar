@@ -1,11 +1,6 @@
 import { useRequireAuth } from '@/hooks'
 import { githubIssueLink } from '@/utils/github'
-import {
-  GiftIcon,
-  HeartIcon,
-  MegaphoneIcon,
-  UserIcon,
-} from '@heroicons/react/24/outline'
+import { GiftIcon, HeartIcon, MegaphoneIcon } from '@heroicons/react/24/outline'
 import { CurrencyAmount, Issue, Pledge, UserRead } from '@polar-sh/sdk'
 import Image from 'next/image'
 import { api, queryClient } from 'polarkit/api'
@@ -15,7 +10,6 @@ import {
   PrimaryButton,
 } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
-import { Switch } from 'polarkit/components/ui/switch'
 import {
   Tabs,
   TabsContent,
@@ -39,6 +33,7 @@ import { twMerge } from 'tailwind-merge'
 import { ModalHeader, Modal as ModernModal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import BadgeMessageForm from './BadgeMessageForm'
+import PublicRewardsSetting from './UpfrontRewards'
 
 const isIssueBadged = (issue: Issue): boolean => {
   return issue.pledge_badge_currently_embedded
@@ -548,24 +543,14 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
     props.issue.upfront_split_to_contributors ??
     props.issue.repository.organization.default_upfront_split_to_contributors
 
-  const [usePublicRewards, setUsePublicRewards] = useState<boolean>(
-    upfront !== null,
-  )
-
-  const [contributorsShare, setContributorsShare] = useState<number>(
-    upfront ?? 50,
-  )
-
-  const maintainerShare = useMemo(() => {
-    if (contributorsShare === undefined) {
-      return 50
-    }
-    return 100 - contributorsShare
-  }, [contributorsShare])
+  const [contributorsShare, setContributorsShare] = useState<
+    number | undefined
+  >(upfront ?? 50)
 
   const updateIssue = useUpdateIssue()
 
   const saveUpFrontSplit = async (splitShare?: number) => {
+    setContributorsShare(splitShare)
     await updateIssue.mutateAsync({
       id: props.issue.id,
       upfront_split_to_contributors: splitShare,
@@ -613,150 +598,18 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
     .map((p) => p.amount.amount)
     .reduce((a, b) => a + b, 0)
 
-  const [bannerContributionRewardShown, setBannerContributionRewardShown] =
-    useState(false)
-
-  const [bannerContributionUpdated, setBannerContributionUpdated] =
-    useState(false)
-  const [bannerContributionUpdatedValue, setBannerContributionUpdatedValue] =
-    useState(0)
-
-  const [bannerContributionRewardHidden, setBannerContributionRewardHidden] =
-    useState(false)
-
   type Timeout = ReturnType<typeof setTimeout>
   const bannerTimeout = useRef<Timeout | null>(null)
 
-  const onCheckedChange = (checked: boolean) => {
-    setUsePublicRewards(checked)
-
-    saveUpFrontSplit(checked ? contributorsShare : undefined)
-
-    if (checked) {
-      setBannerContributionRewardShown(true)
-      setBannerContributionRewardHidden(false)
-
-      bannerTimeout.current && clearTimeout(bannerTimeout.current)
-      bannerTimeout.current = setTimeout(() => {
-        setBannerContributionRewardShown(false)
-      }, 2000)
-    } else {
-      setBannerContributionRewardHidden(true)
-      setBannerContributionRewardShown(false)
-
-      bannerTimeout.current && clearTimeout(bannerTimeout.current)
-      bannerTimeout.current = setTimeout(() => {
-        setBannerContributionRewardHidden(false)
-      }, 2000)
-    }
-  }
-
-  const contributorShareUpdated = (val: number) => {
-    setContributorsShare(val)
-    saveUpFrontSplit(val)
-    setBannerContributionUpdatedValue(val)
-    setBannerContributionUpdated(true)
-
-    bannerTimeout.current && clearTimeout(bannerTimeout.current)
-    bannerTimeout.current = setTimeout(() => {
-      setBannerContributionUpdated(false)
-    }, 2000)
-  }
-
   return (
     <div className="flex w-full flex-col space-y-6">
-      <div className="flex w-full flex-col space-y-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="dark:text-polar-100 text-sm font-medium text-gray-900">
-              Public rewards
-            </div>
-            <div className="dark:text-polar-400 mt-1 text-xs text-gray-600">
-              Public & upfront rewards can attract contributors. You can also
-              reward & adjust splits later too.
-            </div>
-          </div>
-          <div>
-            <Switch
-              className="data-[state=checked]:bg-blue-600"
-              checked={usePublicRewards}
-              onCheckedChange={onCheckedChange}
-            />
-          </div>
-        </div>
+      <PublicRewardsSetting
+        value={contributorsShare}
+        org={props.issue.repository.organization}
+        onSave={saveUpFrontSplit}
+      />
 
-        {usePublicRewards && (
-          <>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <UserIcon className="dark:bg-polar-950 h-6 w-6 rounded-full bg-gray-50 p-1" />
-                <div className="dark:text-polar-100 text-sm">
-                  Reserved for contributor(s)
-                </div>
-              </div>
-              <div className="dark:bg-polar-700 flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5">
-                <span className="dark:text-polar-400 flex-shrink-0 text-gray-500">
-                  %
-                </span>
-                <div className="flex-1">
-                  <input
-                    className={classNames(
-                      'dark:bg-polar-700 w-full bg-white dark:outline-gray-700 ',
-                      usePublicRewards
-                        ? 'dark:text-polar-100 font-medium text-black'
-                        : 'dark:text-polar-400 text-gray-500',
-                    )}
-                    disabled={!usePublicRewards}
-                    value={contributorsShare}
-                    placeholder={'50'}
-                    onChange={(e) => {
-                      let val = parseInt(e.target.value)
-                      val = Math.min(Math.max(val, 0), 100)
-                      if (isNaN(val)) {
-                        val = 0
-                      }
-                      contributorShareUpdated(val)
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="dark:text-polar-100 flex items-center gap-2 text-sm">
-                <img
-                  src={props.issue.repository.organization.avatar_url}
-                  className="h-6 w-6 rounded-full"
-                />
-                <div>
-                  {props.issue.repository.organization.pretty_name ||
-                    props.issue.repository.organization.name}
-                </div>
-                <div className="dark:text-polar-400 text-gray-500">
-                  Reviews, feedback & maintenance. Reward yourself too.
-                </div>
-              </div>
-              <div className="dark:bg-polar-700 flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5">
-                <span className="dark:text-polar-400 flex-shrink-0 text-gray-500">
-                  %
-                </span>
-                <div className="flex-1">
-                  <input
-                    className={classNames(
-                      'dark:bg-polar-700 w-full bg-white dark:outline-gray-700 ',
-                      'dark:text-polar-400 text-gray-500',
-                    )}
-                    disabled
-                    value={maintainerShare}
-                  />
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
-      {usePublicRewards && (
+      {contributorsShare !== undefined && (
         <>
           <hr className="dark:bg-polar-500 bg-gray-500" />
 
@@ -805,25 +658,6 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
 
           <hr className="dark:bg-polar-500 bg-gray-500" />
         </>
-      )}
-
-      {bannerContributionRewardShown && (
-        <Banner color="blue">
-          Contributor reward is now shown in the Polar badge
-        </Banner>
-      )}
-
-      {bannerContributionRewardHidden && (
-        <Banner color="blue">
-          Contributor reward is now hidden from the Polar badge
-        </Banner>
-      )}
-
-      {bannerContributionUpdated && (
-        <Banner color="blue">
-          Contributor reward has been updated to{' '}
-          <strong>{bannerContributionUpdatedValue}%</strong>
-        </Banner>
       )}
 
       {bannerSeededPledge && createdSeedPledge && (

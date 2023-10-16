@@ -1,5 +1,6 @@
 import OrganizationPublicPage from '@/components/Organization/OrganizationPublicPage'
 import PageNotFound from '@/components/Shared/PageNotFound'
+import { useAPI } from '@/hooks/api'
 import {
   ListFundingSortBy,
   Organization,
@@ -80,6 +81,7 @@ export default async function Page({
 }: {
   params: { organization: string }
 }) {
+  const api = useAPI()
   const organization = await api.organizations.lookup(
     {
       platform: Platforms.GITHUB,
@@ -114,6 +116,14 @@ export default async function Page({
 
   const totalIssueCount = issuesFunding.pagination.total_count
 
+  const subscriptionGroups = await api.subscriptions.searchSubscriptionGroups(
+    {
+      platform: Platforms.GITHUB,
+      organizationName: organization.name,
+    },
+    cacheConfig,
+  )
+
   if (
     organization === undefined ||
     repositories === undefined ||
@@ -128,6 +138,7 @@ export default async function Page({
         organization={organization}
         repositories={repositories.items || []}
         issuesFunding={issuesFunding.items || []}
+        subscriptionGroups={subscriptionGroups.items || []}
         totalIssueCount={totalIssueCount}
       />
     </>

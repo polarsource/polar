@@ -40,6 +40,7 @@ export const Default: Story = {
     repositories: [repo],
     totalIssueCount: 4,
     issuesFunding: [issueFunding, issueFunding, issueFunding, issueFunding],
+    subscriptionGroups: [],
   },
   render: (args) => {
     return (

@@ -1,6 +1,12 @@
-import { IssueFunding, Organization, Repository } from '@polar-sh/sdk'
+import {
+  IssueFunding,
+  Organization,
+  Repository,
+  SubscriptionGroup,
+} from '@polar-sh/sdk'
 import { prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
+import PublicSubscriptionGroups from '../Subscriptions/PublicSubscriptionGroups'
 import Footer from './Footer'
 import Header from './Header'
 import IssuesLookingForFunding from './IssuesLookingForFunding'
@@ -10,10 +16,12 @@ const OrganizationPublicPage = ({
   repositories,
   issuesFunding,
   totalIssueCount,
+  subscriptionGroups,
 }: {
   organization: Organization
   repositories: Repository[]
   issuesFunding: IssueFunding[]
+  subscriptionGroups: SubscriptionGroup[]
   totalIssueCount: number
 }) => {
   const showMeta =
@@ -63,6 +71,13 @@ const OrganizationPublicPage = ({
             )}
           </div>
         </div>
+      )}
+
+      {subscriptionGroups.length > 0 && (
+        <PublicSubscriptionGroups
+          subscriptionGroups={subscriptionGroups}
+          subscribePath={`/${organization.name}/subscribe`}
+        />
       )}
 
       <IssuesLookingForFunding issuesFunding={issuesFunding} />

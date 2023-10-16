@@ -164,7 +164,7 @@ const IssueCard = ({
         )}
       </div>
       {/* Rewards */}
-      {upfrontSplit && (
+      {upfrontSplit ? (
         <div className="my-4 hidden sm:block">
           <Alert color="blue">
             <div className="flex items-center">
@@ -177,7 +177,7 @@ const IssueCard = ({
             </div>
           </Alert>
         </div>
-      )}
+      ) : null}
 
       {haveRewradsOrAssignees && (
         <div className="my-4 hidden items-center space-x-4 sm:flex">

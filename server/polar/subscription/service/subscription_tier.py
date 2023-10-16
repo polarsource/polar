@@ -51,6 +51,11 @@ class NoAssociatedPayoutAccount(SubscriptionTierError):
 class SubscriptionTierService(
     ResourceService[SubscriptionTier, SubscriptionTierCreate, SubscriptionTierUpdate]
 ):
+    async def get_by_stripe_product_id(
+        self, session: AsyncSession, stripe_product_id: str
+    ) -> SubscriptionTier | None:
+        return await self.get_by(session, stripe_product_id=stripe_product_id)
+
     async def user_create(
         self,
         session: AsyncSession,

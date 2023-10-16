@@ -177,13 +177,16 @@ class StripeService:
             transfer_group=transfer_group,
         )
 
+    def get_customer(self, customer_id: str) -> stripe_lib.Customer:
+        return stripe_lib.Customer.retrieve(customer_id)
+
     async def get_or_create_user_customer(
         self,
         session: AsyncSession,
         user: User,
     ) -> stripe_lib.Customer | None:
         if user.stripe_customer_id:
-            return stripe_lib.Customer.retrieve(user.stripe_customer_id)
+            return self.get_customer(user.stripe_customer_id)
 
         customer = stripe_lib.Customer.create(
             name=user.username,

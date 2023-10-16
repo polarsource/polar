@@ -25,6 +25,11 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
     ) -> User | None:
         return await self.get_by(session, username=username)
 
+    async def get_by_stripe_customer_id(
+        self, session: AsyncSession, stripe_customer_id: str
+    ) -> User | None:
+        return await self.get_by(session, stripe_customer_id=stripe_customer_id)
+
     async def get_by_email_or_signup(
         self,
         session: AsyncSession,

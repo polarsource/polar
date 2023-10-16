@@ -32,6 +32,8 @@ IMPLEMENTED_WEBHOOKS = {
     "payment_intent.succeeded",
     "charge.refunded",
     "charge.dispute.created",
+    "customer.subscription.created",
+    "customer.subscription.updated",
 }
 
 

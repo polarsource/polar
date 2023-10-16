@@ -20,6 +20,7 @@ import type {
   Organization,
   OrganizationBadgeSettingsRead,
   OrganizationBadgeSettingsUpdate,
+  OrganizationUpdate,
   Platforms,
 } from '../models/index';
 
@@ -39,6 +40,11 @@ export interface OrganizationsApiLookupRequest {
 export interface OrganizationsApiSearchRequest {
     platform?: Platforms;
     organizationName?: string;
+}
+
+export interface OrganizationsApiUpdateRequest {
+    id: string;
+    organizationUpdate: OrganizationUpdate;
 }
 
 export interface OrganizationsApiUpdateBadgeSettingsRequest {
@@ -250,6 +256,53 @@ export class OrganizationsApi extends runtime.BaseAPI {
      */
     async search(requestParameters: OrganizationsApiSearchRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganization> {
         const response = await this.searchRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Update organization
+     * Update an organization (Public API)
+     */
+    async updateRaw(requestParameters: OrganizationsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling update.');
+        }
+
+        if (requestParameters.organizationUpdate === null || requestParameters.organizationUpdate === undefined) {
+            throw new runtime.RequiredError('organizationUpdate','Required parameter requestParameters.organizationUpdate was null or undefined when calling update.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/organizations/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'PATCH',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters.organizationUpdate,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Update organization
+     * Update an organization (Public API)
+     */
+    async update(requestParameters: OrganizationsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
+        const response = await this.updateRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

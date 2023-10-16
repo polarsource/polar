@@ -599,129 +599,49 @@ export interface CurrencyAmount {
 /**
  * 
  * @export
- * @interface Data
+ * @interface Entry
  */
-export interface Data {
+export interface Entry {
     /**
      * 
      * @type {string}
-     * @memberof Data
+     * @memberof Entry
      */
     type: string;
     /**
      * 
      * @type {Id}
-     * @memberof Data
-     */
-    id: Id;
-}
-/**
- * 
- * @export
- * @interface EntryAny
- */
-export interface EntryAny {
-    /**
-     * 
-     * @type {string}
-     * @memberof EntryAny
-     */
-    type: string;
-    /**
-     * 
-     * @type {Id}
-     * @memberof EntryAny
-     */
-    id: Id;
-    /**
-     * 
-     * @type {any}
-     * @memberof EntryAny
-     */
-    attributes?: any | null;
-    /**
-     * 
-     * @type {{ [key: string]: Relationship; }}
-     * @memberof EntryAny
-     */
-    relationships?: { [key: string]: Relationship; };
-    /**
-     * 
-     * @type {Array<Reward>}
-     * @memberof EntryAny
-     */
-    rewards?: Array<Reward>;
-    /**
-     * 
-     * @type {PledgesTypeSummaries}
-     * @memberof EntryAny
-     */
-    pledges_summary?: PledgesTypeSummaries;
-    /**
-     * 
-     * @type {Array<IssueReferenceRead>}
-     * @memberof EntryAny
-     */
-    references?: Array<IssueReferenceRead>;
-    /**
-     * 
-     * @type {Array<Pledge>}
-     * @memberof EntryAny
-     */
-    pledges?: Array<Pledge>;
-}
-/**
- * 
- * @export
- * @interface EntryIssue
- */
-export interface EntryIssue {
-    /**
-     * 
-     * @type {string}
-     * @memberof EntryIssue
-     */
-    type: string;
-    /**
-     * 
-     * @type {Id}
-     * @memberof EntryIssue
+     * @memberof Entry
      */
     id: Id;
     /**
      * 
      * @type {Issue}
-     * @memberof EntryIssue
+     * @memberof Entry
      */
     attributes: Issue;
     /**
      * 
-     * @type {{ [key: string]: Relationship; }}
-     * @memberof EntryIssue
-     */
-    relationships?: { [key: string]: Relationship; };
-    /**
-     * 
      * @type {Array<Reward>}
-     * @memberof EntryIssue
+     * @memberof Entry
      */
     rewards?: Array<Reward>;
     /**
      * 
      * @type {PledgesTypeSummaries}
-     * @memberof EntryIssue
+     * @memberof Entry
      */
     pledges_summary?: PledgesTypeSummaries;
     /**
      * 
      * @type {Array<IssueReferenceRead>}
-     * @memberof EntryIssue
+     * @memberof Entry
      */
     references?: Array<IssueReferenceRead>;
     /**
      * 
      * @type {Array<Pledge>}
-     * @memberof EntryIssue
+     * @memberof Entry
      */
     pledges?: Array<Pledge>;
 }
@@ -1159,16 +1079,10 @@ export interface IssueFunding {
 export interface IssueListResponse {
     /**
      * 
-     * @type {Array<EntryIssue>}
+     * @type {Array<Entry>}
      * @memberof IssueListResponse
      */
-    data: Array<EntryIssue>;
-    /**
-     * 
-     * @type {Array<EntryAny>}
-     * @memberof IssueListResponse
-     */
-    included?: Array<EntryAny>;
+    data: Array<Entry>;
     /**
      * 
      * @type {PaginationResponse}
@@ -2219,6 +2133,12 @@ export interface Organization {
      * @memberof Organization
      */
     pledge_badge_show_amount: boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof Organization
+     */
+    default_upfront_split_to_contributors?: number;
 }
 /**
  * 
@@ -2396,6 +2316,37 @@ export interface OrganizationPrivateRead {
      * @memberof OrganizationPrivateRead
      */
     repositories?: Array<RepositoryLegacyRead>;
+}
+/**
+ * 
+ * @export
+ * @interface OrganizationUpdate
+ */
+export interface OrganizationUpdate {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationUpdate
+     */
+    set_default_upfront_split_to_contributors?: boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof OrganizationUpdate
+     */
+    default_upfront_split_to_contributors?: number;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationUpdate
+     */
+    pledge_badge_show_amount?: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationUpdate
+     */
+    billing_email?: string;
 }
 /**
  * 
@@ -3409,38 +3360,6 @@ export interface Reactions {
      * @memberof Reactions
      */
     eyes: number;
-}
-/**
- * 
- * @export
- * @interface Relationship
- */
-export interface Relationship {
-    /**
-     * 
-     * @type {Data}
-     * @memberof Relationship
-     */
-    data: Data;
-}
-/**
- * 
- * @export
- * @interface RelationshipData
- */
-export interface RelationshipData {
-    /**
-     * 
-     * @type {string}
-     * @memberof RelationshipData
-     */
-    type: string;
-    /**
-     * 
-     * @type {Id}
-     * @memberof RelationshipData
-     */
-    id: Id;
 }
 /**
  * 

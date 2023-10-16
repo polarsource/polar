@@ -29,10 +29,8 @@ class UserOrganization(TimestampedModel):
         primary_key=True,
     )
 
-    user: "Mapped[User]" = relationship("User", lazy="joined")  # TODO: lazy="raise"!
+    user: "Mapped[User]" = relationship("User", lazy="raise")
 
-    organization: "Mapped[Organization]" = relationship(
-        "Organization", lazy="joined"
-    )  # TODO: lazy="raise"!
+    organization: "Mapped[Organization]" = relationship("Organization", lazy="raise")
 
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

@@ -108,3 +108,70 @@ async def test_get_organization_deleted(
     )
 
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_update_organization_no_admin(
+    organization: Organization,
+    auth_jwt: str,
+    client: AsyncClient,
+) -> None:
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        json={
+            "set_default_upfront_split_to_contributors": True,
+            "default_upfront_split_to_contributors": 85,
+        },
+    )
+
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_update_organization(
+    organization: Organization,
+    auth_jwt: str,
+    client: AsyncClient,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    session: AsyncSession,
+) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        json={
+            "set_default_upfront_split_to_contributors": True,
+            "default_upfront_split_to_contributors": 85,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["default_upfront_split_to_contributors"] == 85
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        json={
+            "default_upfront_split_to_contributors": 70,  # no change
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["default_upfront_split_to_contributors"] == 85
+
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        json={
+            "set_default_upfront_split_to_contributors": True,  # unset!
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == str(organization.id)
+    assert response.json()["default_upfront_split_to_contributors"] is None

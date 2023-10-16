@@ -31,6 +31,8 @@ class Organization(Schema):
     pledge_minimum_amount: int
     pledge_badge_show_amount: bool
 
+    default_upfront_split_to_contributors: int | None
+
     @classmethod
     def from_db(cls, o: OrganizationModel) -> Self:
         return cls(
@@ -47,7 +49,16 @@ class Organization(Schema):
             twitter_username=o.twitter_username,
             pledge_minimum_amount=o.pledge_minimum_amount,
             pledge_badge_show_amount=o.pledge_badge_show_amount,
+            default_upfront_split_to_contributors=o.default_upfront_split_to_contributors,
         )
+
+
+class OrganizationUpdate(Schema):
+    set_default_upfront_split_to_contributors: bool | None
+    default_upfront_split_to_contributors: int | None
+
+    pledge_badge_show_amount: bool = True
+    billing_email: str | None = None
 
 
 #
@@ -56,14 +67,9 @@ class Organization(Schema):
 
 
 # Internal model
-class OrganizationSettingsRead(BaseModel):
+# TODO: Remove
+class OrganizationSettingsRead(Schema):
     pledge_badge_show_amount: bool = True
-    billing_email: str | None = None
-
-
-# Internal model
-class OrganizationSettingsUpdate(Schema):
-    pledge_badge_show_amount: bool | None = None
     billing_email: str | None = None
 
 
@@ -126,11 +132,6 @@ class OrganizationCreate(OrganizationPrivateBase):
             installation_updated_at=installation_updated_at,
             installation_suspended_at=installation.suspended_at,
         )
-
-
-# Internal model
-class OrganizationUpdate(OrganizationCreate):
-    ...
 
 
 # Internal model

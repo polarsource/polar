@@ -82,6 +82,12 @@ class Organization(RecordModel):
         default=None,
     )
 
+    default_upfront_split_to_contributors: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        default=None,
+    )
+
     onboarded_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
     stripe_customer_id: Mapped[str | None] = mapped_column(

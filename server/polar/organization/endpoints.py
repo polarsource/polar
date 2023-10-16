@@ -24,7 +24,7 @@ from .schemas import (
     OrganizationBadgeSettingsUpdate,
     OrganizationPrivateBase,
     OrganizationSettingsRead,
-    OrganizationSettingsUpdate,
+    OrganizationUpdate,
     RepositoryBadgeSettingsRead,
 )
 from .service import organization
@@ -135,12 +135,41 @@ async def get(
     return OrganizationSchema.from_db(org)
 
 
+@router.patch(
+    "/organizations/{id}",
+    response_model=OrganizationSchema,
+    tags=[Tags.PUBLIC],
+    description="Update organization",
+    status_code=200,
+    summary="Update an organization (Public API)",
+    responses={404: {}},
+)
+async def update(
+    id: UUID,
+    update: OrganizationUpdate,
+    auth: Auth = Depends(Auth.current_user),
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationSchema:
+    org = await organization.get(session, id=id)
+    if not org:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, org):
+        raise Unauthorized()
+
+    org = await organization.update_settings(session, org, update)
+
+    return OrganizationSchema.from_db(org)
+
+
 #
 # Internal APIs below
 #
 
 
 # Internal model
+# TODO: remove!
 class OrganizationPrivateRead(OrganizationPrivateBase, OrganizationSettingsRead):
     id: UUID
     created_at: datetime

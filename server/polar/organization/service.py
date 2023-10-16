@@ -16,7 +16,6 @@ from polar.repository.service import repository as repository_service
 from .schemas import (
     OrganizationBadgeSettingsUpdate,
     OrganizationCreate,
-    OrganizationSettingsUpdate,
     OrganizationUpdate,
 )
 
@@ -171,15 +170,18 @@ class OrganizationService(
         self,
         session: AsyncSession,
         organization: Organization,
-        settings: OrganizationSettingsUpdate,
+        settings: OrganizationUpdate,
     ) -> Organization:
-        # Leverage .update() in case we expand this with additional settings
-
         if settings.billing_email is not None:
             organization.billing_email = settings.billing_email
 
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(timezone.utc)
+
+        if settings.set_default_upfront_split_to_contributors:
+            organization.default_upfront_split_to_contributors = (
+                settings.default_upfront_split_to_contributors
+            )
 
         updated = await organization.save(session)
         log.info(

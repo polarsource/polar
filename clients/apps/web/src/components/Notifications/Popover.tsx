@@ -585,15 +585,15 @@ export const Notification = ({
       }
 
     case NotificationType.MAINTAINER_PLEDGED_ISSUE_CONFIRMATION_PENDING_NOTIFICATION:
-      return (
-        <MaintainerPledgedIssueConfirmationPendingWrapper
-          n={n}
-          payload={
-            n.payload as MaintainerPledgedIssueConfirmationPendingNotification
-          }
-          setIsInNestedModal={setIsInNestedModal}
-        />
-      )
+      if (n.maintainer_pledged_issue_confirmation_pending) {
+        return (
+          <MaintainerPledgedIssueConfirmationPendingWrapper
+            n={n}
+            payload={n.maintainer_pledged_issue_confirmation_pending}
+            setIsInNestedModal={setIsInNestedModal}
+          />
+        )
+      }
 
     case NotificationType.MAINTAINER_PLEDGE_PENDING_NOTIFICATION:
       if (n.maintainer_pledge_pending) {

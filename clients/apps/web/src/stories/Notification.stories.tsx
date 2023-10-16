@@ -7,7 +7,6 @@ import {
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from 'polarkit'
 import {
-  notificationDummyPayload,
   notification_maintainerPledgeConfirmationPendingNotification,
   notification_maintainerPledgeCreatedNotification,
   notification_maintainerPledgePaidNotification,
@@ -107,7 +106,6 @@ export const MaintainerPledgedIssuePendingNotificationItem: Story = {
       id: 'x',
       created_at: new Date().toISOString(),
       type: NotificationType.MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION,
-      payload: notificationDummyPayload,
       maintainer_pledged_issue_pending: {
         pledge_amount_sum: '123.50',
         issue_url: '#',
@@ -129,7 +127,6 @@ export const MaintainerPledgedIssueConfirmationPendingNotificationItem: StoryCon
         id: 'x',
         created_at: new Date().toISOString(),
         type: NotificationType.MAINTAINER_PLEDGED_ISSUE_CONFIRMATION_PENDING_NOTIFICATION,
-        payload: notificationDummyPayload,
         maintainer_pledged_issue_confirmation_pending: {
           pledge_amount_sum: '123.50',
           issue_url: '#',

@@ -43,7 +43,6 @@ async def get(
                 id=n.id,
                 type=NotificationType.from_str(n.type),
                 created_at=n.created_at,
-                payload=payload,  # deprecated
             )
 
             if isinstance(payload, MaintainerPledgeCreatedNotification):

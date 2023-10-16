@@ -1909,13 +1909,6 @@ export interface NotificationRead {
     created_at: string;
     /**
      * 
-     * @type {Payload1}
-     * @memberof NotificationRead
-     * @deprecated
-     */
-    payload: Payload1;
-    /**
-     * 
      * @type {MaintainerPledgePaidNotification}
      * @memberof NotificationRead
      */
@@ -2500,103 +2493,6 @@ export interface Payload {
      * @memberof Payload
      */
     message?: string;
-}
-/**
- * 
- * @export
- * @interface Payload1
- */
-export interface Payload1 {
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload1
-     */
-    paid_out_amount: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload1
-     */
-    issue_url: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload1
-     */
-    issue_title: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload1
-     */
-    issue_org_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload1
-     */
-    issue_repo_name: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof Payload1
-     */
-    issue_number: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload1
-     */
-    pledge_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload1
-     */
-    pledger_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload1
-     */
-    pledge_amount: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof Payload1
-     */
-    maintainer_has_stripe_account: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload1
-     */
-    pledge_date: string;
-    /**
-     * 
-     * @type {PledgeType}
-     * @memberof Payload1
-     */
-    pledge_type?: PledgeType;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload1
-     */
-    issue_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload1
-     */
-    pledge_amount_sum: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof Payload1
-     */
-    maintainer_has_account: boolean;
 }
 /**
  * 

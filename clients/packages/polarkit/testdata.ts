@@ -265,29 +265,10 @@ const maintainerPledgedIssueConfirmationPendingNotification: MaintainerPledgedIs
     maintainer_has_account: false,
   }
 
-// hack to fill in types, it's unused.
-export const notificationDummyPayload = {
-  paid_out_amount: '',
-  issue_url: '',
-  issue_title: '',
-  issue_org_name: '',
-  issue_repo_name: '',
-  issue_number: 0,
-  pledge_id: '',
-  pledger_name: '',
-  pledge_amount: '',
-  maintainer_has_stripe_account: false,
-  pledge_date: '',
-  issue_id: '',
-  pledge_amount_sum: '',
-  maintainer_has_account: false,
-}
-
 export const notification_maintainerPledgeCreatedNotification: NotificationRead =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
-    payload: notificationDummyPayload,
     type: NotificationType.MAINTAINER_PLEDGE_CREATED_NOTIFICATION,
     maintainer_pledge_created: maintainerPledgeCreatedNotification,
   }
@@ -296,7 +277,6 @@ export const notification_maintainerPledgeConfirmationPendingNotification: Notif
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
-    payload: notificationDummyPayload,
     type: NotificationType.MAINTAINER_PLEDGE_CONFIRMATION_PENDING_NOTIFICATION,
     maintainer_pledge_confirmation_pending:
       maintainerPledgeConfirmationPendingNotification,
@@ -306,7 +286,6 @@ export const notification_maintainerPledgePendingNotification: NotificationRead 
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
-    payload: notificationDummyPayload,
     type: NotificationType.MAINTAINER_PLEDGE_PENDING_NOTIFICATION,
     maintainer_pledge_pending: maintainerPledgePendingNotification,
   }
@@ -314,7 +293,6 @@ export const notification_maintainerPledgePendingNotification: NotificationRead 
 export const notification_maintainerPledgePaidNotification: NotificationRead = {
   id: 'x',
   created_at: addDays(new Date(), -2).toISOString(),
-  payload: notificationDummyPayload,
   type: NotificationType.MAINTAINER_PLEDGE_PAID_NOTIFICATION,
   maintainer_pledge_paid: maintainerPledgePaidNotification,
 }
@@ -322,7 +300,6 @@ export const notification_maintainerPledgePaidNotification: NotificationRead = {
 export const notification_pledgerPledgePendingNotification: NotificationRead = {
   id: 'x',
   created_at: addDays(new Date(), -2).toISOString(),
-  payload: notificationDummyPayload,
   type: NotificationType.PLEDGER_PLEDGE_PENDING_NOTIFICATION,
   pledger_pledge_pending: pledgerPledgePendingNotification,
 }
@@ -330,7 +307,6 @@ export const notification_pledgerPledgePendingNotification: NotificationRead = {
 export const notification_rewardPaidNotification: NotificationRead = {
   id: 'x',
   created_at: addDays(new Date(), -2).toISOString(),
-  payload: notificationDummyPayload,
   type: NotificationType.REWARD_PAID_NOTIFICATION,
   reward_paid: rewardPaidNotification,
 }
@@ -339,7 +315,6 @@ export const notification_maintainerPledgedIssuePendingNotification: Notificatio
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
-    payload: notificationDummyPayload,
     type: NotificationType.MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION,
     maintainer_pledged_issue_pending: maintainerPledgedIssuePendingNotification,
   }
@@ -348,7 +323,6 @@ export const notification_maintainerPledgedIssueConfirmationPendingNotification:
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
-    payload: notificationDummyPayload,
     type: NotificationType.MAINTAINER_PLEDGED_ISSUE_CONFIRMATION_PENDING_NOTIFICATION,
     maintainer_pledged_issue_confirmation_pending:
       maintainerPledgedIssueConfirmationPendingNotification,

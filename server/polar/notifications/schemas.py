@@ -44,17 +44,6 @@ class NotificationRead(Schema):
     type: NotificationType
     created_at: datetime
 
-    payload: Union[
-        MaintainerPledgePaidNotification,
-        MaintainerPledgeConfirmationPendingNotification,
-        MaintainerPledgePendingNotification,
-        MaintainerPledgeCreatedNotification,
-        PledgerPledgePendingNotification,
-        RewardPaidNotification,
-        MaintainerPledgedIssueConfirmationPendingNotification,
-        MaintainerPledgedIssuePendingNotification,
-    ] = Field(deprecated=True)
-
     maintainer_pledge_paid: MaintainerPledgePaidNotification | None = None
     maintainer_pledge_confirmation_pending: MaintainerPledgeConfirmationPendingNotification | None = (  # noqa: E501
         None

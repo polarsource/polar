@@ -298,7 +298,7 @@ const BadgeSetup = ({
             />
 
             <div className="flex flex-row items-center">
-              <div className="w-1/2">
+              <div className="grow">
                 <SettingsCheckbox
                   id="show-raised"
                   title="Show amount pledged"
@@ -315,7 +315,7 @@ const BadgeSetup = ({
                 />
               </div>
 
-              <div className="w-1/2">
+              <div className="w-fit">
                 <div className="flex flex-row items-center text-right">
                   <label htmlFor="minimum-pledge" className="mr-4 w-64 text-sm">
                     Minimum pledge

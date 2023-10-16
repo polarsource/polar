@@ -91,7 +91,7 @@ const AccessToken = (
             </p>
           </div>
         </div>{' '}
-        <div className="dark:text-polar-400 flex flex-row items-center space-x-4 text-gray-500">
+        <div className="dark:text-polar-400 flex flex-row items-center gap-x-4 space-x-4 text-gray-500">
           {props.last_used_at && (
             <FormattedDateTime datetime={props.last_used_at} dateStyle="long" />
           )}

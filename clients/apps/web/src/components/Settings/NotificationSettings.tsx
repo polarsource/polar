@@ -1,4 +1,4 @@
-import { InformationCircleIcon } from '@heroicons/react/20/solid'
+import { InfoOutlined } from '@mui/icons-material'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { useUser, useUserPreferencesMutation } from 'polarkit/hooks'
 import { useEffect, useState } from 'react'
@@ -88,8 +88,8 @@ export const NotificationSettingsBox = (props: {
             })
           }}
         />
-        <span className="dark:text-polar-400 inline-flex items-center space-x-1 text-sm text-gray-500">
-          <InformationCircleIcon className="dark:text-polar-400 h-5 w-5 text-gray-400" />
+        <span className="dark:text-polar-400 inline-flex items-center gap-x-1 space-x-1 text-sm text-gray-500">
+          <InfoOutlined className="dark:text-polar-400 h-5 w-5 text-gray-400" />
           <span>
             You&apos;ll always receive emails about pledges and transactions
           </span>

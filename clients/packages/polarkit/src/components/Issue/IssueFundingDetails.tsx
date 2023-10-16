@@ -20,6 +20,11 @@ const IssueFundingDetails: React.FC<IssueFundingDetailsProps> = ({
   pledgesSummaries,
 }) => {
   const { pay_upfront, pay_on_completion } = pledgesSummaries
+
+  const upfrontSplit =
+    issue.upfront_split_to_contributors ??
+    issue.repository.organization.default_upfront_split_to_contributors
+
   return (
     <div className="flex flex-col items-center gap-4 md:flex-row">
       <FundingPill total={total} goal={fundingGoal} />
@@ -34,9 +39,7 @@ const IssueFundingDetails: React.FC<IssueFundingDetailsProps> = ({
         )}
       </div>
 
-      {issue.upfront_split_to_contributors && (
-        <PublicRewardPill percent={issue.upfront_split_to_contributors} />
-      )}
+      {upfrontSplit && <PublicRewardPill percent={upfrontSplit} />}
     </div>
   )
 }

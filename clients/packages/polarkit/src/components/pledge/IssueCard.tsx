@@ -55,6 +55,10 @@ const IssueCard = ({
   const haveAssignees = issue.assignees && issue.assignees.length > 0
   const haveRewradsOrAssignees = haveRewards || haveAssignees
 
+  const upfrontSplit =
+    issue.upfront_split_to_contributors ??
+    issue.repository.organization.default_upfront_split_to_contributors
+
   return (
     <>
       <h1 className="dark:text-polar-50 mb-4 text-center text-4xl text-gray-900 sm:text-left">
@@ -160,17 +164,15 @@ const IssueCard = ({
         )}
       </div>
       {/* Rewards */}
-      {issue.upfront_split_to_contributors && (
+      {upfrontSplit && (
         <div className="my-4 hidden sm:block">
           <Alert color="blue">
             <div className="flex items-center">
               <HeartIcon className="mr-2 h-5 w-5 text-blue-300 dark:text-blue-700" />
               <div className="inline">
                 <span className="font-bold">Rewards</span> contributors{' '}
-                <span className="font-bold">
-                  {issue.upfront_split_to_contributors}%
-                </span>{' '}
-                of received funds
+                <span className="font-bold">{upfrontSplit}%</span> of received
+                funds
               </div>
             </div>
           </Alert>

@@ -85,7 +85,7 @@ export default function ClientPage() {
       </DashboardTopbar>
       <DashboardBody>
         <div className="space-y-4">
-          <h2 className="dark:text-polar-200 text-lg text-gray-900">
+          <h2 className="dark:text-polar-100 text-lg text-gray-900">
             Github Sponsors
           </h2>
           <p className="dark:text-polar-400 text-sm text-gray-500">
@@ -112,7 +112,7 @@ export default function ClientPage() {
               </div>
             </div>
           </ShadowBox>
-          <h2 className="dark:text-polar-200 pt-8 text-lg text-gray-900">
+          <h2 className="dark:text-polar-100 pt-8 text-lg text-gray-900">
             Readme embeds
           </h2>
           <p className="dark:text-polar-400 text-sm text-gray-500">

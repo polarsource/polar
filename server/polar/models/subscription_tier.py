@@ -20,7 +20,9 @@ class SubscriptionTier(RecordModel):
     price_currency: Mapped[str] = mapped_column(String(3), nullable=False)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-    stripe_product_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    stripe_product_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, index=True
+    )
     stripe_price_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     subscription_group_id: Mapped[UUID] = mapped_column(

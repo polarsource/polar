@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
 import pytest
@@ -11,10 +12,12 @@ from polar.models import (
     Account,
     Organization,
     Repository,
+    Subscription,
     SubscriptionGroup,
     SubscriptionTier,
     User,
 )
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.endpoints import is_feature_flag_enabled
 
@@ -73,6 +76,31 @@ async def create_subscription_tier(
     session.add(subscription_tier)
     await session.commit()
     return subscription_tier
+
+
+async def create_subscription(
+    session: AsyncSession,
+    *,
+    subscription_tier: SubscriptionTier,
+    user: User,
+    stripe_subscription_id: str = "SUBSCRIPTION_ID",
+) -> Subscription:
+    now = datetime.now(UTC)
+    subscription = Subscription(
+        stripe_subscription_id=stripe_subscription_id,
+        status=SubscriptionStatus.incomplete,
+        current_period_start=now,
+        current_period_end=now + timedelta(days=30),
+        cancel_at_period_end=False,
+        ended_at=None,
+        price_amount=subscription_tier.price_amount,
+        price_currency=subscription_tier.price_currency,
+        user_id=user.id,
+        subscription_tier_id=subscription_tier.id,
+    )
+    session.add(subscription)
+    await session.commit()
+    return subscription
 
 
 @pytest_asyncio.fixture

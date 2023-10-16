@@ -1,8 +1,11 @@
 import stripe
+from arq import Retry
 from pydantic import parse_obj_as
 
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook
 from polar.pledge.service import pledge as pledge_service
+from polar.subscription.service.subscription import SubscriptionDoesNotExist
+from polar.subscription.service.subscription import subscription as subscription_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 
@@ -48,3 +51,40 @@ async def charge_dispute_created(
                 amount=dispute["amount"],
                 transaction_id=dispute["id"],
             )
+
+
+@task("stripe.webhook.customer.subscription.created")
+async def customer_subscription_created(
+    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            subscription = stripe.Subscription.construct_from(
+                event["data"]["object"], None
+            )
+            await subscription_service.create_subscription(
+                session, stripe_subscription=subscription
+            )
+
+
+@task("stripe.webhook.customer.subscription.updated")
+async def customer_subscription_updated(
+    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            subscription = stripe.Subscription.construct_from(
+                event["data"]["object"], None
+            )
+            try:
+                await subscription_service.update_subscription(
+                    session, stripe_subscription=subscription
+                )
+            except SubscriptionDoesNotExist as e:
+                # Retry because we Stripe sends consecutive webhook quickly,
+                # so we might not have been able to handle subscription.created yet!
+                MAX_RETRIES = 2
+                if ctx["job_try"] <= MAX_RETRIES:
+                    raise Retry(ctx["job_try"]) from e
+                else:
+                    raise

@@ -356,7 +356,9 @@ export const Badge = ({
           </div>
         </div>
 
-        {orgName && upfront_split_to_contributors && (
+        {orgName &&
+        upfront_split_to_contributors &&
+        upfront_split_to_contributors > 0 ? (
           <div
             style={{
               width: '100%',
@@ -411,7 +413,7 @@ export const Badge = ({
               Contribute
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </>
   )

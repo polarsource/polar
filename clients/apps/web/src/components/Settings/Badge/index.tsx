@@ -276,6 +276,7 @@ const BadgeSetup = ({
               onUpdateFundingGoal={async () => {}}
               showUpdateButton={false}
               showAmountRaised={settings.show_amount}
+              org={org}
               onChangeMessage={(value: string) => {
                 setSettings((prev) => {
                   return {
@@ -293,6 +294,7 @@ const BadgeSetup = ({
               canSetFundingGoal={false}
               title="Badge defaults"
               subtitle="You can change the settings per issue or configure a deault value"
+              upfrontSplit={upfrontSplitValue}
             />
 
             <div className="flex flex-row items-center">

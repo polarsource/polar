@@ -76,7 +76,7 @@ const IssuePledge = (props: Props) => {
             />
           )}
 
-          {upfrontSplit && <PublicRewardPill percent={upfrontSplit} />}
+          {upfrontSplit ? <PublicRewardPill percent={upfrontSplit} /> : null}
         </div>
 
         <div className="flex flex-row items-center space-x-4">

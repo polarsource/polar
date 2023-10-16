@@ -1,4 +1,4 @@
-import { CurrencyAmount, Funding } from '@polar-sh/sdk'
+import { CurrencyAmount, Funding, Organization } from '@polar-sh/sdk'
 import { Marked } from '@ts-stack/markdown'
 import { useTheme } from 'next-themes'
 import { Badge } from 'polarkit/components/badge'
@@ -23,6 +23,8 @@ const BadgeMessageForm = (props: {
   funding: Funding
   title?: string
   subtitle?: string
+  upfrontSplit?: number
+  org: Organization
 }) => {
   const [message, setMessage] = useState(props.value)
 
@@ -115,10 +117,12 @@ const BadgeMessageForm = (props: {
           <>
             <div className="prose dark:prose-invert" ref={ref} />
             <Badge
+              orgName={props.org.name}
               showAmountRaised={props.showAmountRaised}
               darkmode={resolvedTheme === 'dark'}
               funding={funding}
               avatarsUrls={[]}
+              upfront_split_to_contributors={props.upfrontSplit}
             />
           </>
         )}

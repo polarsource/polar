@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Self, Sequence
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from polar.config import settings
 from polar.enums import Platforms
@@ -55,7 +55,9 @@ class Organization(Schema):
 
 class OrganizationUpdate(Schema):
     set_default_upfront_split_to_contributors: bool | None
-    default_upfront_split_to_contributors: int | None
+    default_upfront_split_to_contributors: int | None = Field(
+        default=None, ge=0.0, le=100.0
+    )
 
     pledge_badge_show_amount: bool = True
     billing_email: str | None = None

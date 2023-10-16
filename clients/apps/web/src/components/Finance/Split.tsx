@@ -225,11 +225,11 @@ const Split = (props: {
       <ModalHeader hide={props.onCancel}>
         <div className="flex items-center gap-4">
           <div>Split reward (${getCentsInDollarString(pledgeSum)})</div>
-          {upfrontSplit && (
+          {upfrontSplit ? (
             <div className="w-fit">
               <PublicRewardPill percent={upfrontSplit} />
             </div>
-          )}
+          ) : null}
         </div>
       </ModalHeader>
       <div className="space-y-4 pt-4">

@@ -1,4 +1,3 @@
-from typing import List, Sequence
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -6,7 +5,7 @@ from fastapi.responses import HTMLResponse
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
-from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
+from polar.dashboard.schemas import IssueSortBy
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.integrations.github.badge import GithubBadge
@@ -15,10 +14,7 @@ from polar.integrations.github.service.issue import github_issue as github_issue
 from polar.integrations.github.service.url import github_url
 from polar.issue.body import IssueBodyRenderer, get_issue_body_renderer
 from polar.kit.pagination import ListResource, Pagination
-from polar.kit.schemas import Schema
 from polar.locker import Locker, get_locker
-from polar.models import Issue
-from polar.organization.schemas import Organization as OrganizationSchema
 from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import (
@@ -36,7 +32,6 @@ from polar.user_organization.service import (
 
 from .schemas import (
     ConfirmIssue,
-    IssueReferenceRead,
     IssueUpdateBadgeMessage,
     PostIssueComment,
     UpdateIssue,
@@ -365,12 +360,8 @@ async def update(
         issue.funding_goal = update.funding_goal.amount
         updated = True
 
-    if update.upfront_split_to_contributors is not None:
+    if update.set_upfront_split_to_contributors:
         issue.upfront_split_to_contributors = update.upfront_split_to_contributors
-        updated = True
-
-    if update.unset_upfront_split_to_contributors:
-        issue.upfront_split_to_contributors = None
         updated = True
 
     if updated:

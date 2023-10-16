@@ -21,6 +21,8 @@ const BadgeMessageForm = (props: {
   showAmountRaised: boolean
   canSetFundingGoal: boolean
   funding: Funding
+  title?: string
+  subtitle?: string
 }) => {
   const [message, setMessage] = useState(props.value)
 
@@ -86,9 +88,17 @@ const BadgeMessageForm = (props: {
   return (
     <div className="flex flex-col space-y-3">
       <div className="text-gray flex items-center justify-between">
-        <div className="dark:text-polar-50 text-sm font-medium">
-          Customize embed
+        <div>
+          <div className="dark:text-polar-50 text-sm font-medium">
+            {props.title ?? 'Customize embed'}
+          </div>
+          {props.subtitle && (
+            <div className="dark:text-polar-400 text-sm text-gray-500">
+              {props.subtitle}
+            </div>
+          )}
         </div>
+
         <LabeledRadioButton
           values={['View', 'Edit']}
           value={descriptionMode}
@@ -155,6 +165,7 @@ const BadgeMessageForm = (props: {
               onClick={onClickUpdate}
               disabled={!canSave}
               fullWidth={false}
+              loading={isLoading}
             >
               Update
             </PrimaryButton>

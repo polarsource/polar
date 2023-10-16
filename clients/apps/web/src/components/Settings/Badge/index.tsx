@@ -1,4 +1,5 @@
 import BadgeMessageForm from '@/components/Dashboard/BadgeMessageForm'
+import PublicRewardsSetting from '@/components/Dashboard/UpfrontRewards'
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
 import { InfoOutlined } from '@mui/icons-material'
 import {
@@ -13,6 +14,7 @@ import { MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
 import {
   useOrganizationBadgeSettings,
   useSSE,
+  useUpdateOrganization,
   useUpdateOrganizationBadgeSettings,
 } from 'polarkit/hooks'
 import { classNames } from 'polarkit/utils'
@@ -230,6 +232,24 @@ const BadgeSetup = ({
     })
   }
 
+  const [upfrontSplitValue, setUpfrontSplitValue] = useState(
+    org.default_upfront_split_to_contributors,
+  )
+
+  const updateOrg = useUpdateOrganization()
+
+  const onSaveUpfrontSplit = async (value: number | undefined) => {
+    setUpfrontSplitValue(value)
+
+    await updateOrg.mutateAsync({
+      id: org.id,
+      settings: {
+        set_default_upfront_split_to_contributors: value !== undefined,
+        default_upfront_split_to_contributors: value,
+      },
+    })
+  }
+
   if (!settings) return <></>
 
   return (
@@ -271,6 +291,8 @@ const BadgeSetup = ({
                 pledges_sum: { amount: 5000, currency: 'USD' },
               }}
               canSetFundingGoal={false}
+              title="Badge defaults"
+              subtitle="You can change the settings per issue or configure a deault value"
             />
 
             <div className="flex flex-row items-center">
@@ -321,7 +343,14 @@ const BadgeSetup = ({
                 </div>
               </div>
             </div>
+
+            <PublicRewardsSetting
+              org={org}
+              value={upfrontSplitValue}
+              onSave={onSaveUpfrontSplit}
+            />
           </div>
+
           <div className="dark:bg-polar-700 dark:border-polar-600 dark:text-polar-300 flex flex-row items-center rounded-b-xl border-t border-gray-200 bg-gray-100/50 px-4 py-3 text-gray-500">
             <InfoOutlined
               width={24}
@@ -329,7 +358,7 @@ const BadgeSetup = ({
               className="dark:text-polar-400 text-gray-300"
             />
             <p className="text-polar-400 ml-4 text-xs">
-              <strong className="text-polar-100 mb-1 block font-medium">
+              <strong className="dark:text-polar-100 mb-1 block font-medium text-gray-500">
                 How is the Polar section added?
               </strong>
               Polar edits the issue description to add your custom promotion

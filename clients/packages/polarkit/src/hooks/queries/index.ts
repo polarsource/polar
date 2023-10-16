@@ -1,9 +1,9 @@
 import {
-  ListResourceOrganization,
-  OrganizationBadgeSettingsUpdate,
+  ListResourceRepository,
   OrganizationPrivateRead,
   Platforms,
   Repository,
+  ResponseError,
 } from '@polar-sh/sdk'
 import {
   UseMutationResult,
@@ -21,19 +21,15 @@ export type RepoListItem = Repository & {
 export * from './backoffice'
 export * from './dashboard'
 export * from './issue'
+export * from './org'
 export * from './pledges'
 export * from './rewards'
 export * from './user'
 
-export const useListOrganizations: () => UseQueryResult<ListResourceOrganization> =
-  () =>
-    useQuery({
-      queryKey: ['user', 'organizations'],
-      queryFn: () => api.organizations.list(),
-      retry: defaultRetry,
-    })
-
-export const useListRepositories = () =>
+export const useListRepositories: () => UseQueryResult<
+  ListResourceRepository,
+  ResponseError
+> = () =>
   useQuery({
     queryKey: ['user', 'repositories'],
     queryFn: () => api.repositories.list(),
@@ -104,30 +100,5 @@ export const useNotificationsMarkRead: () => UseMutationResult<
     },
     onSuccess: (result, variables, ctx) => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
-    },
-  })
-
-export const useOrganizationBadgeSettings = (id: string) =>
-  useQuery({
-    queryKey: ['organizationBadgeSettings', id],
-    queryFn: () => api.organizations.getBadgeSettings({ id }),
-    retry: defaultRetry,
-  })
-
-export const useUpdateOrganizationBadgeSettings = () =>
-  useMutation({
-    mutationFn: (variables: {
-      id: string
-      settings: OrganizationBadgeSettingsUpdate
-    }) => {
-      return api.organizations.updateBadgeSettings({
-        id: variables.id,
-        organizationBadgeSettingsUpdate: variables.settings,
-      })
-    },
-    onSuccess: (result, variables, ctx) => {
-      queryClient.invalidateQueries({
-        queryKey: ['organizationBadgeSettings', variables.id],
-      })
     },
   })

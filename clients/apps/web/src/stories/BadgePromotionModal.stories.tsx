@@ -64,6 +64,18 @@ export const RewardsWithSplit: Story = {
   },
 }
 
+export const RewardsWithSplitZero: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    defaultTab: 'rewards',
+    issue: {
+      ...issue,
+      upfront_split_to_contributors: 0,
+    },
+  },
+}
+
 export const Promote: Story = {
   ...Default,
   args: {

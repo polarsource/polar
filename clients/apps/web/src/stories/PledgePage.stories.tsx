@@ -245,3 +245,14 @@ export const LongAuthorName: Story = {
     },
   },
 }
+
+export const SplitsZero: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    issue: {
+      ...issue,
+      upfront_split_to_contributors: 0,
+    },
+  },
+}

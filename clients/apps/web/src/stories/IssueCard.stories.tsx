@@ -88,6 +88,17 @@ export const UpfrontSplit: Story = {
   },
 }
 
+export const UpfrontSplitZero: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    issue: {
+      ...issue,
+      upfront_split_to_contributors: 0,
+    },
+  },
+}
+
 export const LongAuthorName: Story = {
   ...Default,
   args: {

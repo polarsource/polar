@@ -4011,7 +4011,7 @@ export interface UpdateIssue {
      * @type {boolean}
      * @memberof UpdateIssue
      */
-    unset_upfront_split_to_contributors?: boolean;
+    set_upfront_split_to_contributors?: boolean;
 }
 /**
  * 

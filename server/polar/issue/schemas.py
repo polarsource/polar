@@ -162,7 +162,7 @@ class UpdateIssue(Schema):
     funding_goal: CurrencyAmount | None = None
 
     upfront_split_to_contributors: int | None = Field(default=None, ge=0.0, le=100.0)
-    unset_upfront_split_to_contributors: bool | None = None
+    set_upfront_split_to_contributors: bool | None = None
 
 
 # Public API

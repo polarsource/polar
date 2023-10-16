@@ -8,10 +8,12 @@ import { useMemo, useRef, useState } from 'react'
 const PublicRewardsSetting = (props: {
   value: number | undefined
   org: Organization
+  isIssue?: boolean
   onSave: (value: number | undefined) => void
 }) => {
   const usePublicRewards = props.value !== null && props.value !== undefined
-  const contributorsShare = props.value ? props.value : 50
+  const contributorsShare =
+    props.value !== null && props.value !== undefined ? props.value : 50
 
   const maintainerShare = useMemo(() => {
     if (contributorsShare === undefined) {
@@ -84,11 +86,23 @@ const PublicRewardsSetting = (props: {
               reward & adjust splits later too.
             </div>
           </div>
+
           <div>
+            {/*
+              We currently don't support opting out a single issue from upfront splits if the organization has it enabled by default. 
+              Disabling the switch if we're in issue mode and it's forced on by the org.
+
+              Users can "disable" rewards by explicitly setting the share to 0.
+            */}
             <Switch
               className="data-[state=checked]:bg-blue-600"
               checked={usePublicRewards}
               onCheckedChange={onCheckedChange}
+              disabled={
+                usePublicRewards &&
+                props.isIssue &&
+                props.org.default_upfront_split_to_contributors !== undefined
+              }
             />
           </div>
         </div>

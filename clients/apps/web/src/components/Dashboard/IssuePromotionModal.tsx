@@ -205,6 +205,10 @@ export const BadgePromotionModal = (props: {
   const isBadged = useMemo(() => isIssueBadged(props.issue), [props.issue])
   const gitHubIssueLink = githubIssueLink(props.issue)
 
+  const upfrontRewards =
+    props.issue.upfront_split_to_contributors ??
+    props.issue.repository.organization.default_upfront_split_to_contributors
+
   return (
     <>
       <ModalHeader hide={toggle} className="border-none">
@@ -272,6 +276,8 @@ export const BadgePromotionModal = (props: {
             showUpdateButton={true}
             innerClassNames="shadow"
             canSetFundingGoal={true}
+            org={props.issue.repository.organization}
+            upfrontSplit={upfrontRewards}
           />
         </TabsContent>
         <TabsContent
@@ -554,7 +560,7 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
     await updateIssue.mutateAsync({
       id: props.issue.id,
       upfront_split_to_contributors: splitShare,
-      unset_upfront_split_to_contributors: !splitShare ? true : undefined,
+      set_upfront_split_to_contributors: true,
     })
   }
 
@@ -607,6 +613,7 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
         value={contributorsShare}
         org={props.issue.repository.organization}
         onSave={saveUpFrontSplit}
+        isIssue={true}
       />
 
       {contributorsShare !== undefined && (

@@ -39,7 +39,7 @@ const IssueFundingDetails: React.FC<IssueFundingDetailsProps> = ({
         )}
       </div>
 
-      {upfrontSplit && <PublicRewardPill percent={upfrontSplit} />}
+      {upfrontSplit ? <PublicRewardPill percent={upfrontSplit} /> : null}
     </div>
   )
 }

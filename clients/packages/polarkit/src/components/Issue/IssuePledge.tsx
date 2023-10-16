@@ -51,6 +51,10 @@ const IssuePledge = (props: Props) => {
 
   const selfMadePledges = pledges.filter((p) => p.authed_can_admin_sender)
 
+  const upfrontSplit =
+    issue.upfront_split_to_contributors ??
+    issue.repository.organization.default_upfront_split_to_contributors
+
   return (
     <>
       <div className="flex flex-row items-center space-x-4 p-4">
@@ -72,11 +76,7 @@ const IssuePledge = (props: Props) => {
             />
           )}
 
-          {props.issue.upfront_split_to_contributors && (
-            <PublicRewardPill
-              percent={props.issue.upfront_split_to_contributors}
-            />
-          )}
+          {upfrontSplit && <PublicRewardPill percent={upfrontSplit} />}
         </div>
 
         <div className="flex flex-row items-center space-x-4">

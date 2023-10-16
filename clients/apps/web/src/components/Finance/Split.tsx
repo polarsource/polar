@@ -56,6 +56,10 @@ const Split = (props: {
     return share !== undefined && !isNaN(share) && isFinite(share) && share >= 0
   }
 
+  const upfrontSplit =
+    props.issue.upfront_split_to_contributors ??
+    props.issue.repository.organization.default_upfront_split_to_contributors
+
   const computedShares = useMemo(() => {
     const upfrontAdjustedShares = shares.map((s) => {
       const user = contributors.find((c) => c.username === s.username)
@@ -63,7 +67,7 @@ const Split = (props: {
       if (!user?.is_maintainer_org) {
         return s
       }
-      if (!props.issue.upfront_split_to_contributors) {
+      if (!upfrontSplit) {
         return s
       }
       if (s.share_thousands !== undefined || s.raw_value !== undefined) {
@@ -72,7 +76,7 @@ const Split = (props: {
 
       return {
         ...s,
-        share_thousands: (100 - props.issue.upfront_split_to_contributors) * 10,
+        share_thousands: (100 - upfrontSplit) * 10,
       }
     })
 
@@ -221,11 +225,9 @@ const Split = (props: {
       <ModalHeader hide={props.onCancel}>
         <div className="flex items-center gap-4">
           <div>Split reward (${getCentsInDollarString(pledgeSum)})</div>
-          {props.issue.upfront_split_to_contributors && (
+          {upfrontSplit && (
             <div className="w-fit">
-              <PublicRewardPill
-                percent={props.issue.upfront_split_to_contributors}
-              />
+              <PublicRewardPill percent={upfrontSplit} />
             </div>
           )}
         </div>

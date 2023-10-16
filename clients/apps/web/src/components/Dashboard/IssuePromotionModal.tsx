@@ -544,12 +544,16 @@ const PromoteTab = (props: {
 }
 
 const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
+  const upfront =
+    props.issue.upfront_split_to_contributors ??
+    props.issue.repository.organization.default_upfront_split_to_contributors
+
   const [usePublicRewards, setUsePublicRewards] = useState<boolean>(
-    props.issue.upfront_split_to_contributors !== null,
+    upfront !== null,
   )
 
   const [contributorsShare, setContributorsShare] = useState<number>(
-    props.issue.upfront_split_to_contributors ?? 50,
+    upfront ?? 50,
   )
 
   const maintainerShare = useMemo(() => {

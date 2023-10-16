@@ -81,13 +81,17 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
     ),
   ).then((res) => res.arrayBuffer())
 
+  const upfront_split_to_contributors =
+    data.issue.upfront_split_to_contributors ??
+    data.issue.repository.organization.default_upfront_split_to_contributors
+
   return await satori(
     <Badge
       showAmountRaised={showAmountRaised}
       darkmode={isDarkmode}
       funding={funding}
       avatarsUrls={Array.from(avatarUrlsSet)}
-      upfront_split_to_contributors={data.issue.upfront_split_to_contributors}
+      upfront_split_to_contributors={upfront_split_to_contributors}
       orgName={data.issue.repository.organization.name}
     />,
     {

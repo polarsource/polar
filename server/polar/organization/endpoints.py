@@ -3,7 +3,7 @@ from typing import List
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
@@ -44,9 +44,16 @@ router = APIRouter(tags=["organizations"])
 )
 async def list(
     auth: UserRequiredAuth,
+    is_admin_only: bool = Query(
+        default=True,
+        description="Include only organizations that the user is an admin of.",
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[OrganizationSchema]:
-    orgs = await organization.list_all_orgs_by_user_id(session, auth.user.id)
+    orgs = await organization.list_all_orgs_by_user_id(
+        session, auth.user.id, is_admin_only
+    )
+
     return ListResource(
         items=[OrganizationSchema.from_db(o) for o in orgs],
         pagination=Pagination(total_count=len(orgs), max_page=1),

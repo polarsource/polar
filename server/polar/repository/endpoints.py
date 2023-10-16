@@ -25,7 +25,7 @@ router = APIRouter(tags=["repositories"])
     "/repositories",
     response_model=ListResource[RepositorySchema],
     tags=[Tags.PUBLIC],
-    description="List repositories in organizations that the authenticated user is a member of. Requires authentication.",  # noqa: E501
+    description="List repositories in organizations that the authenticated user is a admin of. Requires authentication.",  # noqa: E501
     summary="List repositories (Public API)",
     status_code=200,
 )
@@ -33,7 +33,12 @@ async def list(
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[RepositorySchema]:
-    orgs = await organization_service.list_all_orgs_by_user_id(session, auth.user.id)
+    orgs = await organization_service.list_all_orgs_by_user_id(
+        session,
+        auth.user.id,
+        is_admin_only=True,
+    )
+
     repos = await repository.list_by(
         session, org_ids=[o.id for o in orgs], load_organization=True
     )

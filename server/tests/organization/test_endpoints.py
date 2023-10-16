@@ -36,6 +36,42 @@ async def test_list_organization_member(
     )
 
     assert response.status_code == 200
+    assert len(response.json()["items"]) == 0
+
+
+@pytest.mark.asyncio
+async def test_list_organization_member_allow_non_admin(
+    organization: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+    client: AsyncClient,
+) -> None:
+    response = await client.get(
+        "/api/v1/organizations?is_admin_only=false",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["items"][0]["id"] == str(organization.id)
+
+
+@pytest.mark.asyncio
+async def test_list_organization_member_admin(
+    organization: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+    client: AsyncClient,
+    session: AsyncSession,
+) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
+    response = await client.get(
+        "/api/v1/organizations",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
     assert response.json()["items"][0]["id"] == str(organization.id)
 
 

@@ -237,7 +237,7 @@ class GithubUserService(UserService):
                 event_name = "User Signed Up"
                 signup = True
 
-        org_count = await self._run_sync_github_admin_orgs(
+        org_count = await self._run_sync_github_orgs(
             session,
             user=user,
             github_user=authenticated,
@@ -301,18 +301,16 @@ class GithubUserService(UserService):
 
         return user
 
-    async def sync_github_admin_orgs(
-        self, session: AsyncSession, *, user: User
-    ) -> None:
+    async def sync_github_orgs(self, session: AsyncSession, *, user: User) -> None:
         user_client = await github.get_user_client(session, user)
         github_user = await self.fetch_authenticated_user(client=user_client)
-        await self._run_sync_github_admin_orgs(
+        await self._run_sync_github_orgs(
             session,
             user=user,
             github_user=github_user,
         )
 
-    async def _run_sync_github_admin_orgs(
+    async def _run_sync_github_orgs(
         self,
         session: AsyncSession,
         *,
@@ -323,13 +321,13 @@ class GithubUserService(UserService):
 
         installations = await self.fetch_user_accessible_installations(session, user)
         log.info(
-            "sync_github_admin_orgs.installations",
+            "sync_github_orgs.installations",
             user_id=user.id,
             installation_ids=[i.id for i in installations],
         )
         gh_oauth = user.get_platform_oauth_account(Platforms.github)
         if not gh_oauth:
-            log.error("sync_github_admin_orgs.no_platform_oauth_found", user_id=user.id)
+            log.error("sync_github_orgs.no_platform_oauth_found", user_id=user.id)
             return org_count
 
         for i in installations:
@@ -337,20 +335,20 @@ class GithubUserService(UserService):
                 continue
 
             if isinstance(i.account, github.rest.Enterprise):
-                log.error("sync_github_admin_orgs.github_enterprise_not_supported")
+                log.error("sync_github_orgs.github_enterprise_not_supported")
                 continue
 
             org = await organization.get_by_platform(
                 session, Platforms.github, i.account.id
             )
             if not org:
-                log.error("sync_github_admin_orgs.org_not_found", id=i.id)
+                log.error("sync_github_orgs.org_not_found", id=i.id)
                 continue
 
             # If installed on personal account, always admin
             if i.account.id == int(gh_oauth.account_id):
                 log.info(
-                    "sync_github_admin_orgs.add_admin",
+                    "sync_github_orgs.add_admin",
                     org_id=org.id,
                     user_id=user.id,
                 )
@@ -369,9 +367,10 @@ class GithubUserService(UserService):
                 )
 
                 data = membership.parsed_data
+
                 if data.role == "admin" and data.state == "active":
                     log.info(
-                        "sync_github_admin_orgs.add_admin",
+                        "sync_github_orgs.add_admin",
                         org_id=org.id,
                         user_id=user.id,
                     )
@@ -379,9 +378,27 @@ class GithubUserService(UserService):
                     # Add as admin in Polar (or upgrade existing member to admin)
                     await organization.add_user(session, org, user, is_admin=True)
                     org_count += 1
+
+                elif data.state == "active":
+                    log.info(
+                        "sync_github_orgs.add_non_admin",
+                        org_id=org.id,
+                        user_id=user.id,
+                    )
+
+                    # Add as admin in Polar
+                    await organization.add_user(session, org, user, is_admin=False)
+                    org_count += 1
+                else:
+                    log.info(
+                        "sync_github_orgs.skip_install",
+                        org_id=org.id,
+                        user_id=user.id,
+                    )
+
             except Exception as e:
                 log.error(
-                    "sync_github_admin_orgs.failed",
+                    "sync_github_orgs.failed",
                     err=e,
                     org_id=org.id,
                     user_id=user.id,

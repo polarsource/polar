@@ -152,7 +152,7 @@ async def repositories_changed(
             session, event.sender.id
         )
         if sender:
-            await service.github_user.sync_github_admin_orgs(session, user=sender)
+            await service.github_user.sync_github_orgs(session, user=sender)
 
         # send after members have been added
         await organization_upserted.call(OrganizationHook(session, org))

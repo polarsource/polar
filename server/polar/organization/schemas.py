@@ -135,6 +135,11 @@ class OrganizationCreate(OrganizationPrivateBase):
 
 
 # Internal model
+class OrganizationGitHubUpdate(OrganizationCreate):
+    ...
+
+
+# Internal model
 class RepositoryBadgeSettingsUpdate(Schema):
     id: UUID
     badge_auto_embed: bool

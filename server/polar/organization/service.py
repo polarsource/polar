@@ -45,7 +45,10 @@ class OrganizationService(
         return await self.get_by(session, platform=platform, name=name)
 
     async def list_all_orgs_by_user_id(
-        self, session: AsyncSession, user_id: UUID
+        self,
+        session: AsyncSession,
+        user_id: UUID,
+        is_admin_only: bool,
     ) -> Sequence[Organization]:
         statement = (
             sql.select(Organization)
@@ -55,6 +58,10 @@ class OrganizationService(
                 Organization.deleted_at.is_(None),
             )
         )
+
+        if is_admin_only:
+            statement = statement.where(UserOrganization.is_admin.is_(True))
+
         res = await session.execute(statement)
         return res.scalars().unique().all()
 

@@ -5,6 +5,7 @@ from polar.config import settings
 from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.models.user_organization import UserOrganization
+from polar.postgres import AsyncSession
 
 
 @pytest.mark.asyncio
@@ -84,6 +85,27 @@ async def test_list_repositories_member(
     auth_jwt: str,
     client: AsyncClient,
 ) -> None:
+    response = await client.get(
+        "/api/v1/repositories",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()["items"]) == 0
+
+
+@pytest.mark.asyncio
+async def test_list_repositories_admin(
+    organization: Organization,
+    repository: Repository,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    auth_jwt: str,
+    client: AsyncClient,
+    session: AsyncSession,
+) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
     response = await client.get(
         "/api/v1/repositories",
         cookies={settings.AUTH_COOKIE_KEY: auth_jwt},

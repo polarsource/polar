@@ -81,7 +81,7 @@ class User(RecordModel):
     )
 
     stripe_customer_id: Mapped[str | None] = mapped_column(
-        String, nullable=True, default=None
+        String, nullable=True, default=None, unique=True
     )
 
     def get_platform_oauth_account(self, platform: Platforms) -> OAuthAccount | None:

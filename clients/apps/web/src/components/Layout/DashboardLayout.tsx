@@ -5,7 +5,7 @@ import { Repository } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { CONFIG } from 'polarkit'
 import { LogoType } from 'polarkit/components/brand'
-import { useListOrganizations } from 'polarkit/hooks'
+import { useListAdminOrganizations } from 'polarkit/hooks'
 import { classNames } from 'polarkit/utils'
 import { Suspense } from 'react'
 import SidebarNavigation from '../Dashboard/MaintainerNavigation'
@@ -16,7 +16,7 @@ import ProfileSelection from '../Shared/ProfileSelection'
 const DashboardLayout = (props: { children: React.ReactNode }) => {
   const { currentUser, hydrated } = useAuth()
 
-  const listOrganizationQuery = useListOrganizations()
+  const listOrganizationQuery = useListAdminOrganizations()
 
   const orgs = listOrganizationQuery?.data?.items
   const showConnectUsell = orgs && orgs.length === 0

@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/select'
-import { useListOrganizations } from 'polarkit/hooks'
+import { useListAllOrganizations } from 'polarkit/hooks'
 import { useState } from 'react'
 
 const OnBehalfOf = ({
@@ -22,7 +22,7 @@ const OnBehalfOf = ({
     Organization | undefined
   >(undefined)
 
-  const organizations = useListOrganizations()
+  const organizations = useListAllOrganizations()
 
   const canAttributeAsOrganizations = (organizations.data?.items || []).filter(
     (o) => o.name !== currentUser?.username,

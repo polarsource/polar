@@ -32,6 +32,10 @@ export interface OrganizationsApiGetBadgeSettingsRequest {
     id: string;
 }
 
+export interface OrganizationsApiListRequest {
+    isAdminOnly?: boolean;
+}
+
 export interface OrganizationsApiLookupRequest {
     platform?: Platforms;
     organizationName?: string;
@@ -139,8 +143,12 @@ export class OrganizationsApi extends runtime.BaseAPI {
      * List organizations that the authenticated user is a member of. Requires authentication.
      * List organizations (Public API)
      */
-    async listRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrganization>> {
+    async listRaw(requestParameters: OrganizationsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrganization>> {
         const queryParameters: any = {};
+
+        if (requestParameters.isAdminOnly !== undefined) {
+            queryParameters['is_admin_only'] = requestParameters.isAdminOnly;
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -166,8 +174,8 @@ export class OrganizationsApi extends runtime.BaseAPI {
      * List organizations that the authenticated user is a member of. Requires authentication.
      * List organizations (Public API)
      */
-    async list(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganization> {
-        const response = await this.listRaw(initOverrides);
+    async list(requestParameters: OrganizationsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganization> {
+        const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -2,7 +2,7 @@
 
 import type { Organization, Repository } from '@polar-sh/sdk'
 import { useParams, useSearchParams } from 'next/navigation'
-import { useListOrganizations, useListRepositories } from 'polarkit/hooks'
+import { useListAdminOrganizations, useListRepositories } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { useEffect, useState } from 'react'
 
@@ -21,7 +21,7 @@ export const useCurrentOrgAndRepoFromURL = (): {
   const search = useSearchParams()
   const searchRepo = search?.get('repo')
 
-  const listOrganizationsQuery = useListOrganizations()
+  const listOrganizationsQuery = useListAdminOrganizations()
   const listRepositoriesQuery = useListRepositories()
 
   const [org, setOrg] = useState<Organization | undefined>(undefined)

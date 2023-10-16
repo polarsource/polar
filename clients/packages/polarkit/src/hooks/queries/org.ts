@@ -1,5 +1,6 @@
 import {
   ListResourceOrganization,
+  Organization,
   OrganizationBadgeSettingsUpdate,
   OrganizationUpdate,
 } from '@polar-sh/sdk'
@@ -12,11 +13,25 @@ import {
 import { api, queryClient } from '../../api'
 import { defaultRetry } from './retry'
 
-export const useListOrganizations: () => UseQueryResult<ListResourceOrganization> =
+export const useListAdminOrganizations: () => UseQueryResult<ListResourceOrganization> =
   () =>
     useQuery({
-      queryKey: ['user', 'organizations'],
-      queryFn: () => api.organizations.list(),
+      queryKey: ['user', 'adminOrganizations'],
+      queryFn: () =>
+        api.organizations.list({
+          isAdminOnly: true,
+        }),
+      retry: defaultRetry,
+    })
+
+export const useListAllOrganizations: () => UseQueryResult<ListResourceOrganization> =
+  () =>
+    useQuery({
+      queryKey: ['user', 'allOrganizations'],
+      queryFn: () =>
+        api.organizations.list({
+          isAdminOnly: false,
+        }),
       retry: defaultRetry,
     })
 
@@ -53,6 +68,56 @@ export const useUpdateOrganizationBadgeSettings: () => UseMutationResult<
     },
   })
 
+const updateOrgsCache = (result: Organization) => {
+  queryClient.setQueriesData<ListResourceOrganization>(
+    {
+      queryKey: ['user', 'adminOrganizations'],
+    },
+    (data) => {
+      if (!data) {
+        return data
+      }
+
+      return {
+        ...data,
+        items: data.items?.map((i) => {
+          if (i.id === result.id) {
+            return {
+              ...i,
+              issue: result,
+            }
+          }
+          return { ...i }
+        }),
+      }
+    },
+  )
+
+  queryClient.setQueriesData<ListResourceOrganization>(
+    {
+      queryKey: ['user', 'allOrganizations'],
+    },
+    (data) => {
+      if (!data) {
+        return data
+      }
+
+      return {
+        ...data,
+        items: data.items?.map((i) => {
+          if (i.id === result.id) {
+            return {
+              ...i,
+              issue: result,
+            }
+          }
+          return { ...i }
+        }),
+      }
+    },
+  )
+}
+
 export const useUpdateOrganization = () =>
   useMutation({
     mutationFn: (variables: { id: string; settings: OrganizationUpdate }) => {
@@ -62,28 +127,6 @@ export const useUpdateOrganization = () =>
       })
     },
     onSuccess: (result, variables, ctx) => {
-      queryClient.setQueriesData<ListResourceOrganization>(
-        {
-          queryKey: ['user', 'organizations'],
-        },
-        (data) => {
-          if (!data) {
-            return data
-          }
-
-          return {
-            ...data,
-            items: data.items?.map((i) => {
-              if (i.id === result.id) {
-                return {
-                  ...i,
-                  issue: result,
-                }
-              }
-              return { ...i }
-            }),
-          }
-        },
-      )
+      updateOrgsCache(result)
     },
   })

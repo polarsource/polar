@@ -3,12 +3,12 @@
 import LoadingScreen from '@/components/Dashboard/LoadingScreen'
 import { useAuth } from '@/hooks/auth'
 import { useRouter } from 'next/navigation'
-import { useListOrganizations } from 'polarkit/hooks'
+import { useListAdminOrganizations } from 'polarkit/hooks'
 import { useEffect } from 'react'
 
 export const useLoginRedirect = () => {
   const { currentUser, hasChecked } = useAuth()
-  const listOrganizationsQuery = useListOrganizations()
+  const listOrganizationsQuery = useListAdminOrganizations()
   const router = useRouter()
   const orgs = listOrganizationsQuery?.data?.items
 

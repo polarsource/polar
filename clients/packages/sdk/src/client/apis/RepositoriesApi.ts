@@ -83,7 +83,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List repositories in organizations that the authenticated user is a member of. Requires authentication.
+     * List repositories in organizations that the authenticated user is a admin of. Requires authentication.
      * List repositories (Public API)
      */
     async listRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceRepository>> {
@@ -110,7 +110,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List repositories in organizations that the authenticated user is a member of. Requires authentication.
+     * List repositories in organizations that the authenticated user is a admin of. Requires authentication.
      * List repositories (Public API)
      */
     async list(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceRepository> {

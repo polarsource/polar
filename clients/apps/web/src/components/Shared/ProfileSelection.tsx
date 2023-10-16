@@ -4,7 +4,7 @@ import { AddOutlined, InfoOutlined, LogoutOutlined } from '@mui/icons-material'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { CONFIG } from 'polarkit/config'
-import { useListOrganizations } from 'polarkit/hooks'
+import { useListAdminOrganizations } from 'polarkit/hooks'
 import { classNames, clsx, useOutsideClick } from 'polarkit/utils'
 import React, { useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../hooks'
@@ -21,7 +21,7 @@ const ProfileSelection = ({
     className,
   )
   const { currentUser: loggedUser, logout } = useAuth()
-  const listOrganizationQuery = useListOrganizations()
+  const listOrganizationQuery = useListAdminOrganizations()
 
   const [isOpen, setOpen] = useState<boolean>(false)
 

@@ -4,12 +4,12 @@ import LoadingScreen from '@/components/Dashboard/LoadingScreen'
 import { useAuth } from '@/hooks'
 import { useRouter } from 'next/navigation'
 import { CONFIG } from 'polarkit/config'
-import { useListOrganizations } from 'polarkit/hooks'
+import { useListAdminOrganizations } from 'polarkit/hooks'
 import { useEffect } from 'react'
 
 export default function Page() {
   const { authenticated, hasChecked } = useAuth()
-  const listOrganizationsQuery = useListOrganizations()
+  const listOrganizationsQuery = useListAdminOrganizations()
 
   const router = useRouter()
   const orgs = listOrganizationsQuery?.data?.items

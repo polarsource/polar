@@ -48,7 +48,7 @@ class AuthService:
             value=value,
             expires=expires,
             path="/",
-            domain=None,
+            domain=settings.AUTH_COOKIE_DOMAIN,
             secure=secure,
             httponly=True,
             samesite="lax",

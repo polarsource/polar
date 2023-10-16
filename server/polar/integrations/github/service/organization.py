@@ -11,7 +11,10 @@ from polar.enums import Platforms
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Organization, User
-from polar.organization.schemas import OrganizationCreate, OrganizationUpdate
+from polar.organization.schemas import (
+    OrganizationCreate,
+    OrganizationGitHubUpdate,
+)
 from polar.organization.service import OrganizationService
 from polar.postgres import AsyncSession
 
@@ -184,7 +187,7 @@ class GithubOrganizationService(OrganizationService):
             organization = await self.update(
                 session,
                 organization,
-                OrganizationUpdate.from_github(data, installation=installation),
+                OrganizationGitHubUpdate.from_github(data, installation=installation),
                 exclude_unset=True,
             )
 

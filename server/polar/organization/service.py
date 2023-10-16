@@ -16,6 +16,7 @@ from polar.repository.service import repository as repository_service
 from .schemas import (
     OrganizationBadgeSettingsUpdate,
     OrganizationCreate,
+    OrganizationGitHubUpdate,
     OrganizationUpdate,
 )
 
@@ -23,7 +24,7 @@ log = structlog.get_logger()
 
 
 class OrganizationService(
-    ResourceService[Organization, OrganizationCreate, OrganizationUpdate]
+    ResourceService[Organization, OrganizationCreate, OrganizationGitHubUpdate]
 ):
     async def list_installed(self, session: AsyncSession) -> Sequence[Organization]:
         stmt = sql.select(Organization).where(

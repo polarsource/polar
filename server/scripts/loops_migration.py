@@ -6,6 +6,7 @@ from typing import Any
 import structlog
 import typer
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 from polar.config import settings
 from polar.enums import Platforms
@@ -148,6 +149,10 @@ async def personal_organization_name(
                 .join(Organization)
                 .where(UserOrganization.user_id == user.id)
                 .order_by(UserOrganization.created_at.asc())
+                .options(
+                    joinedload(UserOrganization.user),
+                    joinedload(UserOrganization.organization),
+                )
             ).limit(1)
             user_organization_result = await session.execute(
                 user_organizations_statement

@@ -832,3 +832,37 @@ export const RewardsStatusPaidOnly: Story = {
     ],
   },
 }
+
+export const RewardsStatusPaidOnlyZero: Story = {
+  args: {
+    ...Default.args,
+    issue: {
+      ...issueClosed,
+      upfront_split_to_contributors: 0,
+      funding: {
+        pledges_sum: { amount: 8000, currency: 'USD' },
+      },
+    },
+    references: [],
+
+    pledgesSummary: {
+      ...pledgesSummaries,
+      pay_upfront: {
+        total: { currency: 'USD', amount: 4000 },
+        pledgers: [pledger, pledger, pledger],
+      },
+      pay_on_completion: {
+        total: { currency: 'USD', amount: 4000 },
+        pledgers: [pledger, pledger, pledger],
+      },
+    },
+
+    rewards: [
+      {
+        ...reward,
+        state: RewardState.PAID,
+        amount: { currency: 'USD', amount: 2000 },
+      },
+    ],
+  },
+}

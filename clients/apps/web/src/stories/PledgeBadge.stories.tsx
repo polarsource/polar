@@ -221,3 +221,16 @@ export const UpfrontSplitPledgeLongName: Story = {
     upfront_split_to_contributors: 80,
   },
 }
+
+export const UpfrontSplitZero: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    showAmountRaised: true,
+    funding: {
+      pledges_sum: { currency: 'USD', amount: 5000 },
+    },
+    avatarsUrls: [...avatars, ...avatars].slice(0, 1),
+    upfront_split_to_contributors: 0,
+  },
+}

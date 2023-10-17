@@ -19,9 +19,7 @@ from polar.config import settings
 from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
-
-if TYPE_CHECKING:  # pragma: no cover
-    from polar.models.organization import Organization
+from polar.models.organization import Organization
 
 
 class Repository(RecordModel):
@@ -37,8 +35,8 @@ class Repository(RecordModel):
         PostgresUUID, ForeignKey("organizations.id"), nullable=False
     )
 
-    organization: "Mapped[Organization]" = relationship(
-        "Organization", back_populates="repos", lazy="raise"
+    organization: Mapped[Organization] = relationship(
+        "Organization", foreign_keys=[organization_id], lazy="raise"
     )
 
     name: Mapped[str] = mapped_column(CIText(), nullable=False)

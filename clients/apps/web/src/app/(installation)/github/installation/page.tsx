@@ -6,7 +6,7 @@ import LoadingScreen, {
 import GithubLoginButton from '@/components/Shared/GithubLoginButton'
 import {
   InstallationCreatePlatformEnum,
-  OrganizationPrivateRead,
+  Organization,
   UserSignupType,
 } from '@polar-sh/sdk'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -17,9 +17,7 @@ import { useEffect, useState } from 'react'
 export default function Page() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
-  const [installed, setInstalled] = useState<OrganizationPrivateRead | null>(
-    null,
-  )
+  const [installed, setInstalled] = useState<Organization | null>(null)
 
   const search = useSearchParams()
 

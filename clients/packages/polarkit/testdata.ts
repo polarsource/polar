@@ -11,7 +11,6 @@ import {
   NotificationRead,
   NotificationType,
   Organization,
-  OrganizationPrivateRead,
   Platforms,
   Pledge,
   PledgeState,
@@ -47,14 +46,6 @@ export const org: Organization = {
   pledge_minimum_amount: 2000,
   pretty_name: 'Pydantic',
   pledge_badge_show_amount: true,
-}
-
-export const orgPrivate: OrganizationPrivateRead = {
-  ...org,
-  is_personal: false,
-  external_id: 123,
-  created_at: new Date().toISOString(),
-  pledge_minimum_amount: 2000,
 }
 
 export const user: UserRead = {
@@ -164,17 +155,6 @@ export const pledgePublicAPI: Pledge = {
   state: PledgeState.CREATED,
   type: PledgeType.UPFRONT,
   pledger: pledger,
-}
-
-export const privateOrganization: OrganizationPrivateRead = {
-  id: 'xxxxx-abc',
-  platform: Platforms.GITHUB,
-  name: 'polarsource',
-  avatar_url: 'https://avatars.githubusercontent.com/u/105373340?s=400&v=4',
-  external_id: 123,
-  is_personal: false,
-  created_at: addDays(new Date(), -7).toISOString(),
-  pledge_minimum_amount: 2000,
 }
 
 const maintainerPledgeCreatedNotification: MaintainerPledgeCreatedNotification =

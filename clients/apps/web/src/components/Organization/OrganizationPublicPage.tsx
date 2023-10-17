@@ -76,7 +76,7 @@ const OrganizationPublicPage = ({
       {subscriptionGroups.length > 0 && (
         <PublicSubscriptionGroups
           subscriptionGroups={subscriptionGroups}
-          subscribePath={`/${organization.name}/subscribe`}
+          subscribePath="/subscribe"
         />
       )}
 

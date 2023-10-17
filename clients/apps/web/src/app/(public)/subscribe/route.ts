@@ -18,10 +18,15 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const subscriptionTierId = searchParams.get('tier') as string
 
-  const { url } = await api.subscriptions.getSubscriptionTierSubscribeUrl({
-    id: subscriptionTierId,
-    successUrl: 'https://polar.sh',
+  const { url } = await api.subscriptions.createSubscribeSession({
+    subscribeSessionCreate: {
+      tier_id: subscriptionTierId,
+      success_url: `${request.nextUrl.protocol}//${request.nextUrl.host}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
+    },
   })
 
-  return new Response(undefined, { status: 303, headers: { Location: url } })
+  return new Response(undefined, {
+    status: 303,
+    headers: { Location: url as string },
+  })
 }

@@ -21,7 +21,7 @@ import type {
   InstallationCreate,
   LoginResponse,
   LookupUserRequest,
-  OrganizationPrivateRead,
+  Organization,
   PolarIntegrationsGithubEndpointsWebhookResponse,
   PolarIntegrationsStripeEndpointsWebhookResponse,
   UserSignupType,
@@ -156,7 +156,7 @@ export class IntegrationsApi extends runtime.BaseAPI {
     /**
      * Install
      */
-    async installRaw(requestParameters: IntegrationsApiInstallRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OrganizationPrivateRead>> {
+    async installRaw(requestParameters: IntegrationsApiInstallRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
         if (requestParameters.installationCreate === null || requestParameters.installationCreate === undefined) {
             throw new runtime.RequiredError('installationCreate','Required parameter requestParameters.installationCreate was null or undefined when calling install.');
         }
@@ -189,7 +189,7 @@ export class IntegrationsApi extends runtime.BaseAPI {
     /**
      * Install
      */
-    async install(requestParameters: IntegrationsApiInstallRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OrganizationPrivateRead> {
+    async install(requestParameters: IntegrationsApiInstallRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
         const response = await this.installRaw(requestParameters, initOverrides);
         return await response.value();
     }

@@ -241,34 +241,57 @@ const FundingGoal = ({
 }) => {
   const { pledges_sum, funding_goal } = funding
 
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2">
-      {/* Funding amount and goal */}
-      <div className="flex flex-col items-center sm:items-start">
-        <div className="dark:text-polar-300 text-lg text-gray-900">
-          ${getCentsInDollarString(pledges_sum?.amount || 0)}{' '}
-          <span className="dark:text-polar-400 text-gray-400">
-            {!funding_goal && 'pledged'}
-            {funding_goal &&
-              `/ ${getCentsInDollarString(funding_goal.amount)} pledged`}
-          </span>
+  if (funding_goal) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2">
+        {/* Funding amount and goal */}
+        <div className="flex flex-col items-center sm:items-start">
+          <div className="dark:text-polar-300 text-lg text-gray-900">
+            ${getCentsInDollarString(pledges_sum?.amount || 0)}{' '}
+            <span className="dark:text-polar-400 text-gray-400">
+              {`/ ${getCentsInDollarString(funding_goal.amount)} funded`}
+            </span>
+          </div>
+
+          {funding_goal && pledges_sum && (
+            <FundingGoalProgress
+              sum={pledges_sum.amount}
+              goal={funding_goal.amount}
+              current={currentPledgeAmount}
+            />
+          )}
         </div>
 
-        {funding_goal && pledges_sum && (
-          <FundingGoalProgress
-            sum={pledges_sum.amount}
-            goal={funding_goal.amount}
-            current={currentPledgeAmount}
-          />
-        )}
+        {/* Pledgers */}
+        <div className="mt-2 flex justify-center md:mt-0 md:justify-end">
+          <Pledgers pledgers={pledgers} size="sm" />
+        </div>
       </div>
+    )
+  }
 
-      {/* Pledgers */}
-      <div className="mt-2 flex justify-center md:mt-0 md:justify-end">
-        <Pledgers pledgers={pledgers} size="sm" />
+  // No funding goal
+  if (pledges_sum && pledges_sum?.amount > 0) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2">
+        {/* Funding amount and goal */}
+        <div className="flex flex-col items-center sm:items-start">
+          <div className="dark:text-polar-300 text-lg text-gray-900">
+            ${getCentsInDollarString(pledges_sum?.amount || 0)}{' '}
+            <span className="dark:text-polar-400 text-gray-400">funded</span>
+          </div>
+        </div>
+
+        {/* Pledgers */}
+        <div className="mt-2 flex justify-center md:mt-0 md:justify-end">
+          <Pledgers pledgers={pledgers} size="sm" />
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
+
+  // No funding goal, and no funding...
+  return null
 }
 
 const RewardsReceivers = ({ rewards }: { rewards: RewardsSummary }) => (

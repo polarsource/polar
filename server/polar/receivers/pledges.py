@@ -30,7 +30,7 @@ from polar.pledge.hooks import (
 from polar.pledge.hooks import (
     pledge_updated as pledge_updated_hook,
 )
-from polar.pledge.schemas import PledgeType
+from polar.pledge.schemas import PledgeType, Pledger
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.repository.service import repository as repository_service
@@ -116,10 +116,11 @@ def issue_url(org: Organization, repo: Repository, issue: Issue) -> str:
     return f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}"
 
 
-def pledger_name(pledge: Pledge) -> str:
-    if pledge.by_organization:
-        return pledge.by_organization.name
-    return pledge.user.username if pledge.user else "anonymous"
+def pledger_name(pledge: Pledge) -> str | None:
+    pledger = Pledger.from_pledge(pledge)
+    if pledger:
+        return pledger.name
+    return None
 
 
 async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> None:

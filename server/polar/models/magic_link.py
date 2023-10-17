@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, ForeignKey, String
@@ -9,9 +8,7 @@ from polar.config import settings
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.kit.utils import utc_now
-
-if TYPE_CHECKING:
-    from polar.models.user import User
+from polar.models.user import User
 
 
 def get_expires_at() -> datetime:

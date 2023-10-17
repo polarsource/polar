@@ -29,7 +29,6 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy_utils.types.ts_vector import TSVectorType
 
-from polar.config import settings
 from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum

@@ -51,6 +51,7 @@ async def test_MaintainerPledgeCreatedNotification_no_stripe(
         issue_org_name="testorg",
         issue_repo_name="testrepo",
         maintainer_has_stripe_account=False,
+        pledge_type=PledgeType.pay_directly,
     )
 
     await check_diff(n.render(predictable_user))
@@ -69,6 +70,45 @@ async def test_MaintainerPledgeCreatedNotification_with_stripe(
         issue_org_name="testorg",
         issue_repo_name="testrepo",
         maintainer_has_stripe_account=True,
+        pledge_type=PledgeType.pay_directly,
+    )
+
+    await check_diff(n.render(predictable_user))
+
+
+@pytest.mark.asyncio
+async def test_MaintainerPledgeCreatedNotification_anonymous(
+    predictable_user: User,
+) -> None:
+    n = MaintainerPledgeCreatedNotification(
+        pledger_name=None,
+        issue_url="https://github.com/testorg/testrepo/issues/123",
+        issue_title="issue title",
+        issue_number=123,
+        pledge_amount="123.45",
+        issue_org_name="testorg",
+        issue_repo_name="testrepo",
+        maintainer_has_stripe_account=True,
+        pledge_type=PledgeType.pay_directly,
+    )
+
+    await check_diff(n.render(predictable_user))
+
+
+@pytest.mark.asyncio
+async def test_MaintainerPledgeCreatedNotification_pay_on_completion(
+    predictable_user: User,
+) -> None:
+    n = MaintainerPledgeCreatedNotification(
+        pledger_name="pledger_name",
+        issue_url="https://github.com/testorg/testrepo/issues/123",
+        issue_title="issue title",
+        issue_number=123,
+        pledge_amount="123.45",
+        issue_org_name="testorg",
+        issue_repo_name="testrepo",
+        maintainer_has_stripe_account=True,
+        pledge_type=PledgeType.pay_on_completion,
     )
 
     await check_diff(n.render(predictable_user))

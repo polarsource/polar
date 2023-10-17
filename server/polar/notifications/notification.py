@@ -29,7 +29,7 @@ class NotificationBase(BaseModel):
 
 
 class MaintainerPledgeCreatedNotification(NotificationBase):
-    pledger_name: str
+    pledger_name: str | None
     pledge_amount: str
     issue_url: str
     issue_title: str
@@ -37,7 +37,8 @@ class MaintainerPledgeCreatedNotification(NotificationBase):
     issue_repo_name: str
     issue_number: int
     maintainer_has_stripe_account: bool
-    pledge_id: UUID | None = None  # Added 2022-06-26
+    pledge_id: UUID | None = None  # Added 2023-06-26
+    pledge_type: PledgeType | None  # Added 2023-10-17
 
     def subject(self) -> str:
         return "Received ${{pledge_amount}} in funding for {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}"  # noqa: E501
@@ -45,7 +46,19 @@ class MaintainerPledgeCreatedNotification(NotificationBase):
     def body(self) -> str:
         return """Hi,<br><br>
 
-Great news! You received <strong>${{pledge_amount}}</strong> in funding for: <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}} - {{issue_title}}</a>.<br><br>
+{% if pledger_name %}
+Great news! You received <strong>${{pledge_amount}}</strong> in funding from {{pledger_name}} for:
+{% else %}
+Great news! You received <strong>${{pledge_amount}}</strong> in funding for:
+{% endif -%}
+
+<a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}} - {{issue_title}}</a>.<br><br>
+
+{% if pledge_type == "pay_upfront" %}
+The funding has been paid upfront. Once you've completed the issue, the money will be paid out to after the 7 day dispute window.<br><br>
+{% elif pledge_type == "pay_on_completion" %}
+The pledge to be paid on completion. Once you've completed the issue, we'll send an invoice to the pledger. As soon as it's paid we'll transfer the money to you.<br><br>.br><br>
+{% endif %}
 
 We'll notify you about the next steps when {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}} is completed.
 
@@ -56,7 +69,7 @@ We'll notify you about the next steps when {{issue_org_name}}/{{issue_repo_name}
 """  # noqa: E501
 
 
-# No longer sent as of 2022-08-22.
+# No longer sent as of 2023-08-22.
 # Replaced by MaintainerPledgedIssueConfirmationPendingNotification
 class MaintainerPledgeConfirmationPendingNotification(NotificationBase):
     pledger_name: str
@@ -67,7 +80,7 @@ class MaintainerPledgeConfirmationPendingNotification(NotificationBase):
     issue_repo_name: str
     issue_number: int
     maintainer_has_stripe_account: bool
-    pledge_id: UUID | None = None  # Added 2022-06-26
+    pledge_id: UUID | None = None  # Added 2023-06-26
 
     def subject(self) -> str:
         return "Please confirm that {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}} is completed"  # noqa: E501
@@ -119,7 +132,7 @@ Create a Stripe account with Polar today to ensure we can transfer the funds dir
 """  # noqa: E501
 
 
-# No longer sent as of 2022-08-22.
+# No longer sent as of 2023-08-22.
 # Replaced by MaintainerPledgedIssuePendingNotification
 class MaintainerPledgePendingNotification(NotificationBase):
     pledger_name: str
@@ -130,7 +143,7 @@ class MaintainerPledgePendingNotification(NotificationBase):
     issue_repo_name: str
     issue_number: int
     maintainer_has_stripe_account: bool
-    pledge_id: UUID | None  # Added 2022-06-26
+    pledge_id: UUID | None  # Added 2023-06-26
 
     def subject(self) -> str:
         return "You have ${{pledge_amount}} in pending pledges for {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}!"  # noqa: E501
@@ -191,7 +204,7 @@ class MaintainerPledgePaidNotification(NotificationBase):
     issue_org_name: str
     issue_repo_name: str
     issue_number: int
-    pledge_id: UUID | None  # Added 2022-06-26
+    pledge_id: UUID | None  # Added 2023-06-26
 
     def subject(self) -> str:
         return "${{paid_out_amount}} transferred for {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}"  # noqa: E501
@@ -243,8 +256,8 @@ class PledgerPledgePendingNotification(NotificationBase):
     issue_org_name: str
     issue_repo_name: str
     pledge_date: str
-    pledge_id: UUID | None  # Added 2022-06-26
-    pledge_type: PledgeType | None  # Added 2022-11-27
+    pledge_id: UUID | None  # Added 2023-06-26
+    pledge_type: PledgeType | None  # Added 2023-11-27
 
     def subject(self) -> str:
         return "{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}} is completed"

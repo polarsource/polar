@@ -1086,13 +1086,6 @@ export interface IssueReferenceRead {
     type: IssueReferenceType;
     /**
      * 
-     * @type {Payload}
-     * @memberof IssueReferenceRead
-     * @deprecated
-     */
-    payload: Payload;
-    /**
-     * 
      * @type {PullRequestReference}
      * @memberof IssueReferenceRead
      */
@@ -2196,6 +2189,24 @@ export interface OrganizationUpdate {
      * @memberof OrganizationUpdate
      */
     billing_email?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationUpdate
+     */
+    set_default_badge_custom_content?: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationUpdate
+     */
+    default_badge_custom_content?: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof OrganizationUpdate
+     */
+    pledge_minimum_amount?: number;
 }
 /**
  * 
@@ -2240,115 +2251,6 @@ export interface PaginationResponse {
      * @memberof PaginationResponse
      */
     next_page?: number;
-}
-/**
- * 
- * @export
- * @interface Payload
- */
-export interface Payload {
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload
-     */
-    title: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload
-     */
-    author_login: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload
-     */
-    author_avatar: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof Payload
-     */
-    number: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof Payload
-     */
-    additions: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof Payload
-     */
-    deletions: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload
-     */
-    state: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload
-     */
-    merged_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload
-     */
-    closed_at?: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof Payload
-     */
-    is_draft: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload
-     */
-    organization_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload
-     */
-    repository_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload
-     */
-    sha: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload
-     */
-    branch_name?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Payload
-     */
-    message?: string;
 }
 /**
  * 

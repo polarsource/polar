@@ -78,21 +78,6 @@ const OnboardingAddDependency = () => {
     {
       id: 'xx',
       type: IssueReferenceType.PULL_REQUEST,
-      payload: {
-        id: 'x',
-        title: 'Add UserInfo endpoint',
-        author_login: 'x',
-        author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
-        number: 2341,
-        additions: 318,
-        deletions: 186,
-        state: 'yyy',
-        created_at: twoHoursAgo.toISOString(),
-        is_draft: false,
-        organization_name: 'x',
-        repository_name: 'x',
-        sha: 'xx',
-      },
       pull_request_reference: {
         id: 'x',
         title: 'Add UserInfo endpoint',

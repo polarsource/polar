@@ -43,7 +43,7 @@ export const useOrganizationBadgeSettings = (id: string) =>
   })
 
 export const useUpdateOrganizationBadgeSettings: () => UseMutationResult<
-  OrganizationBadgeSettingsUpdate,
+  Organization,
   Error,
   {
     id: string

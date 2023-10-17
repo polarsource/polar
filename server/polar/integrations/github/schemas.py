@@ -21,12 +21,6 @@ class OAuthAccessToken(Schema):
     refresh_token_expires_in: int
 
 
-class GithubBadgeRead(Schema):
-    badge_type: Literal["pledge"]
-    amount: int
-    funding: Funding
-
-
 class GitHubIssue(Schema):
     raw: str
     owner: str | None = None

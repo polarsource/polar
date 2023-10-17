@@ -765,41 +765,6 @@ export interface Funding {
 /**
  * 
  * @export
- * @interface GithubBadgeRead
- */
-export interface GithubBadgeRead {
-    /**
-     * 
-     * @type {string}
-     * @memberof GithubBadgeRead
-     */
-    badge_type: GithubBadgeReadBadgeTypeEnum;
-    /**
-     * 
-     * @type {number}
-     * @memberof GithubBadgeRead
-     */
-    amount: number;
-    /**
-     * 
-     * @type {Funding}
-     * @memberof GithubBadgeRead
-     */
-    funding: Funding;
-}
-
-
-/**
- * @export
- */
-export const GithubBadgeReadBadgeTypeEnum = {
-    PLEDGE: 'pledge'
-} as const;
-export type GithubBadgeReadBadgeTypeEnum = typeof GithubBadgeReadBadgeTypeEnum[keyof typeof GithubBadgeReadBadgeTypeEnum];
-
-/**
- * 
- * @export
  * @interface GithubUser
  */
 export interface GithubUser {

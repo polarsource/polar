@@ -16,7 +16,6 @@
 import * as runtime from '../runtime';
 import type {
   AuthorizationResponse,
-  GithubBadgeRead,
   GithubUser,
   HTTPValidationError,
   InstallationCreate,
@@ -27,13 +26,6 @@ import type {
   PolarIntegrationsStripeEndpointsWebhookResponse,
   UserSignupType,
 } from '../models/index';
-
-export interface IntegrationsApiGetBadgeSettingsRequest {
-    org: string;
-    repo: string;
-    number: number;
-    badgeType: GetBadgeSettingsBadgeTypeEnum;
-}
 
 export interface IntegrationsApiGithubAuthorizeRequest {
     paymentIntentId?: string;
@@ -64,56 +56,6 @@ export interface IntegrationsApiStripeConnectReturnRequest {
  * 
  */
 export class IntegrationsApi extends runtime.BaseAPI {
-
-    /**
-     * Get Badge Settings
-     */
-    async getBadgeSettingsRaw(requestParameters: IntegrationsApiGetBadgeSettingsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GithubBadgeRead>> {
-        if (requestParameters.org === null || requestParameters.org === undefined) {
-            throw new runtime.RequiredError('org','Required parameter requestParameters.org was null or undefined when calling getBadgeSettings.');
-        }
-
-        if (requestParameters.repo === null || requestParameters.repo === undefined) {
-            throw new runtime.RequiredError('repo','Required parameter requestParameters.repo was null or undefined when calling getBadgeSettings.');
-        }
-
-        if (requestParameters.number === null || requestParameters.number === undefined) {
-            throw new runtime.RequiredError('number','Required parameter requestParameters.number was null or undefined when calling getBadgeSettings.');
-        }
-
-        if (requestParameters.badgeType === null || requestParameters.badgeType === undefined) {
-            throw new runtime.RequiredError('badgeType','Required parameter requestParameters.badgeType was null or undefined when calling getBadgeSettings.');
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/integrations/github/{org}/{repo}/issues/{number}/badges/{badge_type}`.replace(`{${"org"}}`, encodeURIComponent(String(requestParameters.org))).replace(`{${"repo"}}`, encodeURIComponent(String(requestParameters.repo))).replace(`{${"number"}}`, encodeURIComponent(String(requestParameters.number))).replace(`{${"badge_type"}}`, encodeURIComponent(String(requestParameters.badgeType))),
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Get Badge Settings
-     */
-    async getBadgeSettings(requestParameters: IntegrationsApiGetBadgeSettingsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<GithubBadgeRead> {
-        const response = await this.getBadgeSettingsRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
 
     /**
      * Github Authorize
@@ -442,11 +384,3 @@ export class IntegrationsApi extends runtime.BaseAPI {
     }
 
 }
-
-/**
- * @export
- */
-export const GetBadgeSettingsBadgeTypeEnum = {
-    PLEDGE: 'pledge'
-} as const;
-export type GetBadgeSettingsBadgeTypeEnum = typeof GetBadgeSettingsBadgeTypeEnum[keyof typeof GetBadgeSettingsBadgeTypeEnum];

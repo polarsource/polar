@@ -18,9 +18,7 @@ from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.auth.service import AuthService, LoginResponse
 from polar.config import settings
 from polar.context import ExecutionContext
-from polar.currency.schemas import CurrencyAmount
-from polar.enums import Platforms, UserSignupType
-from polar.funding.funding_schema import Funding
+from polar.enums import UserSignupType
 from polar.integrations.github import client as github
 from polar.kit import jwt
 from polar.models import Organization
@@ -33,13 +31,10 @@ from polar.worker import enqueue_job
 
 from .schemas import (
     AuthorizationResponse,
-    GithubBadgeRead,
     GithubUser,
     OAuthAccessToken,
 )
-from .service.issue import github_issue
 from .service.organization import github_organization
-from .service.repository import github_repository
 from .service.user import github_user
 
 log = structlog.get_logger()
@@ -147,64 +142,8 @@ async def github_callback(
 
 
 ###############################################################################
-# BADGE
+# User lookup
 ###############################################################################
-
-
-@router.get(
-    "/{org}/{repo}/issues/{number}/badges/{badge_type}", response_model=GithubBadgeRead
-)
-async def get_badge_settings(
-    org: str,
-    repo: str,
-    number: int,
-    badge_type: Literal["pledge"],
-    session: AsyncSession = Depends(get_db_session),
-) -> GithubBadgeRead:
-    posthog.anonymous_event(
-        "Github Badge Settings Load",
-        {
-            "org": org,
-            "repo": repo,
-            "issue_number": number,
-            "badge_type": badge_type,
-        },
-    )
-
-    organization = await github_organization.get_by_name(session, Platforms.github, org)
-    if organization is None:
-        raise HTTPException(status_code=404, detail="Organization not found")
-
-    repository = await github_repository.get_by_org_and_name(
-        session, organization.id, repo
-    )
-    if repository is None:
-        raise HTTPException(status_code=404, detail="Repository not found")
-
-    issue = await github_issue.get_by(
-        session,
-        organization_id=organization.id,
-        repository_id=repository.id,
-        number=number,
-    )
-
-    if not issue:
-        raise HTTPException(status_code=404, detail="Issue not found")
-
-    pledges = await pledge_service.get_by_issue_ids(session, [issue.id])
-    amount = sum([p.amount for p in pledges]) or 0
-
-    badge = GithubBadgeRead(
-        badge_type=badge_type,
-        amount=amount,
-        funding=Funding(
-            pledges_sum=CurrencyAmount(currency="USD", amount=amount),
-            funding_goal=CurrencyAmount(currency="USD", amount=issue.funding_goal)
-            if issue.funding_goal
-            else None,
-        ),
-    )
-    return badge
 
 
 class LookupUserRequest(BaseModel):

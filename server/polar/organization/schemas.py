@@ -54,13 +54,18 @@ class Organization(Schema):
 
 
 class OrganizationUpdate(Schema):
-    set_default_upfront_split_to_contributors: bool | None
+    set_default_upfront_split_to_contributors: bool | None = None
     default_upfront_split_to_contributors: int | None = Field(
         default=None, ge=0.0, le=100.0
     )
 
-    pledge_badge_show_amount: bool = True
+    pledge_badge_show_amount: bool | None = None
     billing_email: str | None = None
+
+    set_default_badge_custom_content: bool | None = None
+    default_badge_custom_content: str | None = None
+
+    pledge_minimum_amount: int | None = None
 
 
 #

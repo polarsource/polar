@@ -351,6 +351,7 @@ Thank you for your support!
         *,
         customer: str | None = None,
         customer_email: str | None = None,
+        metadata: dict[str, str] | None = None,
     ) -> stripe_lib.checkout.Session:
         return stripe_lib.checkout.Session.create(
             success_url=success_url,
@@ -364,7 +365,11 @@ Thank you for your support!
             automatic_tax={"enabled": True},
             customer=customer,
             customer_email=customer_email,
+            metadata=metadata,
         )
+
+    def get_checkout_session(self, id: str) -> stripe_lib.checkout.Session:
+        return stripe_lib.checkout.Session.retrieve(id)
 
 
 stripe = StripeService()

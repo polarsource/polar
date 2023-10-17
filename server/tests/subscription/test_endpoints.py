@@ -390,11 +390,11 @@ class TestArchiveSubscriptionTier:
 
 
 @pytest.mark.asyncio
-class TestGetSubscriptionTierSubscribeURL:
+class TestCreateSubscribeSession:
     async def test_not_existing(self, client: AsyncClient) -> None:
-        response = await client.get(
-            f"/api/v1/subscriptions/tiers/{uuid.uuid4()}/subscribe",
-            params={"success_url": "https://polar.sh"},
+        response = await client.post(
+            "/api/v1/subscriptions/subscribe-sessions/",
+            json={"tier_id": str(uuid.uuid4()), "success_url": "https://polar.sh"},
         )
 
         assert response.status_code == 404
@@ -406,13 +406,12 @@ class TestGetSubscriptionTierSubscribeURL:
         client: AsyncClient,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
-        params = {}
+        json = {"tier_id": str(subscription_tier_organization.id)}
         if success_url is not None:
-            params["success_url"] = success_url
+            json["success_url"] = success_url
 
-        response = await client.get(
-            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/subscribe",
-            params=params,
+        response = await client.post(
+            "/api/v1/subscriptions/subscribe-sessions/", json=json
         )
 
         assert response.status_code == 422
@@ -420,9 +419,10 @@ class TestGetSubscriptionTierSubscribeURL:
     async def test_invalid_customer_email(
         self, client: AsyncClient, subscription_tier_organization: SubscriptionTier
     ) -> None:
-        response = await client.get(
-            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/subscribe",
-            params={
+        response = await client.post(
+            "/api/v1/subscriptions/subscribe-sessions/",
+            json={
+                "tier_id": str(subscription_tier_organization.id),
                 "success_url": "https://polar.sh",
                 "customer_email": "INVALID_EMAIL",
             },
@@ -433,9 +433,12 @@ class TestGetSubscriptionTierSubscribeURL:
     async def test_no_payout_account(
         self, client: AsyncClient, subscription_tier_organization: SubscriptionTier
     ) -> None:
-        response = await client.get(
-            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/subscribe",
-            params={"success_url": "https://polar.sh"},
+        response = await client.post(
+            "/api/v1/subscriptions/subscribe-sessions/",
+            json={
+                "tier_id": str(subscription_tier_organization.id),
+                "success_url": "https://polar.sh",
+            },
         )
 
         assert response.status_code == 400
@@ -451,15 +454,54 @@ class TestGetSubscriptionTierSubscribeURL:
             mock_stripe_service.create_subscription_checkout_session
         )
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
-            url="STRIPE_URL"
+            stripe_id="SESSION_ID",
+            url="STRIPE_URL",
+            customer_email=None,
+            customer_details=None,
+        )
+
+        response = await client.post(
+            "/api/v1/subscriptions/subscribe-sessions/",
+            json={
+                "tier_id": str(subscription_tier_organization.id),
+                "success_url": "https://polar.sh",
+            },
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["id"] == "SESSION_ID"
+        assert json["url"] == "STRIPE_URL"
+        assert json["subscription_tier"]["id"] == str(subscription_tier_organization.id)
+
+
+@pytest.mark.asyncio
+class TestGetSubscribeSession:
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        subscription_tier_organization: SubscriptionTier,
+        mock_stripe_service: MagicMock,
+    ) -> None:
+        get_checkout_session_mock: MagicMock = mock_stripe_service.get_checkout_session
+        get_checkout_session_mock.return_value = SimpleNamespace(
+            stripe_id="SESSION_ID",
+            url="STRIPE_URL",
+            customer_email=None,
+            customer_details={"name": "John", "email": "backer@example.com"},
+            metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
         )
 
         response = await client.get(
-            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/subscribe",
-            params={"success_url": "https://polar.sh"},
+            "/api/v1/subscriptions/subscribe-sessions/SESSION_ID"
         )
 
         assert response.status_code == 200
 
         json = response.json()
-        assert json == {"url": "STRIPE_URL"}
+        assert json["id"] == "SESSION_ID"
+        assert json["url"] == "STRIPE_URL"
+        assert json["customer_name"] == "John"
+        assert json["customer_email"] == "backer@example.com"
+        assert json["subscription_tier"]["id"] == str(subscription_tier_organization.id)

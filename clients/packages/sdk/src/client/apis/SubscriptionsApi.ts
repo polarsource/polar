@@ -18,17 +18,22 @@ import type {
   HTTPValidationError,
   ListResourceSubscriptionGroup,
   Platforms,
+  SubscribeSession,
+  SubscribeSessionCreate,
   SubscriptionGroup,
   SubscriptionGroupCreate,
   SubscriptionGroupUpdate,
   SubscriptionTier,
   SubscriptionTierCreate,
-  SubscriptionTierSubscribeURL,
   SubscriptionTierUpdate,
 } from '../models/index';
 
 export interface SubscriptionsApiArchiveSubscriptionTierRequest {
     id: string;
+}
+
+export interface SubscriptionsApiCreateSubscribeSessionRequest {
+    subscribeSessionCreate: SubscribeSessionCreate;
 }
 
 export interface SubscriptionsApiCreateSubscriptionGroupRequest {
@@ -39,10 +44,8 @@ export interface SubscriptionsApiCreateSubscriptionTierRequest {
     subscriptionTierCreate: SubscriptionTierCreate;
 }
 
-export interface SubscriptionsApiGetSubscriptionTierSubscribeUrlRequest {
+export interface SubscriptionsApiGetSubscribeSessionRequest {
     id: string;
-    successUrl: string;
-    customerEmail?: string;
 }
 
 export interface SubscriptionsApiSearchSubscriptionGroupsRequest {
@@ -104,6 +107,47 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async archiveSubscriptionTier(requestParameters: SubscriptionsApiArchiveSubscriptionTierRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionTier> {
         const response = await this.archiveSubscriptionTierRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Create Subscribe Session
+     */
+    async createSubscribeSessionRaw(requestParameters: SubscriptionsApiCreateSubscribeSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscribeSession>> {
+        if (requestParameters.subscribeSessionCreate === null || requestParameters.subscribeSessionCreate === undefined) {
+            throw new runtime.RequiredError('subscribeSessionCreate','Required parameter requestParameters.subscribeSessionCreate was null or undefined when calling createSubscribeSession.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/subscriptions/subscribe-sessions/`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters.subscribeSessionCreate,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Create Subscribe Session
+     */
+    async createSubscribeSession(requestParameters: SubscriptionsApiCreateSubscribeSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscribeSession> {
+        const response = await this.createSubscribeSessionRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -190,26 +234,14 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get Subscription Tier Subscribe Url
+     * Get Subscribe Session
      */
-    async getSubscriptionTierSubscribeUrlRaw(requestParameters: SubscriptionsApiGetSubscriptionTierSubscribeUrlRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionTierSubscribeURL>> {
+    async getSubscribeSessionRaw(requestParameters: SubscriptionsApiGetSubscribeSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscribeSession>> {
         if (requestParameters.id === null || requestParameters.id === undefined) {
-            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling getSubscriptionTierSubscribeUrl.');
-        }
-
-        if (requestParameters.successUrl === null || requestParameters.successUrl === undefined) {
-            throw new runtime.RequiredError('successUrl','Required parameter requestParameters.successUrl was null or undefined when calling getSubscriptionTierSubscribeUrl.');
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling getSubscribeSession.');
         }
 
         const queryParameters: any = {};
-
-        if (requestParameters.successUrl !== undefined) {
-            queryParameters['success_url'] = requestParameters.successUrl;
-        }
-
-        if (requestParameters.customerEmail !== undefined) {
-            queryParameters['customer_email'] = requestParameters.customerEmail;
-        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -222,7 +254,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/subscriptions/tiers/{id}/subscribe`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            path: `/api/v1/subscriptions/subscribe-sessions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -232,10 +264,10 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get Subscription Tier Subscribe Url
+     * Get Subscribe Session
      */
-    async getSubscriptionTierSubscribeUrl(requestParameters: SubscriptionsApiGetSubscriptionTierSubscribeUrlRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionTierSubscribeURL> {
-        const response = await this.getSubscriptionTierSubscribeUrlRaw(requestParameters, initOverrides);
+    async getSubscribeSession(requestParameters: SubscriptionsApiGetSubscribeSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscribeSession> {
+        const response = await this.getSubscribeSessionRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

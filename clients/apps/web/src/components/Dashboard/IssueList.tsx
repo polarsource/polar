@@ -44,7 +44,7 @@ const IssueList = (props: {
   const canAddRemovePolarLabel = props.filters.tab === IssueListType.ISSUES
 
   return (
-    <div className="dark:divide-polar-700 divide-y">
+    <div>
       {props.dashboard && (
         <>
           {!props.loading && (

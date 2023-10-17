@@ -142,7 +142,7 @@ const IssueListItemDecoration = ({
         {haveReferences && (
           <div
             className={classNames(
-              'dark:bg-polar-900 space-y-2 bg-gray-50 px-4 py-2',
+              'dark:bg-polar-900 space-y-2 bg-gray-50 px-6 py-2',
             )}
           >
             {haveReferences &&
@@ -162,7 +162,7 @@ const IssueListItemDecoration = ({
       </div>
 
       {showDisputeAction && showPledgeStatusBox && (
-        <div className="dark:bg-polar-900 dark:border-polar-700 border-t border-gray-100 bg-gray-50 px-4 pb-1.5 pt-1">
+        <div className="dark:bg-polar-900 dark:border-polar-700 border-t border-gray-100 bg-gray-50 px-6 pb-1.5 pt-1">
           {disputablePledges.map((p) => {
             return (
               <div key={p.id}>

@@ -63,7 +63,7 @@ export default IssueRewards
 
 const Group = (props: { children: React.ReactNode }) => (
   <div
-    className={`dark:text-polar-400 flex justify-between px-4 text-sm text-gray-700`}
+    className={`dark:text-polar-400 flex justify-between px-6 text-sm text-gray-700`}
   >
     <div className="flex w-full items-center justify-between gap-2">
       {props.children}

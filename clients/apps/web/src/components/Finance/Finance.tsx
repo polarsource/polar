@@ -364,7 +364,7 @@ const AccountBanner = (props: { org: Organization; accounts: Account[] }) => {
           }
         >
           <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
-          <span className="text-sm">
+          <span className="dark:text-polar-400 text-sm">
             {accountType === AccountType.STRIPE &&
               'Payouts will be sent to the connected Stripe account'}
             {accountType === AccountType.OPEN_COLLECTIVE &&

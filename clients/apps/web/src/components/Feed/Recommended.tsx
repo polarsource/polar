@@ -24,13 +24,13 @@ const Recommended = () => {
 
           {issues.isLoading && (
             <div className="flex flex-col gap-2">
-              <div className="h-4 w-[300px] animate-pulse rounded-lg bg-gray-400"></div>
-              <div className="h-4 w-[500px] animate-pulse rounded-lg bg-gray-400"></div>
-              <div className="h-4 w-[350px] animate-pulse rounded-lg bg-gray-400"></div>
+              <div className="dark:bg-polar-700 h-4 w-[300px] animate-pulse rounded-lg bg-gray-400"></div>
+              <div className="dark:bg-polar-700 h-4 w-[500px] animate-pulse rounded-lg bg-gray-400"></div>
+              <div className="dark:bg-polar-700 h-4 w-[350px] animate-pulse rounded-lg bg-gray-400"></div>
             </div>
           )}
 
-          <div className="dark:border-polar-700 dark:divide-polar-700 divide-y divide-gray-100 border-y border-gray-100 ">
+          <div className="dark:border-polar-700 ">
             {issues.data?.items?.map((issue) => (
               <IssueListItem
                 issue={issue}

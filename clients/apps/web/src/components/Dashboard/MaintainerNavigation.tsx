@@ -47,10 +47,10 @@ const MaintainerNavigation = () => {
         <div key={n.link} className="flex flex-col gap-4">
           <Link
             className={classNames(
-              'flex items-center gap-2 rounded-xl px-5 py-3',
+              'flex items-center gap-2 rounded-xl px-5 py-3 transition-colors',
               n.isActive
-                ? 'dark:bg-polar-800 bg-blue-50 text-blue-600 dark:text-blue-500'
-                : 'dark:text-polar-400 dark:hover:text-polar-200 text-gray-900 hover:text-blue-700',
+                ? 'bg-blue-50 text-blue-600 dark:bg-transparent dark:text-blue-500'
+                : 'dark:text-polar-500 dark:hover:text-polar-200 text-gray-900 hover:text-blue-700',
             )}
             href={n.link}
           >

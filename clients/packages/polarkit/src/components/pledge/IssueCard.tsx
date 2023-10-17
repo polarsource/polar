@@ -60,66 +60,68 @@ const IssueCard = ({
     issue.repository.organization.default_upfront_split_to_contributors
 
   return (
-    <>
-      <h1 className="dark:text-polar-50 mb-4 text-center text-4xl text-gray-900 sm:text-left">
-        {generateMarkdownTitle(issue.title)}
-      </h1>
-      {/* Issue details */}
-      <div className="dark:text-polar-500 grid grid-cols-1 text-gray-600 sm:grid-cols-3">
-        {/* Left part */}
-        <div className="col-span-1 flex	flex-row items-center justify-center gap-2 sm:col-span-2 sm:justify-start	">
-          <div>
-            <a href={url}>#{issue.number}</a>
-          </div>
-          {issue.author && (
+    <div className="dark:divide-polar-700 divide-y-[1px] divide-gray-200">
+      <div className="space-y-4 pb-4">
+        <h1 className="dark:text-polar-50 text-center text-4xl text-gray-900 sm:text-left">
+          {generateMarkdownTitle(issue.title)}
+        </h1>
+        {/* Issue details */}
+        <div className="dark:text-polar-500 grid grid-cols-1 text-gray-600 sm:grid-cols-3">
+          {/* Left part */}
+          <div className="col-span-1 flex	flex-row items-center justify-center gap-2 sm:col-span-2 sm:justify-start	">
             <div>
-              <a
-                href={issue.author.html_url}
-                className="flex flex-row items-center gap-2"
-                title={`@${issue.author.login}`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={issue.author.avatar_url}
-                  alt={issue.author.login}
-                  className="h-5 w-5 rounded-full"
-                />
-                <div className="overflow-hidden text-ellipsis whitespace-nowrap">
-                  @{issue.author.login}
-                </div>
-              </a>
+              <a href={url}>#{issue.number}</a>
             </div>
-          )}
-          <div className="dark:text-polar-500 whitespace-nowrap text-gray-400">
-            <PolarTimeAgo date={new Date(issue.issue_created_at)} />
+            {issue.author && (
+              <div>
+                <a
+                  href={issue.author.html_url}
+                  className="flex flex-row items-center gap-2"
+                  title={`@${issue.author.login}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={issue.author.avatar_url}
+                    alt={issue.author.login}
+                    className="h-5 w-5 rounded-full"
+                  />
+                  <div className="overflow-hidden text-ellipsis whitespace-nowrap">
+                    @{issue.author.login}
+                  </div>
+                </a>
+              </div>
+            )}
+            <div className="dark:text-polar-500 whitespace-nowrap text-gray-400">
+              <PolarTimeAgo date={new Date(issue.issue_created_at)} />
+            </div>
           </div>
-        </div>
-        {/* Right part */}
-        <div className="flex flex-row items-center justify-center gap-4 sm:justify-end">
-          {issue.comments !== undefined && (
-            <div className="flex flex-row items-center gap-1">
-              <ChatBubbleLeftIcon className="h-5 w-5" />
-              {issue.comments}
-            </div>
-          )}
-          {issue.reactions !== undefined && (
-            <div className="flex flex-row items-center gap-1">
-              <div>👍</div>
-              {issue.reactions.plus_one}
-            </div>
-          )}
+          {/* Right part */}
+          <div className="flex flex-row items-center justify-center gap-4 sm:justify-end">
+            {issue.comments !== undefined && (
+              <div className="flex flex-row items-center gap-1">
+                <ChatBubbleLeftIcon className="h-5 w-5" />
+                {issue.comments}
+              </div>
+            )}
+            {issue.reactions !== undefined && (
+              <div className="flex flex-row items-center gap-1">
+                <div>👍</div>
+                {issue.reactions.plus_one}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-      <hr className="dark:border-polar-700 my-4" />
+
       {/* Funding goal */}
       <FundingGoal
         funding={issue.funding}
         pledgers={pledgers}
         currentPledgeAmount={currentPledgeAmount}
       />
-      <hr className="dark:border-polar-700 my-4" />
+
       {/* Issue description */}
-      <div className="hidden sm:block">
+      <div className="hidden py-4 sm:block">
         <div className="relative max-h-80 overflow-hidden">
           {htmlBody && <IssueBodyRenderer html={htmlBody} />}
           <div className="absolute bottom-0 left-0 h-12 w-full bg-gradient-to-b from-transparent to-gray-50 dark:to-gray-950"></div>
@@ -129,10 +131,10 @@ const IssueCard = ({
             Read more
           </a>
         </div>
-        <hr className="dark:border-polar-700 my-4" />
       </div>
+
       {/* Repository */}
-      <div className="dark:text-polar-400 grid grid-cols-1 text-gray-600 sm:grid-cols-3">
+      <div className="dark:text-polar-400 grid grid-cols-1 py-4 text-gray-600 sm:grid-cols-3">
         {/* Name/description */}
         <div className="col-span-1 flex flex-row items-center gap-4 sm:col-span-2">
           <div className="min-w-max">
@@ -163,36 +165,43 @@ const IssueCard = ({
           </div>
         )}
       </div>
-      {/* Rewards */}
-      {upfrontSplit ? (
-        <div className="my-4 hidden sm:block">
-          <Alert color="blue">
-            <div className="flex items-center">
-              <HeartIcon className="mr-2 h-5 w-5 text-blue-300 dark:text-blue-700" />
-              <div className="inline">
-                <span className="font-bold">Rewards</span> contributors{' '}
-                <span className="font-bold">{upfrontSplit}%</span> of received
-                funds
-              </div>
+
+      {upfrontSplit || haveRewradsOrAssignees ? (
+        <div className="space-y-4 py-4">
+          {/* Rewards */}
+          {upfrontSplit ? (
+            <div className="hidden sm:block">
+              <Alert color="blue">
+                <div className="flex items-center">
+                  <HeartIcon className="mr-2 h-5 w-5 text-blue-300 dark:text-blue-700" />
+                  <div className="inline">
+                    <span className="font-bold">Rewards</span> contributors{' '}
+                    <span className="font-bold">{upfrontSplit}%</span> of
+                    received funds
+                  </div>
+                </div>
+              </Alert>
             </div>
-          </Alert>
+          ) : null}
+
+          {haveRewradsOrAssignees && (
+            <div className="hidden items-center space-x-4 sm:flex">
+              {/* Rewards Receivers Avatars */}
+              {haveRewards && <RewardsReceivers rewards={rewards} />}
+
+              {/* Assignees Avatars */}
+              {haveAssignees && (
+                <Assignees assignees={issue?.assignees || []} />
+              )}
+            </div>
+          )}
         </div>
       ) : null}
-
-      {haveRewradsOrAssignees && (
-        <div className="my-4 hidden items-center space-x-4 sm:flex">
-          {/* Rewards Receivers Avatars */}
-          {haveRewards && <RewardsReceivers rewards={rewards} />}
-
-          {/* Assignees Avatars */}
-          {haveAssignees && <Assignees assignees={issue?.assignees || []} />}
-        </div>
-      )}
 
       {pullRequests && pullRequests.length > 0 && (
         <PullRequests pulls={pullRequests} />
       )}
-    </>
+    </div>
   )
 }
 
@@ -243,7 +252,7 @@ const FundingGoal = ({
 
   if (funding_goal) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2">
+      <div className="grid grid-cols-1 py-4 sm:grid-cols-2">
         {/* Funding amount and goal */}
         <div className="flex flex-col items-center sm:items-start">
           <div className="dark:text-polar-300 text-lg text-gray-900">
@@ -273,7 +282,7 @@ const FundingGoal = ({
   // No funding goal
   if (pledges_sum && pledges_sum?.amount > 0) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2">
+      <div className="grid grid-cols-1 py-4 sm:grid-cols-2">
         {/* Funding amount and goal */}
         <div className="flex flex-col items-center sm:items-start">
           <div className="dark:text-polar-300 text-lg text-gray-900">
@@ -321,7 +330,7 @@ const Assignees = ({ assignees }: { assignees: Assignee[] }) => (
 )
 
 const PullRequests = ({ pulls }: { pulls: PullRequest[] }) => (
-  <div className="hidden space-y-2 sm:block">
+  <div className="hidden space-y-2 py-4 sm:block">
     {pulls.map((pr) => (
       <Pull pr={pr} key={pr.id} />
     ))}

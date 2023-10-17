@@ -19,6 +19,7 @@ import {
   Pledger,
   PledgerPledgePendingNotification,
   PledgesTypeSummaries,
+  PullRequest,
   Reactions,
   Repository,
   RewardPaidNotification,
@@ -327,3 +328,13 @@ export const notification_maintainerPledgedIssueConfirmationPendingNotification:
     maintainer_pledged_issue_confirmation_pending:
       maintainerPledgedIssueConfirmationPendingNotification,
   }
+
+export const pullRequest: PullRequest = {
+  id: '12355',
+  number: 1337,
+  title: 'Hello `world` from a PR',
+  additions: 20,
+  deletions: 20,
+  is_merged: true,
+  is_closed: true,
+}

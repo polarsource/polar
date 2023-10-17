@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
 import { IssueCard } from 'polarkit/components/pledge'
-import { issue, issueBodyHTML, pledger } from 'polarkit/testdata'
+import { issue, issueBodyHTML, pledger, pullRequest } from 'polarkit/testdata'
 
 const meta: Meta<typeof IssueCard> = {
   title: 'Organisms/IssueCard',
@@ -77,6 +77,30 @@ export const FundingGoalPlusCurrent: Story = {
   },
 }
 
+export const Assigned: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    issue: {
+      ...issue,
+      assignees: [
+        {
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          login: 'zegl',
+          id: 123,
+          html_url: 'x',
+        },
+        {
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          login: 'zegl',
+          id: 123,
+          html_url: 'x',
+        },
+      ],
+    },
+  },
+}
+
 export const UpfrontSplit: Story = {
   ...Default,
   args: {
@@ -84,6 +108,31 @@ export const UpfrontSplit: Story = {
     issue: {
       ...issue,
       upfront_split_to_contributors: 75,
+    },
+  },
+}
+
+export const UpfrontSplitAssigned: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    issue: {
+      ...issue,
+      upfront_split_to_contributors: 75,
+      assignees: [
+        {
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          login: 'zegl',
+          id: 123,
+          html_url: 'x',
+        },
+        {
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          login: 'zegl',
+          id: 123,
+          html_url: 'x',
+        },
+      ],
     },
   },
 }
@@ -112,5 +161,116 @@ export const LongAuthorName: Story = {
           }
         : undefined,
     },
+  },
+}
+
+export const Rewarded: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    rewards: {
+      receivers: [
+        {
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          name: 'zegl',
+        },
+      ],
+    },
+    issue: {
+      ...issue,
+      assignees: [
+        {
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          login: 'zegl',
+          id: 123,
+          html_url: 'x',
+        },
+        {
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          login: 'zegl',
+          id: 123,
+          html_url: 'x',
+        },
+      ],
+    },
+  },
+}
+
+export const RewardedSplit: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    rewards: {
+      receivers: [
+        {
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          name: 'zegl',
+        },
+      ],
+    },
+    issue: {
+      ...issue,
+      upfront_split_to_contributors: 75,
+      assignees: [
+        {
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          login: 'zegl',
+          id: 123,
+          html_url: 'x',
+        },
+        {
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          login: 'zegl',
+          id: 123,
+          html_url: 'x',
+        },
+      ],
+    },
+  },
+}
+
+export const RewardedSplitPulls: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    rewards: {
+      receivers: [
+        {
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          name: 'zegl',
+        },
+      ],
+    },
+    issue: {
+      ...issue,
+      upfront_split_to_contributors: 75,
+      assignees: [
+        {
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          login: 'zegl',
+          id: 123,
+          html_url: 'x',
+        },
+        {
+          avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          login: 'zegl',
+          id: 123,
+          html_url: 'x',
+        },
+      ],
+    },
+    pullRequests: [pullRequest, pullRequest],
+  },
+}
+
+export const Pulls: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+
+    issue: {
+      ...issue,
+    },
+    pullRequests: [pullRequest, pullRequest],
   },
 }

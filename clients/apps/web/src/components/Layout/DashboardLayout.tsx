@@ -10,6 +10,7 @@ import { classNames } from 'polarkit/utils'
 import { Suspense } from 'react'
 import SidebarNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
+import MetaNavigation from '../Dashboard/MetaNavigation'
 import Popover from '../Notifications/Popover'
 import ProfileSelection from '../Shared/ProfileSelection'
 
@@ -51,17 +52,20 @@ const DashboardLayout = (props: { children: React.ReactNode }) => {
           <SidebarNavigation />
         </div>
 
-        {showConnectUsell && (
-          <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 mx-4 my-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm">
-            <p className="mb-2">Get funding for your public repositories.</p>
-            <Link
-              href={CONFIG.GITHUB_INSTALLATION_URL}
-              className="font-medium text-blue-600"
-            >
-              Connect repositories
-            </Link>
-          </div>
-        )}
+        <div className="flex flex-col gap-y-2">
+          <MetaNavigation />
+          {showConnectUsell && (
+            <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 mx-4 my-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm">
+              <p className="mb-2">Get funding for your public repositories.</p>
+              <Link
+                href={CONFIG.GITHUB_INSTALLATION_URL}
+                className="font-medium text-blue-600"
+              >
+                Connect repositories
+              </Link>
+            </div>
+          )}
+        </div>
       </aside>
       <div className="dark:bg-polar-900 relative flex h-screen w-full translate-x-0 flex-row overflow-hidden bg-white">
         <main className={classNames('relative h-full w-full overflow-auto')}>

@@ -98,8 +98,8 @@ export const maintainerRoutes = (
     id: 'public-site',
     title: 'Public site',
     link: `/${org?.name}`,
-    icon: undefined,
-    postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
+    postIcon: undefined,
+    icon: <ArrowUpRightIcon className="h-4 w-4" />,
     if: org && isLoaded,
     subs: undefined,
   },
@@ -141,6 +141,27 @@ export const backerRoutes: Route[] = [
     link: `/settings`,
     icon: <TuneOutlined className="h-6 w-6" />,
     postIcon: undefined,
+    if: true,
+    subs: undefined,
+  },
+]
+
+export const metaRoutes: Route[] = [
+  {
+    id: 'github',
+    title: 'Github',
+    link: `https://github.com/polarsource/polar`,
+    icon: undefined,
+    postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
+    if: true,
+    subs: undefined,
+  },
+  {
+    id: 'discord',
+    title: 'Join our Discord',
+    link: `https://discord.gg/STfRufb32V`,
+    icon: undefined,
+    postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
     if: true,
     subs: undefined,
   },

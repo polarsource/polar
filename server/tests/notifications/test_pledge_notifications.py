@@ -13,7 +13,7 @@ from polar.models.user_organization import UserOrganization
 from polar.notifications.notification import MaintainerPledgeCreatedNotification
 from polar.notifications.schemas import NotificationType
 from polar.notifications.service import NotificationsService, PartialNotification
-from polar.pledge.schemas import PledgeState
+from polar.pledge.schemas import PledgeState, PledgeType
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 
@@ -66,6 +66,7 @@ async def test_create_pledge_from_created(
                 issue_repo_name=repository.name,
                 issue_number=issue.number,
                 maintainer_has_stripe_account=False,
+                pledge_type=PledgeType.pay_upfront,
             ),
         ),
     )

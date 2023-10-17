@@ -1,16 +1,22 @@
-import { GithubBadgeRead, GithubBadgeReadBadgeTypeEnum } from '@polar-sh/sdk'
+import { Funding } from '@polar-sh/sdk'
 import { Badge } from 'polarkit/components/badge'
 import { getCentsInDollarString } from 'polarkit/money'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
-const renderBadge = async (badge: GithubBadgeRead, isDarkmode: boolean) => {
-  let hasAmount = badge.amount !== null
+const renderBadge = async ({
+  amount,
+  funding,
+  isDarkMode,
+}: {
+  amount?: number
+  funding: Funding
+  isDarkMode: boolean
+}) => {
+  let hasAmount = amount !== null
 
-  const amountRaised = badge.amount
-    ? getCentsInDollarString(badge.amount)
-    : undefined
+  const amountRaised = amount ? getCentsInDollarString(amount) : undefined
 
   const inter = await fetch(
     new URL(
@@ -22,8 +28,8 @@ const renderBadge = async (badge: GithubBadgeRead, isDarkmode: boolean) => {
   return await satori(
     <Badge
       showAmountRaised={hasAmount}
-      darkmode={isDarkmode}
-      funding={badge.funding}
+      darkmode={isDarkMode}
+      funding={funding}
       avatarsUrls={[]}
       orgName="demoorg"
     />,
@@ -57,13 +63,7 @@ export async function GET(request: Request) {
     pledges_sum: { currency: 'USD', amount: amount },
   }
 
-  const badge: GithubBadgeRead = {
-    badge_type: GithubBadgeReadBadgeTypeEnum.PLEDGE,
-    amount,
-    funding,
-  }
-
-  const svg = await renderBadge(badge, isDarkMode)
+  const svg = await renderBadge({ amount, funding, isDarkMode })
 
   return new Response(svg, {
     headers: {

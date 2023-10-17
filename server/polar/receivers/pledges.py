@@ -30,6 +30,7 @@ from polar.pledge.hooks import (
 from polar.pledge.hooks import (
     pledge_updated as pledge_updated_hook,
 )
+from polar.pledge.schemas import PledgeType
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.repository.service import repository as repository_service
@@ -151,6 +152,7 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
         issue_number=issue.number,
         maintainer_has_stripe_account=True if org_account else False,
         pledge_id=pledge.id,
+        pledge_type=PledgeType.from_str(pledge.type),
     )
 
     await notification_service.send_to_org(

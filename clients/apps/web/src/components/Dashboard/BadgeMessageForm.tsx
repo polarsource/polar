@@ -110,7 +110,7 @@ const BadgeMessageForm = (props: {
       <div
         className={classNames(
           props.innerClassNames,
-          'dark:bg-polar-800 dark:ring-polar-700 rounded-xl bg-white px-5 py-3.5 dark:ring-1',
+          'dark:bg-polar-800 dark:ring-polar-600 rounded-xl bg-white px-5 py-3.5 dark:ring-1',
         )}
       >
         {descriptionMode === 'View' && (
@@ -137,18 +137,18 @@ const BadgeMessageForm = (props: {
           </>
         )}
       </div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col justify-between">
         {/* <div className="text-gray-600">
           Template variables: <code>{'{badge}'}</code>, <code>{'{repo}'}</code>
         </div> */}
 
         {props.canSetFundingGoal && (
-          <div className="flex max-w-[300px] items-center space-x-2">
+          <div className="flex max-w-[300px] flex-col space-y-2 py-4">
             <label
               htmlFor="fundingGoal"
-              className="dark:text-polar-400 flex-shrink-0 text-sm"
+              className="dark:text-polar-50 text-sm font-medium"
             >
-              Set funding goal:{' '}
+              Set funding goal
             </label>
             <MoneyInput
               id={'fundingGoal'}
@@ -162,9 +162,8 @@ const BadgeMessageForm = (props: {
           </div>
         )}
 
-        <div className="flex-1"></div>
         {props.showUpdateButton && (
-          <div>
+          <div className="mt-4">
             <PrimaryButton
               onClick={onClickUpdate}
               disabled={!canSave}

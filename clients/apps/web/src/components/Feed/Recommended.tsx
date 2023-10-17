@@ -13,7 +13,7 @@ const Recommended = () => {
       <ShadowBoxOnLg>
         <>
           <div className="space-y-2 pb-4">
-            <h1 className="dark:text-polar-100 text-lg text-gray-900">
+            <h1 className="dark:text-polar-50 text-lg text-gray-900">
               Recommended issues
             </h1>
             <p className="dark:text-polar-400 text-sm text-gray-500">
@@ -30,7 +30,7 @@ const Recommended = () => {
             </div>
           )}
 
-          <div className="dark:border-polar-700 ">
+          <div>
             {issues.data?.items?.map((issue) => (
               <IssueListItem
                 issue={issue}

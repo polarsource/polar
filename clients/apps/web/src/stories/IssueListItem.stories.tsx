@@ -29,7 +29,7 @@ type Story = StoryObj<typeof IssueListItem>
 const pledges: Pledge[] = [
   {
     id: 'xx',
-    created_at: new Date().toISOString(),
+    created_at: new Date('2023-10-17').toISOString(),
     issue: issue,
     amount: { currency: 'USD', amount: 1234 },
     state: PledgeState.CREATED,

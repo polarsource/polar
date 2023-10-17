@@ -3415,6 +3415,24 @@ export interface SubscriptionGroup {
     name: string;
     /**
      * 
+     * @type {string}
+     * @memberof SubscriptionGroup
+     */
+    description?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionGroup
+     */
+    icon: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionGroup
+     */
+    color: string;
+    /**
+     * 
      * @type {number}
      * @memberof SubscriptionGroup
      */
@@ -3441,31 +3459,19 @@ export interface SubscriptionGroup {
 /**
  * 
  * @export
- * @interface SubscriptionGroupCreate
+ * @interface SubscriptionGroupInitialize
  */
-export interface SubscriptionGroupCreate {
+export interface SubscriptionGroupInitialize {
     /**
      * 
      * @type {string}
-     * @memberof SubscriptionGroupCreate
-     */
-    name: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof SubscriptionGroupCreate
-     */
-    order: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionGroupCreate
+     * @memberof SubscriptionGroupInitialize
      */
     organization_id?: string;
     /**
      * 
      * @type {string}
-     * @memberof SubscriptionGroupCreate
+     * @memberof SubscriptionGroupInitialize
      */
     repository_id?: string;
 }

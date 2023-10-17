@@ -22,6 +22,7 @@ import {
   Repository,
 } from '@polar-sh/sdk'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { ShadowBoxOnLg } from 'polarkit/components/ui/atoms'
 import { useDashboard, useListRepositories, useSSE } from 'polarkit/hooks'
 import {
   Dispatch,
@@ -273,28 +274,41 @@ const OrganizationIssues = ({
         </RepoPickerHeader>
       </DashboardTopbar>
       <DashboardBody>
-        <div className="space-y-4">
+        <div className="space-y-8">
           {showAddBadgeBanner && <OnboardingAddBadge />}
 
           {haveIssues ? (
-            <IssueList
-              totalCount={totalCount}
-              loading={dashboardQuery.isLoading}
-              dashboard={dashboard}
-              filters={filters}
-              onSetFilters={onSetFilters}
-              isInitialLoading={dashboardQuery.isInitialLoading}
-              isFetchingNextPage={dashboardQuery.isFetchingNextPage}
-              hasNextPage={dashboardQuery.hasNextPage || false}
-              fetchNextPage={dashboardQuery.fetchNextPage}
-            />
+            <ShadowBoxOnLg>
+              <div className="pb-4">
+                <h3 className="text-lg">
+                  {filters.q.length
+                    ? `Showing issues matching "${filters.q}"`
+                    : 'Issues'}
+                </h3>
+                <p className="dark:text-polar-400 mt-2 text-sm text-gray-500">
+                  You can filter issues using the filtering options in the
+                  topbar
+                </p>
+              </div>
+              <IssueList
+                totalCount={totalCount}
+                loading={dashboardQuery.isLoading}
+                dashboard={dashboard}
+                filters={filters}
+                onSetFilters={onSetFilters}
+                isInitialLoading={dashboardQuery.isInitialLoading}
+                isFetchingNextPage={dashboardQuery.isFetchingNextPage}
+                hasNextPage={dashboardQuery.hasNextPage || false}
+                fetchNextPage={dashboardQuery.fetchNextPage}
+              />
+            </ShadowBoxOnLg>
           ) : (
             <EmptyLayout>
               <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
                 <span className="text-6xl">
                   <HowToVoteOutlined fontSize="inherit" />
                 </span>
-                <h2 className="text-lg">You have no open issues</h2>
+                <h2 className="text-lg">No issues found</h2>
               </div>
             </EmptyLayout>
           )}

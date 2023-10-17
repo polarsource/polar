@@ -3621,6 +3621,68 @@ export interface RewardsSummaryReceiver {
 /**
  * 
  * @export
+ * @interface SubscribeSession
+ */
+export interface SubscribeSession {
+    /**
+     * ID of the subscribe session.
+     * @type {string}
+     * @memberof SubscribeSession
+     */
+    id: string;
+    /**
+     * URL where you should redirect your backer so they can subscribe to the selected tier.
+     * @type {string}
+     * @memberof SubscribeSession
+     */
+    url?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscribeSession
+     */
+    customer_email?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscribeSession
+     */
+    customer_name?: string;
+    /**
+     * 
+     * @type {SubscriptionTier}
+     * @memberof SubscribeSession
+     */
+    subscription_tier: SubscriptionTier;
+}
+/**
+ * 
+ * @export
+ * @interface SubscribeSessionCreate
+ */
+export interface SubscribeSessionCreate {
+    /**
+     * ID of the Subscription Tier to subscribe to.
+     * @type {string}
+     * @memberof SubscribeSessionCreate
+     */
+    tier_id: string;
+    /**
+     * URL where the backer will be redirected after a successful subscription. You can add the `session_id={CHECKOUT_SESSION_ID}` query parameter to retrieve the subscribe session id.
+     * @type {string}
+     * @memberof SubscribeSessionCreate
+     */
+    success_url: string;
+    /**
+     * If you already know the email of your backer, you can set it. It'll be pre-filled on the subscription page.
+     * @type {string}
+     * @memberof SubscribeSessionCreate
+     */
+    customer_email?: string;
+}
+/**
+ * 
+ * @export
  * @interface SubscriptionGroup
  */
 export interface SubscriptionGroup {
@@ -3820,19 +3882,6 @@ export interface SubscriptionTierCreate {
      * @memberof SubscriptionTierCreate
      */
     subscription_group_id: string;
-}
-/**
- * 
- * @export
- * @interface SubscriptionTierSubscribeURL
- */
-export interface SubscriptionTierSubscribeURL {
-    /**
-     * URL where you should redirect your customer so they can subscribe to the selected tier.
-     * @type {string}
-     * @memberof SubscriptionTierSubscribeURL
-     */
-    url: string;
 }
 /**
  * 

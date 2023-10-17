@@ -242,7 +242,7 @@ async def get_badge_settings(
 
 @router.post(
     "/organizations/{id}/badge_settings",
-    response_model=OrganizationBadgeSettingsUpdate,
+    response_model=OrganizationSchema,
     tags=[Tags.INTERNAL],
     summary="Update badge settings (Internal API)",
 )
@@ -252,11 +252,47 @@ async def update_badge_settings(
     auth: UserRequiredAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> OrganizationBadgeSettingsUpdate:
+) -> OrganizationSchema:
     org = await organization.get(session, id)
     if not org:
         raise ResourceNotFound()
     if not await authz.can(auth.subject, AccessType.write, org):
         raise Unauthorized()
 
-    return await organization.update_badge_settings(session, org, settings)
+    # convert payload into OrganizationUpdate format
+    org_update = OrganizationUpdate()
+    if settings.show_amount is not None:
+        org_update.pledge_badge_show_amount = settings.show_amount
+
+    if settings.minimum_amount is not None:
+        org_update.pledge_minimum_amount = settings.minimum_amount
+
+    if settings.message:
+        org_update.set_default_badge_custom_content = True
+        org_update.default_badge_custom_content = settings.message
+
+    await organization.update_settings(session, org, org_update)
+
+    # save repositories settings
+    repositories = await repository_service.list_by_ids_and_organization(
+        session, [r.id for r in settings.repositories], org.id
+    )
+    for repository_settings in settings.repositories:
+        if repository := next(
+            (r for r in repositories if r.id == repository_settings.id), None
+        ):
+            await repository_service.update_badge_settings(
+                session, org, repository, repository_settings
+            )
+
+    log.info(
+        "organization.update_badge_settings",
+        organization_id=org.id,
+        settings=settings.dict(),
+    )
+
+    # get for return
+    org = await organization.get(session, id)
+    if not org:
+        raise ResourceNotFound()
+    return OrganizationSchema.from_db(org)

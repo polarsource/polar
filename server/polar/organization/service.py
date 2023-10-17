@@ -10,10 +10,8 @@ from polar.integrations.loops.service import loops as loops_service
 from polar.kit.services import ResourceService
 from polar.models import Organization, User, UserOrganization
 from polar.postgres import AsyncSession, sql
-from polar.repository.service import repository as repository_service
 
 from .schemas import (
-    OrganizationBadgeSettingsUpdate,
     OrganizationCreate,
     OrganizationGitHubUpdate,
     OrganizationUpdate,
@@ -112,50 +110,6 @@ class OrganizationService(
         finally:
             await loops_service.organization_installed(session, user=user)
 
-    async def update_badge_settings(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        settings: OrganizationBadgeSettingsUpdate,
-    ) -> OrganizationBadgeSettingsUpdate:
-        if settings.show_amount is not None:
-            organization.pledge_badge_show_amount = settings.show_amount
-
-        if settings.minimum_amount:
-            organization.pledge_minimum_amount = settings.minimum_amount
-
-        if settings.message:
-            organization.default_badge_custom_content = settings.message
-
-        if organization.onboarded_at is None:
-            organization.onboarded_at = datetime.now(timezone.utc)
-
-        await organization.save(session)
-
-        # TODO: refactor this. the organization service should not depend
-        # repositoriy service.
-        #
-        # We should try to keep the dependency graph the same in the services as
-        # in the API schemas.
-        repositories = await repository_service.list_by_ids_and_organization(
-            session, [r.id for r in settings.repositories], organization.id
-        )
-        for repository_settings in settings.repositories:
-            if repository := next(
-                (r for r in repositories if r.id == repository_settings.id), None
-            ):
-                await repository_service.update_badge_settings(
-                    session, organization, repository, repository_settings
-                )
-
-        log.info(
-            "organization.update_badge_settings",
-            organization_id=organization.id,
-            settings=settings.dict(),
-        )
-
-        return settings
-
     async def update_settings(
         self,
         session: AsyncSession,
@@ -173,7 +127,19 @@ class OrganizationService(
                 settings.default_upfront_split_to_contributors
             )
 
+        if settings.pledge_badge_show_amount is not None:
+            organization.pledge_badge_show_amount = settings.pledge_badge_show_amount
+
+        if settings.set_default_badge_custom_content:
+            organization.default_badge_custom_content = (
+                settings.default_badge_custom_content
+            )
+
+        if settings.pledge_minimum_amount is not None:
+            organization.pledge_minimum_amount = settings.pledge_minimum_amount
+
         updated = await organization.save(session)
+
         log.info(
             "organization.update_settings",
             organization_id=organization.id,

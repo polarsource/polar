@@ -1,4 +1,3 @@
-from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey
@@ -6,10 +5,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import TimestampedModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
-
-if TYPE_CHECKING:  # pragma: no cover
-    from polar.models.organization import Organization
-    from polar.models.user import User
+from polar.models.organization import Organization
+from polar.models.user import User
 
 
 class UserOrganization(TimestampedModel):

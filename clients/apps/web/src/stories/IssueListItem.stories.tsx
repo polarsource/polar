@@ -94,23 +94,6 @@ const dateConv = (input: Date): string => {
   return input.toISOString()
 }
 
-// urgh!
-const dummyPayload = {
-  id: '',
-  title: '',
-  author_login: '',
-  author_avatar: '',
-  number: 0,
-  additions: 0,
-  deletions: 0,
-  state: '',
-  created_at: dateConv(new Date()),
-  is_draft: false,
-  organization_name: '',
-  repository_name: '',
-  sha: '',
-}
-
 const pullRequestReference: PullRequestReference = {
   id: '11',
   title: 'Updated Readme.md',
@@ -128,7 +111,6 @@ const references: IssueReferenceRead[] = [
   {
     id: 'wha',
     type: IssueReferenceType.PULL_REQUEST,
-    payload: dummyPayload,
     pull_request_reference: pullRequestReference,
   },
 ]
@@ -137,7 +119,6 @@ const referencesDraft: IssueReferenceRead[] = [
   {
     id: 'wha',
     type: IssueReferenceType.PULL_REQUEST,
-    payload: dummyPayload,
     pull_request_reference: {
       ...pullRequestReference,
       is_draft: true,
@@ -149,7 +130,6 @@ const referencesMerged: IssueReferenceRead[] = [
   {
     id: 'wha',
     type: IssueReferenceType.PULL_REQUEST,
-    payload: dummyPayload,
     pull_request_reference: {
       ...pullRequestReference,
       //is_draft: true,
@@ -163,7 +143,6 @@ const referencesClosed: IssueReferenceRead[] = [
   {
     id: 'wha',
     type: IssueReferenceType.PULL_REQUEST,
-    payload: dummyPayload,
     pull_request_reference: {
       ...pullRequestReference,
       state: 'closed',
@@ -176,7 +155,6 @@ const doubleReference: IssueReferenceRead[] = [
   {
     id: 'wha',
     type: IssueReferenceType.PULL_REQUEST,
-    payload: dummyPayload,
     pull_request_reference: {
       ...pullRequestReference,
     },
@@ -184,7 +162,6 @@ const doubleReference: IssueReferenceRead[] = [
   {
     id: 'wha',
     type: IssueReferenceType.PULL_REQUEST,
-    payload: dummyPayload,
     pull_request_reference: {
       ...pullRequestReference,
     },
@@ -195,7 +172,6 @@ const referencesCommit: IssueReferenceRead[] = [
   {
     id: 'wha',
     type: IssueReferenceType.EXTERNAL_GITHUB_COMMIT,
-    payload: dummyPayload,
     external_github_commit_reference: {
       author_login: 'petterheterjag',
       author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
@@ -209,7 +185,6 @@ const referencesCommit: IssueReferenceRead[] = [
   {
     id: 'wha',
     type: IssueReferenceType.EXTERNAL_GITHUB_COMMIT,
-    payload: dummyPayload,
     external_github_commit_reference: {
       author_login: 'petterheterjag',
       author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
@@ -375,7 +350,6 @@ export const AllReferences: Story = {
       {
         id: 'wha',
         type: IssueReferenceType.EXTERNAL_GITHUB_PULL_REQUEST,
-        payload: dummyPayload,
         external_github_pull_request_reference: {
           author_login: 'petterheterjag',
           author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',
@@ -389,7 +363,6 @@ export const AllReferences: Story = {
       {
         id: 'wha',
         type: IssueReferenceType.EXTERNAL_GITHUB_PULL_REQUEST,
-        payload: dummyPayload,
         external_github_pull_request_reference: {
           author_login: 'petterheterjag',
           author_avatar: 'https://avatars.githubusercontent.com/u/1426460?v=4',

@@ -317,7 +317,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
     /**
      * Update badge settings (Internal API)
      */
-    async updateBadgeSettingsRaw(requestParameters: OrganizationsApiUpdateBadgeSettingsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OrganizationBadgeSettingsUpdate>> {
+    async updateBadgeSettingsRaw(requestParameters: OrganizationsApiUpdateBadgeSettingsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
         if (requestParameters.id === null || requestParameters.id === undefined) {
             throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling updateBadgeSettings.');
         }
@@ -354,7 +354,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
     /**
      * Update badge settings (Internal API)
      */
-    async updateBadgeSettings(requestParameters: OrganizationsApiUpdateBadgeSettingsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OrganizationBadgeSettingsUpdate> {
+    async updateBadgeSettings(requestParameters: OrganizationsApiUpdateBadgeSettingsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
         const response = await this.updateBadgeSettingsRaw(requestParameters, initOverrides);
         return await response.value();
     }

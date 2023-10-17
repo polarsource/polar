@@ -418,11 +418,6 @@ class ExternalGitHubCommitReference(Schema):
 class IssueReferenceRead(Schema):
     id: str
     type: IssueReferenceType
-    payload: Union[
-        PullRequestReference,
-        ExternalGitHubPullRequestReference,
-        ExternalGitHubCommitReference,
-    ] = Field(deprecated=True)
 
     pull_request_reference: PullRequestReference | None = None
     external_github_pull_request_reference: ExternalGitHubPullRequestReference | None = (  # noqa: E501
@@ -473,7 +468,6 @@ class IssueReferenceRead(Schema):
                     return IssueReferenceRead(
                         id=m.external_id,
                         type=IssueReferenceType.pull_request,
-                        payload=pr_ref,
                         pull_request_reference=pr_ref,
                     )
 
@@ -494,7 +488,6 @@ class IssueReferenceRead(Schema):
                     return IssueReferenceRead(
                         id=m.external_id,
                         type=IssueReferenceType.external_github_pull_request,
-                        payload=ext_pr_ref,
                         external_github_pull_request_reference=ext_pr_ref,
                     )
 
@@ -515,7 +508,6 @@ class IssueReferenceRead(Schema):
                     return IssueReferenceRead(
                         id=m.external_id,
                         type=IssueReferenceType.external_github_commit,
-                        payload=ext_commit_ref,
                         external_github_commit_reference=ext_commit_ref,
                     )
 

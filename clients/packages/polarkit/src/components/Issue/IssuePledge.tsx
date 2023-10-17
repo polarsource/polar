@@ -57,7 +57,7 @@ const IssuePledge = (props: Props) => {
 
   return (
     <>
-      <div className="flex flex-row items-center space-x-4 p-4">
+      <div className="flex flex-row items-center space-x-4 px-6 py-4">
         <div className="flex flex-1 flex-row items-center space-x-4">
           <FundingPill
             total={{ amount: totalPledgeAmount, currency: 'USD' }}
@@ -111,7 +111,7 @@ const IssuePledge = (props: Props) => {
         <div
           className={twMerge(
             'dark:border-polar-700 border-t',
-            'flex flex-row items-center gap-2 bg-gray-50 bg-white px-4 py-2 dark:bg-transparent  ',
+            'flex flex-row items-center gap-2 bg-gray-50 bg-white px-6 py-2 dark:bg-transparent  ',
           )}
         >
           <Avatar

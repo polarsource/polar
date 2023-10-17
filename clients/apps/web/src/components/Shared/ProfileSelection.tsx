@@ -17,7 +17,7 @@ const ProfileSelection = ({
   showBackerLinks = false,
 }) => {
   const classNames = clsx(
-    'relative flex w-full flex-col rounded-xl bg-white dark:bg-polar-800 hover:bg-gray-100/50 dark:shadow-none dark:hover:bg-polar-700 dark:border dark:border-polar-700',
+    'relative flex w-full flex-col rounded-xl bg-white dark:bg-polar-800 hover:bg-gray-100/50 dark:shadow-none dark:hover:bg-polar-700 dark:border dark:border-polar-700 transition-colors',
     className,
   )
   const { currentUser: loggedUser, logout } = useAuth()
@@ -151,7 +151,7 @@ const ProfileSelection = ({
                   <InfoOutlined className="dark:text-polar-400 text-gray-600" />
                 }
               >
-                <span className="dark:text-polar-400  mx-1.5 text-gray-600">
+                <span className="dark:text-polar-400 mx-1.5 text-gray-600">
                   Support
                 </span>
               </LinkItem>
@@ -162,7 +162,7 @@ const ProfileSelection = ({
                   <LogoutOutlined className="dark:text-polar-400 text-gray-600" />
                 }
               >
-                <span className="dark:text-polar-400  mx-1.5 text-gray-600">
+                <span className="dark:text-polar-400 mx-1.5 text-gray-600">
                   Log out
                 </span>
               </TextItem>
@@ -185,7 +185,7 @@ const ListItem = (props: {
     'animate-background duration-10 flex items-center gap-2 py-2 px-4 w-full',
     props.current
       ? 'bg-blue-50 dark:bg-white/5'
-      : 'hover:bg-gray-100/50 dark:hover:bg-polar-800',
+      : 'hover:bg-gray-100/50 dark:hover:bg-white/5',
     props.className ?? '',
   )
 

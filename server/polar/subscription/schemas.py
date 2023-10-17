@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import UUID4, Field, root_validator
+from pydantic import UUID4, AnyHttpUrl, EmailStr, Field, root_validator
 
 from polar.kit.schemas import Schema, TimestampedSchema
 
@@ -30,14 +30,43 @@ class SubscriptionTier(TimestampedSchema):
     subscription_group_id: UUID4
 
 
-class SubscriptionTierSubscribeURL(Schema):
-    url: str = Field(
+class SubscribeSessionCreate(Schema):
+    tier_id: UUID4 = Field(
+        ...,
+        description="ID of the Subscription Tier to subscribe to.",
+    )
+    success_url: AnyHttpUrl = Field(
         ...,
         description=(
-            "URL where you should redirect your customer "
+            "URL where the backer will be redirected after a successful subscription. "
+            "You can add the `session_id={CHECKOUT_SESSION_ID}` query parameter "
+            "to retrieve the subscribe session id."
+        ),
+    )
+    customer_email: EmailStr | None = Field(
+        None,
+        description=(
+            "If you already know the email of your backer, you can set it. "
+            "It'll be pre-filled on the subscription page."
+        ),
+    )
+
+
+class SubscribeSession(Schema):
+    id: str = Field(
+        ...,
+        description=("ID of the subscribe session."),
+    )
+    url: str | None = Field(
+        None,
+        description=(
+            "URL where you should redirect your backer "
             "so they can subscribe to the selected tier."
         ),
     )
+    customer_email: str | None = None
+    customer_name: str | None = None
+    subscription_tier: SubscriptionTier
 
 
 class SubscriptionGroupCreate(Schema):

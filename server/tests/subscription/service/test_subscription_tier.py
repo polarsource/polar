@@ -230,14 +230,14 @@ class TestArchive:
 
 
 @pytest.mark.asyncio
-class TestGetCheckoutSessionURL:
+class TestCreateSubscribeSession:
     async def test_archived_subscription_tier(
         self, session: AsyncSession, subscription_tier_organization: SubscriptionTier
     ) -> None:
         subscription_tier_organization.is_archived = True
 
         with pytest.raises(ArchivedSubscriptionTier):
-            await subscription_tier_service.get_checkout_session_url(
+            await subscription_tier_service.create_subscribe_session(
                 session,
                 subscription_tier_organization,
                 "SUCCESS_URL",
@@ -252,7 +252,7 @@ class TestGetCheckoutSessionURL:
         subscription_tier_organization.stripe_price_id = None
 
         with pytest.raises(NotAddedToStripeSubscriptionTier):
-            await subscription_tier_service.get_checkout_session_url(
+            await subscription_tier_service.create_subscribe_session(
                 session,
                 subscription_tier_organization,
                 "SUCCESS_URL",
@@ -264,7 +264,7 @@ class TestGetCheckoutSessionURL:
         self, session: AsyncSession, subscription_tier_organization: SubscriptionTier
     ) -> None:
         with pytest.raises(NoAssociatedPayoutAccount):
-            await subscription_tier_service.get_checkout_session_url(
+            await subscription_tier_service.create_subscribe_session(
                 session,
                 subscription_tier_organization,
                 "SUCCESS_URL",
@@ -283,17 +283,28 @@ class TestGetCheckoutSessionURL:
             mock_stripe_service.create_subscription_checkout_session
         )
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
-            url="STRIPE_URL"
+            stripe_id="SESSION_ID",
+            url="STRIPE_URL",
+            customer_email=None,
+            customer_details=None,
         )
 
-        url = await subscription_tier_service.get_checkout_session_url(
+        subscribe_session = await subscription_tier_service.create_subscribe_session(
             session, subscription_tier_organization, "SUCCESS_URL", Anonymous(), None
         )
 
-        assert url == "STRIPE_URL"
+        assert subscribe_session.id == "SESSION_ID"
+        assert subscribe_session.url == "STRIPE_URL"
+        assert subscribe_session.customer_email is None
+        assert subscribe_session.customer_name is None
+        assert (
+            subscribe_session.subscription_tier.id == subscription_tier_organization.id
+        )
 
         create_subscription_checkout_session_mock.assert_called_once_with(
-            subscription_tier_organization.stripe_price_id, "SUCCESS_URL"
+            subscription_tier_organization.stripe_price_id,
+            "SUCCESS_URL",
+            metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
         )
 
     async def test_valid_user_cookie(
@@ -310,10 +321,13 @@ class TestGetCheckoutSessionURL:
             mock_stripe_service.create_subscription_checkout_session
         )
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
-            url="STRIPE_URL"
+            stripe_id="SESSION_ID",
+            url="STRIPE_URL",
+            customer_email=None,
+            customer_details={"name": "John", "email": "backer@example.com"},
         )
 
-        url = await subscription_tier_service.get_checkout_session_url(
+        subscribe_session = await subscription_tier_service.create_subscribe_session(
             session,
             subscription_tier_organization,
             "SUCCESS_URL",
@@ -321,12 +335,19 @@ class TestGetCheckoutSessionURL:
             AuthMethod.COOKIE,
         )
 
-        assert url == "STRIPE_URL"
+        assert subscribe_session.id == "SESSION_ID"
+        assert subscribe_session.url == "STRIPE_URL"
+        assert subscribe_session.customer_email == "backer@example.com"
+        assert subscribe_session.customer_name == "John"
+        assert (
+            subscribe_session.subscription_tier.id == subscription_tier_organization.id
+        )
 
         create_subscription_checkout_session_mock.assert_called_once_with(
             subscription_tier_organization.stripe_price_id,
             "SUCCESS_URL",
             customer="STRIPE_CUSTOMER_ID",
+            metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
         )
 
     async def test_valid_pat(
@@ -343,10 +364,13 @@ class TestGetCheckoutSessionURL:
             mock_stripe_service.create_subscription_checkout_session
         )
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
-            url="STRIPE_URL"
+            stripe_id="SESSION_ID",
+            url="STRIPE_URL",
+            customer_email=None,
+            customer_details=None,
         )
 
-        url = await subscription_tier_service.get_checkout_session_url(
+        subscribe_session = await subscription_tier_service.create_subscribe_session(
             session,
             subscription_tier_organization,
             "SUCCESS_URL",
@@ -354,11 +378,18 @@ class TestGetCheckoutSessionURL:
             AuthMethod.PERSONAL_ACCESS_TOKEN,
         )
 
-        assert url == "STRIPE_URL"
+        assert subscribe_session.id == "SESSION_ID"
+        assert subscribe_session.url == "STRIPE_URL"
+        assert subscribe_session.customer_email is None
+        assert subscribe_session.customer_name is None
+        assert (
+            subscribe_session.subscription_tier.id == subscription_tier_organization.id
+        )
 
         create_subscription_checkout_session_mock.assert_called_once_with(
             subscription_tier_organization.stripe_price_id,
             "SUCCESS_URL",
+            metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
         )
 
     async def test_valid_pat_customer_email(
@@ -375,10 +406,13 @@ class TestGetCheckoutSessionURL:
             mock_stripe_service.create_subscription_checkout_session
         )
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
-            url="STRIPE_URL"
+            stripe_id="SESSION_ID",
+            url="STRIPE_URL",
+            customer_email="backer@example.com",
+            customer_details=None,
         )
 
-        url = await subscription_tier_service.get_checkout_session_url(
+        subscribe_session = await subscription_tier_service.create_subscribe_session(
             session,
             subscription_tier_organization,
             "SUCCESS_URL",
@@ -387,10 +421,47 @@ class TestGetCheckoutSessionURL:
             customer_email="backer@example.com",
         )
 
-        assert url == "STRIPE_URL"
+        assert subscribe_session.id == "SESSION_ID"
+        assert subscribe_session.url == "STRIPE_URL"
+        assert subscribe_session.customer_email == "backer@example.com"
+        assert subscribe_session.customer_name is None
+        assert (
+            subscribe_session.subscription_tier.id == subscription_tier_organization.id
+        )
 
         create_subscription_checkout_session_mock.assert_called_once_with(
             subscription_tier_organization.stripe_price_id,
             "SUCCESS_URL",
             customer_email="backer@example.com",
+            metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
+        )
+
+
+@pytest.mark.asyncio
+class TestGetSubscribeSession:
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        mock_stripe_service: MagicMock,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        get_checkout_session_mock: MagicMock = mock_stripe_service.get_checkout_session
+        get_checkout_session_mock.return_value = SimpleNamespace(
+            stripe_id="SESSION_ID",
+            url="STRIPE_URL",
+            customer_email=None,
+            customer_details={"name": "John", "email": "backer@example.com"},
+            metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
+        )
+
+        subscribe_session = await subscription_tier_service.get_subscribe_session(
+            session, "SESSION_ID"
+        )
+
+        assert subscribe_session.id == "SESSION_ID"
+        assert subscribe_session.url == "STRIPE_URL"
+        assert subscribe_session.customer_email == "backer@example.com"
+        assert subscribe_session.customer_name == "John"
+        assert (
+            subscribe_session.subscription_tier.id == subscription_tier_organization.id
         )

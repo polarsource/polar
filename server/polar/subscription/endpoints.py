@@ -15,14 +15,15 @@ from polar.repository.dependencies import OptionalRepositoryNameQuery
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 
-from .schemas import SubscriptionGroup as SubscriptionGroupSchema
 from .schemas import (
+    SubscribeSession,
+    SubscribeSessionCreate,
     SubscriptionGroupCreate,
     SubscriptionGroupUpdate,
     SubscriptionTierCreate,
-    SubscriptionTierSubscribeURL,
     SubscriptionTierUpdate,
 )
+from .schemas import SubscriptionGroup as SubscriptionGroupSchema
 from .schemas import SubscriptionTier as SubscriptionTierSchema
 from .service.subscription_group import subscription_group as subscription_group_service
 from .service.subscription_tier import subscription_tier as subscription_tier_service
@@ -184,29 +185,41 @@ async def archive_subscription_tier(
     )
 
 
-@router.get(
-    "/tiers/{id}/subscribe",
+@router.post(
+    "/subscribe-sessions/",
+    response_model=SubscribeSession,
+    status_code=201,
     tags=[Tags.PUBLIC],
-    response_model=SubscriptionTierSubscribeURL,
 )
-async def get_subscription_tier_subscribe_url(
-    id: UUID4,
-    success_url: AnyHttpUrl,
-    customer_email: EmailStr | None = Query(None),
+async def create_subscribe_session(
+    session_create: SubscribeSessionCreate,
     auth: Auth = Depends(Auth.optional_user),
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionTierSubscribeURL:
-    subscription_tier = await subscription_tier_service.get(session, id)
+) -> SubscribeSession:
+    subscription_tier = await subscription_tier_service.get(
+        session, session_create.tier_id
+    )
 
     if subscription_tier is None:
         raise ResourceNotFound()
 
-    url = await subscription_tier_service.get_checkout_session_url(
+    return await subscription_tier_service.create_subscribe_session(
         session,
         subscription_tier,
-        success_url,
+        session_create.success_url,
         auth.subject,
         auth.auth_method,
-        customer_email=customer_email,
+        customer_email=session_create.customer_email,
     )
-    return SubscriptionTierSubscribeURL(url=url)
+
+
+@router.get(
+    "/subscribe-sessions/{id}",
+    response_model=SubscribeSession,
+    tags=[Tags.PUBLIC],
+)
+async def get_subscribe_session(
+    id: str,
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscribeSession:
+    return await subscription_tier_service.get_subscribe_session(session, id)

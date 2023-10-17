@@ -9,7 +9,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.services import ResourceService
 from polar.models import SubscriptionTier, User
 
-from ..schemas import SubscriptionTierCreate, SubscriptionTierUpdate
+from ..schemas import SubscribeSession, SubscriptionTierCreate, SubscriptionTierUpdate
 from .subscription_group import subscription_group as subscription_group_service
 
 
@@ -168,7 +168,7 @@ class SubscriptionTierService(
 
         return await subscription_tier.update(session, is_archived=True)
 
-    async def get_checkout_session_url(
+    async def create_subscribe_session(
         self,
         session: AsyncSession,
         subscription_tier: SubscriptionTier,
@@ -177,7 +177,7 @@ class SubscriptionTierService(
         auth_method: AuthMethod | None,
         *,
         customer_email: str | None = None,
-    ) -> str:
+    ) -> SubscribeSession:
         if subscription_tier.is_archived:
             raise ArchivedSubscriptionTier(subscription_tier.id)
 
@@ -209,11 +209,47 @@ class SubscriptionTierService(
         elif customer_email is not None:
             customer_options["customer_email"] = customer_email
 
+        metadata: dict[str, str] = {"subscription_tier_id": str(subscription_tier.id)}
+
         checkout_session = stripe_service.create_subscription_checkout_session(
-            subscription_tier.stripe_price_id, success_url, **customer_options
+            subscription_tier.stripe_price_id,
+            success_url,
+            **customer_options,
+            metadata=metadata,
         )
 
-        return checkout_session.url
+        return SubscribeSession(
+            id=checkout_session.stripe_id,
+            url=checkout_session.url,
+            customer_email=checkout_session.customer_details["email"]
+            if checkout_session.customer_details
+            else checkout_session.customer_email,
+            customer_name=checkout_session.customer_details["name"]
+            if checkout_session.customer_details
+            else None,
+            subscription_tier=subscription_tier,  # type: ignore
+        )
+
+    async def get_subscribe_session(
+        self, session: AsyncSession, id: str
+    ) -> SubscribeSession:
+        checkout_session = stripe_service.get_checkout_session(id)
+
+        subscription_tier_id = checkout_session.metadata["subscription_tier_id"]
+        subscription_tier = await self.get(session, uuid.UUID(subscription_tier_id))
+        assert subscription_tier is not None
+
+        return SubscribeSession(
+            id=checkout_session.stripe_id,
+            url=checkout_session.url,
+            customer_email=checkout_session.customer_details["email"]
+            if checkout_session.customer_details
+            else checkout_session.customer_email,
+            customer_name=checkout_session.customer_details["name"]
+            if checkout_session.customer_details
+            else None,
+            subscription_tier=subscription_tier,  # type: ignore
+        )
 
 
 subscription_tier = SubscriptionTierService(SubscriptionTier)

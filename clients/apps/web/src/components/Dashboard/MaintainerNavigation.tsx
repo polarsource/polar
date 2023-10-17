@@ -47,16 +47,18 @@ const MaintainerNavigation = () => {
         <div key={n.link} className="flex flex-col gap-4">
           <Link
             className={classNames(
-              'flex items-center gap-2 rounded-xl px-5 py-3 transition-colors',
+              'flex items-center gap-x-4 rounded-xl px-5 py-3 transition-colors',
               n.isActive
                 ? 'bg-blue-50 text-blue-600 dark:bg-transparent dark:text-blue-500'
                 : 'dark:text-polar-500 dark:hover:text-polar-200 text-gray-900 hover:text-blue-700',
             )}
             href={n.link}
           >
-            {'icon' in n ? <span className="mr-3">{n.icon}</span> : undefined}
+            {'icon' in n && n.icon ? <span>{n.icon}</span> : undefined}
             <span className="text-sm font-medium">{n.title}</span>
-            {'postIcon' in n ? <span>{n.postIcon}</span> : undefined}
+            {'postIcon' in n && n.postIcon ? (
+              <span>{n.postIcon}</span>
+            ) : undefined}
           </Link>
         </div>
       ))}

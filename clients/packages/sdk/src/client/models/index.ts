@@ -1578,7 +1578,7 @@ export interface MaintainerPledgeCreatedNotification {
      * @type {string}
      * @memberof MaintainerPledgeCreatedNotification
      */
-    pledger_name: string;
+    pledger_name?: string;
     /**
      * 
      * @type {string}
@@ -1627,6 +1627,12 @@ export interface MaintainerPledgeCreatedNotification {
      * @memberof MaintainerPledgeCreatedNotification
      */
     pledge_id?: string;
+    /**
+     * 
+     * @type {PledgeType}
+     * @memberof MaintainerPledgeCreatedNotification
+     */
+    pledge_type?: PledgeType;
 }
 /**
  * 
@@ -2159,121 +2165,6 @@ export interface OrganizationBadgeSettingsUpdate {
      * @memberof OrganizationBadgeSettingsUpdate
      */
     repositories: Array<RepositoryBadgeSettingsUpdate>;
-}
-/**
- * 
- * @export
- * @interface OrganizationPrivateRead
- */
-export interface OrganizationPrivateRead {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof OrganizationPrivateRead
-     */
-    pledge_badge_show_amount?: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganizationPrivateRead
-     */
-    billing_email?: string;
-    /**
-     * 
-     * @type {Platforms}
-     * @memberof OrganizationPrivateRead
-     */
-    platform: Platforms;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganizationPrivateRead
-     */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganizationPrivateRead
-     */
-    avatar_url: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof OrganizationPrivateRead
-     */
-    external_id: number;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof OrganizationPrivateRead
-     */
-    is_personal: boolean;
-    /**
-     * 
-     * @type {number}
-     * @memberof OrganizationPrivateRead
-     */
-    installation_id?: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganizationPrivateRead
-     */
-    installation_created_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganizationPrivateRead
-     */
-    installation_updated_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganizationPrivateRead
-     */
-    installation_suspended_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganizationPrivateRead
-     */
-    onboarded_at?: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof OrganizationPrivateRead
-     */
-    pledge_minimum_amount: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganizationPrivateRead
-     */
-    default_badge_custom_content?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganizationPrivateRead
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganizationPrivateRead
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganizationPrivateRead
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {Array<RepositoryLegacyRead>}
-     * @memberof OrganizationPrivateRead
-     */
-    repositories?: Array<RepositoryLegacyRead>;
 }
 /**
  * 
@@ -3386,61 +3277,6 @@ export interface RepositoryBadgeSettingsUpdate {
      * @memberof RepositoryBadgeSettingsUpdate
      */
     retroactive: boolean;
-}
-/**
- * 
- * @export
- * @interface RepositoryLegacyRead
- */
-export interface RepositoryLegacyRead {
-    /**
-     * 
-     * @type {string}
-     * @memberof RepositoryLegacyRead
-     */
-    id: string;
-    /**
-     * 
-     * @type {Platforms}
-     * @memberof RepositoryLegacyRead
-     */
-    platform: Platforms;
-    /**
-     * 
-     * @type {Visibility}
-     * @memberof RepositoryLegacyRead
-     */
-    visibility: Visibility;
-    /**
-     * 
-     * @type {string}
-     * @memberof RepositoryLegacyRead
-     */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof RepositoryLegacyRead
-     */
-    description?: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof RepositoryLegacyRead
-     */
-    stars?: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof RepositoryLegacyRead
-     */
-    license?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof RepositoryLegacyRead
-     */
-    homepage?: string;
 }
 /**
  * 

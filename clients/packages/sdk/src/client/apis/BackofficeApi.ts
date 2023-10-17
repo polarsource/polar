@@ -22,7 +22,6 @@ import type {
   HTTPValidationError,
   Issue,
   ListResourceBackofficeReward,
-  OrganizationPrivateRead,
   PledgeRewardTransfer,
 } from '../models/index';
 
@@ -32,10 +31,6 @@ export interface BackofficeApiIssueRequest {
 
 export interface BackofficeApiManageBadgeRequest {
     backofficeBadge: BackofficeBadge;
-}
-
-export interface BackofficeApiOrganizationSyncRequest {
-    name: string;
 }
 
 export interface BackofficeApiPledgeCreateInvoiceRequest {
@@ -135,44 +130,6 @@ export class BackofficeApi extends runtime.BaseAPI {
      */
     async manageBadge(requestParameters: BackofficeApiManageBadgeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BackofficeBadgeResponse> {
         const response = await this.manageBadgeRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Organization Sync
-     */
-    async organizationSyncRaw(requestParameters: BackofficeApiOrganizationSyncRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OrganizationPrivateRead>> {
-        if (requestParameters.name === null || requestParameters.name === undefined) {
-            throw new runtime.RequiredError('name','Required parameter requestParameters.name was null or undefined when calling organizationSync.');
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/backoffice/organization/sync/{name}`.replace(`{${"name"}}`, encodeURIComponent(String(requestParameters.name))),
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Organization Sync
-     */
-    async organizationSync(requestParameters: BackofficeApiOrganizationSyncRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OrganizationPrivateRead> {
-        const response = await this.organizationSyncRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -5,5 +5,5 @@ export const isFeatureEnabled = (key: string): boolean => {
   if (CONFIG.ENVIRONMENT == 'development') {
     return true
   }
-  return posthog.isFeatureEnabled(key)
+  return posthog.isFeatureEnabled(key) || false
 }

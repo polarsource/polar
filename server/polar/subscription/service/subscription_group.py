@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import ColumnExpressionArgument, Select, or_, select
+from sqlalchemy import ColumnExpressionArgument, Select, func, or_, select
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.account.service import account as account_service
@@ -22,7 +22,35 @@ from polar.models import (
 from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
 
-from ..schemas import SubscriptionGroupCreate, SubscriptionGroupUpdate
+from ..schemas import (
+    SubscriptionGroupDefault,
+    SubscriptionGroupInitialize,
+    SubscriptionGroupUpdate,
+)
+
+DEFAULT_SUBSCRIPTION_GROUPS: list[SubscriptionGroupDefault] = [
+    SubscriptionGroupDefault(
+        name="Hobby",
+        description="Tiers best suited for individuals",
+        icon="material-symbols/stream",
+        color="#79A2E1",  # type: ignore
+        order=1,
+    ),
+    SubscriptionGroupDefault(
+        name="Pro",
+        description="Tiers best suited for indie hackers & startups",
+        icon="material-symbols/verified",
+        color="#96ECD7",  # type: ignore
+        order=2,
+    ),
+    SubscriptionGroupDefault(
+        name="Business",
+        description="Tiers best suited for companies & corporations",
+        icon="material-symbols/business",
+        color="#FFC58F",  # type: ignore
+        order=3,
+    ),
+]
 
 
 class SubscriptionGroupError(PolarError):
@@ -43,8 +71,34 @@ class RepositoryDoesNotExist(SubscriptionGroupError):
         super().__init__(message, 422)
 
 
+class SubscriptionGroupsAlreadyInitialized(SubscriptionGroupError):
+    def __init__(
+        self,
+        organization_id: uuid.UUID | None = None,
+        repository_id: uuid.UUID | None = None,
+    ) -> None:
+        assert bool(organization_id) != bool(repository_id)
+
+        self.organization_id = organization_id
+        self.repository_id = repository_id
+
+        if organization_id is not None:
+            message = (
+                f"Subscription groups for organization {organization_id} "
+                "are already initialized."
+            )
+        else:
+            message = (
+                f"Subscription groups for repository {repository_id} "
+                "are already initialized."
+            )
+        super().__init__(message, 422)
+
+
 class SubscriptionGroupService(
-    ResourceService[SubscriptionGroup, SubscriptionGroupCreate, SubscriptionGroupUpdate]
+    ResourceService[
+        SubscriptionGroup, SubscriptionGroupInitialize, SubscriptionGroupUpdate
+    ]
 ):
     async def search(
         self,
@@ -95,32 +149,56 @@ class SubscriptionGroupService(
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
-    async def user_create(
+    async def initialize(
         self,
         session: AsyncSession,
         authz: Authz,
-        create_schema: SubscriptionGroupCreate,
+        initialize_schema: SubscriptionGroupInitialize,
         user: User,
-    ) -> SubscriptionGroup:
-        if create_schema.organization_id is not None:
+    ) -> list[SubscriptionGroup]:
+        if initialize_schema.organization_id is not None:
             organization = await organization_service.get(
-                session, create_schema.organization_id
+                session, initialize_schema.organization_id
             )
             if organization is None or not await authz.can(
                 user, AccessType.write, organization
             ):
-                raise OrganizationDoesNotExist(create_schema.organization_id)
+                raise OrganizationDoesNotExist(initialize_schema.organization_id)
 
-        if create_schema.repository_id is not None:
+            if await self._count_by_organization_or_repository(
+                session, organization_id=organization.id
+            ):
+                raise SubscriptionGroupsAlreadyInitialized(
+                    organization_id=organization.id
+                )
+
+        if initialize_schema.repository_id is not None:
             repository = await repository_service.get(
-                session, create_schema.repository_id
+                session, initialize_schema.repository_id
             )
             if repository is None or not await authz.can(
                 user, AccessType.write, repository
             ):
-                raise RepositoryDoesNotExist(create_schema.repository_id)
+                raise RepositoryDoesNotExist(initialize_schema.repository_id)
 
-        return await self.model.create(session, **create_schema.dict(), tiers=[])
+            if await self._count_by_organization_or_repository(
+                session, repository_id=repository.id
+            ):
+                raise SubscriptionGroupsAlreadyInitialized(repository_id=repository.id)
+
+        subscription_groups: list[SubscriptionGroup] = []
+        for default_subscription_group in DEFAULT_SUBSCRIPTION_GROUPS:
+            subscription_group = SubscriptionGroup(
+                **default_subscription_group.dict(exclude={"color"}),
+                color=str(default_subscription_group.color),
+                **initialize_schema.dict(),
+                tiers=[],
+            )
+            session.add(subscription_group)
+            subscription_groups.append(subscription_group)
+        await session.commit()
+
+        return subscription_groups
 
     async def get_managing_organization_account(
         self, session: AsyncSession, subscription_group: SubscriptionGroup
@@ -154,6 +232,30 @@ class SubscriptionGroupService(
             )
             .where(or_(*clauses))
         )
+
+    async def _count_by_organization_or_repository(
+        self,
+        session: AsyncSession,
+        *,
+        organization_id: uuid.UUID | None = None,
+        repository_id: uuid.UUID | None = None,
+    ) -> int:
+        assert bool(organization_id) != bool(repository_id)
+
+        statement = select(SubscriptionGroup).with_only_columns(func.count("*"))
+
+        if organization_id is not None:
+            statement = statement.where(
+                SubscriptionGroup.organization_id == organization_id
+            )
+
+        if repository_id is not None:
+            statement = statement.where(
+                SubscriptionGroup.repository_id == repository_id
+            )
+
+        result = await session.execute(statement)
+        return result.scalar_one()
 
 
 subscription_group = SubscriptionGroupService(SubscriptionGroup)

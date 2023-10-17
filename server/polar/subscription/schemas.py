@@ -1,6 +1,7 @@
 from typing import Any
 
 from pydantic import UUID4, AnyHttpUrl, EmailStr, Field, root_validator
+from pydantic.color import Color
 
 from polar.kit.schemas import Schema, TimestampedSchema
 
@@ -69,9 +70,7 @@ class SubscribeSession(Schema):
     subscription_tier: SubscriptionTier
 
 
-class SubscriptionGroupCreate(Schema):
-    name: str
-    order: int
+class SubscriptionGroupInitialize(Schema):
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None
 
@@ -83,15 +82,23 @@ class SubscriptionGroupCreate(Schema):
         repository_id = values.get("repository_id")
         if organization_id is not None and repository_id is not None:
             raise ValueError(
-                "A SubscriptionGroup should either be linked to "
+                "Subscription groups should either be linked to "
                 "an Organization or a Repository, not both."
             )
         if organization_id is None and repository_id is None:
             raise ValueError(
-                "A SubscriptionGroup should be linked to "
+                "Subscription groups should be linked to "
                 "an Organization or a Repository."
             )
         return values
+
+
+class SubscriptionGroupDefault(Schema):
+    name: str
+    description: str
+    icon: str
+    color: Color
+    order: int
 
 
 class SubscriptionGroupUpdate(Schema):
@@ -102,6 +109,9 @@ class SubscriptionGroupUpdate(Schema):
 class SubscriptionGroup(TimestampedSchema):
     id: UUID4
     name: str
+    description: str | None = None
+    icon: str
+    color: Color
     order: int
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None

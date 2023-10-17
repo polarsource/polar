@@ -160,15 +160,11 @@ class TestSearchSubscriptionGroups:
 
 
 @pytest.mark.asyncio
-class TestCreateSubscriptionGroup:
+class TestInitializeSubscriptionGroups:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
-            "/api/v1/subscriptions/groups/",
-            json={
-                "name": "Subscription Group",
-                "order": 1,
-                "organization_id": str(uuid.uuid4()),
-            },
+            "/api/v1/subscriptions/groups/initialize",
+            json={"organization_id": str(uuid.uuid4())},
         )
 
         assert response.status_code == 401
@@ -178,8 +174,8 @@ class TestCreateSubscriptionGroup:
         self, client: AsyncClient
     ) -> None:
         response = await client.post(
-            "/api/v1/subscriptions/groups/",
-            json={"name": "Subscription Group", "order": 1},
+            "/api/v1/subscriptions/groups/initialize",
+            json={},
         )
 
         assert response.status_code == 422
@@ -193,10 +189,8 @@ class TestCreateSubscriptionGroup:
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.post(
-            "/api/v1/subscriptions/groups/",
+            "/api/v1/subscriptions/groups/initialize",
             json={
-                "name": "Subscription Group",
-                "order": 1,
                 "organization_id": str(organization.id),
                 "repository_id": str(public_repository.id),
             },
@@ -212,12 +206,8 @@ class TestCreateSubscriptionGroup:
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.post(
-            "/api/v1/subscriptions/groups/",
-            json={
-                "name": "Subscription Group",
-                "order": 1,
-                "organization_id": str(organization.id),
-            },
+            "/api/v1/subscriptions/groups/initialize",
+            json={"organization_id": str(organization.id)},
         )
 
         assert response.status_code == 201

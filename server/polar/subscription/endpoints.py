@@ -5,7 +5,7 @@ from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.exceptions import NotPermitted, ResourceNotFound
-from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Repository, SubscriptionGroup, SubscriptionTier, User
 from polar.organization.dependencies import OrganizationNameQuery
 from polar.organization.service import organization as organization_service
@@ -18,7 +18,7 @@ from polar.tags.api import Tags
 from .schemas import (
     SubscribeSession,
     SubscribeSessionCreate,
-    SubscriptionGroupCreate,
+    SubscriptionGroupInitialize,
     SubscriptionGroupUpdate,
     SubscriptionTierCreate,
     SubscriptionTierUpdate,
@@ -88,19 +88,26 @@ async def search_subscription_groups(
 
 
 @router.post(
-    "/groups/",
-    response_model=SubscriptionGroupSchema,
+    "/groups/initialize",
+    response_model=ListResource[SubscriptionGroupSchema],
     status_code=201,
     tags=[Tags.PUBLIC],
 )
-async def create_subscription_group(
-    subscription_group_create: SubscriptionGroupCreate,
+async def initialize_subscription_groups(
+    subscription_group_initialize: SubscriptionGroupInitialize,
     auth: UserRequiredAuth,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionGroup:
-    return await subscription_group_service.user_create(
-        session, authz, subscription_group_create, auth.user
+) -> ListResource[SubscriptionGroupSchema]:
+    subscription_groups = await subscription_group_service.initialize(
+        session, authz, subscription_group_initialize, auth.user
+    )
+    return ListResource(
+        items=[
+            SubscriptionGroupSchema.from_orm(subscription_group)
+            for subscription_group in subscription_groups
+        ],
+        pagination=Pagination(total_count=len(subscription_groups), max_page=1),
     )
 
 

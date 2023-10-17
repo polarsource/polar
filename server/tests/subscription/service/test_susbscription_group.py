@@ -12,14 +12,18 @@ from polar.models import (
     UserOrganization,
 )
 from polar.postgres import AsyncSession
-from polar.subscription.schemas import SubscriptionGroupCreate
+from polar.subscription.schemas import SubscriptionGroupInitialize
 from polar.subscription.service.subscription_group import (
+    DEFAULT_SUBSCRIPTION_GROUPS,
     OrganizationDoesNotExist,
     RepositoryDoesNotExist,
+    SubscriptionGroupsAlreadyInitialized,
 )
 from polar.subscription.service.subscription_group import (
     subscription_group as subscription_group_service,
 )
+
+from ..conftest import create_subscription_group
 
 
 @pytest.fixture
@@ -154,17 +158,13 @@ async def test_with_organization_or_repository(
 
 
 @pytest.mark.asyncio
-class TestUserCreate:
+class TestInitialize:
     async def test_not_existing_organization(
         self, session: AsyncSession, authz: Authz, user: User
     ) -> None:
-        create_schema = SubscriptionGroupCreate(
-            name="Subscription Group",
-            order=1,
-            organization_id=uuid.uuid4(),
-        )
+        create_schema = SubscriptionGroupInitialize(organization_id=uuid.uuid4())
         with pytest.raises(OrganizationDoesNotExist):
-            await subscription_group_service.user_create(
+            await subscription_group_service.initialize(
                 session, authz, create_schema, user
             )
 
@@ -175,13 +175,25 @@ class TestUserCreate:
         organization: Organization,
         user: User,
     ) -> None:
-        create_schema = SubscriptionGroupCreate(
-            name="Subscription Group",
-            order=1,
-            organization_id=organization.id,
-        )
+        create_schema = SubscriptionGroupInitialize(organization_id=organization.id)
         with pytest.raises(OrganizationDoesNotExist):
-            await subscription_group_service.user_create(
+            await subscription_group_service.initialize(
+                session, authz, create_schema, user
+            )
+
+    async def test_initialized_organization(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        organization: Organization,
+        user: User,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        await create_subscription_group(session, organization=organization)
+
+        create_schema = SubscriptionGroupInitialize(organization_id=organization.id)
+        with pytest.raises(SubscriptionGroupsAlreadyInitialized):
+            await subscription_group_service.initialize(
                 session, authz, create_schema, user
             )
 
@@ -193,26 +205,21 @@ class TestUserCreate:
         user: User,
         user_organization_admin: UserOrganization,
     ) -> None:
-        create_schema = SubscriptionGroupCreate(
-            name="Subscription Group",
-            order=1,
-            organization_id=organization.id,
-        )
-        subscription_group = await subscription_group_service.user_create(
+        create_schema = SubscriptionGroupInitialize(organization_id=organization.id)
+        subscription_groups = await subscription_group_service.initialize(
             session, authz, create_schema, user
         )
-        assert subscription_group.organization_id == organization.id
+
+        assert len(subscription_groups) == len(DEFAULT_SUBSCRIPTION_GROUPS)
+        for subscription_group in subscription_groups:
+            assert subscription_group.organization_id == organization.id
 
     async def test_not_existing_repository(
         self, session: AsyncSession, authz: Authz, user: User
     ) -> None:
-        create_schema = SubscriptionGroupCreate(
-            name="Subscription Group",
-            order=1,
-            repository_id=uuid.uuid4(),
-        )
+        create_schema = SubscriptionGroupInitialize(repository_id=uuid.uuid4())
         with pytest.raises(RepositoryDoesNotExist):
-            await subscription_group_service.user_create(
+            await subscription_group_service.initialize(
                 session, authz, create_schema, user
             )
 
@@ -223,13 +230,25 @@ class TestUserCreate:
         public_repository: Repository,
         user: User,
     ) -> None:
-        create_schema = SubscriptionGroupCreate(
-            name="Subscription Group",
-            order=1,
-            repository_id=public_repository.id,
-        )
+        create_schema = SubscriptionGroupInitialize(repository_id=public_repository.id)
         with pytest.raises(RepositoryDoesNotExist):
-            await subscription_group_service.user_create(
+            await subscription_group_service.initialize(
+                session, authz, create_schema, user
+            )
+
+    async def test_initialized_repository(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        public_repository: Repository,
+        user: User,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        await create_subscription_group(session, repository=public_repository)
+
+        create_schema = SubscriptionGroupInitialize(repository_id=public_repository.id)
+        with pytest.raises(SubscriptionGroupsAlreadyInitialized):
+            await subscription_group_service.initialize(
                 session, authz, create_schema, user
             )
 
@@ -241,12 +260,11 @@ class TestUserCreate:
         user: User,
         user_organization_admin: UserOrganization,
     ) -> None:
-        create_schema = SubscriptionGroupCreate(
-            name="Subscription Group",
-            order=1,
-            repository_id=public_repository.id,
-        )
-        subscription_group = await subscription_group_service.user_create(
+        create_schema = SubscriptionGroupInitialize(repository_id=public_repository.id)
+        subscription_groups = await subscription_group_service.initialize(
             session, authz, create_schema, user
         )
-        assert subscription_group.repository_id == public_repository.id
+
+        assert len(subscription_groups) == len(DEFAULT_SUBSCRIPTION_GROUPS)
+        for subscription_group in subscription_groups:
+            assert subscription_group.repository_id == public_repository.id

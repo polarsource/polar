@@ -53,6 +53,8 @@ async def create_subscription_group(
         order=order,
         organization_id=organization.id if organization is not None else None,
         repository_id=repository.id if repository is not None else None,
+        icon="material-symbols/stream",
+        color="#79A2E1",
     )
     session.add(subscription_group)
     await session.commit()

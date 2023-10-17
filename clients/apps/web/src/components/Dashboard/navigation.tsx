@@ -99,7 +99,7 @@ export const maintainerRoutes = (
     title: 'Public site',
     link: `/${org?.name}`,
     postIcon: undefined,
-    icon: <ArrowUpRightIcon className="h-4 w-4" />,
+    icon: <ArrowUpRightIcon className="h-6 w-6" />,
     if: org && isLoaded,
     subs: undefined,
   },

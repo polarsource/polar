@@ -34,7 +34,6 @@
     "@tanstack/react-query-next-experimental": "^5.0.0-beta.20",
     "@ts-stack/markdown": "^1.4.0",
     "@vercel/og": "^0.5.7",
-    "axios": "^0.27.2",
     "class-variance-authority": "^0.6.0",
     "clsx": "^1.2.1",
     "cmdk": "^0.2.0",

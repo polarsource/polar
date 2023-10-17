@@ -21,7 +21,7 @@ import type {
   SubscribeSession,
   SubscribeSessionCreate,
   SubscriptionGroup,
-  SubscriptionGroupCreate,
+  SubscriptionGroupInitialize,
   SubscriptionGroupUpdate,
   SubscriptionTier,
   SubscriptionTierCreate,
@@ -36,16 +36,24 @@ export interface SubscriptionsApiCreateSubscribeSessionRequest {
     subscribeSessionCreate: SubscribeSessionCreate;
 }
 
-export interface SubscriptionsApiCreateSubscriptionGroupRequest {
-    subscriptionGroupCreate: SubscriptionGroupCreate;
-}
-
 export interface SubscriptionsApiCreateSubscriptionTierRequest {
     subscriptionTierCreate: SubscriptionTierCreate;
 }
 
 export interface SubscriptionsApiGetSubscribeSessionRequest {
     id: string;
+}
+
+export interface SubscriptionsApiInitializeSubscriptionGroupsRequest {
+    subscriptionGroupInitialize: SubscriptionGroupInitialize;
+}
+
+export interface SubscriptionsApiLookupSubscriptionGroupRequest {
+    subscriptionGroupId: string;
+}
+
+export interface SubscriptionsApiLookupSubscriptionTierRequest {
+    subscriptionTierId: string;
 }
 
 export interface SubscriptionsApiSearchSubscriptionGroupsRequest {
@@ -152,47 +160,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Create Subscription Group
-     */
-    async createSubscriptionGroupRaw(requestParameters: SubscriptionsApiCreateSubscriptionGroupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionGroup>> {
-        if (requestParameters.subscriptionGroupCreate === null || requestParameters.subscriptionGroupCreate === undefined) {
-            throw new runtime.RequiredError('subscriptionGroupCreate','Required parameter requestParameters.subscriptionGroupCreate was null or undefined when calling createSubscriptionGroup.');
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/subscriptions/groups/`,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: requestParameters.subscriptionGroupCreate,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Create Subscription Group
-     */
-    async createSubscriptionGroup(requestParameters: SubscriptionsApiCreateSubscriptionGroupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionGroup> {
-        const response = await this.createSubscriptionGroupRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
      * Create Subscription Tier
      */
     async createSubscriptionTierRaw(requestParameters: SubscriptionsApiCreateSubscriptionTierRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionTier>> {
@@ -268,6 +235,131 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async getSubscribeSession(requestParameters: SubscriptionsApiGetSubscribeSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscribeSession> {
         const response = await this.getSubscribeSessionRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Initialize Subscription Groups
+     */
+    async initializeSubscriptionGroupsRaw(requestParameters: SubscriptionsApiInitializeSubscriptionGroupsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscriptionGroup>> {
+        if (requestParameters.subscriptionGroupInitialize === null || requestParameters.subscriptionGroupInitialize === undefined) {
+            throw new runtime.RequiredError('subscriptionGroupInitialize','Required parameter requestParameters.subscriptionGroupInitialize was null or undefined when calling initializeSubscriptionGroups.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/subscriptions/groups/initialize`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters.subscriptionGroupInitialize,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Initialize Subscription Groups
+     */
+    async initializeSubscriptionGroups(requestParameters: SubscriptionsApiInitializeSubscriptionGroupsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscriptionGroup> {
+        const response = await this.initializeSubscriptionGroupsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Lookup Subscription Group
+     */
+    async lookupSubscriptionGroupRaw(requestParameters: SubscriptionsApiLookupSubscriptionGroupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionGroup>> {
+        if (requestParameters.subscriptionGroupId === null || requestParameters.subscriptionGroupId === undefined) {
+            throw new runtime.RequiredError('subscriptionGroupId','Required parameter requestParameters.subscriptionGroupId was null or undefined when calling lookupSubscriptionGroup.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.subscriptionGroupId !== undefined) {
+            queryParameters['subscription_group_id'] = requestParameters.subscriptionGroupId;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/subscriptions/groups/lookup`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Lookup Subscription Group
+     */
+    async lookupSubscriptionGroup(requestParameters: SubscriptionsApiLookupSubscriptionGroupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionGroup> {
+        const response = await this.lookupSubscriptionGroupRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Lookup Subscription Tier
+     */
+    async lookupSubscriptionTierRaw(requestParameters: SubscriptionsApiLookupSubscriptionTierRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionTier>> {
+        if (requestParameters.subscriptionTierId === null || requestParameters.subscriptionTierId === undefined) {
+            throw new runtime.RequiredError('subscriptionTierId','Required parameter requestParameters.subscriptionTierId was null or undefined when calling lookupSubscriptionTier.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.subscriptionTierId !== undefined) {
+            queryParameters['subscription_tier_id'] = requestParameters.subscriptionTierId;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/subscriptions/tiers/lookup`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Lookup Subscription Tier
+     */
+    async lookupSubscriptionTier(requestParameters: SubscriptionsApiLookupSubscriptionTierRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionTier> {
+        const response = await this.lookupSubscriptionTierRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

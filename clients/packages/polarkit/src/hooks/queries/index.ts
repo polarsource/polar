@@ -1,10 +1,4 @@
-import {
-  ListResourceRepository,
-  OrganizationPrivateRead,
-  Platforms,
-  Repository,
-  ResponseError,
-} from '@polar-sh/sdk'
+import { ListResourceRepository, Platforms, ResponseError } from '@polar-sh/sdk'
 import {
   UseMutationResult,
   UseQueryResult,
@@ -13,10 +7,6 @@ import {
 } from '@tanstack/react-query'
 import { api, queryClient } from '../../api'
 import { defaultRetry } from './retry'
-
-export type RepoListItem = Repository & {
-  organization: OrganizationPrivateRead
-}
 
 export * from './backoffice'
 export * from './dashboard'

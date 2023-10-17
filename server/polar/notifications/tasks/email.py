@@ -44,9 +44,6 @@ async def notifications_send(
                 log.warning("notifications.send.user_not_found", user_id=notif.user_id)
                 return
 
-            if not await should_send(session, user, notif):
-                return
-
             if not user.email:
                 log.warning("notifications.send.user_no_email", user_id=user.id)
                 return
@@ -67,29 +64,3 @@ async def notifications_send(
                 subject=f"[Polar] {subject}",
                 html_content=body,
             )
-
-
-async def should_send(session: AsyncSession, user: User, notif: Notification) -> bool:
-    # TODO: do we need personal notification and email preferences?
-    if not notif.organization_id:
-        return True
-
-    # Use user notificaiton preferences in the org that this notification originates
-    # from
-    settings = await user_organization_service.get_settings(
-        session, user_id=user.id, org_id=notif.organization_id
-    )
-
-    match notif.type:
-        # TODO(zegl): add new email preferences to match new types of notifications
-        case NotificationType.MaintainerPledgeCreatedNotification:
-            return settings.email_notification_maintainer_issue_receives_backing
-        case NotificationType.MaintainerPledgePendingNotification:
-            return settings.email_notification_maintainer_issue_receives_backing
-        case NotificationType.MaintainerPledgePaidNotification:
-            return settings.email_notification_maintainer_issue_receives_backing
-
-        case NotificationType.PledgerPledgePendingNotification:
-            return settings.email_notification_backed_issue_branch_created
-
-    return False

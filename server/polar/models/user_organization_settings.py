@@ -23,31 +23,3 @@ class UserOrganizationSettings(TimestampedModel):
         nullable=False,
         primary_key=True,
     )
-
-    email_notification_maintainer_issue_receives_backing: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True
-    )
-
-    email_notification_maintainer_issue_branch_created: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
-
-    email_notification_maintainer_pull_request_created: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
-
-    email_notification_maintainer_pull_request_merged: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
-
-    email_notification_backed_issue_branch_created: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True
-    )
-
-    email_notification_backed_issue_pull_request_created: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True
-    )
-
-    email_notification_backed_issue_pull_request_merged: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True
-    )

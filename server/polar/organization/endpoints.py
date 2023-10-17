@@ -1,5 +1,3 @@
-from datetime import datetime
-from typing import List
 from uuid import UUID
 
 import structlog
@@ -12,7 +10,6 @@ from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.integrations.github.badge import GithubBadge
 from polar.kit.pagination import ListResource, Pagination
 from polar.postgres import AsyncSession, get_db_session
-from polar.repository.schemas import RepositoryLegacyRead
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 
@@ -22,8 +19,6 @@ from .schemas import (
 from .schemas import (
     OrganizationBadgeSettingsRead,
     OrganizationBadgeSettingsUpdate,
-    OrganizationPrivateBase,
-    OrganizationSettingsRead,
     OrganizationUpdate,
     RepositoryBadgeSettingsRead,
 )
@@ -173,22 +168,6 @@ async def update(
 #
 # Internal APIs below
 #
-
-
-# Internal model
-# TODO: remove!
-class OrganizationPrivateRead(OrganizationPrivateBase, OrganizationSettingsRead):
-    id: UUID
-    created_at: datetime
-    modified_at: datetime | None
-
-    # TODO: remove ASAP!
-    # The import of RepositorySchema is why this definition needs to live here, and
-    # not in schemas.
-    repositories: List[RepositoryLegacyRead] | None
-
-    class Config:
-        orm_mode = True
 
 
 @router.get(

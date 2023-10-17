@@ -4,12 +4,11 @@ from uuid import UUID
 
 import structlog
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import contains_eager
 
 from polar.enums import Platforms
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.services import ResourceService
-from polar.models import Organization, Repository, User, UserOrganization
+from polar.models import Organization, User, UserOrganization
 from polar.postgres import AsyncSession, sql
 from polar.repository.service import repository as repository_service
 
@@ -62,23 +61,6 @@ class OrganizationService(
         if is_admin_only:
             statement = statement.where(UserOrganization.is_admin.is_(True))
 
-        res = await session.execute(statement)
-        return res.scalars().unique().all()
-
-    async def get_all_org_repos_by_user_id(
-        self, session: AsyncSession, user_id: UUID
-    ) -> Sequence[Organization]:
-        statement = (
-            sql.select(Organization)
-            .join(UserOrganization)
-            .join(Organization.repos)
-            .options(contains_eager(Organization.repos))
-            .where(
-                UserOrganization.user_id == user_id,
-                Organization.deleted_at.is_(None),
-                Repository.deleted_at.is_(None),
-            )
-        )
         res = await session.execute(statement)
         return res.scalars().unique().all()
 

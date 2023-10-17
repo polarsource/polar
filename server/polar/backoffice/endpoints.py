@@ -7,21 +7,13 @@ from polar.auth.dependencies import Auth
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
 from polar.integrations.github.service.issue import github_issue
-from polar.integrations.github.service.organization import (
-    github_organization as github_organization_service,
-)
-from polar.integrations.github.service.repository import (
-    github_repository as github_repository_service,
-)
 from polar.issue.schemas import Issue
 from polar.issue.service import issue as issue_service
 from polar.kit.pagination import ListResource, Pagination
 from polar.kit.schemas import Schema
 from polar.models.issue_reward import IssueReward
-from polar.models.organization import Organization
 from polar.models.pledge import Pledge as PledgeModel
 from polar.models.pledge_transaction import PledgeTransaction as PledgeTransactionModel
-from polar.organization.endpoints import OrganizationPrivateRead
 from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
@@ -195,33 +187,6 @@ async def pledge_mark_disputed(
         session, pledge_id, by_user_id=auth.user.id, reason="Disputed via Backoffice"
     )
     return await get_pledge(session, pledge_id)
-
-
-@router.post(
-    "/organization/sync/{name}",
-    response_model=OrganizationPrivateRead,
-    tags=[Tags.INTERNAL],
-)
-async def organization_sync(
-    name: str,
-    auth: Auth = Depends(Auth.backoffice_user),
-    session: AsyncSession = Depends(get_db_session),
-) -> Organization:
-    if not auth.user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
-    org = await github_organization_service.get_by_name(session, Platforms.github, name)
-    if not org:
-        raise HTTPException(
-            status_code=404,
-            detail="Org not found",
-        )
-
-    await github_repository_service.install_for_organization(
-        session, org, org.safe_installation_id
-    )
-
-    return org
 
 
 @router.post("/badge", response_model=BackofficeBadgeResponse, tags=[Tags.INTERNAL])

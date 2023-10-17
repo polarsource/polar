@@ -19,10 +19,11 @@ from polar.auth.service import AuthService, LoginResponse
 from polar.config import settings
 from polar.context import ExecutionContext
 from polar.enums import UserSignupType
+from polar.exceptions import ResourceNotFound
 from polar.integrations.github import client as github
 from polar.kit import jwt
 from polar.models import Organization
-from polar.organization.endpoints import OrganizationPrivateRead
+from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
@@ -178,18 +179,20 @@ class InstallationCreate(BaseModel):
     external_id: int
 
 
-@router.post("/installations", response_model=OrganizationPrivateRead)
+@router.post("/installations", response_model=OrganizationSchema)
 async def install(
     installation: InstallationCreate,
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
-) -> Organization | None:
+) -> OrganizationSchema:
     with ExecutionContext(is_during_installation=True):
         organization = await github_organization.install(
             session, auth.user, installation_id=installation.external_id
         )
+        if not organization:
+            raise ResourceNotFound()
 
-    return organization
+        return OrganizationSchema.from_db(organization)
 
 
 ###############################################################################

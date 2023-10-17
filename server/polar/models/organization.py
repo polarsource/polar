@@ -1,20 +1,16 @@
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING
 from uuid import UUID
 
 from citext import CIText
 from sqlalchemy import TIMESTAMP, Boolean, Integer, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.config import settings
 from polar.enums import Platforms
 from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
-
-if TYPE_CHECKING:  # pragma: no cover
-    from polar.models.repository import Repository
 
 
 class NotInstalledOrganization(PolarError):
@@ -96,13 +92,6 @@ class Organization(RecordModel):
 
     billing_email: Mapped[str | None] = mapped_column(
         String(length=120), nullable=True, default=None
-    )
-
-    repos: "Mapped[list[Repository]]" = relationship(
-        "Repository",
-        back_populates="organization",
-        uselist=True,
-        lazy="raise",
     )
 
     # Org description or user bio

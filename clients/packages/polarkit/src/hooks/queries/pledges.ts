@@ -1,4 +1,9 @@
-import { PaymentMethod, Platforms, Pledge } from '@polar-sh/sdk'
+import {
+  PaymentMethod,
+  Platforms,
+  Pledge,
+  PledgesApiSearchRequest,
+} from '@polar-sh/sdk'
 import {
   UseMutationResult,
   UseQueryResult,
@@ -47,6 +52,15 @@ export const useListPledgesForOrganization = (
 
     retry: defaultRetry,
     enabled: !!platform && !!orgName,
+  })
+
+export const useSearchPledges = (search: PledgesApiSearchRequest) =>
+  useQuery({
+    queryKey: ['pledgeSearch', JSON.stringify(search)],
+    queryFn: () => api.pledges.search(search),
+    retry: defaultRetry,
+    enabled:
+      Boolean(search.byOrganizationId) || Boolean(search.organizationName),
   })
 
 export const useListPaymentMethods = () =>

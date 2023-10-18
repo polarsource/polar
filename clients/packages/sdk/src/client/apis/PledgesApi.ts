@@ -57,6 +57,7 @@ export interface PledgesApiSearchRequest {
     organizationName?: string;
     repositoryName?: string;
     issueId?: string;
+    byOrganizationId?: string;
 }
 
 export interface PledgesApiSummaryRequest {
@@ -347,6 +348,10 @@ export class PledgesApi extends runtime.BaseAPI {
 
         if (requestParameters.issueId !== undefined) {
             queryParameters['issue_id'] = requestParameters.issueId;
+        }
+
+        if (requestParameters.byOrganizationId !== undefined) {
+            queryParameters['by_organization_id'] = requestParameters.byOrganizationId;
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

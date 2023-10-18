@@ -17,9 +17,9 @@ import {
   useUpdateOrganization,
   useUpdateOrganizationBadgeSettings,
 } from 'polarkit/hooks'
-import { classNames } from 'polarkit/utils'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useTimeoutFn } from 'react-use'
+import { twMerge } from 'tailwind-merge'
 import SettingsCheckbox from '../SettingsCheckbox'
 import BadgeRepositories from './Repositories'
 import { AllRetroactiveChanges, RetroactiveChanges } from './types'
@@ -602,7 +602,7 @@ export const Controls = ({
           </PrimaryButton>
 
           <span
-            className={classNames(
+            className={twMerge(
               'dark:text-polar-400 text-sm leading-6 text-gray-500 transition-all duration-500',
               isSaved ? 'opacity-1' : 'opacity-0',
             )}

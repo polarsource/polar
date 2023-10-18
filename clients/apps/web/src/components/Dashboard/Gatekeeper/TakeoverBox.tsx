@@ -1,5 +1,5 @@
-import { classNames } from 'polarkit/utils'
 import { useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 const TakeoverBox = (props: {
   fadeOut: boolean
@@ -17,7 +17,7 @@ const TakeoverBox = (props: {
 
   return (
     <div
-      className={classNames(
+      className={twMerge(
         'flex h-screen items-center justify-center transition duration-500 ease-in-out',
         show ? 'scale-100 opacity-100' : 'scale-90 opacity-0',
       )}

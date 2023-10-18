@@ -26,7 +26,6 @@ import {
   useUpdateIssue,
 } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
-import { classNames } from 'polarkit/utils'
 import { posthog } from 'posthog-js'
 import { ChangeEvent, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -139,7 +138,7 @@ export const AddBadgeButton = (props: { issue: Issue }) => {
     <>
       <button
         onClick={click}
-        className={classNames(
+        className={twMerge(
           isBadged ? 'dark:bg-polar-800 bg-white' : '',
           isBadged
             ? 'border-green-200 text-green-600 hover:border-green-300 dark:border-green-600'
@@ -349,7 +348,7 @@ const PostCommentForm = (props: {
           <button
             onClick={submitComment}
             disabled={posted || loading}
-            className={classNames(
+            className={twMerge(
               !posted
                 ? 'text-blue-600 dark:text-blue-300'
                 : 'text-gray-400 dark:text-blue-200/40',
@@ -514,7 +513,7 @@ const PromoteTab = (props: {
           <span>Embed badge on website</span>
 
           <select
-            className={classNames(
+            className={twMerge(
               'border-0 bg-transparent p-0 text-xs',
               embed.classNames,
             )}

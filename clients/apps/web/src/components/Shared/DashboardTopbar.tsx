@@ -4,8 +4,8 @@ import { useAuth, useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { classNames } from 'polarkit/utils'
 import { PropsWithChildren, useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 import {
   Route,
   SubRoute,
@@ -19,7 +19,7 @@ const SubNav = (props: { items: (SubRoute & { active: boolean })[] }) => {
   return (
     <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-2 rounded-xl bg-gray-100 p-1 dark:border">
       {props.items.map((item) => {
-        const className = classNames(
+        const className = twMerge(
           item.active
             ? 'bg-white dark:bg-polar-700 shadow-md text-gray-950 dark:text-polar-100 font-medium'
             : 'text-gray-500 dark:text-polar-500 hover:text-gray-950 dark:hover:text-polar-300 hover:bg-gray-100 dark:hover:bg-polar-700',
@@ -74,7 +74,7 @@ const DashboardTopbar = ({
     pathname?.startsWith(route.link),
   )
 
-  const className = classNames(
+  const className = twMerge(
     props.isFixed !== false ? 'fixed z-20 left-0 top-0 right-0' : '',
     'flex h-20 w-full items-center justify-between space-x-4 bg-white dark:bg-polar-900 border-b border-gray-200 dark:border-polar-700',
   )

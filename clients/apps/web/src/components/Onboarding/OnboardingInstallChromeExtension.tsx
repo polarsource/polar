@@ -2,8 +2,8 @@ import { PlusIcon } from '@heroicons/react/20/solid'
 import Image from 'next/image'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { useStore } from 'polarkit/store'
-import { classNames } from 'polarkit/utils'
 import { MouseEvent, useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import screenshot from './Extension.jpg'
 
 const OnboardingInstallChromeExtension = () => {
@@ -41,7 +41,7 @@ const OnboardingInstallChromeExtension = () => {
   return (
     <>
       <div
-        className={classNames(
+        className={twMerge(
           'flex-start dark:bg-polar-800 dark:ring-polar-700 flex flex-row overflow-hidden rounded-xl bg-white shadow dark:ring-1',
         )}
       >

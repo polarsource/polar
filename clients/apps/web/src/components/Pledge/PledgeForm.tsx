@@ -36,7 +36,6 @@ import {
 } from 'polarkit/components/ui/tabs'
 import { useListPaymentMethods } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
-import { classNames } from 'polarkit/utils'
 import posthog from 'posthog-js'
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -582,7 +581,7 @@ const FundToday = ({
             }}
           />
           <p
-            className={classNames(
+            className={twMerge(
               formState.amount < organization.pledge_minimum_amount
                 ? 'text-red-500'
                 : '',

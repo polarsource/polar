@@ -3,8 +3,8 @@ import { useAuth } from '@/hooks/auth'
 import Link from 'next/link'
 import { LogoType } from 'polarkit/components/brand'
 import { useStore } from 'polarkit/store'
-import { classNames } from 'polarkit/utils'
 import { Suspense } from 'react'
+import { twMerge } from 'tailwind-merge'
 import BackerConnectUpsell from '../Dashboard/BackerConnectUpsell'
 import SidebarNavigation from '../Dashboard/BackerNavigation'
 import MetaNavigation from '../Dashboard/MetaNavigation'
@@ -73,9 +73,9 @@ const BackerLayout = (props: {
           {showBanner && <BackerConnectUpsell />}
         </nav>
 
-        <main className={classNames('relative h-full w-full overflow-y-auto')}>
+        <main className={twMerge('relative h-full w-full overflow-y-auto')}>
           <div
-            className={classNames(
+            className={twMerge(
               'relative mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-8',
             )}
             style={{

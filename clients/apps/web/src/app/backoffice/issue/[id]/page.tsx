@@ -8,7 +8,7 @@ import {
   useBackofficeRewards,
 } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
-import { classNames } from 'polarkit/utils'
+import { twMerge } from 'tailwind-merge'
 
 export default function Page({ params }: { params: { id: string } }) {
   const id = params.id
@@ -88,7 +88,7 @@ export default function Page({ params }: { params: { id: string } }) {
               </span>
             </div>
             <div
-              className={classNames(
+              className={twMerge(
                 'flex items-center rounded-full bg-gray-500 px-2 text-sm text-white',
                 r.state === 'pending' ? '!bg-blue-700' : '',
                 r.state === 'paid' ? '!bg-green-700' : '',

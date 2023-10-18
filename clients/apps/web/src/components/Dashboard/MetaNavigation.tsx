@@ -1,4 +1,4 @@
-import { classNames } from 'polarkit/utils'
+import { twMerge } from 'tailwind-merge'
 import { metaRoutes } from './navigation'
 
 const MetaNavigation = () => {
@@ -7,7 +7,7 @@ const MetaNavigation = () => {
       {metaRoutes.map((n) => (
         <div key={n.link} className="flex flex-col gap-4">
           <a
-            className={classNames(
+            className={twMerge(
               'flex items-center gap-x-2 rounded-xl px-5 transition-colors',
               'dark:text-polar-500 text-gray-500 hover:text-blue-700 dark:hover:text-blue-600',
             )}

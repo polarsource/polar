@@ -6,8 +6,8 @@ import { PublicRewardPill } from 'polarkit/components/Issue'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { getCentsInDollarString } from 'polarkit/money'
-import { classNames } from 'polarkit/utils'
 import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { ModalHeader } from '../Modal'
 
 export type Share = {
@@ -263,7 +263,7 @@ const Split = (props: {
                 </span>
                 <div className="flex-1">
                   <input
-                    className={classNames(
+                    className={twMerge(
                       'dark:bg-polar-700 dark:placeholder:text-polar-400 w-full bg-white dark:outline-gray-700 ',
                       s.is_fixed
                         ? 'dark:text-polar-100 font-medium text-black'

@@ -8,7 +8,7 @@ import {
   Reward,
 } from '@polar-sh/sdk'
 import { getCentsInDollarString } from 'polarkit/money'
-import { classNames } from 'polarkit/utils'
+import { twMerge } from 'tailwind-merge'
 import IssuePledge from './IssuePledge'
 import IssueReference from './IssueReference'
 import IssueRewards from './IssueRewards'
@@ -141,7 +141,7 @@ const IssueListItemDecoration = ({
         )}
         {haveReferences && (
           <div
-            className={classNames(
+            className={twMerge(
               'dark:bg-polar-900 space-y-2 bg-gray-50 px-6 py-2',
             )}
           >

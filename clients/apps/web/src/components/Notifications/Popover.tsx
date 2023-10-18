@@ -20,7 +20,7 @@ import {
   useNotifications,
   useNotificationsMarkRead,
 } from 'polarkit/hooks'
-import { classNames, useOutsideClick } from 'polarkit/utils'
+import { useOutsideClick } from 'polarkit/utils'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SplitRewardModal from '../Finance/SplitRewardModal'
@@ -60,7 +60,7 @@ const Popover = ({ type = 'topbar' }: { type?: 'topbar' | 'dashboard' }) => {
     }
   }
 
-  const notificationsContainerClassnames = classNames(
+  const notificationsContainerClassnames = twMerge(
     'pointer-events-none fixed z-40 flex items-end',
     type === 'topbar' ? 'right-5 top-20' : 'right-4 top-12 left-2',
   )

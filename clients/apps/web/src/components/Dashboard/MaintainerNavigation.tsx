@@ -4,7 +4,7 @@ import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { classNames } from 'polarkit/utils'
+import { twMerge } from 'tailwind-merge'
 import { maintainerRoutes } from './navigation'
 
 const MaintainerNavigation = () => {
@@ -46,7 +46,7 @@ const MaintainerNavigation = () => {
       {filteredNavs.map((n) => (
         <div key={n.link} className="flex flex-col gap-4">
           <Link
-            className={classNames(
+            className={twMerge(
               'flex items-center gap-x-4 rounded-xl px-5 py-3 transition-colors',
               n.isActive
                 ? 'bg-blue-50 text-blue-600 dark:bg-transparent dark:text-blue-500'

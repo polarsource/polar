@@ -1,4 +1,4 @@
-import { classNames } from 'polarkit/utils'
+import { twMerge } from 'tailwind-merge'
 
 const LabeledRadioButton = (props: {
   values: string[]
@@ -19,7 +19,7 @@ const LabeledRadioButton = (props: {
           <div
             key={v.label}
             onClick={() => props.onSelected(v.label)}
-            className={classNames(
+            className={twMerge(
               v.selected
                 ? 'dark:bg-polar-600 dark:text-polar-50 rounded-lg bg-white text-gray-900 shadow'
                 : '',

@@ -2,7 +2,7 @@ import { type RepositoryBadgeSettingsRead } from '@polar-sh/sdk'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { IssueLabel } from 'polarkit/components/Issue'
-import { classNames } from 'polarkit/utils'
+import { twMerge } from 'tailwind-merge'
 
 const ProgressText = ({
   progress,
@@ -69,7 +69,7 @@ const EmbedSetting = ({
   onChange: (state: boolean) => void
 }) => {
   const getTabClasses = (active: boolean) => {
-    return classNames(
+    return twMerge(
       active
         ? 'bg-white rounded-lg text-gray-900 shadow dark:bg-polar-600 dark:text-polar-50'
         : '',
@@ -128,13 +128,11 @@ export const BadgeRepository = ({
   /*
    * Use the Polarkit ShadowBox component instead of custom.
    *
-   * We need to switch our classNames to the npm version which allows for better
-   * merging of classnames so that we can do overrides etc, i.e smaller padding here.
    */
 
   return (
     <div
-      className={classNames(
+      className={twMerge(
         showControls && repo.is_private
           ? 'dark:bg-polar-900 bg-gray-100/50 py-2 text-sm'
           : 'dark:bg-polar-800 bg-white py-4',

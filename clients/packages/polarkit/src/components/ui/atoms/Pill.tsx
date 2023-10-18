@@ -1,4 +1,4 @@
-import { classNames } from 'polarkit/utils'
+import { twMerge } from 'tailwind-merge'
 
 const Pill = ({
   children,
@@ -11,7 +11,7 @@ const Pill = ({
 }) => {
   return (
     <span
-      className={classNames(
+      className={twMerge(
         'inline-flex items-center space-x-3 whitespace-nowrap rounded-full px-1.5 py-0.5 text-sm text-xs font-medium transition-all duration-200',
 
         color === 'blue'

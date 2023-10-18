@@ -17,6 +17,7 @@ from polar.models import (
     User,
 )
 from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription_tier import SubscriptionTierType
 from polar.postgres import AsyncSession
 from polar.subscription.endpoints import is_feature_flag_enabled
 
@@ -41,12 +42,14 @@ def override_is_feature_flag_enabled() -> Iterator[None]:
 async def create_subscription_tier(
     session: AsyncSession,
     *,
+    type: SubscriptionTierType = SubscriptionTierType.hobby,
     organization: Organization | None = None,
     repository: Repository | None = None,
     name: str = "Subscription Tier",
 ) -> SubscriptionTier:
     assert (organization is not None) != (repository is not None)
     subscription_tier = SubscriptionTier(
+        type=type,
         name=name,
         price_amount=1000,
         price_currency="USD",
@@ -103,7 +106,9 @@ async def subscription_tier_repository(
 async def subscription_tier_private_repository(
     session: AsyncSession, repository: Repository
 ) -> SubscriptionTier:
-    return await create_subscription_tier(session, repository=repository)
+    return await create_subscription_tier(
+        session, type=SubscriptionTierType.business, repository=repository
+    )
 
 
 @pytest_asyncio.fixture

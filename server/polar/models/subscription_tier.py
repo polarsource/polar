@@ -1,3 +1,4 @@
+from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -11,9 +12,18 @@ if TYPE_CHECKING:
     from polar.models import Organization, Repository
 
 
+class SubscriptionTierType(StrEnum):
+    hobby = "hobby"
+    pro = "pro"
+    business = "business"
+
+
 class SubscriptionTier(RecordModel):
     __tablename__ = "subscription_tiers"
 
+    type: Mapped[SubscriptionTierType] = mapped_column(
+        String, nullable=False, index=True
+    )
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     price_amount: Mapped[int] = mapped_column(Integer, nullable=False)

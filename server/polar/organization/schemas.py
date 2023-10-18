@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Self, Sequence
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from polar.config import settings
 from polar.enums import Platforms

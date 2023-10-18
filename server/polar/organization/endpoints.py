@@ -12,6 +12,10 @@ from polar.kit.pagination import ListResource, Pagination
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
+from polar.user_organization.schemas import OrganizationMember
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 
 from .schemas import (
     Organization as OrganizationSchema,
@@ -163,6 +167,42 @@ async def update(
     org = await organization.update_settings(session, org, update)
 
     return OrganizationSchema.from_db(org)
+
+
+@router.get(
+    "/organizations/{id}/members",
+    response_model=ListResource[OrganizationMember],
+    tags=[Tags.PUBLIC],
+    description="List members of an organization. Requires authentication.",  # noqa: E501
+    summary="List members in an organization (Public API)",
+    status_code=200,
+)
+async def list_members(
+    auth: UserRequiredAuth,
+    id: UUID | None = None,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> ListResource[OrganizationMember]:
+    if not id:
+        raise ResourceNotFound()
+
+    org = await organization.get(session, id)
+    if not org:
+        raise ResourceNotFound()
+
+    # if user is member
+    self_member = await user_organization_service.get_by_user_and_org(
+        session, auth.user.id, id
+    )
+    if not self_member:
+        raise Unauthorized()
+
+    members = await user_organization_service.list_by_org(session, id)
+
+    return ListResource(
+        items=[OrganizationMember.from_db(m) for m in members],
+        pagination=Pagination(total_count=len(members), max_page=1),
+    )
 
 
 #

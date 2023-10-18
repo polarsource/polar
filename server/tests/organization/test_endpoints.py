@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 import pytest
 from httpx import AsyncClient
@@ -8,6 +9,7 @@ from polar.models.organization import Organization
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
+from polar.user_organization.schemas import OrganizationMember
 
 
 @pytest.mark.asyncio
@@ -211,3 +213,48 @@ async def test_update_organization(
     assert response.status_code == 200
     assert response.json()["id"] == str(organization.id)
     assert response.json()["default_upfront_split_to_contributors"] is None
+
+
+@pytest.mark.asyncio
+async def test_list_members(
+    session: AsyncSession,
+    organization: Organization,
+    user_organization_admin: UserOrganization,  # makes User a member of Organization
+    user_organization_second: UserOrganization,  # adds another member
+    auth_jwt: str,
+    client: AsyncClient,
+) -> None:
+    response = await client.get(
+        f"/api/v1/organizations/{organization.id}/members",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+
+    items_r: list[dict[str, Any]] = response.json()["items"]
+    items = [OrganizationMember.parse_obj(r) for r in items_r]
+
+    assert len(items) == 2
+
+    admins = [i for i in items if i.is_admin]
+    non_admins = [i for i in items if not i.is_admin]
+
+    assert len(admins) == 1
+    assert len(non_admins) == 1
+
+
+@pytest.mark.asyncio
+async def test_list_members_not_member(
+    session: AsyncSession,
+    organization: Organization,
+    # user_organization_admin: UserOrganization,  # makes User a member of Organization
+    user_organization_second: UserOrganization,  # adds another member
+    auth_jwt: str,
+    client: AsyncClient,
+) -> None:
+    response = await client.get(
+        f"/api/v1/organizations/{organization.id}/members",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 401

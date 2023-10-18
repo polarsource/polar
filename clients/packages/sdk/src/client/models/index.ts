@@ -1292,6 +1292,25 @@ export interface ListResourceOrganization {
 /**
  * 
  * @export
+ * @interface ListResourceOrganizationMember
+ */
+export interface ListResourceOrganizationMember {
+    /**
+     * 
+     * @type {Array<OrganizationMember>}
+     * @memberof ListResourceOrganizationMember
+     */
+    items?: Array<OrganizationMember>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceOrganizationMember
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourcePaymentMethod
  */
 export interface ListResourcePaymentMethod {
@@ -2158,6 +2177,37 @@ export interface OrganizationBadgeSettingsUpdate {
      * @memberof OrganizationBadgeSettingsUpdate
      */
     repositories: Array<RepositoryBadgeSettingsUpdate>;
+}
+/**
+ * 
+ * @export
+ * @interface OrganizationMember
+ */
+export interface OrganizationMember {
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationMember
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationMember
+     */
+    github_username?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationMember
+     */
+    avatar_url?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationMember
+     */
+    is_admin: boolean;
 }
 /**
  * 

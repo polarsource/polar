@@ -17,6 +17,7 @@ import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
   ListResourceOrganization,
+  ListResourceOrganizationMember,
   Organization,
   OrganizationBadgeSettingsRead,
   OrganizationBadgeSettingsUpdate,
@@ -34,6 +35,10 @@ export interface OrganizationsApiGetBadgeSettingsRequest {
 
 export interface OrganizationsApiListRequest {
     isAdminOnly?: boolean;
+}
+
+export interface OrganizationsApiListMembersRequest {
+    id: string;
 }
 
 export interface OrganizationsApiLookupRequest {
@@ -176,6 +181,46 @@ export class OrganizationsApi extends runtime.BaseAPI {
      */
     async list(requestParameters: OrganizationsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganization> {
         const response = await this.listRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * List members of an organization. Requires authentication.
+     * List members in an organization (Public API)
+     */
+    async listMembersRaw(requestParameters: OrganizationsApiListMembersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrganizationMember>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling listMembers.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/organizations/{id}/members`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * List members of an organization. Requires authentication.
+     * List members in an organization (Public API)
+     */
+    async listMembers(requestParameters: OrganizationsApiListMembersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganizationMember> {
+        const response = await this.listMembersRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

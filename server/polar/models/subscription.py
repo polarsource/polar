@@ -24,7 +24,7 @@ class SubscriptionStatus(StrEnum):
 
 
 class Subscription(RecordModel):
-    __tablename__ = "subscription"
+    __tablename__ = "subscriptions"
 
     stripe_subscription_id: Mapped[str] = mapped_column(
         String, nullable=False, index=True

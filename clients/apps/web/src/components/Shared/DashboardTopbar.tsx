@@ -57,11 +57,11 @@ const DashboardTopbar = ({
   const pathname = usePathname()
 
   const getRoutes = (pathname: string, currentOrg?: Organization): Route[] => {
-    if (pathname.startsWith('/maintainer/') && currentOrg) {
+    if (pathname && pathname.startsWith('/maintainer/') && currentOrg) {
       return maintainerRoutes(currentOrg)
     }
 
-    if (pathname.startsWith('/team/') && currentOrg) {
+    if (pathname && pathname.startsWith('/team/') && currentOrg) {
       return maintainerRoutes(currentOrg)
     }
 

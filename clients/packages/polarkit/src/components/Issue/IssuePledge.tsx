@@ -113,6 +113,7 @@ const IssuePledge = (props: Props) => {
             'dark:border-polar-700 border-t',
             'flex flex-row items-center gap-2 bg-gray-50 bg-white px-6 py-2 dark:bg-transparent  ',
           )}
+          key={p.id}
         >
           <Avatar
             name={p.pledger?.name || ''}

@@ -3,7 +3,7 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import EmptyLayout from '@/components/Layout/EmptyLayout'
 import { Bolt } from '@mui/icons-material'
-import { ListResourceSubscriptionGroup } from '@polar-sh/sdk'
+import { ListResourceSubscriptionGroup, Organization } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
 import { Button } from 'polarkit/components/ui/button'
@@ -13,21 +13,21 @@ import SubscriptionGroup from './SubscriptionGroup'
 
 interface TiersPageProps {
   subscriptionGroups: ListResourceSubscriptionGroup
-  organizationId: string
+  organization: Organization
 }
 
 const TiersPage: React.FC<TiersPageProps> = ({
   subscriptionGroups,
-  organizationId,
+  organization,
 }) => {
   const router = useRouter()
 
   const initializeGroups = useCallback(async () => {
     await api.subscriptions.initializeSubscriptionGroups({
-      subscriptionGroupInitialize: { organization_id: organizationId },
+      subscriptionGroupInitialize: { organization_id: organization.id },
     })
     router.refresh()
-  }, [organizationId, router])
+  }, [organization, router])
 
   return (
     <DashboardBody>
@@ -50,7 +50,10 @@ const TiersPage: React.FC<TiersPageProps> = ({
         <div className="flex flex-col gap-4 overflow-hidden">
           {subscriptionGroups.items?.map((subscriptionGroup) => (
             <React.Fragment key={subscriptionGroup.id}>
-              <SubscriptionGroup subscriptionGroup={subscriptionGroup} />
+              <SubscriptionGroup
+                subscriptionGroup={subscriptionGroup}
+                organization={organization}
+              />
               <Separator />
             </React.Fragment>
           ))}

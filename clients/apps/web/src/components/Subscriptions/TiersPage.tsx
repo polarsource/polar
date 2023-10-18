@@ -29,8 +29,6 @@ const TiersPage: React.FC<TiersPageProps> = ({
     router.refresh()
   }, [organization, router])
 
-  console.log(subscriptionGroups)
-
   return (
     <DashboardBody>
       {subscriptionGroups.pagination.total_count === 0 && (

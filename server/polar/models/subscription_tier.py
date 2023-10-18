@@ -8,7 +8,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import SubscriptionGroup
+    from polar.models import Organization, Repository
 
 
 class SubscriptionTier(RecordModel):
@@ -25,11 +25,26 @@ class SubscriptionTier(RecordModel):
     )
     stripe_price_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    subscription_group_id: Mapped[UUID] = mapped_column(
+    organization_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
-        ForeignKey("subscription_groups.id", ondelete="cascade"),
-        nullable=False,
+        ForeignKey("organizations.id", ondelete="cascade"),
+        nullable=True,
     )
-    subscription_group: Mapped["SubscriptionGroup"] = relationship(
-        "SubscriptionGroup", lazy="raise", back_populates="tiers"
+    organization: Mapped["Organization | None"] = relationship(
+        "Organization", lazy="raise"
     )
+
+    repository_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("repositories.id", ondelete="cascade"),
+        nullable=True,
+    )
+    repository: Mapped["Repository | None"] = relationship("Repository", lazy="raise")
+
+    @property
+    def managing_organization_id(self) -> UUID:
+        if self.organization_id is not None:
+            return self.organization_id
+        if self.repository is not None:
+            return self.repository.organization_id
+        raise RuntimeError()

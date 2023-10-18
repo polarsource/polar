@@ -1,29 +1,49 @@
 import uuid
+from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import Select, select
+from sqlalchemy import ColumnExpressionArgument, Select, or_, select
+from sqlalchemy.exc import InvalidRequestError
+from sqlalchemy.orm import aliased, contains_eager
 
+from polar.account.service import account as account_service
 from polar.auth.dependencies import AuthMethod
 from polar.authz.service import AccessType, Authz, Subject
 from polar.exceptions import NotPermitted, PolarError
 from polar.integrations.stripe.service import StripeError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
-from polar.models import SubscriptionGroup, SubscriptionTier, User
+from polar.models import (
+    Account,
+    Organization,
+    Repository,
+    SubscriptionTier,
+    User,
+    UserOrganization,
+)
+from polar.organization.service import organization as organization_service
+from polar.repository.service import repository as repository_service
 
 from ..schemas import SubscribeSession, SubscriptionTierCreate, SubscriptionTierUpdate
-from .subscription_group import subscription_group as subscription_group_service
 
 
 class SubscriptionTierError(PolarError):
     ...
 
 
-class SubscriptionGroupDoesNotExist(SubscriptionTierError):
-    def __init__(self, subscription_group_id: uuid.UUID) -> None:
-        self.subscription_group_id = subscription_group_id
-        message = f"Subscription Group with id {subscription_group_id} does not exist."
+class OrganizationDoesNotExist(SubscriptionTierError):
+    def __init__(self, organization_id: uuid.UUID) -> None:
+        self.organization_id = organization_id
+        message = f"Organization with id {organization_id} does not exist."
+        super().__init__(message, 422)
+
+
+class RepositoryDoesNotExist(SubscriptionTierError):
+    def __init__(self, organization_id: uuid.UUID) -> None:
+        self.organization_id = organization_id
+        message = f"Repository with id {organization_id} does not exist."
         super().__init__(message, 422)
 
 
@@ -54,11 +74,45 @@ class NoAssociatedPayoutAccount(SubscriptionTierError):
 class SubscriptionTierService(
     ResourceService[SubscriptionTier, SubscriptionTierCreate, SubscriptionTierUpdate]
 ):
+    async def search(
+        self,
+        session: AsyncSession,
+        auth_subject: Subject,
+        *,
+        organization: Organization | None = None,
+        repository: Repository | None = None,
+        direct_organization: bool = True,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[SubscriptionTier], int]:
+        statement = self._get_readable_subscription_tier_statement(auth_subject)
+
+        if organization is not None:
+            clauses = [SubscriptionTier.organization_id == organization.id]
+            if not direct_organization:
+                clauses.append(Repository.organization_id == organization.id)
+            statement = statement.where(or_(*clauses))
+
+        if repository is not None:
+            statement = statement.where(SubscriptionTier.repository_id == repository.id)
+
+        statement = statement.order_by(
+            SubscriptionTier.price_amount,
+        )
+
+        results, count = await paginate(session, statement, pagination=pagination)
+
+        return results, count
+
     async def get_by_id(
         self, session: AsyncSession, auth_subject: Subject, id: uuid.UUID
     ) -> SubscriptionTier | None:
-        statement = self._get_readable_subscription_tier_statement(auth_subject).where(
-            SubscriptionTier.id == id
+        statement = (
+            self._get_readable_subscription_tier_statement(auth_subject)
+            .where(SubscriptionTier.id == id, SubscriptionTier.deleted_at.is_(None))
+            .options(
+                contains_eager(SubscriptionTier.organization),
+                contains_eager(SubscriptionTier.repository),
+            )
         )
 
         result = await session.execute(statement)
@@ -76,15 +130,25 @@ class SubscriptionTierService(
         create_schema: SubscriptionTierCreate,
         user: User,
     ) -> SubscriptionTier:
-        subscription_group = (
-            await subscription_group_service.get_with_organization_or_repository(
-                session, create_schema.subscription_group_id
+        organization: Organization | None = None
+        repository: Repository | None = None
+        if create_schema.organization_id is not None:
+            organization = await organization_service.get(
+                session, create_schema.organization_id
             )
-        )
-        if subscription_group is None or not await authz.can(
-            user, AccessType.write, subscription_group
-        ):
-            raise SubscriptionGroupDoesNotExist(create_schema.subscription_group_id)
+            if organization is None or not await authz.can(
+                user, AccessType.write, organization
+            ):
+                raise OrganizationDoesNotExist(create_schema.organization_id)
+
+        if create_schema.repository_id is not None:
+            repository = await repository_service.get(
+                session, create_schema.repository_id
+            )
+            if repository is None or not await authz.can(
+                user, AccessType.write, repository
+            ):
+                raise RepositoryDoesNotExist(create_schema.repository_id)
 
         nested = await session.begin_nested()
         subscription_tier = await self.model.create(
@@ -101,14 +165,13 @@ class SubscriptionTierService(
                 description=create_schema.description,
                 metadata={
                     "subscription_tier_id": str(subscription_tier.id),
-                    "subscription_group_id": str(subscription_group.id),
-                    "organization_id": str(subscription_group.organization_id),
-                    "organization_name": subscription_group.organization.name
-                    if subscription_group.organization is not None
+                    "organization_id": str(subscription_tier.organization_id),
+                    "organization_name": organization.name
+                    if organization is not None
                     else None,
-                    "repository_id": str(subscription_group.repository_id),
-                    "repository_name": subscription_group.repository.name
-                    if subscription_group.repository is not None
+                    "repository_id": str(subscription_tier.repository_id),
+                    "repository_name": repository.name
+                    if repository is not None
                     else None,
                 },
             )
@@ -130,14 +193,11 @@ class SubscriptionTierService(
         update_schema: SubscriptionTierUpdate,
         user: User,
     ) -> SubscriptionTier:
-        subscription_group = (
-            await subscription_group_service.get_with_organization_or_repository(
-                session, subscription_tier.subscription_group_id
-            )
+        subscription_tier = await self._with_organization_or_repository(
+            session, subscription_tier
         )
-        if subscription_group is None or not await authz.can(
-            user, AccessType.write, subscription_group
-        ):
+
+        if not await authz.can(user, AccessType.write, subscription_tier):
             raise NotPermitted()
 
         if (
@@ -166,14 +226,10 @@ class SubscriptionTierService(
         subscription_tier: SubscriptionTier,
         user: User,
     ) -> SubscriptionTier:
-        subscription_group = (
-            await subscription_group_service.get_with_organization_or_repository(
-                session, subscription_tier.subscription_group_id
-            )
+        subscription_tier = await self._with_organization_or_repository(
+            session, subscription_tier
         )
-        if subscription_group is None or not await authz.can(
-            user, AccessType.write, subscription_group
-        ):
+        if not await authz.can(user, AccessType.write, subscription_tier):
             raise NotPermitted()
 
         if subscription_tier.stripe_product_id is not None:
@@ -197,17 +253,11 @@ class SubscriptionTierService(
         if subscription_tier.stripe_price_id is None:
             raise NotAddedToStripeSubscriptionTier(subscription_tier.id)
 
-        subscription_group = (
-            await subscription_group_service.get_with_organization_or_repository(
-                session, subscription_tier.subscription_group_id
-            )
-        )
-        assert subscription_group is not None
-        account = await subscription_group_service.get_managing_organization_account(
-            session, subscription_group
+        account = await self._get_managing_organization_account(
+            session, subscription_tier
         )
         if account is None:
-            raise NoAssociatedPayoutAccount(subscription_group.managing_organization_id)
+            raise NoAssociatedPayoutAccount(subscription_tier.managing_organization_id)
 
         customer_options: dict[str, str] = {}
         # Set the customer only from a cookie-based authentication!
@@ -264,18 +314,50 @@ class SubscriptionTierService(
             subscription_tier=subscription_tier,  # type: ignore
         )
 
+    async def _with_organization_or_repository(
+        self, session: AsyncSession, subscription_tier: SubscriptionTier
+    ) -> SubscriptionTier:
+        try:
+            subscription_tier.organization
+            subscription_tier.repository
+        except InvalidRequestError:
+            await session.refresh(subscription_tier, {"organization", "repository"})
+        return subscription_tier
+
     def _get_readable_subscription_tier_statement(
         self, auth_subject: Subject
     ) -> Select[Any]:
-        readable_subscription_groups_statement = (
-            subscription_group_service.get_readable_subscription_groups_statement(
-                auth_subject
-            )
-        ).with_only_columns(SubscriptionGroup.id)
+        clauses: list[ColumnExpressionArgument[bool]] = [
+            SubscriptionTier.repository_id.is_(None),
+            Repository.is_private.is_(False),
+        ]
+        if isinstance(auth_subject, User):
+            clauses.append(UserOrganization.user_id == auth_subject.id)
+
+        RepositoryOrganization = aliased(Organization)
+
         return (
             select(SubscriptionTier)
-            .join(SubscriptionGroup)
-            .where(SubscriptionGroup.id.in_(readable_subscription_groups_statement))
+            .join(SubscriptionTier.organization, full=True)
+            .join(SubscriptionTier.repository, full=True)
+            .join(
+                RepositoryOrganization,
+                onclause=RepositoryOrganization.id == Repository.organization_id,
+                full=True,
+            )
+            .join(
+                UserOrganization,
+                onclause=UserOrganization.organization_id == RepositoryOrganization.id,
+                full=True,
+            )
+            .where(SubscriptionTier.deleted_at.is_(None), or_(*clauses))
+        )
+
+    async def _get_managing_organization_account(
+        self, session: AsyncSession, subscription_tier: SubscriptionTier
+    ) -> Account | None:
+        return await account_service.get_by_org(
+            session, subscription_tier.managing_organization_id
         )
 
 

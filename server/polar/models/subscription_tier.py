@@ -26,6 +26,9 @@ class SubscriptionTier(RecordModel):
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_highlighted: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, index=True
+    )
     price_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     price_currency: Mapped[str] = mapped_column(String(3), nullable=False)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

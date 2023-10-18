@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import ColumnExpressionArgument, Select, or_, select
+from sqlalchemy import ColumnExpressionArgument, Select, or_, select, update
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import aliased, contains_eager
 
@@ -157,6 +157,15 @@ class SubscriptionTierService(
                 raise RepositoryDoesNotExist(create_schema.repository_id)
 
         nested = await session.begin_nested()
+
+        if create_schema.is_highlighted:
+            await self._disable_other_highlights(
+                session,
+                type=create_schema.type,
+                organization_id=create_schema.organization_id,
+                repository_id=create_schema.repository_id,
+            )
+
         subscription_tier = await self.model.create(
             session, **create_schema.dict(), autocommit=False
         )
@@ -220,6 +229,14 @@ class SubscriptionTierService(
             )
             stripe_service.archive_price(subscription_tier.stripe_price_id)
             subscription_tier.stripe_price_id = new_price.stripe_id
+
+        if update_schema.is_highlighted:
+            await self._disable_other_highlights(
+                session,
+                type=subscription_tier.type,
+                organization_id=subscription_tier.organization_id,
+                repository_id=subscription_tier.repository_id,
+            )
 
         return await subscription_tier.update(
             session, **update_schema.dict(exclude_unset=True)
@@ -365,6 +382,30 @@ class SubscriptionTierService(
         return await account_service.get_by_org(
             session, subscription_tier.managing_organization_id
         )
+
+    async def _disable_other_highlights(
+        self,
+        session: AsyncSession,
+        *,
+        type: SubscriptionTierType,
+        organization_id: uuid.UUID | None = None,
+        repository_id: uuid.UUID | None = None,
+    ) -> None:
+        statement = (
+            update(SubscriptionTier)
+            .where(SubscriptionTier.type == type)
+            .values(is_highlighted=False)
+        )
+
+        if organization_id is not None:
+            statement = statement.where(
+                SubscriptionTier.organization_id == organization_id
+            )
+
+        if repository_id is not None:
+            statement = statement.where(SubscriptionTier.repository_id == repository_id)
+
+        await session.execute(statement)
 
 
 subscription_tier = SubscriptionTierService(SubscriptionTier)

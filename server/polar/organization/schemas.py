@@ -68,6 +68,10 @@ class OrganizationUpdate(Schema):
     pledge_minimum_amount: int | None = None
 
 
+class OrganizationStripePortalSession(Schema):
+    url: str
+
+
 #
 # Internal models below. Not to be used in "public" APIs!
 #

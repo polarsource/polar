@@ -6,8 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
-from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.exceptions import InternalServerError, ResourceNotFound, Unauthorized
 from polar.integrations.github.badge import GithubBadge
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import ListResource, Pagination
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
@@ -23,6 +24,7 @@ from .schemas import (
 from .schemas import (
     OrganizationBadgeSettingsRead,
     OrganizationBadgeSettingsUpdate,
+    OrganizationStripePortalSession,
     OrganizationUpdate,
     RepositoryBadgeSettingsRead,
 )
@@ -203,6 +205,30 @@ async def list_members(
         items=[OrganizationMember.from_db(m) for m in members],
         pagination=Pagination(total_count=len(members), max_page=1),
     )
+
+
+@router.post(
+    "/organizations/{id}/stripe_customer_portal",
+    response_model=OrganizationStripePortalSession,
+)
+async def create_stripe_customer_portal(
+    id: UUID,
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> OrganizationStripePortalSession:
+    org = await organization.get(session, id)
+    if not org:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, org):
+        raise Unauthorized()
+
+    portal = await stripe_service.create_org_portal_session(session, org)
+    if not portal:
+        raise InternalServerError()
+
+    return OrganizationStripePortalSession(url=portal.url)
 
 
 #

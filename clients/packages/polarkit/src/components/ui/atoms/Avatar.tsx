@@ -1,9 +1,13 @@
+import { twMerge } from 'tailwind-merge'
+
 const Avatar = ({
   name,
   avatar_url,
+  className,
 }: {
   name: string
   avatar_url: string | undefined
+  className?: string
 }) => {
   if (avatar_url) {
     {
@@ -12,7 +16,10 @@ const Avatar = ({
     return (
       <img
         src={avatar_url}
-        className="dark:bg-polar-900 dark:border-polar-700 h-6 w-6 flex-shrink-0 rounded-full border-2 border-white bg-white"
+        className={twMerge(
+          'dark:bg-polar-900 dark:border-polar-700 h-6 w-6 flex-shrink-0 rounded-full border-2 border-white bg-white',
+          className,
+        )}
       />
     )
   }
@@ -20,7 +27,12 @@ const Avatar = ({
   const initials = getInitials(name)
 
   return (
-    <div className="dark:bg-polar-900 dark:border-polar-700 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-white bg-white text-xs">
+    <div
+      className={twMerge(
+        'dark:bg-polar-900 dark:border-polar-700 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-white bg-white text-xs',
+        className,
+      )}
+    >
       <span>{initials}</span>
     </div>
   )

@@ -8,6 +8,7 @@ import IssueBodyRenderer from './IssueBodyRenderer'
 import LabeledRadioButton from './LabeledRadioButton'
 import LabeledSeparator from './LabeledSeparator'
 import MoneyInput from './MoneyInput'
+import Pill from './Pill'
 import PolarTimeAgo from './PolarTimeAgo'
 import { PrimaryButton, ThinButton } from './PrimaryButton'
 import ShadowBox from './ShadowBox'
@@ -31,4 +32,5 @@ export {
   PrimaryButton,
   ThinButton,
   Avatar,
+  Pill,
 }

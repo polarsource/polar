@@ -35,6 +35,17 @@ export const useListAllOrganizations: () => UseQueryResult<ListResourceOrganizat
       retry: defaultRetry,
     })
 
+export const useListOrganizationMembers = (id?: string) =>
+  useQuery({
+    queryKey: ['organizationMembers', id],
+    queryFn: () =>
+      api.organizations.listMembers({
+        id: id || '',
+      }),
+    retry: defaultRetry,
+    enabled: !!id,
+  })
+
 export const useOrganizationBadgeSettings = (id: string) =>
   useQuery({
     queryKey: ['organizationBadgeSettings', id],

@@ -87,7 +87,6 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
                         <SubscriptionGroupIcon
                           icon={subscriptionGroup.icon}
                           color={subscriptionGroup.color}
-                          size={4}
                         />
                         {subscriptionGroup.name}
                       </div>

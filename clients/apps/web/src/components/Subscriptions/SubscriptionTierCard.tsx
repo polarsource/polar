@@ -63,7 +63,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
 
   return (
     <Card
-      className="flex h-full flex-col gap-y-8 rounded-3xl border-0 bg-[--var-bg-color] bg-gradient-to-tr p-10 shadow-none transition-opacity hover:opacity-50 dark:hover:opacity-80"
+      className="flex h-full min-w-[320px] max-w-[360px] flex-col gap-y-8 rounded-3xl border-0 bg-[--var-bg-color] bg-gradient-to-tr p-10 shadow-none transition-opacity hover:opacity-50 dark:hover:opacity-80"
       style={style}
     >
       <CardHeader className="grow gap-y-8 p-0">
@@ -92,7 +92,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
                 )}
               </>
             }
-            <span className="ml-2 text-lg font-normal text-[--var-muted-color]">
+            <span className="ml-4 text-xl font-normal text-[--var-muted-color]">
               /mo
             </span>
           </div>

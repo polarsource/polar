@@ -1,24 +1,19 @@
 import { twMerge } from 'tailwind-merge'
 import { type CardProperties } from './types'
 
-const BaseCard = (props: CardProperties) => {
-  let className = 'w-full rounded-xl'
-  if (props.border === true) {
-    className = twMerge(className, 'border')
-  }
+const BaseCard = (props: CardProperties) => (
+  <>
+    <div
+      className={twMerge(
+        'w-full rounded-xl',
+        props.border ? 'border' : '',
+        props.padding ? 'p-6' : '',
+        props.className,
+      )}
+    >
+      {props.children}
+    </div>
+  </>
+)
 
-  if (props.padding === true) {
-    className = twMerge(className, 'p-6')
-  }
-
-  if (props.className) {
-    className = twMerge(className, props.className)
-  }
-
-  return (
-    <>
-      <div className={className}>{props.children}</div>
-    </>
-  )
-}
 export default BaseCard

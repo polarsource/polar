@@ -20,6 +20,9 @@ type Story = StoryObj<typeof PledgeByLink>
 
 export const Default: Story = {
   parameters: {
+    nextjs: {
+      appDirectory: true,
+    },
     chromatic: { viewports: [390, 1200] },
   },
 

@@ -17,6 +17,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.subscription_tier import SubscriptionTierType
 from polar.postgres import AsyncSession
 from polar.subscription.schemas import SubscriptionTierCreate, SubscriptionTierUpdate
 from polar.subscription.service.subscription_tier import (
@@ -29,6 +30,8 @@ from polar.subscription.service.subscription_tier import (
 from polar.subscription.service.subscription_tier import (
     subscription_tier as subscription_tier_service,
 )
+
+from ..conftest import create_subscription_tier
 
 
 @pytest.fixture
@@ -78,6 +81,29 @@ class TestSearch:
 
         assert count == 3
         assert len(results) == 3
+
+    async def test_filter_type(
+        self,
+        session: AsyncSession,
+        user: User,
+        organization: Organization,
+    ) -> None:
+        hobby_subscription_tier = await create_subscription_tier(
+            session, type=SubscriptionTierType.hobby, organization=organization
+        )
+        await create_subscription_tier(
+            session, type=SubscriptionTierType.pro, organization=organization
+        )
+        results, count = await subscription_tier_service.search(
+            session,
+            user,
+            type=SubscriptionTierType.hobby,
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert count == 1
+        assert len(results) == 1
+        assert results[0].id == hobby_subscription_tier.id
 
     async def test_filter_organization_direct(
         self,
@@ -211,6 +237,7 @@ class TestUserCreate:
         self, session: AsyncSession, authz: Authz, user: User
     ) -> None:
         create_schema = SubscriptionTierCreate(
+            type=SubscriptionTierType.hobby,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",
@@ -229,6 +256,7 @@ class TestUserCreate:
         organization: Organization,
     ) -> None:
         create_schema = SubscriptionTierCreate(
+            type=SubscriptionTierType.hobby,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",
@@ -256,6 +284,7 @@ class TestUserCreate:
         )
 
         create_schema = SubscriptionTierCreate(
+            type=SubscriptionTierType.hobby,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",
@@ -274,6 +303,7 @@ class TestUserCreate:
         self, session: AsyncSession, authz: Authz, user: User
     ) -> None:
         create_schema = SubscriptionTierCreate(
+            type=SubscriptionTierType.hobby,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",
@@ -292,6 +322,7 @@ class TestUserCreate:
         repository: Repository,
     ) -> None:
         create_schema = SubscriptionTierCreate(
+            type=SubscriptionTierType.hobby,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",
@@ -319,6 +350,7 @@ class TestUserCreate:
         )
 
         create_schema = SubscriptionTierCreate(
+            type=SubscriptionTierType.hobby,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",
@@ -348,6 +380,7 @@ class TestUserCreate:
         create_product_with_price_mock.side_effect = StripeError()
 
         create_schema = SubscriptionTierCreate(
+            type=SubscriptionTierType.hobby,
             name="Subscription Tier",
             price_amount=1000,
             price_currency="USD",

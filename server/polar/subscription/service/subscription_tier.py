@@ -23,6 +23,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.subscription_tier import SubscriptionTierType
 from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
 
@@ -79,12 +80,16 @@ class SubscriptionTierService(
         session: AsyncSession,
         auth_subject: Subject,
         *,
+        type: SubscriptionTierType | None = None,
         organization: Organization | None = None,
         repository: Repository | None = None,
         direct_organization: bool = True,
         pagination: PaginationParams,
     ) -> tuple[Sequence[SubscriptionTier], int]:
         statement = self._get_readable_subscription_tier_statement(auth_subject)
+
+        if type is not None:
+            statement = statement.where(SubscriptionTier.type == type)
 
         if organization is not None:
             clauses = [SubscriptionTier.organization_id == organization.id]
@@ -96,6 +101,7 @@ class SubscriptionTierService(
             statement = statement.where(SubscriptionTier.repository_id == repository.id)
 
         statement = statement.order_by(
+            SubscriptionTier.type,
             SubscriptionTier.price_amount,
         )
 

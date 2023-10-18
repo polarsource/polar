@@ -3,9 +3,11 @@ from typing import Any
 from pydantic import UUID4, AnyHttpUrl, EmailStr, Field, root_validator
 
 from polar.kit.schemas import Schema, TimestampedSchema
+from polar.models.subscription_tier import SubscriptionTierType
 
 
 class SubscriptionTierCreate(Schema):
+    type: SubscriptionTierType
     name: str
     description: str | None = None
     price_amount: int = Field(..., ge=0)
@@ -41,6 +43,7 @@ class SubscriptionTierUpdate(Schema):
 
 class SubscriptionTier(TimestampedSchema):
     id: UUID4
+    type: SubscriptionTierType
     name: str
     description: str | None = None
     price_amount: int

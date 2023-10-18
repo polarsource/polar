@@ -163,6 +163,7 @@ class TestCreateSubscriptionTier:
         response = await client.post(
             "/api/v1/subscriptions/tiers/",
             json={
+                "type": "hobby",
                 "name": "Subscription Tier",
                 "price_amount": 1000,
                 "organization_id": str(uuid.uuid4()),
@@ -170,6 +171,42 @@ class TestCreateSubscriptionTier:
         )
 
         assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_both_organization_and_repository(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        public_repository: Repository,
+        user_organization_admin: UserOrganization,
+        mock_stripe_service: MagicMock,
+    ) -> None:
+        response = await client.post(
+            "/api/v1/subscriptions/tiers/",
+            json={
+                "type": "hobby",
+                "name": "Subscription Tier",
+                "price_amount": 1000,
+                "organization_id": str(organization.id),
+                "repository_id": str(public_repository.id),
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.authenticated
+    async def test_neither_organization_nor_repository(
+        self,
+        client: AsyncClient,
+        user_organization_admin: UserOrganization,
+        mock_stripe_service: MagicMock,
+    ) -> None:
+        response = await client.post(
+            "/api/v1/subscriptions/tiers/",
+            json={"type": "hobby", "name": "Subscription Tier", "price_amount": 1000},
+        )
+
+        assert response.status_code == 422
 
     @pytest.mark.authenticated
     async def test_valid(
@@ -189,6 +226,7 @@ class TestCreateSubscriptionTier:
         response = await client.post(
             "/api/v1/subscriptions/tiers/",
             json={
+                "type": "hobby",
                 "name": "Subscription Tier",
                 "price_amount": 1000,
                 "organization_id": str(organization.id),

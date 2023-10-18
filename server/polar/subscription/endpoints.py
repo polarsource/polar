@@ -7,6 +7,7 @@ from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Repository, SubscriptionTier
+from polar.models.subscription_tier import SubscriptionTierType
 from polar.organization.dependencies import OrganizationNameQuery
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -49,6 +50,7 @@ async def search_subscription_tiers(
     organization_name: OrganizationNameQuery,
     repository_name: OptionalRepositoryNameQuery = None,
     direct_organization: bool = Query(True),
+    type: SubscriptionTierType | None = Query(None),
     platform: Platforms = Query(...),
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
@@ -70,6 +72,7 @@ async def search_subscription_tiers(
     results, count = await subscription_tier_service.search(
         session,
         auth.subject,
+        type=type,
         organization=organization,
         repository=repository,
         direct_organization=direct_organization,

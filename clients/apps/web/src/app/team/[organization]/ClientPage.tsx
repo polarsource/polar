@@ -20,6 +20,9 @@ export default function ClientPage() {
 
   const members = useListOrganizationMembers(org?.id)
 
+  const mems = members.data?.items || []
+  const sortedMembers = mems.sort((a, b) => a.name.localeCompare(b.name))
+
   if (!isLoaded || !org) {
     return (
       <DashboardBody>
@@ -31,7 +34,7 @@ export default function ClientPage() {
   return (
     <DashboardBody>
       <div>
-        <h2 className="text-3xl font-medium">Members</h2>
+        <h2 className="text-2xl font-medium">Funding</h2>
 
         <Table>
           <TableHeader>
@@ -41,7 +44,7 @@ export default function ClientPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {members.data?.items?.map((m) => (
+            {sortedMembers.map((m) => (
               <TableRow>
                 <TableCell className="font-medium ">
                   <div className="inline-flex items-center gap-2">
@@ -50,7 +53,7 @@ export default function ClientPage() {
                       avatar_url={m.avatar_url}
                       name={m.name}
                     />
-                    {m.name}
+                    <span className="whitespace-nowrap">{m.name}</span>
                   </div>
                 </TableCell>
                 <TableCell>

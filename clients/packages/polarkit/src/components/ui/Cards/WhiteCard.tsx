@@ -1,9 +1,9 @@
-import { classNames } from '../../../utils/dom'
+import { twMerge } from 'tailwind-merge'
 import BaseCard from './BaseCard'
 import { type CardProperties } from './types'
 
 const WhiteCard = (props: CardProperties) => {
-  const className = classNames(
+  const className = twMerge(
     'bg-white shadow dark:bg-polar-800 dark:ring-1 dark:ring-polar-700',
     props.className || '',
   )

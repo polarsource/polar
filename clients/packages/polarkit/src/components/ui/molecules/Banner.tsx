@@ -1,5 +1,5 @@
-import clsx from 'clsx'
 import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 type Color = 'default' | 'muted' | 'red' | 'green' | 'blue'
 
@@ -14,7 +14,7 @@ const Banner = ({
 }) => {
   return (
     <div
-      className={clsx(
+      className={twMerge(
         'flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm',
         color === 'default'
           ? 'dark:bg-polar-800 dark:ring-polar-700 bg-white shadow dark:ring-1'

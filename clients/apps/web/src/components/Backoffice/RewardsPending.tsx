@@ -16,8 +16,8 @@ import {
   useBackofficeRewardsPending,
 } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
-import { classNames } from 'polarkit/utils'
 import { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 const Pledges = () => {
   const rewards = useBackofficeRewardsPending()
@@ -146,7 +146,7 @@ const Pledges = () => {
                   </div>
                   <div>{p[0].pledger_email}</div>
                   <div
-                    className={classNames(
+                    className={twMerge(
                       'flex items-center rounded-full px-2 text-sm text-white',
                       p[0].pledge.state === PledgeState.CHARGE_DISPUTED ||
                         p[0].pledge.state === PledgeState.DISPUTED
@@ -163,7 +163,7 @@ const Pledges = () => {
                     state={p[0].pledge.state}
                   </div>
                   <div
-                    className={classNames(
+                    className={twMerge(
                       'flex items-center rounded-full px-2 text-sm text-white',
                       p[0].pledge.type === PledgeType.UPFRONT
                         ? 'bg-green-700'

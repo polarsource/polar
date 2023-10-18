@@ -35,7 +35,6 @@
     "@ts-stack/markdown": "^1.4.0",
     "@vercel/og": "^0.5.7",
     "class-variance-authority": "^0.6.0",
-    "clsx": "^1.2.1",
     "cmdk": "^0.2.0",
     "framer-motion": "^10.12.4",
     "jest": "^29.6.2",

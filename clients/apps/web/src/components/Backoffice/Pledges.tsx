@@ -6,8 +6,8 @@ import Link from 'next/link'
 import { ThinButton } from 'polarkit/components/ui/atoms'
 import { useBackofficeAllPledges } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
-import { classNames } from 'polarkit/utils'
 import { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 const Pledges = () => {
   const pledges = useBackofficeAllPledges()
@@ -84,7 +84,7 @@ const Pledges = () => {
                       'Anonymous'}
                   </div>
                   <div
-                    className={classNames(
+                    className={twMerge(
                       'flex items-center rounded-full bg-gray-500 px-2 text-sm text-white',
                       p.state === 'disputed' || p.state === 'charge_disputed'
                         ? '!bg-red-700'
@@ -96,7 +96,7 @@ const Pledges = () => {
                   </div>
 
                   <div
-                    className={classNames(
+                    className={twMerge(
                       'flex items-center rounded-full bg-gray-500 px-2 text-sm text-white',
                       p.state === 'disputed' || p.state === 'charge_disputed'
                         ? '!bg-red-700'

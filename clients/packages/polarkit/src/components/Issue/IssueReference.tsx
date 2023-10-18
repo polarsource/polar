@@ -13,7 +13,8 @@ import {
 } from 'polarkit/components/icons'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import { githubPullReqeustUrl } from 'polarkit/github'
-import { classNames, dateOrString } from 'polarkit/utils'
+import { dateOrString } from 'polarkit/utils'
+import { twMerge } from 'tailwind-merge'
 import { generateMarkdownTitle } from './markdown'
 
 const IssueReference = (props: {
@@ -167,7 +168,7 @@ const IssueReferenceExternalGitHubPullRequest = (props: {
     <>
       <LeftSide>
         <span
-          className={classNames(
+          className={twMerge(
             isMerged
               ? 'border-purple-200 bg-purple-100 text-purple-600 dark:border-purple-500/40 dark:bg-purple-500/40 dark:text-purple-200'
               : '',
@@ -273,7 +274,7 @@ const IssueReferencePullRequest = (props: {
     <>
       <LeftSide>
         <span
-          className={classNames(
+          className={twMerge(
             formatting.iconClasses,
             'h-6 w-6 rounded-lg border p-0.5',
           )}
@@ -284,7 +285,7 @@ const IssueReferencePullRequest = (props: {
         </span>
         <a
           href={href}
-          className={classNames(formatting.titleClasses, 'font-medium')}
+          className={twMerge(formatting.titleClasses, 'font-medium')}
         >
           {markdownTitle}
         </a>
@@ -340,7 +341,7 @@ export const DiffStat = (props: {
       return (
         <span
           key={i}
-          className={classNames(
+          className={twMerge(
             className,
             'ml-0.5 inline-block h-2.5 w-2.5 border dark:border-white/10',
           )}

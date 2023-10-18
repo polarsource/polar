@@ -5,8 +5,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { CONFIG } from 'polarkit/config'
 import { useListAdminOrganizations } from 'polarkit/hooks'
-import { classNames, clsx, useOutsideClick } from 'polarkit/utils'
+import { useOutsideClick } from 'polarkit/utils'
 import React, { useMemo, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { useAuth } from '../../hooks'
 import { backerRoutes } from '../Dashboard/navigation'
 
@@ -16,7 +17,7 @@ const ProfileSelection = ({
   narrow = true,
   showBackerLinks = false,
 }) => {
-  const classNames = clsx(
+  const classNames = twMerge(
     'relative flex w-full flex-col rounded-xl bg-white dark:bg-polar-800 hover:bg-gray-100/50 dark:shadow-none dark:hover:bg-polar-700 dark:border dark:border-polar-700 transition-colors',
     className,
   )
@@ -69,7 +70,7 @@ const ProfileSelection = ({
     <>
       <div className={classNames}>
         <div
-          className={clsx(
+          className={twMerge(
             'relative flex cursor-pointer flex-row items-center justify-between gap-x-2 px-4 transition-colors',
             narrow ? 'py-2' : 'py-3',
           )}
@@ -86,7 +87,7 @@ const ProfileSelection = ({
         {isOpen && (
           <div
             ref={ref}
-            className={clsx(
+            className={twMerge(
               'dark:bg-polar-700 dark:text-polar-400 absolute left-0 w-full overflow-hidden rounded-2xl bg-white py-2 shadow-xl',
               narrow ? '-top-2' : '-top-1',
             )}
@@ -181,7 +182,7 @@ const ListItem = (props: {
   current: boolean
   className?: string
 }) => {
-  const className = classNames(
+  const className = twMerge(
     'animate-background duration-10 flex items-center gap-2 py-2 px-4 w-full',
     props.current
       ? 'bg-blue-50 dark:bg-white/5'
@@ -268,7 +269,7 @@ const TextItem = (props: {
 const ProfileBadge = (props: { type: 'backer' | 'maintainer' }) => {
   return (
     <span
-      className={clsx(
+      className={twMerge(
         props.type === 'backer' &&
           'border-green-200 bg-green-100 text-green-600 dark:border-green-600 dark:bg-green-700 dark:text-green-300',
         props.type === 'maintainer' &&

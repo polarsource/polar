@@ -7,8 +7,8 @@ import {
   MoneyInput,
   PrimaryButton,
 } from 'polarkit/components/ui/atoms'
-import { classNames } from 'polarkit/utils'
 import { ChangeEvent, MouseEvent, useEffect, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 const BadgeMessageForm = (props: {
   value: string
@@ -108,7 +108,7 @@ const BadgeMessageForm = (props: {
         />
       </div>
       <div
-        className={classNames(
+        className={twMerge(
           props.innerClassNames,
           'dark:bg-polar-800 dark:ring-polar-600 rounded-xl bg-white px-5 py-3.5 dark:ring-1',
         )}

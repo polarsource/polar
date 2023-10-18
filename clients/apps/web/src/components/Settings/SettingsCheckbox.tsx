@@ -1,6 +1,6 @@
 import { InformationCircleIcon } from '@heroicons/react/24/outline'
-import { classNames } from 'polarkit/utils'
 import { ReactNode } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 const SettingsCheckbox = ({
   id,
@@ -34,7 +34,7 @@ const SettingsCheckbox = ({
           onChange={onChange}
           checked={isChecked}
           disabled={!!disabled}
-          className={classNames(
+          className={twMerge(
             type === 'radio' ? 'rounded-full' : 'rounded',
             'dark:bg-polar-800 dark:border-polar-600 h-4 w-4 border-gray-300 p-2 text-blue-500 focus:ring-blue-500 dark:text-blue-500 dark:checked:!border-blue-600 dark:checked:!bg-blue-600 dark:focus:ring-blue-500 dark:focus:ring-offset-gray-800',
           )}

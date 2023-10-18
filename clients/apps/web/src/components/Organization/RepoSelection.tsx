@@ -2,8 +2,9 @@
 
 import { Repository } from '@polar-sh/sdk'
 import { Command } from 'cmdk'
-import { clsx, useOutsideClick } from 'polarkit/utils'
+import { useOutsideClick } from 'polarkit/utils'
 import React, { useEffect, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { Item, Left, SelectedBox, Text } from '../Dropdown'
 
 export function RepoSelection(props: {
@@ -92,7 +93,7 @@ export function RepoSelection(props: {
             <Command
               value={value}
               onValueChange={onValueChange}
-              className={clsx(
+              className={twMerge(
                 width,
                 props.openClassNames,
                 'dark:bg-polar-800 dark:border-polar-700 !absolute -top-10 z-10 w-max rounded-lg bg-white shadow-lg dark:border',

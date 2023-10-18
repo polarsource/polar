@@ -1,8 +1,8 @@
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { Command } from 'cmdk'
 import Image from 'next/image'
-import { clsx } from 'polarkit/utils'
 import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 export const Item = ({
   children,
@@ -84,7 +84,7 @@ export const SelectedBox = ({
 }) => {
   return (
     <div
-      className={clsx(
+      className={twMerge(
         'dark:hover:bg-polar-800 flex cursor-pointer items-center justify-between space-x-2 rounded-lg px-2 py-2 text-sm hover:bg-gray-100',
         classNames,
       )}

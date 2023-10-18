@@ -11,8 +11,8 @@ import { LogoIcon } from 'polarkit/components/brand'
 import { MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { getCentsInDollarString } from 'polarkit/money'
-import { classNames } from 'polarkit/utils'
 import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import GithubLoginButton from '../Shared/GithubLoginButton'
 import OnBehalfOf from './OnBehalfOf'
 
@@ -107,7 +107,7 @@ const FundOnCompletion = ({
             }}
           />
           <p
-            className={classNames(
+            className={twMerge(
               formState.amount < organization.pledge_minimum_amount
                 ? 'text-red-500'
                 : '',

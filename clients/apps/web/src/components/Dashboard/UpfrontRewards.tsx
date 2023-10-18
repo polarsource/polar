@@ -2,8 +2,8 @@ import { UserIcon } from '@heroicons/react/24/outline'
 import { Organization } from '@polar-sh/sdk'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { Switch } from 'polarkit/components/ui/switch'
-import { classNames } from 'polarkit/utils'
 import { useMemo, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 const PublicRewardsSetting = (props: {
   value: number | undefined
@@ -122,7 +122,7 @@ const PublicRewardsSetting = (props: {
                 </span>
                 <div className="flex-1">
                   <input
-                    className={classNames(
+                    className={twMerge(
                       'dark:bg-polar-700 w-full bg-white dark:outline-gray-700 ',
                       usePublicRewards
                         ? 'dark:text-polar-100 font-medium text-black'
@@ -161,7 +161,7 @@ const PublicRewardsSetting = (props: {
                 </span>
                 <div className="flex-1">
                   <input
-                    className={classNames(
+                    className={twMerge(
                       'dark:bg-polar-700 w-full bg-white dark:outline-gray-700 ',
                       'dark:text-polar-400 text-gray-500',
                     )}

@@ -1,7 +1,7 @@
 import { type RepositoryBadgeSettingsRead } from '@polar-sh/sdk'
 
 import { IssueLabel } from 'polarkit/components/Issue'
-import { classNames } from 'polarkit/utils'
+import { twMerge } from 'tailwind-merge'
 import BadgeRepository from './Repository'
 
 export const BadgeRepositories = ({
@@ -22,7 +22,7 @@ export const BadgeRepositories = ({
   return (
     <>
       <h2
-        className={classNames(
+        className={twMerge(
           isSettingPage ? 'text-left' : 'text-center',
           'dark:text-polar-100 text-lg text-gray-500',
         )}

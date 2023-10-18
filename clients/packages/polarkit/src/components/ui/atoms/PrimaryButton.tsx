@@ -1,6 +1,5 @@
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
-import { classNames } from '../../../utils/dom'
 
 type Color = 'blue' | 'gray' | 'red' | 'green' | 'lightblue'
 type Size = 'normal' | 'small' | 'smaller'
@@ -19,7 +18,7 @@ type ButtonProps = {
 }
 
 const LoadingSpinner = (props: { disabled: boolean; size: Size }) => {
-  const classes = classNames(
+  const classes = twMerge(
     props.disabled
       ? 'fill-gray-300 text-gray-200 dark:fill-gray-600 dark:text-polar-400'
       : 'fill-white text-blue-300',

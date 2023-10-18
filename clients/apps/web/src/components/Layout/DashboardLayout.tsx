@@ -6,8 +6,8 @@ import Link from 'next/link'
 import { CONFIG } from 'polarkit'
 import { LogoType } from 'polarkit/components/brand'
 import { useListAdminOrganizations } from 'polarkit/hooks'
-import { classNames } from 'polarkit/utils'
 import { Suspense } from 'react'
+import { twMerge } from 'tailwind-merge'
 import SidebarNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
@@ -68,7 +68,7 @@ const DashboardLayout = (props: { children: React.ReactNode }) => {
         </div>
       </aside>
       <div className="dark:bg-polar-900 relative flex h-screen w-full translate-x-0 flex-row overflow-hidden bg-white">
-        <main className={classNames('relative h-full w-full overflow-auto')}>
+        <main className={twMerge('relative h-full w-full overflow-auto')}>
           <Suspense>{props.children}</Suspense>
         </main>
       </div>
@@ -103,7 +103,7 @@ export const RepoPickerHeader = (props: {
 
 export const DashboardHeader = (props: { children?: React.ReactNode }) => {
   return (
-    <div className={classNames('sticky left-[300px] right-0 top-20 z-10')}>
+    <div className={twMerge('sticky left-[300px] right-0 top-20 z-10')}>
       {props.children}
     </div>
   )
@@ -112,7 +112,7 @@ export const DashboardHeader = (props: { children?: React.ReactNode }) => {
 export const DashboardBody = (props: { children?: React.ReactNode }) => {
   return (
     <div
-      className={classNames(
+      className={twMerge(
         'relative mx-auto max-w-screen-2xl px-4 pb-6 pt-28 sm:px-6 md:px-8',
       )}
     >

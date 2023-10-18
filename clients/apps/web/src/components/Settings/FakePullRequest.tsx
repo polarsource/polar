@@ -1,7 +1,7 @@
-import clsx from 'clsx'
 import { useTheme } from 'next-themes'
 import { CONFIG } from 'polarkit'
 import { Badge } from 'polarkit/components/badge'
+import { twMerge } from 'tailwind-merge'
 
 const FakePullRequest = ({
   showAmount,
@@ -14,7 +14,7 @@ const FakePullRequest = ({
 }) => {
   return (
     <div
-      className={clsx(
+      className={twMerge(
         'dark:bg-polar-700/30 dark:border-polar-600 overflow-hidden rounded-lg border border-gray-200 bg-gray-50',
         classNames,
       )}

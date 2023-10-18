@@ -1,4 +1,4 @@
-import { classNames } from 'polarkit/utils'
+import { twMerge } from 'tailwind-merge'
 
 const TopbarPill = ({
   children,
@@ -13,7 +13,7 @@ const TopbarPill = ({
 
   return (
     <div
-      className={classNames(
+      className={twMerge(
         'inline-flex items-center space-x-3 whitespace-nowrap rounded-full border py-1 pl-3 text-sm font-medium transition-all duration-200',
         padding,
         color === 'blue'

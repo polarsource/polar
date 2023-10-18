@@ -1,4 +1,4 @@
-import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 const LogoIcon = ({
   className,
@@ -14,7 +14,7 @@ const LogoIcon = ({
       viewBox="0 0 29 29"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={clsx(className ? className : '')}
+      className={twMerge(className ? className : '')}
     >
       <path
         fillRule="evenodd"

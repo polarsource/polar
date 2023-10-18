@@ -149,7 +149,7 @@ export const issueFunding: IssueFunding = {
 // PublicAPI
 export const pledgePublicAPI: Pledge = {
   id: 'pppp',
-  created_at: addDays(new Date(), -7).toISOString(),
+  created_at: '2023-10-11',
   issue: issue,
   amount: { currency: 'USD', amount: 3000 },
   state: PledgeState.CREATED,

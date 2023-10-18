@@ -60,6 +60,10 @@ async def search(
     ),
     issue_id: UUID
     | None = Query(default=None, description="Search pledges to this issue"),
+    by_organization_id: UUID
+    | None = Query(
+        default=None, description="Search pledges made by this organization."
+    ),
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
     authz: Authz = Depends(Authz.authz),
@@ -124,7 +128,12 @@ async def search(
     if issue_id:
         list_by_issues = [issue_id]
 
-    if len(list_by_orgs) == 0 and len(list_by_repos) == 0 and len(list_by_issues) == 0:
+    if (
+        len(list_by_orgs) == 0
+        and len(list_by_repos) == 0
+        and len(list_by_issues) == 0
+        and not by_organization_id
+    ):
         raise HTTPException(
             status_code=400,
             detail="No search criteria specified",
@@ -135,6 +144,7 @@ async def search(
         organization_ids=list_by_orgs,
         repository_ids=list_by_repos,
         issue_ids=list_by_issues,
+        pledging_organization=by_organization_id,
         load_issue=True,
         load_pledger=True,
     )

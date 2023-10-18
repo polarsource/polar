@@ -4,6 +4,7 @@ import datetime
 from datetime import timedelta
 from typing import Any, Awaitable, Callable, List, Sequence
 from uuid import UUID
+from sqlalchemy import or_
 
 import structlog
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
@@ -104,6 +105,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         repository_ids: list[UUID] | None = None,
         issue_ids: list[UUID] | None = None,
         pledging_user: UUID | None = None,
+        pledging_organization: UUID | None = None,
         load_issue: bool = False,
         load_pledger: bool = False,
         all_states: bool = False,
@@ -123,6 +125,14 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         if pledging_user:
             statement = statement.where(Pledge.by_user_id == pledging_user)
+
+        if pledging_organization:
+            statement = statement.where(
+                or_(
+                    Pledge.by_organization_id == pledging_organization,
+                    Pledge.on_behalf_of_organization_id == pledging_organization,
+                )
+            )
 
         if issue_ids:
             statement = statement.where(Pledge.issue_id.in_(issue_ids))

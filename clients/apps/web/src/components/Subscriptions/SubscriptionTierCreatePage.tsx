@@ -64,7 +64,7 @@ const SubscriptionTierCreatePage: React.FC<SubscriptionTierCreatePageProps> = ({
     <DashboardBody>
       <Form {...form}>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="mb-8 flex items-center justify-between">
+          <div className="mb-16 flex items-center justify-between">
             <h1 className="text-lg font-medium">New Subscription Tier</h1>
             <div className="flex flex-row gap-2">
               <Button variant="ghost" onClick={() => router.back()}>

@@ -30,6 +30,7 @@ export default async function Page({
     organizationName: params.organization,
     platform: Platforms.GITHUB,
   })
+
   return (
     <TiersPage
       subscriptionGroups={subscriptionGroups}

@@ -4,11 +4,13 @@ import { useMemo } from 'react'
 interface SubscriptionGroupIconProps {
   icon: string
   color: string
+  size?: number
 }
 
 const SubscriptionGroupIcon: React.FC<SubscriptionGroupIconProps> = ({
   icon,
   color,
+  size = 6,
 }) => {
   /**
    * Naive approach considering we know by advance the icons we use.
@@ -36,7 +38,7 @@ const SubscriptionGroupIcon: React.FC<SubscriptionGroupIconProps> = ({
       className={`inline-flex items-center text-[--var-icon-color]`}
       style={style}
     >
-      <IconComponent className="!h-4 !w-4" />
+      <IconComponent className={`!h-${size} !w-${size}`} />
     </div>
   ) : null
 }

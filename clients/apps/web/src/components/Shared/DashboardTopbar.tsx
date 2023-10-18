@@ -1,11 +1,13 @@
 'use client'
 
 import { useAuth, useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { classNames } from 'polarkit/utils'
 import { PropsWithChildren, useMemo } from 'react'
 import {
+  Route,
   SubRoute,
   backerRoutes,
   maintainerRoutes,
@@ -43,8 +45,8 @@ const DashboardTopbar = ({
   hideProfile?: boolean
   isFixed?: boolean
 }>) => {
-  const { org: currentOrgFromURL, isLoaded } = useCurrentOrgAndRepoFromURL()
-  const { currentUser, hydrated } = useAuth()
+  const { org: currentOrgFromURL } = useCurrentOrgAndRepoFromURL()
+  const { hydrated } = useAuth()
 
   const useOrgFromURL = props.useOrgFromURL
 
@@ -52,11 +54,21 @@ const DashboardTopbar = ({
     return currentOrgFromURL && useOrgFromURL ? currentOrgFromURL : undefined
   }, [currentOrgFromURL, useOrgFromURL])
 
-  const routes = currentOrg
-    ? maintainerRoutes(currentOrg, isLoaded)
-    : backerRoutes
-
   const pathname = usePathname()
+
+  const getRoutes = (pathname: string, currentOrg?: Organization): Route[] => {
+    if (pathname.startsWith('/maintainer/') && currentOrg) {
+      return maintainerRoutes(currentOrg)
+    }
+
+    if (pathname.startsWith('/team/') && currentOrg) {
+      return maintainerRoutes(currentOrg)
+    }
+
+    return backerRoutes
+  }
+
+  const routes = getRoutes(pathname, currentOrg)
 
   const [currentRoute] = routes.filter((route) =>
     pathname?.startsWith(route.link),

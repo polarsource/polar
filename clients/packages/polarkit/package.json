@@ -35,6 +35,7 @@
     "./components/ui/textarea": "./src/components/ui/textarea.tsx",
     "./components/ui/tabs": "./src/components/ui/tabs.tsx",
     "./components/ui/separator": "./src/components/ui/separator.tsx",
+    "./components/ui/table": "./src/components/ui/table.tsx",
     "./components/pledge": "./src/components/pledge/index.ts",
     "./components/brand": "./src/components/brand/index.ts",
     "./components/badge": "./src/components/badge/index.ts",

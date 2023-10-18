@@ -2,7 +2,6 @@ import { Organization } from '@polar-sh/sdk'
 
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
-import { CubeIcon } from '@heroicons/react/24/outline'
 import {
   AttachMoneyOutlined,
   Bolt,
@@ -28,17 +27,14 @@ export type Route = {
   readonly subs?: SubRoute[]
 }
 
-export const maintainerRoutes = (
-  org?: Organization,
-  isLoaded?: boolean,
-): Route[] => [
+export const maintainerRoutes = (org: Organization): Route[] => [
   {
     id: 'org-issues',
     title: 'Issues',
     icon: <HowToVoteOutlined className="h-6 w-6" />,
     postIcon: undefined,
-    link: `/maintainer/${org?.name}/issues`,
-    if: org && isLoaded,
+    link: `/maintainer/${org.name}/issues`,
+    if: true,
     subs: undefined,
   },
   ...(isFeatureEnabled('subscriptions')
@@ -48,20 +44,20 @@ export const maintainerRoutes = (
           title: 'Subscriptions',
           icon: <Bolt className="h-6 w-6" />,
           postIcon: undefined,
-          link: `/maintainer/${org?.name}/subscriptions`,
-          if: org && isLoaded,
+          link: `/maintainer/${org.name}/subscriptions`,
+          if: true,
           subs: [
             {
               title: 'Overview',
-              link: `/maintainer/${org?.name}/subscriptions`,
+              link: `/maintainer/${org.name}/subscriptions`,
             },
             {
               title: 'Tiers',
-              link: `/maintainer/${org?.name}/subscriptions/tiers`,
+              link: `/maintainer/${org.name}/subscriptions/tiers`,
             },
             {
               title: 'Subscribers',
-              link: `/maintainer/${org?.name}/subscriptions/subscribers`,
+              link: `/maintainer/${org.name}/subscriptions/subscribers`,
             },
           ],
         },
@@ -72,8 +68,8 @@ export const maintainerRoutes = (
     title: 'Finance',
     icon: <AttachMoneyOutlined className="h-6 w-6" />,
     postIcon: undefined,
-    link: `/maintainer/${org?.name}/finance`,
-    if: org && isLoaded,
+    link: `/maintainer/${org.name}/finance`,
+    if: true,
     subs: undefined,
   },
   {
@@ -81,38 +77,53 @@ export const maintainerRoutes = (
     title: 'Promote',
     icon: <WifiTethering className="h-6 w-6" />,
     postIcon: undefined,
-    link: `/maintainer/${org?.name}/promote`,
-    if: org && isLoaded,
+    link: `/maintainer/${org.name}/promote`,
+    if: true,
     subs: [
       {
         title: 'Issues',
-        link: `/maintainer/${org?.name}/promote/issues`,
+        link: `/maintainer/${org.name}/promote/issues`,
       },
       {
         title: 'Embeds',
-        link: `/maintainer/${org?.name}/promote/embeds`,
+        link: `/maintainer/${org.name}/promote/embeds`,
       },
     ],
   },
   {
     id: 'public-site',
     title: 'Public site',
-    link: `/${org?.name}`,
+    link: `/${org.name}`,
     postIcon: undefined,
     icon: <ArrowUpRightIcon className="h-6 w-6" />,
-    if: org && isLoaded,
+    if: true,
     subs: undefined,
   },
-
-  // Non org navigation
   {
-    id: 'personal-dependencies',
-    title: 'Dependencies',
-    icon: <CubeIcon className="h-6 w-6" />,
+    id: 'team',
+    title: org.name,
+    link: `/team/${org.name}`,
     postIcon: undefined,
-    link: `/feed`,
-    if: !org && isLoaded,
-    subs: undefined,
+    icon: <ArrowUpRightIcon className="h-6 w-6" />,
+    if: false, // Hidden for now
+    subs: [
+      {
+        title: 'Overview',
+        link: `/team/${org.name}`,
+      },
+      {
+        title: 'Funding',
+        link: `/team/${org.name}/funding`,
+      },
+      {
+        title: 'Members',
+        link: `/team/${org.name}/members`,
+      },
+      {
+        title: 'Settings',
+        link: `/team/${org.name}/settings`,
+      },
+    ],
   },
 ]
 

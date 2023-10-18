@@ -11,7 +11,7 @@ const MaintainerNavigation = () => {
   const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
 
   // All routes and conditions
-  const navs = maintainerRoutes(org, isLoaded)
+  const navs = org ? maintainerRoutes(org) : []
 
   const pathname = usePathname()
 

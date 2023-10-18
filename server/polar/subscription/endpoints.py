@@ -87,6 +87,24 @@ async def search_subscription_groups(
     )
 
 
+@router.get(
+    "/groups/lookup", response_model=SubscriptionGroupSchema, tags=[Tags.PUBLIC]
+)
+async def lookup_subscription_group(
+    subscription_group_id: UUID4,
+    auth: Auth = Depends(Auth.optional_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionGroup:
+    subscription_group = await subscription_group_service.get_by_id(
+        session, auth.subject, subscription_group_id
+    )
+
+    if subscription_group is None:
+        raise ResourceNotFound()
+
+    return subscription_group
+
+
 @router.post(
     "/groups/initialize",
     response_model=ListResource[SubscriptionGroupSchema],
@@ -136,6 +154,26 @@ async def update_subscription_group(
     )
     await session.refresh(subscription_group, {"tiers"})
     return subscription_group
+
+
+@router.get(
+    "/tiers/lookup",
+    response_model=SubscriptionTierSchema,
+    tags=[Tags.PUBLIC],
+)
+async def lookup_subscription_tier(
+    subscription_tier_id: UUID4,
+    auth: Auth = Depends(Auth.optional_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionTier:
+    subscription_tier = await subscription_tier_service.get_by_id(
+        session, auth.subject, subscription_tier_id
+    )
+
+    if subscription_tier is None:
+        raise ResourceNotFound()
+
+    return subscription_tier
 
 
 @router.post(

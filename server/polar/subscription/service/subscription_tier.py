@@ -1,4 +1,7 @@
 import uuid
+from typing import Any
+
+from sqlalchemy import Select, select
 
 from polar.auth.dependencies import AuthMethod
 from polar.authz.service import AccessType, Authz, Subject
@@ -7,7 +10,7 @@ from polar.integrations.stripe.service import StripeError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.services import ResourceService
-from polar.models import SubscriptionTier, User
+from polar.models import SubscriptionGroup, SubscriptionTier, User
 
 from ..schemas import SubscribeSession, SubscriptionTierCreate, SubscriptionTierUpdate
 from .subscription_group import subscription_group as subscription_group_service
@@ -51,6 +54,16 @@ class NoAssociatedPayoutAccount(SubscriptionTierError):
 class SubscriptionTierService(
     ResourceService[SubscriptionTier, SubscriptionTierCreate, SubscriptionTierUpdate]
 ):
+    async def get_by_id(
+        self, session: AsyncSession, auth_subject: Subject, id: uuid.UUID
+    ) -> SubscriptionTier | None:
+        statement = self._get_readable_subscription_tier_statement(auth_subject).where(
+            SubscriptionTier.id == id
+        )
+
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def get_by_stripe_product_id(
         self, session: AsyncSession, stripe_product_id: str
     ) -> SubscriptionTier | None:
@@ -249,6 +262,20 @@ class SubscriptionTierService(
             if checkout_session.customer_details
             else None,
             subscription_tier=subscription_tier,  # type: ignore
+        )
+
+    def _get_readable_subscription_tier_statement(
+        self, auth_subject: Subject
+    ) -> Select[Any]:
+        readable_subscription_groups_statement = (
+            subscription_group_service.get_readable_subscription_groups_statement(
+                auth_subject
+            )
+        ).with_only_columns(SubscriptionGroup.id)
+        return (
+            select(SubscriptionTier)
+            .join(SubscriptionGroup)
+            .where(SubscriptionGroup.id.in_(readable_subscription_groups_statement))
         )
 
 

@@ -160,6 +160,30 @@ class TestSearchSubscriptionGroups:
 
 
 @pytest.mark.asyncio
+class TestLookupSubscriptionGroup:
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/groups/lookup",
+            params={"subscription_group_id": str(uuid.uuid4())},
+        )
+
+        assert response.status_code == 404
+
+    async def test_valid(
+        self, client: AsyncClient, subscription_group_organization: SubscriptionGroup
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/groups/lookup",
+            params={"subscription_group_id": str(subscription_group_organization.id)},
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["id"] == str(subscription_group_organization.id)
+
+
+@pytest.mark.asyncio
 class TestInitializeSubscriptionGroups:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -261,6 +285,30 @@ class TestUpdateSubscriptionGroup:
 
         json = response.json()
         assert json["name"] == "Updated Subscription Group"
+
+
+@pytest.mark.asyncio
+class TestLookupSubscriptionTier:
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/tiers/lookup",
+            params={"subscription_tier_id": str(uuid.uuid4())},
+        )
+
+        assert response.status_code == 404
+
+    async def test_valid(
+        self, client: AsyncClient, subscription_tier_organization: SubscriptionTier
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/tiers/lookup",
+            params={"subscription_tier_id": str(subscription_tier_organization.id)},
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["id"] == str(subscription_tier_organization.id)
 
 
 @pytest.mark.asyncio

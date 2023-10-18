@@ -4,6 +4,7 @@ import IssueListItem from '@/components/Dashboard/IssueListItem'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Spinner from '@/components/Shared/Spinner'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { HowToVoteOutlined } from '@mui/icons-material'
 import { Pledge } from '@polar-sh/sdk'
 
 import { useSearchPledges } from 'polarkit/hooks'
@@ -51,6 +52,17 @@ export default function ClientPage() {
 
   return (
     <DashboardBody>
+      {pledges.isFetched && pledges.data?.items?.length === 0 ? (
+        <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
+          <span className="text-6xl">
+            <HowToVoteOutlined fontSize="inherit" />
+          </span>
+          <h2 className="text-lg">
+            {org.name} hasn&apos;t funded any issues... yet!
+          </h2>
+        </div>
+      ) : null}
+
       <div>
         {openIssues.length > 0 ? (
           <h2 className="text-lg">Open issues</h2>

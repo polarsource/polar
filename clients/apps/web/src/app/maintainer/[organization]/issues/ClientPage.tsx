@@ -288,7 +288,9 @@ const OrganizationIssues = ({
               hasNextPage={dashboardQuery.hasNextPage || false}
               fetchNextPage={dashboardQuery.fetchNextPage}
             />
-          ) : (
+          ) : null}
+
+          {!haveIssues && dashboardQuery.isFetched ? (
             <EmptyLayout>
               <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
                 <span className="text-6xl">
@@ -297,7 +299,7 @@ const OrganizationIssues = ({
                 <h2 className="text-lg">No issues found</h2>
               </div>
             </EmptyLayout>
-          )}
+          ) : null}
         </div>
       </DashboardBody>
     </>

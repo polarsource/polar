@@ -75,14 +75,14 @@ const SubscriptionTierCreatePage: React.FC<SubscriptionTierCreatePageProps> = ({
               </Button>
             </div>
           </div>
-          <div className="grid grid-cols-4">
-            <div className="col-span-2 space-y-6">
+          <div className="flex flex-row justify-between gap-x-24">
+            <div className="flex w-1/2 flex-col gap-y-6 ">
               <SubscriptionTierForm
                 update={false}
                 subscriptionGroups={subscriptionGroups}
               />
             </div>
-            <div className="col-start-4">
+            <div className="flex flex-col">
               {selectedSubscriptionGroup && (
                 <SubscriptionTierCard
                   subscriptionGroup={selectedSubscriptionGroup}

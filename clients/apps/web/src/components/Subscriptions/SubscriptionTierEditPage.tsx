@@ -53,7 +53,7 @@ const SubscriptionTierEditPage: React.FC<SubscriptionTierEditPageProps> = ({
       <Form {...form}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-8 flex items-center justify-between">
-            <h1 className="text-lg font-medium">New Subscription Tier</h1>
+            <h1 className="text-lg font-medium">Edit Subscription Tier</h1>
             <div className="flex flex-row gap-2">
               <Button variant="ghost" onClick={() => router.back()}>
                 Cancel
@@ -63,11 +63,11 @@ const SubscriptionTierEditPage: React.FC<SubscriptionTierEditPageProps> = ({
               </Button>
             </div>
           </div>
-          <div className="grid grid-cols-4">
-            <div className="col-span-2 space-y-6">
+          <div className="flex flex-row justify-between gap-x-24">
+            <div className="flex w-1/2 flex-col gap-y-6">
               <SubscriptionTierForm update={true} subscriptionGroups={[]} />
             </div>
-            <div className="col-start-4">
+            <div className="flex flex-col">
               <SubscriptionTierCard
                 subscriptionGroup={subscriptionGroup}
                 subscriptionTier={editingSubscriptionTier}

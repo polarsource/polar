@@ -7,7 +7,6 @@ import { ListResourceSubscriptionGroup, Organization } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
 import { Button } from 'polarkit/components/ui/button'
-import { Separator } from 'polarkit/components/ui/separator'
 import React, { useCallback } from 'react'
 import SubscriptionGroup from './SubscriptionGroup'
 
@@ -26,8 +25,11 @@ const TiersPage: React.FC<TiersPageProps> = ({
     await api.subscriptions.initializeSubscriptionGroups({
       subscriptionGroupInitialize: { organization_id: organization.id },
     })
+
     router.refresh()
   }, [organization, router])
+
+  console.log(subscriptionGroups)
 
   return (
     <DashboardBody>
@@ -47,14 +49,13 @@ const TiersPage: React.FC<TiersPageProps> = ({
         </EmptyLayout>
       )}
       {subscriptionGroups.pagination.total_count > 0 && (
-        <div className="flex flex-col gap-4 overflow-hidden">
+        <div className="dark:divide-polar-700 flex flex-col gap-4 divide-y">
           {subscriptionGroups.items?.map((subscriptionGroup) => (
             <React.Fragment key={subscriptionGroup.id}>
               <SubscriptionGroup
                 subscriptionGroup={subscriptionGroup}
                 organization={organization}
               />
-              <Separator />
             </React.Fragment>
           ))}
         </div>

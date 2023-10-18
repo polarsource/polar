@@ -397,6 +397,48 @@ class TestUserCreate:
         )
         assert subscription_tier is None
 
+    async def test_valid_highlighted(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+        mock_stripe_service: MagicMock,
+    ) -> None:
+        highlighted_subscription_tier = await create_subscription_tier(
+            session, organization=organization, is_highlighted=True
+        )
+        await create_subscription_tier(
+            session, organization=organization, is_highlighted=False
+        )
+        create_product_with_price_mock: MagicMock = (
+            mock_stripe_service.create_product_with_price
+        )
+        create_product_with_price_mock.return_value = SimpleNamespace(
+            stripe_id="PRODUCT_ID", default_price="PRICE_ID"
+        )
+
+        create_schema = SubscriptionTierCreate(
+            type=SubscriptionTierType.hobby,
+            name="Subscription Tier",
+            price_amount=1000,
+            price_currency="USD",
+            organization_id=organization.id,
+            is_highlighted=True,
+        )
+
+        subscription_tier = await subscription_tier_service.user_create(
+            session, authz, create_schema, user
+        )
+        assert subscription_tier.is_highlighted
+
+        updated_highlighted_subscription_tier = await subscription_tier_service.get(
+            session, highlighted_subscription_tier.id
+        )
+        assert updated_highlighted_subscription_tier is not None
+        assert not updated_highlighted_subscription_tier.is_highlighted
+
 
 @pytest.mark.asyncio
 class TestUserUpdate:
@@ -456,6 +498,40 @@ class TestUserUpdate:
 
         assert updated_subscription_tier.price_amount == 1500
         assert updated_subscription_tier.stripe_price_id == "NEW_PRICE_ID"
+
+    async def test_valid_highlighted(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        organization: Organization,
+        subscription_tier_organization: SubscriptionTier,
+        user_organization_admin: UserOrganization,
+        mock_stripe_service: MagicMock,
+    ) -> None:
+        highlighted_subscription_tier = await create_subscription_tier(
+            session, organization=organization, is_highlighted=True
+        )
+
+        create_price_for_product_mock: MagicMock = (
+            mock_stripe_service.create_price_for_product
+        )
+        create_price_for_product_mock.return_value = SimpleNamespace(
+            stripe_id="NEW_PRICE_ID"
+        )
+
+        update_schema = SubscriptionTierUpdate(is_highlighted=True)
+        updated_subscription_tier = await subscription_tier_service.user_update(
+            session, authz, subscription_tier_organization, update_schema, user
+        )
+
+        assert updated_subscription_tier.is_highlighted
+
+        updated_highlighted_subscription_tier = await subscription_tier_service.get(
+            session, highlighted_subscription_tier.id
+        )
+        assert updated_highlighted_subscription_tier is not None
+        assert not updated_highlighted_subscription_tier.is_highlighted
 
 
 @pytest.mark.asyncio

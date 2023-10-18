@@ -14,6 +14,7 @@ class SubscriptionTierCreate(Schema):
     type: SubscriptionTierType
     name: str = Field(..., min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH)
     description: str | None = Field(None, max_length=DESCRIPTION_MAX_LENGTH)
+    is_highlighted: bool = False
     price_amount: int = Field(..., ge=0)
     price_currency: str = Field("USD", regex="USD")
     organization_id: UUID4 | None = None
@@ -43,6 +44,7 @@ class SubscriptionTierUpdate(Schema):
         None, min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH
     )
     description: str | None = Field(None, max_length=DESCRIPTION_MAX_LENGTH)
+    is_highlighted: bool | None = None
     price_amount: int | None = Field(None, ge=0)
     price_currency: str | None = Field(None, regex="USD")
 
@@ -52,6 +54,7 @@ class SubscriptionTier(TimestampedSchema):
     type: SubscriptionTierType
     name: str
     description: str | None = None
+    is_highlighted: bool
     price_amount: int
     price_currency: str
     is_archived: bool

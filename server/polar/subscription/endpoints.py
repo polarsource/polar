@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import UUID4, AnyHttpUrl, EmailStr
+from pydantic import UUID4
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
-from polar.authz.service import AccessType, Authz
+from polar.authz.service import Authz
 from polar.enums import Platforms
-from polar.exceptions import NotPermitted, ResourceNotFound
-from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
-from polar.models import Repository, SubscriptionGroup, SubscriptionTier, User
+from polar.exceptions import ResourceNotFound
+from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.models import Repository, SubscriptionTier
 from polar.organization.dependencies import OrganizationNameQuery
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -18,14 +18,10 @@ from polar.tags.api import Tags
 from .schemas import (
     SubscribeSession,
     SubscribeSessionCreate,
-    SubscriptionGroupInitialize,
-    SubscriptionGroupUpdate,
     SubscriptionTierCreate,
     SubscriptionTierUpdate,
 )
-from .schemas import SubscriptionGroup as SubscriptionGroupSchema
 from .schemas import SubscriptionTier as SubscriptionTierSchema
-from .service.subscription_group import subscription_group as subscription_group_service
 from .service.subscription_tier import subscription_tier as subscription_tier_service
 
 
@@ -44,11 +40,11 @@ router = APIRouter(
 
 
 @router.get(
-    "/groups/search",
-    response_model=ListResource[SubscriptionGroupSchema],
+    "/tiers/search",
+    response_model=ListResource[SubscriptionTierSchema],
     tags=[Tags.PUBLIC],
 )
-async def search_subscription_groups(
+async def search_subscription_tiers(
     pagination: PaginationParamsQuery,
     organization_name: OrganizationNameQuery,
     repository_name: OptionalRepositoryNameQuery = None,
@@ -56,7 +52,7 @@ async def search_subscription_groups(
     platform: Platforms = Query(...),
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
-) -> ListResource[SubscriptionGroupSchema]:
+) -> ListResource[SubscriptionTierSchema]:
     organization = await organization_service.get_by_name(
         session, platform, organization_name
     )
@@ -71,7 +67,7 @@ async def search_subscription_groups(
         if repository is None:
             raise ResourceNotFound("Repository not found")
 
-    results, count = await subscription_group_service.search(
+    results, count = await subscription_tier_service.search(
         session,
         auth.subject,
         organization=organization,
@@ -81,79 +77,10 @@ async def search_subscription_groups(
     )
 
     return ListResource.from_paginated_results(
-        [SubscriptionGroupSchema.from_orm(result) for result in results],
+        [SubscriptionTierSchema.from_orm(result) for result in results],
         count,
         pagination,
     )
-
-
-@router.get(
-    "/groups/lookup", response_model=SubscriptionGroupSchema, tags=[Tags.PUBLIC]
-)
-async def lookup_subscription_group(
-    subscription_group_id: UUID4,
-    auth: Auth = Depends(Auth.optional_user),
-    session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionGroup:
-    subscription_group = await subscription_group_service.get_by_id(
-        session, auth.subject, subscription_group_id
-    )
-
-    if subscription_group is None:
-        raise ResourceNotFound()
-
-    return subscription_group
-
-
-@router.post(
-    "/groups/initialize",
-    response_model=ListResource[SubscriptionGroupSchema],
-    status_code=201,
-    tags=[Tags.PUBLIC],
-)
-async def initialize_subscription_groups(
-    subscription_group_initialize: SubscriptionGroupInitialize,
-    auth: UserRequiredAuth,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> ListResource[SubscriptionGroupSchema]:
-    subscription_groups = await subscription_group_service.initialize(
-        session, authz, subscription_group_initialize, auth.user
-    )
-    return ListResource(
-        items=[
-            SubscriptionGroupSchema.from_orm(subscription_group)
-            for subscription_group in subscription_groups
-        ],
-        pagination=Pagination(total_count=len(subscription_groups), max_page=1),
-    )
-
-
-@router.post("/groups/{id}", response_model=SubscriptionGroupSchema, tags=[Tags.PUBLIC])
-async def update_subscription_group(
-    id: UUID4,
-    subscription_group_update: SubscriptionGroupUpdate,
-    auth: UserRequiredAuth,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionGroup:
-    subscription_group = (
-        await subscription_group_service.get_with_organization_or_repository(
-            session, id
-        )
-    )
-
-    if subscription_group is None:
-        raise ResourceNotFound()
-
-    if not await authz.can(auth.user, AccessType.write, subscription_group):
-        raise NotPermitted()
-
-    subscription_group = await subscription_group_service.update(
-        session, subscription_group, subscription_group_update, exclude_unset=True
-    )
-    await session.refresh(subscription_group, {"tiers"})
-    return subscription_group
 
 
 @router.get(
@@ -201,7 +128,9 @@ async def update_subscription_tier(
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
-    subscription_tier = await subscription_tier_service.get(session, id)
+    subscription_tier = await subscription_tier_service.get_by_id(
+        session, auth.subject, id
+    )
 
     if subscription_tier is None:
         raise ResourceNotFound()
@@ -220,7 +149,9 @@ async def archive_subscription_tier(
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionTier:
-    subscription_tier = await subscription_tier_service.get(session, id)
+    subscription_tier = await subscription_tier_service.get_by_id(
+        session, auth.subject, id
+    )
 
     if subscription_tier is None:
         raise ResourceNotFound()

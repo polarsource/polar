@@ -13,7 +13,6 @@ from polar.models import (
     Organization,
     Repository,
     Subscription,
-    SubscriptionGroup,
     SubscriptionTier,
     User,
 )
@@ -39,39 +38,20 @@ def override_is_feature_flag_enabled() -> Iterator[None]:
     app.dependency_overrides.pop(is_feature_flag_enabled)
 
 
-async def create_subscription_group(
-    session: AsyncSession,
-    *,
-    name: str = "Subscription Group",
-    order: int = 1,
-    organization: Organization | None = None,
-    repository: Repository | None = None,
-) -> SubscriptionGroup:
-    assert (organization is not None) != (repository is not None)
-    subscription_group = SubscriptionGroup(
-        name=name,
-        order=order,
-        organization_id=organization.id if organization is not None else None,
-        repository_id=repository.id if repository is not None else None,
-        icon="material-symbols/stream",
-        color="#79A2E1",
-    )
-    session.add(subscription_group)
-    await session.commit()
-    return subscription_group
-
-
 async def create_subscription_tier(
     session: AsyncSession,
     *,
-    subscription_group: SubscriptionGroup,
+    organization: Organization | None = None,
+    repository: Repository | None = None,
     name: str = "Subscription Tier",
 ) -> SubscriptionTier:
+    assert (organization is not None) != (repository is not None)
     subscription_tier = SubscriptionTier(
         name=name,
         price_amount=1000,
         price_currency="USD",
-        subscription_group_id=subscription_group.id,
+        organization_id=organization.id if organization is not None else None,
+        repository_id=repository.id if repository is not None else None,
         stripe_product_id="PRODUCT_ID",
         stripe_price_id="PRICE_ID",
     )
@@ -106,54 +86,36 @@ async def create_subscription(
 
 
 @pytest_asyncio.fixture
-async def subscription_group_organization(
-    session: AsyncSession, organization: Organization
-) -> SubscriptionGroup:
-    return await create_subscription_group(session, organization=organization)
-
-
-@pytest_asyncio.fixture
-async def subscription_group_repository(
-    session: AsyncSession, public_repository: Repository
-) -> SubscriptionGroup:
-    return await create_subscription_group(session, repository=public_repository)
-
-
-@pytest_asyncio.fixture
-async def subscription_group_private_repository(
-    session: AsyncSession, repository: Repository
-) -> SubscriptionGroup:
-    return await create_subscription_group(session, repository=repository)
-
-
-@pytest_asyncio.fixture
-async def subscription_groups(
-    subscription_group_organization: SubscriptionGroup,
-    subscription_group_repository: SubscriptionGroup,
-    subscription_group_private_repository: SubscriptionGroup,
-) -> list[SubscriptionGroup]:
-    return [
-        subscription_group_organization,
-        subscription_group_repository,
-        subscription_group_private_repository,
-    ]
-
-
-@pytest_asyncio.fixture
 async def subscription_tier_organization(
-    session: AsyncSession, subscription_group_organization: SubscriptionGroup
+    session: AsyncSession, organization: Organization
 ) -> SubscriptionTier:
-    return await create_subscription_tier(
-        session, subscription_group=subscription_group_organization
-    )
+    return await create_subscription_tier(session, organization=organization)
+
+
+@pytest_asyncio.fixture
+async def subscription_tier_repository(
+    session: AsyncSession, public_repository: Repository
+) -> SubscriptionTier:
+    return await create_subscription_tier(session, repository=public_repository)
+
+
+@pytest_asyncio.fixture
+async def subscription_tier_private_repository(
+    session: AsyncSession, repository: Repository
+) -> SubscriptionTier:
+    return await create_subscription_tier(session, repository=repository)
 
 
 @pytest_asyncio.fixture
 async def subscription_tiers(
     subscription_tier_organization: SubscriptionTier,
+    subscription_tier_repository: SubscriptionTier,
+    subscription_tier_private_repository: SubscriptionTier,
 ) -> list[SubscriptionTier]:
     return [
         subscription_tier_organization,
+        subscription_tier_repository,
+        subscription_tier_private_repository,
     ]
 
 

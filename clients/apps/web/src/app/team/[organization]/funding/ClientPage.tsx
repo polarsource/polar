@@ -42,6 +42,8 @@ export default function ClientPage() {
 
   const groupedClosedIssues = groupByIssue(closedIssues)
 
+  const havePledges = (pledges.data?.items?.length || 0) > 0
+
   if (!isLoaded || !org) {
     return (
       <DashboardBody>
@@ -52,7 +54,7 @@ export default function ClientPage() {
 
   return (
     <DashboardBody>
-      {pledges.isFetched && pledges.data?.items?.length === 0 ? (
+      {pledges.isFetched && !havePledges ? (
         <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
           <span className="text-6xl">
             <HowToVoteOutlined fontSize="inherit" />
@@ -63,39 +65,43 @@ export default function ClientPage() {
         </div>
       ) : null}
 
-      <div>
-        {openIssues.length > 0 ? (
-          <h2 className="text-lg">Open issues</h2>
-        ) : null}
+      {havePledges ? (
+        <div>
+          <h2 className="text-2xl font-medium">Funding</h2>
 
-        {Object.values(groupedOpenIssues).map((ps) => (
-          <IssueListItem
-            key={ps[0].issue.id}
-            issue={ps[0].issue}
-            references={[]}
-            pledges={ps}
-            canAddRemovePolarLabel={false}
-            showLogo={true}
-            showPledgeAction={false}
-          />
-        ))}
+          {openIssues.length > 0 ? (
+            <h2 className="mt-2 text-lg">Open issues</h2>
+          ) : null}
 
-        {closedIssues.length > 0 ? (
-          <h2 className="text-lg">Closed issues</h2>
-        ) : null}
+          {Object.values(groupedOpenIssues).map((ps) => (
+            <IssueListItem
+              key={ps[0].issue.id}
+              issue={ps[0].issue}
+              references={[]}
+              pledges={ps}
+              canAddRemovePolarLabel={false}
+              showLogo={true}
+              showPledgeAction={false}
+            />
+          ))}
 
-        {Object.values(groupedClosedIssues).map((ps) => (
-          <IssueListItem
-            key={ps[0].issue.id}
-            issue={ps[0].issue}
-            references={[]}
-            pledges={ps}
-            canAddRemovePolarLabel={false}
-            showLogo={true}
-            showPledgeAction={false}
-          />
-        ))}
-      </div>
+          {closedIssues.length > 0 ? (
+            <h2 className="mt-2 text-lg">Closed issues</h2>
+          ) : null}
+
+          {Object.values(groupedClosedIssues).map((ps) => (
+            <IssueListItem
+              key={ps[0].issue.id}
+              issue={ps[0].issue}
+              references={[]}
+              pledges={ps}
+              canAddRemovePolarLabel={false}
+              showLogo={true}
+              showPledgeAction={false}
+            />
+          ))}
+        </div>
+      ) : null}
     </DashboardBody>
   )
 }

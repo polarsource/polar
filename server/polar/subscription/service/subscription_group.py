@@ -110,7 +110,7 @@ class SubscriptionGroupService(
         direct_organization: bool = True,
         pagination: PaginationParams,
     ) -> tuple[Sequence[SubscriptionGroup], int]:
-        statement = self._get_readable_subscription_group_statement(auth_subject)
+        statement = self.get_readable_subscription_groups_statement(auth_subject)
 
         statement = statement.options(selectinload(SubscriptionGroup.tiers))
 
@@ -134,6 +134,18 @@ class SubscriptionGroupService(
         results, count = await paginate(session, statement, pagination=pagination)
 
         return results, count
+
+    async def get_by_id(
+        self, session: AsyncSession, auth_subject: Subject, id: uuid.UUID
+    ) -> SubscriptionGroup | None:
+        statement = (
+            self.get_readable_subscription_groups_statement(auth_subject)
+            .options(selectinload(SubscriptionGroup.tiers))
+            .where(SubscriptionGroup.id == id)
+        )
+
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
 
     async def get_with_organization_or_repository(
         self, session: AsyncSession, id: uuid.UUID
@@ -207,7 +219,7 @@ class SubscriptionGroupService(
             session, subscription_group.managing_organization_id
         )
 
-    def _get_readable_subscription_group_statement(
+    def get_readable_subscription_groups_statement(
         self, auth_subject: Subject
     ) -> Select[Any]:
         clauses: list[ColumnExpressionArgument[bool]] = [

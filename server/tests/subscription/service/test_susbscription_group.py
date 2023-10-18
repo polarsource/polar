@@ -128,6 +128,79 @@ class TestSearch:
 
 
 @pytest.mark.asyncio
+class TestGetById:
+    async def test_anonymous(
+        self,
+        session: AsyncSession,
+        subscription_group_private_repository: SubscriptionGroup,
+        subscription_group_organization: SubscriptionGroup,
+    ) -> None:
+        not_existing_subscription_group = await subscription_group_service.get_by_id(
+            session, Anonymous(), uuid.uuid4()
+        )
+        assert not_existing_subscription_group is None
+
+        not_accessible_subscription_group = await subscription_group_service.get_by_id(
+            session, Anonymous(), subscription_group_private_repository.id
+        )
+        assert not_accessible_subscription_group is None
+
+        accessible_subscription_group = await subscription_group_service.get_by_id(
+            session, Anonymous(), subscription_group_organization.id
+        )
+        assert accessible_subscription_group is not None
+        assert accessible_subscription_group.id == subscription_group_organization.id
+
+    async def test_user(
+        self,
+        session: AsyncSession,
+        subscription_group_private_repository: SubscriptionGroup,
+        subscription_group_organization: SubscriptionGroup,
+        user: User,
+    ) -> None:
+        not_existing_subscription_group = await subscription_group_service.get_by_id(
+            session, user, uuid.uuid4()
+        )
+        assert not_existing_subscription_group is None
+
+        not_accessible_subscription_group = await subscription_group_service.get_by_id(
+            session, user, subscription_group_private_repository.id
+        )
+        assert not_accessible_subscription_group is None
+
+        accessible_subscription_group = await subscription_group_service.get_by_id(
+            session, user, subscription_group_organization.id
+        )
+        assert accessible_subscription_group is not None
+        assert accessible_subscription_group.id == subscription_group_organization.id
+
+    async def test_user_organization(
+        self,
+        session: AsyncSession,
+        subscription_group_private_repository: SubscriptionGroup,
+        subscription_group_organization: SubscriptionGroup,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        not_existing_subscription_group = await subscription_group_service.get_by_id(
+            session, user, uuid.uuid4()
+        )
+        assert not_existing_subscription_group is None
+
+        private_subscription_group = await subscription_group_service.get_by_id(
+            session, user, subscription_group_private_repository.id
+        )
+        assert private_subscription_group is not None
+        assert private_subscription_group.id == subscription_group_private_repository.id
+
+        accessible_subscription_group = await subscription_group_service.get_by_id(
+            session, user, subscription_group_organization.id
+        )
+        assert accessible_subscription_group is not None
+        assert accessible_subscription_group.id == subscription_group_organization.id
+
+
+@pytest.mark.asyncio
 async def test_with_organization_or_repository(
     session: AsyncSession,
     subscription_group_organization: SubscriptionGroup,

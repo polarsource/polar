@@ -1,5 +1,6 @@
 import uuid
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -208,6 +209,52 @@ class TestCreateSubscriptionTier:
 
         assert response.status_code == 422
 
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {"name": "This is a way too long name for a subscription tier"},
+            {"name": "ab"},
+            {"name": ""},
+            {
+                "description": (
+                    "This is a way too long description that shall never fit "
+                    "in the space we have in a single subscription tier card. "
+                    "That's why we need to add this upper limit of characters, "
+                    "otherwise users would put loads and loads of text that would "
+                    "result in a very ugly output on the subscription page."
+                )
+            },
+        ],
+    )
+    @pytest.mark.authenticated
+    async def test_validation(
+        self,
+        payload: dict[str, Any],
+        client: AsyncClient,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+        mock_stripe_service: MagicMock,
+    ) -> None:
+        create_product_with_price_mock: MagicMock = (
+            mock_stripe_service.create_product_with_price
+        )
+        create_product_with_price_mock.return_value = SimpleNamespace(
+            stripe_id="PRODUCT_ID", default_price="PRICE_ID"
+        )
+
+        response = await client.post(
+            "/api/v1/subscriptions/tiers/",
+            json={
+                "type": "hobby",
+                "name": "Subscription Tier",
+                "price_amount": 1000,
+                "organization_id": str(organization.id),
+                **payload,
+            },
+        )
+
+        assert response.status_code == 422
+
     @pytest.mark.authenticated
     async def test_valid(
         self,
@@ -243,7 +290,7 @@ class TestUpdateSubscriptionTier:
     ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}",
-            json={"name": "Updated Subscription Tier"},
+            json={"name": "Updated Name"},
         )
 
         assert response.status_code == 401
@@ -252,10 +299,42 @@ class TestUpdateSubscriptionTier:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/tiers/{uuid.uuid4()}",
-            json={"name": "Updated Subscription Tier"},
+            json={"name": "Updated Name"},
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {"name": "This is a way too long name for a subscription tier"},
+            {"name": "ab"},
+            {"name": ""},
+            {
+                "description": (
+                    "This is a way too long description that shall never fit "
+                    "in the space we have in a single subscription tier card. "
+                    "That's why we need to add this upper limit of characters, "
+                    "otherwise users would put loads and loads of text that would "
+                    "result in a very ugly output on the subscription page."
+                )
+            },
+        ],
+    )
+    @pytest.mark.authenticated
+    async def test_validation(
+        self,
+        payload: dict[str, Any],
+        client: AsyncClient,
+        subscription_tier_organization: SubscriptionTier,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}",
+            json=payload,
+        )
+
+        assert response.status_code == 422
 
     @pytest.mark.authenticated
     async def test_valid(
@@ -266,13 +345,13 @@ class TestUpdateSubscriptionTier:
     ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}",
-            json={"name": "Updated Subscription Tier"},
+            json={"name": "Updated Name"},
         )
 
         assert response.status_code == 200
 
         json = response.json()
-        assert json["name"] == "Updated Subscription Tier"
+        assert json["name"] == "Updated Name"
 
 
 @pytest.mark.asyncio

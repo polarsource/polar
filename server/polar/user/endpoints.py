@@ -49,7 +49,7 @@ async def create_stripe_customer_portal(
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
 ) -> UserStripePortalSession:
-    portal = await stripe_service.create_portal_session(session, auth.subject)
+    portal = await stripe_service.create_user_portal_session(session, auth.subject)
     if not portal:
         raise InternalServerError()
 

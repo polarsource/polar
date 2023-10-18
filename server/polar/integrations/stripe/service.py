@@ -211,6 +211,34 @@ class StripeService:
 
         return customer
 
+    async def get_or_create_org_customer(
+        self, session: AsyncSession, org: Organization
+    ) -> stripe_lib.Customer | None:
+        if org.stripe_customer_id:
+            return self.get_customer(org.stripe_customer_id)
+
+        customer = stripe_lib.Customer.create(
+            name=org.name,
+            email=org.billing_email,
+            metadata={
+                "org_id": org.id,
+            },
+        )
+
+        if not customer:
+            return None
+
+        # Save customer ID
+        stmt = (
+            sql.Update(Organization)
+            .where(Organization.id == org.id)
+            .values(stripe_customer_id=customer.id)
+        )
+        await session.execute(stmt)
+        await session.commit()
+
+        return customer
+
     async def list_user_payment_methods(
         self,
         session: AsyncSession,
@@ -284,7 +312,7 @@ Thank you for your support!
 
         return sent_invoice
 
-    async def create_portal_session(
+    async def create_user_portal_session(
         self,
         session: AsyncSession,
         user: User,
@@ -296,6 +324,20 @@ Thank you for your support!
         return stripe_lib.billing_portal.Session.create(
             customer=customer.id,
             return_url=f"{settings.FRONTEND_BASE_URL}/settings",
+        )
+
+    async def create_org_portal_session(
+        self,
+        session: AsyncSession,
+        org: Organization,
+    ) -> stripe_lib.billing_portal.Session | None:
+        customer = await self.get_or_create_org_customer(session, org)
+        if not customer:
+            return None
+
+        return stripe_lib.billing_portal.Session.create(
+            customer=customer.id,
+            return_url=f"{settings.FRONTEND_BASE_URL}/team/{org.name}/settings",
         )
 
     def create_product_with_price(

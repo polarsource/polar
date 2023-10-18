@@ -1,13 +1,13 @@
 import { CheckOutlined } from '@mui/icons-material'
-import { SubscriptionGroup, SubscriptionTier } from '@polar-sh/sdk'
+import { SubscriptionTier } from '@polar-sh/sdk'
 import { Card, CardContent, CardHeader } from 'polarkit/components/ui/card'
 import { Separator } from 'polarkit/components/ui/separator'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
 import { getCentsInDollarString } from 'polarkit/money'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
+import { getSubscriptionColorByType } from './utils'
 
 interface SubscriptionTierCardProps {
-  subscriptionGroup: SubscriptionGroup
   subscriptionTier: Partial<SubscriptionTier>
 }
 
@@ -38,18 +38,23 @@ const mockedBenefits = [
 
 const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   subscriptionTier,
-  subscriptionGroup,
 }) => {
+  const subscriptionColor = getSubscriptionColorByType(subscriptionTier.type)
+
   const style = {
-    '--var-bg-color': hexToRGBA(subscriptionGroup.color, 0.1),
-    '--var-border-color': hexToRGBA(subscriptionGroup.color, 0.15),
-    '--var-muted-color': hexToRGBA(subscriptionGroup.color, 0.5),
-    '--var-fg-color': subscriptionGroup.color,
+    '--var-bg-color': hexToRGBA(subscriptionColor, 0.2),
+    '--var-border-color': hexToRGBA(subscriptionColor, 0.5),
+    '--var-muted-color': hexToRGBA(subscriptionColor, 0.5),
+    '--var-fg-color': subscriptionColor,
+    '--var-dark-bg-color': hexToRGBA(subscriptionColor, 0.1),
+    '--var-dark-border-color': hexToRGBA(subscriptionColor, 0.15),
+    '--var-dark-muted-color': hexToRGBA(subscriptionColor, 0.5),
+    '--var-dark-fg-color': subscriptionColor,
   } as React.CSSProperties
 
   return (
     <Card
-      className="flex h-full min-w-[320px] max-w-[360px] flex-col gap-y-8 rounded-3xl border-0 bg-[--var-bg-color] bg-gradient-to-tr p-10 shadow-none transition-opacity hover:opacity-50 dark:hover:opacity-80"
+      className="flex h-full min-w-[320px] max-w-[360px] flex-col gap-y-8 rounded-3xl border-0 bg-[--var-bg-color] bg-gradient-to-tr p-10 shadow-none transition-opacity hover:opacity-50 dark:bg-[--var-dark-bg-color] dark:hover:opacity-80"
       style={style}
     >
       <CardHeader className="grow gap-y-8 p-0">
@@ -58,15 +63,12 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             {subscriptionTier.name ? (
               subscriptionTier.name
             ) : (
-              <Skeleton className="inline-block h-4 w-[150px]" />
+              <Skeleton className="inline-block h-4 w-[150px] bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
             )}
           </h3>
-          <SubscriptionGroupIcon
-            icon={subscriptionGroup.icon}
-            color={subscriptionGroup.color}
-          />
+          <SubscriptionGroupIcon type={subscriptionTier.type} />
         </div>
-        <div className="flex flex-col gap-y-8 text-[--var-fg-color]">
+        <div className="flex flex-col gap-y-8 text-[--var-fg-color] dark:text-[--var-dark-fg-color]">
           <div className="text-6xl !font-[200]">
             {
               <>
@@ -88,9 +90,9 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             </p>
           ) : (
             <div className="flex flex-col gap-2">
-              <Skeleton className="inline-block h-2 w-full" />
-              <Skeleton className="inline-block h-2 w-full" />
-              <Skeleton className="inline-block h-2 w-full" />
+              <Skeleton className="inline-block h-2 w-full bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
+              <Skeleton className="inline-block h-2 w-full bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
+              <Skeleton className="inline-block h-2 w-full bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
             </div>
           )}
         </div>
@@ -98,7 +100,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
       <Separator className="bg-[--var-border-color]" />
       <CardContent className="flex shrink flex-col gap-y-1 p-0">
         {mockedBenefits.map((benefit) => (
-          <div className="flex flex-row items-center text-[--var-fg-color]">
+          <div className="flex flex-row items-center text-[--var-fg-color] dark:text-[--var-dark-fg-color]">
             <CheckOutlined className="h-4 w-4" fontSize="small" />
             <span className="ml-2 text-sm">{benefit.summary}</span>
           </div>

@@ -1,4 +1,4 @@
-import TiersPage from '@/components/Subscriptions/TiersPage'
+import SubscriptionTierCreatePage from '@/components/Subscriptions/SubscriptionTierCreatePage'
 import { useAPI } from '@/hooks/api'
 import { Platforms } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
@@ -18,8 +18,10 @@ export async function generateMetadata(
 
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: { organization: string }
+  searchParams: { subscription_group?: string }
 }) {
   const api = useAPI()
   const organization = await api.organizations.lookup({
@@ -31,8 +33,9 @@ export default async function Page({
     platform: Platforms.GITHUB,
   })
   return (
-    <TiersPage
-      subscriptionGroups={subscriptionGroups}
+    <SubscriptionTierCreatePage
+      subscriptionGroups={subscriptionGroups.items || []}
+      subscriptionGroup={searchParams.subscription_group}
       organization={organization}
     />
   )

@@ -1,12 +1,13 @@
 import { SubscriptionGroup, SubscriptionTier } from '@polar-sh/sdk'
 import { Card, CardHeader } from 'polarkit/components/ui/card'
 import { Separator } from 'polarkit/components/ui/separator'
+import { Skeleton } from 'polarkit/components/ui/skeleton'
 import { getCentsInDollarString } from 'polarkit/money'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 
 interface SubscriptionTierCardProps {
   subscriptionGroup: SubscriptionGroup
-  subscriptionTier: SubscriptionTier
+  subscriptionTier: Partial<SubscriptionTier>
 }
 
 const hexToRGBA = (hex: string, opacity: number): string => {
@@ -36,7 +37,13 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     >
       <CardHeader>
         <div className="flex justify-between">
-          <h3 className="font-medium">{subscriptionTier.name}</h3>
+          <h3 className="font-medium">
+            {subscriptionTier.name ? (
+              subscriptionTier.name
+            ) : (
+              <Skeleton className="inline-block h-4 w-[150px]" />
+            )}
+          </h3>
           <SubscriptionGroupIcon
             icon={subscriptionGroup.icon}
             color={subscriptionGroup.color}
@@ -44,12 +51,31 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
         </div>
         <div className="flex flex-col gap-4 text-[--var-fg-color]">
           <div className="text-4xl">
-            $
-            {getCentsInDollarString(subscriptionTier.price_amount, false, true)}
+            {subscriptionTier.price_amount === undefined && (
+              <Skeleton className="inline-block h-8 w-[100px]" />
+            )}
+            {subscriptionTier.price_amount && (
+              <>
+                ${' '}
+                {getCentsInDollarString(
+                  subscriptionTier.price_amount,
+                  false,
+                  true,
+                )}
+              </>
+            )}
             <span className="text-lg text-[--var-muted-color]"> / mo</span>
           </div>
           <Separator className="bg-[--var-muted-color]" />
-          <p className="text-sm">{subscriptionTier.description}</p>
+          {subscriptionTier.description ? (
+            <p className="text-sm">{subscriptionTier.description}</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <Skeleton className="inline-block h-2 w-full" />
+              <Skeleton className="inline-block h-2 w-full" />
+              <Skeleton className="inline-block h-2 w-full" />
+            </div>
+          )}
         </div>
       </CardHeader>
     </Card>

@@ -1425,19 +1425,19 @@ export interface ListResourceReward {
 /**
  * 
  * @export
- * @interface ListResourceSubscriptionGroup
+ * @interface ListResourceSubscriptionTier
  */
-export interface ListResourceSubscriptionGroup {
+export interface ListResourceSubscriptionTier {
     /**
      * 
-     * @type {Array<SubscriptionGroup>}
-     * @memberof ListResourceSubscriptionGroup
+     * @type {Array<SubscriptionTier>}
+     * @memberof ListResourceSubscriptionTier
      */
-    items?: Array<SubscriptionGroup>;
+    items?: Array<SubscriptionTier>;
     /**
      * 
      * @type {Pagination}
-     * @memberof ListResourceSubscriptionGroup
+     * @memberof ListResourceSubscriptionTier
      */
     pagination: Pagination;
 }
@@ -3436,117 +3436,6 @@ export interface SubscribeSessionCreate {
 /**
  * 
  * @export
- * @interface SubscriptionGroup
- */
-export interface SubscriptionGroup {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionGroup
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionGroup
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionGroup
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionGroup
-     */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionGroup
-     */
-    description?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionGroup
-     */
-    icon: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionGroup
-     */
-    color: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof SubscriptionGroup
-     */
-    order: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionGroup
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionGroup
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {Array<SubscriptionTier>}
-     * @memberof SubscriptionGroup
-     */
-    tiers: Array<SubscriptionTier>;
-}
-/**
- * 
- * @export
- * @interface SubscriptionGroupInitialize
- */
-export interface SubscriptionGroupInitialize {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionGroupInitialize
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionGroupInitialize
-     */
-    repository_id?: string;
-}
-/**
- * 
- * @export
- * @interface SubscriptionGroupUpdate
- */
-export interface SubscriptionGroupUpdate {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionGroupUpdate
-     */
-    name?: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof SubscriptionGroupUpdate
-     */
-    order?: number;
-}
-/**
- * 
- * @export
  * @interface SubscriptionTier
  */
 export interface SubscriptionTier {
@@ -3568,6 +3457,12 @@ export interface SubscriptionTier {
      * @memberof SubscriptionTier
      */
     id: string;
+    /**
+     * 
+     * @type {SubscriptionTierType}
+     * @memberof SubscriptionTier
+     */
+    type: SubscriptionTierType;
     /**
      * 
      * @type {string}
@@ -3603,7 +3498,13 @@ export interface SubscriptionTier {
      * @type {string}
      * @memberof SubscriptionTier
      */
-    subscription_group_id: string;
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTier
+     */
+    repository_id?: string;
 }
 /**
  * 
@@ -3611,6 +3512,12 @@ export interface SubscriptionTier {
  * @interface SubscriptionTierCreate
  */
 export interface SubscriptionTierCreate {
+    /**
+     * 
+     * @type {SubscriptionTierType}
+     * @memberof SubscriptionTierCreate
+     */
+    type: SubscriptionTierType;
     /**
      * 
      * @type {string}
@@ -3640,8 +3547,26 @@ export interface SubscriptionTierCreate {
      * @type {string}
      * @memberof SubscriptionTierCreate
      */
-    subscription_group_id: string;
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierCreate
+     */
+    repository_id?: string;
 }
+
+/**
+ * An enumeration.
+ * @export
+ */
+export const SubscriptionTierType = {
+    HOBBY: 'hobby',
+    PRO: 'pro',
+    BUSINESS: 'business'
+} as const;
+export type SubscriptionTierType = typeof SubscriptionTierType[keyof typeof SubscriptionTierType];
+
 /**
  * 
  * @export

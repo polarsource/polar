@@ -1,8 +1,8 @@
 'use client'
 
 import {
-  SubscriptionGroup,
   SubscriptionTierCreate,
+  SubscriptionTierType,
   SubscriptionTierUpdate,
 } from '@polar-sh/sdk'
 import {
@@ -21,22 +21,30 @@ import {
   SelectValue,
 } from 'polarkit/components/ui/select'
 import { Textarea } from 'polarkit/components/ui/textarea'
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 
 interface SubscriptionTierFormProps {
   update?: boolean
-  subscriptionGroups: SubscriptionGroup[]
 }
 
 const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
   update,
-  subscriptionGroups,
 }) => {
   const { control } = useFormContext<
     SubscriptionTierCreate | SubscriptionTierUpdate
   >()
+
+  const subscriptionTierTypes = useMemo(
+    () =>
+      ({
+        [SubscriptionTierType.HOBBY]: 'Hobby',
+        [SubscriptionTierType.PRO]: 'Pro',
+        [SubscriptionTierType.BUSINESS]: 'Business',
+      } as const),
+    [],
+  )
 
   return (
     <>
@@ -66,7 +74,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
       {!update && (
         <FormField
           control={control}
-          name="subscription_group_id"
+          name="type"
           rules={{ required: 'This field is required' }}
           render={({ field }) => (
             <FormItem className="max-w-[300px]">
@@ -74,24 +82,22 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a subscription group" />
+                    <SelectValue placeholder="Select a tier type" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {subscriptionGroups.map((subscriptionGroup) => (
-                    <SelectItem
-                      key={subscriptionGroup.id}
-                      value={subscriptionGroup.id}
-                    >
-                      <div className="flex items-center gap-2">
-                        <SubscriptionGroupIcon
-                          icon={subscriptionGroup.icon}
-                          color={subscriptionGroup.color}
-                        />
-                        {subscriptionGroup.name}
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {Object.entries(subscriptionTierTypes).map(
+                    ([type, pretty]) => (
+                      <SelectItem key={type} value={type}>
+                        <div className="flex items-center gap-2">
+                          <SubscriptionGroupIcon
+                            type={type as SubscriptionTierType}
+                          />
+                          {pretty}
+                        </div>
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
               <FormMessage />

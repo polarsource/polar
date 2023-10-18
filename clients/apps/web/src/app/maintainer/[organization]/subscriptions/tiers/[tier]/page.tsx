@@ -31,13 +31,10 @@ export default async function Page({
     const subscriptionTier = await api.subscriptions.lookupSubscriptionTier({
       subscriptionTierId: params.tier,
     })
-    const subscriptionGroup = await api.subscriptions.lookupSubscriptionGroup({
-      subscriptionGroupId: subscriptionTier.subscription_group_id,
-    })
+
     return (
       <SubscriptionTierEditPage
         subscriptionTier={subscriptionTier}
-        subscriptionGroup={subscriptionGroup}
         organization={organization}
       />
     )

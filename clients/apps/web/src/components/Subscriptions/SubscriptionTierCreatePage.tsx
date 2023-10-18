@@ -3,36 +3,34 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
   Organization,
-  SubscriptionGroup,
   SubscriptionTier,
   SubscriptionTierCreate,
+  SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
 import { Button } from 'polarkit/components/ui/button'
 import { Form } from 'polarkit/components/ui/form'
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import SubscriptionTierCard from './SubscriptionTierCard'
 import SubscriptionTierForm from './SubscriptionTierForm'
 
 interface SubscriptionTierCreatePageProps {
-  subscriptionGroups: SubscriptionGroup[]
-  subscriptionGroup?: string
+  type?: SubscriptionTierType
   organization: Organization
 }
 
 const SubscriptionTierCreatePage: React.FC<SubscriptionTierCreatePageProps> = ({
-  subscriptionGroups,
-  subscriptionGroup,
+  type,
   organization,
 }) => {
   const router = useRouter()
 
   const form = useForm<SubscriptionTierCreate>({
     defaultValues: {
-      ...(subscriptionGroup
-        ? { subscription_group_id: subscriptionGroup }
+      ...(type && organization
+        ? { type, organization_id: organization.id }
         : {}),
     },
   })
@@ -40,14 +38,7 @@ const SubscriptionTierCreatePage: React.FC<SubscriptionTierCreatePageProps> = ({
 
   const newSubscriptionTier = watch() as SubscriptionTier
 
-  const selectedSubscriptionGroupId = watch('subscription_group_id')
-  const selectedSubscriptionGroup = useMemo(() => {
-    if (selectedSubscriptionGroupId) {
-      return subscriptionGroups.find(
-        ({ id }) => id === selectedSubscriptionGroupId,
-      )
-    }
-  }, [subscriptionGroups, selectedSubscriptionGroupId])
+  const selectedSubscriptionTierType = watch('type')
 
   const onSubmit = useCallback(
     async (subscriptionTierCreate: SubscriptionTierCreate) => {
@@ -77,17 +68,11 @@ const SubscriptionTierCreatePage: React.FC<SubscriptionTierCreatePageProps> = ({
           </div>
           <div className="flex flex-row justify-between gap-x-24">
             <div className="flex w-1/2 flex-col gap-y-6 ">
-              <SubscriptionTierForm
-                update={false}
-                subscriptionGroups={subscriptionGroups}
-              />
+              <SubscriptionTierForm update={false} />
             </div>
             <div className="flex flex-col">
-              {selectedSubscriptionGroup && (
-                <SubscriptionTierCard
-                  subscriptionGroup={selectedSubscriptionGroup}
-                  subscriptionTier={newSubscriptionTier}
-                />
+              {selectedSubscriptionTierType && (
+                <SubscriptionTierCard subscriptionTier={newSubscriptionTier} />
               )}
             </div>
           </div>

@@ -3,7 +3,6 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
   Organization,
-  SubscriptionGroup,
   SubscriptionTier,
   SubscriptionTierUpdate,
 } from '@polar-sh/sdk'
@@ -18,13 +17,11 @@ import SubscriptionTierForm from './SubscriptionTierForm'
 
 interface SubscriptionTierEditPageProps {
   subscriptionTier: SubscriptionTier
-  subscriptionGroup: SubscriptionGroup
   organization: Organization
 }
 
 const SubscriptionTierEditPage: React.FC<SubscriptionTierEditPageProps> = ({
   subscriptionTier,
-  subscriptionGroup,
   organization,
 }) => {
   const router = useRouter()
@@ -65,11 +62,10 @@ const SubscriptionTierEditPage: React.FC<SubscriptionTierEditPageProps> = ({
           </div>
           <div className="flex flex-row justify-between gap-x-24">
             <div className="flex w-1/2 flex-col gap-y-6">
-              <SubscriptionTierForm update={true} subscriptionGroups={[]} />
+              <SubscriptionTierForm update={true} />
             </div>
             <div className="flex flex-col">
               <SubscriptionTierCard
-                subscriptionGroup={subscriptionGroup}
                 subscriptionTier={editingSubscriptionTier}
               />
             </div>

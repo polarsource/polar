@@ -1,14 +1,17 @@
 import { Business, Stream, Verified } from '@mui/icons-material'
+import { SubscriptionTierType } from '@polar-sh/sdk'
 import { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
+import { getSubscriptionColorByType } from './utils'
 
 interface SubscriptionGroupIconProps {
-  icon: string
-  color: string
+  className?: string
+  type?: SubscriptionTierType
 }
 
 const SubscriptionGroupIcon: React.FC<SubscriptionGroupIconProps> = ({
-  icon,
-  color,
+  className,
+  type,
 }) => {
   /**
    * Naive approach considering we know by advance the icons we use.
@@ -17,26 +20,28 @@ const SubscriptionGroupIcon: React.FC<SubscriptionGroupIconProps> = ({
    * so we could set any icon dynamically.
    */
   const IconComponent = useMemo(() => {
-    switch (icon) {
-      case 'material-symbols/stream':
+    switch (type) {
+      case SubscriptionTierType.HOBBY:
         return Stream
-      case 'material-symbols/verified':
+      case SubscriptionTierType.PRO:
         return Verified
-      case 'material-symbols/business':
+      case SubscriptionTierType.BUSINESS:
         return Business
       default:
         return undefined
     }
-  }, [icon])
+  }, [type])
 
-  const style = { '--var-icon-color': color } as React.CSSProperties
+  const style = {
+    '--var-icon-color': getSubscriptionColorByType(type),
+  } as React.CSSProperties
 
   return IconComponent ? (
     <div
       className={`inline-flex items-center text-[--var-icon-color]`}
       style={style}
     >
-      <IconComponent className="!h-5 !w-5" />
+      <IconComponent className={twMerge('!h-5 !w-5', className)} />
     </div>
   ) : null
 }

@@ -25,11 +25,13 @@
     "./components/ui/button": "./src/components/ui/button.tsx",
     "./components/ui/card": "./src/components/ui/card.tsx",
     "./components/ui/dialog": "./src/components/ui/dialog.tsx",
+    "./components/ui/form": "./src/components/ui/form.tsx",
     "./components/ui/input": "./src/components/ui/input.tsx",
     "./components/ui/label": "./src/components/ui/label.tsx",
     "./components/ui/select": "./src/components/ui/select.tsx",
     "./components/ui/checkbox": "./src/components/ui/checkbox.tsx",
     "./components/ui/switch": "./src/components/ui/switch.tsx",
+    "./components/ui/skeleton": "./src/components/ui/skeleton.tsx",
     "./components/ui/textarea": "./src/components/ui/textarea.tsx",
     "./components/ui/tabs": "./src/components/ui/tabs.tsx",
     "./components/ui/separator": "./src/components/ui/separator.tsx",
@@ -47,6 +49,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.0.16",
+    "@hookform/resolvers": "^3.3.2",
     "@polar-sh/sdk": "workspace:*",
     "@radix-ui/react-checkbox": "^1.0.4",
     "@radix-ui/react-dialog": "^1.0.5",
@@ -70,8 +73,10 @@
     "lucide-react": "^0.272.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-hook-form": "^7.47.0",
     "react-timeago": "^7.1.0",
     "tailwind-merge": "^1.14.0",
+    "zod": "^3.22.4",
     "zustand": "^4.3.3"
   },
   "devDependencies": {

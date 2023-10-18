@@ -21,20 +21,6 @@ const hexToRGBA = (hex: string, opacity: number): string => {
     : ''
 }
 
-enum BenefitType {
-  BADGE,
-  AVATAR_README_SM,
-  AVATAR_README_MD,
-  AVATAR_README_LG,
-  LOGO_README_SM,
-  LOGO_README_MD,
-  LOGO_README_LG,
-  CONSULTANCY,
-  SUPPORT,
-  FEATURE_REQUEST,
-  CUSTOM,
-}
-
 const mockedBenefits = [
   {
     id: '123',

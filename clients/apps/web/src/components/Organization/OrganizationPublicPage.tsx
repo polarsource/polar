@@ -2,11 +2,11 @@ import {
   IssueFunding,
   Organization,
   Repository,
-  SubscriptionGroup,
+  SubscriptionTier,
 } from '@polar-sh/sdk'
 import { prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
-import PublicSubscriptionGroups from '../Subscriptions/PublicSubscriptionGroups'
+import PublicSubscriptionUpsell from '../Subscriptions/PublicSubscriptionUpsell'
 import Footer from './Footer'
 import Header from './Header'
 import IssuesLookingForFunding from './IssuesLookingForFunding'
@@ -16,12 +16,12 @@ const OrganizationPublicPage = ({
   repositories,
   issuesFunding,
   totalIssueCount,
-  subscriptionGroups,
+  subscriptionTiers,
 }: {
   organization: Organization
   repositories: Repository[]
   issuesFunding: IssueFunding[]
-  subscriptionGroups: SubscriptionGroup[]
+  subscriptionTiers: SubscriptionTier[]
   totalIssueCount: number
 }) => {
   const showMeta =
@@ -73,9 +73,9 @@ const OrganizationPublicPage = ({
         </div>
       )}
 
-      {subscriptionGroups.length > 0 && (
-        <PublicSubscriptionGroups
-          subscriptionGroups={subscriptionGroups}
+      {subscriptionTiers.length > 0 && (
+        <PublicSubscriptionUpsell
+          subscriptionTiers={subscriptionTiers}
           subscribePath="/subscribe"
         />
       )}

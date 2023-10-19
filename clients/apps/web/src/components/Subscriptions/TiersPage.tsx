@@ -9,6 +9,7 @@ import {
 } from '@polar-sh/sdk'
 import React, { useMemo } from 'react'
 import SubscriptionGroup from './SubscriptionGroup'
+import { getSubscriptionTiersByType } from './utils'
 
 type SubscriptionTiersByType = {
   [key in SubscriptionTierType]: SubscriptionTier[]
@@ -30,18 +31,7 @@ const TiersPage: React.FC<TiersPageProps> = ({
   organization,
 }) => {
   const subscriptionTiersByType = useMemo(
-    () =>
-      subscriptionTiers.items?.reduce(
-        (acc: SubscriptionTiersByType, subscriptionTier: SubscriptionTier) => {
-          const entry = [...acc[subscriptionTier.type], subscriptionTier]
-
-          return {
-            ...acc,
-            [subscriptionTier.type]: entry,
-          }
-        },
-        defaultSubscriptionTiersByType,
-      ) ?? defaultSubscriptionTiersByType,
+    () => getSubscriptionTiersByType(subscriptionTiers.items ?? []),
     [subscriptionTiers],
   )
 

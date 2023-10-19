@@ -1,8 +1,7 @@
+import { PolarQueryClientProvider } from '@/app/providers'
 import PublicLayout from '@/components/Layout/PublicLayout'
 import RepositoryPublicPage from '@/components/Organization/RepositoryPublicPage'
 import type { Meta, StoryObj } from '@storybook/react'
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClient } from 'polarkit'
 import { issueFunding, org, repo } from 'polarkit/testdata'
 
 const meta: Meta<typeof RepositoryPublicPage> = {
@@ -50,11 +49,11 @@ export const Default: Story = {
   },
   render: (args) => {
     return (
-      <QueryClientProvider client={queryClient}>
+      <PolarQueryClientProvider>
         <PublicLayout>
           <RepositoryPublicPage {...args} />
         </PublicLayout>
-      </QueryClientProvider>
+      </PolarQueryClientProvider>
     )
   },
 }

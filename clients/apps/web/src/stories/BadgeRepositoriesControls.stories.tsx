@@ -1,8 +1,7 @@
+import { PolarQueryClientProvider } from '@/app/providers'
 import { Controls } from '@/components/Settings/Badge'
 import { RepositoryBadgeSettingsRead } from '@polar-sh/sdk'
 import type { Meta, StoryObj } from '@storybook/react'
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClient } from 'polarkit'
 
 const meta: Meta<typeof Controls> = {
   title: 'Organisms/BadgeRepositoriesControls',
@@ -14,9 +13,9 @@ const meta: Meta<typeof Controls> = {
     },
   },
   render: (args) => (
-    <QueryClientProvider client={queryClient}>
+    <PolarQueryClientProvider>
       <Controls {...args} />
-    </QueryClientProvider>
+    </PolarQueryClientProvider>
   ),
 }
 

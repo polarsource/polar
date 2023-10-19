@@ -1,8 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
+import { PolarQueryClientProvider } from '@/app/providers'
 import OnboardingAddDependency from '@/components/Onboarding/OnboardingAddDependency'
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClient } from 'polarkit/api'
 
 const meta: Meta<typeof OnboardingAddDependency> = {
   title: 'Organisms/OnboardingAddDependency',
@@ -25,9 +24,9 @@ export const Default: Story = {
   },
   render: (args) => {
     return (
-      <QueryClientProvider client={queryClient}>
+      <PolarQueryClientProvider>
         <OnboardingAddDependency />
-      </QueryClientProvider>
+      </PolarQueryClientProvider>
     )
   },
 }

@@ -1,8 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
+import { PolarQueryClientProvider } from '@/app/providers'
 import { BadgePromotionModal } from '@/components/Dashboard/IssuePromotionModal'
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClient } from 'polarkit'
 import { issue, user } from 'polarkit/testdata'
 
 type Story = StoryObj<typeof BadgePromotionModal>
@@ -19,9 +18,9 @@ const meta: Meta<typeof BadgePromotionModal> = {
   },
   render: (args) => {
     return (
-      <QueryClientProvider client={queryClient}>
+      <PolarQueryClientProvider>
         <BadgePromotionModal {...args} />
-      </QueryClientProvider>
+      </PolarQueryClientProvider>
     )
   },
 }

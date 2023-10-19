@@ -32,10 +32,13 @@ const SubscriptionGroupIcon: React.FC<SubscriptionGroupIconProps> = ({
 
   return IconComponent ? (
     <div
-      className={`inline-flex items-center text-[--var-icon-color]`}
+      className={twMerge(
+        `inline-flex items-center text-[--var-icon-color]`,
+        className,
+      )}
       style={style}
     >
-      <IconComponent className={twMerge('!h-5 !w-5', className)} />
+      <IconComponent fontSize="inherit" />
     </div>
   ) : null
 }

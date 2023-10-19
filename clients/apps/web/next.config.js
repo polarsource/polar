@@ -1,3 +1,5 @@
+const POLAR_AUTH_COOKIE_KEY = 'polar_session'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -30,7 +32,7 @@ const nextConfig = {
           // Do not rewrite if user is logged in, they'll be redirected to the app
           {
             type: 'cookie',
-            key: 'polar',
+            key: POLAR_AUTH_COOKIE_KEY,
           }
         ],
       },
@@ -105,7 +107,7 @@ const nextConfig = {
         missing: [
           {
             type: 'cookie',
-            key: 'polar',
+            key: POLAR_AUTH_COOKIE_KEY,
           },
           {
             type: 'host',
@@ -122,7 +124,7 @@ const nextConfig = {
         has: [
           {
             type: 'cookie',
-            key: 'polar',
+            key: POLAR_AUTH_COOKIE_KEY,
           }
         ],
         missing: [
@@ -139,7 +141,7 @@ const nextConfig = {
         has: [
           {
             type: 'cookie',
-            key: 'polar',
+            key: POLAR_AUTH_COOKIE_KEY,
           }
         ],
         permanent: false,

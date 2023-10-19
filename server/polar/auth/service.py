@@ -92,7 +92,6 @@ class AuthService:
         is_localhost = request.url.hostname in ["127.0.0.1", "localhost"]
         secure = False if is_localhost else True
 
-        cls._clear_subdomain_cookie(response=response)
         cls.set_auth_cookie(response=response, value=token, secure=secure)
         return LoginResponse(success=True, expires_at=expires_at, goto_url=goto_url)
 
@@ -140,31 +139,5 @@ class AuthService:
 
     @classmethod
     def generate_logout_response(cls, *, response: Response) -> LogoutResponse:
-        cls._clear_subdomain_cookie(response=response)
         cls.set_auth_cookie(response=response, value="", expires=0)
         return LogoutResponse(success=True)
-
-    @classmethod
-    def _clear_subdomain_cookie(cls, *, response: Response) -> Response:
-        """
-        FIXME: Temporary fix that can be removed on November 19th 2023.
-
-        We used to issue cookie without a domain,
-        so they were tied to our API subdomain, `api.polar.sh`.
-
-        Then, we changed this to issue cookie for the root domain `.polar.sh`.
-
-        However, old cookies are still in the nature and we need to explicitly get
-        rid of them on login/logout, otherwise they take precedence over the new one.
-        """
-        response.set_cookie(
-            settings.AUTH_COOKIE_KEY,
-            value="",
-            expires=0,
-            path="/",
-            domain=None,
-            secure=True,
-            httponly=True,
-            samesite="lax",
-        )
-        return response

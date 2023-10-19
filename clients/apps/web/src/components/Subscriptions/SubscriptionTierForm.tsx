@@ -111,11 +111,16 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
         name="is_highlighted"
         render={({ field }) => {
           return (
-            <FormItem>
+            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
               <FormControl>
-                <Checkbox {...field} value="Highight" checked={field.value} />
+                <Checkbox
+                  defaultChecked={field.value}
+                  onCheckedChange={field.onChange}
+                />
               </FormControl>
-              <FormMessage />
+              <FormLabel className="text-sm leading-none">
+                Highlight this tier
+              </FormLabel>
             </FormItem>
           )
         }}

@@ -81,6 +81,9 @@ class Pledge(RecordModel):
         TIMESTAMP(timezone=True), nullable=True
     )
 
+    # by_user_id, by_organization_id are mutually exclusive
+    #
+    # They determine who paid for this pledge (or who's going to pay for it).
     by_user_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("users.id"),
@@ -97,11 +100,27 @@ class Pledge(RecordModel):
         default=None,
     )
 
+    # on_behalf_of_organization_id can be set when by_user_id is set.
+    # This means that the "credz" if the pledge will go to the organization, but that
+    # the by_user_id-user is still the one that paid/will pay for the pledge.
+    #
+    # on_behalf_of_organization_id can not be set when by_organization_id is set.
     on_behalf_of_organization_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("organizations.id"),
         nullable=True,
         index=True,
+        default=None,
+    )
+
+    # created_by_user_id is the user/actor that created the pledge, unrelated to who's
+    # going to pay for it.
+    #
+    # If by_organization_id is set, this is the user that pressed the "Pledge" button.
+    created_by_user_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("users.id"),
+        nullable=True,
         default=None,
     )
 
@@ -123,6 +142,10 @@ class Pledge(RecordModel):
 
     to_organization: Mapped[Organization] = relationship(
         "Organization", foreign_keys=[organization_id], lazy="raise"
+    )
+
+    created_by_user: Mapped[User | None] = relationship(
+        "User", foreign_keys=[created_by_user_id], lazy="raise"
     )
 
     issue: Mapped[Issue] = relationship("Issue", foreign_keys=[issue_id], lazy="raise")

@@ -80,12 +80,7 @@ const OrganizationPublicPage = ({
         />
       )}
 
-      <div className="flex flex-col py-4">
-        <div className="mb-6 flex flex-row items-center justify-between">
-          <h2 className="flex flex-row items-center text-2xl">Issues</h2>
-        </div>
-        <IssuesLookingForFunding issuesFunding={issuesFunding} />
-      </div>
+      <IssuesLookingForFunding issuesFunding={issuesFunding} />
 
       <HowItWorks />
 

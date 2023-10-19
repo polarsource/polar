@@ -6,7 +6,7 @@ import {
   Organization,
   Platforms,
   ResponseError,
-  SubscriptionGroup,
+  SubscriptionTier,
 } from '@polar-sh/sdk'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -117,17 +117,17 @@ export default async function Page({
 
   const totalIssueCount = issuesFunding.pagination.total_count
 
-  let subscriptionGroups: SubscriptionGroup[] = []
+  let subscriptionTiers: SubscriptionTier[] = []
   try {
     const subscriptionGroupsResponse =
-      await api.subscriptions.searchSubscriptionGroups(
+      await api.subscriptions.searchSubscriptionTiers(
         {
           platform: Platforms.GITHUB,
           organizationName: organization.name,
         },
         cacheConfig,
       )
-    subscriptionGroups = subscriptionGroupsResponse.items || []
+    subscriptionTiers = subscriptionGroupsResponse.items ?? []
   } catch (err) {}
 
   if (
@@ -144,7 +144,7 @@ export default async function Page({
         organization={organization}
         repositories={repositories.items || []}
         issuesFunding={issuesFunding.items || []}
-        subscriptionGroups={subscriptionGroups}
+        subscriptionTiers={subscriptionTiers}
         totalIssueCount={totalIssueCount}
       />
     </>

@@ -4,6 +4,7 @@ import AccessTokensSettings from '@/components/Settings/AccessTokensSettings'
 import AuthenticationSettings from '@/components/Settings/AuthenticationSettings'
 import NotificationSettings from '@/components/Settings/NotificationSettings'
 import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
+import { Section, SectionDescription } from '@/components/Settings/Section'
 
 export default function Page() {
   return (
@@ -38,33 +39,6 @@ export default function Page() {
           <AccessTokensSettings />
         </Section>
       </div>
-    </div>
-  )
-}
-
-const Section = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <div className="mb-8 flex flex-col space-x-12 space-y-4 pt-8 xl:flex-row xl:space-y-0">
-      {children}
-    </div>
-  )
-}
-
-const SectionDescription = ({
-  title,
-  description,
-}: {
-  title: string
-  description?: string
-}) => {
-  return (
-    <div className="flex-shrink-0 xl:ml-8 xl:w-60">
-      <h2 className="mb-2 font-medium">{title}</h2>
-      {description && (
-        <p className="dark:text-polar-500 text-sm text-gray-500">
-          {description}
-        </p>
-      )}
     </div>
   )
 }

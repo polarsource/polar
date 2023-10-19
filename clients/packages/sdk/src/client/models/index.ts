@@ -2212,6 +2212,19 @@ export interface OrganizationMember {
 /**
  * 
  * @export
+ * @interface OrganizationStripePortalSession
+ */
+export interface OrganizationStripePortalSession {
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationStripePortalSession
+     */
+    url: string;
+}
+/**
+ * 
+ * @export
  * @interface OrganizationUpdate
  */
 export interface OrganizationUpdate {

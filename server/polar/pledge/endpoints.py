@@ -262,12 +262,19 @@ async def create_pay_on_completion(
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> PledgeSchema:
+    is_org_pledge = True if create.by_organization_id else False
+    is_user_pledge = True if not is_org_pledge else False
+
     pledge = await pledge_service.create_pay_on_completion(
         session=session,
         issue_id=create.issue_id,
         amount=create.amount,
-        by_user=auth.user,
-        on_behalf_of_organization_id=create.on_behalf_of_organization_id,
+        by_user=auth.user if is_user_pledge else None,
+        on_behalf_of_organization_id=create.on_behalf_of_organization_id
+        if is_user_pledge
+        else None,
+        by_organization_id=create.by_organization_id if is_org_pledge else None,
+        authenticated_user=auth.user,
     )
 
     ret = await pledge_service.get_with_loaded(session, pledge.id)

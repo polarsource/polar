@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Literal, Self
+from typing import Any, Literal, Self
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, root_validator
 
 from polar.currency.schemas import CurrencyAmount
 from polar.funding.funding_schema import Funding
@@ -204,8 +204,17 @@ class Pledge(Schema):
         description="If the currently authenticated subject can perform admin actions on behalf of the receiver of the peldge",  # noqa: E501
     )
 
+    created_by: Pledger | None = Field(
+        description="For pledges made by an organization, or on behalf of an organization. This is the user that made the pledge. Only visible for members of said organization."  # noqa: E501
+    )
+
     @classmethod
-    def from_db(cls, o: PledgeModel, include_admin_fields: bool = False) -> Pledge:
+    def from_db(
+        cls,
+        o: PledgeModel,
+        include_admin_fields: bool = False,
+        include_org_fields: bool = False,
+    ) -> Pledge:
         return Pledge(
             id=o.id,
             created_at=o.created_at,
@@ -217,6 +226,9 @@ class Pledge(Schema):
             issue=Issue.from_db(o.issue),
             pledger=Pledger.from_pledge(o),
             hosted_invoice_url=o.invoice_hosted_url if include_admin_fields else None,
+            created_by=Pledger.from_user(o.created_by_user)
+            if o.created_by_user and include_org_fields
+            else None,
         )
 
 
@@ -246,8 +258,27 @@ class CreatePledgeFromPaymentIntent(Schema):
 
 class CreatePledgePayLater(Schema):
     issue_id: UUID
-    amount: int
-    on_behalf_of_organization_id: UUID | None
+    amount: int = Field(gt=0)
+    on_behalf_of_organization_id: UUID | None = Field(
+        description="The organization to give credit to. The pledge will be paid by the authenticated user."
+    )
+    by_organization_id: UUID | None = Field(
+        description="The organization to create the pledge as. The pledge will be paid by this organization."
+    )
+
+    @root_validator(skip_on_failure=True)
+    def validate_payer(cls, values: dict[str, Any]) -> dict[str, Any]:
+        on_behalf_of_organization_id: UUID | None = values[
+            "on_behalf_of_organization_id"
+        ]
+        by_organization_id: UUID | None = values["by_organization_id"]
+
+        if on_behalf_of_organization_id and by_organization_id:
+            raise ValueError(
+                "on_behalf_of_organization_id and by_organization_id are mutually exclusive"
+            )
+
+        return values
 
 
 class PledgeTransactionType(str, Enum):
@@ -260,16 +291,26 @@ class PledgeTransactionType(str, Enum):
 class PledgeStripePaymentIntentCreate(Schema):
     issue_id: UUID
     email: str
-    amount: int
-    setup_future_usage: Literal["on_session"] | None
-    on_behalf_of_organization_id: UUID | None
+    amount: int = Field(gt=0)
+    setup_future_usage: Literal["on_session"] | None = Field(
+        description="If the payment method should be saved for future usage."
+    )
+    on_behalf_of_organization_id: UUID | None = Field(
+        description="The organization to give credit to. The pledge will be paid by the authenticated user."
+    )
 
 
 class PledgeStripePaymentIntentUpdate(Schema):
     email: str
-    amount: int
-    setup_future_usage: Literal["on_session"] | None
-    on_behalf_of_organization_id: UUID | None
+    amount: int = Field(
+        gt=0,
+    )
+    setup_future_usage: Literal["on_session"] | None = Field(
+        description="If the payment method should be saved for future usage."
+    )
+    on_behalf_of_organization_id: UUID | None = Field(
+        description="The organization to give credit to. The pledge will be paid by the authenticated user."
+    )
 
 
 class PledgeStripePaymentIntentMutationResponse(Schema):

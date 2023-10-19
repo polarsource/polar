@@ -4,10 +4,10 @@ import datetime
 from datetime import timedelta
 from typing import Any, Awaitable, Callable, List, Sequence
 from uuid import UUID
-from sqlalchemy import or_
 
 import structlog
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
+from sqlalchemy import or_
 from sqlalchemy.orm import (
     joinedload,
 )
@@ -16,6 +16,7 @@ from polar.account.service import account as account_service
 from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
 from polar.exceptions import (
+    BadRequest,
     InternalServerError,
     NotPermitted,
     ResourceNotFound,
@@ -909,10 +910,21 @@ class PledgeService(ResourceServiceReader[Pledge]):
         self,
         session: AsyncSession,
         issue_id: UUID,
-        by_user: User,
+        by_user: User | None,
         amount: int,
         on_behalf_of_organization_id: UUID | None,
+        by_organization_id: UUID | None,
+        authenticated_user: User,
     ) -> Pledge:
+        if by_user and by_organization_id:
+            raise BadRequest("by_user and by_organization_id are mutually exclusive")
+
+        if on_behalf_of_organization_id and not by_user:
+            raise BadRequest("on_behalf_of_organization_id requires by_user to be set")
+
+        if not by_user and not by_organization_id:
+            raise BadRequest("Either by_user or by_organization_id myst be set")
+
         issue = await issue_service.get(session, issue_id)
         if not issue:
             raise ResourceNotFound("Issue Not Found")
@@ -926,11 +938,13 @@ class PledgeService(ResourceServiceReader[Pledge]):
             fee=0,
             state=PledgeState.created,
             type=PledgeType.pay_on_completion,
-            by_user_id=by_user.id,
+            by_user_id=by_user.id if by_user else None,
             on_behalf_of_organization_id=on_behalf_of_organization_id,
+            by_organization_id=by_organization_id,
+            created_by_user_id=authenticated_user,
         )
 
-        await loops_service.user_update(by_user, isBacker=True)
+        await loops_service.user_update(authenticated_user, isBacker=True)
 
         await pledge_created.call(PledgeHook(session, pledge))
 
@@ -973,6 +987,8 @@ class PledgeService(ResourceServiceReader[Pledge]):
             raise NotPermitted("this pledge is not of type pay_on_completion")
         if not pledge.by_user_id:
             raise NotPermitted("this pledge is not made by a user")
+
+        # TODO: send invoice to org!
 
         pledge_issue = await issue_service.get(session, pledge.issue_id)
         if not pledge_issue:

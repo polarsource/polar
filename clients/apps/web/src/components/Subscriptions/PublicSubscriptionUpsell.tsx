@@ -23,7 +23,7 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
           .filter((tier) => tier.is_highlighted)
           .sort((a, b) => a.price_amount - b.price_amount)
           .map((tier) => (
-            <SubscriptionTierCard subscriptionTier={tier} showHighlight={false}>
+            <SubscriptionTierCard subscriptionTier={tier}>
               <Link
                 className="w-full"
                 href={{
@@ -32,7 +32,7 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
                 }}
               >
                 <PrimaryButton
-                  classNames="bg-[--var-border-color] dark:bg-[--var-dark-border-color] hover:bg-[--var-border-color] text-[--var-fg-color] dark:text-[--var-dark-fg-color] hover:border-[--var-fg-color] dark:hover:border-[--var-dark-fg-color] transition-colors hover:text-white dark:hover:text-white border border-transparent"
+                  classNames="bg-[--var-border-color] dark:bg-[--var-dark-border-color] hover:bg-[--var-border-color] text-[--var-fg-color] dark:text-[--var-dark-fg-color] hover:border-[--var-muted-color] dark:hover:border-[--var-dark-muted-color] transition-colors hover:text-white dark:hover:text-white border border-transparent"
                   fullWidth
                 >
                   Subscribe

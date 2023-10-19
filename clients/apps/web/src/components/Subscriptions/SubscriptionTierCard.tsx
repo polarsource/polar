@@ -16,7 +16,6 @@ import { getSubscriptionColorByType } from './utils'
 interface SubscriptionTierCardProps {
   subscriptionTier: Partial<SubscriptionTier>
   children?: React.ReactNode
-  showHighlight?: boolean
 }
 
 const hexToRGBA = (hex: string, opacity: number): string => {
@@ -46,13 +45,12 @@ const mockedBenefits = [
 
 const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   subscriptionTier,
-  showHighlight = true,
   children,
 }) => {
   const subscriptionColor = getSubscriptionColorByType(subscriptionTier.type)
 
   const style = {
-    '--var-bg-color': hexToRGBA(subscriptionColor, 0.2),
+    '--var-bg-color': hexToRGBA(subscriptionColor, 0.3),
     '--var-border-color': hexToRGBA(subscriptionColor, 0.3),
     '--var-muted-color': hexToRGBA(subscriptionColor, 0.7),
     '--var-fg-color': subscriptionColor,
@@ -65,23 +63,23 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   return (
     <Card
       className={twMerge(
-        'flex h-full min-w-[300px] max-w-[320px] flex-col gap-y-4 rounded-3xl border-2 border-transparent bg-[--var-bg-color] bg-gradient-to-tr p-8 shadow-none dark:bg-[--var-dark-bg-color]',
-        showHighlight && subscriptionTier.is_highlighted
-          ? 'border-[--var-muted-color] dark:border-[--var-dark-muted-color]'
-          : '',
+        'flex h-full min-w-[300px] max-w-[320px] flex-col gap-y-4 rounded-3xl border-none bg-[--var-bg-color] bg-gradient-to-tr p-8 dark:bg-[--var-dark-bg-color]',
       )}
       style={style}
     >
       <CardHeader className="grow gap-y-6 p-0">
         <div className="flex justify-between">
-          <h3 className="text-lg font-medium">
+          <h3 className="truncate text-lg font-medium">
             {subscriptionTier.name ? (
               subscriptionTier.name
             ) : (
               <Skeleton className="inline-block h-4 w-[150px] bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
             )}
           </h3>
-          <SubscriptionGroupIcon type={subscriptionTier.type} />
+          <SubscriptionGroupIcon
+            className="h-8! w-8! ml-2 text-2xl"
+            type={subscriptionTier.type}
+          />
         </div>
         <div className="flex flex-col gap-y-8 text-[--var-fg-color] dark:text-[--var-dark-fg-color]">
           <div className="text-5xl !font-[200]">

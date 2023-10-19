@@ -2,35 +2,15 @@
   "name": "chrome-extension",
   "version": "0.1.0",
   "private": true,
-  "dependencies": {
-    "@types/jest": "^27.0.1",
-    "@types/node": "^16.7.13",
-    "@types/react": "^18.2.21",
-    "@types/react-dom": "^18.2.7",
-    "polarkit": "workspace:*",
-    "@polar-sh/sdk": "workspace:*",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-frame-component": "^5.2.6",
-    "use-chrome-storage": "^1.2.1",
-    "web-vitals": "^2.1.0",
-    "typescript": "5.0.4"
-  },
   "scripts": {
     "build": "npm run clean && npm run build:js && npm run build:css && npm run build:manifest-dev",
-    "build:prod": "npm run clean && API_URL=https://api.polar.sh WEB_URL=https://polar.sh npm run build:js && npm run build:css && npm run build:manifest-prod",
     "build:css": "tailwindcss -i ./src/frame.css -o ./extension/frame.css",
     "build:js": "webpack --config webpack.config.js && mv dist/content.js ./extension && mv dist/auth.js ./extension && mv dist/service-worker.js ./extension",
     "build:manifest-dev": "node --loader ts-node/esm create-manifest.mts --dev > ./extension/manifest.json",
     "build:manifest-prod": "node --loader ts-node/esm create-manifest.mts --production > ./extension/manifest.json",
+    "build:prod": "npm run clean && API_URL=https://api.polar.sh WEB_URL=https://polar.sh npm run build:js && npm run build:css && npm run build:manifest-prod",
     "clean": "rm ./extension/*.{js,css} || true",
     "package": "zip extension.zip extension/*"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
   },
   "browserslist": {
     "production": [
@@ -44,6 +24,26 @@
       "last 1 safari version"
     ]
   },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "dependencies": {
+    "@polar-sh/sdk": "workspace:*",
+    "@types/jest": "^27.0.1",
+    "@types/node": "^20.5.7",
+    "@types/react": "^18.2.21",
+    "@types/react-dom": "^18.2.7",
+    "polarkit": "workspace:*",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-frame-component": "^5.2.6",
+    "typescript": "5.0.4",
+    "use-chrome-storage": "^1.2.1",
+    "web-vitals": "^2.1.0"
+  },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^13.0.0",
@@ -52,7 +52,7 @@
     "css-loader": "^6.7.3",
     "style-loader": "^3.3.2",
     "svg-inline-loader": "^0.8.2",
-    "tailwindcss": "^3.1.8",
+    "tailwindcss": "^3.3.2",
     "ts-loader": "^9.4.2",
     "ts-node": "^10.9.1",
     "url-loader": "^4.1.1",

@@ -1,5 +1,6 @@
 {
   "private": true,
+  "name": "polar",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -9,9 +10,11 @@
     "storybook": "turbo run build --filter=@polar-sh/sdk && cd apps/web && pnpm storybook",
     "generate": "cd packages/sdk && pnpm generate",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "preinstall": "npx only-allow pnpm"
+    "preinstall": "npx only-allow pnpm",
+    "postinstall": "manypkg check"
   },
-  "devDependencies": {
+  "dependencies": {
+    "@manypkg/cli": "latest",
     "eslint": "8.40.0",
     "eslint-config-custom": "workspace:*",
     "only-allow": "1.1.1",
@@ -20,5 +23,10 @@
     "prettier-plugin-tailwindcss": "^0.2.8",
     "turbo": "^1.10.15"
   },
-  "packageManager": "pnpm@7.15.0"
+  "packageManager": "pnpm@7.15.0",
+  "manypkg": {
+    "ignoredRules": [
+      "INTERNAL_MISMATCH"
+    ]
+  }
 }

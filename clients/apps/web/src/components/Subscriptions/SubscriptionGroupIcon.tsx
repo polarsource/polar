@@ -13,12 +13,6 @@ const SubscriptionGroupIcon: React.FC<SubscriptionGroupIconProps> = ({
   className,
   type,
 }) => {
-  /**
-   * Naive approach considering we know by advance the icons we use.
-   *
-   * A better approach would be to use the full Material Symbol Web Font,
-   * so we could set any icon dynamically.
-   */
   const IconComponent = useMemo(() => {
     switch (type) {
       case SubscriptionTierType.HOBBY:

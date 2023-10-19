@@ -47,6 +47,7 @@ async def create_subscription_tier(
     repository: Repository | None = None,
     name: str = "Subscription Tier",
     is_highlighted: bool = False,
+    is_archived: bool = False,
 ) -> SubscriptionTier:
     assert (organization is not None) != (repository is not None)
     subscription_tier = SubscriptionTier(
@@ -55,6 +56,7 @@ async def create_subscription_tier(
         price_amount=1000,
         price_currency="USD",
         is_highlighted=is_highlighted,
+        is_archived=is_archived,
         organization_id=organization.id if organization is not None else None,
         repository_id=repository.id if repository is not None else None,
         stripe_product_id="PRODUCT_ID",

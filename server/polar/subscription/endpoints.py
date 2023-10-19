@@ -50,6 +50,7 @@ async def search_subscription_tiers(
     organization_name: OrganizationNameQuery,
     repository_name: OptionalRepositoryNameQuery = None,
     direct_organization: bool = Query(True),
+    show_archived: bool = Query(False),
     type: SubscriptionTierType | None = Query(None),
     platform: Platforms = Query(...),
     session: AsyncSession = Depends(get_db_session),
@@ -76,6 +77,7 @@ async def search_subscription_tiers(
         organization=organization,
         repository=repository,
         direct_organization=direct_organization,
+        show_archived=show_archived,
         pagination=pagination,
     )
 

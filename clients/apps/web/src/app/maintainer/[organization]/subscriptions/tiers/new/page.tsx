@@ -1,5 +1,5 @@
 import SubscriptionTierCreatePage from '@/components/Subscriptions/SubscriptionTierCreatePage'
-import { useAPI } from '@/hooks/api'
+import { getServerSideAPI } from '@/utils/api'
 import { Platforms, SubscriptionTierType } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
 
@@ -23,7 +23,7 @@ export default async function Page({
   params: { organization: string }
   searchParams: { type?: SubscriptionTierType }
 }) {
-  const api = useAPI()
+  const api = getServerSideAPI()
   const organization = await api.organizations.lookup({
     organizationName: params.organization,
     platform: Platforms.GITHUB,

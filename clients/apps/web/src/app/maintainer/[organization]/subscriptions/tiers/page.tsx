@@ -1,5 +1,5 @@
 import TiersPage from '@/components/Subscriptions/TiersPage'
-import { useAPI } from '@/hooks/api'
+import { getServerSideAPI } from '@/utils/api'
 import { Platforms } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
 
@@ -21,7 +21,7 @@ export default async function Page({
 }: {
   params: { organization: string }
 }) {
-  const api = useAPI()
+  const api = getServerSideAPI()
   const organization = await api.organizations.lookup({
     organizationName: params.organization,
     platform: Platforms.GITHUB,

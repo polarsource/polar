@@ -1,11 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
+import { PolarQueryClientProvider } from '@/app/providers'
 import {
   MaintainerPledgedIssueConfirmationPendingNotification,
   NotificationType,
 } from '@polar-sh/sdk'
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClient } from 'polarkit'
 import {
   notification_maintainerPledgeConfirmationPendingNotification,
   notification_maintainerPledgeCreatedNotification,
@@ -68,9 +67,9 @@ export const MaintainerPledgeConfirmationPendingNotificationItem: StoryConfirmat
     },
     render: (args) => {
       return (
-        <QueryClientProvider client={queryClient}>
+        <PolarQueryClientProvider>
           <MaintainerPledgeConfirmationPending {...args} />
-        </QueryClientProvider>
+        </PolarQueryClientProvider>
       )
     },
   }
@@ -154,9 +153,9 @@ export const MaintainerPledgedIssueConfirmationPendingNotificationItem: StoryCon
     },
     render: (args) => {
       return (
-        <QueryClientProvider client={queryClient}>
+        <PolarQueryClientProvider>
           <MaintainerPledgeConfirmationPending {...args} />
-        </QueryClientProvider>
+        </PolarQueryClientProvider>
       )
     },
   }

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
+import { PolarQueryClientProvider } from '@/app/providers'
 import {
   IssueReferenceRead,
   IssueReferenceType,
@@ -11,8 +12,6 @@ import {
   Reward,
   RewardState,
 } from '@polar-sh/sdk'
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClient } from 'polarkit'
 import {
   addDays,
   addHours,
@@ -287,9 +286,9 @@ const meta: Meta<typeof IssueListItem> = {
   },
   render: (args) => {
     return (
-      <QueryClientProvider client={queryClient}>
+      <PolarQueryClientProvider>
         <IssueListItem {...args} />
-      </QueryClientProvider>
+      </PolarQueryClientProvider>
     )
   },
 }

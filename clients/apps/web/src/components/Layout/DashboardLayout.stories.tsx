@@ -1,6 +1,5 @@
+import { PolarQueryClientProvider } from '@/app/providers'
 import type { Meta, StoryObj } from '@storybook/react'
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClient } from 'polarkit'
 import { repo } from 'polarkit/testdata'
 import BackerLayout from './BackerLayout'
 import DashboardLayout, {
@@ -29,13 +28,13 @@ export const Default: Story = {
     padding: 'p-0 m-0',
   },
   render: (args) => (
-    <QueryClientProvider client={queryClient}>
+    <PolarQueryClientProvider>
       <DashboardLayout {...args}>
         <DashboardBody>
           <div className="bg-red-200 text-black">Content</div>
         </DashboardBody>
       </DashboardLayout>
-    </QueryClientProvider>
+    </PolarQueryClientProvider>
   ),
 }
 
@@ -58,13 +57,13 @@ export const Header: Story = {
   },
   render: (args) => {
     return (
-      <QueryClientProvider client={queryClient}>
+      <PolarQueryClientProvider>
         <DashboardLayout {...args}>
           <DashboardHeader>
             <div className="bg-blue-200">Hello from header</div>,
           </DashboardHeader>
         </DashboardLayout>
-      </QueryClientProvider>
+      </PolarQueryClientProvider>
     )
   },
 }
@@ -80,7 +79,7 @@ export const RepoPicker: Story = {
   },
   render: (args) => {
     return (
-      <QueryClientProvider client={queryClient}>
+      <PolarQueryClientProvider>
         <DashboardLayout {...args}>
           <DashboardHeader>
             <RepoPickerHeader currentRepository={repo} repositories={[repo]}>
@@ -94,7 +93,7 @@ export const RepoPicker: Story = {
             </RepoPickerHeader>
           </DashboardHeader>
         </DashboardLayout>
-      </QueryClientProvider>
+      </PolarQueryClientProvider>
     )
   },
 }

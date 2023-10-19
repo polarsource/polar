@@ -17,7 +17,7 @@ const IssuesLookingForFunding = ({
 
   return (
     <>
-      <div className="divide-black/7 border-black/7 divide-y border-b border-t">
+      <div>
         {issuesFunding.map((i) => (
           <div key={i.issue.id}>
             <IssueSummary

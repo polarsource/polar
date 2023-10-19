@@ -1,14 +1,22 @@
 import { CheckOutlined } from '@mui/icons-material'
 import { SubscriptionTier } from '@polar-sh/sdk'
-import { Card, CardContent, CardHeader } from 'polarkit/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from 'polarkit/components/ui/card'
 import { Separator } from 'polarkit/components/ui/separator'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
 import { getCentsInDollarString } from 'polarkit/money'
+import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 import { getSubscriptionColorByType } from './utils'
 
 interface SubscriptionTierCardProps {
   subscriptionTier: Partial<SubscriptionTier>
+  children?: React.ReactNode
+  showHighlight?: boolean
 }
 
 const hexToRGBA = (hex: string, opacity: number): string => {
@@ -38,13 +46,15 @@ const mockedBenefits = [
 
 const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   subscriptionTier,
+  showHighlight = true,
+  children,
 }) => {
   const subscriptionColor = getSubscriptionColorByType(subscriptionTier.type)
 
   const style = {
     '--var-bg-color': hexToRGBA(subscriptionColor, 0.2),
-    '--var-border-color': hexToRGBA(subscriptionColor, 0.5),
-    '--var-muted-color': hexToRGBA(subscriptionColor, 0.5),
+    '--var-border-color': hexToRGBA(subscriptionColor, 0.3),
+    '--var-muted-color': hexToRGBA(subscriptionColor, 0.7),
     '--var-fg-color': subscriptionColor,
     '--var-dark-bg-color': hexToRGBA(subscriptionColor, 0.1),
     '--var-dark-border-color': hexToRGBA(subscriptionColor, 0.15),
@@ -54,10 +64,15 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
 
   return (
     <Card
-      className="flex h-full min-w-[320px] max-w-[360px] flex-col gap-y-8 rounded-3xl border-0 bg-[--var-bg-color] bg-gradient-to-tr p-10 shadow-none transition-opacity hover:opacity-50 dark:bg-[--var-dark-bg-color] dark:hover:opacity-80"
+      className={twMerge(
+        'flex h-full min-w-[300px] max-w-[320px] flex-col gap-y-4 rounded-3xl border-2 border-transparent bg-[--var-bg-color] bg-gradient-to-tr p-8 shadow-none dark:bg-[--var-dark-bg-color]',
+        showHighlight && subscriptionTier.is_highlighted
+          ? 'border-[--var-muted-color] dark:border-[--var-dark-muted-color]'
+          : '',
+      )}
       style={style}
     >
-      <CardHeader className="grow gap-y-8 p-0">
+      <CardHeader className="grow gap-y-6 p-0">
         <div className="flex justify-between">
           <h3 className="text-lg font-medium">
             {subscriptionTier.name ? (
@@ -69,7 +84,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
           <SubscriptionGroupIcon type={subscriptionTier.type} />
         </div>
         <div className="flex flex-col gap-y-8 text-[--var-fg-color] dark:text-[--var-dark-fg-color]">
-          <div className="text-6xl !font-[200]">
+          <div className="text-5xl !font-[200]">
             {
               <>
                 $
@@ -85,7 +100,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             </span>
           </div>
           {subscriptionTier.description ? (
-            <p className="text-sm leading-relaxed">
+            <p className="text-sm leading-relaxed text-[--var-muted-color] dark:text-[--var-dark-muted-color]">
               {subscriptionTier.description}
             </p>
           ) : (
@@ -97,7 +112,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
           )}
         </div>
       </CardHeader>
-      <Separator className="bg-[--var-border-color]" />
+      <Separator className="bg-[--var-border-color] dark:bg-[--var-dark-border-color]" />
       <CardContent className="flex shrink flex-col gap-y-1 p-0">
         {mockedBenefits.map((benefit) => (
           <div className="flex flex-row items-center text-[--var-fg-color] dark:text-[--var-dark-fg-color]">
@@ -106,6 +121,11 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
           </div>
         ))}
       </CardContent>
+      {children && (
+        <CardFooter className="mt-4 flex w-full flex-row p-0">
+          {children}
+        </CardFooter>
+      )}
     </Card>
   )
 }

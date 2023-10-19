@@ -172,7 +172,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
               </span>
             </div>
             <FormControl>
-              <Textarea className="resize-none" {...field} />
+              <Textarea className="min-h-[200px] resize-none" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>

@@ -135,12 +135,24 @@ const ProfileSelection = ({
                   </Link>
                 ))}
 
+              {showConnectUsell && (
+                <div className="dark:bg-polar-800 dark:text-polar-400 mx-4 my-4 flex flex-col rounded-lg border-blue-100 bg-blue-50 p-4 text-sm">
+                  <h3>Get funding for your public repositories.</h3>
+                  <Link
+                    href={CONFIG.GITHUB_INSTALLATION_URL}
+                    className="mt-2 text-blue-600 dark:text-blue-500"
+                  >
+                    Connect repositories
+                  </Link>
+                </div>
+              )}
+
               {showAddOrganization && (
                 <LinkItem
                   href={CONFIG.GITHUB_INSTALLATION_URL}
-                  icon={<AddOutlined className="text-blue-600" />}
+                  icon={<AddOutlined className="h-5 w-5 text-blue-600" />}
                 >
-                  <span className="mx-1.5 text-blue-600">Add organization</span>
+                  <span className="mx-2 text-blue-600">Add organization</span>
                 </LinkItem>
               )}
 

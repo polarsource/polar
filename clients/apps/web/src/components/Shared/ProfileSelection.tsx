@@ -124,8 +124,9 @@ const ProfileSelection = ({
                   <Link
                     href={`/maintainer/${org.name}/issues`}
                     className="w-full"
+                    key={org.id}
                   >
-                    <ListItem key={org.id} current={currentOrg?.id === org.id}>
+                    <ListItem current={currentOrg?.id === org.id}>
                       <Profile
                         name={org.name}
                         avatar_url={org.avatar_url}

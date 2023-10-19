@@ -88,7 +88,7 @@ const EmbedSetting = ({
             onChange(false)
           }}
         >
-          <p>
+          <div>
             By label
             {showIndividualBadgeLabel && (
               <span className="ml-1 inline-flex">
@@ -97,7 +97,7 @@ const EmbedSetting = ({
                 />
               </span>
             )}
-          </p>
+          </div>
         </div>
         <div
           className={getTabClasses(isAutoEnabled)}

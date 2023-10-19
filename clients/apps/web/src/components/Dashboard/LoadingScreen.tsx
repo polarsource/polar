@@ -2,11 +2,6 @@
 
 import { motion, Transition } from 'framer-motion'
 
-interface Props {
-  animate: boolean
-  children: React.ReactNode
-}
-
 const LogoIcon = ({ animate }: { animate: boolean }) => {
   const transition: Transition = {
     repeat: animate ? Infinity : 0,
@@ -108,12 +103,17 @@ const LogoIcon = ({ animate }: { animate: boolean }) => {
   )
 }
 
-const LoadingScreen = ({ animate, children }: Props) => {
+interface Props {
+  animate?: boolean
+  children: React.ReactNode
+}
+
+const LoadingScreen = ({ animate = false, children }: Props) => {
   return (
     <>
       <div className="flex grow items-center justify-center p-8 md:min-h-screen">
         <div className="flex-row">
-          <LogoIcon animate={animate} />
+          <LogoIcon animate={animate} key={`animate-${animate ? 't' : 'f'}`} />
           <div className="dark:text-polar-400 mt-4 text-gray-500">
             {children}
           </div>
@@ -121,10 +121,6 @@ const LoadingScreen = ({ animate, children }: Props) => {
       </div>
     </>
   )
-}
-
-LoadingScreen.defaultProps = {
-  animate: true,
 }
 
 export default LoadingScreen

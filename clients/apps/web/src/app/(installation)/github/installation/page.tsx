@@ -7,6 +7,7 @@ import GithubLoginButton from '@/components/Shared/GithubLoginButton'
 import {
   InstallationCreatePlatformEnum,
   Organization,
+  ResponseError,
   UserSignupType,
 } from '@polar-sh/sdk'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -33,6 +34,7 @@ export default function Page() {
 
   const install = () => {
     if (!installationID) {
+      console.error('no installation id')
       setError('Unexpected installation_id')
       return
     }
@@ -58,13 +60,18 @@ export default function Page() {
     request
       .then((organization) => {
         setInstalled(organization)
+        // redirect
+        router.replace(`/maintainer/${organization.name}/initialize`)
       })
-      .catch((err) => {
-        if (err.isCancelled) return
-        if (err.status === 401) {
+      .catch((err: ResponseError) => {
+        if (signal.aborted) {
+          return
+        }
+        if (err.response.status === 401) {
           setShowLogin(true)
           return
         }
+        console.error(err)
         setError('Error installing organization')
       })
     return { request, controller }
@@ -92,8 +99,9 @@ export default function Page() {
   }, [])
 
   if (installed) {
-    router.replace(`/maintainer/${installed.name}/initialize`)
-    return <></>
+    return (
+      <LoadingScreen animate={true}>Ready to go! Redirecting...</LoadingScreen>
+    )
   }
 
   if (showLogin) {

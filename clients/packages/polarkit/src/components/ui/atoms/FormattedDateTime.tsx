@@ -9,9 +9,9 @@ interface FormattedDateTimeProps {
 
 const FormattedDateTime: React.FC<FormattedDateTimeProps> = ({
   datetime,
-  locale,
-  displayTime,
-  dateStyle,
+  locale = 'en-US',
+  displayTime = false,
+  dateStyle = 'medium',
 }) => {
   const formatted = useMemo(() => {
     try {
@@ -26,12 +26,6 @@ const FormattedDateTime: React.FC<FormattedDateTimeProps> = ({
   }, [datetime, locale, displayTime, dateStyle])
 
   return <>{formatted}</>
-}
-
-FormattedDateTime.defaultProps = {
-  locale: 'en-US',
-  displayTime: false,
-  dateStyle: 'medium',
 }
 
 export default FormattedDateTime

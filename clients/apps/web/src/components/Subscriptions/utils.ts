@@ -3,9 +3,9 @@ import { SubscriptionTier, SubscriptionTierType } from '@polar-sh/sdk'
 export const getSubscriptionColorByType = (type?: SubscriptionTierType) => {
   switch (type) {
     case SubscriptionTierType.BUSINESS:
-      return '#FFB174' as const
+      return '#9f74ff' as const
     case SubscriptionTierType.PRO:
-      return '#1be39f' as const
+      return '#25c8ad' as const
     case SubscriptionTierType.HOBBY:
     default:
       return '#79A2E1' as const

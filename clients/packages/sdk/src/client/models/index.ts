@@ -3477,6 +3477,12 @@ export interface SubscriptionTier {
     description?: string;
     /**
      * 
+     * @type {boolean}
+     * @memberof SubscriptionTier
+     */
+    is_highlighted: boolean;
+    /**
+     * 
      * @type {number}
      * @memberof SubscriptionTier
      */
@@ -3532,6 +3538,12 @@ export interface SubscriptionTierCreate {
     description?: string;
     /**
      * 
+     * @type {boolean}
+     * @memberof SubscriptionTierCreate
+     */
+    is_highlighted?: boolean;
+    /**
+     * 
      * @type {number}
      * @memberof SubscriptionTierCreate
      */
@@ -3585,6 +3597,12 @@ export interface SubscriptionTierUpdate {
      * @memberof SubscriptionTierUpdate
      */
     description?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionTierUpdate
+     */
+    is_highlighted?: boolean;
     /**
      * 
      * @type {number}

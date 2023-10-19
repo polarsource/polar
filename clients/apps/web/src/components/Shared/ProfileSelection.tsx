@@ -44,7 +44,7 @@ const ProfileSelection = ({
 
   const onLogout = async () => {
     await logout()
-    router.push('/')
+    window.location.href = '/'
   }
 
   if (!loggedUser) {

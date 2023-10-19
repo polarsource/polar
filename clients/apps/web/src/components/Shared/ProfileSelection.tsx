@@ -88,7 +88,7 @@ const ProfileSelection = ({
           <div
             ref={ref}
             className={twMerge(
-              'dark:bg-polar-700 dark:text-polar-400 absolute left-0 w-full overflow-hidden rounded-2xl bg-white py-2 shadow-xl',
+              'dark:bg-polar-800 dark:text-polar-400 absolute left-0 w-full overflow-hidden rounded-2xl bg-white py-2 shadow-xl',
               narrow ? '-top-2' : '-top-1',
             )}
           >
@@ -198,8 +198,8 @@ const ListItem = (props: {
   const className = twMerge(
     'animate-background duration-10 flex items-center gap-2 py-2 px-4 w-full',
     props.current
-      ? 'bg-blue-50 dark:bg-white/5'
-      : 'hover:bg-gray-100/50 dark:hover:bg-white/5',
+      ? 'bg-blue-50 dark:bg-polar-700'
+      : 'hover:bg-gray-100/50 dark:hover:bg-polar-700',
     props.className ?? '',
   )
 

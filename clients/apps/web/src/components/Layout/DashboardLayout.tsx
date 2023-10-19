@@ -26,7 +26,7 @@ const DashboardLayout = (props: { children: React.ReactNode }) => {
 
   return (
     <div className="relative flex w-full flex-row">
-      <aside className="dark:bg-polar-900 dark:border-r-polar-700 flex h-screen w-[320px] flex-shrink-0 flex-col justify-between overflow-hidden border-r border-r-gray-200 bg-white">
+      <aside className="dark:bg-polar-950 dark:border-r-polar-700 flex h-screen w-[320px] flex-shrink-0 flex-col justify-between overflow-hidden border-r border-r-gray-200 bg-white">
         <div className="flex flex-col">
           <div className="relative z-10 mt-7 flex translate-x-0 flex-row items-center justify-between space-x-2 pl-9 pr-7">
             <a
@@ -54,7 +54,7 @@ const DashboardLayout = (props: { children: React.ReactNode }) => {
           <MetaNavigation />
         </div>
       </aside>
-      <div className="dark:bg-polar-900 relative flex h-screen w-full translate-x-0 flex-row overflow-hidden bg-white">
+      <div className="dark:bg-polar-950 relative flex h-screen w-full translate-x-0 flex-row overflow-hidden bg-white">
         <main className={twMerge('relative h-full w-full overflow-auto')}>
           <Suspense>{props.children}</Suspense>
         </main>

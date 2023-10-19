@@ -17,7 +17,7 @@ export type LogoPosition = 'center' | 'left'
 
 const SubNav = (props: { items: (SubRoute & { active: boolean })[] }) => {
   return (
-    <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-2 rounded-xl bg-gray-100 p-1 dark:border">
+    <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-row items-center gap-x-2 rounded-xl bg-gray-100 p-1 dark:border">
       {props.items.map((item) => {
         const className = twMerge(
           item.active
@@ -27,7 +27,7 @@ const SubNav = (props: { items: (SubRoute & { active: boolean })[] }) => {
         )
 
         return (
-          <Link href={item.link} className={className}>
+          <Link key={item.title} href={item.link} className={className}>
             {item.title}
           </Link>
         )
@@ -76,7 +76,7 @@ const DashboardTopbar = ({
 
   const className = twMerge(
     props.isFixed !== false ? 'fixed z-20 left-0 top-0 right-0' : '',
-    'flex h-20 w-full items-center justify-between space-x-4 bg-white dark:bg-polar-900 border-b border-gray-200 dark:border-polar-700',
+    'flex h-20 w-full items-center justify-between space-x-4 bg-white dark:bg-polar-950 border-b border-gray-200 dark:border-polar-700',
   )
 
   if (!hydrated) {

@@ -21,9 +21,14 @@ import type {
   Organization,
   OrganizationBadgeSettingsRead,
   OrganizationBadgeSettingsUpdate,
+  OrganizationStripePortalSession,
   OrganizationUpdate,
   Platforms,
 } from '../models/index';
+
+export interface OrganizationsApiCreateStripeCustomerPortalRequest {
+    id: string;
+}
 
 export interface OrganizationsApiGetRequest {
     id: string;
@@ -65,6 +70,44 @@ export interface OrganizationsApiUpdateBadgeSettingsRequest {
  * 
  */
 export class OrganizationsApi extends runtime.BaseAPI {
+
+    /**
+     * Create Stripe Customer Portal
+     */
+    async createStripeCustomerPortalRaw(requestParameters: OrganizationsApiCreateStripeCustomerPortalRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OrganizationStripePortalSession>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling createStripeCustomerPortal.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/organizations/{id}/stripe_customer_portal`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Create Stripe Customer Portal
+     */
+    async createStripeCustomerPortal(requestParameters: OrganizationsApiCreateStripeCustomerPortalRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OrganizationStripePortalSession> {
+        const response = await this.createStripeCustomerPortalRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Get organization

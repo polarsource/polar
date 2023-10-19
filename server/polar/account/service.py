@@ -74,7 +74,9 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
                 "both organization_id and user_id is set, this is not supported"
             )
 
-        existing = await self.get_by(session=session, organization_id=organization_id)
+        existing = await self.get_by(
+            session=session, organization_id=organization_id, user_id=user_id
+        )
         if existing is not None:
             raise AccountAlreadyExistsError()
 

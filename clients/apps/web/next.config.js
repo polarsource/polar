@@ -22,10 +22,16 @@ const nextConfig = {
         source: '/',
         destination: 'https://splendid-help-401117.framer.app/',
         missing: [
+          // Do not rewrite for polar.new, polar.new has another rule below
           {
             type: 'host',
-            value: 'polar.new', // do not rewrite for polar.new, polar.new has another rule below
+            value: 'polar.new',
           },
+          // Do not rewrite if user is logged in, they'll be redirected to the app
+          {
+            type: 'cookie',
+            key: 'polar',
+          }
         ],
       },
       {
@@ -68,6 +74,7 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // dashboard.polar.sh redirections
       {
         source: '/',
         destination: '/login/init',
@@ -87,6 +94,53 @@ const nextConfig = {
             type: 'host',
             value: 'dashboard.polar.sh',
           },
+        ],
+        permanent: false,
+      },
+
+      // Logged-out user redirection
+      {
+        source: '/(feed|for-you|rewards|settings|backoffice|maintainer|team)(.*)',
+        destination: '/login/init',
+        missing: [
+          {
+            type: 'cookie',
+            key: 'polar',
+          },
+          {
+            type: 'host',
+            value: 'polar.new',
+          },
+        ],
+        permanent: false,
+      },
+
+      // Logged-in user redirections
+      {
+        source: '/',
+        destination: '/feed',
+        has: [
+          {
+            type: 'cookie',
+            key: 'polar',
+          }
+        ],
+        missing: [
+          {
+            type: 'host',
+            value: 'polar.new',
+          },
+        ],
+        permanent: false,
+      },
+      {
+        source: '/login(.*)',
+        destination: '/feed',
+        has: [
+          {
+            type: 'cookie',
+            key: 'polar',
+          }
         ],
         permanent: false,
       },

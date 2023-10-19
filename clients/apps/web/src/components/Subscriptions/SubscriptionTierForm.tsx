@@ -5,6 +5,7 @@ import {
   SubscriptionTierType,
   SubscriptionTierUpdate,
 } from '@polar-sh/sdk'
+import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   FormControl,
   FormField,
@@ -105,6 +106,20 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
           )}
         />
       )}
+      <FormField
+        control={control}
+        name="is_highlighted"
+        render={({ field }) => {
+          return (
+            <FormItem>
+              <FormControl>
+                <Checkbox {...field} value="Highight" checked={field.value} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
       <FormField
         control={control}
         name="price_amount"

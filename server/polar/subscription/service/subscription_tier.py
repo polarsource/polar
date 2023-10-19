@@ -84,6 +84,7 @@ class SubscriptionTierService(
         organization: Organization | None = None,
         repository: Repository | None = None,
         direct_organization: bool = True,
+        show_archived: bool = False,
         pagination: PaginationParams,
     ) -> tuple[Sequence[SubscriptionTier], int]:
         statement = self._get_readable_subscription_tier_statement(auth_subject)
@@ -100,9 +101,13 @@ class SubscriptionTierService(
         if repository is not None:
             statement = statement.where(SubscriptionTier.repository_id == repository.id)
 
+        if not show_archived:
+            statement = statement.where(SubscriptionTier.is_archived.is_(False))
+
         statement = statement.order_by(
             SubscriptionTier.type,
             SubscriptionTier.price_amount,
+            SubscriptionTier.created_at,
         )
 
         results, count = await paginate(session, statement, pagination=pagination)
@@ -350,30 +355,52 @@ class SubscriptionTierService(
     def _get_readable_subscription_tier_statement(
         self, auth_subject: Subject
     ) -> Select[Any]:
-        clauses: list[ColumnExpressionArgument[bool]] = [
+        RepositoryOrganization = aliased(Organization)
+        RepositoryUserOrganization = aliased(UserOrganization)
+
+        private_repositories_clauses: list[ColumnExpressionArgument[bool]] = [
             SubscriptionTier.repository_id.is_(None),
             Repository.is_private.is_(False),
         ]
         if isinstance(auth_subject, User):
-            clauses.append(UserOrganization.user_id == auth_subject.id)
+            private_repositories_clauses.append(
+                RepositoryUserOrganization.user_id == auth_subject.id
+            )
 
-        RepositoryOrganization = aliased(Organization)
+        archived_clauses: list[ColumnExpressionArgument[bool]] = [
+            SubscriptionTier.is_archived.is_(False)
+        ]
+        if isinstance(auth_subject, User):
+            archived_clauses.append(UserOrganization.user_id == auth_subject.id)
 
         return (
             select(SubscriptionTier)
             .join(SubscriptionTier.organization, full=True)
             .join(SubscriptionTier.repository, full=True)
             .join(
+                UserOrganization,
+                onclause=UserOrganization.organization_id
+                == SubscriptionTier.organization_id,
+                full=True,
+            )
+            .join(
                 RepositoryOrganization,
                 onclause=RepositoryOrganization.id == Repository.organization_id,
                 full=True,
             )
             .join(
-                UserOrganization,
-                onclause=UserOrganization.organization_id == RepositoryOrganization.id,
+                RepositoryUserOrganization,
+                onclause=RepositoryUserOrganization.organization_id
+                == RepositoryOrganization.id,
                 full=True,
             )
-            .where(SubscriptionTier.deleted_at.is_(None), or_(*clauses))
+            .where(
+                # Prevent to return `None` objects due to the full outer join
+                SubscriptionTier.id.is_not(None),
+                SubscriptionTier.deleted_at.is_(None),
+                or_(*private_repositories_clauses),
+                or_(*archived_clauses),
+            )
         )
 
     async def _get_managing_organization_account(

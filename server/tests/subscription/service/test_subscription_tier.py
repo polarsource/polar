@@ -157,6 +157,45 @@ class TestSearch:
         assert len(results) == 1
         assert results[0].id == subscription_tier_private_repository.id
 
+    async def test_filter_is_archived(
+        self,
+        session: AsyncSession,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        archived_subscription_tier = await create_subscription_tier(
+            session, organization=organization, is_archived=True
+        )
+
+        # Anonymous
+        results, count = await subscription_tier_service.search(
+            session,
+            Anonymous(),
+            show_archived=False,
+            pagination=PaginationParams(1, 10),
+        )
+        assert count == 0
+        assert len(results) == 0
+        results, count = await subscription_tier_service.search(
+            session, Anonymous(), show_archived=True, pagination=PaginationParams(1, 10)
+        )
+        assert count == 0
+        assert len(results) == 0
+
+        # User
+        results, count = await subscription_tier_service.search(
+            session, user, show_archived=False, pagination=PaginationParams(1, 10)
+        )
+        assert count == 0
+        assert len(results) == 0
+        results, count = await subscription_tier_service.search(
+            session, user, show_archived=True, pagination=PaginationParams(1, 10)
+        )
+        assert count == 1
+        assert len(results) == 1
+        assert results[0].id == archived_subscription_tier.id
+
 
 @pytest.mark.asyncio
 class TestGetById:

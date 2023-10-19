@@ -38,7 +38,7 @@
     "cmdk": "^0.2.0",
     "framer-motion": "^10.12.4",
     "jest": "^29.6.2",
-    "next": "13.5.5",
+    "next": "^13.5.6",
     "next-themes": "^0.2.1",
     "polarkit": "workspace:*",
     "posthog-js": "^1.83.1",

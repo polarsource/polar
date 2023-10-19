@@ -1,5 +1,5 @@
 import SubscriptionTierEditPage from '@/components/Subscriptions/SubscriptionTierEditPage'
-import { useAPI } from '@/hooks/api'
+import { getServerSideAPI } from '@/utils/api'
 import { Platforms, ResponseError } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -22,7 +22,7 @@ export default async function Page({
 }: {
   params: { organization: string; tier: string }
 }) {
-  const api = useAPI()
+  const api = getServerSideAPI()
   const organization = await api.organizations.lookup({
     organizationName: params.organization,
     platform: Platforms.GITHUB,

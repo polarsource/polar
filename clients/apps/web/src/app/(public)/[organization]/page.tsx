@@ -1,6 +1,6 @@
 import OrganizationPublicPage from '@/components/Organization/OrganizationPublicPage'
 import PageNotFound from '@/components/Shared/PageNotFound'
-import { useAPI } from '@/hooks/api'
+import { getServerSideAPI } from '@/utils/api'
 import {
   ListFundingSortBy,
   Organization,
@@ -82,7 +82,7 @@ export default async function Page({
 }: {
   params: { organization: string }
 }) {
-  const api = useAPI()
+  const api = getServerSideAPI()
   const organization = await api.organizations.lookup(
     {
       platform: Platforms.GITHUB,

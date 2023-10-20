@@ -16,6 +16,7 @@ import {
   addDays,
   addHours,
   issue,
+  org,
   pledgePublicAPI,
   pledger,
   pledgesSummaries,
@@ -701,6 +702,73 @@ export const SelfSummaryNoGoal: Story = {
         pledgers: [pledger, pledger, pledger],
       },
     },
+  },
+}
+
+export const OrganizationPledgeWithCreatedBy: Story = {
+  args: {
+    ...Default.args,
+    issue: {
+      ...issueClosed,
+    },
+    pledges: [
+      {
+        ...pledgePublicAPI,
+        pledger: {
+          name: org.name,
+          github_username: org.name,
+          avatar_url: org.avatar_url,
+        },
+        authed_can_admin_sender: true,
+        created_by: {
+          name: user.username,
+          github_username: user.username,
+          avatar_url: user.avatar_url,
+        },
+      },
+    ],
+  },
+}
+
+export const OrganizationPledgeWithInvoice: Story = {
+  args: {
+    ...Default.args,
+    issue: {
+      ...issueClosed,
+    },
+    pledges: [
+      {
+        ...pledgePublicAPI,
+        pledger: {
+          name: org.name,
+          github_username: org.name,
+          avatar_url: org.avatar_url,
+        },
+        authed_can_admin_sender: true,
+        created_by: {
+          name: user.username,
+          github_username: user.username,
+          avatar_url: user.avatar_url,
+        },
+        hosted_invoice_url: 'http://example.com/',
+      },
+      {
+        ...pledgePublicAPI,
+        pledger: {
+          name: org.name,
+          github_username: org.name,
+          avatar_url: org.avatar_url,
+        },
+        authed_can_admin_sender: true,
+        created_by: {
+          name: user.username,
+          github_username: user.username,
+          avatar_url: user.avatar_url,
+        },
+        hosted_invoice_url: 'http://example.com/',
+        state: PledgeState.PENDING, // paid
+      },
+    ],
   },
 }
 

@@ -444,7 +444,7 @@ class TestCreateSubscribeSession:
 
         assert response.status_code == 400
 
-    async def test_anonymous(
+    async def test_anonymous_subscription_tier_organization(
         self,
         client: AsyncClient,
         subscription_tier_organization: SubscriptionTier,
@@ -476,10 +476,42 @@ class TestCreateSubscribeSession:
         assert json["url"] == "STRIPE_URL"
         assert json["subscription_tier"]["id"] == str(subscription_tier_organization.id)
 
+    async def test_anonymous_subscription_tier_repository(
+        self,
+        client: AsyncClient,
+        subscription_tier_repository: SubscriptionTier,
+        mock_stripe_service: MagicMock,
+        organization_account: Account,
+    ) -> None:
+        create_subscription_checkout_session_mock: MagicMock = (
+            mock_stripe_service.create_subscription_checkout_session
+        )
+        create_subscription_checkout_session_mock.return_value = SimpleNamespace(
+            stripe_id="SESSION_ID",
+            url="STRIPE_URL",
+            customer_email=None,
+            customer_details=None,
+        )
+
+        response = await client.post(
+            "/api/v1/subscriptions/subscribe-sessions/",
+            json={
+                "tier_id": str(subscription_tier_repository.id),
+                "success_url": "https://polar.sh",
+            },
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["id"] == "SESSION_ID"
+        assert json["url"] == "STRIPE_URL"
+        assert json["subscription_tier"]["id"] == str(subscription_tier_repository.id)
+
 
 @pytest.mark.asyncio
 class TestGetSubscribeSession:
-    async def test_valid(
+    async def test_valid_subscription_tier_organization(
         self,
         client: AsyncClient,
         subscription_tier_organization: SubscriptionTier,
@@ -506,3 +538,31 @@ class TestGetSubscribeSession:
         assert json["customer_name"] == "John"
         assert json["customer_email"] == "backer@example.com"
         assert json["subscription_tier"]["id"] == str(subscription_tier_organization.id)
+
+    async def test_valid_subscription_tier_repository(
+        self,
+        client: AsyncClient,
+        subscription_tier_repository: SubscriptionTier,
+        mock_stripe_service: MagicMock,
+    ) -> None:
+        get_checkout_session_mock: MagicMock = mock_stripe_service.get_checkout_session
+        get_checkout_session_mock.return_value = SimpleNamespace(
+            stripe_id="SESSION_ID",
+            url="STRIPE_URL",
+            customer_email=None,
+            customer_details={"name": "John", "email": "backer@example.com"},
+            metadata={"subscription_tier_id": str(subscription_tier_repository.id)},
+        )
+
+        response = await client.get(
+            "/api/v1/subscriptions/subscribe-sessions/SESSION_ID"
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["id"] == "SESSION_ID"
+        assert json["url"] == "STRIPE_URL"
+        assert json["customer_name"] == "John"
+        assert json["customer_email"] == "backer@example.com"
+        assert json["subscription_tier"]["id"] == str(subscription_tier_repository.id)

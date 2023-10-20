@@ -177,8 +177,8 @@ async def create_subscribe_session(
     auth: Auth = Depends(Auth.optional_user),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscribeSession:
-    subscription_tier = await subscription_tier_service.get(
-        session, session_create.tier_id
+    subscription_tier = await subscription_tier_service.get_by_id(
+        session, auth.subject, session_create.tier_id
     )
 
     if subscription_tier is None:

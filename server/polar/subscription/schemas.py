@@ -1,8 +1,10 @@
-from typing import Any
+from typing import Any, Self
 
+import stripe as stripe_lib
 from pydantic import UUID4, AnyHttpUrl, EmailStr, Field, root_validator
 
 from polar.kit.schemas import Schema, TimestampedSchema
+from polar.models.subscription_tier import SubscriptionTier as SubscriptionTierModel
 from polar.models.subscription_tier import SubscriptionTierType
 
 NAME_MIN_LENGTH = 3
@@ -99,3 +101,29 @@ class SubscribeSession(Schema):
     customer_email: str | None = None
     customer_name: str | None = None
     subscription_tier: SubscriptionTier
+    organization_name: str | None = None
+    repository_name: str | None = None
+
+    @classmethod
+    def from_db(
+        cls,
+        checkout_session: stripe_lib.checkout.Session,
+        subscription_tier: SubscriptionTierModel,
+    ) -> Self:
+        return cls(
+            id=checkout_session.stripe_id,
+            url=checkout_session.url,
+            customer_email=checkout_session.customer_details["email"]
+            if checkout_session.customer_details
+            else checkout_session.customer_email,
+            customer_name=checkout_session.customer_details["name"]
+            if checkout_session.customer_details
+            else None,
+            subscription_tier=subscription_tier,  # type: ignore
+            organization_name=subscription_tier.organization.name
+            if subscription_tier.organization is not None
+            else None,
+            repository_name=subscription_tier.repository.name
+            if subscription_tier.repository is not None
+            else None,
+        )

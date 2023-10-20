@@ -57,6 +57,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
           minLength: 3,
           maxLength: 24,
         }}
+        defaultValue=""
         render={({ field }) => (
           <FormItem className="max-w-[300px]">
             <div className="flex flex-row items-center justify-between">
@@ -148,7 +149,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
                   type="number"
                   {...field}
                   onChange={onChange}
-                  value={displayValue}
+                  value={displayValue || ''}
                 />
               </FormControl>
               <FormMessage />

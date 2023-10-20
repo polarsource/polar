@@ -31,7 +31,7 @@ const SubscriptionTierEditPage: React.FC<SubscriptionTierEditPageProps> = ({
   })
   const { handleSubmit, watch } = form
 
-  const editingSubscriptionTier = watch() as SubscriptionTier
+  const editingSubscriptionTier = watch()
 
   const onSubmit = useCallback(
     async (subscriptionTierUpdate: SubscriptionTierUpdate) => {
@@ -52,7 +52,11 @@ const SubscriptionTierEditPage: React.FC<SubscriptionTierEditPageProps> = ({
           <div className="mb-8 flex items-center justify-between">
             <h1 className="text-lg font-medium">Edit Subscription Tier</h1>
             <div className="flex flex-row gap-2">
-              <Button variant="ghost" onClick={() => router.back()}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => router.back()}
+              >
                 Cancel
               </Button>
               <Button type="submit" variant="default">

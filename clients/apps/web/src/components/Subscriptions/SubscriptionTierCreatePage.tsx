@@ -3,7 +3,6 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
   Organization,
-  SubscriptionTier,
   SubscriptionTierCreate,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
@@ -29,14 +28,13 @@ const SubscriptionTierCreatePage: React.FC<SubscriptionTierCreatePageProps> = ({
 
   const form = useForm<SubscriptionTierCreate>({
     defaultValues: {
-      ...(type && organization
-        ? { type, organization_id: organization.id }
-        : {}),
+      organization_id: organization.id,
+      ...(type ? { type } : {}),
     },
   })
   const { handleSubmit, watch } = form
 
-  const newSubscriptionTier = watch() as SubscriptionTier
+  const newSubscriptionTier = watch()
 
   const selectedSubscriptionTierType = watch('type')
 
@@ -58,7 +56,11 @@ const SubscriptionTierCreatePage: React.FC<SubscriptionTierCreatePageProps> = ({
           <div className="mb-16 flex items-center justify-between">
             <h1 className="text-lg font-medium">New Subscription Tier</h1>
             <div className="flex flex-row gap-2">
-              <Button variant="ghost" onClick={() => router.back()}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => router.back()}
+              >
                 Cancel
               </Button>
               <Button type="submit" variant="default">

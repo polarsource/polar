@@ -3420,6 +3420,18 @@ export interface SubscribeSession {
      * @memberof SubscribeSession
      */
     subscription_tier: SubscriptionTier;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscribeSession
+     */
+    organization_name?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscribeSession
+     */
+    repository_name?: string;
 }
 /**
  * 

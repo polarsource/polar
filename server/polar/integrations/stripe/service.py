@@ -1,4 +1,4 @@
-from typing import Any, Literal, Tuple
+from typing import Any, Literal, Tuple, TypedDict, Unpack
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -17,6 +17,11 @@ from polar.postgres import AsyncSession, sql
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 
 StripeError = stripe_lib_error.StripeError
+
+
+class ProductUpdateKwargs(TypedDict, total=False):
+    name: str
+    description: str
 
 
 class StripeService:
@@ -379,6 +384,11 @@ Thank you for your support!
         if set_default:
             stripe_lib.Product.modify(product, default_price=price.stripe_id)
         return price
+
+    def update_product(
+        self, product: str, **kwargs: Unpack[ProductUpdateKwargs]
+    ) -> stripe_lib.Product:
+        return stripe_lib.Product.modify(product, **kwargs)
 
     def archive_product(self, id: str) -> stripe_lib.Product:
         return stripe_lib.Product.modify(id, active=False)

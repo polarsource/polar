@@ -494,19 +494,50 @@ class TestUserUpdate:
                 session, authz, subscription_tier_organization, update_schema, user
             )
 
-    async def test_valid(
+    async def test_valid_name_change(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        subscription_tier_organization: SubscriptionTier,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+        mock_stripe_service: MagicMock,
+    ) -> None:
+        update_product_mock: MagicMock = mock_stripe_service.update_product
+
+        update_schema = SubscriptionTierUpdate(name="Subscription Tier Update")
+        updated_subscription_tier = await subscription_tier_service.user_update(
+            session, authz, subscription_tier_organization, update_schema, user
+        )
+        assert updated_subscription_tier.name == "Subscription Tier Update"
+
+        update_product_mock.assert_called_once_with(
+            updated_subscription_tier.stripe_product_id,
+            name=f"{organization.name} - Subscription Tier Update",
+        )
+
+    async def test_valid_description_change(
         self,
         session: AsyncSession,
         authz: Authz,
         user: User,
         subscription_tier_organization: SubscriptionTier,
         user_organization_admin: UserOrganization,
+        mock_stripe_service: MagicMock,
     ) -> None:
-        update_schema = SubscriptionTierUpdate(name="Subscription Tier Update")
+        update_product_mock: MagicMock = mock_stripe_service.update_product
+
+        update_schema = SubscriptionTierUpdate(description="Description update")
         updated_subscription_tier = await subscription_tier_service.user_update(
             session, authz, subscription_tier_organization, update_schema, user
         )
-        assert updated_subscription_tier.name == "Subscription Tier Update"
+        assert updated_subscription_tier.description == "Description update"
+
+        update_product_mock.assert_called_once_with(
+            updated_subscription_tier.stripe_product_id,
+            description="Description update",
+        )
 
     async def test_valid_price_change(
         self,

@@ -212,8 +212,9 @@ class Pledge(Schema):
     def from_db(
         cls,
         o: PledgeModel,
-        include_admin_fields: bool = False,
-        include_org_fields: bool = False,
+        include_receiver_admin_fields: bool = False,
+        include_sender_admin_fields: bool = False,
+        include_sender_fields: bool = False,
     ) -> Pledge:
         return Pledge(
             id=o.id,
@@ -221,13 +222,24 @@ class Pledge(Schema):
             amount=CurrencyAmount(currency="USD", amount=o.amount),
             state=PledgeState.from_str(o.state),
             type=PledgeType.from_str(o.type),
-            refunded_at=o.refunded_at if include_admin_fields else None,
-            scheduled_payout_at=o.scheduled_payout_at if include_admin_fields else None,
+            #
+            refunded_at=o.refunded_at
+            if include_sender_admin_fields or include_receiver_admin_fields
+            else None,
+            #
+            scheduled_payout_at=o.scheduled_payout_at
+            if include_receiver_admin_fields
+            else None,
+            #
             issue=Issue.from_db(o.issue),
             pledger=Pledger.from_pledge(o),
-            hosted_invoice_url=o.invoice_hosted_url if include_admin_fields else None,
+            #
+            hosted_invoice_url=o.invoice_hosted_url
+            if include_sender_admin_fields
+            else None,
+            #
             created_by=Pledger.from_user(o.created_by_user)
-            if o.created_by_user and include_org_fields
+            if o.created_by_user and include_sender_fields
             else None,
         )
 

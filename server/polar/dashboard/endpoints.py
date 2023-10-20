@@ -24,6 +24,7 @@ from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.organization.service import organization as organization_service
+from polar.pledge.endpoints import to_schema as pledge_to_schema
 from polar.pledge.schemas import Pledge as PledgeSchema
 from polar.pledge.schemas import PledgeState
 from polar.pledge.service import pledge as pledge_service
@@ -240,7 +241,7 @@ async def dashboard(
             if pled.state not in pledge_statuses:
                 continue
 
-            pledge_schema = PledgeSchema.from_db(pled)
+            pledge_schema = await pledge_to_schema(session, auth.subject, pled)
 
             # Add user-specific metadata
             if auth.user:

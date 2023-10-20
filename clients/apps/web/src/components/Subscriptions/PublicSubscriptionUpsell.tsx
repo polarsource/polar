@@ -23,7 +23,7 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
           .filter((tier) => tier.is_highlighted)
           .sort((a, b) => a.price_amount - b.price_amount)
           .map((tier) => (
-            <SubscriptionTierCard subscriptionTier={tier}>
+            <SubscriptionTierCard key={tier.id} subscriptionTier={tier}>
               <Link
                 className="w-full"
                 href={{

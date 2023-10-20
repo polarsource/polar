@@ -113,7 +113,10 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
       <Separator className="bg-[--var-border-color] dark:bg-[--var-dark-border-color]" />
       <CardContent className="flex shrink flex-col gap-y-1 p-0">
         {mockedBenefits.map((benefit) => (
-          <div className="flex flex-row items-center text-[--var-fg-color] dark:text-[--var-dark-fg-color]">
+          <div
+            key={benefit.id}
+            className="flex flex-row items-center text-[--var-fg-color] dark:text-[--var-dark-fg-color]"
+          >
             <CheckOutlined className="h-4 w-4" fontSize="small" />
             <span className="ml-2 text-sm">{benefit.summary}</span>
           </div>

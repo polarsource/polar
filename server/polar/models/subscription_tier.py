@@ -61,3 +61,10 @@ class SubscriptionTier(RecordModel):
         if self.repository is not None:
             return self.repository.organization_id
         raise RuntimeError()
+
+    def get_stripe_name(self) -> str:
+        if self.organization is not None:
+            return f"{self.organization.name} - {self.name}"
+        if self.repository is not None:
+            return f"{self.repository.name} - {self.name}"
+        raise RuntimeError()

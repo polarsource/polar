@@ -10,7 +10,7 @@ from polar.account.service import account as account_service
 from polar.auth.dependencies import AuthMethod
 from polar.authz.service import AccessType, Authz, Subject
 from polar.exceptions import NotPermitted, PolarError
-from polar.integrations.stripe.service import StripeError
+from polar.integrations.stripe.service import ProductUpdateKwargs, StripeError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
@@ -172,17 +172,21 @@ class SubscriptionTierService(
             )
 
         subscription_tier = await self.model.create(
-            session, **create_schema.dict(), autocommit=False
+            session,
+            organization=organization,
+            repository=repository,
+            **create_schema.dict(exclude={"organization_id", "repository_id"}),
+            autocommit=False,
         )
         await session.flush()
         assert subscription_tier.id is not None
 
         try:
             product = stripe_service.create_product_with_price(
-                create_schema.name,
-                price_amount=create_schema.price_amount,
-                price_currency=create_schema.price_currency,
-                description=create_schema.description,
+                subscription_tier.get_stripe_name(),
+                price_amount=subscription_tier.price_amount,
+                price_currency=subscription_tier.price_currency,
+                description=subscription_tier.description,
                 metadata={
                     "subscription_tier_id": str(subscription_tier.id),
                     "organization_id": str(subscription_tier.organization_id),
@@ -219,6 +223,25 @@ class SubscriptionTierService(
 
         if not await authz.can(user, AccessType.write, subscription_tier):
             raise NotPermitted()
+
+        product_update: ProductUpdateKwargs = {}
+        if (
+            update_schema.name is not None
+            and update_schema.name != subscription_tier.name
+        ):
+            subscription_tier.name = update_schema.name
+            product_update["name"] = subscription_tier.get_stripe_name()
+        if (
+            update_schema.description is not None
+            and update_schema.description != subscription_tier.description
+        ):
+            subscription_tier.description = update_schema.description
+            product_update["description"] = update_schema.description
+
+        if product_update and subscription_tier.stripe_product_id is not None:
+            stripe_service.update_product(
+                subscription_tier.stripe_product_id, **product_update
+            )
 
         if (
             update_schema.price_amount is not None

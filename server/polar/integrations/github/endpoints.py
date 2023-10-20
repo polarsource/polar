@@ -119,7 +119,11 @@ async def github_callback(
         raise HTTPException(status_code=400, detail="Invalid token data")
 
     state_user_id = state_data.get("user_id")
-    if auth.user is not None and auth.user.id == UUID(state_user_id):
+    if (
+        auth.user is not None
+        and state_user_id is not None
+        and auth.user.id == UUID(state_user_id)
+    ):
         user = await github_user.link_existing_user(
             session, user=auth.user, tokens=tokens
         )

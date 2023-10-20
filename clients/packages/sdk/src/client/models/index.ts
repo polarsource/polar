@@ -349,6 +349,12 @@ export interface BackofficePledge {
     authed_can_admin_received?: boolean;
     /**
      * 
+     * @type {Pledger}
+     * @memberof BackofficePledge
+     */
+    created_by?: Pledger;
+    /**
+     * 
      * @type {string}
      * @memberof BackofficePledge
      */
@@ -571,11 +577,17 @@ export interface CreatePledgePayLater {
      */
     amount: number;
     /**
-     * 
+     * The organization to give credit to. The pledge will be paid by the authenticated user.
      * @type {string}
      * @memberof CreatePledgePayLater
      */
     on_behalf_of_organization_id?: string;
+    /**
+     * The organization to create the pledge as. The pledge will be paid by this organization.
+     * @type {string}
+     * @memberof CreatePledgePayLater
+     */
+    by_organization_id?: string;
 }
 /**
  * 
@@ -2493,6 +2505,12 @@ export interface Pledge {
      * @memberof Pledge
      */
     authed_can_admin_received?: boolean;
+    /**
+     * 
+     * @type {Pledger}
+     * @memberof Pledge
+     */
+    created_by?: Pledger;
 }
 /**
  * 
@@ -2572,13 +2590,13 @@ export interface PledgeStripePaymentIntentCreate {
      */
     amount: number;
     /**
-     * 
+     * If the payment method should be saved for future usage.
      * @type {string}
      * @memberof PledgeStripePaymentIntentCreate
      */
     setup_future_usage?: PledgeStripePaymentIntentCreateSetupFutureUsageEnum;
     /**
-     * 
+     * The organization to give credit to. The pledge will be paid by the authenticated user.
      * @type {string}
      * @memberof PledgeStripePaymentIntentCreate
      */
@@ -2650,13 +2668,13 @@ export interface PledgeStripePaymentIntentUpdate {
      */
     amount: number;
     /**
-     * 
+     * If the payment method should be saved for future usage.
      * @type {string}
      * @memberof PledgeStripePaymentIntentUpdate
      */
     setup_future_usage?: PledgeStripePaymentIntentUpdateSetupFutureUsageEnum;
     /**
-     * 
+     * The organization to give credit to. The pledge will be paid by the authenticated user.
      * @type {string}
      * @memberof PledgeStripePaymentIntentUpdate
      */

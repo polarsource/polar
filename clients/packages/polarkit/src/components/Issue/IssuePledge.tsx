@@ -1,8 +1,12 @@
-import { CheckCircleIcon } from '@heroicons/react/24/outline'
+import {
+  CheckCircleIcon,
+  ChevronDoubleRightIcon,
+} from '@heroicons/react/24/outline'
 import {
   Funding,
   Issue,
   Pledge,
+  PledgeState,
   PledgeType,
   PledgesTypeSummaries,
 } from '@polar-sh/sdk'
@@ -111,7 +115,7 @@ const IssuePledge = (props: Props) => {
         <div
           className={twMerge(
             'dark:border-polar-700 border-t',
-            'flex flex-row items-center gap-2 bg-gray-50 bg-white px-6 py-2 dark:bg-transparent  ',
+            'flex flex-row items-center gap-2 bg-gray-50 bg-white px-6 py-2 text-sm  dark:bg-transparent',
           )}
           key={p.id}
         >
@@ -119,10 +123,39 @@ const IssuePledge = (props: Props) => {
             name={p.pledger?.name || ''}
             avatar_url={p.pledger?.avatar_url}
           />
-          <div className="text-sm ">
+          <div className="flex-1">
             {p.pledger?.name} {pledgeVerb(p)} $
             {getCentsInDollarString(p.amount.amount, false, true)} to this issue
             on <FormattedDateTime datetime={p.created_at} dateStyle="long" />
+          </div>
+
+          <div className="flex items-center gap-4">
+            {p.created_by ? (
+              <div className="flex items-center gap-1">
+                <Avatar
+                  name={p.created_by?.name || ''}
+                  avatar_url={p.created_by?.avatar_url}
+                />
+                <span>{p.created_by.name}</span>
+              </div>
+            ) : null}
+
+            {p.hosted_invoice_url ? (
+              <a
+                href={p.hosted_invoice_url}
+                className="border-1 dark:text-polar-200 dark:border-polar-400 dark:hover:bg-polar-700 flex items-center gap-2 rounded-md border border-gray-300 py-1 pl-3 pr-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                {p.state === PledgeState.CREATED ? (
+                  <span>Pay Invoice</span>
+                ) : null}
+                {p.state === PledgeState.PENDING ? (
+                  <span className="text-xs">Invoice Paid</span>
+                ) : null}
+                {p.state === PledgeState.CREATED ? (
+                  <ChevronDoubleRightIcon className="h-4 w-4" />
+                ) : null}
+              </a>
+            ) : null}
           </div>
         </div>
       ))}

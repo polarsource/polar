@@ -35,7 +35,7 @@ const FundAGithubIssue = () => {
     <>
       <div className="dark:bg-polar-800 dark:ring-polar-700 flex flex-col items-start space-y-4 rounded-xl bg-white px-6 py-4 shadow dark:ring-1">
         <h2 className="dark:text-polar-50 text-center text-lg text-gray-900">
-          Fund a Github issue
+          Fund a GitHub issue
         </h2>
         <p className="dark:text-polar-400 flex-1 overflow-hidden text-sm text-gray-500">
           Enter an issue link, like https://github.com/

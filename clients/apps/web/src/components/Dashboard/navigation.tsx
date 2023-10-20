@@ -160,7 +160,7 @@ export const backerRoutes: Route[] = [
 export const metaRoutes: Route[] = [
   {
     id: 'github',
-    title: 'Github',
+    title: 'GitHub',
     link: `https://github.com/polarsource/polar`,
     icon: undefined,
     postIcon: <ArrowUpRightIcon className="h-4 w-4" />,

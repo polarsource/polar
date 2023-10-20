@@ -43,7 +43,7 @@ const OrganizationSubscriptionsPublicPage: React.FC<
       <Separator />
       <SubscriptionGroupPublic
         title="Business"
-        description="Your most exclusive tiers for business customers"
+        description="The most exclusive tiers for business customers"
         type={SubscriptionTierType.BUSINESS}
         tiers={subscriptionTiersByType?.business}
         subscribePath="/subscribe"

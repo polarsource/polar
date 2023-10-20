@@ -61,6 +61,7 @@ async def create_subscription_tier(
         repository_id=repository.id if repository is not None else None,
         stripe_product_id="PRODUCT_ID",
         stripe_price_id="PRICE_ID",
+        subscription_tier_benefits=[],
     )
     session.add(subscription_tier)
     await session.commit()

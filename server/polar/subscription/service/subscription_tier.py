@@ -175,6 +175,7 @@ class SubscriptionTierService(
             session,
             organization=organization,
             repository=repository,
+            subscription_tier_benefits=[],
             **create_schema.dict(exclude={"organization_id", "repository_id"}),
             autocommit=False,
         )

@@ -1,21 +1,32 @@
+from collections.abc import Iterable
 from typing import Any, Self
 
 import stripe as stripe_lib
-from pydantic import UUID4, AnyHttpUrl, EmailStr, Field, root_validator
+from pydantic import UUID4, AnyHttpUrl, EmailStr, Field, root_validator, validator
 
 from polar.kit.schemas import Schema, TimestampedSchema
+from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTier as SubscriptionTierModel
 from polar.models.subscription_tier import SubscriptionTierType
 
-NAME_MIN_LENGTH = 3
-NAME_MAX_LENGTH = 24
-DESCRIPTION_MAX_LENGTH = 240
+TIER_NAME_MIN_LENGTH = 3
+TIER_NAME_MAX_LENGTH = 24
+TIER_DESCRIPTION_MAX_LENGTH = 240
+
+
+class SubscriptionBenefit(Schema):
+    type: SubscriptionBenefitType
+    description: str
+    organization_id: UUID4 | None = None
+    repository_id: UUID4 | None = None
 
 
 class SubscriptionTierCreate(Schema):
     type: SubscriptionTierType
-    name: str = Field(..., min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH)
-    description: str | None = Field(None, max_length=DESCRIPTION_MAX_LENGTH)
+    name: str = Field(
+        ..., min_length=TIER_NAME_MIN_LENGTH, max_length=TIER_NAME_MAX_LENGTH
+    )
+    description: str | None = Field(None, max_length=TIER_DESCRIPTION_MAX_LENGTH)
     is_highlighted: bool = False
     price_amount: int = Field(..., ge=0)
     price_currency: str = Field("USD", regex="USD")
@@ -43,9 +54,9 @@ class SubscriptionTierCreate(Schema):
 
 class SubscriptionTierUpdate(Schema):
     name: str | None = Field(
-        None, min_length=NAME_MIN_LENGTH, max_length=NAME_MAX_LENGTH
+        None, min_length=TIER_NAME_MIN_LENGTH, max_length=TIER_NAME_MAX_LENGTH
     )
-    description: str | None = Field(None, max_length=DESCRIPTION_MAX_LENGTH)
+    description: str | None = Field(None, max_length=TIER_DESCRIPTION_MAX_LENGTH)
     is_highlighted: bool | None = None
     price_amount: int | None = Field(None, ge=0)
     price_currency: str | None = Field(None, regex="USD")
@@ -62,6 +73,14 @@ class SubscriptionTier(TimestampedSchema):
     is_archived: bool
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None
+    benefits: list[SubscriptionBenefit]
+
+    @validator("benefits", pre=True)
+    def benefits_association_proxy_fix(
+        cls, v: Iterable[SubscriptionBenefit]
+    ) -> list[SubscriptionBenefit]:
+        # FIXME: Not needed in Pydantic V2
+        return list(v)
 
 
 class SubscribeSessionCreate(Schema):

@@ -3,13 +3,19 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import Organization, Repository
+    from polar.models import (
+        Organization,
+        Repository,
+        SubscriptionBenefit,
+        SubscriptionTierBenefit,
+    )
 
 
 class SubscriptionTierType(StrEnum):
@@ -53,6 +59,14 @@ class SubscriptionTier(RecordModel):
         nullable=True,
     )
     repository: Mapped["Repository | None"] = relationship("Repository", lazy="raise")
+
+    subscription_tier_benefits: Mapped[list["SubscriptionTierBenefit"]] = relationship(
+        lazy="selectin", order_by="SubscriptionTierBenefit.order"
+    )
+
+    benefits: AssociationProxy[list["SubscriptionBenefit"]] = association_proxy(
+        "subscription_tier_benefits", "subscription_benefit"
+    )
 
     @property
     def managing_organization_id(self) -> UUID:

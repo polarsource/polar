@@ -5,9 +5,7 @@ import { notFound } from 'next/navigation'
 
 export default async function Page({
   searchParams,
-  params,
 }: {
-  params: { organization: string }
   searchParams: { session_id: string }
 }) {
   const api = getServerSideAPI()

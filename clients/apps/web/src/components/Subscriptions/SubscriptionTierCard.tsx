@@ -16,6 +16,7 @@ import { getSubscriptionColorByType } from './utils'
 interface SubscriptionTierCardProps {
   subscriptionTier: Partial<SubscriptionTier>
   children?: React.ReactNode
+  className?: string
 }
 
 const hexToRGBA = (hex: string, opacity: number): string => {
@@ -46,15 +47,15 @@ const mockedBenefits = [
 const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   subscriptionTier,
   children,
+  className,
 }) => {
   const subscriptionColor = getSubscriptionColorByType(subscriptionTier.type)
 
   const style = {
-    '--var-bg-color': hexToRGBA(subscriptionColor, 0.3),
+    '--var-bg-color': hexToRGBA(subscriptionColor, 0.1),
     '--var-border-color': hexToRGBA(subscriptionColor, 0.3),
     '--var-muted-color': hexToRGBA(subscriptionColor, 0.7),
     '--var-fg-color': subscriptionColor,
-    '--var-dark-bg-color': hexToRGBA(subscriptionColor, 0.1),
     '--var-dark-border-color': hexToRGBA(subscriptionColor, 0.15),
     '--var-dark-muted-color': hexToRGBA(subscriptionColor, 0.5),
     '--var-dark-fg-color': subscriptionColor,
@@ -63,7 +64,8 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   return (
     <Card
       className={twMerge(
-        'flex h-full min-w-[300px] max-w-[320px] flex-col gap-y-4 rounded-3xl border-none bg-[--var-bg-color] bg-gradient-to-tr p-8 dark:bg-[--var-dark-bg-color]',
+        'dark:bg-polar-900 dark:border-polar-700 flex min-w-[300px] max-w-[320px] flex-col gap-y-4 rounded-3xl border border-transparent bg-[--var-bg-color] p-8 dark:shadow-none',
+        className,
       )}
       style={style}
     >

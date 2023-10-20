@@ -15,7 +15,12 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
   return (
     <div className="flex flex-col py-6">
       <div className="flex flex-row items-center justify-between">
-        <h2 className="text-2xl">Subscriptions</h2>
+        <div className="flex flex-col">
+          <h2 className="text-2xl">Subscriptions</h2>
+          <p className="dark:text-polar-400 mt-3 text-gray-400">
+            Say thanks with a subscription & gain benefits as a bonus
+          </p>
+        </div>
         <PrimaryButton fullWidth={false}>View all Tiers</PrimaryButton>
       </div>
       <div className="flex flex-row gap-6 pb-6 pt-10">
@@ -23,7 +28,11 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
           .filter((tier) => tier.is_highlighted)
           .sort((a, b) => a.price_amount - b.price_amount)
           .map((tier) => (
-            <SubscriptionTierCard key={tier.id} subscriptionTier={tier}>
+            <SubscriptionTierCard
+              className="h-full"
+              key={tier.id}
+              subscriptionTier={tier}
+            >
               <Link
                 className="w-full"
                 href={{
@@ -32,7 +41,7 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
                 }}
               >
                 <PrimaryButton
-                  classNames="bg-[--var-border-color] dark:bg-[--var-dark-border-color] hover:bg-[--var-border-color] text-[--var-fg-color] dark:text-[--var-dark-fg-color] hover:border-[--var-muted-color] dark:hover:border-[--var-dark-muted-color] transition-colors hover:text-white dark:hover:text-white border border-transparent"
+                  classNames="bg-[--var-border-color] dark:bg-[--var-dark-border-color] text-[--var-fg-color] dark:hover:bg-[--var-dark-fg-color] hover:bg-[--var-fg-color] dark:text-[--var-dark-fg-color] transition-colors hover:text-white dark:hover:text-white"
                   fullWidth
                 >
                   Subscribe

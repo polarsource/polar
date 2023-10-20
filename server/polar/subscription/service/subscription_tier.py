@@ -298,6 +298,10 @@ class SubscriptionTierService(
         *,
         customer_email: str | None = None,
     ) -> SubscribeSession:
+        subscription_tier = await self._with_organization_or_repository(
+            session, subscription_tier
+        )
+
         if subscription_tier.is_archived:
             raise ArchivedSubscriptionTier(subscription_tier.id)
 
@@ -332,17 +336,7 @@ class SubscriptionTierService(
             metadata=metadata,
         )
 
-        return SubscribeSession(
-            id=checkout_session.stripe_id,
-            url=checkout_session.url,
-            customer_email=checkout_session.customer_details["email"]
-            if checkout_session.customer_details
-            else checkout_session.customer_email,
-            customer_name=checkout_session.customer_details["name"]
-            if checkout_session.customer_details
-            else None,
-            subscription_tier=subscription_tier,  # type: ignore
-        )
+        return SubscribeSession.from_db(checkout_session, subscription_tier)
 
     async def get_subscribe_session(
         self, session: AsyncSession, id: str
@@ -352,18 +346,11 @@ class SubscriptionTierService(
         subscription_tier_id = checkout_session.metadata["subscription_tier_id"]
         subscription_tier = await self.get(session, uuid.UUID(subscription_tier_id))
         assert subscription_tier is not None
-
-        return SubscribeSession(
-            id=checkout_session.stripe_id,
-            url=checkout_session.url,
-            customer_email=checkout_session.customer_details["email"]
-            if checkout_session.customer_details
-            else checkout_session.customer_email,
-            customer_name=checkout_session.customer_details["name"]
-            if checkout_session.customer_details
-            else None,
-            subscription_tier=subscription_tier,  # type: ignore
+        subscription_tier = await self._with_organization_or_repository(
+            session, subscription_tier
         )
+
+        return SubscribeSession.from_db(checkout_session, subscription_tier)
 
     async def _with_organization_or_repository(
         self, session: AsyncSession, subscription_tier: SubscriptionTier

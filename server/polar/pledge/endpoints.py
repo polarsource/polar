@@ -36,7 +36,7 @@ from .service import pledge as pledge_service
 router = APIRouter(tags=["pledges"])
 
 
-async def include_org_fields(
+async def include_receiver_admin_fields(
     session: AsyncSession,
     subject: Subject,
     pledge: Pledge,
@@ -46,6 +46,65 @@ async def include_org_fields(
 
     if not subject.id:
         return False
+
+    # is admin of receiver org
+    if pledge.organization_id:
+        m = await user_organization_service.get_by_user_and_org(
+            session, subject.id, pledge.organization_id
+        )
+        if m and m.is_admin:
+            return True
+
+    return False
+
+
+async def include_sender_admin_fields(
+    session: AsyncSession,
+    subject: Subject,
+    pledge: Pledge,
+) -> bool:
+    if not isinstance(subject, User):
+        return False
+
+    if not subject.id:
+        return False
+
+    # if is sender
+    if pledge.by_user_id == subject.id:
+        return True
+
+    # is member if sending org
+    if pledge.by_organization_id:
+        m = await user_organization_service.get_by_user_and_org(
+            session, subject.id, pledge.by_organization_id
+        )
+        if m and m.is_admin:
+            return True
+
+    if pledge.on_behalf_of_organization_id:
+        m = await user_organization_service.get_by_user_and_org(
+            session, subject.id, pledge.on_behalf_of_organization_id
+        )
+        if m and m.is_admin:
+            return True
+
+    return False
+
+
+async def include_sender_fields(
+    session: AsyncSession,
+    subject: Subject,
+    pledge: Pledge,
+) -> bool:
+    if not isinstance(subject, User):
+        return False
+
+    if not subject.id:
+        return False
+
+    # if is sender
+    if pledge.by_user_id == subject.id:
+        return True
 
     # is member if sending org
     if pledge.by_organization_id:
@@ -61,6 +120,19 @@ async def include_org_fields(
             return True
 
     return False
+
+
+async def to_schema(session: AsyncSession, subject: Subject, p: Pledge) -> PledgeSchema:
+    return PledgeSchema.from_db(
+        p,
+        include_receiver_admin_fields=await include_receiver_admin_fields(
+            session, subject, p
+        ),
+        include_sender_admin_fields=await include_sender_admin_fields(
+            session, subject, p
+        ),
+        include_sender_fields=await include_sender_fields(session, subject, p),
+    )
 
 
 @router.get(
@@ -179,11 +251,7 @@ async def search(
     )
 
     items = [
-        PledgeSchema.from_db(
-            p,
-            include_admin_fields=await authz.can(auth.subject, AccessType.write, p),
-            include_org_fields=await include_org_fields(session, auth.subject, p),
-        )
+        await to_schema(session, auth.subject, p)
         for p in pledges
         if await authz.can(auth.subject, AccessType.read, p)
     ]
@@ -238,11 +306,7 @@ async def get(
     if not await authz.can(auth.subject, AccessType.read, pledge):
         raise Unauthorized()
 
-    return PledgeSchema.from_db(
-        pledge,
-        include_admin_fields=await authz.can(auth.subject, AccessType.write, pledge),
-        include_org_fields=await include_org_fields(session, auth.subject, pledge),
-    )
+    return await to_schema(session, auth.subject, pledge)
 
 
 # Internal APIs below
@@ -276,11 +340,7 @@ async def create(
     if not ret:
         raise ResourceNotFound()
 
-    return PledgeSchema.from_db(
-        ret,
-        include_admin_fields=await authz.can(auth.subject, AccessType.write, ret),
-        include_org_fields=await include_org_fields(session, auth.subject, ret),
-    )
+    return await to_schema(session, auth.subject, ret)
 
 
 @router.post(
@@ -315,11 +375,7 @@ async def create_pay_on_completion(
     if not ret:
         raise ResourceNotFound()
 
-    return PledgeSchema.from_db(
-        ret,
-        include_admin_fields=await authz.can(auth.subject, AccessType.write, ret),
-        include_org_fields=await include_org_fields(session, auth.subject, ret),
-    )
+    return await to_schema(session, auth.subject, ret)
 
 
 @router.post(
@@ -348,11 +404,7 @@ async def create_invoice(
     if not ret:
         raise ResourceNotFound()
 
-    return PledgeSchema.from_db(
-        ret,
-        include_admin_fields=await authz.can(auth.subject, AccessType.write, ret),
-        include_org_fields=await include_org_fields(session, auth.subject, ret),
-    )
+    return await to_schema(session, auth.subject, ret)
 
 
 @router.post(
@@ -460,8 +512,4 @@ async def dispute_pledge(
     if not pledge:
         raise HTTPException(status_code=404, detail="Pledge not found")
 
-    return PledgeSchema.from_db(
-        pledge,
-        include_admin_fields=await authz.can(auth.subject, AccessType.write, pledge),
-        include_org_fields=await include_org_fields(session, auth.subject, pledge),
-    )
+    return await to_schema(session, auth.subject, pledge)

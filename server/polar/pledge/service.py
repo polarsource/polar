@@ -89,6 +89,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 joinedload(Pledge.user),
                 joinedload(Pledge.by_organization),
                 joinedload(Pledge.on_behalf_of_organization),
+                joinedload(Pledge.created_by_user),
                 joinedload(Pledge.issue).joinedload(Issue.organization),
                 joinedload(Pledge.issue)
                 .joinedload(Issue.repository)
@@ -151,6 +152,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 joinedload(Pledge.by_organization),
                 joinedload(Pledge.user),
                 joinedload(Pledge.on_behalf_of_organization),
+                joinedload(Pledge.created_by_user),
             )
 
         statement = statement.order_by(Pledge.created_at)
@@ -188,6 +190,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 joinedload(Pledge.to_repository).joinedload(Repository.organization),
                 joinedload(Pledge.to_organization),
                 joinedload(Pledge.on_behalf_of_organization),
+                joinedload(Pledge.created_by_user),
             )
         )
         res = await session.execute(statement)
@@ -206,6 +209,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 joinedload(Pledge.user),
                 joinedload(Pledge.by_organization),
                 joinedload(Pledge.on_behalf_of_organization),
+                joinedload(Pledge.created_by_user),
             )
             .filter(
                 Pledge.issue_id.in_(issue_ids),
@@ -941,7 +945,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             by_user_id=by_user.id if by_user else None,
             on_behalf_of_organization_id=on_behalf_of_organization_id,
             by_organization_id=by_organization_id,
-            created_by_user_id=authenticated_user,
+            created_by_user_id=authenticated_user.id,
         )
 
         await loops_service.user_update(authenticated_user, isBacker=True)

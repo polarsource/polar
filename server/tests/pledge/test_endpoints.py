@@ -10,9 +10,15 @@ from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
+from polar.pledge.schemas import Pledge as PledgeSchema
 from polar.pledge.schemas import PledgeState
 from polar.postgres import AsyncSession
-from tests.fixtures.random_objects import create_issue
+from tests.fixtures.random_objects import (
+    create_issue,
+    create_organization,
+    create_pledge,
+    create_user,
+)
 
 
 @pytest.mark.asyncio
@@ -42,6 +48,99 @@ async def test_get_pledge(
     assert response.json()["issue"]["repository"]["organization"]["id"] == str(
         organization.id
     )
+
+
+@pytest.mark.asyncio
+async def test_get_pledge_member_sending_org(
+    organization: Organization,
+    repository: Repository,
+    pledge: Pledge,
+    issue: Issue,
+    auth_jwt: str,
+    session: AsyncSession,
+    client: AsyncClient,
+    user: User,
+) -> None:
+    pledging_organization = await create_organization(session=session)
+
+    pledge_created_by_user = await create_user(session=session)
+
+    pledge = await create_pledge(
+        session=session,
+        organization=organization,
+        repository=repository,
+        issue=issue,
+        pledging_organization=pledging_organization,
+    )
+
+    pledge.created_by_user_id = pledge_created_by_user.id
+    await pledge.save(session)
+
+    # make user member of the pledging organization
+    await UserOrganization.create(
+        session=session,
+        user_id=user.id,
+        organization_id=pledging_organization.id,
+    )
+
+    response = await client.get(
+        f"/api/v1/pledges/{pledge.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+
+    assert response.json()["id"] == str(pledge.id)
+    res: PledgeSchema = PledgeSchema.parse_obj(response.json())
+    assert res.id == pledge.id
+    assert res.created_by is not None
+    assert res.created_by.name == pledge_created_by_user.username
+
+
+@pytest.mark.asyncio
+async def test_get_pledge_member_receiving_org(
+    organization: Organization,
+    repository: Repository,
+    pledge: Pledge,
+    issue: Issue,
+    auth_jwt: str,
+    session: AsyncSession,
+    client: AsyncClient,
+    user: User,
+) -> None:
+    pledging_organization = await create_organization(session=session)
+
+    pledge_created_by_user = await create_user(session=session)
+
+    pledge = await create_pledge(
+        session=session,
+        organization=organization,
+        repository=repository,
+        issue=issue,
+        pledging_organization=pledging_organization,
+    )
+
+    pledge.created_by_user_id = pledge_created_by_user.id
+    await pledge.save(session)
+
+    # make user member of the receiving organization
+    await UserOrganization.create(
+        session=session,
+        user_id=user.id,
+        organization_id=organization.id,
+    )
+
+    response = await client.get(
+        f"/api/v1/pledges/{pledge.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+
+    assert response.json()["id"] == str(pledge.id)
+    res: PledgeSchema = PledgeSchema.parse_obj(response.json())
+    assert res.id == pledge.id
+    assert res.created_by is None  # created_by should not be available!
 
 
 @pytest.mark.asyncio

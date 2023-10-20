@@ -4,11 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from polar import locker
 from polar.auth.dependencies import Auth, UserRequiredAuth
-from polar.authz.service import AccessType, Authz
+from polar.authz.service import AccessType, Authz, Subject
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.issue.service import issue as issue_service
 from polar.kit.pagination import ListResource, Pagination
+from polar.models.pledge import Pledge
+from polar.models.user import User
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
@@ -32,6 +34,33 @@ from .schemas import (
 from .service import pledge as pledge_service
 
 router = APIRouter(tags=["pledges"])
+
+
+async def include_org_fields(
+    session: AsyncSession,
+    subject: Subject,
+    pledge: Pledge,
+) -> bool:
+    if not isinstance(subject, User):
+        return False
+
+    if not subject.id:
+        return False
+
+    # is member if sending org
+    if pledge.by_organization_id:
+        if await user_organization_service.get_by_user_and_org(
+            session, subject.id, pledge.by_organization_id
+        ):
+            return True
+
+    if pledge.on_behalf_of_organization_id:
+        if await user_organization_service.get_by_user_and_org(
+            session, subject.id, pledge.on_behalf_of_organization_id
+        ):
+            return True
+
+    return False
 
 
 @router.get(
@@ -151,7 +180,9 @@ async def search(
 
     items = [
         PledgeSchema.from_db(
-            p, include_admin_fields=await authz.can(auth.subject, AccessType.write, p)
+            p,
+            include_admin_fields=await authz.can(auth.subject, AccessType.write, p),
+            include_org_fields=await include_org_fields(session, auth.subject, p),
         )
         for p in pledges
         if await authz.can(auth.subject, AccessType.read, p)
@@ -210,6 +241,7 @@ async def get(
     return PledgeSchema.from_db(
         pledge,
         include_admin_fields=await authz.can(auth.subject, AccessType.write, pledge),
+        include_org_fields=await include_org_fields(session, auth.subject, pledge),
     )
 
 
@@ -245,7 +277,9 @@ async def create(
         raise ResourceNotFound()
 
     return PledgeSchema.from_db(
-        ret, include_admin_fields=await authz.can(auth.subject, AccessType.write, ret)
+        ret,
+        include_admin_fields=await authz.can(auth.subject, AccessType.write, ret),
+        include_org_fields=await include_org_fields(session, auth.subject, ret),
     )
 
 
@@ -282,7 +316,9 @@ async def create_pay_on_completion(
         raise ResourceNotFound()
 
     return PledgeSchema.from_db(
-        ret, include_admin_fields=await authz.can(auth.subject, AccessType.write, ret)
+        ret,
+        include_admin_fields=await authz.can(auth.subject, AccessType.write, ret),
+        include_org_fields=await include_org_fields(session, auth.subject, ret),
     )
 
 
@@ -313,7 +349,9 @@ async def create_invoice(
         raise ResourceNotFound()
 
     return PledgeSchema.from_db(
-        ret, include_admin_fields=await authz.can(auth.subject, AccessType.write, ret)
+        ret,
+        include_admin_fields=await authz.can(auth.subject, AccessType.write, ret),
+        include_org_fields=await include_org_fields(session, auth.subject, ret),
     )
 
 
@@ -393,6 +431,7 @@ async def dispute_pledge(
     reason: str,
     auth: UserRequiredAuth,
     session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
 ) -> PledgeSchema:
     pledge = await pledge_service.get(session, pledge_id)
     if not pledge:
@@ -421,4 +460,8 @@ async def dispute_pledge(
     if not pledge:
         raise HTTPException(status_code=404, detail="Pledge not found")
 
-    return PledgeSchema.from_db(pledge)
+    return PledgeSchema.from_db(
+        pledge,
+        include_admin_fields=await authz.can(auth.subject, AccessType.write, pledge),
+        include_org_fields=await include_org_fields(session, auth.subject, pledge),
+    )

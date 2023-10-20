@@ -46,14 +46,18 @@ const SubscriptionGroup: React.FC<SubscriptionGroupProps> = ({
         </div>
         <p className="dark:text-polar-500 mt-4 text-gray-400">{description}</p>
       </div>
-      <div className="grid auto-cols-[320px] grid-flow-col gap-6">
+      <div className="grid grid-cols-4 gap-6">
         {tiers.map((tier) => (
           <Link
             className="transition-opacity hover:opacity-50  dark:hover:opacity-80"
             key={tier.id}
             href={`/maintainer/${organization.name}/subscriptions/tiers/${tier.id}`}
           >
-            <SubscriptionTierCard key={tier.id} subscriptionTier={tier} />
+            <SubscriptionTierCard
+              className="h-full"
+              key={tier.id}
+              subscriptionTier={tier}
+            />
           </Link>
         ))}
       </div>

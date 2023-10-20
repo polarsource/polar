@@ -4,26 +4,15 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
   ListResourceSubscriptionTier,
   Organization,
-  SubscriptionTier,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import React, { useMemo } from 'react'
 import SubscriptionGroup from './SubscriptionGroup'
 import { getSubscriptionTiersByType } from './utils'
 
-type SubscriptionTiersByType = {
-  [key in SubscriptionTierType]: SubscriptionTier[]
-}
-
 interface TiersPageProps {
   subscriptionTiers: ListResourceSubscriptionTier
   organization: Organization
-}
-
-const defaultSubscriptionTiersByType: SubscriptionTiersByType = {
-  [SubscriptionTierType.HOBBY]: [],
-  [SubscriptionTierType.PRO]: [],
-  [SubscriptionTierType.BUSINESS]: [],
 }
 
 const TiersPage: React.FC<TiersPageProps> = ({

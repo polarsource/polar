@@ -75,6 +75,7 @@ const OrganizationPublicPage = ({
 
       {subscriptionTiers.length > 0 && (
         <PublicSubscriptionUpsell
+          organization={organization}
           subscriptionTiers={subscriptionTiers}
           subscribePath="/subscribe"
         />

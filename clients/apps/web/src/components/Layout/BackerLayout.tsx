@@ -81,7 +81,7 @@ const BackerLayout = (props: {
                 href="/new"
                 className="font-medium text-blue-600 dark:text-blue-500"
               >
-                Fund a Github issue
+                Fund a GitHub issue
               </Link>
             </div>
           )}

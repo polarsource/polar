@@ -53,7 +53,7 @@ const SubscriptionGroup: React.FC<SubscriptionGroupProps> = ({
             key={tier.id}
             href={`/maintainer/${organization.name}/subscriptions/tiers/${tier.id}`}
           >
-            <SubscriptionTierCard subscriptionTier={tier} />
+            <SubscriptionTierCard key={tier.id} subscriptionTier={tier} />
           </Link>
         ))}
       </div>

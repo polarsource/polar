@@ -315,7 +315,7 @@ const FundToday = ({
         },
       })
     },
-    [],
+    [issue.id],
   )
 
   const updatePaymentIntent = useCallback(
@@ -334,76 +334,86 @@ const FundToday = ({
         },
       })
     },
-    [],
+    [polarPaymentIntent],
   )
 
-  const shouldSynchronizePledge = useCallback((pledgeSync: PledgeFormState) => {
-    if (
-      pledgeSync.amount < issue.repository.organization.pledge_minimum_amount
-    ) {
-      return false
-    }
-
-    if (!validateEmail(pledgeSync.email)) {
-      return false
-    }
-
-    if (lastPledgeSync.current === undefined) {
-      return true
-    }
-
-    if (
-      lastPledgeSync.current.amount !== pledgeSync.amount ||
-      lastPledgeSync.current.email !== pledgeSync.email ||
-      lastPledgeSync.current.setup_future_usage !==
-        pledgeSync.setup_future_usage ||
-      lastPledgeSync.current.on_behalf_of_organization_id !==
-        pledgeSync.on_behalf_of_organization_id
-    ) {
-      return true
-    }
-
-    return false
-  }, [])
-
-  const synchronizePledge = useCallback(async (pledgeSync: PledgeFormState) => {
-    if (!shouldSynchronizePledge(pledgeSync)) {
-      return
-    }
-
-    setSyncing(true)
-    setErrorMessage('')
-
-    let updatedPaymentIntent:
-      | PledgeStripePaymentIntentMutationResponse
-      | undefined
-
-    try {
-      if (!polarPaymentIntent) {
-        updatedPaymentIntent = await createPaymentIntent(pledgeSync)
-      } else {
-        updatedPaymentIntent = await updatePaymentIntent(pledgeSync)
+  const shouldSynchronizePledge = useCallback(
+    (pledgeSync: PledgeFormState) => {
+      if (
+        pledgeSync.amount < issue.repository.organization.pledge_minimum_amount
+      ) {
+        return false
       }
 
-      if (updatedPaymentIntent) {
-        setPolarPaymentIntent(updatedPaymentIntent)
+      if (!validateEmail(pledgeSync.email)) {
+        return false
       }
 
-      lastPledgeSync.current = pledgeSync
-    } catch (e) {
-      if (e instanceof ResponseError) {
-        const body = await e.response.json()
-        if (body && body['detail'] === 'Invalid Stripe Request') {
-          // Probably a invalid email according to Stripe. Ignore this error.
+      if (lastPledgeSync.current === undefined) {
+        return true
+      }
+
+      if (
+        lastPledgeSync.current.amount !== pledgeSync.amount ||
+        lastPledgeSync.current.email !== pledgeSync.email ||
+        lastPledgeSync.current.setup_future_usage !==
+          pledgeSync.setup_future_usage ||
+        lastPledgeSync.current.on_behalf_of_organization_id !==
+          pledgeSync.on_behalf_of_organization_id
+      ) {
+        return true
+      }
+
+      return false
+    },
+    [issue.repository.organization.pledge_minimum_amount],
+  )
+
+  const synchronizePledge = useCallback(
+    async (pledgeSync: PledgeFormState) => {
+      if (!shouldSynchronizePledge(pledgeSync)) {
+        return
+      }
+
+      setSyncing(true)
+      setErrorMessage('')
+
+      let updatedPaymentIntent:
+        | PledgeStripePaymentIntentMutationResponse
+        | undefined
+
+      try {
+        if (!polarPaymentIntent) {
+          updatedPaymentIntent = await createPaymentIntent(pledgeSync)
         } else {
-          // We didn't handle this error, raise it again.
-          setErrorMessage('Something went wrong, please try again')
+          updatedPaymentIntent = await updatePaymentIntent(pledgeSync)
+        }
+
+        if (updatedPaymentIntent) {
+          setPolarPaymentIntent(updatedPaymentIntent)
+        }
+        lastPledgeSync.current = pledgeSync
+      } catch (e) {
+        if (e instanceof ResponseError) {
+          const body = await e.response.json()
+          if (body && body['detail'] === 'Invalid Stripe Request') {
+            // Probably a invalid email according to Stripe. Ignore this error.
+          } else {
+            // We didn't handle this error, raise it again.
+            setErrorMessage('Something went wrong, please try again')
+          }
         }
       }
-    }
 
-    setSyncing(false)
-  }, [])
+      setSyncing(false)
+    },
+    [
+      createPaymentIntent,
+      updatePaymentIntent,
+      polarPaymentIntent,
+      shouldSynchronizePledge,
+    ],
+  )
 
   const didFirstUserEmailSync = useRef(false)
 

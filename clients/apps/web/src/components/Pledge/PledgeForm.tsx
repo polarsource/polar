@@ -556,7 +556,6 @@ const FundToday = ({
     }
     setFormState(n)
     debouncedSync(n)
-    console.log('changed', { ...n })
   }
 
   return (

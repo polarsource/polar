@@ -2,7 +2,6 @@ import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { CONFIG } from '../config'
 import {
-  ContextState,
   UserContextState,
   UserState,
   createUserContextSlice,
@@ -33,4 +32,4 @@ const useStore = create<UserContextState>()(
 )
 
 export { useStore }
-export type { UserState, ContextState, UserContextState }
+export type { UserState, UserContextState }

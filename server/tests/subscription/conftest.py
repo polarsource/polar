@@ -13,10 +13,12 @@ from polar.models import (
     Organization,
     Repository,
     Subscription,
+    SubscriptionBenefit,
     SubscriptionTier,
     User,
 )
 from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.postgres import AsyncSession
 from polar.subscription.endpoints import is_feature_flag_enabled
@@ -66,6 +68,26 @@ async def create_subscription_tier(
     session.add(subscription_tier)
     await session.commit()
     return subscription_tier
+
+
+async def create_subscription_benefit(
+    session: AsyncSession,
+    *,
+    type: SubscriptionBenefitType = SubscriptionBenefitType.plain,
+    organization: Organization | None = None,
+    repository: Repository | None = None,
+    description: str = "Subscription Benefit",
+) -> SubscriptionBenefit:
+    assert (organization is not None) != (repository is not None)
+    subscription_benefit = SubscriptionBenefit(
+        type=type,
+        description=description,
+        organization_id=organization.id if organization is not None else None,
+        repository_id=repository.id if repository is not None else None,
+    )
+    session.add(subscription_benefit)
+    await session.commit()
+    return subscription_benefit
 
 
 async def create_subscription(
@@ -126,6 +148,42 @@ async def subscription_tiers(
         subscription_tier_organization,
         subscription_tier_repository,
         subscription_tier_private_repository,
+    ]
+
+
+@pytest_asyncio.fixture
+async def subscription_benefit_organization(
+    session: AsyncSession, organization: Organization
+) -> SubscriptionBenefit:
+    return await create_subscription_benefit(session, organization=organization)
+
+
+@pytest_asyncio.fixture
+async def subscription_benefit_repository(
+    session: AsyncSession, public_repository: Repository
+) -> SubscriptionBenefit:
+    return await create_subscription_benefit(session, repository=public_repository)
+
+
+@pytest_asyncio.fixture
+async def subscription_benefit_private_repository(
+    session: AsyncSession, repository: Repository
+) -> SubscriptionBenefit:
+    return await create_subscription_benefit(
+        session, type=SubscriptionBenefitType.plain, repository=repository
+    )
+
+
+@pytest_asyncio.fixture
+async def subscription_benefits(
+    subscription_benefit_organization: SubscriptionBenefit,
+    subscription_benefit_repository: SubscriptionBenefit,
+    subscription_benefit_private_repository: SubscriptionBenefit,
+) -> list[SubscriptionBenefit]:
+    return [
+        subscription_benefit_organization,
+        subscription_benefit_repository,
+        subscription_benefit_private_repository,
     ]
 
 

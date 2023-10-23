@@ -1,23 +1,20 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { CONFIG } from '../config'
-import {
-  UserContextState,
-  UserState,
-  createUserContextSlice,
-} from './userContext'
+import { UserSlice, UserState, createUserSlice } from './userContext'
 
 // https://docs.pmnd.rs/zustand/guides/typescript#slices-pattern
-const useStore = create<UserContextState>()(
+const useStore = create<UserSlice>()(
   devtools(
     persist(
       (...a) => ({
-        ...createUserContextSlice(...a),
+        ...createUserSlice(...a),
       }),
       {
         name: CONFIG.LOCALSTORAGE_PERSIST_KEY,
         version: CONFIG.LOCALSTORAGE_PERSIST_VERSION,
         partialize: (state) => ({
+          // From UserSlice
           authenticated: state.authenticated,
           currentUser: state.currentUser,
           onboardingDashboardSkip: state.onboardingDashboardSkip,
@@ -32,4 +29,4 @@ const useStore = create<UserContextState>()(
 )
 
 export { useStore }
-export type { UserState, UserContextState }
+export type { UserState, UserSlice }

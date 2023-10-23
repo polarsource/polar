@@ -12,6 +12,36 @@ from polar.models.subscription_tier import SubscriptionTierType
 TIER_NAME_MIN_LENGTH = 3
 TIER_NAME_MAX_LENGTH = 24
 TIER_DESCRIPTION_MAX_LENGTH = 240
+BENEFIT_DESCRIPTION_MAX_LENGTH = 120
+
+
+class SubscriptionBenefitCreate(Schema):
+    type: SubscriptionBenefitType
+    description: str = Field(..., max_length=BENEFIT_DESCRIPTION_MAX_LENGTH)
+    organization_id: UUID4 | None = None
+    repository_id: UUID4 | None = None
+
+    @root_validator
+    def check_either_organization_or_repository(
+        cls, values: dict[str, Any]
+    ) -> dict[str, Any]:
+        organization_id = values.get("organization_id")
+        repository_id = values.get("repository_id")
+        if organization_id is not None and repository_id is not None:
+            raise ValueError(
+                "Subscription benefits should either be linked to "
+                "an Organization or a Repository, not both."
+            )
+        if organization_id is None and repository_id is None:
+            raise ValueError(
+                "Subscription benefits should be linked to "
+                "an Organization or a Repository."
+            )
+        return values
+
+
+class SubscriptionBenefitUpdate(Schema):
+    description: str | None = Field(None, max_length=BENEFIT_DESCRIPTION_MAX_LENGTH)
 
 
 class SubscriptionBenefit(Schema):

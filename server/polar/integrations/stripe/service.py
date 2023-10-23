@@ -417,6 +417,7 @@ Thank you for your support!
             automatic_tax={"enabled": True},
             customer=customer,
             customer_email=customer_email,
+            payment_method_collection="if_required",
             metadata=metadata,
         )
 

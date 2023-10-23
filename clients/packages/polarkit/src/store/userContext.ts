@@ -35,10 +35,7 @@ export interface LastPledgeState {
   setLatestPledgeShown: (shown: boolean) => void
 }
 
-export interface UserContextState
-  extends UserState,
-    OnboardingState,
-    LastPledgeState {
+export interface UserSlice extends UserState, OnboardingState, LastPledgeState {
   resetState: () => void
 }
 
@@ -52,10 +49,7 @@ const emptyState = {
   latestPledgeShown: false,
 }
 
-export const createUserContextSlice: StateCreator<UserContextState> = (
-  set,
-  get,
-) => ({
+export const createUserSlice: StateCreator<UserSlice> = (set, get) => ({
   ...emptyState,
   login: (
     callback?: (authenticated: boolean) => void,

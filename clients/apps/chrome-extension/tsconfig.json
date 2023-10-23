@@ -19,7 +19,12 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "paths": {
+      // To get chadcns import paths to work here as well.
+      // When using regular polarkit components, refer to "polarkit" instead of "@polarkit"
+      "@polarkit/lib/*": ["../../../packages/polarkit/src/lib/*"]
+    }
   },
   "include": [
     "src"

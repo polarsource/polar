@@ -1,6 +1,6 @@
 import { forwardRef } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Input as ShadInput } from '../input'
+import { Input as ShadInput } from './'
 
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {}

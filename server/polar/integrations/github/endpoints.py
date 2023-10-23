@@ -16,10 +16,11 @@ from pydantic import BaseModel, ValidationError
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.auth.service import AuthService, LoginResponse
+from polar.authz.service import AccessType, Authz
 from polar.config import settings
 from polar.context import ExecutionContext
 from polar.enums import UserSignupType
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.integrations.github import client as github
 from polar.kit import jwt
 from polar.models import Organization
@@ -149,6 +150,29 @@ async def github_callback(
 ###############################################################################
 # User lookup
 ###############################################################################
+
+
+class SynchronizeMembersResponse(BaseModel):
+    status: bool
+
+
+@router.post("/synchronize_members", response_model=SynchronizeMembersResponse)
+async def synchronize_members(
+    organization_id: UUID,
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> SynchronizeMembersResponse:
+    org = await github_organization.get(session, organization_id)
+    if not org:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, org):
+        raise Unauthorized()
+
+    await github_organization.synchronize_members(session, org)
+
+    return SynchronizeMembersResponse(status=True)
 
 
 class LookupUserRequest(BaseModel):

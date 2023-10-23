@@ -5,6 +5,7 @@ import {
   SubscriptionTierType,
   SubscriptionTierUpdate,
 } from '@polar-sh/sdk'
+import { Input } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   FormControl,
@@ -13,7 +14,6 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import { Input } from 'polarkit/components/ui/input'
 import {
   Select,
   SelectContent,

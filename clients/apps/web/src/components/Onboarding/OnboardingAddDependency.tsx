@@ -12,7 +12,7 @@ import {
   Visibility,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Input, PrimaryButton } from 'polarkit/components/ui/atoms'
 import { CONFIG } from 'polarkit/config'
 import { parseGitHubIssueLink } from 'polarkit/github'
 import { posthog } from 'posthog-js'
@@ -153,14 +153,14 @@ const OnboardingAddDependency = () => {
             </p>
 
             <div className="flex w-full items-center space-x-2">
-              <input
+              <Input
                 type="text"
                 id="link"
                 onChange={onLinkChange}
                 onBlur={onLinkChange}
                 value={link}
                 placeholder="URL to GitHub issue"
-                className="dark:border-polar-600 dark:placeholder:text-polar-500 block w-full flex-1 rounded-lg border-gray-200 bg-transparent px-3 py-2.5 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
+                className="block w-full flex-1"
               />
 
               <div>

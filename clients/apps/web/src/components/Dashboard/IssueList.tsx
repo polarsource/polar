@@ -7,7 +7,7 @@ import {
 import { IssueListResponse, IssueListType, IssueSortBy } from '@polar-sh/sdk'
 import { InfiniteData } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Input, PrimaryButton } from 'polarkit/components/ui/atoms'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -290,8 +290,12 @@ export const Header = (props: {
   return (
     <div className="flex w-full flex-row items-center justify-between pr-4">
       <div className="relative w-full min-w-[280px] max-w-[500px] py-2">
-        <div className="dark:text-500 pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5">
-          {props.spinner && <Spinner />}
+        <div className="dark:text-500 pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+          {props.spinner && (
+            <span className="pl-1">
+              <Spinner />
+            </span>
+          )}
           {!props.spinner && (
             <MagnifyingGlassIcon
               className="dark:text-polar-500 h-5 w-5 text-gray-500"
@@ -299,11 +303,11 @@ export const Header = (props: {
             />
           )}
         </div>
-        <input
+        <Input
           type="text"
           name="query"
           id="query"
-          className="dark:bg-polar-800 dark:text-polar-200 dark:ring-polar-700 dark:placeholder:text-polar-400 block w-full rounded-lg border-0 bg-gray-100 py-2 pl-12 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm sm:leading-6"
+          className="pl-11"
           placeholder="Search issues"
           onChange={onQueryChange}
           value={props.filters.q || ''}

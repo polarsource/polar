@@ -59,7 +59,7 @@ export default function Page() {
 
   return (
     <LoadingScreen animate={!error}>
-      {!error && 'Brewing a fresh access token.'}
+      {!error && 'Brewing a fresh access token'}
       {error && <LoadingScreenError error={error} />}
     </LoadingScreen>
   )

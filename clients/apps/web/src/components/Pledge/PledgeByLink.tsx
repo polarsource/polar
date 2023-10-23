@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Input, PrimaryButton } from 'polarkit/components/ui/atoms'
 import { parseGitHubIssueLink } from 'polarkit/github'
 import { ChangeEvent, MouseEvent, useState } from 'react'
 import HowItWorks from './HowItWorks'
@@ -71,13 +71,11 @@ const PledgeByLink = ({
                   </span>
                 </label>
 
-                <input
-                  type="text"
+                <Input
                   id="link"
                   onChange={onLinkChange}
                   onBlur={onLinkChange}
                   value={link}
-                  className="dark:border-polar-600 block w-full rounded-lg border-gray-200 bg-transparent px-3 py-2.5 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
                 />
 
                 <div className="mt-6">

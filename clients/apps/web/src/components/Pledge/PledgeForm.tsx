@@ -20,7 +20,7 @@ import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
-import { MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Input, MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
 import {
   Select,
   SelectContent,
@@ -613,13 +613,13 @@ const FundToday = ({
           Contact details
         </label>
         <div className="relative mt-2">
-          <input
+          <Input
             type="email"
             id="email"
             onChange={onEmailChange}
             onBlur={onEmailChange}
             value={formState.email}
-            className="dark:border-polar-600 block w-full rounded-lg border-gray-200 bg-transparent px-3 py-2.5 pl-10 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
+            className="block w-full pl-11"
             onFocus={(event) => {
               event.target.select()
             }}

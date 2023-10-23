@@ -1,3 +1,5 @@
+import { Input } from './'
+
 const CopyToClipboardInput = (props: {
   id: string
   value: string
@@ -19,9 +21,9 @@ const CopyToClipboardInput = (props: {
 
   return (
     <div className="dark:border-polar-600 flex w-full overflow-hidden rounded-lg border">
-      <input
+      <Input
         id={props.id}
-        className="dark:text-polar-400 dark:bg-polar-700 flex-1 rounded-l-lg px-3 py-2 font-mono text-sm text-gray-600"
+        className="dark:text-polar-400 dark:bg-polar-700 flex-1 rounded-l-lg rounded-r-none border-none px-3 py-2 font-mono text-sm text-gray-600"
         onClick={() => {
           copyToClipboard(props.id)
         }}

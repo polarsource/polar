@@ -99,9 +99,9 @@ const text = (color: Color, loading: boolean, disabled: boolean) => {
 
 const sizeClasses = (size: Size) => {
   if (size === 'normal') {
-    return 'px-5 py-2 text-sm font-medium '
+    return 'px-5 py-2 text-sm font-medium rounded-lg'
   }
-  return 'px-3 py-1.5 text-xs font-medium '
+  return 'px-3 py-1.5 text-xs font-medium rounded-md'
 }
 
 const height = (size: Size) => {
@@ -127,7 +127,7 @@ export const PrimaryButton: React.FC<ButtonProps> = ({
     text(color, loading, disabled),
     sizeClasses(size),
     fullWidth ? 'w-full' : '',
-    'rounded-lg text-center inline-flex items-center transition-colors duration-100 justify-center whitespace-nowrap',
+    'text-center inline-flex items-center transition-colors duration-100 justify-center whitespace-nowrap',
     classNames,
   )
 

@@ -90,6 +90,6 @@ export default function Page() {
   }
 
   return (
-    <LoadingScreen animate={true}>Brewing a fresh access token.</LoadingScreen>
+    <LoadingScreen animate={true}>Brewing a fresh access token</LoadingScreen>
   )
 }

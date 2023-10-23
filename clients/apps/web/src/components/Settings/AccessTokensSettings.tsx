@@ -174,10 +174,9 @@ export const AccessTokensBox = (props: {
           <div className="flex flex-row items-center gap-x-4">
             <Input
               value={accessTokenName}
-              onUpdated={setAccessTokenName}
+              onChange={(e) => setAccessTokenName(e.target.value)}
               id="access-token-nname"
               name="name"
-              type="text"
               placeholder="Name your Access Token"
             />
             <PrimaryButton

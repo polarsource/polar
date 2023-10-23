@@ -63,14 +63,10 @@ const MoneyInput = (props: Props) => {
           )}
           onChange={onChanged}
           placeholder={getCentsInDollarString(props.placeholder)}
+          preSlot={<span className="text-lg">$</span>}
+          postSlot={<span className="text-sm">USD</span>}
           {...other}
         />
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-lg">
-          <span className="dark:text-polar-400 text-gray-500">$</span>
-        </div>
-        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-sm">
-          <span className="dark:text-polar-400 text-gray-500">USD</span>
-        </div>
       </div>
     </>
   )

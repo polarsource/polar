@@ -5,7 +5,7 @@ import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
 import {
   DashboardBody,
   RepoPickerHeader,
-} from '@/components/Layout/DashboardLayout'
+} from '@/components/Layout/MaintainerLayout'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import {

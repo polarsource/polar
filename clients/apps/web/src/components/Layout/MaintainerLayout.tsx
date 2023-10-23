@@ -3,22 +3,17 @@
 import { useAuth } from '@/hooks/auth'
 import { Repository } from '@polar-sh/sdk'
 import { LogoType } from 'polarkit/components/brand'
-import { useListAdminOrganizations } from 'polarkit/hooks'
 import { Suspense } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SidebarNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
+import TeamsNavigation from '../Dashboard/TeamsNavigation'
 import Popover from '../Notifications/Popover'
 import ProfileSelection from '../Shared/ProfileSelection'
 
-const DashboardLayout = (props: { children: React.ReactNode }) => {
+const MaintainerLayout = (props: { children: React.ReactNode }) => {
   const { currentUser, hydrated } = useAuth()
-
-  const listOrganizationQuery = useListAdminOrganizations()
-
-  const orgs = listOrganizationQuery?.data?.items
-  const showConnectUsell = orgs && orgs.length === 0
 
   if (!hydrated) {
     return <></>
@@ -48,6 +43,8 @@ const DashboardLayout = (props: { children: React.ReactNode }) => {
             )}
           </div>
           <SidebarNavigation />
+
+          <TeamsNavigation />
         </div>
 
         <div className="flex flex-col gap-y-2">
@@ -63,7 +60,7 @@ const DashboardLayout = (props: { children: React.ReactNode }) => {
   )
 }
 
-export default DashboardLayout
+export default MaintainerLayout
 
 export const RepoPickerHeader = (props: {
   currentRepository?: Repository

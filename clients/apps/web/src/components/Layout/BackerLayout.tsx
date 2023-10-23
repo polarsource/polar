@@ -1,3 +1,5 @@
+'use client'
+
 import ProfileSelection from '@/components/Shared/ProfileSelection'
 import { useAuth } from '@/hooks/auth'
 import Link from 'next/link'
@@ -10,6 +12,7 @@ import { twMerge } from 'tailwind-merge'
 import BackerConnectUpsell from '../Dashboard/BackerConnectUpsell'
 import SidebarNavigation from '../Dashboard/BackerNavigation'
 import MetaNavigation from '../Dashboard/MetaNavigation'
+import TeamsNavigation from '../Dashboard/TeamsNavigation'
 import Popover from '../Notifications/Popover'
 import DashboardTopbar from '../Shared/DashboardTopbar'
 
@@ -59,6 +62,7 @@ const BackerLayout = (props: {
             )}
           </div>
           <SidebarNavigation />
+          <TeamsNavigation />
         </div>
 
         <div className="flex flex-col gap-y-2">

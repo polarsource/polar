@@ -5,11 +5,11 @@ import {
   DashboardFilters,
   DefaultFilters,
 } from '@/components/Dashboard/filters'
+import EmptyLayout from '@/components/Layout/EmptyLayout'
 import {
   DashboardBody,
   RepoPickerHeader,
-} from '@/components/Layout/DashboardLayout'
-import EmptyLayout from '@/components/Layout/EmptyLayout'
+} from '@/components/Layout/MaintainerLayout'
 import OnboardingAddBadge from '@/components/Onboarding/OnboardingAddBadge'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import { useToast } from '@/components/Toast/use-toast'

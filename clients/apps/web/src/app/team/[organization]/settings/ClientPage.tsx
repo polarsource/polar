@@ -1,6 +1,5 @@
 'use client'
 
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import Spinner from '@/components/Shared/Spinner'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
@@ -9,15 +8,11 @@ export default function ClientPage() {
   const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
 
   if (!isLoaded || !org) {
-    return (
-      <DashboardBody>
-        <Spinner />
-      </DashboardBody>
-    )
+    return <Spinner />
   }
 
   return (
-    <DashboardBody>
+    <>
       <div>
         <h2 className="text-2xl font-medium">Team settings</h2>
       </div>
@@ -28,7 +23,7 @@ export default function ClientPage() {
           <PaymentMethodSettings org={org} />
         </Section>
       </div>
-    </DashboardBody>
+    </>
   )
 }
 

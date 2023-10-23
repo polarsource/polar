@@ -1,10 +1,18 @@
 'use client'
 
 import type { Organization, Repository } from '@polar-sh/sdk'
-import { useParams, useSearchParams } from 'next/navigation'
-import { useListAdminOrganizations, useListRepositories } from 'polarkit/hooks'
+import { useParams, usePathname, useSearchParams } from 'next/navigation'
+import { useListAllOrganizations, useListRepositories } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { useEffect, useState } from 'react'
+
+const isMaintainerOrgInURL = (url: string) => {
+  return true
+  if (url.startsWith('/team/')) {
+    return false
+  }
+  return true
+}
 
 export const useCurrentOrgAndRepoFromURL = (): {
   org: Organization | undefined
@@ -21,7 +29,7 @@ export const useCurrentOrgAndRepoFromURL = (): {
   const search = useSearchParams()
   const searchRepo = search?.get('repo')
 
-  const listOrganizationsQuery = useListAdminOrganizations()
+  const listOrganizationsQuery = useListAllOrganizations()
   const listRepositoriesQuery = useListRepositories()
 
   const [org, setOrg] = useState<Organization | undefined>(undefined)
@@ -32,15 +40,24 @@ export const useCurrentOrgAndRepoFromURL = (): {
   const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
   const setUserHaveOrgs = useStore((state) => state.setUserHaveOrgs)
 
-  useEffect(() => {
-    const orgSlug = typeof paramsOrg === 'string' ? paramsOrg : ''
+  const pathname = usePathname()
 
-    // Repo slug form param or search
+  useEffect(() => {
+    let orgSlug = ''
     let repoSlug = ''
-    if (typeof paramsRepo === 'string') {
-      repoSlug = paramsRepo
-    } else if (typeof searchRepo === 'string') {
-      repoSlug = searchRepo
+
+    if (isMaintainerOrgInURL(pathname)) {
+      if (typeof paramsOrg === 'string') {
+        orgSlug = paramsOrg
+      }
+
+      // Repo slug form param or search
+      // let repoSlug = ''
+      if (typeof paramsRepo === 'string') {
+        repoSlug = paramsRepo
+      } else if (typeof searchRepo === 'string') {
+        repoSlug = searchRepo
+      }
     }
 
     let nextOrg: Organization | undefined
@@ -91,6 +108,7 @@ export const useCurrentOrgAndRepoFromURL = (): {
     paramsOrg,
     paramsRepo,
     searchRepo,
+    pathname,
   ])
 
   return {

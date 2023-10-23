@@ -2,10 +2,10 @@
 
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import Spinner from '@/components/Shared/Spinner'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { useCurrentTeamFromURL } from '@/hooks/org'
 
 export default function ClientPage() {
-  const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
+  const { org, isLoaded } = useCurrentTeamFromURL()
 
   if (!isLoaded || !org) {
     return <Spinner />

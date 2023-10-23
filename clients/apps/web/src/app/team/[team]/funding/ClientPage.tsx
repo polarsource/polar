@@ -2,14 +2,14 @@
 
 import IssueListItem from '@/components/Dashboard/IssueListItem'
 import Spinner from '@/components/Shared/Spinner'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { useCurrentTeamFromURL } from '@/hooks/org'
 import { HowToVoteOutlined } from '@mui/icons-material'
 import { Pledge } from '@polar-sh/sdk'
 
 import { useSearchPledges } from 'polarkit/hooks'
 
 export default function ClientPage() {
-  const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
+  const { org, isLoaded } = useCurrentTeamFromURL()
 
   const pledges = useSearchPledges({
     byOrganizationId: org?.id,

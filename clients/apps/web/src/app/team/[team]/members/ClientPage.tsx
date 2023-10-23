@@ -1,7 +1,7 @@
 'use client'
 
 import Spinner from '@/components/Shared/Spinner'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { useCurrentTeamFromURL } from '@/hooks/org'
 import { Avatar, Pill } from 'polarkit/components/ui/atoms'
 
 import {
@@ -15,7 +15,7 @@ import {
 import { useListOrganizationMembers } from 'polarkit/hooks'
 
 export default function ClientPage() {
-  const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
+  const { org, isLoaded } = useCurrentTeamFromURL()
 
   const members = useListOrganizationMembers(org?.id)
 

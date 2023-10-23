@@ -1,6 +1,10 @@
 'use client'
 
-import { useAuth, useCurrentOrgAndRepoFromURL } from '@/hooks'
+import {
+  useAuth,
+  useCurrentOrgAndRepoFromURL,
+  useCurrentTeamFromURL,
+} from '@/hooks'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -46,13 +50,27 @@ const DashboardTopbar = ({
   isFixed?: boolean
 }>) => {
   const { org: currentOrgFromURL } = useCurrentOrgAndRepoFromURL()
+  const { org: currentTeamFromURL } = useCurrentTeamFromURL()
+
   const { hydrated } = useAuth()
 
   const useOrgFromURL = props.useOrgFromURL
 
   const currentOrg = useMemo(() => {
-    return currentOrgFromURL && useOrgFromURL ? currentOrgFromURL : undefined
-  }, [currentOrgFromURL, useOrgFromURL])
+    if (!useOrgFromURL) {
+      return undefined
+    }
+
+    if (currentTeamFromURL) {
+      return currentTeamFromURL
+    }
+
+    if (currentOrgFromURL) {
+      return currentOrgFromURL
+    }
+
+    return undefined
+  }, [currentOrgFromURL, useOrgFromURL, currentTeamFromURL])
 
   const pathname = usePathname()
 

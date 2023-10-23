@@ -1,10 +1,4 @@
-import {
-  Pledge,
-  Repository,
-  ResponseError,
-  type Organization,
-  type UserRead,
-} from '@polar-sh/sdk'
+import { Pledge, ResponseError, type UserRead } from '@polar-sh/sdk'
 import { StateCreator } from 'zustand'
 import { api } from '../api'
 
@@ -29,17 +23,6 @@ export interface OnboardingState {
   setOnboardingMaintainerConnectRepositories: (skip: boolean) => void
 }
 
-export interface ContextState {
-  userHaveOrgs: boolean
-  currentOrg: Organization | undefined
-  currentRepo: Repository | undefined
-  setUserHaveOrgs: (userHaveOrgs: boolean) => void
-  setCurrentOrgRepo: (
-    org: Organization | undefined,
-    repo: Repository | undefined,
-  ) => void
-}
-
 export interface LastPledgeState {
   latestPledge:
     | {
@@ -54,7 +37,6 @@ export interface LastPledgeState {
 
 export interface UserContextState
   extends UserState,
-    ContextState,
     OnboardingState,
     LastPledgeState {
   resetState: () => void
@@ -66,9 +48,6 @@ const emptyState = {
   onboardingDashboardSkip: false,
   onboardingDashboardInstallChromeExtensionSkip: false,
   onboardingMaintainerConnectRepositoriesSkip: false,
-  userHaveOrgs: false,
-  currentOrg: undefined,
-  currentRepo: undefined,
   latestPledge: undefined,
   latestPledgeShown: false,
 }
@@ -109,18 +88,6 @@ export const createUserContextSlice: StateCreator<UserContextState> = (
       get().resetState()
     })
     return request
-  },
-  setUserHaveOrgs: (userHaveOrgs: boolean) => {
-    set({ userHaveOrgs })
-  },
-  setCurrentOrgRepo: (
-    org: Organization | undefined,
-    repo: Repository | undefined,
-  ) => {
-    set({
-      currentOrg: org,
-      currentRepo: repo,
-    })
   },
   setOnboardingDashboardSkip: (skip: boolean) => {
     set({

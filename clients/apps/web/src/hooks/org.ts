@@ -3,7 +3,6 @@
 import type { Organization, Repository } from '@polar-sh/sdk'
 import { useParams, usePathname, useSearchParams } from 'next/navigation'
 import { useListAllOrganizations, useListRepositories } from 'polarkit/hooks'
-import { useStore } from 'polarkit/store'
 import { useEffect, useState } from 'react'
 
 export const useCurrentOrgAndRepoFromURL = (): {
@@ -28,9 +27,6 @@ export const useCurrentOrgAndRepoFromURL = (): {
   const [repo, setRepo] = useState<Repository | undefined>(undefined)
   const [haveOrgs, setHaveOrgs] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
-
-  const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
-  const setUserHaveOrgs = useStore((state) => state.setUserHaveOrgs)
 
   const pathname = usePathname()
 
@@ -86,15 +82,9 @@ export const useCurrentOrgAndRepoFromURL = (): {
     )
 
     setHaveOrgs(nextUserHaveOrgs)
-
-    // global stores
-    setCurrentOrgRepo(nextOrg, nextRepo)
-    setUserHaveOrgs(nextUserHaveOrgs)
   }, [
     listOrganizationsQuery,
     listRepositoriesQuery,
-    setCurrentOrgRepo,
-    setUserHaveOrgs,
     paramsOrg,
     paramsRepo,
     searchRepo,

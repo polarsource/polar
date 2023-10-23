@@ -4,28 +4,10 @@ import { DashboardBody } from '@/components/Layout/MaintainerLayout'
 import BadgeSetup from '@/components/Settings/Badge'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
-import { useStore } from 'polarkit/store'
-import { ReactElement, useEffect, useRef } from 'react'
+import { ReactElement } from 'react'
 
 export default function ClientPage() {
   const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
-  const didFirstSetForOrg = useRef<string>('')
-  const setCurrentOrgRepo = useStore((state) => state.setCurrentOrgRepo)
-
-  useEffect(() => {
-    if (!org) {
-      return
-    }
-
-    setCurrentOrgRepo(org, undefined)
-
-    // If org changes, or if this is the first time we load this org, build states
-    if (didFirstSetForOrg.current === org.id) {
-      return
-    }
-
-    didFirstSetForOrg.current = org.id
-  }, [org, setCurrentOrgRepo])
 
   if (!org && isLoaded) {
     return (

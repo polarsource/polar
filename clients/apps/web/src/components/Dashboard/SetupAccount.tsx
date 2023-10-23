@@ -9,7 +9,11 @@ import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
 import { ACCOUNT_TYPE_DISPLAY_NAMES } from 'polarkit/account'
 import { getValidationErrorsMap } from 'polarkit/api/errors'
-import { CountryPicker, PrimaryButton } from 'polarkit/components/ui/atoms'
+import {
+  CountryPicker,
+  Input,
+  PrimaryButton,
+} from 'polarkit/components/ui/atoms'
 import { ChangeEvent, useState } from 'react'
 import { ModalBox } from '../Modal'
 
@@ -148,7 +152,7 @@ const SetupAccount = ({
                       https://opencollective.com/
                     </span>
                   </div>
-                  <input
+                  <Input
                     type="text"
                     id="open_collective_slug"
                     name="open_collective_slug"

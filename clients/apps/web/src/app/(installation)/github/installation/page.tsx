@@ -155,7 +155,7 @@ export default function Page() {
 
   return (
     <LoadingScreen animate={true}>
-      Connecting your amazing repositories.
+      Connecting your amazing repositories...
     </LoadingScreen>
   )
 }

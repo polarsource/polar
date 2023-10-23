@@ -3,7 +3,7 @@ import { XMarkIcon } from '@heroicons/react/24/solid'
 import { Issue, Pledge } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
 import { PublicRewardPill } from 'polarkit/components/Issue'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Input, PrimaryButton } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { getCentsInDollarString } from 'polarkit/money'
 import { FormEvent, useEffect, useMemo, useState } from 'react'
@@ -235,7 +235,7 @@ const Split = (props: {
       <div className="space-y-4 pt-4">
         <div className="flex flex-col gap-4 px-4">
           {computedShares.map((s) => (
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-4">
               <div>
                 <img src={s.avatar_url} className="h-6 w-6 rounded-full" />
               </div>
@@ -257,14 +257,14 @@ const Split = (props: {
                   true,
                 )}
               </div>
-              <div className="dark:bg-polar-700 flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5">
+              <div className="flex w-[120px] items-center gap-2 py-2">
                 <span className="dark:text-polar-400 flex-shrink-0 text-gray-500">
                   %
                 </span>
                 <div className="flex-1">
-                  <input
+                  <Input
                     className={twMerge(
-                      'dark:bg-polar-700 dark:placeholder:text-polar-400 w-full bg-white dark:outline-gray-700 ',
+                      'w-full',
                       s.is_fixed
                         ? 'dark:text-polar-100 font-medium text-black'
                         : 'dark:text-polar-400 text-gray-500',
@@ -278,7 +278,7 @@ const Split = (props: {
                 </div>
                 {s.is_fixed && (
                   <XMarkIcon
-                    className="hover:text-polar-600 h-6 w-6 flex-shrink-0 cursor-pointer text-gray-500"
+                    className="hover:text-polar-600 dark:text-polar-300 h-6 w-6 flex-shrink-0 cursor-pointer text-gray-500"
                     onClick={() => onUpdate(s.username, '')}
                   />
                 )}
@@ -286,17 +286,17 @@ const Split = (props: {
             </div>
           ))}
 
-          <div className="flex">
+          <div className="flex flex-row items-center justify-between">
             <form
-              className="flex flex-1 items-center space-x-2"
+              className="flex flex-row items-center space-x-4"
               onSubmit={onSearchGithubUsernameSubmit}
             >
               <button type="submit">
                 <PlusIcon className="h-6 w-6" />
               </button>
-              <input
+              <Input
                 placeholder="Add a GitHub user..."
-                className="dark:bg-polar-900 dark:placeholder:text-polar-400 px-2 py-1 dark:outline-gray-700"
+                className="w-[240px]"
                 value={searchGithubUsername}
                 onChange={(e) => setSearchGithubUsername(e.target.value)}
               />

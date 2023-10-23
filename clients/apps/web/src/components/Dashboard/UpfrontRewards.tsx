@@ -1,9 +1,9 @@
 import { UserIcon } from '@heroicons/react/24/outline'
 import { Organization } from '@polar-sh/sdk'
+import { Input } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { Switch } from 'polarkit/components/ui/switch'
 import { useMemo, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 const PublicRewardsSetting = (props: {
   value: number | undefined
@@ -116,18 +116,17 @@ const PublicRewardsSetting = (props: {
                   Reserved for contributor(s)
                 </div>
               </div>
-              <div className="dark:bg-polar-700 flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5">
+              <div className="flex w-[120px] items-center gap-3 py-2">
                 <span className="dark:text-polar-400 flex-shrink-0 text-gray-500">
                   %
                 </span>
                 <div className="flex-1">
-                  <input
-                    className={twMerge(
-                      'dark:bg-polar-700 w-full bg-white dark:outline-gray-700 ',
+                  <Input
+                    className={
                       usePublicRewards
                         ? 'dark:text-polar-100 font-medium text-black'
-                        : 'dark:text-polar-400 text-gray-500',
-                    )}
+                        : 'dark:text-polar-400 text-gray-500'
+                    }
                     disabled={!usePublicRewards}
                     value={contributorsShare}
                     placeholder={'50'}
@@ -155,19 +154,12 @@ const PublicRewardsSetting = (props: {
                   Reviews, feedback & maintenance. Reward yourself too.
                 </div>
               </div>
-              <div className="dark:bg-polar-700 flex w-[120px] items-center gap-1 overflow-hidden rounded-lg border bg-white px-3 py-2 pr-1.5">
+              <div className="flex w-[120px] items-center gap-3 py-2">
                 <span className="dark:text-polar-400 flex-shrink-0 text-gray-500">
                   %
                 </span>
                 <div className="flex-1">
-                  <input
-                    className={twMerge(
-                      'dark:bg-polar-700 w-full bg-white dark:outline-gray-700 ',
-                      'dark:text-polar-400 text-gray-500',
-                    )}
-                    disabled
-                    value={maintainerShare}
-                  />
+                  <Input disabled value={maintainerShare} />
                 </div>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Input, PrimaryButton } from 'polarkit/components/ui/atoms'
 import { useState } from 'react'
 
 interface MagicLinkLoginFormProps {}
@@ -27,7 +27,7 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({}) => {
 
   return (
     <form className="relative w-full" onSubmit={onSubmit}>
-      <input
+      <Input
         value={email}
         onChange={(event) => setEmail(event.target.value)}
         id="magic-link-email"
@@ -35,9 +35,9 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({}) => {
         type="email"
         placeholder="Email"
         required
-        className="text-md dark:bg-polar-800 dark:border-polar-600 dark:text-polar-200 dark:ring-polar-700 block w-full rounded-xl border-0 p-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 dark:placeholder-gray-500 dark:focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+        className="w-full"
       />
-      <div className="absolute inset-y-0 right-0 flex items-center pr-2.5">
+      <div className="absolute inset-y-0 right-0 flex items-center pr-2">
         <PrimaryButton
           type="submit"
           size="small"

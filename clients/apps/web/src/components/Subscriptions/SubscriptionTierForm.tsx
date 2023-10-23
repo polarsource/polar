@@ -131,10 +131,11 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
         name="price_amount"
         rules={{ required: 'This field is required', min: 0 }}
         render={({ field }) => {
-          const displayValue = field.value ? field.value / 100 : undefined
+          const displayValue =
+            field.value !== undefined ? field.value / 100 : undefined
           const onChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
             e.preventDefault()
-            if (e.currentTarget.value) {
+            if (e.currentTarget.value !== undefined) {
               e.currentTarget.value = (
                 Number.parseInt(e.currentTarget.value) * 100
               ).toString()
@@ -149,7 +150,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
                   type="number"
                   {...field}
                   onChange={onChange}
-                  value={displayValue || ''}
+                  value={displayValue !== undefined ? displayValue : ''}
                 />
               </FormControl>
               <FormMessage />

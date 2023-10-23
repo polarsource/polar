@@ -44,7 +44,8 @@ class SubscriptionBenefitUpdate(Schema):
     description: str | None = Field(None, max_length=BENEFIT_DESCRIPTION_MAX_LENGTH)
 
 
-class SubscriptionBenefit(Schema):
+class SubscriptionBenefit(TimestampedSchema):
+    id: UUID4
     type: SubscriptionBenefitType
     description: str
     organization_id: UUID4 | None = None

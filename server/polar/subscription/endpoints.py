@@ -6,7 +6,8 @@ from polar.authz.service import Authz
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.models import Repository, SubscriptionTier
+from polar.models import Repository, SubscriptionBenefit, SubscriptionTier
+from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.organization.dependencies import OrganizationNameQuery
 from polar.organization.service import organization as organization_service
@@ -19,10 +20,16 @@ from polar.tags.api import Tags
 from .schemas import (
     SubscribeSession,
     SubscribeSessionCreate,
+    SubscriptionBenefitCreate,
+    SubscriptionBenefitUpdate,
     SubscriptionTierCreate,
     SubscriptionTierUpdate,
 )
+from .schemas import SubscriptionBenefit as SubscriptionBenefitSchema
 from .schemas import SubscriptionTier as SubscriptionTierSchema
+from .service.subscription_benefit import (
+    subscription_benefit as subscription_benefit_service,
+)
 from .service.subscription_tier import subscription_tier as subscription_tier_service
 
 
@@ -163,6 +170,91 @@ async def archive_subscription_tier(
 
     return await subscription_tier_service.archive(
         session, authz, subscription_tier, auth.user
+    )
+
+
+@router.get(
+    "/benefits/search",
+    response_model=ListResource[SubscriptionBenefitSchema],
+    tags=[Tags.PUBLIC],
+)
+async def search_subscription_benefits(
+    pagination: PaginationParamsQuery,
+    organization_name: OrganizationNameQuery,
+    auth: UserRequiredAuth,
+    repository_name: OptionalRepositoryNameQuery = None,
+    direct_organization: bool = Query(True),
+    type: SubscriptionBenefitType | None = Query(None),
+    platform: Platforms = Query(...),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[SubscriptionBenefitSchema]:
+    organization = await organization_service.get_by_name(
+        session, platform, organization_name
+    )
+    if organization is None:
+        raise ResourceNotFound("Organization not found")
+
+    repository: Repository | None = None
+    if repository_name is not None:
+        repository = await repository_service.get_by_org_and_name(
+            session, organization.id, repository_name
+        )
+        if repository is None:
+            raise ResourceNotFound("Repository not found")
+
+    results, count = await subscription_benefit_service.search(
+        session,
+        auth.subject,
+        type=type,
+        organization=organization,
+        repository=repository,
+        direct_organization=direct_organization,
+        pagination=pagination,
+    )
+
+    return ListResource.from_paginated_results(
+        [SubscriptionBenefitSchema.from_orm(result) for result in results],
+        count,
+        pagination,
+    )
+
+
+@router.post(
+    "/benefits/",
+    response_model=SubscriptionBenefitSchema,
+    status_code=201,
+    tags=[Tags.PUBLIC],
+)
+async def create_subscription_benefit(
+    subscription_benefit_create: SubscriptionBenefitCreate,
+    auth: UserRequiredAuth,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionBenefit:
+    return await subscription_benefit_service.user_create(
+        session, authz, subscription_benefit_create, auth.user
+    )
+
+
+@router.post(
+    "/benefits/{id}", response_model=SubscriptionBenefitSchema, tags=[Tags.PUBLIC]
+)
+async def update_subscription_benefit(
+    id: UUID4,
+    subscription_benefit_update: SubscriptionBenefitUpdate,
+    auth: UserRequiredAuth,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionBenefit:
+    subscription_benefit = await subscription_benefit_service.get_by_id(
+        session, auth.subject, id
+    )
+
+    if subscription_benefit is None:
+        raise ResourceNotFound()
+
+    return await subscription_benefit_service.user_update(
+        session, authz, subscription_benefit, subscription_benefit_update, auth.user
     )
 
 

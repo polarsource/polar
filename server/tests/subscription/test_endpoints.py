@@ -10,8 +10,8 @@ from polar.models import (
     Account,
     Organization,
     Repository,
+    SubscriptionBenefit,
     SubscriptionTier,
-    User,
     UserOrganization,
 )
 
@@ -388,6 +388,305 @@ class TestArchiveSubscriptionTier:
 
         json = response.json()
         assert json["is_archived"]
+
+
+@pytest.mark.asyncio
+class TestSearchSubscriptionBenefits:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/api/v1/subscriptions/benefits/search")
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_not_existing_organization(self, client: AsyncClient) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/benefits/search",
+            params={"platform": "github", "organization_name": "not_existing"},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.authenticated
+    async def test_not_existing_repository(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/benefits/search",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+                "repository_name": "not_existing",
+            },
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.authenticated
+    async def test_not_user_organization(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        subscription_benefits: list[SubscriptionBenefit],
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/benefits/search",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 0
+
+    @pytest.mark.authenticated
+    async def test_organization(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        subscription_benefits: list[SubscriptionBenefit],
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/benefits/search",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+
+        items = json["items"]
+        assert items[0]["id"] == str(subscription_benefits[0].id)
+
+    @pytest.mark.authenticated
+    async def test_indirect_organization(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        subscription_benefits: list[SubscriptionBenefit],
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/benefits/search",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+                "direct_organization": False,
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 3
+
+    @pytest.mark.authenticated
+    async def test_public_repository(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        public_repository: Repository,
+        user_organization: UserOrganization,
+        subscription_benefits: list[SubscriptionBenefit],
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/benefits/search",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+                "repository_name": public_repository.name,
+                "direct_organization": False,
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+
+        items = json["items"]
+        assert items[0]["repository_id"] == str(public_repository.id)
+
+
+@pytest.mark.asyncio
+class TestCreateSubscriptionBenefit:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/api/v1/subscriptions/benefits/",
+            json={
+                "type": "plain",
+                "description": "Subscription Benefit",
+                "organization_id": str(uuid.uuid4()),
+            },
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_both_organization_and_repository(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        public_repository: Repository,
+        user_organization_admin: UserOrganization,
+        mock_stripe_service: MagicMock,
+    ) -> None:
+        response = await client.post(
+            "/api/v1/subscriptions/benefits/",
+            json={
+                "type": "plain",
+                "description": "Subscription Benefit",
+                "organization_id": str(organization.id),
+                "repository_id": str(public_repository.id),
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.authenticated
+    async def test_neither_organization_nor_repository(
+        self,
+        client: AsyncClient,
+        user_organization_admin: UserOrganization,
+        mock_stripe_service: MagicMock,
+    ) -> None:
+        response = await client.post(
+            "/api/v1/subscriptions/benefits/",
+            json={
+                "type": "plain",
+                "description": "Subscription Benefit",
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {
+                "description": (
+                    "This is a way too long description that shall never fit "
+                    "in the space we have in a single subscription benefit card. "
+                    "That's why we need to add this upper limit of characters, "
+                    "otherwise users would put loads and loads of text that would "
+                    "result in a very ugly output on the subscription page."
+                )
+            },
+        ],
+    )
+    @pytest.mark.authenticated
+    async def test_validation(
+        self,
+        payload: dict[str, Any],
+        client: AsyncClient,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/api/v1/subscriptions/benefits/",
+            json={
+                "type": "plain",
+                "organization_id": str(organization.id),
+                **payload,
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.authenticated
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/api/v1/subscriptions/benefits/",
+            json={
+                "type": "plain",
+                "description": "Subscription Benefit",
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 201
+
+
+@pytest.mark.asyncio
+class TestUpdateSubscriptionBenefit:
+    async def test_anonymous(
+        self,
+        client: AsyncClient,
+        subscription_benefit_organization: SubscriptionBenefit,
+    ) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/benefits/{subscription_benefit_organization.id}",
+            json={"description": "Updated Name"},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/benefits/{uuid.uuid4()}",
+            json={"description": "Updated Name"},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {
+                "description": (
+                    "This is a way too long description that shall never fit "
+                    "in the space we have in a single subscription benefit card. "
+                    "That's why we need to add this upper limit of characters, "
+                    "otherwise users would put loads and loads of text that would "
+                    "result in a very ugly output on the subscription page."
+                )
+            },
+        ],
+    )
+    @pytest.mark.authenticated
+    async def test_validation(
+        self,
+        payload: dict[str, Any],
+        client: AsyncClient,
+        subscription_benefit_organization: SubscriptionBenefit,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/benefits/{subscription_benefit_organization.id}",
+            json=payload,
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.authenticated
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        subscription_benefit_organization: SubscriptionBenefit,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/benefits/{subscription_benefit_organization.id}",
+            json={"description": "Updated Description"},
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["description"] == "Updated Description"
 
 
 @pytest.mark.asyncio

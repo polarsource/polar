@@ -330,7 +330,7 @@ class GithubOrganizationService(OrganizationService):
         github_members = await self.fetch_members(org)
 
         db_members_stmt = (
-            sql.select(OAuthAccount, UserOrganization)
+            sql.select(OAuthAccount)
             .where(
                 UserOrganization.user_id == OAuthAccount.user_id,
                 OAuthAccount.platform == "github",
@@ -343,21 +343,9 @@ class GithubOrganizationService(OrganizationService):
         )
 
         res = await session.execute(db_members_stmt)
-        rows = res.unique().all()
-        db_members = [r._tuple() for r in rows]
+        db_members = res.unique().all()
 
-        # compare
-        github_user_ids: set[int] = set()
-        db_user_ids: set[int] = set()
-
-        for gh_m in github_members:
-            github_user_ids.add(gh_m.external_id)
-
-        for db_m in db_members:
-            (oauth, _) = db_m
-            db_user_ids.add(int(oauth.account_id))
-
-        # github users
+        # add or update members from github
         for gh_m in github_members:
             # get user
             get_user = await github_user_service.get_user_by_github_id(
@@ -371,15 +359,16 @@ class GithubOrganizationService(OrganizationService):
                 session, org, get_user, is_admin=gh_m.is_admin
             )
 
-        # users in our db that are not members on github, delete them!
+        # remove members that are members in our DB, but not a member on github
+        github_user_ids: set[int] = set()
+        for gh_m in github_members:
+            github_user_ids.add(gh_m.external_id)
+
         for db_m in db_members:
-            (oauth, _) = db_m
-            if int(oauth.account_id) in github_user_ids:
+            if int(db_m.account_id) in github_user_ids:
                 continue
 
-            await user_organization_service.remove_member(
-                session, oauth.user_id, org.id
-            )
+            await user_organization_service.remove_member(session, db_m.user_id, org.id)
 
 
 github_organization = GithubOrganizationService(Organization)

@@ -34,7 +34,11 @@ from polar.subscription.service.subscription_tier import (
     subscription_tier as subscription_tier_service,
 )
 
-from ..conftest import add_subscription_benefits, create_subscription_tier
+from ..conftest import (
+    add_subscription_benefits,
+    create_subscription_benefit,
+    create_subscription_tier,
+)
 
 
 @pytest.fixture
@@ -902,6 +906,7 @@ class TestCreateSubscribeSession:
         create_subscription_checkout_session_mock.assert_called_once_with(
             subscription_tier_organization.stripe_price_id,
             "SUCCESS_URL",
+            is_tax_applicable=False,
             metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
         )
 
@@ -944,6 +949,7 @@ class TestCreateSubscribeSession:
         create_subscription_checkout_session_mock.assert_called_once_with(
             subscription_tier_organization.stripe_price_id,
             "SUCCESS_URL",
+            is_tax_applicable=False,
             customer="STRIPE_CUSTOMER_ID",
             metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
         )
@@ -987,6 +993,7 @@ class TestCreateSubscribeSession:
         create_subscription_checkout_session_mock.assert_called_once_with(
             subscription_tier_organization.stripe_price_id,
             "SUCCESS_URL",
+            is_tax_applicable=False,
             metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
         )
 
@@ -1030,7 +1037,55 @@ class TestCreateSubscribeSession:
         create_subscription_checkout_session_mock.assert_called_once_with(
             subscription_tier_organization.stripe_price_id,
             "SUCCESS_URL",
+            is_tax_applicable=False,
             customer_email="backer@example.com",
+            metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
+        )
+
+    async def test_valid_tax_applicable(
+        self,
+        session: AsyncSession,
+        subscription_tier_organization: SubscriptionTier,
+        mock_stripe_service: MagicMock,
+        organization: Organization,
+        user: User,
+        organization_account: Account,
+    ) -> None:
+        applicable_tax_benefit = await create_subscription_benefit(
+            session, is_tax_applicable=True, organization=organization
+        )
+        subscription_tier_organization = await add_subscription_benefits(
+            session,
+            subscription_tier=subscription_tier_organization,
+            subscription_benefits=[applicable_tax_benefit],
+        )
+
+        create_subscription_checkout_session_mock: MagicMock = (
+            mock_stripe_service.create_subscription_checkout_session
+        )
+        create_subscription_checkout_session_mock.return_value = SimpleNamespace(
+            stripe_id="SESSION_ID",
+            url="STRIPE_URL",
+            customer_email=None,
+            customer_details=None,
+        )
+
+        subscribe_session = await subscription_tier_service.create_subscribe_session(
+            session, subscription_tier_organization, "SUCCESS_URL", Anonymous(), None
+        )
+
+        assert subscribe_session.id == "SESSION_ID"
+        assert subscribe_session.url == "STRIPE_URL"
+        assert subscribe_session.customer_email is None
+        assert subscribe_session.customer_name is None
+        assert (
+            subscribe_session.subscription_tier.id == subscription_tier_organization.id
+        )
+
+        create_subscription_checkout_session_mock.assert_called_once_with(
+            subscription_tier_organization.stripe_price_id,
+            "SUCCESS_URL",
+            is_tax_applicable=True,
             metadata={"subscription_tier_id": str(subscription_tier_organization.id)},
         )
 

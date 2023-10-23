@@ -389,6 +389,7 @@ class SubscriptionTierService(
         checkout_session = stripe_service.create_subscription_checkout_session(
             subscription_tier.stripe_price_id,
             success_url,
+            is_tax_applicable=subscription_tier.is_tax_applicable,
             **customer_options,
             metadata=metadata,
         )

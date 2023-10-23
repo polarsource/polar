@@ -445,6 +445,7 @@ Thank you for your support!
         price: str,
         success_url: str,
         *,
+        is_tax_applicable: bool,
         customer: str | None = None,
         customer_email: str | None = None,
         metadata: dict[str, str] | None = None,
@@ -458,7 +459,11 @@ Thank you for your support!
                 },
             ],
             mode="subscription",
-            automatic_tax={"enabled": True},
+            automatic_tax={"enabled": is_tax_applicable},
+            tax_id_collection={"enabled": is_tax_applicable},
+            customer_update={"name": "auto", "address": "auto"}
+            if customer is not None
+            else None,
             customer=customer,
             customer_email=customer_email,
             payment_method_collection="if_required",

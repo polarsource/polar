@@ -205,6 +205,7 @@ class TestUserCreate:
         create_schema = SubscriptionBenefitCreate(
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
+            is_tax_applicable=True,
             organization_id=uuid.uuid4(),
         )
         with pytest.raises(OrganizationDoesNotExist):
@@ -222,6 +223,7 @@ class TestUserCreate:
         create_schema = SubscriptionBenefitCreate(
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
+            is_tax_applicable=True,
             organization_id=organization.id,
         )
         with pytest.raises(OrganizationDoesNotExist):
@@ -240,6 +242,7 @@ class TestUserCreate:
         create_schema = SubscriptionBenefitCreate(
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
+            is_tax_applicable=True,
             organization_id=organization.id,
         )
         subscription_benefit = await subscription_benefit_service.user_create(
@@ -253,6 +256,7 @@ class TestUserCreate:
         create_schema = SubscriptionBenefitCreate(
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
+            is_tax_applicable=True,
             repository_id=uuid.uuid4(),
         )
         with pytest.raises(RepositoryDoesNotExist):
@@ -270,6 +274,7 @@ class TestUserCreate:
         create_schema = SubscriptionBenefitCreate(
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
+            is_tax_applicable=True,
             repository_id=repository.id,
         )
         with pytest.raises(RepositoryDoesNotExist):
@@ -288,6 +293,7 @@ class TestUserCreate:
         create_schema = SubscriptionBenefitCreate(
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
+            is_tax_applicable=True,
             repository_id=repository.id,
         )
         subscription_benefit = await subscription_benefit_service.user_create(

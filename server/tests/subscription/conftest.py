@@ -15,6 +15,7 @@ from polar.models import (
     Subscription,
     SubscriptionBenefit,
     SubscriptionTier,
+    SubscriptionTierBenefit,
     User,
 )
 from polar.models.subscription import SubscriptionStatus
@@ -73,7 +74,7 @@ async def create_subscription_tier(
 async def create_subscription_benefit(
     session: AsyncSession,
     *,
-    type: SubscriptionBenefitType = SubscriptionBenefitType.plain,
+    type: SubscriptionBenefitType = SubscriptionBenefitType.custom,
     organization: Organization | None = None,
     repository: Repository | None = None,
     description: str = "Subscription Benefit",
@@ -88,6 +89,24 @@ async def create_subscription_benefit(
     session.add(subscription_benefit)
     await session.commit()
     return subscription_benefit
+
+
+async def add_subscription_benefits(
+    session: AsyncSession,
+    *,
+    subscription_tier: SubscriptionTier,
+    subscription_benefits: list[SubscriptionBenefit],
+) -> SubscriptionTier:
+    subscription_tier.subscription_tier_benefits = []
+    for order, subscription_benefit in enumerate(subscription_benefits):
+        subscription_tier.subscription_tier_benefits.append(
+            SubscriptionTierBenefit(
+                subscription_benefit=subscription_benefit, order=order
+            )
+        )
+    session.add(subscription_tier)
+    await session.commit()
+    return subscription_tier
 
 
 async def create_subscription(
@@ -170,7 +189,7 @@ async def subscription_benefit_private_repository(
     session: AsyncSession, repository: Repository
 ) -> SubscriptionBenefit:
     return await create_subscription_benefit(
-        session, type=SubscriptionBenefitType.plain, repository=repository
+        session, type=SubscriptionBenefitType.custom, repository=repository
     )
 
 

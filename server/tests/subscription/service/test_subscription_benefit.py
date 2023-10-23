@@ -71,12 +71,12 @@ class TestSearch:
         user_organization: UserOrganization,
     ) -> None:
         plain_subscription_benefit = await create_subscription_benefit(
-            session, type=SubscriptionBenefitType.plain, organization=organization
+            session, type=SubscriptionBenefitType.custom, organization=organization
         )
         results, count = await subscription_benefit_service.search(
             session,
             user,
-            type=SubscriptionBenefitType.plain,
+            type=SubscriptionBenefitType.custom,
             pagination=PaginationParams(1, 10),
         )
 
@@ -203,7 +203,7 @@ class TestUserCreate:
         self, session: AsyncSession, authz: Authz, user: User
     ) -> None:
         create_schema = SubscriptionBenefitCreate(
-            type=SubscriptionBenefitType.plain,
+            type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             organization_id=uuid.uuid4(),
         )
@@ -220,7 +220,7 @@ class TestUserCreate:
         organization: Organization,
     ) -> None:
         create_schema = SubscriptionBenefitCreate(
-            type=SubscriptionBenefitType.plain,
+            type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             organization_id=organization.id,
         )
@@ -238,7 +238,7 @@ class TestUserCreate:
         user_organization_admin: UserOrganization,
     ) -> None:
         create_schema = SubscriptionBenefitCreate(
-            type=SubscriptionBenefitType.plain,
+            type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             organization_id=organization.id,
         )
@@ -251,7 +251,7 @@ class TestUserCreate:
         self, session: AsyncSession, authz: Authz, user: User
     ) -> None:
         create_schema = SubscriptionBenefitCreate(
-            type=SubscriptionBenefitType.plain,
+            type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             repository_id=uuid.uuid4(),
         )
@@ -268,7 +268,7 @@ class TestUserCreate:
         repository: Repository,
     ) -> None:
         create_schema = SubscriptionBenefitCreate(
-            type=SubscriptionBenefitType.plain,
+            type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             repository_id=repository.id,
         )
@@ -286,7 +286,7 @@ class TestUserCreate:
         user_organization_admin: UserOrganization,
     ) -> None:
         create_schema = SubscriptionBenefitCreate(
-            type=SubscriptionBenefitType.plain,
+            type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             repository_id=repository.id,
         )

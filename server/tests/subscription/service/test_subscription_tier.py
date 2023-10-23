@@ -13,7 +13,9 @@ from polar.models import (
     Account,
     Organization,
     Repository,
+    SubscriptionBenefit,
     SubscriptionTier,
+    SubscriptionTierBenefit,
     User,
     UserOrganization,
 )
@@ -26,12 +28,13 @@ from polar.subscription.service.subscription_tier import (
     NotAddedToStripeSubscriptionTier,
     OrganizationDoesNotExist,
     RepositoryDoesNotExist,
+    SubscriptionBenefitDoesNotExist,
 )
 from polar.subscription.service.subscription_tier import (
     subscription_tier as subscription_tier_service,
 )
 
-from ..conftest import create_subscription_tier
+from ..conftest import add_subscription_benefits, create_subscription_tier
 
 
 @pytest.fixture
@@ -602,6 +605,190 @@ class TestUserUpdate:
         )
         assert updated_highlighted_subscription_tier is not None
         assert not updated_highlighted_subscription_tier.is_highlighted
+
+
+@pytest.mark.asyncio
+class TestUpdateBenefits:
+    async def test_not_writable_subscription_tier(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        with pytest.raises(NotPermitted):
+            await subscription_tier_service.update_benefits(
+                session, authz, subscription_tier_organization, [], user
+            )
+
+    async def test_not_existing_benefit(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        user_organization_admin: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_benefits: list[SubscriptionBenefit],
+    ) -> None:
+        subscription_tier_organization = await add_subscription_benefits(
+            session,
+            subscription_tier=subscription_tier_organization,
+            subscription_benefits=subscription_benefits,
+        )
+
+        with pytest.raises(SubscriptionBenefitDoesNotExist):
+            await subscription_tier_service.update_benefits(
+                session, authz, subscription_tier_organization, [uuid.uuid4()], user
+            )
+
+        await session.refresh(subscription_tier_organization)
+        assert len(subscription_tier_organization.subscription_tier_benefits) == len(
+            subscription_benefits
+        )
+
+    async def test_added_benefits(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        user_organization_admin: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_benefits: list[SubscriptionBenefit],
+    ) -> None:
+        (
+            subscription_tier,
+            added,
+            deleted,
+        ) = await subscription_tier_service.update_benefits(
+            session,
+            authz,
+            subscription_tier_organization,
+            [benefit.id for benefit in subscription_benefits],
+            user,
+        )
+
+        assert len(subscription_tier.subscription_tier_benefits) == len(
+            subscription_benefits
+        )
+        for (
+            i,
+            subscription_tier_benefit,
+        ) in enumerate(subscription_tier.subscription_tier_benefits):
+            assert subscription_tier_benefit.order == i
+            assert (
+                subscription_benefits[i].id
+                == subscription_tier_benefit.subscription_benefit_id
+            )
+
+        assert len(added) == len(subscription_benefits)
+        assert len(deleted) == 0
+
+    async def test_order(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        user_organization_admin: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_benefits: list[SubscriptionBenefit],
+    ) -> None:
+        (
+            subscription_tier,
+            added,
+            deleted,
+        ) = await subscription_tier_service.update_benefits(
+            session,
+            authz,
+            subscription_tier_organization,
+            [benefit.id for benefit in subscription_benefits[::-1]],
+            user,
+        )
+
+        assert len(subscription_tier.subscription_tier_benefits) == len(
+            subscription_benefits
+        )
+        for (
+            i,
+            subscription_tier_benefit,
+        ) in enumerate(subscription_tier.subscription_tier_benefits):
+            assert subscription_tier_benefit.order == i
+            assert (
+                subscription_benefits[-i - 1].id
+                == subscription_tier_benefit.subscription_benefit_id
+            )
+
+        assert len(added) == len(subscription_benefits)
+        assert len(deleted) == 0
+
+    async def test_deleted(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        user_organization_admin: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_benefits: list[SubscriptionBenefit],
+    ) -> None:
+        subscription_tier_organization = await add_subscription_benefits(
+            session,
+            subscription_tier=subscription_tier_organization,
+            subscription_benefits=subscription_benefits,
+        )
+
+        (
+            subscription_tier,
+            added,
+            deleted,
+        ) = await subscription_tier_service.update_benefits(
+            session, authz, subscription_tier_organization, [], user
+        )
+
+        assert len(subscription_tier.subscription_tier_benefits) == 0
+        assert len(added) == 0
+        assert len(deleted) == len(subscription_benefits)
+
+    async def test_reordering(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        user_organization_admin: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_benefits: list[SubscriptionBenefit],
+    ) -> None:
+        subscription_tier_organization = await add_subscription_benefits(
+            session,
+            subscription_tier=subscription_tier_organization,
+            subscription_benefits=subscription_benefits,
+        )
+
+        (
+            subscription_tier,
+            added,
+            deleted,
+        ) = await subscription_tier_service.update_benefits(
+            session,
+            authz,
+            subscription_tier_organization,
+            [benefit.id for benefit in subscription_benefits[::-1]],
+            user,
+        )
+
+        assert len(subscription_tier.subscription_tier_benefits) == len(
+            subscription_benefits
+        )
+        for (
+            i,
+            subscription_tier_benefit,
+        ) in enumerate(subscription_tier.subscription_tier_benefits):
+            assert subscription_tier_benefit.order == i
+            assert (
+                subscription_benefits[-i - 1].id
+                == subscription_tier_benefit.subscription_benefit_id
+            )
+
+        assert len(added) == 0
+        assert len(deleted) == 0
 
 
 @pytest.mark.asyncio

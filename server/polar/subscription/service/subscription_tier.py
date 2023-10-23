@@ -19,7 +19,9 @@ from polar.models import (
     Account,
     Organization,
     Repository,
+    SubscriptionBenefit,
     SubscriptionTier,
+    SubscriptionTierBenefit,
     User,
     UserOrganization,
 )
@@ -28,6 +30,7 @@ from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
 
 from ..schemas import SubscribeSession, SubscriptionTierCreate, SubscriptionTierUpdate
+from .subscription_benefit import subscription_benefit as subscription_benefit_service
 
 
 class SubscriptionTierError(PolarError):
@@ -45,6 +48,15 @@ class RepositoryDoesNotExist(SubscriptionTierError):
     def __init__(self, organization_id: uuid.UUID) -> None:
         self.organization_id = organization_id
         message = f"Repository with id {organization_id} does not exist."
+        super().__init__(message, 422)
+
+
+class SubscriptionBenefitDoesNotExist(SubscriptionTierError):
+    def __init__(self, subscription_benefit_id: uuid.UUID) -> None:
+        self.subscription_benefit_id = subscription_benefit_id
+        message = (
+            f"Subscription benefit with id {subscription_benefit_id} does not exist."
+        )
         super().__init__(message, 422)
 
 
@@ -270,6 +282,50 @@ class SubscriptionTierService(
         return await subscription_tier.update(
             session, **update_schema.dict(exclude_unset=True)
         )
+
+    async def update_benefits(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        subscription_tier: SubscriptionTier,
+        benefits: list[uuid.UUID],
+        user: User,
+    ) -> tuple[SubscriptionTier, set[SubscriptionBenefit], set[SubscriptionBenefit]]:
+        subscription_tier = await self._with_organization_or_repository(
+            session, subscription_tier
+        )
+        if not await authz.can(user, AccessType.write, subscription_tier):
+            raise NotPermitted()
+
+        previous_benefits = set(subscription_tier.benefits)
+        new_benefits: set[SubscriptionBenefit] = set()
+
+        nested = await session.begin_nested()
+
+        subscription_tier.subscription_tier_benefits = []
+        await session.flush()
+
+        for order, subscription_benefit_id in enumerate(benefits):
+            subscription_benefit = await subscription_benefit_service.get_by_id(
+                session, user, subscription_benefit_id
+            )
+            if subscription_benefit is None:
+                await nested.rollback()
+                raise SubscriptionBenefitDoesNotExist(subscription_benefit_id)
+            new_benefits.add(subscription_benefit)
+            subscription_tier.subscription_tier_benefits.append(
+                SubscriptionTierBenefit(
+                    subscription_benefit=subscription_benefit, order=order
+                )
+            )
+
+        added_benefits = new_benefits - previous_benefits
+        deleted_benefits = previous_benefits - new_benefits
+
+        session.add(subscription_tier)
+        await session.commit()
+
+        return subscription_tier, added_benefits, deleted_benefits
 
     async def archive(
         self,

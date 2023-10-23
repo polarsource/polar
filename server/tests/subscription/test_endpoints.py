@@ -14,6 +14,9 @@ from polar.models import (
     SubscriptionTier,
     UserOrganization,
 )
+from polar.postgres import AsyncSession
+
+from .conftest import add_subscription_benefits
 
 
 @pytest.mark.asyncio
@@ -156,6 +159,30 @@ class TestLookupSubscriptionTier:
 
         json = response.json()
         assert json["id"] == str(subscription_tier_organization.id)
+
+    async def test_valid_with_benefits(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_benefits: list[SubscriptionBenefit],
+    ) -> None:
+        subscription_tier_organization = await add_subscription_benefits(
+            session,
+            subscription_tier=subscription_tier_organization,
+            subscription_benefits=subscription_benefits,
+        )
+
+        response = await client.get(
+            "/api/v1/subscriptions/tiers/lookup",
+            params={"subscription_tier_id": str(subscription_tier_organization.id)},
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["id"] == str(subscription_tier_organization.id)
+        assert len(json["benefits"]) == len(subscription_benefits)
 
 
 @pytest.mark.asyncio
@@ -521,7 +548,7 @@ class TestCreateSubscriptionBenefit:
         response = await client.post(
             "/api/v1/subscriptions/benefits/",
             json={
-                "type": "plain",
+                "type": "custom",
                 "description": "Subscription Benefit",
                 "organization_id": str(uuid.uuid4()),
             },
@@ -541,7 +568,7 @@ class TestCreateSubscriptionBenefit:
         response = await client.post(
             "/api/v1/subscriptions/benefits/",
             json={
-                "type": "plain",
+                "type": "custom",
                 "description": "Subscription Benefit",
                 "organization_id": str(organization.id),
                 "repository_id": str(public_repository.id),
@@ -560,7 +587,7 @@ class TestCreateSubscriptionBenefit:
         response = await client.post(
             "/api/v1/subscriptions/benefits/",
             json={
-                "type": "plain",
+                "type": "custom",
                 "description": "Subscription Benefit",
             },
         )
@@ -592,7 +619,7 @@ class TestCreateSubscriptionBenefit:
         response = await client.post(
             "/api/v1/subscriptions/benefits/",
             json={
-                "type": "plain",
+                "type": "custom",
                 "organization_id": str(organization.id),
                 **payload,
             },
@@ -610,7 +637,7 @@ class TestCreateSubscriptionBenefit:
         response = await client.post(
             "/api/v1/subscriptions/benefits/",
             json={
-                "type": "plain",
+                "type": "custom",
                 "description": "Subscription Benefit",
                 "organization_id": str(organization.id),
             },

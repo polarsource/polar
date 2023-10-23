@@ -1,4 +1,5 @@
 const EnvironmentPlugin = require('webpack').EnvironmentPlugin
+const path = require('path');
 
 module.exports = {
   entry: {
@@ -46,6 +47,9 @@ module.exports = {
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
+    alias: {
+      '@polarkit/lib/utils': path.resolve(__dirname, '../../packages/polarkit/src/lib/utils'),
+    }
   },
   plugins: [
     new EnvironmentPlugin({

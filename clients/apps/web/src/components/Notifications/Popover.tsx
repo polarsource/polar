@@ -1,4 +1,4 @@
-import { BellIcon } from '@heroicons/react/24/outline'
+import { NotificationsOutlined } from '@mui/icons-material'
 import {
   MaintainerPledgeConfirmationPendingNotification,
   MaintainerPledgeCreatedNotification,
@@ -96,8 +96,8 @@ const Popover = ({ type = 'topbar' }: { type?: 'topbar' | 'dashboard' }) => {
   return (
     <>
       <div className="flex">
-        <BellIcon
-          className="dark:text-polar-400 dark:hover:text-polar-200 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-100 hover:text-gray-900"
+        <NotificationsOutlined
+          className="dark:text-polar-500 dark:hover:text-polar-300 h-5 w-5 cursor-pointer text-gray-500 transition-colors duration-100 hover:text-gray-900"
           aria-hidden="true"
           onMouseDown={clickBell}
         />

@@ -52,6 +52,7 @@ class OrganizationService(
             .join(UserOrganization)
             .where(
                 UserOrganization.user_id == user_id,
+                UserOrganization.deleted_at.is_(None),
                 Organization.deleted_at.is_(None),
             )
         )
@@ -103,7 +104,10 @@ class OrganizationService(
                     UserOrganization.user_id == user.id,
                     UserOrganization.organization_id == organization.id,
                 )
-                .values(is_admin=is_admin)
+                .values(
+                    is_admin=is_admin,
+                    deleted_at=None,  # un-delete user if exists
+                )
             )
             await session.execute(stmt)
             await session.commit()

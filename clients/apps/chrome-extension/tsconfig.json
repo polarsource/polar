@@ -20,10 +20,11 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    "baseUrl": "src/",
     "paths": {
       // To get chadcns import paths to work here as well.
       // When using regular polarkit components, refer to "polarkit" instead of "@polarkit"
-      "@polarkit/lib/*": ["../../../packages/polarkit/src/lib/*"]
+      "@polarkit/lib/*": ["../../../packages/polarkit/src/lib/*"],
     }
   },
   "include": [

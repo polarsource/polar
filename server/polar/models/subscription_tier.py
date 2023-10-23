@@ -78,6 +78,17 @@ class SubscriptionTier(RecordModel):
             return self.repository.organization_id
         raise RuntimeError()
 
+    @property
+    def is_tax_applicable(self) -> bool:
+        if self.price_amount == 0:
+            return False
+
+        for benefit in self.benefits:
+            if benefit.is_tax_applicable:
+                return True
+
+        return False
+
     def get_stripe_name(self) -> str:
         if self.organization is not None:
             return f"{self.organization.name} - {self.name}"

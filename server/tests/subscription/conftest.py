@@ -75,6 +75,7 @@ async def create_subscription_benefit(
     session: AsyncSession,
     *,
     type: SubscriptionBenefitType = SubscriptionBenefitType.custom,
+    is_tax_applicable: bool | None = None,
     organization: Organization | None = None,
     repository: Repository | None = None,
     description: str = "Subscription Benefit",
@@ -83,6 +84,7 @@ async def create_subscription_benefit(
     subscription_benefit = SubscriptionBenefit(
         type=type,
         description=description,
+        is_tax_applicable=is_tax_applicable,
         organization_id=organization.id if organization is not None else None,
         repository_id=repository.id if repository is not None else None,
     )

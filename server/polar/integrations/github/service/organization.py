@@ -343,7 +343,7 @@ class GithubOrganizationService(OrganizationService):
         )
 
         res = await session.execute(db_members_stmt)
-        db_members = res.unique().all()
+        db_members = res.scalars().unique().all()
 
         # add or update members from github
         for gh_m in github_members:

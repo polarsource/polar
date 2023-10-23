@@ -1,4 +1,4 @@
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { DashboardBody } from '@/components/Layout/MaintainerLayout'
 import { Metadata, ResolvingMetadata } from 'next'
 
 export async function generateMetadata(

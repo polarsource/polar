@@ -424,5 +424,22 @@ Thank you for your support!
     def get_checkout_session(self, id: str) -> stripe_lib.checkout.Session:
         return stripe_lib.checkout.Session.retrieve(id)
 
+    # def get_customer_credit_balance(self, customer_id: str) -> int:
+    #     transactions = stripe_lib.Customer.list_balance_transactions(
+    #         customer_id, limit=1
+    #     )
+
+    #     if not transactions:
+    #         return 0
+
+    #     transactions["data"][0]
+
+    #     data: list[stripe_lib.CustomerBalanceTransaction] = transactions
+
+    #     if len(data) == 0:
+    #         return 0
+
+    #     return data[0].ending_balance
+
 
 stripe = StripeService()

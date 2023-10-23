@@ -1,7 +1,6 @@
 'use client'
 
 import IssueListItem from '@/components/Dashboard/IssueListItem'
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Spinner from '@/components/Shared/Spinner'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { HowToVoteOutlined } from '@mui/icons-material'
@@ -45,15 +44,11 @@ export default function ClientPage() {
   const havePledges = (pledges.data?.items?.length || 0) > 0
 
   if (!isLoaded || !org) {
-    return (
-      <DashboardBody>
-        <Spinner />
-      </DashboardBody>
-    )
+    return <Spinner />
   }
 
   return (
-    <DashboardBody>
+    <>
       {pledges.isFetched && !havePledges ? (
         <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
           <span className="text-6xl">
@@ -102,6 +97,6 @@ export default function ClientPage() {
           ))}
         </div>
       ) : null}
-    </DashboardBody>
+    </>
   )
 }

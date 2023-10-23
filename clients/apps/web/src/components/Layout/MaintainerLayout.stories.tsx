@@ -2,14 +2,14 @@ import { PolarQueryClientProvider } from '@/app/providers'
 import type { Meta, StoryObj } from '@storybook/react'
 import { repo } from 'polarkit/testdata'
 import BackerLayout from './BackerLayout'
-import DashboardLayout, {
+import MaintainerLayout, {
   DashboardBody,
   DashboardHeader,
   RepoPickerHeader,
-} from './DashboardLayout'
+} from './MaintainerLayout'
 
-const meta: Meta<typeof DashboardLayout> = {
-  title: 'Layouts/DashboardLayout',
+const meta: Meta<typeof MaintainerLayout> = {
+  title: 'Layouts/MaintainerLayout',
   component: BackerLayout,
   parameters: {
     nextjs: {
@@ -20,7 +20,7 @@ const meta: Meta<typeof DashboardLayout> = {
 
 export default meta
 
-type Story = StoryObj<typeof DashboardLayout>
+type Story = StoryObj<typeof MaintainerLayout>
 
 export const Default: Story = {
   parameters: {
@@ -29,11 +29,11 @@ export const Default: Story = {
   },
   render: (args) => (
     <PolarQueryClientProvider>
-      <DashboardLayout {...args}>
+      <MaintainerLayout {...args}>
         <DashboardBody>
           <div className="bg-red-200 text-black">Content</div>
         </DashboardBody>
-      </DashboardLayout>
+      </MaintainerLayout>
     </PolarQueryClientProvider>
   ),
 }
@@ -58,11 +58,11 @@ export const Header: Story = {
   render: (args) => {
     return (
       <PolarQueryClientProvider>
-        <DashboardLayout {...args}>
+        <MaintainerLayout {...args}>
           <DashboardHeader>
             <div className="bg-blue-200">Hello from header</div>,
           </DashboardHeader>
-        </DashboardLayout>
+        </MaintainerLayout>
       </PolarQueryClientProvider>
     )
   },
@@ -80,7 +80,7 @@ export const RepoPicker: Story = {
   render: (args) => {
     return (
       <PolarQueryClientProvider>
-        <DashboardLayout {...args}>
+        <MaintainerLayout {...args}>
           <DashboardHeader>
             <RepoPickerHeader currentRepository={repo} repositories={[repo]}>
               <input
@@ -92,7 +92,7 @@ export const RepoPicker: Story = {
               />
             </RepoPickerHeader>
           </DashboardHeader>
-        </DashboardLayout>
+        </MaintainerLayout>
       </PolarQueryClientProvider>
     )
   },

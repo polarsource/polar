@@ -1,14 +1,14 @@
 import Gatekeeper from '@/components/Dashboard/Gatekeeper/Gatekeeper'
-import DashboardLayout from '@/components/Layout/DashboardLayout'
+import MaintainerLayout from '@/components/Layout/MaintainerLayout'
 import DashboardTopbar from '@/components/Shared/DashboardTopbar'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <Gatekeeper>
-      <DashboardLayout>
+      <MaintainerLayout>
         <DashboardTopbar isFixed useOrgFromURL />
         <>{children}</>
-      </DashboardLayout>
+      </MaintainerLayout>
     </Gatekeeper>
   )
 }

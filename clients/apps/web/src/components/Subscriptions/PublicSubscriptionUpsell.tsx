@@ -27,13 +27,13 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
           <PrimaryButton fullWidth={false}>View all Tiers</PrimaryButton>
         </Link>
       </div>
-      <div className="flex flex-row gap-6 pb-6 pt-10">
+      <div className="flex h-fit flex-row gap-6 pb-6 pt-10">
         {subscriptionTiers
           .filter((tier) => tier.is_highlighted)
           .sort((a, b) => a.price_amount - b.price_amount)
           .map((tier) => (
             <SubscriptionTierCard
-              className="h-full"
+              className="grow"
               key={tier.id}
               subscriptionTier={tier}
             >

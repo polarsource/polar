@@ -64,7 +64,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   return (
     <Card
       className={twMerge(
-        'dark:bg-polar-900 dark:border-polar-700 flex min-w-[300px] max-w-[320px] flex-col gap-y-4 rounded-3xl border border-transparent bg-[--var-bg-color] p-8 dark:shadow-none',
+        'dark:bg-polar-900 dark:border-polar-700 flex min-w-[280px] max-w-[320px] flex-col gap-y-4 rounded-3xl border border-transparent bg-[--var-bg-color] p-8 dark:shadow-none',
         className,
       )}
       style={style}

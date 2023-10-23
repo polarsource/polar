@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class SubscriptionBenefitType(StrEnum):
-    plain = "plain"
+    custom = "custom"
 
 
 class SubscriptionBenefit(RecordModel):

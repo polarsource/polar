@@ -32,9 +32,9 @@ const TeamsNavigation = () => {
   }
 
   return (
-    <div className="mx-4 space-y-2 border-t border-gray-100 pt-8">
+    <div className="dark:border-polar-700 mx-4 space-y-2 border-t border-gray-100 pt-8 ">
       {allOrgs.map((o) => (
-        <Team org={o} />
+        <Team org={o} key={o.id} />
       ))}
     </div>
   )
@@ -44,7 +44,7 @@ export default TeamsNavigation
 
 const Team = ({ org }: { org: Organization }) => (
   <Link
-    className="flex items-center gap-4 rounded-xl bg-blue-50 px-4 py-2 text-sm text-gray-900 transition duration-100 hover:bg-blue-100"
+    className="dark:bg-polar-700 dark:text-polar-300 dark:hover:bg-polar-800  flex items-center gap-4 rounded-xl bg-blue-50 px-4 py-2 text-sm text-gray-900 transition duration-100 hover:bg-blue-100"
     href={`/team/${org.name}`}
   >
     <Avatar avatar_url={org.avatar_url} name={org.name} className="h-8 w-8" />

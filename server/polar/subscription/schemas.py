@@ -93,6 +93,10 @@ class SubscriptionTierUpdate(Schema):
     price_currency: str | None = Field(None, regex="USD")
 
 
+class SubscriptionTierBenefitsUpdate(Schema):
+    benefits: list[UUID4]
+
+
 class SubscriptionTier(TimestampedSchema):
     id: UUID4
     type: SubscriptionTierType

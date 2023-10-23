@@ -22,6 +22,7 @@ from .schemas import (
     SubscribeSessionCreate,
     SubscriptionBenefitCreate,
     SubscriptionBenefitUpdate,
+    SubscriptionTierBenefitsUpdate,
     SubscriptionTierCreate,
     SubscriptionTierUpdate,
 )
@@ -171,6 +172,29 @@ async def archive_subscription_tier(
     return await subscription_tier_service.archive(
         session, authz, subscription_tier, auth.user
     )
+
+
+@router.post(
+    "/tiers/{id}/benefits", response_model=SubscriptionTierSchema, tags=[Tags.PUBLIC]
+)
+async def update_subscription_tier_benefits(
+    id: UUID4,
+    benefits_update: SubscriptionTierBenefitsUpdate,
+    auth: UserRequiredAuth,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionTier:
+    subscription_tier = await subscription_tier_service.get_by_id(
+        session, auth.subject, id
+    )
+
+    if subscription_tier is None:
+        raise ResourceNotFound()
+
+    subscription_tier, _, _ = await subscription_tier_service.update_benefits(
+        session, authz, subscription_tier, benefits_update.benefits, auth.user
+    )
+    return subscription_tier
 
 
 @router.get(

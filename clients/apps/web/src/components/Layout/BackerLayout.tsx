@@ -93,7 +93,7 @@ const BackerLayout = (props: {
       </aside>
 
       <div className="dark:bg-polar-950 relative flex h-screen w-full translate-x-0 flex-row bg-white">
-        <DashboardTopbar isFixed useOrgFromURL={false} />
+        <DashboardTopbar isFixed useOrgFromURL />
         <nav className="fixed z-10 w-full ">
           {showBanner && <BackerConnectUpsell />}
         </nav>

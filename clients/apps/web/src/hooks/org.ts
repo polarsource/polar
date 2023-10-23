@@ -6,14 +6,6 @@ import { useListAllOrganizations, useListRepositories } from 'polarkit/hooks'
 import { useStore } from 'polarkit/store'
 import { useEffect, useState } from 'react'
 
-const isMaintainerOrgInURL = (url: string) => {
-  return true
-  if (url.startsWith('/team/')) {
-    return false
-  }
-  return true
-}
-
 export const useCurrentOrgAndRepoFromURL = (): {
   org: Organization | undefined
   repo: Repository | undefined
@@ -46,18 +38,16 @@ export const useCurrentOrgAndRepoFromURL = (): {
     let orgSlug = ''
     let repoSlug = ''
 
-    if (isMaintainerOrgInURL(pathname)) {
-      if (typeof paramsOrg === 'string') {
-        orgSlug = paramsOrg
-      }
+    if (typeof paramsOrg === 'string') {
+      orgSlug = paramsOrg
+    }
 
-      // Repo slug form param or search
-      // let repoSlug = ''
-      if (typeof paramsRepo === 'string') {
-        repoSlug = paramsRepo
-      } else if (typeof searchRepo === 'string') {
-        repoSlug = searchRepo
-      }
+    // Repo slug form param or search
+    // let repoSlug = ''
+    if (typeof paramsRepo === 'string') {
+      repoSlug = paramsRepo
+    } else if (typeof searchRepo === 'string') {
+      repoSlug = searchRepo
     }
 
     let nextOrg: Organization | undefined
@@ -116,5 +106,48 @@ export const useCurrentOrgAndRepoFromURL = (): {
     repo,
     isLoaded,
     haveOrgs,
+  }
+}
+
+export const useCurrentTeamFromURL = (): {
+  org: Organization | undefined
+  isLoaded: boolean
+} => {
+  // org from router params "/foo/[team]/"
+  const params = useParams()
+  const paramsOrg = params?.team
+
+  const listOrganizationsQuery = useListAllOrganizations()
+
+  const [org, setOrg] = useState<Organization | undefined>(undefined)
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  const pathname = usePathname()
+
+  useEffect(() => {
+    let orgSlug = ''
+
+    if (typeof paramsOrg === 'string') {
+      orgSlug = paramsOrg
+    }
+
+    let nextOrg: Organization | undefined
+
+    // Get org if no org found above
+    if (orgSlug && listOrganizationsQuery.data?.items) {
+      nextOrg = listOrganizationsQuery.data.items.find(
+        (o) => o.name === orgSlug,
+      )
+    }
+
+    // local state
+    setOrg(nextOrg)
+
+    setIsLoaded(listOrganizationsQuery.isSuccess)
+  }, [listOrganizationsQuery, paramsOrg, pathname])
+
+  return {
+    org,
+    isLoaded,
   }
 }

@@ -382,6 +382,46 @@ class TestUpdateSubscriptionTier:
 
 
 @pytest.mark.asyncio
+class TestUpdateSubscriptionTierBenefits:
+    async def test_anonymous(
+        self, client: AsyncClient, subscription_tier_organization: SubscriptionTier
+    ) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/benefits",
+            json={"benefits": []},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/tiers/{uuid.uuid4()}/benefits",
+            json={"benefits": []},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.authenticated
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        subscription_tier_organization: SubscriptionTier,
+        user_organization_admin: UserOrganization,
+        subscription_benefit_organization: SubscriptionBenefit,
+    ) -> None:
+        response = await client.post(
+            f"/api/v1/subscriptions/tiers/{subscription_tier_organization.id}/benefits",
+            json={"benefits": [str(subscription_benefit_organization.id)]},
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert len(json["benefits"]) == 1
+
+
+@pytest.mark.asyncio
 class TestArchiveSubscriptionTier:
     async def test_anonymous(
         self, client: AsyncClient, subscription_tier_organization: SubscriptionTier

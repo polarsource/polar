@@ -20,10 +20,10 @@ const CopyToClipboardInput = (props: {
   }
 
   return (
-    <div className="dark:border-polar-600 dark:bg-polar-700 flex w-full overflow-hidden rounded-lg border bg-white">
+    <div className="dark:border-polar-600 dark:bg-polar-700 flex w-full flex-row overflow-hidden rounded-lg border bg-white">
       <Input
         id={props.id}
-        className="dark:text-polar-400 flex-1 rounded-l-lg rounded-r-none border-none px-3 py-2 font-mono text-sm text-gray-600"
+        className="dark:text-polar-400 w-full grow rounded-l-lg rounded-r-none border-none font-mono text-sm text-gray-600"
         onClick={() => {
           copyToClipboard(props.id)
         }}

@@ -33,7 +33,7 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
           .sort((a, b) => a.price_amount - b.price_amount)
           .map((tier) => (
             <SubscriptionTierCard
-              className="grow"
+              className="w-full"
               key={tier.id}
               subscriptionTier={tier}
             >

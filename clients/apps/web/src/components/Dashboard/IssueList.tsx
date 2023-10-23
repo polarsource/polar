@@ -290,19 +290,6 @@ export const Header = (props: {
   return (
     <div className="flex w-full flex-row items-center justify-between pr-4">
       <div className="relative w-full min-w-[280px] max-w-[500px] py-2">
-        <div className="dark:text-500 pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-          {props.spinner && (
-            <span className="pl-1">
-              <Spinner />
-            </span>
-          )}
-          {!props.spinner && (
-            <MagnifyingGlassIcon
-              className="dark:text-polar-500 h-5 w-5 text-gray-500"
-              aria-hidden="true"
-            />
-          )}
-        </div>
         <Input
           type="text"
           name="query"
@@ -311,6 +298,18 @@ export const Header = (props: {
           placeholder="Search issues"
           onChange={onQueryChange}
           value={props.filters.q || ''}
+          preSlot={
+            props.spinner ? (
+              <span className="pl-2">
+                <Spinner />
+              </span>
+            ) : (
+              <MagnifyingGlassIcon
+                className="dark:text-polar-500 h-6 w-6 pl-1 text-lg text-gray-500"
+                aria-hidden="true"
+              />
+            )
+          }
         />
       </div>
 

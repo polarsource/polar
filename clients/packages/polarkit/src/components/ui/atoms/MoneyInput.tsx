@@ -1,6 +1,7 @@
 import { getCentsInDollarString } from 'polarkit/money'
 import { ChangeEvent, FocusEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { Input } from '.'
 
 interface Props {
   id: string
@@ -52,12 +53,12 @@ const MoneyInput = (props: Props) => {
   return (
     <>
       <div className={twMerge('relative')}>
-        <input
+        <Input
           type="text"
           id={id}
           name={name}
           className={twMerge(
-            'dark:border-polar-600 dark:placeholder:text-polar-500 block w-full rounded-lg border-gray-200 bg-transparent px-4 pl-8 pr-16 text-sm shadow-sm focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 dark:focus:border-blue-600 dark:focus:ring-blue-700/40',
+            'block w-full px-4 pl-8 text-base',
             props.className ?? '',
           )}
           onChange={onChanged}

@@ -51,24 +51,20 @@ const MoneyInput = (props: Props) => {
   }
 
   return (
-    <>
-      <div className={twMerge('relative')}>
-        <Input
-          type="text"
-          id={id}
-          name={name}
-          className={twMerge(
-            'block w-full px-4 pl-8 text-base',
-            props.className ?? '',
-          )}
-          onChange={onChanged}
-          placeholder={getCentsInDollarString(props.placeholder)}
-          preSlot={<span className="text-lg">$</span>}
-          postSlot={<span className="text-sm">USD</span>}
-          {...other}
-        />
-      </div>
-    </>
+    <Input
+      type="text"
+      id={id}
+      name={name}
+      className={twMerge(
+        'block w-full px-4 pl-8 text-base',
+        props.className ?? '',
+      )}
+      onChange={onChanged}
+      placeholder={getCentsInDollarString(props.placeholder)}
+      preSlot={<span className="text-lg">$</span>}
+      postSlot={<span className="text-sm">USD</span>}
+      {...other}
+    />
   )
 }
 

@@ -24,6 +24,7 @@ import type {
   Organization,
   PolarIntegrationsGithubEndpointsWebhookResponse,
   PolarIntegrationsStripeEndpointsWebhookResponse,
+  SynchronizeMembersResponse,
   UserSignupType,
 } from '../models/index';
 
@@ -50,6 +51,10 @@ export interface IntegrationsApiLookupUserOperationRequest {
 
 export interface IntegrationsApiStripeConnectReturnRequest {
     stripeId: string;
+}
+
+export interface IntegrationsApiSynchronizeMembersRequest {
+    organizationId: string;
 }
 
 /**
@@ -312,6 +317,48 @@ export class IntegrationsApi extends runtime.BaseAPI {
      */
     async stripeConnectReturn(requestParameters: IntegrationsApiStripeConnectReturnRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
         const response = await this.stripeConnectReturnRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Synchronize Members
+     */
+    async synchronizeMembersRaw(requestParameters: IntegrationsApiSynchronizeMembersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SynchronizeMembersResponse>> {
+        if (requestParameters.organizationId === null || requestParameters.organizationId === undefined) {
+            throw new runtime.RequiredError('organizationId','Required parameter requestParameters.organizationId was null or undefined when calling synchronizeMembers.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.organizationId !== undefined) {
+            queryParameters['organization_id'] = requestParameters.organizationId;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/integrations/github/synchronize_members`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Synchronize Members
+     */
+    async synchronizeMembers(requestParameters: IntegrationsApiSynchronizeMembersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SynchronizeMembersResponse> {
+        const response = await this.synchronizeMembersRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -46,6 +46,26 @@ export const useListOrganizationMembers = (id?: string) =>
     enabled: !!id,
   })
 
+export const useSyncOrganizationMembers = () =>
+  useMutation({
+    mutationFn: (variables: { id: string }) =>
+      api.integrations.synchronizeMembers({
+        organizationId: variables.id,
+      }),
+    retry: defaultRetry,
+    onSuccess: (result, variables, ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['organizationMembers', variables.id],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['user', 'adminOrganizations'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['user', 'allOrganizations'],
+      })
+    },
+  })
+
 export const useOrganizationBadgeSettings = (id: string) =>
   useQuery({
     queryKey: ['organizationBadgeSettings', id],

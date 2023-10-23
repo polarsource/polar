@@ -2,7 +2,8 @@
 
 import Spinner from '@/components/Shared/Spinner'
 import { useCurrentTeamFromURL } from '@/hooks/org'
-import { Avatar, Pill } from 'polarkit/components/ui/atoms'
+import { ArrowPathIcon } from '@heroicons/react/24/outline'
+import { Avatar, Pill, PrimaryButton } from 'polarkit/components/ui/atoms'
 
 import {
   Table,
@@ -12,7 +13,10 @@ import {
   TableHeader,
   TableRow,
 } from 'polarkit/components/ui/table'
-import { useListOrganizationMembers } from 'polarkit/hooks'
+import {
+  useListOrganizationMembers,
+  useSyncOrganizationMembers,
+} from 'polarkit/hooks'
 
 export default function ClientPage() {
   const { org, isLoaded } = useCurrentTeamFromURL()
@@ -22,13 +26,33 @@ export default function ClientPage() {
   const mems = members.data?.items || []
   const sortedMembers = mems.sort((a, b) => a.name.localeCompare(b.name))
 
+  const refresh = useSyncOrganizationMembers()
+
+  const onClickRefresh = async () => {
+    if (!org) {
+      return
+    }
+    await refresh.mutateAsync({ id: org.id })
+  }
+
   if (!isLoaded || !org) {
     return <Spinner />
   }
 
   return (
     <div>
-      <h2 className="text-2xl font-medium">Members</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-medium">Members</h2>
+        <PrimaryButton
+          fullWidth={false}
+          color="gray"
+          onClick={onClickRefresh}
+          loading={refresh.isPending}
+        >
+          <ArrowPathIcon className="mr-2 h-5 w-5" />
+          <span>Refresh</span>
+        </PrimaryButton>
+      </div>
 
       <Table>
         <TableHeader>

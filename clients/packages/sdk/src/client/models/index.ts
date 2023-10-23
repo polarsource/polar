@@ -3681,6 +3681,19 @@ export interface SummaryPledge {
 /**
  * 
  * @export
+ * @interface SynchronizeMembersResponse
+ */
+export interface SynchronizeMembersResponse {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SynchronizeMembersResponse
+     */
+    status: boolean;
+}
+/**
+ * 
+ * @export
  * @interface UpdateIssue
  */
 export interface UpdateIssue {

@@ -175,9 +175,9 @@ const IssueCard = ({
                 <div className="flex items-center">
                   <HeartIcon className="mr-2 h-5 w-5 text-blue-300 dark:text-blue-700" />
                   <div className="inline">
-                    <span className="font-bold">Rewards</span> contributors{' '}
-                    <span className="font-bold">{upfrontSplit}%</span> - fees of
-                    received funds
+                    <span className="font-bold">Contributors</span> get{' '}
+                    <span className="font-bold">{upfrontSplit}%</span> of
+                    received funds after fees
                   </div>
                 </div>
               </Alert>

@@ -11,7 +11,7 @@ export interface InputProps
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ preSlot, postSlot, className, ...props }: InputProps, ref) => {
     return (
-      <div className="dark:bg-polar-800 relative flex flex-1 flex-row bg-white">
+      <div className="dark:bg-polar-800 relative flex flex-1 flex-row rounded-lg bg-white">
         <ShadInput
           className={twMerge(
             'dark:border-polar-600 dark:placeholder:text-polar-500 rounded-lg border-gray-200 bg-transparent p-3 text-sm shadow-sm outline-none focus:z-10 focus:border-blue-300 focus:ring-[3px] focus:ring-blue-100 focus-visible:ring-blue-100 dark:ring-offset-transparent dark:focus:border-blue-600 dark:focus:ring-blue-700/40',

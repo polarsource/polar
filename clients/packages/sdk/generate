@@ -16,6 +16,7 @@ docker run \
     openapitools/openapi-generator-cli:v7.0.1 \
     generate \
     -i /sdk/openapi/updated.json \
+    -t /sdk/openapi_templates \
     -g typescript-fetch \
     -o /sdk/src/client \
     --skip-validate-spec \

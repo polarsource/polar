@@ -89,7 +89,7 @@ export function RepoSelection(props: {
       )}
       {open && (
         <>
-          <div>
+          <div className="relative">
             <Command
               value={value}
               onValueChange={onValueChange}

@@ -4,6 +4,7 @@ import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import { Issue, IssueStateEnum, Label } from '@polar-sh/sdk'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import { githubIssueUrl } from 'polarkit/github'
+import { twMerge } from 'tailwind-merge'
 import IconCounter from './IconCounter'
 import IssueLabel from './IssueLabel'
 import { generateMarkdownTitle } from './markdown'
@@ -42,10 +43,10 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
   const markdownTitle = generateMarkdownTitle(title)
 
   return (
-    <div className="dark:hover:bg-polar-700 duration-50 dark:text-polar-50 group flex items-center justify-between gap-4 overflow-hidden rounded-2xl px-6 py-4 pb-5 hover:bg-blue-50">
+    <div className="dark:hover:bg-polar-700 duration-50 dark:text-polar-50 group flex flex-col items-start justify-between gap-4 overflow-hidden rounded-2xl px-6 py-4 pb-5 hover:bg-blue-50 md:flex-row md:items-center">
       <div className="flex flex-row items-center">
         {showLogo && (
-          <div className="mr-3 flex-shrink-0 justify-center rounded-full bg-white p-[1px] shadow">
+          <div className="mr-4 flex-shrink-0 justify-center rounded-full bg-white p-[1px] shadow">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               alt={`Avatar of ${organization.name}`}
@@ -57,7 +58,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
           </div>
         )}
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
             <a
               className="text-md text-nowrap font-medium"
@@ -88,7 +89,12 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-6">
+      <div
+        className={twMerge(
+          'flex flex-col items-center gap-6 md:flex-row',
+          showLogo && 'md:pl-none pl-12',
+        )}
+      >
         <div className="flex items-center gap-6">
           {showStatus && (
             <div className="dark:text-polar-400 flex flex-row items-center gap-2 text-sm text-gray-500">

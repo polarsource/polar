@@ -11,7 +11,7 @@ import {
   useQuery,
 } from '@tanstack/react-query'
 import { api, queryClient } from '../../api'
-import { defaultRetry } from './retry'
+import { defaultRetry, serverErrorRetry } from './retry'
 
 export const useListAdminOrganizations: () => UseQueryResult<ListResourceOrganization> =
   () =>
@@ -160,4 +160,12 @@ export const useUpdateOrganization = () =>
     onSuccess: (result, variables, ctx) => {
       updateOrgsCache(result)
     },
+  })
+
+export const useOrganizationCredits = (id?: string) =>
+  useQuery({
+    queryKey: ['organizationCredits', id],
+    queryFn: () => api.organizations.getCredits({ id: id || '' }),
+    retry: serverErrorRetry,
+    enabled: !!id,
   })

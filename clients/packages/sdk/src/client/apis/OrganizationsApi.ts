@@ -15,6 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
+  CreditBalance,
   HTTPValidationError,
   ListResourceOrganization,
   ListResourceOrganizationMember,
@@ -35,6 +36,10 @@ export interface OrganizationsApiGetRequest {
 }
 
 export interface OrganizationsApiGetBadgeSettingsRequest {
+    id: string;
+}
+
+export interface OrganizationsApiGetCreditsRequest {
     id: string;
 }
 
@@ -184,6 +189,44 @@ export class OrganizationsApi extends runtime.BaseAPI {
      */
     async getBadgeSettings(requestParameters: OrganizationsApiGetBadgeSettingsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OrganizationBadgeSettingsRead> {
         const response = await this.getBadgeSettingsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get Credits
+     */
+    async getCreditsRaw(requestParameters: OrganizationsApiGetCreditsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CreditBalance>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling getCredits.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/organizations/{id}/credit`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get Credits
+     */
+    async getCredits(requestParameters: OrganizationsApiGetCreditsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CreditBalance> {
+        const response = await this.getCreditsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

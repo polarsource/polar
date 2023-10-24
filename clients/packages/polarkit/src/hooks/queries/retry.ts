@@ -1,7 +1,7 @@
 import { ResponseError } from '@polar-sh/sdk'
 import { useStore } from '../../store'
 
-export const defaultRetry = (
+export const authenticatingRetry = (
   failureCount: number,
   error: ResponseError,
 ): boolean => {
@@ -20,5 +20,26 @@ export const defaultRetry = (
   if (failureCount > 2) {
     return false
   }
+  return true
+}
+
+export const defaultRetry = authenticatingRetry
+
+export const serverErrorRetry = (
+  failureCount: number,
+  error: ResponseError,
+): boolean => {
+  if (error.response.status === 401) {
+    return false
+  }
+
+  if (error.response.status === 404) {
+    return false
+  }
+
+  if (failureCount > 2) {
+    return false
+  }
+
   return true
 }

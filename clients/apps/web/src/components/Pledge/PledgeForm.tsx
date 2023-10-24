@@ -639,13 +639,13 @@ const FundToday = ({
           <div>
             <label
               htmlFor="payment_method"
-              className="dark:text-polar-400 mb-2 text-sm font-medium text-gray-500"
+              className="dark:text-polar-400 text-sm font-medium text-gray-500"
             >
               Payment method
             </label>
 
             <Select onValueChange={onPaymentMethodChange} name="payment_method">
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="mt-2 w-full">
                 {paymentMethod ? (
                   <SelectValue
                     placeholder={`${prettyCardName(paymentMethod.brand)} (****${

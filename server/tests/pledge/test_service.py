@@ -66,7 +66,7 @@ async def test_mark_pending_by_issue_id(
     )
 
     transfer = mocker.patch(
-        "polar.integrations.stripe.service.StripeService.create_pledge_invoice"
+        "polar.integrations.stripe.service.StripeService.create_user_pledge_invoice"
     )
     transfer.return_value = Invoice()
 

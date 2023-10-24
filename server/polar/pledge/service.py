@@ -5,6 +5,7 @@ from datetime import timedelta
 from typing import Any, Awaitable, Callable, List, Sequence
 from uuid import UUID
 
+import stripe as stripe_lib
 import structlog
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 from sqlalchemy import or_
@@ -989,10 +990,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
             raise NotPermitted("this pledge already has an invoice")
         if pledge.type != PledgeType.pay_on_completion:
             raise NotPermitted("this pledge is not of type pay_on_completion")
-        if not pledge.by_user_id:
-            raise NotPermitted("this pledge is not made by a user")
-
-        # TODO: send invoice to org!
 
         pledge_issue = await issue_service.get(session, pledge.issue_id)
         if not pledge_issue:
@@ -1010,18 +1007,39 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not pledge_issue_org:
             raise ResourceNotFound()
 
-        pledger_user = await user_service.get(session, pledge.by_user_id)
-        if not pledger_user:
-            raise ResourceNotFound()
+        invoice: stripe_lib.Invoice | None = None
 
-        invoice = await stripe_service.create_pledge_invoice(
-            session=session,
-            user=pledger_user,
-            pledge=pledge,
-            pledge_issue=pledge_issue,
-            pledge_issue_repo=pledge_issue_repo,
-            pledge_issue_org=pledge_issue_org,
-        )
+        if pledge.by_user_id:
+            pledger_user = await user_service.get(session, pledge.by_user_id)
+            if not pledger_user:
+                raise ResourceNotFound()
+
+            invoice = await stripe_service.create_user_pledge_invoice(
+                session=session,
+                user=pledger_user,
+                pledge=pledge,
+                pledge_issue=pledge_issue,
+                pledge_issue_repo=pledge_issue_repo,
+                pledge_issue_org=pledge_issue_org,
+            )
+        elif pledge.by_organization_id:
+            pledger_org = await organization_service.get(
+                session, pledge.by_organization_id
+            )
+            if not pledger_org:
+                raise ResourceNotFound()
+
+            invoice = await stripe_service.create_organization_pledge_invoice(
+                session=session,
+                organization=pledger_org,
+                pledge=pledge,
+                pledge_issue=pledge_issue,
+                pledge_issue_repo=pledge_issue_repo,
+                pledge_issue_org=pledge_issue_org,
+            )
+        else:
+            raise NotPermitted("Pledger is not user or org")
+
         if not invoice:
             raise InternalServerError()
 

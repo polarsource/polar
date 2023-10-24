@@ -10,7 +10,7 @@ from polar.kit.pagination import PaginationParams
 from polar.models import Issue, Organization, Pledge, User, UserOrganization
 from polar.pledge.schemas import PledgeState, PledgeType
 from polar.postgres import AsyncSession
-from tests.fixtures.random_objects import create_repository
+from tests.fixtures.random_objects import create_repository, create_user
 
 from .conftest import IssuesPledgesFixture, create_issues_pledges
 
@@ -129,6 +129,36 @@ class TestListBy:
 
         assert count == len(issues_pledges)
         assert len(results) == len(issues_pledges)
+
+    async def test_multiple_users_organization(
+        self,
+        issues_pledges: IssuesPledgesFixture,
+        user: User,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        user2 = await create_user(session)
+        await UserOrganization.create(
+            session=session,
+            user_id=user2.id,
+            organization_id=organization.id,
+        )
+        user3 = await create_user(session)
+        await UserOrganization.create(
+            session=session,
+            user_id=user3.id,
+            organization_id=organization.id,
+        )
+
+        results, count = await funding_service.list_by(
+            session, user, pagination=PaginationParams(1, 10), organization=organization
+        )
+
+        assert count == len(issues_pledges)
+        assert len(results) > 0
+        for i, result in enumerate(results):
+            issue, pledges = issues_pledges[i]
+            issue_row_assertions(result, issue, pledges)
 
 
 @pytest.mark.asyncio

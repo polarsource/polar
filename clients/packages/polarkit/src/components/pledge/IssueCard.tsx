@@ -176,7 +176,7 @@ const IssueCard = ({
                   <HeartIcon className="mr-2 h-5 w-5 text-blue-300 dark:text-blue-700" />
                   <div className="inline">
                     <span className="font-bold">Rewards</span> contributors{' '}
-                    <span className="font-bold">{upfrontSplit}%</span> of
+                    <span className="font-bold">{upfrontSplit}%</span> - fees of
                     received funds
                   </div>
                 </div>

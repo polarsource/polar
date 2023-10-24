@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz
+from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.exceptions import InternalServerError, ResourceNotFound, Unauthorized
 from polar.integrations.github.badge import GithubBadge
@@ -19,14 +20,15 @@ from polar.user_organization.service import (
 )
 
 from .schemas import (
-    Organization as OrganizationSchema,
-)
-from .schemas import (
+    CreditBalance,
     OrganizationBadgeSettingsRead,
     OrganizationBadgeSettingsUpdate,
     OrganizationStripePortalSession,
     OrganizationUpdate,
     RepositoryBadgeSettingsRead,
+)
+from .schemas import (
+    Organization as OrganizationSchema,
 )
 from .service import organization
 
@@ -229,6 +231,35 @@ async def create_stripe_customer_portal(
         raise InternalServerError()
 
     return OrganizationStripePortalSession(url=portal.url)
+
+
+@router.get(
+    "/organizations/{id}/credit",
+    response_model=CreditBalance,
+)
+async def get_credits(
+    id: UUID,
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> CreditBalance:
+    org = await organization.get(session, id)
+    if not org:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth.subject, AccessType.write, org):
+        raise Unauthorized()
+
+    balance = await stripe_service.get_organization_credit_balance(session, org)
+    if balance is None:
+        raise ResourceNotFound()
+
+    return CreditBalance(
+        amount=CurrencyAmount(
+            currency="USD",
+            amount=balance,
+        )
+    )
 
 
 #

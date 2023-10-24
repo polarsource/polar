@@ -424,22 +424,43 @@ Thank you for your support!
     def get_checkout_session(self, id: str) -> stripe_lib.checkout.Session:
         return stripe_lib.checkout.Session.retrieve(id)
 
-    # def get_customer_credit_balance(self, customer_id: str) -> int:
-    #     transactions = stripe_lib.Customer.list_balance_transactions(
-    #         customer_id, limit=1
-    #     )
+    def get_customer_credit_balance(self, customer_id: str) -> int:
+        transactions = stripe_lib.Customer.list_balance_transactions(
+            customer_id, limit=1
+        )
 
-    #     if not transactions:
-    #         return 0
+        if not transactions:
+            return 0
 
-    #     transactions["data"][0]
+        data: list[stripe_lib.CustomerBalanceTransaction] = transactions
 
-    #     data: list[stripe_lib.CustomerBalanceTransaction] = transactions
+        if len(data) == 0:
+            return 0
 
-    #     if len(data) == 0:
-    #         return 0
+        return data[0].ending_balance
 
-    #     return data[0].ending_balance
+    async def get_organization_credit_balance(
+        self,
+        session: AsyncSession,
+        org: Organization,
+    ) -> int | None:
+        customer = await self.get_or_create_org_customer(session, org)
+        if not customer:
+            return 0
+
+        transactions = stripe_lib.Customer.list_balance_transactions(
+            customer.id, limit=1
+        )
+
+        if not transactions:
+            return 0
+
+        data: list[stripe_lib.CustomerBalanceTransaction] = transactions["data"]
+
+        if len(data) == 0:
+            return 0
+
+        return data[0].ending_balance
 
 
 stripe = StripeService()

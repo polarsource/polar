@@ -1,13 +1,15 @@
 from collections.abc import Iterable
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 import stripe as stripe_lib
 from pydantic import UUID4, AnyHttpUrl, EmailStr, Field, root_validator, validator
 
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.subscription_benefit import (
+    SubscriptionBenefitBuiltinProperties,
+    SubscriptionBenefitCustomProperties,
+    SubscriptionBenefitProperties,
     SubscriptionBenefitType,
-    TaxApplicationMustBeSpecified,
 )
 from polar.models.subscription_tier import SubscriptionTier as SubscriptionTierModel
 from polar.models.subscription_tier import SubscriptionTierType
@@ -18,12 +20,11 @@ TIER_DESCRIPTION_MAX_LENGTH = 240
 BENEFIT_DESCRIPTION_MAX_LENGTH = 120
 
 
-class SubscriptionBenefitCreate(Schema):
-    type: SubscriptionBenefitType
+class SubscriptionBenefitCreateBase(Schema):
     description: str = Field(..., max_length=BENEFIT_DESCRIPTION_MAX_LENGTH)
-    is_tax_applicable: bool | None = None
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None
+    properties: SubscriptionBenefitProperties
 
     @root_validator
     def check_either_organization_or_repository(
@@ -43,19 +44,39 @@ class SubscriptionBenefitCreate(Schema):
             )
         return values
 
-    @root_validator
-    def check_is_tax_applicable(cls, values: dict[str, Any]) -> dict[str, Any]:
-        benefit_type: SubscriptionBenefitType = values["type"]
-        try:
-            values["is_tax_applicable"] = benefit_type.is_tax_applicable()
-        except TaxApplicationMustBeSpecified as e:
-            if values.get("is_tax_applicable") is None:
-                raise ValueError(e.message) from e
-        return values
+
+class SubscriptionBenefitBuiltinCreate(SubscriptionBenefitCreateBase):
+    type: Literal[SubscriptionBenefitType.builtin]
+    properties: SubscriptionBenefitBuiltinProperties
 
 
-class SubscriptionBenefitUpdate(Schema):
+class SubscriptionBenefitCustomCreate(SubscriptionBenefitCreateBase):
+    type: Literal[SubscriptionBenefitType.custom]
+    is_tax_applicable: bool
+    properties: SubscriptionBenefitCustomProperties
+
+
+SubscriptionBenefitCreate = (
+    SubscriptionBenefitBuiltinCreate | SubscriptionBenefitCustomCreate
+)
+
+
+class SubscriptionBenefitUpdateBase(Schema):
     description: str | None = Field(None, max_length=BENEFIT_DESCRIPTION_MAX_LENGTH)
+
+
+class SubscriptionBenefitBuiltinUpdate(SubscriptionBenefitUpdateBase):
+    properties: SubscriptionBenefitBuiltinProperties | None = None
+
+
+class SubscriptionBenefitCustomUpdate(SubscriptionBenefitUpdateBase):
+    is_tax_applicable: bool | None = None
+    properties: SubscriptionBenefitCustomProperties | None = None
+
+
+SubscriptionBenefitUpdate = (
+    SubscriptionBenefitBuiltinUpdate | SubscriptionBenefitCustomUpdate
+)
 
 
 class SubscriptionBenefit(TimestampedSchema):

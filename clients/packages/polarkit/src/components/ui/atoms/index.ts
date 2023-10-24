@@ -14,6 +14,7 @@ import { PrimaryButton, ThinButton } from './PrimaryButton'
 import ShadowBox from './ShadowBox'
 import ShadowBoxOnLg from './ShadowBoxOnLg'
 import ShadowListGroup from './ShadowListGroup'
+import TextArea from './TextArea'
 
 export {
   Alert,
@@ -30,6 +31,7 @@ export {
   LabeledSeparator,
   MoneyInput,
   PrimaryButton,
+  TextArea,
   ThinButton,
   Avatar,
   Pill,

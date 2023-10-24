@@ -1,9 +1,8 @@
 import { githubIssueLink } from '@/utils/github'
 import { ConfirmIssueSplit, Issue, Pledge, UserRead } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { PrimaryButton, TextArea } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
-import { Textarea } from 'polarkit/components/ui/textarea'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useState } from 'react'
 import { ModalHeader } from '../Modal'
@@ -81,12 +80,12 @@ _If you already have a Polar account setup, you don't need to do anything._
       </ModalHeader>
       <div className="space-y-4 pt-4">
         <div className="flex flex-col gap-4 px-4">
-          <Textarea
-            className="dark:text-polar-200"
+          <TextArea
+            resizable={false}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             rows={14}
-          ></Textarea>
+          />
           <div className="flex flex-row items-center gap-4">
             <img src={props.user.avatar_url} className="h-8 w-8 rounded-full" />
             <span className="dark:text-polar-200 text-gray-500">

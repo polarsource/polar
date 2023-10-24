@@ -5,7 +5,7 @@ import {
   SubscriptionTierType,
   SubscriptionTierUpdate,
 } from '@polar-sh/sdk'
-import { Input } from 'polarkit/components/ui/atoms'
+import { Input, TextArea } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   FormControl,
@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/select'
-import { Textarea } from 'polarkit/components/ui/textarea'
 import React, { useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
@@ -173,7 +172,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
               </span>
             </div>
             <FormControl>
-              <Textarea className="min-h-[200px] resize-none" {...field} />
+              <TextArea {...field} resizable={false} />
             </FormControl>
             <FormMessage />
           </FormItem>

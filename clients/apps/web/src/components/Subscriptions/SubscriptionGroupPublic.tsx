@@ -45,7 +45,7 @@ const SubscriptionGroupPublic = ({
               }}
             >
               <PrimaryButton
-                classNames="bg-[--var-border-color] dark:bg-[--var-dark-border-color] text-[--var-fg-color] dark:hover:bg-[--var-dark-fg-color] hover:bg-[--var-fg-color] dark:text-[--var-dark-fg-color] transition-colors hover:text-white dark:hover:text-white"
+                classNames="bg-[--var-border-color] dark:bg-[--var-dark-border-color] text-[--var-fg-color] dark:text-[--var-dark-fg-color] transition-colors hover:text-white dark:hover:text-white"
                 fullWidth
               >
                 Subscribe

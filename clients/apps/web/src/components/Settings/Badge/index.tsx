@@ -350,7 +350,7 @@ const BadgeSetup = ({
               height={24}
               className="dark:text-polar-400 text-gray-300"
             />
-            <p className="text-polar-400 ml-4 text-xs">
+            <p className="dark:text-polar-400 ml-4 text-xs text-gray-400">
               <strong className="dark:text-polar-100 mb-1 block font-medium text-gray-500">
                 How is the Polar section added?
               </strong>

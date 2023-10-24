@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import Field
 
 from polar.config import settings
+from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.kit.schemas import Schema
@@ -70,6 +71,12 @@ class OrganizationUpdate(Schema):
 
 class OrganizationStripePortalSession(Schema):
     url: str
+
+
+class CreditBalance(Schema):
+    amount: CurrencyAmount = Field(
+        description="The customers credit balance. A negative value means that Polar owes this customer money (credit), a positive number means that the customer owes Polar money (debit)."
+    )
 
 
 #

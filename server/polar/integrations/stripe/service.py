@@ -263,7 +263,7 @@ class StripeService:
     def detach_payment_method(self, id: str) -> stripe_lib.PaymentMethod:
         return stripe_lib.PaymentMethod.detach(id)  # type: ignore
 
-    async def create_pledge_invoice(
+    async def create_user_pledge_invoice(
         self,
         session: AsyncSession,
         user: User,
@@ -276,13 +276,57 @@ class StripeService:
         if not customer:
             return None
 
-        # Sync email
+        # Sync user email
         if not customer.email or customer.email != user.email:
             stripe_lib.Customer.modify(
                 customer.id,
                 email=user.email,
             )
 
+        return self.create_pledge_invoice(
+            customer,
+            pledge,
+            pledge_issue,
+            pledge_issue_repo,
+            pledge_issue_org,
+        )
+
+    async def create_organization_pledge_invoice(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        pledge: Pledge,
+        pledge_issue: Issue,
+        pledge_issue_repo: Repository,
+        pledge_issue_org: Organization,
+    ) -> stripe_lib.Invoice | None:
+        customer = await self.get_or_create_org_customer(session, organization)
+        if not customer:
+            return None
+
+        # Sync billing email
+        if not customer.email or customer.email != organization.billing_email:
+            stripe_lib.Customer.modify(
+                customer.id,
+                email=organization.billing_email,
+            )
+
+        return self.create_pledge_invoice(
+            customer,
+            pledge,
+            pledge_issue,
+            pledge_issue_repo,
+            pledge_issue_org,
+        )
+
+    def create_pledge_invoice(
+        self,
+        customer: stripe_lib.Customer,
+        pledge: Pledge,
+        pledge_issue: Issue,
+        pledge_issue_repo: Repository,
+        pledge_issue_org: Organization,
+    ) -> stripe_lib.Invoice | None:
         # Create an invoice, then add line items to it
         invoice = stripe_lib.Invoice.create(
             customer=customer.id,

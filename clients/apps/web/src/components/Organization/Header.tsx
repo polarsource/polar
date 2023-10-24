@@ -12,7 +12,7 @@ const Header = ({
   repository?: Repository
 }) => {
   return (
-    <div className="flex flex-col-reverse items-center justify-between gap-4 md:flex-row">
+    <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
       <a href="/">
         <LogoType />
       </a>

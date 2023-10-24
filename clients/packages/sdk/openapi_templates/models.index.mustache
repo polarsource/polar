@@ -1,0 +1,36 @@
+/* tslint:disable */
+/* eslint-disable */
+{{#models}}
+{{#model}}
+{{^withoutRuntimeChecks}}
+export * from './{{{ classFilename }}}{{importFileExtension}}';
+{{#useSagaAndRecords}}
+{{^isEnum}}
+export * from './{{{ classFilename }}}Record{{importFileExtension}}';
+{{/isEnum}}
+{{/useSagaAndRecords}}
+{{/withoutRuntimeChecks}}
+{{#withoutRuntimeChecks}}
+{{#isEnum}}
+{{>modelEnumInterfaces}}
+{{/isEnum}}
+{{^isEnum}}
+{{#oneOf}}
+{{#-first}}
+{{>modelOneOfInterfaces}}
+{{/-first}}
+{{/oneOf}}
+{{^oneOf}}
+{{#anyOf}}
+{{#-first}}
+{{>modelAnyOfInterfaces}}
+{{/-first}}
+{{/anyOf}}
+{{^anyOf}}
+{{>modelGenericInterfaces}}
+{{/anyOf}}
+{{/oneOf}}
+{{/isEnum}}
+{{/withoutRuntimeChecks}}
+{{/model}}
+{{/models}}

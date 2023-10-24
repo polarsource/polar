@@ -8,6 +8,7 @@ from polar.config import settings
 from polar.models.organization import Organization
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
+from polar.organization.schemas import Organization as OrganizationSchema
 from polar.postgres import AsyncSession
 from polar.user_organization.schemas import OrganizationMember
 
@@ -22,7 +23,104 @@ async def test_get_organization(
     )
 
     assert response.status_code == 200
+
+    org = OrganizationSchema.parse_obj(response.json())
     assert response.json()["id"] == str(organization.id)
+    assert org.id == organization.id
+
+
+@pytest.mark.asyncio
+async def test_get_organization_member_only_fields_no_member(
+    session: AsyncSession,
+    organization: Organization,
+    auth_jwt: str,
+    client: AsyncClient,
+) -> None:
+    organization.billing_email = "billing@polar.sh"
+    await organization.save(session)
+
+    response = await client.get(
+        f"/api/v1/organizations/{organization.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+
+    org = OrganizationSchema.parse_obj(response.json())
+    assert response.json()["id"] == str(organization.id)
+    assert org.id == organization.id
+    assert org.billing_email is None
+
+
+@pytest.mark.asyncio
+async def test_get_organization_member_only_fields_is_member(
+    session: AsyncSession,
+    organization: Organization,
+    auth_jwt: str,
+    client: AsyncClient,
+    user_organization: UserOrganization,  # makes User a member of Organization
+) -> None:
+    organization.billing_email = "billing@polar.sh"
+    await organization.save(session)
+
+    response = await client.get(
+        f"/api/v1/organizations/{organization.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+
+    org = OrganizationSchema.parse_obj(response.json())
+    assert response.json()["id"] == str(organization.id)
+    assert org.id == organization.id
+    assert org.billing_email == "billing@polar.sh"
+
+
+@pytest.mark.asyncio
+async def test_update_organization_billing_email(
+    session: AsyncSession,
+    organization: Organization,
+    auth_jwt: str,
+    client: AsyncClient,
+    user_organization: UserOrganization,  # makes User a member of Organization
+) -> None:
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
+    response = await client.get(
+        f"/api/v1/organizations/{organization.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+
+    org = OrganizationSchema.parse_obj(response.json())
+    assert response.json()["id"] == str(organization.id)
+    assert org.id == organization.id
+    assert org.billing_email is None
+
+    # edit
+    response = await client.patch(
+        f"/api/v1/organizations/{organization.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+        json={
+            "billing_email": "billing_via_api@polar.sh",
+        },
+    )
+
+    assert response.status_code == 200
+    org = OrganizationSchema.parse_obj(response.json())
+    assert org.billing_email == "billing_via_api@polar.sh"
+
+    # get again!
+    response = await client.get(
+        f"/api/v1/organizations/{organization.id}",
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert response.status_code == 200
+    org = OrganizationSchema.parse_obj(response.json())
+    assert org.billing_email == "billing_via_api@polar.sh"
 
 
 @pytest.mark.asyncio

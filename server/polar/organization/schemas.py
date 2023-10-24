@@ -21,21 +21,29 @@ class Organization(Schema):
     name: str
     avatar_url: str
 
-    bio: str | None
-    pretty_name: str | None
-    company: str | None
-    blog: str | None
-    location: str | None
-    email: str | None
-    twitter_username: str | None
+    bio: str | None = Field(description="Public field from GitHub")
+    pretty_name: str | None = Field(description="Public field from GitHub")
+    company: str | None = Field(description="Public field from GitHub")
+    blog: str | None = Field(description="Public field from GitHub")
+    location: str | None = Field(description="Public field from GitHub")
+    email: str | None = Field(description="Public field from GitHub")
+    twitter_username: str | None = Field(description="Public field from GitHub")
 
     pledge_minimum_amount: int
     pledge_badge_show_amount: bool
 
     default_upfront_split_to_contributors: int | None
 
+    billing_email: str | None = Field(
+        description="Is only visible for members of the organization"
+    )
+
     @classmethod
-    def from_db(cls, o: OrganizationModel) -> Self:
+    def from_db(
+        cls,
+        o: OrganizationModel,
+        include_member_fields: bool = False,
+    ) -> Self:
         return cls(
             id=o.id,
             platform=o.platform,
@@ -51,6 +59,7 @@ class Organization(Schema):
             pledge_minimum_amount=o.pledge_minimum_amount,
             pledge_badge_show_amount=o.pledge_badge_show_amount,
             default_upfront_split_to_contributors=o.default_upfront_split_to_contributors,
+            billing_email=o.billing_email if include_member_fields else None,
         )
 
 

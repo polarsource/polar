@@ -1,3 +1,5 @@
+'use client'
+
 import { CheckOutlined } from '@mui/icons-material'
 import { SubscriptionTier } from '@polar-sh/sdk'
 import {
@@ -9,6 +11,7 @@ import {
 import { Separator } from 'polarkit/components/ui/separator'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
 import { getCentsInDollarString } from 'polarkit/money'
+import { MouseEventHandler, useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 import { getSubscriptionColorByType } from './utils'
@@ -49,7 +52,9 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   children,
   className,
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null)
   const subscriptionColor = getSubscriptionColorByType(subscriptionTier.type)
+  const [shineActive, setShineActive] = useState(false)
 
   const style = {
     '--var-bg-color': hexToRGBA(subscriptionColor, 0.1),
@@ -61,14 +66,38 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     '--var-dark-fg-color': subscriptionColor,
   } as React.CSSProperties
 
+  const onMouseMove: MouseEventHandler<HTMLDivElement> = useCallback(
+    (e) => {
+      if (containerRef.current) {
+        const { x, y } = containerRef.current.getBoundingClientRect()
+        containerRef.current.style.setProperty('--x', String(e.clientX - x))
+        containerRef.current.style.setProperty('--y', String(e.clientY - y))
+      }
+    },
+    [containerRef],
+  )
+
+  const onMouseEnter = useCallback(() => {
+    setShineActive(true)
+  }, [setShineActive])
+
+  const onMouseLeave = useCallback(() => {
+    setShineActive(false)
+  }, [setShineActive])
+
   return (
     <Card
+      ref={containerRef}
       className={twMerge(
-        'dark:bg-polar-900 dark:border-polar-700 flex min-w-[280px] max-w-[320px] flex-col gap-y-4 rounded-3xl border border-transparent bg-[--var-bg-color] p-8 dark:shadow-none',
+        'dark:bg-polar-900 dark:border-polar-700 relative flex min-w-[280px] max-w-[320px] flex-col gap-y-4 overflow-hidden rounded-3xl border border-transparent bg-[--var-bg-color] p-8 dark:shadow-none',
         className,
       )}
       style={style}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onMouseMove={onMouseMove}
     >
+      <Shine active={shineActive} />
       <CardHeader className="grow gap-y-6 p-0">
         <div className="flex justify-between">
           <h3 className="truncate text-lg font-medium">
@@ -134,3 +163,20 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
 }
 
 export default SubscriptionTierCard
+
+const Shine = ({ active = false }: { active: boolean }) => {
+  return (
+    <div
+      style={{
+        content: '',
+        top: `calc(var(--y, 0) * 1px - 300px)`,
+        left: `calc(var(--x, 0) * 1px - 300px)`,
+        background: `radial-gradient(white, #3984ff00 70%)`,
+      }}
+      className={twMerge(
+        'pointer-events-none absolute h-[600px] w-[600px] opacity-0 transition-opacity duration-300',
+        active && 'dark:opacity-5',
+      )}
+    />
+  )
+}

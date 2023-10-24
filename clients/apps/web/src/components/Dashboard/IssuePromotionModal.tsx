@@ -8,6 +8,7 @@ import {
   CopyToClipboardInput,
   MoneyInput,
   PrimaryButton,
+  TextArea,
 } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import {
@@ -333,14 +334,15 @@ const PostCommentForm = (props: {
         />
       )}
       <div className="flex h-full flex-1 flex-col overflow-hidden rounded-md border ">
-        <textarea
-          className="overflow-hiddens dark:bg-polar-700 max-h-[10rem] w-full flex-1 border-0 px-4 py-2.5 text-gray-800 outline-0 dark:text-white"
+        <TextArea
+          className="focus:ring-none max-h-[10rem] w-full flex-1 overflow-hidden border-0 outline-0"
+          resizable={false}
           value={message}
           disabled={posted || loading}
           onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
             setMessage(e.target.value)
           }}
-        ></textarea>
+        />
         <div className="flex items-center justify-between border-t bg-blue-50 px-4 py-2 dark:bg-blue-500/30">
           <div className="text-xs text-gray-900 dark:text-white/90">
             🔔 Comments on your behalf

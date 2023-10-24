@@ -6,6 +6,7 @@ import {
   LabeledRadioButton,
   MoneyInput,
   PrimaryButton,
+  TextArea,
 } from 'polarkit/components/ui/atoms'
 import { ChangeEvent, MouseEvent, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -95,7 +96,7 @@ const BadgeMessageForm = (props: {
             {props.title ?? 'Customize embed'}
           </div>
           {props.subtitle && (
-            <div className="dark:text-polar-400 text-sm text-gray-500">
+            <div className="dark:text-polar-400 mt-2 text-sm text-gray-500">
               {props.subtitle}
             </div>
           )}
@@ -110,7 +111,7 @@ const BadgeMessageForm = (props: {
       <div
         className={twMerge(
           props.innerClassNames,
-          'dark:bg-polar-800 dark:ring-polar-600 rounded-xl bg-white px-5 py-3.5 dark:ring-1',
+          'dark:bg-polar-800 dark:ring-polar-600 rounded-2xl bg-white p-5 dark:ring-1',
         )}
       >
         {descriptionMode === 'View' && (
@@ -128,12 +129,7 @@ const BadgeMessageForm = (props: {
         )}
         {descriptionMode === 'Edit' && (
           <>
-            <textarea
-              className="dark:bg-polar-800 w-full rounded-md border-0 text-gray-800 dark:text-white"
-              rows={6}
-              value={message}
-              onChange={onChange}
-            />
+            <TextArea rows={6} value={message} onChange={onChange} />
           </>
         )}
       </div>

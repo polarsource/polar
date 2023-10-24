@@ -15,7 +15,7 @@ import {
   IssueListItemDecoration,
   IssueSummary,
 } from 'polarkit/components/Issue'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { PrimaryButton, TextArea } from 'polarkit/components/ui/atoms'
 import { getCentsInDollarString } from 'polarkit/money'
 import { ChangeEvent, useState } from 'react'
 import SplitRewardModal from '../Finance/SplitRewardModal'
@@ -229,12 +229,12 @@ const DisputeModal = (props: { pledge: Pledge }) => {
             >
               Description
             </label>
-            <textarea
+            <TextArea
               id="dispute_description"
               placeholder="Explain what happened"
               rows={8}
               onChange={onUpdateReason}
-            ></textarea>
+            ></TextArea>
           </>
         )}
 

@@ -111,7 +111,7 @@ const PublicRewardsSetting = (props: {
           <>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <UserIcon className="dark:bg-polar-950 h-6 w-6 rounded-full bg-gray-50 p-1" />
+                <UserIcon className="dark:bg-polar-600 h-6 w-6 rounded-full bg-gray-100 p-1" />
                 <div className="dark:text-polar-100 text-sm">
                   Reserved for contributor(s)
                 </div>

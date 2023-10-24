@@ -62,7 +62,7 @@ const IssuePledge = (props: Props) => {
   return (
     <>
       <div className="flex flex-row items-center space-x-4 px-6 py-4">
-        <div className="flex flex-1 flex-row items-center space-x-4">
+        <div className="flex flex-wrap items-center gap-4">
           <FundingPill
             total={{ amount: totalPledgeAmount, currency: 'USD' }}
             goal={showFundingGoal ? issue.funding.funding_goal : undefined}

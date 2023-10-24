@@ -24,6 +24,7 @@ class BackofficePledgeService:
             joinedload(Pledge.by_organization),
             joinedload(Pledge.to_organization),
             joinedload(Pledge.on_behalf_of_organization),
+            joinedload(Pledge.created_by_user),
             joinedload(Pledge.user),
             joinedload(Pledge.issue)
             .joinedload(Issue.repository)

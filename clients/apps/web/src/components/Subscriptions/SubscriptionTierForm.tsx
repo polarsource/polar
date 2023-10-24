@@ -5,7 +5,15 @@ import {
   SubscriptionTierType,
   SubscriptionTierUpdate,
 } from '@polar-sh/sdk'
-import { Input, TextArea } from 'polarkit/components/ui/atoms'
+import {
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  TextArea,
+} from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   FormControl,
@@ -14,13 +22,6 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from 'polarkit/components/ui/select'
 import React, { useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'

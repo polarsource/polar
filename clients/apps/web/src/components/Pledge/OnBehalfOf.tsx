@@ -1,13 +1,13 @@
 import { useAuth } from '@/hooks'
 import { Organization } from '@polar-sh/sdk'
-import { Avatar } from 'polarkit/components/ui/atoms'
 import {
+  Avatar,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/select'
+} from 'polarkit/components/ui/atoms'
 import { useListAllOrganizations } from 'polarkit/hooks'
 import { useState } from 'react'
 

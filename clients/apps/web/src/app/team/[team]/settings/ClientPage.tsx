@@ -7,6 +7,8 @@ import { useCurrentTeamFromURL } from '@/hooks/org'
 export default function ClientPage() {
   const { org, isLoaded } = useCurrentTeamFromURL()
 
+  const credits = useOrganizationCredits(org?.id)
+
   if (!isLoaded || !org) {
     return <Spinner />
   }
@@ -20,7 +22,7 @@ export default function ClientPage() {
       <div className="dark:divide-polar-700 divide-y divide-gray-200">
         <Section>
           <SectionDescription title="Payment methods" />
-          <PaymentMethodSettings org={org} />
+          <PaymentMethodSettings org={org} credits={credits.data} />
         </Section>
       </div>
     </>
@@ -28,12 +30,20 @@ export default function ClientPage() {
 }
 
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
-import { Organization } from '@polar-sh/sdk'
+import { CreditBalance, Organization } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
 import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { useOrganizationCredits } from 'polarkit/hooks'
+import { getCentsInDollarString } from 'polarkit/money'
 import { useState } from 'react'
 
-const PaymentMethodSettings = ({ org }: { org: Organization }) => {
+const PaymentMethodSettings = ({
+  org,
+  credits,
+}: {
+  org: Organization
+  credits?: CreditBalance
+}) => {
   const [stripePortalLoading, setStripePortalLoading] = useState(false)
 
   const onGotoStripeCustomerPortal = async () => {
@@ -51,6 +61,13 @@ const PaymentMethodSettings = ({ org }: { org: Organization }) => {
 
   return (
     <div className="dark:text-polar-200 dark:border-polar-700 dark:bg-polar-800 flex w-full flex-col divide-y rounded-xl border text-gray-900">
+      {credits && credits.amount.amount < 0 ? (
+        <div className="dark:text-polar:300 space-y-2 p-4 text-sm text-gray-500">
+          {org.name} has $
+          {getCentsInDollarString(credits.amount.amount * -1, true, true)} in
+          prepaid credits that will automatically be applied on future invoices.
+        </div>
+      ) : null}
       <div className="dark:text-polar:300 space-y-2 p-4 text-sm text-gray-500">
         <PrimaryButton
           fullWidth={false}

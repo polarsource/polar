@@ -592,6 +592,19 @@ export interface CreatePledgePayLater {
 /**
  * 
  * @export
+ * @interface CreditBalance
+ */
+export interface CreditBalance {
+    /**
+     * 
+     * @type {CurrencyAmount}
+     * @memberof CreditBalance
+     */
+    amount: CurrencyAmount;
+}
+/**
+ * 
+ * @export
  * @interface CurrencyAmount
  */
 export interface CurrencyAmount {

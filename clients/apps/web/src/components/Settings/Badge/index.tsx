@@ -32,6 +32,13 @@ interface SSEIssueSyncEvent {
   repository_id: string
 }
 
+/**
+ * Since 2023-10-24 we always default new accounts to show amount.
+ *
+ * We should migrate existing accounts to this new standard for simplicity.
+ * However, we'll do that as a separate effort and therefore the setting
+ * remains (default: true) here even though it's not exposed.
+ */
 interface MappedRepoSettings {
   show_amount: boolean
   minimum_amount: number
@@ -293,55 +300,39 @@ const BadgeSetup = ({
               }}
               canSetFundingGoal={false}
               title="Badge defaults"
-              subtitle="You can change the settings per issue or configure a deault value"
+              subtitle="You can override these settings later per issue too"
               upfrontSplit={upfrontSplitValue}
             />
-
-            <div className="flex flex-row items-center">
-              <div className="grow">
-                <SettingsCheckbox
-                  id="show-raised"
-                  title="Show amount pledged"
-                  isChecked={settings.show_amount}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    setSettings((prev) => {
-                      return {
-                        ...prev,
-                        show_amount: e.target.checked,
-                      }
-                    })
-                    setAnyBadgeSettingChanged(true)
-                  }}
-                />
-              </div>
-
-              <div className="w-fit">
-                <div className="flex flex-row items-center text-right">
-                  <label htmlFor="minimum-pledge" className="mr-4 w-64 text-sm">
-                    Minimum pledge
-                  </label>
-                  <div className="">
-                    <MoneyInput
-                      id="minimum-pledge"
-                      name="minimum-pledge"
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        let amount = parseInt(e.target.value)
-                        if (isNaN(amount)) {
-                          amount = 0
-                        }
-
-                        setSettings((prev) => {
-                          return {
-                            ...prev,
-                            minimum_amount: amount * 100,
-                          }
-                        })
-                        setAnyBadgeSettingChanged(true)
-                      }}
-                      placeholder={settings.minimum_amount}
-                      value={settings.minimum_amount}
-                    />
+            <div className="flex w-full flex-col space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="dark:text-polar-100 text-sm font-medium text-gray-900">
+                    Minimum funding amount
                   </div>
+                  <div className="dark:text-polar-400 mt-1 text-xs text-gray-600"></div>
+                </div>
+
+                <div>
+                  <MoneyInput
+                    id="minimum-pledge"
+                    name="minimum-pledge"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      let amount = parseInt(e.target.value)
+                      if (isNaN(amount)) {
+                        amount = 0
+                      }
+
+                      setSettings((prev) => {
+                        return {
+                          ...prev,
+                          minimum_amount: amount * 100,
+                        }
+                      })
+                      setAnyBadgeSettingChanged(true)
+                    }}
+                    placeholder={settings.minimum_amount}
+                    value={settings.minimum_amount}
+                  />
                 </div>
               </div>
             </div>

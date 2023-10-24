@@ -52,7 +52,7 @@ const OnBehalfOf = ({
             value={attributePledgeTo?.id ?? ''}
             name="attribute_pledge"
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="mt-2 w-full">
               {attributePledgeTo ? (
                 <SelectValue placeholder={`${attributePledgeTo.name}`} />
               ) : (

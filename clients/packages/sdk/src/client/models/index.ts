@@ -820,12 +820,10 @@ export interface HTTPValidationError {
     detail?: Array<ValidationError>;
 }
 /**
- * 
+ * @type Id
  * @export
- * @interface Id
  */
-export interface Id {
-}
+export type Id = string;
 /**
  * 
  * @export
@@ -1467,12 +1465,10 @@ export interface ListResourceSubscriptionTier {
     pagination: Pagination;
 }
 /**
- * 
+ * @type LocationInner
  * @export
- * @interface LocationInner
  */
-export interface LocationInner {
-}
+export type LocationInner = number | string;
 /**
  * 
  * @export
@@ -2081,43 +2077,43 @@ export interface Organization {
      */
     avatar_url: string;
     /**
-     * 
+     * Public field from GitHub
      * @type {string}
      * @memberof Organization
      */
     bio?: string;
     /**
-     * 
+     * Public field from GitHub
      * @type {string}
      * @memberof Organization
      */
     pretty_name?: string;
     /**
-     * 
+     * Public field from GitHub
      * @type {string}
      * @memberof Organization
      */
     company?: string;
     /**
-     * 
+     * Public field from GitHub
      * @type {string}
      * @memberof Organization
      */
     blog?: string;
     /**
-     * 
+     * Public field from GitHub
      * @type {string}
      * @memberof Organization
      */
     location?: string;
     /**
-     * 
+     * Public field from GitHub
      * @type {string}
      * @memberof Organization
      */
     email?: string;
     /**
-     * 
+     * Public field from GitHub
      * @type {string}
      * @memberof Organization
      */
@@ -2140,6 +2136,12 @@ export interface Organization {
      * @memberof Organization
      */
     default_upfront_split_to_contributors?: number;
+    /**
+     * Is only visible for members of the organization
+     * @type {string}
+     * @memberof Organization
+     */
+    billing_email?: string;
 }
 /**
  * 

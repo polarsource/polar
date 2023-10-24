@@ -101,11 +101,18 @@ class FundingService:
     def _get_readable_issues_statement(self, auth_subject: Subject) -> Select[Any]:
         statement = select(Issue).join(Issue.repository).join(Repository.organization)
         if isinstance(auth_subject, Anonymous):
-            return statement.where(Repository.is_private == False)  # noqa: E712
+            return statement.where(Repository.is_private.is_(False))
 
-        return statement.join(UserOrganization).where(
+        return statement.join(
+            UserOrganization,
+            isouter=True,
+            onclause=and_(
+                UserOrganization.organization_id == Organization.id,
+                UserOrganization.user_id == auth_subject.id,
+            ),
+        ).where(
             or_(
-                Repository.is_private == False,  # noqa: E712
+                Repository.is_private.is_(False),
                 UserOrganization.user_id == auth_subject.id,
             )
         )

@@ -15,7 +15,8 @@ from polar.models import (
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.postgres import AsyncSession
 from polar.subscription.schemas import (
-    SubscriptionBenefitCreate,
+    SubscriptionBenefitCustomCreate,
+    SubscriptionBenefitCustomUpdate,
     SubscriptionBenefitUpdate,
 )
 from polar.subscription.service.subscription_benefit import (
@@ -202,10 +203,11 @@ class TestUserCreate:
     async def test_not_existing_organization(
         self, session: AsyncSession, authz: Authz, user: User
     ) -> None:
-        create_schema = SubscriptionBenefitCreate(
+        create_schema = SubscriptionBenefitCustomCreate(
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
+            properties={},
             organization_id=uuid.uuid4(),
         )
         with pytest.raises(OrganizationDoesNotExist):
@@ -220,10 +222,11 @@ class TestUserCreate:
         user: User,
         organization: Organization,
     ) -> None:
-        create_schema = SubscriptionBenefitCreate(
+        create_schema = SubscriptionBenefitCustomCreate(
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
+            properties={},
             organization_id=organization.id,
         )
         with pytest.raises(OrganizationDoesNotExist):
@@ -239,10 +242,11 @@ class TestUserCreate:
         organization: Organization,
         user_organization_admin: UserOrganization,
     ) -> None:
-        create_schema = SubscriptionBenefitCreate(
+        create_schema = SubscriptionBenefitCustomCreate(
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
+            properties={},
             organization_id=organization.id,
         )
         subscription_benefit = await subscription_benefit_service.user_create(
@@ -253,10 +257,11 @@ class TestUserCreate:
     async def test_not_existing_repository(
         self, session: AsyncSession, authz: Authz, user: User
     ) -> None:
-        create_schema = SubscriptionBenefitCreate(
+        create_schema = SubscriptionBenefitCustomCreate(
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
+            properties={},
             repository_id=uuid.uuid4(),
         )
         with pytest.raises(RepositoryDoesNotExist):
@@ -271,10 +276,11 @@ class TestUserCreate:
         user: User,
         repository: Repository,
     ) -> None:
-        create_schema = SubscriptionBenefitCreate(
+        create_schema = SubscriptionBenefitCustomCreate(
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
+            properties={},
             repository_id=repository.id,
         )
         with pytest.raises(RepositoryDoesNotExist):
@@ -290,10 +296,11 @@ class TestUserCreate:
         repository: Repository,
         user_organization_admin: UserOrganization,
     ) -> None:
-        create_schema = SubscriptionBenefitCreate(
+        create_schema = SubscriptionBenefitCustomCreate(
             type=SubscriptionBenefitType.custom,
             description="Subscription Benefit",
             is_tax_applicable=True,
+            properties={},
             repository_id=repository.id,
         )
         subscription_benefit = await subscription_benefit_service.user_create(
@@ -311,7 +318,7 @@ class TestUserUpdate:
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
     ) -> None:
-        update_schema = SubscriptionBenefitUpdate(
+        update_schema = SubscriptionBenefitCustomUpdate(
             description="Subscription Benefit Update"
         )
         with pytest.raises(NotPermitted):
@@ -327,7 +334,9 @@ class TestUserUpdate:
         subscription_benefit_organization: SubscriptionBenefit,
         user_organization_admin: UserOrganization,
     ) -> None:
-        update_schema = SubscriptionBenefitUpdate(description="Description update")
+        update_schema = SubscriptionBenefitCustomUpdate(
+            description="Description update"
+        )
         updated_subscription_benefit = await subscription_benefit_service.user_update(
             session, authz, subscription_benefit_organization, update_schema, user
         )

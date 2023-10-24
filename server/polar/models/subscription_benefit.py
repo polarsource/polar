@@ -1,8 +1,9 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict, TypeVar
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.exceptions import PolarError
@@ -22,16 +23,31 @@ class TaxApplicationMustBeSpecified(PolarError):
 
 class SubscriptionBenefitType(StrEnum):
     custom = "custom"
+    builtin = "builtin"  # Temp type to demonstrate the API
 
     def is_tax_applicable(self) -> bool:
         try:
             _is_tax_applicable_map: dict["SubscriptionBenefitType", bool] = {
-                # SubscriptionBenefitType.foo: True,
-                # SubscriptionBenefitType.bar: False,
+                SubscriptionBenefitType.builtin: True,
             }
             return _is_tax_applicable_map[self]
         except KeyError as e:
             raise TaxApplicationMustBeSpecified(self) from e
+
+
+class SubscriptionBenefitProperties(TypedDict):
+    ...
+
+
+class SubscriptionBenefitCustomProperties(SubscriptionBenefitProperties):
+    ...
+
+
+class SubscriptionBenefitBuiltinProperties(SubscriptionBenefitProperties):
+    ...
+
+
+M = TypeVar("M", bound=SubscriptionBenefitProperties)
 
 
 class SubscriptionBenefit(RecordModel):
@@ -43,6 +59,9 @@ class SubscriptionBenefit(RecordModel):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     is_tax_applicable: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
+    )
+    properties: Mapped[SubscriptionBenefitProperties] = mapped_column(
+        "properties", JSONB, nullable=False, default=dict
     )
 
     organization_id: Mapped[UUID | None] = mapped_column(
@@ -60,3 +79,29 @@ class SubscriptionBenefit(RecordModel):
         nullable=True,
     )
     repository: Mapped["Repository | None"] = relationship("Repository", lazy="raise")
+
+    __mapper_args__ = {
+        "polymorphic_on": "type",
+    }
+
+
+class SubscriptionBenefitCustom(SubscriptionBenefit):
+    properties: Mapped[SubscriptionBenefitCustomProperties] = mapped_column(
+        use_existing_column=True
+    )
+
+    __mapper_args__ = {
+        "polymorphic_identity": SubscriptionBenefitType.custom,
+        "polymorphic_load": "inline",
+    }
+
+
+class SubscriptionBenefitBuiltin(SubscriptionBenefit):
+    properties: Mapped[SubscriptionBenefitBuiltinProperties] = mapped_column(
+        use_existing_column=True
+    )
+
+    __mapper_args__ = {
+        "polymorphic_identity": SubscriptionBenefitType.builtin,
+        "polymorphic_load": "inline",
+    }

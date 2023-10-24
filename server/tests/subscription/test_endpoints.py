@@ -639,6 +639,7 @@ class TestCreateSubscriptionBenefit:
         [
             {
                 "is_tax_applicable": True,
+                "properties": {},
                 "description": (
                     "This is a way too long description that shall never fit "
                     "in the space we have in a single subscription benefit card. "
@@ -647,7 +648,7 @@ class TestCreateSubscriptionBenefit:
                     "result in a very ugly output on the subscription page."
                 ),
             },
-            {"description": "Subscription Benefit"},
+            {"description": "Subscription Benefit", "properties": {}},
         ],
     )
     @pytest.mark.authenticated
@@ -682,6 +683,7 @@ class TestCreateSubscriptionBenefit:
                 "type": "custom",
                 "description": "Subscription Benefit",
                 "is_tax_applicable": True,
+                "properties": {},
                 "organization_id": str(organization.id),
             },
         )

@@ -396,7 +396,7 @@ export const Badge = ({
                 marginLeft: '-5px',
               }}
             >
-              {`rewards contributors ${upfront_split_to_contributors}% - fees`}
+              {`rewards contributors ${upfront_split_to_contributors}% after fees`}
             </div>
             <div
               style={{

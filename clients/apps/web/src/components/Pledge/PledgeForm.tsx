@@ -20,14 +20,16 @@ import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
-import { Input, MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
 import {
+  Input,
+  MoneyInput,
+  PrimaryButton,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/select'
+} from 'polarkit/components/ui/atoms'
 import {
   Tabs,
   TabsContent,

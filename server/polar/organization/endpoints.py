@@ -4,13 +4,15 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
-from polar.authz.service import AccessType, Authz
+from polar.authz.service import AccessType, Authz, Subject
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.exceptions import InternalServerError, ResourceNotFound, Unauthorized
 from polar.integrations.github.badge import GithubBadge
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import ListResource, Pagination
+from polar.models.organization import Organization
+from polar.models.user import User
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
@@ -37,6 +39,28 @@ log = structlog.get_logger()
 router = APIRouter(tags=["organizations"])
 
 
+async def to_schema(
+    session: AsyncSession,
+    subject: Subject,
+    o: Organization,
+) -> OrganizationSchema:
+    is_member = False
+
+    if isinstance(
+        subject, User
+    ) and await user_organization_service.get_by_user_and_org(
+        session,
+        subject.id,
+        o.id,
+    ):
+        is_member = True
+
+    return OrganizationSchema.from_db(
+        o,
+        include_member_fields=is_member,
+    )
+
+
 @router.get(
     "/organizations",
     response_model=ListResource[OrganizationSchema],
@@ -58,7 +82,7 @@ async def list(
     )
 
     return ListResource(
-        items=[OrganizationSchema.from_db(o) for o in orgs],
+        items=[await to_schema(session, auth.subject, o) for o in orgs],
         pagination=Pagination(total_count=len(orgs), max_page=1),
     )
 
@@ -75,6 +99,7 @@ async def search(
     platform: Platforms | None = None,
     organization_name: str | None = None,
     session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.optional_user),
 ) -> ListResource[OrganizationSchema]:
     # Search by platform and organization name.
     # Currently the only way to search
@@ -82,7 +107,7 @@ async def search(
         org = await organization.get_by_name(session, platform, organization_name)
         if org:
             return ListResource(
-                items=[OrganizationSchema.from_db(org)],
+                items=[await to_schema(session, auth.subject, org)],
                 pagination=Pagination(total_count=0, max_page=1),
             )
 
@@ -106,13 +131,14 @@ async def lookup(
     platform: Platforms | None = None,
     organization_name: str | None = None,
     session: AsyncSession = Depends(get_db_session),
+    auth: Auth = Depends(Auth.optional_user),
 ) -> OrganizationSchema:
     # Search by platform and organization name.
     # Currently the only way to search
     if platform and organization_name:
         org = await organization.get_by_name(session, platform, organization_name)
         if org:
-            return OrganizationSchema.from_db(org)
+            return await to_schema(session, auth.subject, org)
 
     raise HTTPException(
         status_code=404,
@@ -142,7 +168,7 @@ async def get(
             detail="Organization not found",
         )
 
-    return OrganizationSchema.from_db(org)
+    return await to_schema(session, auth.subject, org)
 
 
 @router.patch(
@@ -170,7 +196,7 @@ async def update(
 
     org = await organization.update_settings(session, org, update)
 
-    return OrganizationSchema.from_db(org)
+    return await to_schema(session, auth.subject, org)
 
 
 @router.get(
@@ -392,4 +418,5 @@ async def update_badge_settings(
     org = await organization.get(session, id)
     if not org:
         raise ResourceNotFound()
-    return OrganizationSchema.from_db(org)
+
+    return await to_schema(session, auth.subject, org)

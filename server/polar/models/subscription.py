@@ -62,3 +62,19 @@ class Subscription(RecordModel):
     subscription_tier: Mapped["SubscriptionTier"] = relationship(
         "SubscriptionTier", lazy="raise"
     )
+
+    def is_incomplete(self) -> bool:
+        return self.status in [
+            SubscriptionStatus.incomplete,
+            SubscriptionStatus.incomplete_expired,
+        ]
+
+    def is_active(self) -> bool:
+        return self.status in [SubscriptionStatus.trialing, SubscriptionStatus.active]
+
+    def is_canceled(self) -> bool:
+        return self.status in [
+            SubscriptionStatus.past_due,
+            SubscriptionStatus.canceled,
+            SubscriptionStatus.unpaid,
+        ]

@@ -223,3 +223,12 @@ async def organization_account(
         is_charges_enabled=True,
         is_payouts_enabled=True,
     )
+
+
+@pytest_asyncio.fixture
+async def subscription(
+    session: AsyncSession, subscription_tier_organization: SubscriptionTier, user: User
+) -> Subscription:
+    return await create_subscription(
+        session, subscription_tier=subscription_tier_organization, user=user
+    )

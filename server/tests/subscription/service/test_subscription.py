@@ -1,22 +1,22 @@
 from datetime import UTC, datetime, timedelta
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.integrations.stripe.service import StripeService
-from polar.models import SubscriptionTier, User
+from polar.models import Subscription, SubscriptionBenefit, SubscriptionTier, User
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.service.subscription import (
+    AssociatedSubscriptionTierDoesNotExist,
     SubscriptionDoesNotExist,
-    SubscriptionTierDoesNotExist,
 )
 from polar.subscription.service.subscription import subscription as subscription_service
 from polar.user.service import user as user_service
 
-from ..conftest import create_subscription
+from ..conftest import add_subscription_benefits, create_subscription
 
 
 def construct_stripe_subscription(
@@ -75,7 +75,7 @@ def mock_stripe_service(mocker: MockerFixture) -> MagicMock:
 class TestCreateSubscription:
     async def test_not_existing_subscription_tier(self, session: AsyncSession) -> None:
         stripe_subscription = construct_stripe_subscription()
-        with pytest.raises(SubscriptionTierDoesNotExist):
+        with pytest.raises(AssociatedSubscriptionTierDoesNotExist):
             await subscription_service.create_subscription(
                 session, stripe_subscription=stripe_subscription
             )
@@ -141,10 +141,15 @@ class TestUpdateSubscription:
 
     async def test_valid(
         self,
+        mocker: MockerFixture,
         session: AsyncSession,
         subscription_tier_organization: SubscriptionTier,
         user: User,
     ) -> None:
+        enqueue_job_mock = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_job"
+        )
+
         stripe_subscription = construct_stripe_subscription(
             status=SubscriptionStatus.active
         )
@@ -160,3 +165,115 @@ class TestUpdateSubscription:
         )
 
         assert updated_subscription.status == SubscriptionStatus.active
+
+        enqueue_job_mock.assert_awaited_once_with(
+            "subscription.subscription.enqueue_benefits_grants",
+            updated_subscription.id,
+        )
+
+
+@pytest.mark.asyncio
+class TestEnqueueBenefitsGrants:
+    @pytest.mark.parametrize(
+        "status", [SubscriptionStatus.incomplete, SubscriptionStatus.incomplete_expired]
+    )
+    async def test_incomplete_subscription(
+        self,
+        status: SubscriptionStatus,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_benefits: list[SubscriptionBenefit],
+        subscription: Subscription,
+    ) -> None:
+        enqueue_job_mock = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_job"
+        )
+
+        subscription_tier_organization = await add_subscription_benefits(
+            session,
+            subscription_tier=subscription_tier_organization,
+            subscription_benefits=subscription_benefits,
+        )
+        subscription.status = status
+
+        await subscription_service.enqueue_benefits_grants(session, subscription)
+
+        enqueue_job_mock.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "status", [SubscriptionStatus.trialing, SubscriptionStatus.active]
+    )
+    async def test_active_subscription(
+        self,
+        status: SubscriptionStatus,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_benefits: list[SubscriptionBenefit],
+        subscription: Subscription,
+    ) -> None:
+        enqueue_job_mock = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_job"
+        )
+
+        subscription_tier_organization = await add_subscription_benefits(
+            session,
+            subscription_tier=subscription_tier_organization,
+            subscription_benefits=subscription_benefits,
+        )
+        subscription.status = status
+
+        await subscription_service.enqueue_benefits_grants(session, subscription)
+
+        enqueue_job_mock.assert_has_awaits(
+            [
+                call(
+                    "subscription.subscription_benefit.grant",
+                    subscription_id=subscription.id,
+                    subscription_benefit_id=benefit.id,
+                )
+                for benefit in subscription_benefits
+            ]
+        )
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            SubscriptionStatus.past_due,
+            SubscriptionStatus.canceled,
+            SubscriptionStatus.unpaid,
+        ],
+    )
+    async def test_canceled_subscription(
+        self,
+        status: SubscriptionStatus,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_benefits: list[SubscriptionBenefit],
+        subscription: Subscription,
+    ) -> None:
+        enqueue_job_mock = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_job"
+        )
+
+        subscription_tier_organization = await add_subscription_benefits(
+            session,
+            subscription_tier=subscription_tier_organization,
+            subscription_benefits=subscription_benefits,
+        )
+        subscription.status = status
+
+        await subscription_service.enqueue_benefits_grants(session, subscription)
+
+        enqueue_job_mock.assert_has_awaits(
+            [
+                call(
+                    "subscription.subscription_benefit.revoke",
+                    subscription_id=subscription.id,
+                    subscription_benefit_id=benefit.id,
+                )
+                for benefit in subscription_benefits
+            ]
+        )

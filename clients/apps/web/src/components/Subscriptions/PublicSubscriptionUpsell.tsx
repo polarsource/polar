@@ -45,7 +45,7 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
                 }}
               >
                 <PrimaryButton
-                  classNames="bg-[--var-border-color] dark:bg-[--var-dark-border-color] text-[--var-fg-color] dark:text-[--var-dark-fg-color] transition-colors hover:text-white dark:hover:text-white"
+                  classNames="bg-[--var-border-color] hover:bg-[--var-border-color] dark:bg-[--var-dark-border-color] text-[--var-fg-color] dark:text-[--var-dark-fg-color] transition-colors hover:text-white dark:hover:text-white"
                   fullWidth
                 >
                   Subscribe

@@ -20,6 +20,9 @@ TIER_DESCRIPTION_MAX_LENGTH = 240
 BENEFIT_DESCRIPTION_MAX_LENGTH = 120
 
 
+# SubscriptionBenefitCreate
+
+
 class SubscriptionBenefitCreateBase(Schema):
     description: str = Field(..., max_length=BENEFIT_DESCRIPTION_MAX_LENGTH)
     organization_id: UUID4 | None = None
@@ -61,6 +64,9 @@ SubscriptionBenefitCreate = (
 )
 
 
+# SubscriptionBenefitUpdate
+
+
 class SubscriptionBenefitUpdateBase(Schema):
     description: str | None = Field(None, max_length=BENEFIT_DESCRIPTION_MAX_LENGTH)
 
@@ -79,12 +85,39 @@ SubscriptionBenefitUpdate = (
 )
 
 
-class SubscriptionBenefit(TimestampedSchema):
+# SubscriptionBenefit
+
+
+class SubscriptionBenefitBase(TimestampedSchema):
     id: UUID4
     type: SubscriptionBenefitType
     description: str
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None
+
+
+class SubscriptionBenefitBuiltin(SubscriptionBenefitBase):
+    type: Literal[SubscriptionBenefitType.builtin]
+    properties: SubscriptionBenefitBuiltinProperties
+
+
+class SubscriptionBenefitCustom(SubscriptionBenefitBase):
+    type: Literal[SubscriptionBenefitType.custom]
+    properties: SubscriptionBenefitCustomProperties
+    is_tax_applicable: bool
+
+
+SubscriptionBenefit = SubscriptionBenefitBuiltin | SubscriptionBenefitCustom
+
+subscription_benefit_schema_map: dict[
+    SubscriptionBenefitType, type[SubscriptionBenefit]
+] = {
+    SubscriptionBenefitType.builtin: SubscriptionBenefitBuiltin,
+    SubscriptionBenefitType.custom: SubscriptionBenefitCustom,
+}
+
+
+# SubscriptionTier
 
 
 class SubscriptionTierCreate(Schema):
@@ -132,6 +165,10 @@ class SubscriptionTierBenefitsUpdate(Schema):
     benefits: list[UUID4]
 
 
+class SubscriptionTierBenefit(SubscriptionBenefitBase):
+    ...
+
+
 class SubscriptionTier(TimestampedSchema):
     id: UUID4
     type: SubscriptionTierType
@@ -143,14 +180,17 @@ class SubscriptionTier(TimestampedSchema):
     is_archived: bool
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None
-    benefits: list[SubscriptionBenefit]
+    benefits: list[SubscriptionTierBenefit]
 
     @validator("benefits", pre=True)
     def benefits_association_proxy_fix(
-        cls, v: Iterable[SubscriptionBenefit]
-    ) -> list[SubscriptionBenefit]:
+        cls, v: Iterable[SubscriptionTierBenefit]
+    ) -> list[SubscriptionTierBenefit]:
         # FIXME: Not needed in Pydantic V2
         return list(v)
+
+
+# SubscribeSession
 
 
 class SubscribeSessionCreate(Schema):

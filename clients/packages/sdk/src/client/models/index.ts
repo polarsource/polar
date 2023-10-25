@@ -1186,6 +1186,11 @@ export interface IssueUpdateBadgeMessage {
     message: string;
 }
 /**
+ * @type ItemsInner
+ * @export
+ */
+export type ItemsInner = SubscriptionBenefitBuiltin | SubscriptionBenefitCustom;
+/**
  * 
  * @export
  * @interface Label
@@ -1461,6 +1466,25 @@ export interface ListResourceSubscriptionTier {
      * 
      * @type {Pagination}
      * @memberof ListResourceSubscriptionTier
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceUnionSubscriptionBenefitBuiltinSubscriptionBenefitCustom
+ */
+export interface ListResourceUnionSubscriptionBenefitBuiltinSubscriptionBenefitCustom {
+    /**
+     * 
+     * @type {Array<ItemsInner>}
+     * @memberof ListResourceUnionSubscriptionBenefitBuiltinSubscriptionBenefitCustom
+     */
+    items?: Array<ItemsInner>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceUnionSubscriptionBenefitBuiltinSubscriptionBenefitCustom
      */
     pagination: Pagination;
 }
@@ -2137,11 +2161,23 @@ export interface Organization {
      */
     default_upfront_split_to_contributors?: number;
     /**
-     * Is only visible for members of the organization
+     * Where to send emails about payments for pledegs that this organization/team has made. Only visible for members of the organization
      * @type {string}
      * @memberof Organization
      */
     billing_email?: string;
+    /**
+     * Overall team monthly spending limit, per calendar month. Only visible for members of the organization
+     * @type {number}
+     * @memberof Organization
+     */
+    total_monthly_spending_limit?: number;
+    /**
+     * Team members monthly spending limit, per calendar month. Only visible for members of the organization
+     * @type {number}
+     * @memberof Organization
+     */
+    per_user_monthly_spending_limit?: number;
 }
 /**
  * 
@@ -2297,6 +2333,30 @@ export interface OrganizationUpdate {
      * @memberof OrganizationUpdate
      */
     pledge_minimum_amount?: number;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationUpdate
+     */
+    set_total_monthly_spending_limit?: boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof OrganizationUpdate
+     */
+    total_monthly_spending_limit?: number;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationUpdate
+     */
+    set_per_user_monthly_spending_limit?: boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof OrganizationUpdate
+     */
+    per_user_monthly_spending_limit?: number;
 }
 /**
  * 
@@ -3277,6 +3337,21 @@ export interface RepositoryBadgeSettingsUpdate {
     retroactive: boolean;
 }
 /**
+ * @type ResponseSubscriptionsCreateSubscriptionBenefit
+ * @export
+ */
+export type ResponseSubscriptionsCreateSubscriptionBenefit = SubscriptionBenefitBuiltin | SubscriptionBenefitCustom;
+/**
+ * @type ResponseSubscriptionsLookupSubscriptionBenefit
+ * @export
+ */
+export type ResponseSubscriptionsLookupSubscriptionBenefit = SubscriptionBenefitBuiltin | SubscriptionBenefitCustom;
+/**
+ * @type ResponseSubscriptionsUpdateSubscriptionBenefit
+ * @export
+ */
+export type ResponseSubscriptionsUpdateSubscriptionBenefit = SubscriptionBenefitBuiltin | SubscriptionBenefitCustom;
+/**
  * 
  * @export
  * @interface Reward
@@ -3494,6 +3569,307 @@ export interface SubscribeSessionCreate {
 /**
  * 
  * @export
+ * @interface SubscriptionBenefitBuiltin
+ */
+export interface SubscriptionBenefitBuiltin {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBuiltin
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBuiltin
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBuiltin
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBuiltin
+     */
+    type: SubscriptionBenefitBuiltinTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBuiltin
+     */
+    description: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBuiltin
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBuiltin
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {object}
+     * @memberof SubscriptionBenefitBuiltin
+     */
+    properties: object;
+}
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitBuiltinTypeEnum = {
+    BUILTIN: 'builtin'
+} as const;
+export type SubscriptionBenefitBuiltinTypeEnum = typeof SubscriptionBenefitBuiltinTypeEnum[keyof typeof SubscriptionBenefitBuiltinTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitBuiltinCreate
+ */
+export interface SubscriptionBenefitBuiltinCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBuiltinCreate
+     */
+    description: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBuiltinCreate
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBuiltinCreate
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {object}
+     * @memberof SubscriptionBenefitBuiltinCreate
+     */
+    properties: object;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBuiltinCreate
+     */
+    type: SubscriptionBenefitBuiltinCreateTypeEnum;
+}
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitBuiltinCreateTypeEnum = {
+    BUILTIN: 'builtin'
+} as const;
+export type SubscriptionBenefitBuiltinCreateTypeEnum = typeof SubscriptionBenefitBuiltinCreateTypeEnum[keyof typeof SubscriptionBenefitBuiltinCreateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitBuiltinUpdate
+ */
+export interface SubscriptionBenefitBuiltinUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitBuiltinUpdate
+     */
+    description?: string;
+    /**
+     * 
+     * @type {object}
+     * @memberof SubscriptionBenefitBuiltinUpdate
+     */
+    properties?: object;
+}
+/**
+ * @type SubscriptionBenefitCreate
+ * @export
+ */
+export type SubscriptionBenefitCreate = SubscriptionBenefitBuiltinCreate | SubscriptionBenefitCustomCreate;
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitCustom
+ */
+export interface SubscriptionBenefitCustom {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustom
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustom
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustom
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustom
+     */
+    type: SubscriptionBenefitCustomTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustom
+     */
+    description: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustom
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustom
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {object}
+     * @memberof SubscriptionBenefitCustom
+     */
+    properties: object;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitCustom
+     */
+    is_tax_applicable: boolean;
+}
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitCustomTypeEnum = {
+    CUSTOM: 'custom'
+} as const;
+export type SubscriptionBenefitCustomTypeEnum = typeof SubscriptionBenefitCustomTypeEnum[keyof typeof SubscriptionBenefitCustomTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitCustomCreate
+ */
+export interface SubscriptionBenefitCustomCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustomCreate
+     */
+    description: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustomCreate
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustomCreate
+     */
+    repository_id?: string;
+    /**
+     * 
+     * @type {object}
+     * @memberof SubscriptionBenefitCustomCreate
+     */
+    properties: object;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustomCreate
+     */
+    type: SubscriptionBenefitCustomCreateTypeEnum;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitCustomCreate
+     */
+    is_tax_applicable: boolean;
+}
+
+
+/**
+ * @export
+ */
+export const SubscriptionBenefitCustomCreateTypeEnum = {
+    CUSTOM: 'custom'
+} as const;
+export type SubscriptionBenefitCustomCreateTypeEnum = typeof SubscriptionBenefitCustomCreateTypeEnum[keyof typeof SubscriptionBenefitCustomCreateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface SubscriptionBenefitCustomUpdate
+ */
+export interface SubscriptionBenefitCustomUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionBenefitCustomUpdate
+     */
+    description?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SubscriptionBenefitCustomUpdate
+     */
+    is_tax_applicable?: boolean;
+    /**
+     * 
+     * @type {object}
+     * @memberof SubscriptionBenefitCustomUpdate
+     */
+    properties?: object;
+}
+
+/**
+ * An enumeration.
+ * @export
+ */
+export const SubscriptionBenefitType = {
+    CUSTOM: 'custom',
+    BUILTIN: 'builtin'
+} as const;
+export type SubscriptionBenefitType = typeof SubscriptionBenefitType[keyof typeof SubscriptionBenefitType];
+
+/**
+ * @type SubscriptionBenefitUpdate
+ * @export
+ */
+export type SubscriptionBenefitUpdate = SubscriptionBenefitBuiltinUpdate | SubscriptionBenefitCustomUpdate;
+/**
+ * 
+ * @export
  * @interface SubscriptionTier
  */
 export interface SubscriptionTier {
@@ -3569,6 +3945,74 @@ export interface SubscriptionTier {
      * @memberof SubscriptionTier
      */
     repository_id?: string;
+    /**
+     * 
+     * @type {Array<SubscriptionTierBenefit>}
+     * @memberof SubscriptionTier
+     */
+    benefits: Array<SubscriptionTierBenefit>;
+}
+/**
+ * 
+ * @export
+ * @interface SubscriptionTierBenefit
+ */
+export interface SubscriptionTierBenefit {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierBenefit
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierBenefit
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierBenefit
+     */
+    id: string;
+    /**
+     * 
+     * @type {SubscriptionBenefitType}
+     * @memberof SubscriptionTierBenefit
+     */
+    type: SubscriptionBenefitType;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierBenefit
+     */
+    description: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierBenefit
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionTierBenefit
+     */
+    repository_id?: string;
+}
+/**
+ * 
+ * @export
+ * @interface SubscriptionTierBenefitsUpdate
+ */
+export interface SubscriptionTierBenefitsUpdate {
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof SubscriptionTierBenefitsUpdate
+     */
+    benefits: Array<string>;
 }
 /**
  * 

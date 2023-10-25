@@ -6,7 +6,7 @@ import { useCurrentTeamFromURL } from '@/hooks/org'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import { CreditBalance, Organization } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
-import { Input, PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Input, MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
 import { Button } from 'polarkit/components/ui/button'
 import {
   Form,
@@ -48,6 +48,8 @@ export default function ClientPage() {
 
 interface TeamSettingsForm {
   billing_email: string
+  total_monthly_spending_limit: number
+  per_user_monthly_spending_limit: number
 }
 
 const PaymentMethodSettings = ({
@@ -77,6 +79,8 @@ const PaymentMethodSettings = ({
   const form = useForm<TeamSettingsForm>({
     defaultValues: {
       billing_email: org.billing_email,
+      total_monthly_spending_limit: org.total_monthly_spending_limit,
+      per_user_monthly_spending_limit: org.per_user_monthly_spending_limit,
     },
   })
 
@@ -89,6 +93,8 @@ const PaymentMethodSettings = ({
       await updateOrganization.mutateAsync({
         id: org.id,
         settings: {
+          set_per_user_monthly_spending_limit: true,
+          set_total_monthly_spending_limit: true,
           ...teamSettings,
         },
       })
@@ -112,8 +118,10 @@ const PaymentMethodSettings = ({
       ) : null}
       <div className="dark:text-polar:300 space-y-2 p-4 text-sm text-gray-500">
         <Form {...form}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <BillingEmail />
+            <TotalMonthlySpendingLimit />
+            <PerUserMonthlySpendingLimit />
 
             <div className="flex items-center gap-2">
               <Button type="submit" variant="default">
@@ -166,6 +174,78 @@ const BillingEmail = () => {
             </div>
             <FormControl>
               <Input {...field} type="email" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </>
+  )
+}
+
+const TotalMonthlySpendingLimit = () => {
+  const { control } = useFormContext<TeamSettingsForm>()
+
+  return (
+    <>
+      <FormField
+        control={control}
+        name="total_monthly_spending_limit"
+        rules={{
+          required: 'This field is required',
+          min: 0,
+          max: 99999999,
+        }}
+        render={({ field }) => {
+          return (
+            <FormItem className="max-w-[300px]">
+              <div className="flex flex-row items-center justify-between">
+                <FormLabel>Total Monthly Spending Limit</FormLabel>
+              </div>
+              <FormControl>
+                <MoneyInput
+                  id={field.name}
+                  name={field.name}
+                  placeholder={0}
+                  value={field.value}
+                  onAmountChangeInCents={(v) => field.onChange(v)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
+    </>
+  )
+}
+
+const PerUserMonthlySpendingLimit = () => {
+  const { control } = useFormContext<TeamSettingsForm>()
+
+  return (
+    <>
+      <FormField
+        control={control}
+        name="per_user_monthly_spending_limit"
+        rules={{
+          required: 'This field is required',
+          min: 0,
+          max: 99999999,
+        }}
+        render={({ field }) => (
+          <FormItem className="max-w-[300px]">
+            <div className="flex flex-row items-center justify-between">
+              <FormLabel>Per User Spending Limit</FormLabel>
+            </div>
+            <FormControl>
+              <MoneyInput
+                id={field.name}
+                name={field.name}
+                placeholder={0}
+                value={field.value}
+                onAmountChangeInCents={(v) => field.onChange(v)}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>

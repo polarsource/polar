@@ -57,10 +57,11 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   const [shineActive, setShineActive] = useState(false)
 
   const style = {
-    '--var-bg-color': hexToRGBA(subscriptionColor, 0.1),
+    '--var-bg-color': hexToRGBA(subscriptionColor, 0.2),
     '--var-border-color': hexToRGBA(subscriptionColor, 0.3),
     '--var-muted-color': hexToRGBA(subscriptionColor, 0.7),
     '--var-fg-color': subscriptionColor,
+    '--var-dark-glow-color': hexToRGBA(subscriptionColor, 0.07),
     '--var-dark-border-color': hexToRGBA(subscriptionColor, 0.15),
     '--var-dark-muted-color': hexToRGBA(subscriptionColor, 0.5),
     '--var-dark-fg-color': subscriptionColor,
@@ -169,13 +170,13 @@ const Shine = ({ active = false }: { active: boolean }) => {
     <div
       style={{
         content: '',
-        top: `calc(var(--y, 0) * 1px - 300px)`,
-        left: `calc(var(--x, 0) * 1px - 300px)`,
-        background: `radial-gradient(white, #3984ff00 70%)`,
+        top: `calc(var(--y, 0) * 1px - 400px)`,
+        left: `calc(var(--x, 0) * 1px - 400px)`,
+        background: `radial-gradient(var(--var-dark-glow-color), #ffffff00 70%)`,
       }}
       className={twMerge(
-        'pointer-events-none absolute h-[600px] w-[600px] opacity-0 transition-opacity duration-300',
-        active && 'dark:opacity-5',
+        'pointer-events-none absolute h-[800px] w-[800px] opacity-0 transition-opacity duration-300',
+        active && 'dark:opacity-100',
       )}
     />
   )

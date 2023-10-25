@@ -44,7 +44,7 @@ const SelectContent = React.forwardRef<
   <SelectContentPrimitive
     ref={ref}
     className={twMerge(
-      'dark:bg-polar-800 rounded-lg bg-white shadow-lg',
+      'dark:bg-polar-800 dark:border-polar-600 rounded-lg bg-white shadow-lg',
       className,
     )}
     {...props}

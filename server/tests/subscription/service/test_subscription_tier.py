@@ -1060,9 +1060,9 @@ class TestCreateSubscribeSession:
             subscription_benefits=[applicable_tax_benefit],
         )
 
-        create_subscription_checkout_session_mock: MagicMock = (
-            mock_stripe_service.create_subscription_checkout_session
-        )
+        create_subscription_checkout_session_mock: (
+            MagicMock
+        ) = mock_stripe_service.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
             stripe_id="SESSION_ID",
             url="STRIPE_URL",

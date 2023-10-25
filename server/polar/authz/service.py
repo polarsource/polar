@@ -191,7 +191,7 @@ class Authz:
         if (
             isinstance(subject, User)
             and accessType == AccessType.write
-            and isinstance(object, (SubscriptionTier, SubscriptionBenefit))
+            and isinstance(object, SubscriptionTier | SubscriptionBenefit)
         ):
             if object.organization:
                 return await self._can_user_write_organization(

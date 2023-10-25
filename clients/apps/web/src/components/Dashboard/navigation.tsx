@@ -6,15 +6,20 @@ import {
   AttachMoneyOutlined,
   Bolt,
   CardGiftcardOutlined,
+  CropFreeOutlined,
+  FaceOutlined,
   FavoriteBorderOutlined,
   HowToVoteOutlined,
+  ShortTextOutlined,
   TuneOutlined,
+  WidthNormalOutlined,
   WifiTethering,
 } from '@mui/icons-material'
 
 export type SubRoute = {
   readonly title: string
   readonly link: string
+  readonly icon?: React.ReactNode
 }
 
 export type Route = {
@@ -50,14 +55,17 @@ export const maintainerRoutes = (org: Organization): Route[] => [
             {
               title: 'Overview',
               link: `/maintainer/${org.name}/subscriptions`,
+              icon: <ShortTextOutlined fontSize="inherit" />,
             },
             {
               title: 'Tiers',
               link: `/maintainer/${org.name}/subscriptions/tiers`,
+              icon: <WidthNormalOutlined fontSize="inherit" />,
             },
             {
               title: 'Subscribers',
               link: `/maintainer/${org.name}/subscriptions/subscribers`,
+              icon: <FaceOutlined fontSize="inherit" />,
             },
           ],
         },
@@ -83,10 +91,12 @@ export const maintainerRoutes = (org: Organization): Route[] => [
       {
         title: 'Issues',
         link: `/maintainer/${org.name}/promote/issues`,
+        icon: <HowToVoteOutlined fontSize="inherit" />,
       },
       {
         title: 'Embeds',
         link: `/maintainer/${org.name}/promote/embeds`,
+        icon: <CropFreeOutlined fontSize="inherit" />,
       },
     ],
   },
@@ -110,18 +120,22 @@ export const maintainerRoutes = (org: Organization): Route[] => [
       {
         title: 'Overview',
         link: `/team/${org.name}`,
+        icon: <ShortTextOutlined fontSize="inherit" />,
       },
       {
         title: 'Funding',
         link: `/team/${org.name}/funding`,
+        icon: <AttachMoneyOutlined fontSize="inherit" />,
       },
       {
         title: 'Members',
         link: `/team/${org.name}/members`,
+        icon: <FaceOutlined fontSize="inherit" />,
       },
       {
         title: 'Settings',
         link: `/team/${org.name}/settings`,
+        icon: <TuneOutlined fontSize="inherit" />,
       },
     ],
   },

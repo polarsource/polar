@@ -82,7 +82,7 @@ exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]  # See: https://github
 
 [tool.ruff]
 target-version = "py311"
-extend-select = ["I"]
+extend-select = ["I", "UP"]
 ignore = [
     "F401", # remove unused import
     "F841", # remove unused variables

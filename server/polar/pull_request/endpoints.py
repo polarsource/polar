@@ -30,8 +30,7 @@ router = APIRouter(tags=["pull_requests"])
     responses={404: {}},
 )
 async def search(
-    references_issue_id: UUID
-    | None = Query(
+    references_issue_id: UUID | None = Query(
         default=None, description="Search pull requests that are mentioning this issue"
     ),
     session: AsyncSession = Depends(get_db_session),

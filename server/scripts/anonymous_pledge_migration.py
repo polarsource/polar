@@ -44,7 +44,7 @@ def typer_async(f):  # type: ignore
 async def anonymous_pledge_migration(
     dry_run: bool = typer.Option(
         False, help="If `True`, changes won't be commited to the database."
-    )
+    ),
 ) -> None:
     engine = create_engine()
     async with engine.connect() as connection:

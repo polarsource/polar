@@ -33,18 +33,15 @@ router = APIRouter(tags=["rewards"])
 )
 async def search(
     auth: UserRequiredAuth,
-    pledges_to_organization: UUID
-    | None = Query(
+    pledges_to_organization: UUID | None = Query(
         default=None,
         description="Search rewards for pledges in this organization.",  # noqa: E501
     ),
-    rewards_to_user: UUID
-    | None = Query(
+    rewards_to_user: UUID | None = Query(
         default=None,
         description="Search rewards to user.",
     ),
-    rewards_to_org: UUID
-    | None = Query(
+    rewards_to_org: UUID | None = Query(
         default=None,
         description="Search rewards to organization.",
     ),

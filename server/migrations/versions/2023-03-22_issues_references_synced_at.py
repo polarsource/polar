@@ -5,8 +5,8 @@ Revises: 7f3d2182a4fb
 Create Date: 2023-03-22 08:53:07.202973
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # Polar Custom Imports

@@ -1,8 +1,8 @@
 import pytest_asyncio
-from polar.kit import jwt
 
-from polar.models.user import User
 from polar.config import settings
+from polar.kit import jwt
+from polar.models.user import User
 
 
 @pytest_asyncio.fixture(scope="function")

@@ -145,24 +145,22 @@ async def to_schema(session: AsyncSession, subject: Subject, p: Pledge) -> Pledg
 )
 async def search(
     platform: Platforms | None = None,
-    organization_name: str
-    | None = Query(
+    organization_name: str | None = Query(
         default=None,
         min_length=1,
         example="my-org",
         description="Search pledges in the organization with this name. Requires platform to be set.",  # noqa: E501
     ),
-    repository_name: str
-    | None = Query(
+    repository_name: str | None = Query(
         default=None,
         min_length=1,
         example="my-repo",
         description="Search pledges in the repository with this name. Can only be used if organization_name is set.",  # noqa: E501
     ),
-    issue_id: UUID
-    | None = Query(default=None, description="Search pledges to this issue"),
-    by_organization_id: UUID
-    | None = Query(
+    issue_id: UUID | None = Query(
+        default=None, description="Search pledges to this issue"
+    ),
+    by_organization_id: UUID | None = Query(
         default=None, description="Search pledges made by this organization."
     ),
     session: AsyncSession = Depends(get_db_session),

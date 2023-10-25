@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 
-import structlog
-
 import sendgrid
-from sendgrid.helpers.mail import Email, To, Content, Mail, ReplyTo
-from polar.config import settings, EmailSender as EmailSenderType
+import structlog
+from sendgrid.helpers.mail import Content, Email, Mail, ReplyTo, To
+
+from polar.config import EmailSender as EmailSenderType
+from polar.config import settings
 from polar.logging import Logger
 
 log: Logger = structlog.get_logger()
@@ -37,9 +38,7 @@ class SendgridEmailSender(EmailSender):
         content = Content("text/html", content=html_content)
         mail = Mail(from_email, to_email, subject, content)
         mail.reply_to = ReplyTo("support@polar.sh", "Polar Support")
-        response = self.sg.client.mail.send.post(
-            request_body=mail.get()
-        )  # type: ignore
+        response = self.sg.client.mail.send.post(request_body=mail.get())  # type: ignore
         log.info(
             "sendgrid.send",
             to_email_addr=to_email_addr,

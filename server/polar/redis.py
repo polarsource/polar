@@ -1,8 +1,9 @@
-import redis.asyncio as _async_redis
+from typing import TYPE_CHECKING
+
 import redis as _sync_redis
+import redis.asyncio as _async_redis
 
 from polar.config import settings
-from typing import TYPE_CHECKING
 
 
 def create_async_connection_pool() -> _async_redis.ConnectionPool:

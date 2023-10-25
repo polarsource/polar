@@ -1,11 +1,11 @@
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, MetaData
 from sqlalchemy.orm import DeclarativeBase, Mapped, MappedColumn, mapped_column
 
 from polar.kit.extensions.sqlalchemy import PostgresUUID
-from polar.kit.utils import utc_now, generate_uuid
+from polar.kit.utils import generate_uuid, utc_now
 
 from .mixins import ActiveRecordMixin, SerializeMixin
 

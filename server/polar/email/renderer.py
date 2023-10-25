@@ -1,13 +1,13 @@
-from typing import Any
 from collections.abc import Mapping
+from typing import Any
 
 from jinja2 import (
+    ChoiceLoader,
     Environment,
     PackageLoader,
-    select_autoescape,
-    StrictUndefined,
     PrefixLoader,
-    ChoiceLoader,
+    StrictUndefined,
+    select_autoescape,
 )
 
 EMAIL_TEMPLATES_FOLDER_NAME = "email_templates"
@@ -56,9 +56,7 @@ class EmailRenderer:
         {{% block body %}}
             {body}
         {{% endblock %}}
-        """.format(
-            body=body
-        )
+        """.format(body=body)
 
         rendered_body = self.env.from_string(wrapped_body).render(context).strip()
         return rendered_subject, rendered_body

@@ -1,10 +1,9 @@
-from typing import Any
 from datetime import datetime, timedelta
+from typing import Any
 
 import jwt
 
 from .utils import utc_now
-
 
 DEFAULT_EXPIRATION = 60 * 15  # 15 minutes
 ALGORITHM = "HS256"
@@ -22,7 +21,7 @@ def encode(
     data: dict[str, Any],
     secret: str,
     expires_at: datetime | None = None,
-    expires_in: int | None = DEFAULT_EXPIRATION
+    expires_in: int | None = DEFAULT_EXPIRATION,
 ) -> str:
     to_encode = data.copy()
     if not expires_at:

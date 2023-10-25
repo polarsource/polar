@@ -5,9 +5,8 @@ Revises: 75d831301aab
 Create Date: 2023-03-15 11:14:34.708444
 
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # Polar Custom Imports
 

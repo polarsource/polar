@@ -1,9 +1,9 @@
 from polar.enums import Platforms
-from polar.pull_request.hooks import PullRequestHook, pull_request_upserted
 from polar.integrations.github.service.url import github_url
-from polar.repository.service import repository as repository_service
-from polar.organization.service import organization as organization_service
 from polar.issue.service import issue as issue_service
+from polar.organization.service import organization as organization_service
+from polar.pull_request.hooks import PullRequestHook, pull_request_upserted
+from polar.repository.service import repository as repository_service
 from polar.worker import enqueue_job
 
 

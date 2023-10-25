@@ -1,9 +1,9 @@
-from fastapi import APIRouter, status, Depends, Query, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 
-from polar.tags.api import Tags
+from polar.auth.service import AuthService, LoginResponse
 from polar.kit.db.postgres import AsyncSession
 from polar.postgres import get_db_session
-from polar.auth.service import AuthService, LoginResponse
+from polar.tags.api import Tags
 
 from .schemas import MagicLinkRequest
 from .service import magic_link as magic_link_service

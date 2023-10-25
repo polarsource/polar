@@ -7,7 +7,6 @@ Create Date: 2023-04-28 10:58:05.715117
 """
 from alembic import op
 
-
 # Polar Custom Imports
 
 # revision identifiers, used by Alembic.

@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Any, cast
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.types import TypeDecorator as _TypeDecorator
 from sqlalchemy.engine.interfaces import Dialect
+from sqlalchemy.types import TypeDecorator as _TypeDecorator
 
 if TYPE_CHECKING:  # pragma: no cover
     GUIDTypeDecorator = _TypeDecorator[UUID]  # type: ignore

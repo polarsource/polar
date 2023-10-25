@@ -5,13 +5,13 @@ Revises: d057eadc5617
 Create Date: 2023-03-24 23:37:52.416804
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
+from polar.enums import Platforms
 
 # Polar Custom Imports
 from polar.kit.extensions.sqlalchemy import StringEnum
-from polar.enums import Platforms
 
 # revision identifiers, used by Alembic.
 revision = "34698e9f3aac"

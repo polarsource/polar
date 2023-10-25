@@ -30,7 +30,7 @@ from polar.pledge.hooks import (
 from polar.pledge.hooks import (
     pledge_updated as pledge_updated_hook,
 )
-from polar.pledge.schemas import PledgeType, Pledger
+from polar.pledge.schemas import Pledger, PledgeType
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.repository.service import repository as repository_service

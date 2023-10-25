@@ -1,4 +1,6 @@
 import structlog
+
+from polar.eventstream.service import publish, publish_members
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.organization.hooks import OrganizationHook, organization_upserted
 from polar.pull_request.hooks import PullRequestHook, pull_request_upserted
@@ -8,7 +10,6 @@ from polar.repository.hooks import (
     repository_issue_synced,
     repository_issues_sync_completed,
 )
-from polar.eventstream.service import publish, publish_members
 
 log = structlog.get_logger()
 

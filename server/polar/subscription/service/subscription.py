@@ -8,8 +8,9 @@ from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.services import ResourceServiceReader
-from polar.models import Subscription, SubscriptionTier
+from polar.models import Subscription
 from polar.user.service import user as user_service
+from polar.worker import enqueue_job
 
 from .subscription_tier import subscription_tier as subscription_tier_service
 
@@ -18,13 +19,14 @@ class SubscriptionError(PolarError):
     ...
 
 
-class SubscriptionTierDoesNotExist(SubscriptionError):
-    def __init__(self, subscription_id: str, product_id: str) -> None:
-        self.subscription_id = subscription_id
-        self.product_id = product_id
+class AssociatedSubscriptionTierDoesNotExist(SubscriptionError):
+    def __init__(self, stripe_subscription_id: str, stripe_product_id: str) -> None:
+        self.subscription_id = stripe_subscription_id
+        self.product_id = stripe_product_id
         message = (
-            f"Received the subscription {subscription_id} from Stripe "
-            f" with product {product_id}, but no associated SubscriptionTier exists."
+            f"Received the subscription {stripe_subscription_id} from Stripe "
+            f"with product {stripe_product_id}, "
+            "but no associated SubscriptionTier exists."
         )
         super().__init__(message)
 
@@ -62,7 +64,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             session, product_id
         )
         if subscription_tier is None:
-            raise SubscriptionTierDoesNotExist(
+            raise AssociatedSubscriptionTierDoesNotExist(
                 stripe_subscription.stripe_id, product_id
             )
 
@@ -106,7 +108,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if subscription is None:
             raise SubscriptionDoesNotExist(stripe_subscription.stripe_id)
 
-        return await subscription.update(
+        updated_subscription = await subscription.update(
             session,
             status=stripe_subscription.status,
             current_period_start=_from_timestamp(
@@ -116,6 +118,32 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             cancel_at_period_end=stripe_subscription.cancel_at_period_end,
             ended_at=_from_timestamp(stripe_subscription.ended_at),
         )
+
+        await enqueue_job(
+            "subscription.subscription.enqueue_benefits_grants",
+            updated_subscription.id,
+        )
+
+        return updated_subscription
+
+    async def enqueue_benefits_grants(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        subscription_tier = await subscription_tier_service.get(
+            session, subscription.subscription_tier_id
+        )
+        assert subscription_tier is not None
+
+        if subscription.is_incomplete():
+            return
+
+        task = "grant" if subscription.is_active() else "revoke"
+        for benefit in subscription_tier.benefits:
+            await enqueue_job(
+                f"subscription.subscription_benefit.{task}",
+                subscription_id=subscription.id,
+                subscription_benefit_id=benefit.id,
+            )
 
 
 subscription = SubscriptionService(Subscription)

@@ -4,7 +4,7 @@ module.exports = {
   rules: {
     '@next/next/no-html-link-for-pages': 'off',
     'react/jsx-key': 'warn',
-    "no-restricted-imports": ["warning", {
+    "no-restricted-imports": ["warn", {
         patterns: [
           {
             "group": ["polarkit/components/ui/*", "!polarkit/components/ui/atoms", "!polarkit/components/ui/molecules", "!polarkit/components/ui/Cards", "!polarkit/components/ui/Form"], 

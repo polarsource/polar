@@ -142,6 +142,16 @@ class OrganizationService(
         if settings.pledge_minimum_amount is not None:
             organization.pledge_minimum_amount = settings.pledge_minimum_amount
 
+        if settings.set_total_monthly_spending_limit:
+            organization.total_monthly_spending_limit = (
+                settings.total_monthly_spending_limit
+            )
+
+        if settings.set_per_user_monthly_spending_limit:
+            organization.per_user_monthly_spending_limit = (
+                settings.per_user_monthly_spending_limit
+            )
+
         updated = await organization.save(session)
 
         log.info(

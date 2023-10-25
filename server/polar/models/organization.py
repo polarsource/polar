@@ -86,6 +86,10 @@ class Organization(RecordModel):
 
     onboarded_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
+    #
+    # "Team" fields (org is pledger)
+    #
+
     stripe_customer_id: Mapped[str | None] = mapped_column(
         String(length=50), nullable=True, unique=True, default=None
     )
@@ -93,6 +97,20 @@ class Organization(RecordModel):
     billing_email: Mapped[str | None] = mapped_column(
         String(length=120), nullable=True, default=None
     )
+
+    total_monthly_spending_limit: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    per_user_monthly_spending_limit: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    #
+    # Fields synced from GitHub
+    #
 
     # Org description or user bio
     bio: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -102,6 +120,10 @@ class Organization(RecordModel):
     location: Mapped[str | None] = mapped_column(String, nullable=True)
     email: Mapped[str | None] = mapped_column(String, nullable=True)
     twitter_username: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    #
+    # End: Fields synced from GitHub
+    #
 
     @property
     def polar_site_url(self) -> str:

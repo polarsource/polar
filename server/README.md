@@ -38,7 +38,7 @@ poetry run task worker
 # Run the tests
 poetry run task test
 
-# Our VSCode settings configure Black & Ruff, but you can run it manually too
+# Our VSCode settings configure Ruff, but you can run it manually too
 poetry run task lint
 
 ```
@@ -63,15 +63,15 @@ Exception to this rule: Database models and core modules (see more & why below).
 
 **How a module is structured**
 
-| polar/your_module/ | Explanation & Usage                                          |
-| ------------------ | ------------------------------------------------------------ |
+| polar/your_module/ | Explanation & Usage                                                                                                                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | endpoints.py       | FastAPI `router` for the module. Mounted and routed in `polar.api`. Endpoint functions should be in charge of validation and authentication, but business logic should be contained within `service.py` |
-| schemas.py         | Pydantic schemas for request/response and data validation. Resources should have schemas for their applicable CRUD operations named `<Resource>(Read|Create|Update|Delete)` |
-| service.py         | Module containing all the business logic. Essentially the non-public API for the resource/service which its own API utilizes along with any other services. |
-| signals.py         | Blinker signals (if any). Great way for other services to listen for specific events and do their own thing. |
-| receivers.py       | Receiver functions of Blinker signals (if any). Needs to be registered in `polar.receivers` which is mounted ensuring all signals/receivers are setup. |
-| exceptions.py      | Any local exceptions.                                        |
-| ***                | resources/services are the same. So extend it as needed.     |
+| schemas.py         | Pydantic schemas for request/response and data validation. Resources should have schemas for their applicable CRUD operations named `<Resource>(Read                                                    | Create | Update | Delete)` |
+| service.py         | Module containing all the business logic. Essentially the non-public API for the resource/service which its own API utilizes along with any other services.                                             |
+| signals.py         | Blinker signals (if any). Great way for other services to listen for specific events and do their own thing.                                                                                            |
+| receivers.py       | Receiver functions of Blinker signals (if any). Needs to be registered in `polar.receivers` which is mounted ensuring all signals/receivers are setup.                                                  |
+| exceptions.py      | Any local exceptions.                                                                                                                                                                                   |
+| ***                | resources/services are the same. So extend it as needed.                                                                                                                                                |
 
 
 Of course, only add what's needed for a given resource/service. Once we've finalized this structure and feel we're used to it, we can create a nice little CLI generator :-)

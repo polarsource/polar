@@ -40,15 +40,14 @@ jobs:
             mypy-${{ runner.os }}-${{ matrix.python-version }}-
             mypy-${{ runner.os }}-
             mypy-
+              
+      - name: 🐶 Lint Server (ruff)
+        working-directory: ./server
+        run:  poetry run task lint_check
 
       - name: 🛟 Type Check Server (mypy)
         working-directory: ./server
         run:  poetry run task lint_types
-
-      - name: 🐶 Type Check Server (ruff)
-        working-directory: ./server
-        run:  poetry run task lint_ruff_polar
-
 
   test:
     name: "Server: Tests 🐍"

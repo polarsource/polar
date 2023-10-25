@@ -35,7 +35,6 @@ posthog = "^3.0.1"
 sqlalchemy-citext = { git = "https://github.com/akolov/sqlalchemy-citext.git", rev = "15b3de84730bb4645c83d890a73f5c9b6b289531" }
 
 [tool.poetry.group.dev.dependencies]
-black = "^22.12.0"
 mypy = "^1.5.0"
 pytest = "^7.2.1"
 httpx = "^0.23.3"
@@ -59,10 +58,8 @@ respx = "^0.20.1"
 api = { cmd = "task verify_github_app && uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }
 worker = { cmd = "arq run_worker.WorkerSettings --watch polar --custom-log-dict run_worker.silent_logger_config_dict", help = "run arq worker" }
 test = { cmd = "POLAR_ENV=testing coverage run --source polar -m pytest && coverage report -m", help = "run all tests" }
-lint = { cmd = "task lint_ruff & task lint_black", help = "run all linters" }
-lint_ruff = { cmd = "ruff check .", help = "run ruff linter" }
-lint_ruff_polar = { cmd = "ruff check polar", help = "run ruff linter" }
-lint_black = { cmd = "black .", help = "run black linter" }
+lint = { cmd = "ruff format . && ruff check --fix .", help = "run linters with autofix" }
+lint_check = { cmd = "ruff format --check . && ruff check .", help = "run ruff linter" }
 lint_types = { cmd = "mypy polar scripts tests", help = "run mypy type verify" }
 db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade" }
 db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }
@@ -85,6 +82,7 @@ exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]  # See: https://github
 
 [tool.ruff]
 target-version = "py311"
+extend-select = ["I"]
 ignore = [
     "F401", # remove unused import
     "F841", # remove unused variables

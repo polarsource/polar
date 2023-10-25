@@ -259,6 +259,41 @@ class GithubIssueService(IssueService):
         # Just need to write & perform tests before changing.
         return False
 
+    async def update_embed_badge(
+        self,
+        session: AsyncSession,
+        *,
+        organization: Organization,
+        repository: Repository,
+        issue: Issue,
+    ) -> bool:
+        if not issue.pledge_badge_currently_embedded:
+            log.info(
+                "github.badge.update_embed_badge",
+                error="badge is currently not embedded, continue",
+                issue_id=issue.id,
+            )
+            return False
+
+        badge = GithubBadge(
+            organization=organization, repository=repository, issue=issue
+        )
+        # TODO: Abort unless not successful
+        await badge.embed()
+
+        stmt = (
+            sql.update(Issue)
+            .values(
+                pledge_badge_embedded_at=utc_now(),
+                pledge_badge_ever_embedded=True,
+            )
+            .where(Issue.id == issue.id)
+        )
+        await session.execute(stmt)
+        await session.commit()
+
+        return True
+
     # client.rest.issues_async_get
     async def async_issues_get_with_headers(
         self,

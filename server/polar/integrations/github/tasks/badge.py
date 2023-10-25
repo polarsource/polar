@@ -39,6 +39,35 @@ async def embed_badge(
             )
 
 
+@task("github.badge.update_on_issue")
+async def update_on_issue(
+    ctx: JobContext,
+    issue_id: UUID,
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            issue = await github_issue.get(session, issue_id)
+            if not issue or not issue.organization_id or not issue.repository_id:
+                log.warning(
+                    "github.badge.update_on_issue",
+                    error="issue not found",
+                    issue_id=issue_id,
+                )
+                return
+
+            organization, repository = await get_organization_and_repo(
+                session, issue.organization_id, issue.repository_id
+            )
+
+            await github_issue.update_embed_badge(
+                session,
+                organization=organization,
+                repository=repository,
+                issue=issue,
+            )
+
+
 @task("github.badge.embed_retroactively_on_repository")
 async def embed_badge_retroactively_on_repository(
     ctx: JobContext,

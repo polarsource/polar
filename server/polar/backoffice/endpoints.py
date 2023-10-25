@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 import structlog
@@ -5,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from polar.auth.dependencies import Auth
 from polar.enums import Platforms
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.integrations.github.service.issue import github_issue
 from polar.issue.schemas import Issue
 from polar.issue.service import issue as issue_service
@@ -21,6 +22,7 @@ from polar.repository.service import repository as repository_service
 from polar.reward.endpoints import to_resource as reward_to_resource
 from polar.reward.service import reward_service
 from polar.tags.api import Tags
+from polar.worker import enqueue_job
 
 from .pledge_service import bo_pledges_service
 from .schemas import (
@@ -181,7 +183,7 @@ async def pledge_mark_disputed(
     session: AsyncSession = Depends(get_db_session),
 ) -> BackofficePledge:
     if not auth.user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        raise Unauthorized()
 
     await pledge_service.mark_disputed(
         session, pledge_id, by_user_id=auth.user.id, reason="Disputed via Backoffice"
@@ -196,7 +198,7 @@ async def manage_badge(
     session: AsyncSession = Depends(get_db_session),
 ) -> BackofficeBadgeResponse:
     if not auth.user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        raise Unauthorized()
 
     log.info("backoffice.badge", badge=badge.dict(), admin=auth.user.username)
 
@@ -245,3 +247,50 @@ async def manage_badge(
         action=badge.action,
         success=success,
     )
+
+
+@router.post(
+    "/update_badge_contents",
+    response_model=dict[Any, Any],
+    tags=[Tags.INTERNAL],
+)
+async def update_badge_contents(
+    org_slug: str,
+    repo_slug: str,
+    auth: Auth = Depends(Auth.backoffice_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> dict[Any, Any]:
+    if not auth.user:
+        raise Unauthorized()
+
+    org = await organization_service.get_by_name(session, Platforms.github, org_slug)
+    if not org:
+        raise ResourceNotFound()
+
+    repo = await repository_service.get_by_org_and_name(session, org.id, repo_slug)
+    if not repo:
+        raise ResourceNotFound()
+
+    (issues, _) = await issue_service.list_by_repository_type_and_status(
+        session,
+        repository_ids=[repo.id],
+        have_polar_badge=True,
+    )
+
+    queued = []
+
+    for issue in issues:
+        if not issue.pledge_badge_currently_embedded:
+            continue
+
+        await enqueue_job(
+            "github.badge.update_on_issue",
+            issue_id=issue.id,
+        )
+
+        queued.append(issue.id)
+
+    return {
+        "status": True,
+        "queued": queued,
+    }

@@ -12,7 +12,8 @@ export default function Page() {
       <h1 className="text-2xl font-bold">Pick-a-feature</h1>
       <Link href="/backoffice/pledges">Pledges</Link>
       <Link href="/backoffice/rewards_pending">Rewards Pending</Link>
-      <Link href="/backoffice/badge">Issue Badge Admin</Link>
+      <Link href="/backoffice/badge">Issue Badge</Link>
+      <Link href="/backoffice/rebadge">Issue Re-Badge (update message)</Link>
     </div>
   )
 }

@@ -35,8 +35,15 @@ class Organization(Schema):
 
     default_upfront_split_to_contributors: int | None
 
+    # Team fields
     billing_email: str | None = Field(
-        description="Is only visible for members of the organization"
+        description="Where to send emails about payments for pledegs that this organization/team has made. Only visible for members of the organization"
+    )
+    total_monthly_spending_limit: int | None = Field(
+        description="Overall team monthly spending limit, per calendar month. Only visible for members of the organization"
+    )
+    per_user_monthly_spending_limit: int | None = Field(
+        description="Team members monthly spending limit, per calendar month. Only visible for members of the organization"
     )
 
     @classmethod
@@ -60,7 +67,16 @@ class Organization(Schema):
             pledge_minimum_amount=o.pledge_minimum_amount,
             pledge_badge_show_amount=o.pledge_badge_show_amount,
             default_upfront_split_to_contributors=o.default_upfront_split_to_contributors,
+            #
             billing_email=o.billing_email if include_member_fields else None,
+            #
+            total_monthly_spending_limit=o.total_monthly_spending_limit
+            if include_member_fields
+            else None,
+            #
+            per_user_monthly_spending_limit=o.per_user_monthly_spending_limit
+            if include_member_fields
+            else None,
         )
 
 
@@ -77,6 +93,12 @@ class OrganizationUpdate(Schema):
     default_badge_custom_content: str | None = None
 
     pledge_minimum_amount: int | None = None
+
+    set_total_monthly_spending_limit: bool | None = None
+    total_monthly_spending_limit: int | None = None
+
+    set_per_user_monthly_spending_limit: bool | None = None
+    per_user_monthly_spending_limit: int | None = None
 
 
 class OrganizationStripePortalSession(Schema):

@@ -25,6 +25,7 @@ from .schemas import (
     SubscriptionTierBenefitsUpdate,
     SubscriptionTierCreate,
     SubscriptionTierUpdate,
+    subscription_benefit_schema_map,
 )
 from .schemas import SubscriptionBenefit as SubscriptionBenefitSchema
 from .schemas import SubscriptionTier as SubscriptionTierSchema
@@ -237,10 +238,33 @@ async def search_subscription_benefits(
     )
 
     return ListResource.from_paginated_results(
-        [SubscriptionBenefitSchema.from_orm(result) for result in results],
+        [
+            subscription_benefit_schema_map[result.type].from_orm(result)
+            for result in results
+        ],
         count,
         pagination,
     )
+
+
+@router.get(
+    "/benefits/lookup",
+    response_model=SubscriptionBenefitSchema,
+    tags=[Tags.PUBLIC],
+)
+async def lookup_subscription_benefit(
+    subscription_benefit_id: UUID4,
+    auth: UserRequiredAuth,
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionBenefit:
+    subscription_benefit = await subscription_benefit_service.get_by_id(
+        session, auth.subject, subscription_benefit_id
+    )
+
+    if subscription_benefit is None:
+        raise ResourceNotFound()
+
+    return subscription_benefit
 
 
 @router.post(

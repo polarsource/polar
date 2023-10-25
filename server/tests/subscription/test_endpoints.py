@@ -136,6 +136,41 @@ class TestSearchSubscriptionTiers:
         json = response.json()
         assert json["pagination"]["total_count"] == 0
 
+    async def test_with_benefits(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_benefits: list[SubscriptionBenefit],
+    ) -> None:
+        subscription_tier_organization = await add_subscription_benefits(
+            session,
+            subscription_tier=subscription_tier_organization,
+            subscription_benefits=subscription_benefits,
+        )
+
+        response = await client.get(
+            "/api/v1/subscriptions/tiers/search",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+
+        items = json["items"]
+        item = items[0]
+        assert item["id"] == str(subscription_tier_organization.id)
+        assert len(item["benefits"]) == len(subscription_benefits)
+        for benefit in item["benefits"]:
+            assert "properties" not in benefit
+            assert "is_tax_applicable" not in benefit
+
 
 @pytest.mark.asyncio
 class TestLookupSubscriptionTier:
@@ -183,6 +218,9 @@ class TestLookupSubscriptionTier:
         json = response.json()
         assert json["id"] == str(subscription_tier_organization.id)
         assert len(json["benefits"]) == len(subscription_benefits)
+        for benefit in json["benefits"]:
+            assert "properties" not in benefit
+            assert "is_tax_applicable" not in benefit
 
 
 @pytest.mark.asyncio
@@ -583,6 +621,52 @@ class TestSearchSubscriptionBenefits:
 
 
 @pytest.mark.asyncio
+class TestLookupSubscriptionBenefit:
+    async def test_anonymous(
+        self,
+        client: AsyncClient,
+        subscription_benefit_organization: SubscriptionBenefit,
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/benefits/lookup",
+            params={
+                "subscription_benefit_id": str(subscription_benefit_organization.id)
+            },
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/benefits/lookup",
+            params={"subscription_benefit_id": str(uuid.uuid4())},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.authenticated
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        subscription_benefit_organization: SubscriptionBenefit,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/benefits/lookup",
+            params={
+                "subscription_benefit_id": str(subscription_benefit_organization.id)
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["id"] == str(subscription_benefit_organization.id)
+        assert "properties" in json
+
+
+@pytest.mark.asyncio
 class TestCreateSubscriptionBenefit:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -690,6 +774,9 @@ class TestCreateSubscriptionBenefit:
 
         assert response.status_code == 201
 
+        json = response.json()
+        assert "properties" in json
+
 
 @pytest.mark.asyncio
 class TestUpdateSubscriptionBenefit:
@@ -759,6 +846,7 @@ class TestUpdateSubscriptionBenefit:
 
         json = response.json()
         assert json["description"] == "Updated Description"
+        assert "properties" in json
 
 
 @pytest.mark.asyncio

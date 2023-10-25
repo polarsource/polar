@@ -1,6 +1,6 @@
 import asyncio
+from collections.abc import Sequence
 from functools import wraps
-from typing import Sequence
 
 import typer
 from sqlalchemy.orm import joinedload
@@ -64,7 +64,7 @@ async def get_issues(session: AsyncSession, org: Organization) -> Sequence[Issue
 
 
 async def do_delete_issues(session: AsyncSession, org: Organization) -> None:
-    query = sql.delete(Issue).where((Issue.organization_id == org.id))
+    query = sql.delete(Issue).where(Issue.organization_id == org.id)
     await session.execute(query)
     await session.commit()
 

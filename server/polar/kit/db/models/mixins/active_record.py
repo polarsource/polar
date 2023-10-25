@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from functools import cache
-from typing import Any, ClassVar, Self, Sequence, TypeVar
+from typing import Any, ClassVar, Self
 
 from sqlalchemy import Column
 from sqlalchemy.orm import (

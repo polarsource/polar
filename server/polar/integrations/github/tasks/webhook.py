@@ -1,4 +1,5 @@
-from typing import Any, Sequence, Union
+from collections.abc import Sequence
+from typing import Any
 from uuid import UUID
 
 import structlog
@@ -122,19 +123,15 @@ async def organizations_renamed(
 
 async def repositories_changed(
     session: AsyncSession,
-    event: Union[
-        github.webhooks.InstallationRepositoriesAdded,
-        github.webhooks.InstallationRepositoriesRemoved,
-        github.webhooks.InstallationCreated,
-    ],
+    event: github.webhooks.InstallationRepositoriesAdded
+    | github.webhooks.InstallationRepositoriesRemoved
+    | github.webhooks.InstallationCreated,
 ) -> None:
     with ExecutionContext(is_during_installation=True):
         removed: Sequence[
-            Union[
-                github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems,
-                github.webhooks.InstallationRepositoriesAddedPropRepositoriesRemovedItems,
-                github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems,
-            ]
+            github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems
+            | github.webhooks.InstallationRepositoriesAddedPropRepositoriesRemovedItems
+            | github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems
         ] = (
             []
             if isinstance(event, github.webhooks.InstallationCreated)
@@ -160,16 +157,11 @@ async def repositories_changed(
 
 async def create_from_installation(
     session: AsyncSession,
-    installation: Union[
-        github.rest.Installation,
-        github.webhooks.Installation,
-    ],
+    installation: github.rest.Installation | github.webhooks.Installation,
     removed: Sequence[
-        Union[
-            github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems,
-            github.webhooks.InstallationRepositoriesAddedPropRepositoriesRemovedItems,
-            github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems,
-        ]
+        github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems
+        | github.webhooks.InstallationRepositoriesAddedPropRepositoriesRemovedItems
+        | github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems
     ],
 ) -> Organization:
     account = installation.account
@@ -333,12 +325,10 @@ async def repositories_transferred(
 
 async def repository_updated(
     session: AsyncSession,
-    event: Union[
-        github.webhooks.PublicEvent,
-        github.webhooks.RepositoryRenamed,
-        github.webhooks.RepositoryEdited,
-        github.webhooks.RepositoryArchived,
-    ],
+    event: github.webhooks.PublicEvent
+    | github.webhooks.RepositoryRenamed
+    | github.webhooks.RepositoryEdited
+    | github.webhooks.RepositoryArchived,
 ) -> dict[str, Any]:
     with ExecutionContext(is_during_installation=True):
         if not event.installation:
@@ -425,13 +415,11 @@ async def handle_issue(
     session: AsyncSession,
     scope: str,
     action: str,
-    event: Union[
-        github.webhooks.IssuesOpened,
-        github.webhooks.IssuesEdited,
-        github.webhooks.IssuesClosed,
-        github.webhooks.IssuesReopened,
-        github.webhooks.IssuesDeleted,
-    ],
+    event: github.webhooks.IssuesOpened
+    | github.webhooks.IssuesEdited
+    | github.webhooks.IssuesClosed
+    | github.webhooks.IssuesReopened
+    | github.webhooks.IssuesDeleted,
 ) -> Issue:
     issue = await upsert_issue(session, event)
     if not issue:
@@ -697,10 +685,7 @@ async def issue_labeled_async(
     session: AsyncSession,
     scope: str,
     action: str,
-    event: Union[
-        github.webhooks.IssuesLabeled,
-        github.webhooks.IssuesUnlabeled,
-    ],
+    event: github.webhooks.IssuesLabeled | github.webhooks.IssuesUnlabeled,
 ) -> None:
     issue = await service.github_issue.get_by_external_id(session, event.issue.id)
     if not issue:
@@ -778,10 +763,7 @@ async def issue_assigned_async(
     session: AsyncSession,
     scope: str,
     action: str,
-    event: Union[
-        github.webhooks.IssuesAssigned,
-        github.webhooks.IssuesUnassigned,
-    ],
+    event: github.webhooks.IssuesAssigned | github.webhooks.IssuesUnassigned,
 ) -> None:
     issue = await service.github_issue.get_by_external_id(session, event.issue.id)
     if not issue:
@@ -813,13 +795,11 @@ async def handle_pull_request(
     session: AsyncSession,
     scope: str,
     action: str,
-    event: Union[
-        github.webhooks.PullRequestOpened,
-        github.webhooks.PullRequestEdited,
-        github.webhooks.PullRequestClosed,
-        github.webhooks.PullRequestReopened,
-        github.webhooks.PullRequestSynchronize,
-    ],
+    event: github.webhooks.PullRequestOpened
+    | github.webhooks.PullRequestEdited
+    | github.webhooks.PullRequestClosed
+    | github.webhooks.PullRequestReopened
+    | github.webhooks.PullRequestSynchronize,
 ) -> None:
     await upsert_pull_request(session, event)
 

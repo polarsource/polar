@@ -1,5 +1,6 @@
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, TypedDict
+from typing import TypedDict
 
 import structlog
 from fastapi import Depends, FastAPI

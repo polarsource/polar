@@ -1,4 +1,4 @@
-from typing import Sequence, Union
+from collections.abc import Sequence
 from uuid import UUID
 
 import structlog
@@ -150,16 +150,16 @@ class NotificationsService:
 
     def parse_payload(
         self, n: Notification
-    ) -> Union[
-        MaintainerPledgeCreatedNotification,
-        MaintainerPledgeConfirmationPendingNotification,
-        MaintainerPledgePendingNotification,
-        MaintainerPledgePaidNotification,
-        PledgerPledgePendingNotification,
-        RewardPaidNotification,
-        MaintainerPledgedIssueConfirmationPendingNotification,
-        MaintainerPledgedIssuePendingNotification,
-    ]:
+    ) -> (
+        MaintainerPledgeCreatedNotification
+        | MaintainerPledgeConfirmationPendingNotification
+        | MaintainerPledgePendingNotification
+        | MaintainerPledgePaidNotification
+        | PledgerPledgePendingNotification
+        | RewardPaidNotification
+        | MaintainerPledgedIssueConfirmationPendingNotification
+        | MaintainerPledgedIssuePendingNotification
+    ):
         match n.type:
             case "MaintainerPledgeCreatedNotification":
                 return parse_obj_as(MaintainerPledgeCreatedNotification, n.payload)

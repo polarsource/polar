@@ -1,4 +1,4 @@
-from typing import List, Sequence, Union
+from collections.abc import Sequence
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -47,11 +47,11 @@ router = APIRouter(tags=["dashboard"])
 async def get_personal_dashboard(
     auth: UserRequiredAuth,
     issue_list_type: IssueListType = IssueListType.issues,  # TODO: remove
-    status: Union[List[IssueStatus], None] = Query(
+    status: list[IssueStatus] | None = Query(
         default=None
     ),  # TODO: remove, replace with show_closed
-    q: Union[str, None] = Query(default=None),
-    sort: Union[IssueSortBy, None] = Query(default=None),
+    q: str | None = Query(default=None),
+    sort: IssueSortBy | None = Query(default=None),
     only_pledged: bool = Query(default=False),
     only_badged: bool = Query(default=False),
     page: int = Query(default=1),
@@ -80,13 +80,13 @@ async def get_personal_dashboard(
 async def get_dashboard(
     platform: Platforms,
     org_name: str,
-    repo_name: Union[str, None] = Query(default=None),
+    repo_name: str | None = Query(default=None),
     issue_list_type: IssueListType = IssueListType.issues,  # TODO: remove
-    status: Union[List[IssueStatus], None] = Query(
+    status: list[IssueStatus] | None = Query(
         default=None
     ),  # TODO: remove, replace with show_closed
-    q: Union[str, None] = Query(default=None),
-    sort: Union[IssueSortBy, None] = Query(default=None),
+    q: str | None = Query(default=None),
+    sort: IssueSortBy | None = Query(default=None),
     only_pledged: bool = Query(default=False),
     only_badged: bool = Query(default=False),
     page: int = Query(default=1),
@@ -160,7 +160,7 @@ async def get_dashboard(
 
 def default_sort(
     issue_list_type: IssueListType,
-    q: Union[str, None] = None,
+    q: str | None = None,
 ) -> IssueSortBy:
     if q:
         return IssueSortBy.relevance
@@ -180,8 +180,8 @@ async def dashboard(
     authz: Authz,
     in_repos: Sequence[Repository] = [],
     issue_list_type: IssueListType = IssueListType.issues,
-    q: Union[str, None] = None,
-    sort: Union[IssueSortBy, None] = None,
+    q: str | None = None,
+    sort: IssueSortBy | None = None,
     for_org: Organization | None = None,
     for_user: User | None = None,
     only_pledged: bool = False,
@@ -298,7 +298,7 @@ async def dashboard(
 
     next_page = page + 1 if total_issue_count > page * limit else None
 
-    data: List[Entry] = [
+    data: list[Entry] = [
         Entry(
             id=i.id,
             type="issue",

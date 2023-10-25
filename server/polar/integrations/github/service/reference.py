@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, List, Set, Union
+from typing import Any
 from uuid import UUID
 
 import structlog
@@ -45,31 +45,31 @@ class UnknownIssueEvent(github.rest.GitHubRestModel):
     event: str = Field(default=...)
 
 
-TimelineEventType = Union[
-    github.rest.LabeledIssueEvent,
-    github.rest.UnlabeledIssueEvent,
-    github.rest.MilestonedIssueEvent,
-    github.rest.DemilestonedIssueEvent,
-    github.rest.RenamedIssueEvent,
-    github.rest.ReviewRequestedIssueEvent,
-    github.rest.ReviewRequestRemovedIssueEvent,
-    github.rest.ReviewDismissedIssueEvent,
-    github.rest.LockedIssueEvent,
-    github.rest.AddedToProjectIssueEvent,
-    github.rest.MovedColumnInProjectIssueEvent,
-    github.rest.RemovedFromProjectIssueEvent,
-    github.rest.ConvertedNoteToIssueIssueEvent,
-    github.rest.TimelineCommentEvent,
-    github.rest.TimelineCrossReferencedEvent,
-    github.rest.TimelineCommittedEvent,
-    github.rest.TimelineReviewedEvent,
-    github.rest.TimelineLineCommentedEvent,
-    github.rest.TimelineCommitCommentedEvent,
-    github.rest.TimelineAssignedIssueEvent,
-    github.rest.TimelineUnassignedIssueEvent,
-    github.rest.StateChangeIssueEvent,
-    UnknownIssueEvent,
-]
+TimelineEventType = (
+    github.rest.LabeledIssueEvent
+    | github.rest.UnlabeledIssueEvent
+    | github.rest.MilestonedIssueEvent
+    | github.rest.DemilestonedIssueEvent
+    | github.rest.RenamedIssueEvent
+    | github.rest.ReviewRequestedIssueEvent
+    | github.rest.ReviewRequestRemovedIssueEvent
+    | github.rest.ReviewDismissedIssueEvent
+    | github.rest.LockedIssueEvent
+    | github.rest.AddedToProjectIssueEvent
+    | github.rest.MovedColumnInProjectIssueEvent
+    | github.rest.RemovedFromProjectIssueEvent
+    | github.rest.ConvertedNoteToIssueIssueEvent
+    | github.rest.TimelineCommentEvent
+    | github.rest.TimelineCrossReferencedEvent
+    | github.rest.TimelineCommittedEvent
+    | github.rest.TimelineReviewedEvent
+    | github.rest.TimelineLineCommentedEvent
+    | github.rest.TimelineCommitCommentedEvent
+    | github.rest.TimelineAssignedIssueEvent
+    | github.rest.TimelineUnassignedIssueEvent
+    | github.rest.StateChangeIssueEvent
+    | UnknownIssueEvent
+)
 
 
 class GitHubIssueReferencesService:
@@ -124,7 +124,7 @@ class GitHubIssueReferencesService:
             name=repo.name,
         )
 
-        triggered_ids: Set[int] = set()
+        triggered_ids: set[int] = set()
 
         for page in range(1, 100):  # Maximum 100 pages
             res = await client.rest.issues.async_list_events_for_repo(
@@ -173,9 +173,9 @@ class GitHubIssueReferencesService:
         return None
 
     def external_issue_ids_to_sync(
-        self, events: List[github.rest.IssueEvent]
-    ) -> Set[int]:
-        res: Set[int] = set()
+        self, events: list[github.rest.IssueEvent]
+    ) -> set[int]:
+        res: set[int] = set()
 
         for event in events:
             if event.event == "referenced" and event.issue:
@@ -192,7 +192,7 @@ class GitHubIssueReferencesService:
         per_page: int = 30,
         page: int = 1,
         etag: str | None = None,
-    ) -> Response[List[TimelineEventType]]:
+    ) -> Response[list[TimelineEventType]]:
         url = f"/repos/{owner}/{repo}/issues/{issue_number}/timeline"
 
         params = {
@@ -205,7 +205,7 @@ class GitHubIssueReferencesService:
             url=url,
             params=exclude_unset(params),
             etag=etag,
-            response_model=List[TimelineEventType],
+            response_model=list[TimelineEventType],
         )
 
     async def sync_issue_references(

@@ -106,14 +106,12 @@ class MinimalPullRequestCreate(IssueAndPullRequestBase):
     @classmethod
     def minimal_pull_request_from_github(
         cls,
-        pr: Union[
-            github.rest.PullRequestSimple,
-            github.rest.PullRequest,
-            github.webhooks.PullRequestOpenedPropPullRequest,
-            github.webhooks.PullRequest,
-            github.webhooks.PullRequestClosedPropPullRequest,
-            github.webhooks.PullRequestReopenedPropPullRequest,
-        ],
+        pr: github.rest.PullRequestSimple
+        | github.rest.PullRequest
+        | github.webhooks.PullRequestOpenedPropPullRequest
+        | github.webhooks.PullRequest
+        | github.webhooks.PullRequestClosedPropPullRequest
+        | github.webhooks.PullRequestReopenedPropPullRequest,
         organization: Organization,
         repository: Repository,
     ) -> Self:
@@ -158,13 +156,11 @@ class FullPullRequestCreate(MinimalPullRequestCreate):
     @classmethod
     def full_pull_request_from_github(
         cls,
-        pr: Union[
-            github.rest.PullRequest,
-            github.webhooks.PullRequestOpenedPropPullRequest,
-            github.webhooks.PullRequest,
-            github.webhooks.PullRequestClosedPropPullRequest,
-            github.webhooks.PullRequestReopenedPropPullRequest,
-        ],
+        pr: github.rest.PullRequest
+        | github.webhooks.PullRequestOpenedPropPullRequest
+        | github.webhooks.PullRequest
+        | github.webhooks.PullRequestClosedPropPullRequest
+        | github.webhooks.PullRequestReopenedPropPullRequest,
         organization: Organization,
         repository: Repository,
     ) -> Self:

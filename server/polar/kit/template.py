@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Tuple
 
 import structlog
 from jinja2 import BaseLoader, Environment, TemplateNotFound
@@ -13,7 +13,7 @@ class PolarLoader(BaseLoader):
 
     def get_source(
         self, environment: "Environment", template: str
-    ) -> Tuple[str, str | None, Callable[[], bool] | None]:
+    ) -> tuple[str, str | None, Callable[[], bool] | None]:
         path = Path(self.path, template)
         if not path.exists():
             raise TemplateNotFound(template)

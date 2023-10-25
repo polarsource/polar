@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Literal, Self, Type, Union
+from typing import Literal, Self
 from uuid import UUID
 
 import structlog
@@ -233,21 +233,19 @@ class Base(Schema):
 class IssueAndPullRequestBase(Base):
     @classmethod
     def get_normalized_github_issue(
-        cls: Type[Self],
-        data: Union[
-            github.rest.Issue,
-            github.webhooks.Issue,
-            github.webhooks.IssuesOpenedPropIssue,
-            github.webhooks.IssuesOpenedPropIssue,
-            github.webhooks.IssuesClosedPropIssue,
-            github.webhooks.IssuesReopenedPropIssue,
-            github.rest.PullRequest,
-            github.rest.PullRequestSimple,
-            github.webhooks.PullRequest,
-            github.webhooks.PullRequestOpenedPropPullRequest,
-            github.webhooks.PullRequestClosedPropPullRequest,
-            github.webhooks.PullRequestReopenedPropPullRequest,
-        ],
+        cls: type[Self],
+        data: github.rest.Issue
+        | github.webhooks.Issue
+        | github.webhooks.IssuesOpenedPropIssue
+        | github.webhooks.IssuesOpenedPropIssue
+        | github.webhooks.IssuesClosedPropIssue
+        | github.webhooks.IssuesReopenedPropIssue
+        | github.rest.PullRequest
+        | github.rest.PullRequestSimple
+        | github.webhooks.PullRequest
+        | github.webhooks.PullRequestOpenedPropPullRequest
+        | github.webhooks.PullRequestClosedPropPullRequest
+        | github.webhooks.PullRequestReopenedPropPullRequest,
         organization: OrganizationModel,
         repository: RepositoryModel,
     ) -> Self:
@@ -317,13 +315,11 @@ class IssueCreate(IssueAndPullRequestBase):
     @classmethod
     def from_github(
         cls,
-        data: Union[
-            github.rest.Issue,
-            github.webhooks.Issue,
-            github.webhooks.IssuesOpenedPropIssue,
-            github.webhooks.IssuesClosedPropIssue,
-            github.webhooks.IssuesReopenedPropIssue,
-        ],
+        data: github.rest.Issue
+        | github.webhooks.Issue
+        | github.webhooks.IssuesOpenedPropIssue
+        | github.webhooks.IssuesClosedPropIssue
+        | github.webhooks.IssuesReopenedPropIssue,
         organization: OrganizationModel,
         repository: RepositoryModel,
     ) -> Self:
@@ -422,9 +418,7 @@ class IssueReferenceRead(Schema):
     pull_request_reference: PullRequestReference | None = None
     external_github_pull_request_reference: (
         ExternalGitHubPullRequestReference | None
-    ) = (  # noqa: E501
-        None
-    )
+    ) = None
     external_github_commit_reference: ExternalGitHubCommitReference | None = None
 
     @classmethod

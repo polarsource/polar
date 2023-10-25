@@ -1,4 +1,5 @@
-from typing import Any, Callable, Coroutine, Generic, TypeVar
+from collections.abc import Callable, Coroutine
+from typing import Any, Generic, TypeVar
 
 T = TypeVar("T")
 HookFunc = Callable[[T], Coroutine[Any, Any, Any]]

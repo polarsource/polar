@@ -1,12 +1,10 @@
 import functools
 import types
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import (
     Any,
-    Awaitable,
-    Callable,
     ParamSpec,
     TypedDict,
     TypeVar,

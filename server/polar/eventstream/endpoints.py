@@ -1,5 +1,6 @@
 import asyncio
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
 import structlog
 from fastapi import APIRouter, Depends, Request

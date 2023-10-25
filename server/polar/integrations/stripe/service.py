@@ -1,4 +1,4 @@
-from typing import Any, Literal, Tuple, TypedDict, Unpack
+from typing import Any, Literal, TypedDict, Unpack
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -145,7 +145,7 @@ class StripeService:
     def retrieve_account(self, id: str) -> stripe_lib.Account:
         return stripe_lib.Account.retrieve(id)
 
-    def retrieve_balance(self, id: str) -> Tuple[str, int]:
+    def retrieve_balance(self, id: str) -> tuple[str, int]:
         # Return available balance in the account's default currency (we assume that
         # there is no balance in other currencies for now)
         account = stripe_lib.Account.retrieve(id)

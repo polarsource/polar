@@ -50,13 +50,13 @@ class EmailRenderer:
     ) -> tuple[str, str]:
         rendered_subject = self.env.from_string(subject).render(context).strip()
 
-        wrapped_body = """
+        wrapped_body = f"""
         {{% extends 'base.html' %}}
 
         {{% block body %}}
             {body}
         {{% endblock %}}
-        """.format(body=body)
+        """
 
         rendered_body = self.env.from_string(wrapped_body).render(context).strip()
         return rendered_subject, rendered_body

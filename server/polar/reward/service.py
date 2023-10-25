@@ -1,4 +1,4 @@
-from typing import Sequence, Tuple
+from collections.abc import Sequence
 from uuid import UUID
 
 import structlog
@@ -29,7 +29,7 @@ class RewardService:
         reward_org_id: UUID | None = None,
         reward_user_id: UUID | None = None,
         is_transfered: bool | None = None,
-    ) -> Sequence[Tuple[Pledge, IssueReward, PledgeTransaction]]:
+    ) -> Sequence[tuple[Pledge, IssueReward, PledgeTransaction]]:
         statement = (
             (
                 sql.select(Pledge, IssueReward, PledgeTransaction)
@@ -92,7 +92,7 @@ class RewardService:
         session: AsyncSession,
         pledge_id: UUID,
         issue_reward_id: UUID,
-    ) -> Tuple[Pledge, IssueReward, PledgeTransaction] | None:
+    ) -> tuple[Pledge, IssueReward, PledgeTransaction] | None:
         statement = (
             sql.select(Pledge, IssueReward, PledgeTransaction)
             .join(Pledge.issue)

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
 import pytest_asyncio
 from httpx import AsyncClient, Response

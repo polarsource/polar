@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import List
 from uuid import UUID
 
 from polar.funding.schemas import PledgesTypeSummaries
@@ -57,7 +56,7 @@ class Entry(Schema):
 
 
 class ListResponse(Schema):
-    data: List[Entry]
+    data: list[Entry]
 
 
 class PaginationResponse(Schema):

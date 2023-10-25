@@ -1,4 +1,4 @@
-from typing import Literal, Optional, Tuple
+from typing import Literal
 from uuid import UUID
 
 import structlog
@@ -97,7 +97,7 @@ async def github_callback(
     request: Request,
     response: Response,
     session: AsyncSession = Depends(get_db_session),
-    access_token_state: Tuple[OAuth2Token, Optional[str]] = Depends(
+    access_token_state: tuple[OAuth2Token, str | None] = Depends(
         oauth2_authorize_callback
     ),
     auth: Auth = Depends(Auth.optional_user),

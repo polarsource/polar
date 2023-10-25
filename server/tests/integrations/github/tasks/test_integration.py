@@ -55,7 +55,6 @@ async def test_installation_no_notifications(
 
     with open(
         "tests/integrations/github/tasks/testdata/github_webhook_installation_created_open-testing.json",
-        "r",
     ) as fp:
         cassette: dict[str, Any] = json.loads(fp.read())
 

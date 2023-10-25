@@ -1,6 +1,6 @@
 from contextvars import ContextVar
 from types import TracebackType
-from typing import ClassVar, Optional, Type
+from typing import ClassVar
 
 
 class PolarContext:
@@ -27,9 +27,9 @@ class ExecutionContext:
     # def __exit__(self, type_, value, traceback) -> None:
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         ExecutionContext._contextvar.reset(self.token)
 

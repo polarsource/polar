@@ -105,10 +105,7 @@ class Organization(RecordModel):
 
     @property
     def polar_site_url(self) -> str:
-        return "{base}/{slug}".format(
-            base=settings.FRONTEND_BASE_URL,
-            slug=self.name,
-        )
+        return f"{settings.FRONTEND_BASE_URL}/{self.name}"
 
     @property
     def safe_installation_id(self) -> int:

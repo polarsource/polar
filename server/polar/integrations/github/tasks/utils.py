@@ -1,4 +1,4 @@
-from typing import Sequence, Union
+from collections.abc import Sequence
 from uuid import UUID
 
 import structlog
@@ -37,11 +37,9 @@ async def get_organization_and_repo(
 async def remove_repositories(
     session: AsyncSession,
     repositories: Sequence[
-        Union[
-            github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems,
-            github.webhooks.InstallationRepositoriesAddedPropRepositoriesRemovedItems,
-            github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems,
-        ]
+        github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems
+        | github.webhooks.InstallationRepositoriesAddedPropRepositoriesRemovedItems
+        | github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems
     ],
 ) -> None:
     for repo in repositories:
@@ -56,19 +54,17 @@ async def remove_repositories(
 
 async def get_event_org_repo(
     session: AsyncSession,
-    event: Union[
-        github.webhooks.IssuesOpened,
-        github.webhooks.IssuesEdited,
-        github.webhooks.IssuesClosed,
-        github.webhooks.IssuesDeleted,
-        github.webhooks.PullRequestOpened,
-        github.webhooks.PullRequestEdited,
-        github.webhooks.PullRequestClosed,
-        github.webhooks.PullRequestReopened,
-        github.webhooks.PullRequestSynchronize,
-        github.webhooks.IssuesReopened,
-    ],
-) -> Union[tuple[Organization, Repository], None]:
+    event: github.webhooks.IssuesOpened
+    | github.webhooks.IssuesEdited
+    | github.webhooks.IssuesClosed
+    | github.webhooks.IssuesDeleted
+    | github.webhooks.PullRequestOpened
+    | github.webhooks.PullRequestEdited
+    | github.webhooks.PullRequestClosed
+    | github.webhooks.PullRequestReopened
+    | github.webhooks.PullRequestSynchronize
+    | github.webhooks.IssuesReopened,
+) -> tuple[Organization, Repository] | None:
     repository_id = event.repository.id
     owner_id = event.repository.owner.id
 
@@ -89,25 +85,21 @@ async def get_event_org_repo(
 
 async def get_event_issue(
     session: AsyncSession,
-    event: Union[
-        github.webhooks.IssuesOpened,
-        github.webhooks.IssuesEdited,
-        github.webhooks.IssuesClosed,
-        github.webhooks.IssuesDeleted,
-    ],
+    event: github.webhooks.IssuesOpened
+    | github.webhooks.IssuesEdited
+    | github.webhooks.IssuesClosed
+    | github.webhooks.IssuesDeleted,
 ) -> Issue | None:
     return await service.github_issue.get_by_external_id(session, event.issue.id)
 
 
 async def upsert_issue(
     session: AsyncSession,
-    event: Union[
-        github.webhooks.IssuesOpened,
-        github.webhooks.IssuesEdited,
-        github.webhooks.IssuesClosed,
-        github.webhooks.IssuesDeleted,
-        github.webhooks.IssuesReopened,
-    ],
+    event: github.webhooks.IssuesOpened
+    | github.webhooks.IssuesEdited
+    | github.webhooks.IssuesClosed
+    | github.webhooks.IssuesDeleted
+    | github.webhooks.IssuesReopened,
 ) -> Issue | None:
     owner_id = event.repository.owner.id
     repository_id = event.repository.id
@@ -131,13 +123,11 @@ async def upsert_issue(
 
 async def upsert_pull_request(
     session: AsyncSession,
-    event: Union[
-        github.webhooks.PullRequestOpened,
-        github.webhooks.PullRequestEdited,
-        github.webhooks.PullRequestClosed,
-        github.webhooks.PullRequestReopened,
-        github.webhooks.PullRequestSynchronize,
-    ],
+    event: github.webhooks.PullRequestOpened
+    | github.webhooks.PullRequestEdited
+    | github.webhooks.PullRequestClosed
+    | github.webhooks.PullRequestReopened
+    | github.webhooks.PullRequestSynchronize,
 ) -> PullRequest | None:
     owner_id = event.repository.owner.id
     repository_id = event.repository.id

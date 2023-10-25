@@ -109,7 +109,7 @@ async def test_send(
         with open(record_file_name, "w+") as f:
             f.write(expected_content)
 
-    with open(record_file_name, "r") as f:
+    with open(record_file_name) as f:
         content = f.read()
         assert content == expected_content
 

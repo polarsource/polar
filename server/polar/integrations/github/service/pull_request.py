@@ -1,4 +1,5 @@
-from typing import Any, Literal, Sequence, Union
+from collections.abc import Sequence
+from typing import Any, Literal
 
 import structlog
 from githubkit import GitHub
@@ -76,9 +77,8 @@ class GithubPullRequestService(PullRequestService):
     async def store_full(
         self,
         session: AsyncSession,
-        data: Union[
-            github.rest.PullRequest, github.webhooks.PullRequestOpenedPropPullRequest
-        ],
+        data: github.rest.PullRequest
+        | github.webhooks.PullRequestOpenedPropPullRequest,
         organization: Organization,
         repository: Repository,
     ) -> PullRequest:
@@ -94,25 +94,21 @@ class GithubPullRequestService(PullRequestService):
         self,
         session: AsyncSession,
         data: Sequence[
-            Union[
-                github.rest.PullRequest,
-                github.webhooks.PullRequest,
-                github.webhooks.PullRequestOpenedPropPullRequest,
-                github.webhooks.PullRequestClosedPropPullRequest,
-                github.webhooks.PullRequestReopenedPropPullRequest,
-            ],
+            github.rest.PullRequest
+            | github.webhooks.PullRequest
+            | github.webhooks.PullRequestOpenedPropPullRequest
+            | github.webhooks.PullRequestClosedPropPullRequest
+            | github.webhooks.PullRequestReopenedPropPullRequest,
         ],
         organization: Organization,
         repository: Repository,
     ) -> Sequence[PullRequest]:
         def parse(
-            pr: Union[
-                github.rest.PullRequest,
-                github.webhooks.PullRequest,
-                github.webhooks.PullRequestOpenedPropPullRequest,
-                github.webhooks.PullRequestClosedPropPullRequest,
-                github.webhooks.PullRequestReopenedPropPullRequest,
-            ],
+            pr: github.rest.PullRequest
+            | github.webhooks.PullRequest
+            | github.webhooks.PullRequestOpenedPropPullRequest
+            | github.webhooks.PullRequestClosedPropPullRequest
+            | github.webhooks.PullRequestReopenedPropPullRequest,
         ) -> FullPullRequestCreate:
             return FullPullRequestCreate.full_pull_request_from_github(
                 pr, organization, repository

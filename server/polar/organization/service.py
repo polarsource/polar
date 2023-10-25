@@ -1,5 +1,5 @@
-from datetime import datetime, timezone
-from typing import Sequence
+from collections.abc import Sequence
+from datetime import UTC, datetime
 from uuid import UUID
 
 import structlog
@@ -124,7 +124,7 @@ class OrganizationService(
             organization.billing_email = settings.billing_email
 
         if organization.onboarded_at is None:
-            organization.onboarded_at = datetime.now(timezone.utc)
+            organization.onboarded_at = datetime.now(UTC)
 
         if settings.set_default_upfront_split_to_contributors:
             organization.default_upfront_split_to_contributors = (

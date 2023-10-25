@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence, Tuple
+from collections.abc import Sequence
 from uuid import UUID
 
 import stripe.error as stripe_lib_error
@@ -192,7 +192,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
     def get_balance(
         self,
         account: Account,
-    ) -> Tuple[str, int] | None:
+    ) -> tuple[str, int] | None:
         if account.account_type != AccountType.stripe:
             return None
         assert account.stripe_id is not None

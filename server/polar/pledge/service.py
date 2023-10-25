@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import datetime
+from collections.abc import Awaitable, Callable, Sequence
 from datetime import timedelta
-from typing import Any, Awaitable, Callable, List, Sequence
+from typing import Any
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -200,7 +201,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
     async def get_by_issue_ids(
         self,
         session: AsyncSession,
-        issue_ids: List[UUID],
+        issue_ids: list[UUID],
     ) -> Sequence[Pledge]:
         if not issue_ids:
             return []

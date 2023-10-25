@@ -55,7 +55,7 @@ def typer_async(f):  # type: ignore
 @cli.command()
 @typer_async
 async def organizations_renamed(
-    organizations: Optional[list[str]] = typer.Argument(None),
+    organizations: list[str] | None = typer.Argument(None),
     dry_run: bool = typer.Option(
         False, help="If `True`, changes won't be commited to the database."
     ),
@@ -129,7 +129,7 @@ async def organizations_renamed(
 @cli.command()
 @typer_async
 async def repositories_transferred(
-    organizations: Optional[list[str]] = typer.Argument(None),
+    organizations: list[str] | None = typer.Argument(None),
     dry_run: bool = typer.Option(
         False, help="If `True`, changes won't be commited to the database."
     ),
@@ -214,7 +214,7 @@ async def repositories_transferred(
 @cli.command()
 @typer_async
 async def issues_transferred(
-    repositories: Optional[list[str]] = typer.Argument(None),
+    repositories: list[str] | None = typer.Argument(None),
     dry_run: bool = typer.Option(
         False, help="If `True`, changes won't be commited to the database."
     ),

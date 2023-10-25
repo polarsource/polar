@@ -1,7 +1,6 @@
 import inspect
 import os
 import uuid
-from typing import Any, Tuple
 
 import pytest
 
@@ -19,7 +18,7 @@ from polar.notifications.notification import (
 from polar.pledge.schemas import PledgeType
 
 
-async def check_diff(email: Tuple[str, str]) -> None:
+async def check_diff(email: tuple[str, str]) -> None:
     (subject, body) = email
     expected = f"{subject}\n<hr>\n{body}"
 
@@ -33,7 +32,7 @@ async def check_diff(email: Tuple[str, str]) -> None:
             f.write(expected)
             return
 
-    with open(f"./tests/notifications/testdata/{name}.html", "r") as f:
+    with open(f"./tests/notifications/testdata/{name}.html") as f:
         content = f.read()
         assert content == expected
 

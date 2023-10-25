@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-from typing import Any, Awaitable, Literal, Sequence, Tuple, Union
+from collections.abc import Awaitable, Sequence
+from typing import Any, Literal
 from uuid import UUID
 
 import structlog
@@ -59,13 +60,11 @@ class GithubIssueService(IssueService):
         self,
         session: AsyncSession,
         *,
-        data: Union[
-            github.webhooks.IssuesOpenedPropIssue,
-            github.webhooks.IssuesClosedPropIssue,
-            github.webhooks.IssuesReopenedPropIssue,
-            github.webhooks.Issue,
-            github.rest.Issue,
-        ],
+        data: github.webhooks.IssuesOpenedPropIssue
+        | github.webhooks.IssuesClosedPropIssue
+        | github.webhooks.IssuesReopenedPropIssue
+        | github.webhooks.Issue
+        | github.rest.Issue,
         organization: Organization,
         repository: Repository,
         autocommit: bool = True,
@@ -84,37 +83,31 @@ class GithubIssueService(IssueService):
         session: AsyncSession,
         *,
         data: list[
-            Union[
-                github.webhooks.IssuesOpenedPropIssue,
-                github.webhooks.IssuesClosedPropIssue,
-                github.webhooks.IssuesReopenedPropIssue,
-                github.webhooks.Issue,
-                github.rest.Issue,
-            ],
+            github.webhooks.IssuesOpenedPropIssue
+            | github.webhooks.IssuesClosedPropIssue
+            | github.webhooks.IssuesReopenedPropIssue
+            | github.webhooks.Issue
+            | github.rest.Issue,
         ],
         organization: Organization,
         repository: Repository,
         autocommit: bool = True,
     ) -> Sequence[Issue]:
         def parse(
-            issue: Union[
-                github.webhooks.IssuesOpenedPropIssue,
-                github.webhooks.IssuesClosedPropIssue,
-                github.webhooks.IssuesReopenedPropIssue,
-                github.webhooks.Issue,
-                github.rest.Issue,
-            ],
+            issue: github.webhooks.IssuesOpenedPropIssue
+            | github.webhooks.IssuesClosedPropIssue
+            | github.webhooks.IssuesReopenedPropIssue
+            | github.webhooks.Issue
+            | github.rest.Issue,
         ) -> IssueCreate:
             return IssueCreate.from_github(issue, organization, repository)
 
         def filter(
-            issue: Union[
-                github.webhooks.IssuesOpenedPropIssue,
-                github.webhooks.IssuesClosedPropIssue,
-                github.webhooks.IssuesReopenedPropIssue,
-                github.webhooks.Issue,
-                github.rest.Issue,
-            ],
+            issue: github.webhooks.IssuesOpenedPropIssue
+            | github.webhooks.IssuesClosedPropIssue
+            | github.webhooks.IssuesReopenedPropIssue
+            | github.webhooks.Issue
+            | github.rest.Issue,
         ) -> bool:
             if issue.pull_request:
                 log.error(
@@ -490,10 +483,7 @@ class GithubIssueService(IssueService):
         session: AsyncSession,
         issue: Issue,
         repository: Repository,
-        github_labels: Union[
-            list[Label],
-            list[WebhookLabel],
-        ],
+        github_labels: list[Label] | list[WebhookLabel],
     ) -> Issue:
         labels = github.jsonify(github_labels)
         issue.labels = labels

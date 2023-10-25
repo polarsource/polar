@@ -1,4 +1,4 @@
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, TypeVar
 
 from githubkit import GitHub, Response
 from githubkit.rest.models import BasicError
@@ -33,8 +33,8 @@ class GitHubApi:
         self,
         client: GitHub[Any],
         url: str,
-        response_model: Type[T],
-        params: Optional[QueryParamTypes] = None,
+        response_model: type[T],
+        params: QueryParamTypes | None = None,
         etag: str | None = None,
     ) -> Response[T]:
         headers = {

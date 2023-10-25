@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import timedelta
-from typing import List, Sequence, Tuple
 from uuid import UUID
 
 import structlog
@@ -94,7 +94,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         return issues
 
     async def list_by_repository_and_numbers(
-        self, session: AsyncSession, repository_id: UUID, numbers: List[int]
+        self, session: AsyncSession, repository_id: UUID, numbers: list[int]
     ) -> Sequence[Issue]:
         statement = (
             sql.select(Issue)
@@ -125,7 +125,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         github_milestone_number: int | None = None,
         show_closed: bool = False,
         show_closed_if_needs_action: bool = False,
-    ) -> Tuple[Sequence[Issue], int]:  # (issues, total_issue_count)
+    ) -> tuple[Sequence[Issue], int]:  # (issues, total_issue_count)
         pledge_by_organization = aliased(Organization)
         issue_repository = aliased(Repository)
         issue_organization = aliased(Organization, name="pledge_organization")

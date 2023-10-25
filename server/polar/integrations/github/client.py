@@ -106,10 +106,10 @@ class RefreshAccessToken(rest.GitHubRestModel):
     expires_in: int = Field(
         default=...
     )  # The number of seconds until access_token expires (will always be 28800)
-    refresh_token: Union[str, None] = Field(
+    refresh_token: str | None = Field(
         default=...
     )  # A new refres token (is only set if the app is using expiring refresh tokens)
-    refresh_token_expires_in: Union[int, None] = Field(default=...)
+    refresh_token_expires_in: int | None = Field(default=...)
     scope: str = Field(default=...)  # Always an empty string
     token_type: str = Field(default=...)  # Always "bearer"
 

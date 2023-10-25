@@ -12,13 +12,13 @@ class RedisCache(BaseCache):
     def __init__(self) -> None:
         pass
 
-    def get(self, key: str) -> Optional[str]:
+    def get(self, key: str) -> str | None:
         val = sync_redis.get("githubkit:" + key)
         if val:
             return str(val)
         return None
 
-    async def aget(self, key: str) -> Optional[str]:
+    async def aget(self, key: str) -> str | None:
         return self.get(key)
 
     def set(self, key: str, value: str, ex: datetime.timedelta) -> None:

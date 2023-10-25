@@ -30,7 +30,7 @@ async def test_get_collective_collective_not_found(
     open_collective_graphql_mock: respx.Route,
 ) -> None:
     with open(
-        "tests/fixtures/cassettes/open_collective/collective/not_found.json", "r"
+        "tests/fixtures/cassettes/open_collective/collective/not_found.json"
     ) as f:
         cassette = json.loads(f.read())
     open_collective_graphql_mock.mock(return_value=httpx.Response(200, json=cassette))
@@ -42,9 +42,7 @@ async def test_get_collective_collective_not_found(
 async def test_get_collective(
     open_collective_graphql_mock: respx.Route,
 ) -> None:
-    with open(
-        "tests/fixtures/cassettes/open_collective/collective/eligible.json", "r"
-    ) as f:
+    with open("tests/fixtures/cassettes/open_collective/collective/eligible.json") as f:
         cassette = json.loads(f.read())
     open_collective_graphql_mock.mock(return_value=httpx.Response(200, json=cassette))
     collective = await open_collective.get_collective("babel")

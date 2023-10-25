@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any
 
 import structlog
 
@@ -436,7 +436,7 @@ class GithubUserService(UserService):
 
     async def fetch_user_accessible_installations(
         self, session: AsyncSession, user: User
-    ) -> List[github.rest.Installation]:
+    ) -> list[github.rest.Installation]:
         """
         Load user accessible installations from GitHub API
         Finds the union between app installations and the users user-to-server token.

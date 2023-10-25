@@ -1,6 +1,5 @@
 {
     "recommendations": [
-        "ms-python.black-formatter",
         "charliermarsh.ruff",
         "ms-python.mypy-type-checker",
         "littlefoxteam.vscode-python-test-adapter"

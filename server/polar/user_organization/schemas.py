@@ -1,4 +1,5 @@
 from typing import Self
+
 from polar.kit.schemas import Schema
 from polar.models.user_organization import UserOrganization as UserOrganizationModel
 

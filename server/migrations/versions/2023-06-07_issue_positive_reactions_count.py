@@ -5,9 +5,8 @@ Revises: 98a7aacb7809
 Create Date: 2023-06-07 16:12:54.535552
 
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # Polar Custom Imports
 from polar.kit.extensions.sqlalchemy import PostgresUUID

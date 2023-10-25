@@ -235,9 +235,9 @@ class TestCreateSubscriptionTier:
         user_organization_admin: UserOrganization,
         mock_stripe_service: MagicMock,
     ) -> None:
-        create_product_with_price_mock: MagicMock = (
-            mock_stripe_service.create_product_with_price
-        )
+        create_product_with_price_mock: (
+            MagicMock
+        ) = mock_stripe_service.create_product_with_price
         create_product_with_price_mock.return_value = SimpleNamespace(
             stripe_id="PRODUCT_ID", default_price="PRICE_ID"
         )
@@ -263,9 +263,9 @@ class TestCreateSubscriptionTier:
         user_organization_admin: UserOrganization,
         mock_stripe_service: MagicMock,
     ) -> None:
-        create_product_with_price_mock: MagicMock = (
-            mock_stripe_service.create_product_with_price
-        )
+        create_product_with_price_mock: (
+            MagicMock
+        ) = mock_stripe_service.create_product_with_price
         create_product_with_price_mock.return_value = SimpleNamespace(
             stripe_id="PRODUCT_ID", default_price="PRICE_ID"
         )
@@ -451,9 +451,9 @@ class TestCreateSubscribeSession:
         mock_stripe_service: MagicMock,
         organization_account: Account,
     ) -> None:
-        create_subscription_checkout_session_mock: MagicMock = (
-            mock_stripe_service.create_subscription_checkout_session
-        )
+        create_subscription_checkout_session_mock: (
+            MagicMock
+        ) = mock_stripe_service.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
             stripe_id="SESSION_ID",
             url="STRIPE_URL",
@@ -483,9 +483,9 @@ class TestCreateSubscribeSession:
         mock_stripe_service: MagicMock,
         organization_account: Account,
     ) -> None:
-        create_subscription_checkout_session_mock: MagicMock = (
-            mock_stripe_service.create_subscription_checkout_session
-        )
+        create_subscription_checkout_session_mock: (
+            MagicMock
+        ) = mock_stripe_service.create_subscription_checkout_session
         create_subscription_checkout_session_mock.return_value = SimpleNamespace(
             stripe_id="SESSION_ID",
             url="STRIPE_URL",

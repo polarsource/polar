@@ -23,7 +23,7 @@ def construct_stripe_subscription(
     *,
     customer_id: str = "CUSTOMER_ID",
     product_id: str = "PRODUCT_ID",
-    status: SubscriptionStatus = SubscriptionStatus.incomplete
+    status: SubscriptionStatus = SubscriptionStatus.incomplete,
 ) -> stripe_lib.Subscription:
     now_timestamp = datetime.now(UTC).timestamp()
     return stripe_lib.Subscription.construct_from(

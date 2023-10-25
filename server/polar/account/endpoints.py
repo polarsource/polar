@@ -22,13 +22,11 @@ router = APIRouter(tags=["accounts"])
 )
 async def search(
     auth: UserRequiredAuth,
-    organization_id: UUID
-    | None = Query(
+    organization_id: UUID | None = Query(
         default=None,
         description="Search accounts connected to this organization. Either user_id or organization_id must be set.",  # noqa: E501
     ),
-    user_id: UUID
-    | None = Query(
+    user_id: UUID | None = Query(
         default=None,
         description="Search accounts connected to this user. Either user_id or organization_id must be set.",  # noqa: E501
     ),

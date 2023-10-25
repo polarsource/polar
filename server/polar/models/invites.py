@@ -1,6 +1,8 @@
 from uuid import UUID
+
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from polar.kit.db.models.base import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.user import User

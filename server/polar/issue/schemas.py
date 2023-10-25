@@ -420,7 +420,9 @@ class IssueReferenceRead(Schema):
     type: IssueReferenceType
 
     pull_request_reference: PullRequestReference | None = None
-    external_github_pull_request_reference: ExternalGitHubPullRequestReference | None = (  # noqa: E501
+    external_github_pull_request_reference: (
+        ExternalGitHubPullRequestReference | None
+    ) = (  # noqa: E501
         None
     )
     external_github_commit_reference: ExternalGitHubCommitReference | None = None

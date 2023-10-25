@@ -1,6 +1,6 @@
 from contextvars import ContextVar
-from typing import ClassVar, Type, Optional
 from types import TracebackType
+from typing import ClassVar, Optional, Type
 
 
 class PolarContext:

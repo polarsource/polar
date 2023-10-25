@@ -1,9 +1,9 @@
 import structlog
+
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.organization.service import organization as organization_service
 from polar.repository.service import repository as repository_service
 from polar.worker import enqueue_job
-
 
 from .badge import GithubBadge
 

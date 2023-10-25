@@ -5,9 +5,9 @@ import pytest
 import respx
 
 from polar.integrations.open_collective.service import (
-    open_collective,
     CollectiveNotFoundError,
     OpenCollectiveAPIError,
+    open_collective,
 )
 
 

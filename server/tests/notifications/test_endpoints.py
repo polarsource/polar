@@ -1,11 +1,12 @@
-from httpx import AsyncClient
 import pytest
+from httpx import AsyncClient
+
+from polar.app import app
+from polar.config import settings
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.models.user import User
-from polar.app import app
-from polar.config import settings
 from polar.models.user_organization import UserOrganization
 
 

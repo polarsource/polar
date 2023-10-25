@@ -522,10 +522,8 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         for model in {IssueReward, Notification}:
             statement = (
                 sql.update(model)
-                # TODO: could be nice to have a common mixin for issue_id foreign key
-                .where(model.issue_id == old_issue.id).values(  # type: ignore
-                    issue_id=new_issue.id
-                )
+                .where(model.issue_id == old_issue.id)  # type: ignore
+                .values(issue_id=new_issue.id)
             )
             await session.execute(statement)
 

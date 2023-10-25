@@ -1,5 +1,5 @@
-from polar.receivers import onboarding, pledges, issue_reference, pull_request
 from polar.integrations.github import receivers as github_receivers
+from polar.receivers import issue_reference, onboarding, pledges, pull_request
 
 __all__ = [
     "onboarding",

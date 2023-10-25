@@ -1,4 +1,5 @@
 import structlog
+
 from .client import get_app_client
 
 log = structlog.get_logger()

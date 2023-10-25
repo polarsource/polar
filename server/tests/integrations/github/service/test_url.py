@@ -61,9 +61,8 @@ def test_parse_urls() -> None:
         == []
     )
 
-    assert (
-        github_url.parse_urls(
-            """
+    assert github_url.parse_urls(
+        """
     Bumps [k8s.io/api](https://github.com/kubernetes/api) from 0.26.1 to 0.26.2.
     <details>
     <summary>Commits</summary>
@@ -99,19 +98,17 @@ def test_parse_urls() -> None:
     - `@dependabot ignore this minor version` will close this PR and stop Dependabot creating any more for this minor version (unless you reopen the PR or upgrade to it yourself)
     - `@dependabot ignore this dependency` will close this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or upgrade to it yourself)
     </details>"""
-        )
-        == [
-            GitHubIssue(raw="#115787", owner=None, repo=None, number=115787),
-            GitHubIssue(raw="#115400", owner=None, repo=None, number=115400),
-            GitHubIssue(
-                raw="pohly/automated-cherry-pick-of-#115354",
-                owner="pohly",
-                repo="automated-cherry-pick-of-",
-                number=115354,
-            ),
-            GitHubIssue(raw="#115642", owner=None, repo=None, number=115642),
-        ]
-    )
+    ) == [
+        GitHubIssue(raw="#115787", owner=None, repo=None, number=115787),
+        GitHubIssue(raw="#115400", owner=None, repo=None, number=115400),
+        GitHubIssue(
+            raw="pohly/automated-cherry-pick-of-#115354",
+            owner="pohly",
+            repo="automated-cherry-pick-of-",
+            number=115354,
+        ),
+        GitHubIssue(raw="#115642", owner=None, repo=None, number=115642),
+    ]
 
 
 def test_parse_multiple_urls() -> None:

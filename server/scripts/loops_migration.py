@@ -48,7 +48,7 @@ def typer_async(f):  # type: ignore
 async def loops_migration(
     dry_run: bool = typer.Option(
         False, help="If `True`, requests won't be truly sent to Loops."
-    )
+    ),
 ) -> None:
     loops_client = LoopsClient(settings.LOOPS_API_KEY if not dry_run else None)
     engine = create_engine()
@@ -128,7 +128,7 @@ async def loops_migration(
 async def personal_organization_name(
     dry_run: bool = typer.Option(
         False, help="If `True`, requests won't be truly sent to Loops."
-    )
+    ),
 ) -> None:
     loops_client = LoopsClient(settings.LOOPS_API_KEY if not dry_run else None)
     engine = create_engine()

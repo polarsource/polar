@@ -1,9 +1,9 @@
 from typing import Any, Optional, Type, TypeVar
-from githubkit import GitHub, Response
-from githubkit.typing import QueryParamTypes
 
-from githubkit.utils import UNSET, exclude_unset
+from githubkit import GitHub, Response
 from githubkit.rest.models import BasicError
+from githubkit.typing import QueryParamTypes
+from githubkit.utils import UNSET, exclude_unset
 
 from polar.kit.schemas import Schema
 

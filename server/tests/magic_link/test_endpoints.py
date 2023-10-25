@@ -1,11 +1,13 @@
-from httpx import AsyncClient
 from unittest.mock import AsyncMock
+
 import pytest
+from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
-from polar.models import User, MagicLink
-from polar.magic_link.service import InvalidMagicLink, magic_link as magic_link_service
 from polar.config import settings
+from polar.magic_link.service import InvalidMagicLink
+from polar.magic_link.service import magic_link as magic_link_service
+from polar.models import MagicLink, User
 
 
 @pytest.mark.asyncio

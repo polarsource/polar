@@ -147,20 +147,20 @@ const SetupAccount = ({
             {accountType === AccountType.OPEN_COLLECTIVE && (
               <div>
                 <div className="relative mt-2">
+                  <Input
+                    type="text"
+                    id="open_collective_slug"
+                    name="open_collective_slug"
+                    className="font-display dark:border-polar-500 block w-full rounded-lg border-gray-200 bg-transparent py-2 pl-56 shadow-sm transition-colors focus:z-10 focus:border-blue-500 focus:ring-blue-500"
+                    value={openCollectiveSlug || ''}
+                    onChange={onChangeOpenCollectiveSlug}
+                    required
+                  />
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                     <span className="font-display dark:text-polar-40 text-gray-500">
                       https://opencollective.com/
                     </span>
                   </div>
-                  <Input
-                    type="text"
-                    id="open_collective_slug"
-                    name="open_collective_slug"
-                    className="font-display dark:border-polar-500 block w-full rounded-lg border-gray-200 bg-transparent py-2 pl-60 shadow-sm transition-colors focus:z-10 focus:border-blue-500 focus:ring-blue-500"
-                    value={openCollectiveSlug || ''}
-                    onChange={onChangeOpenCollectiveSlug}
-                    required
-                  />
                 </div>
                 {validationErrors.open_collective_slug?.map((error) => (
                   <p key={error} className="mt-2 text-xs text-red-500">

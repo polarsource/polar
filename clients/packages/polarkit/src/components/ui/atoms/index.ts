@@ -24,6 +24,7 @@ import {
 import ShadowBox from './ShadowBox'
 import ShadowBoxOnLg from './ShadowBoxOnLg'
 import ShadowListGroup from './ShadowListGroup'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './Tabs'
 import TextArea from './TextArea'
 
 export {
@@ -53,4 +54,8 @@ export {
   ThinButton,
   Avatar,
   Pill,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 }

@@ -49,6 +49,11 @@ export interface BackofficeApiRewardsRequest {
     issueId?: string;
 }
 
+export interface BackofficeApiUpdateBadgeContentsRequest {
+    orgSlug: string;
+    repoSlug: string;
+}
+
 /**
  * 
  */
@@ -353,6 +358,56 @@ export class BackofficeApi extends runtime.BaseAPI {
      */
     async rewardsPending(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceBackofficeReward> {
         const response = await this.rewardsPendingRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Update Badge Contents
+     */
+    async updateBadgeContentsRaw(requestParameters: BackofficeApiUpdateBadgeContentsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<object>> {
+        if (requestParameters.orgSlug === null || requestParameters.orgSlug === undefined) {
+            throw new runtime.RequiredError('orgSlug','Required parameter requestParameters.orgSlug was null or undefined when calling updateBadgeContents.');
+        }
+
+        if (requestParameters.repoSlug === null || requestParameters.repoSlug === undefined) {
+            throw new runtime.RequiredError('repoSlug','Required parameter requestParameters.repoSlug was null or undefined when calling updateBadgeContents.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.orgSlug !== undefined) {
+            queryParameters['org_slug'] = requestParameters.orgSlug;
+        }
+
+        if (requestParameters.repoSlug !== undefined) {
+            queryParameters['repo_slug'] = requestParameters.repoSlug;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/backoffice/update_badge_contents`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse<any>(response);
+    }
+
+    /**
+     * Update Badge Contents
+     */
+    async updateBadgeContents(requestParameters: BackofficeApiUpdateBadgeContentsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<object> {
+        const response = await this.updateBadgeContentsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

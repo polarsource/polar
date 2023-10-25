@@ -29,13 +29,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from 'polarkit/components/ui/atoms'
-import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from 'polarkit/components/ui/tabs'
+} from 'polarkit/components/ui/atoms'
 import { useListPaymentMethods } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import posthog from 'posthog-js'
@@ -115,34 +113,22 @@ const PledgeForm = ({
         </label>
 
         <Tabs defaultValue="fund" className="">
-          <TabsList
-            className={twMerge(
-              'dark:bg-polar-900 grid h-fit w-full grid-cols-2 grid-rows-1',
-            )}
-          >
+          <TabsList className="w-full">
             <TabsTrigger
               value="fund"
-              className="dark:text-polar-300 dark:data-[state=active]:bg-polar-700 text-gray-500 data-[state=active]:text-red-600 dark:data-[state=active]:text-red-600"
+              className="data-[state=active]:text-red-600 dark:data-[state=active]:text-red-600"
             >
-              <div className="flex w-full items-center justify-center gap-4 px-1 text-left">
-                <HeartIcon className="h-6 w-6" />
-                <div className="dark:text-polar-300 text-sm font-medium text-gray-700">
-                  Fund
-                </div>
-              </div>
+              <HeartIcon className="h-4 w-4" />
+              <div className="dark:text-polar-300 text-gray-700">Fund</div>
             </TabsTrigger>
 
             <TabsTrigger
               value="contribute"
-              className="dark:text-polar-300 dark:data-[state=active]:bg-polar-700 data-[state=active]:text-gray-600 dark:data-[state=active]:text-green-400"
+              className="data-[state=active]:text-green-400 dark:data-[state=active]:text-green-400"
             >
-              <div className="flex w-full items-center justify-center  gap-4 px-1 text-left">
-                <CommandLineIcon className="h-6 w-6 " />
-                <div>
-                  <div className='font-medium" dark:text-polar-300 text-sm text-gray-700'>
-                    Contribute
-                  </div>
-                </div>
+              <CommandLineIcon className="h-4 w-4" />
+              <div className="dark:text-polar-300 text-gray-700">
+                Contribute
               </div>
             </TabsTrigger>
           </TabsList>
@@ -184,24 +170,16 @@ const Fund = ({
         </label>
 
         <Tabs defaultValue="fund_today" className="mt-2">
-          <TabsList
-            className={twMerge(
-              'dark:bg-polar-900 grid h-fit w-full grid-cols-1 grid-rows-2',
-            )}
-          >
+          <TabsList className="w-full" vertical>
             <FundingMethodTab
               value="fund_today"
-              icon={
-                <CurrencyDollarIcon className="dark:text-polar-300 h-6 w-6 text-gray-600" />
-              }
+              icon={<CurrencyDollarIcon className="h-6 w-6" />}
               title="Fund today"
               subtitle="Paid today. Held by Polar until completion."
             />
             <FundingMethodTab
               value="fund_on_completion"
-              icon={
-                <ClockIcon className="dark:text-polar-300 h-6 w-6 text-gray-600" />
-              }
+              icon={<ClockIcon className="h-6 w-6" />}
               title="Fund on completion"
               subtitle="Get an invoice when the issue is completed."
             />
@@ -245,14 +223,12 @@ const FundingMethodTab = ({
   title: string
   subtitle: string
 }) => (
-  <TabsTrigger value={value} className="dark:data-[state=active]:bg-polar-700">
+  <TabsTrigger value={value} className="w-full md:flex-col md:items-center">
     <div className="flex w-full items-center gap-4 px-1 text-left">
-      {icon}
-      <div>
-        <div className='font-medium" dark:text-polar-100 text-sm text-gray-700'>
-          {title}
-        </div>
-        <div className="dark:text-polar-400 text-xs font-normal text-gray-600">
+      <div className="shrink-0">{icon}</div>
+      <div className="w-full">
+        <div>{title}</div>
+        <div className="w-full truncate text-xs font-normal opacity-50">
           {subtitle}
         </div>
       </div>

@@ -8,15 +8,13 @@ import {
   CopyToClipboardInput,
   MoneyInput,
   PrimaryButton,
-  TextArea,
-} from 'polarkit/components/ui/atoms'
-import { Banner } from 'polarkit/components/ui/molecules'
-import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from 'polarkit/components/ui/tabs'
+  TextArea,
+} from 'polarkit/components/ui/atoms'
+import { Banner } from 'polarkit/components/ui/molecules'
 import {
   useBadgeWithComment,
   useIssueAddComment,
@@ -230,37 +228,24 @@ export const BadgePromotionModal = (props: {
       </ModalHeader>
 
       <Tabs defaultValue={props.defaultTab ?? 'funding'}>
-        <TabsList
-          className={twMerge(
-            'mx-2 flex h-fit w-full flex-row justify-start space-x-2 !border-0 bg-transparent !p-0',
-          )}
-        >
+        <TabsList className="mx-5 mt-4">
           <Tab
             value="funding"
-            icon={
-              <HeartIcon className="dark:text-polar-300 h-6 w-6 text-gray-600" />
-            }
+            icon={<HeartIcon className="h-4 w-4" />}
             title="Funding"
           />
           <Tab
             value="rewards"
-            icon={
-              <GiftIcon className="dark:text-polar-300 h-6 w-6 text-gray-600" />
-            }
+            icon={<GiftIcon className="h-4 w-4" />}
             title="Rewards"
           />
           <Tab
             value="promote"
-            icon={
-              <MegaphoneIcon className="dark:text-polar-300 h-6 w-6 text-gray-600" />
-            }
+            icon={<MegaphoneIcon className="h-4 w-4" />}
             title="Promote"
           />
         </TabsList>
-        <TabsContent
-          value="funding"
-          className="bg-gray-75 dark:bg-polar-800 dark:border-polar-600 -mt-[1px] border-t p-6"
-        >
+        <TabsContent value="funding" className="px-6 pb-6 pt-4">
           <BadgeMessageForm
             value={
               props.issue.badge_custom_content ||
@@ -280,16 +265,10 @@ export const BadgePromotionModal = (props: {
             upfrontSplit={upfrontRewards}
           />
         </TabsContent>
-        <TabsContent
-          value="rewards"
-          className="bg-gray-75 dark:bg-polar-800 dark:border-polar-600 -mt-[1px] border-t p-6"
-        >
+        <TabsContent value="rewards" className="p-8">
           <RewardsTab {...props} />
         </TabsContent>
-        <TabsContent
-          value="promote"
-          className="bg-gray-75 dark:bg-polar-800 dark:border-polar-600 -mt-[1px] border-t p-6"
-        >
+        <TabsContent value="promote" className="p-8">
           <PromoteTab {...props} />
         </TabsContent>
       </Tabs>
@@ -434,18 +413,9 @@ const Tab = ({
   icon: React.ReactElement
   title: string
 }) => (
-  <TabsTrigger
-    value={value}
-    className="data-[state=active]:bg-gray-75 dark:data-[state=active]:bg-polar-800 dark:hover:bg-polar-white/10 dark:data-[state=active]:border-polar-600 rounded-none rounded-t-lg border !border-b-0 border-transparent bg-transparent !shadow-none outline-0 ring-0 hover:bg-gray-500/10 data-[state=active]:border-gray-200"
-  >
-    <div className="flex w-full items-center gap-4 px-1 text-left">
-      {icon}
-      <div>
-        <div className='font-medium" dark:text-polar-300 text-sm text-gray-700'>
-          {title}
-        </div>
-      </div>
-    </div>
+  <TabsTrigger value={value}>
+    <div>{icon}</div>
+    <div>{title}</div>
   </TabsTrigger>
 )
 

@@ -21,7 +21,7 @@ export type LogoPosition = 'center' | 'left'
 
 const SubNav = (props: { items: (SubRoute & { active: boolean })[] }) => {
   return (
-    <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-row items-center gap-x-2 rounded-xl bg-gray-100 p-1 dark:border">
+    <div className="dark:bg-polar-950 dark:border-polar-700 flex flex-row items-center gap-x-2 rounded-xl bg-gray-100 p-1 dark:border">
       {props.items.map((item) => {
         const className = twMerge(
           item.active

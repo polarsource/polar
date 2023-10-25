@@ -29,12 +29,15 @@ TabsList.displayName = TabsListPrimitive.displayName
 
 const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsTriggerPrimitive>,
-  React.ComponentPropsWithoutRef<typeof TabsTriggerPrimitive>
->(({ className, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof TabsTriggerPrimitive> & {
+    size?: 'small' | 'default'
+  }
+>(({ className, size = 'default', ...props }, ref) => (
   <TabsTriggerPrimitive
     ref={ref}
     className={twMerge(
-      'dark:text-polar-500 dark:data-[state=active]:bg-polar-700 dark:data-[state=active]:text-polar-50 w-full gap-x-2 px-4 py-2 text-sm font-normal data-[state=active]:font-medium data-[state=active]:text-gray-800 dark:data-[state=active]:text-white',
+      'dark:text-polar-500 dark:data-[state=active]:bg-polar-700 dark:hover:text-polar-50 dark:data-[state=active]:text-polar-50 flex w-full flex-row items-center gap-x-2 px-4 py-2 font-normal hover:text-gray-950 data-[state=active]:font-medium data-[state=active]:text-gray-800 dark:data-[state=active]:text-white',
+      size === 'default' ? 'text-sm' : 'text-xs',
       className,
     )}
     {...props}

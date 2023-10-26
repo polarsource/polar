@@ -4,7 +4,7 @@ import calendar
 import datetime
 from collections.abc import Awaitable, Callable, Sequence
 from datetime import timedelta
-from typing import Any, Tuple
+from typing import Any
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -932,6 +932,12 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not by_user and not by_organization_id:
             raise BadRequest("Either by_user or by_organization_id myst be set")
 
+        if by_organization_id:
+            # will throw an error if this pledge is not allowed per the spending limits
+            await self.assert_spending_limits(
+                session, by_organization_id, authenticated_user, amount
+            )
+
         issue = await issue_service.get(session, issue_id)
         if not issue:
             raise ResourceNotFound("Issue Not Found")
@@ -1194,8 +1200,13 @@ class PledgeService(ResourceServiceReader[Pledge]):
             Pledge.created_at <= end,
         )
 
-        res = await session.execute(stmt)
-        return res.scalar_one()
+        ret = await session.execute(stmt)
+        res = ret.scalars().one_or_none()
+
+        if not res:
+            return 0
+
+        return res
 
     """
     month_range returns the first and the last second of the month that ts is in
@@ -1215,6 +1226,40 @@ class PledgeService(ResourceServiceReader[Pledge]):
         end = end - timedelta(seconds=1)
 
         return (start, end)
+
+    async def assert_spending_limits(
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+        user: User,
+        amount: int,
+    ) -> None:
+        org = await organization_service.get(session, organization_id)
+        if not org:
+            raise ResourceNotFound()
+
+        # user spending limit
+        if org.per_user_monthly_spending_limit:
+            user_pre_spend = await self.sum_pledges_period(
+                session, organization_id=organization_id, user_id=user.id
+            )
+
+            # user has spent more than their limit
+            if user_pre_spend + amount > org.per_user_monthly_spending_limit:
+                raise BadRequest("The user spending limit has been reached")
+
+        # organization spending limit
+        if org.total_monthly_spending_limit:
+            org_pre_spend = await self.sum_pledges_period(
+                session, organization_id=organization_id
+            )
+
+            # org has spent more than their limit
+            if org_pre_spend + amount > org.total_monthly_spending_limit:
+                raise BadRequest("The team spending limit has been reached")
+
+        # limit is not reached
+        return None
 
 
 pledge = PledgeService(Pledge)

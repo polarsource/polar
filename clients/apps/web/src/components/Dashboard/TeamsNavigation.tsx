@@ -51,7 +51,7 @@ const Team = ({ org }: { org: Organization }) => {
   return (
     <Link
       className="dark:bg-polar-700 dark:text-polar-300 dark:hover:bg-polar-800  flex items-center gap-4 rounded-xl bg-blue-50 px-4 py-2 text-sm text-gray-900 transition duration-100 hover:bg-blue-100"
-      href={`/team/${org.name}`}
+      href={`/team/${org.name}/funding`}
     >
       <div className=" flex flex-1 items-center gap-4">
         <Avatar

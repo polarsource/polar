@@ -1,5 +1,5 @@
 import { Metadata, ResolvingMetadata } from 'next'
-import ClientPage from './ClientPage'
+import { redirect } from 'next/navigation'
 
 export async function generateMetadata(
   {
@@ -14,6 +14,6 @@ export async function generateMetadata(
   }
 }
 
-export default function Page() {
-  return <ClientPage />
+export default function Page({ params }: { params: { team: string } }) {
+  return redirect(`/team/${params.team}/funding`)
 }

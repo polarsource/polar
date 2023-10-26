@@ -716,7 +716,12 @@ const FundToday = ({
        */}
       {!showStripeForm && (
         <div className="mt-6">
-          <Button disabled={true} loading={isSyncing} onClick={() => false}>
+          <Button
+            disabled={true}
+            loading={isSyncing}
+            onClick={() => false}
+            fullWidth
+          >
             Fund this issue
           </Button>
         </div>

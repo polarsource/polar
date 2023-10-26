@@ -146,6 +146,7 @@ const FundOnCompletion = ({
 
       <div className="">
         <Button
+          fullWidth
           disabled={!hasValidDetails}
           loading={isLoading}
           onClick={submit}

@@ -253,7 +253,12 @@ const PaymentForm = ({
         )}
 
       <div>
-        <Button disabled={!canSubmit} loading={isSyncing} onClick={onSubmit}>
+        <Button
+          disabled={!canSubmit}
+          loading={isSyncing}
+          onClick={onSubmit}
+          fullWidth
+        >
           Fund this issue
         </Button>
       </div>

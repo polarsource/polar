@@ -15,6 +15,7 @@ from polar.notifications.notification import (
     MaintainerPledgePendingNotification,
     PledgerPledgePendingNotification,
     RewardPaidNotification,
+    TeamAdminMemberPledgedNotification,
 )
 
 
@@ -33,6 +34,7 @@ class NotificationType(str, Enum):
     MaintainerPledgedIssuePendingNotification = (
         "MaintainerPledgedIssuePendingNotification"
     )
+    TeamAdminMemberPledgedNotification = "TeamAdminMemberPledgedNotification"
 
     @classmethod
     def from_str(cls, s: str) -> Self:
@@ -47,23 +49,18 @@ class NotificationRead(Schema):
     maintainer_pledge_paid: MaintainerPledgePaidNotification | None = None
     maintainer_pledge_confirmation_pending: (
         MaintainerPledgeConfirmationPendingNotification | None
-    ) = (  # noqa: E501
-        None
-    )
+    ) = None  # noqa: E501
     maintainer_pledge_pending: MaintainerPledgePendingNotification | None = None
     maintainer_pledge_created: MaintainerPledgeCreatedNotification | None = None
     pledger_pledge_pending: PledgerPledgePendingNotification | None = None
     reward_paid: RewardPaidNotification | None = None
     maintainer_pledged_issue_confirmation_pending: (
         MaintainerPledgedIssueConfirmationPendingNotification | None
-    ) = (  # noqa: E501
-        None
-    )
+    ) = None  # noqa: E501
     maintainer_pledged_issue_pending: (
         MaintainerPledgedIssuePendingNotification | None
-    ) = (  # noqa: E501
-        None
-    )
+    ) = None  # noqa: E501
+    team_admin_member_pledged: TeamAdminMemberPledgedNotification | None = None
 
 
 class NotificationsList(Schema):

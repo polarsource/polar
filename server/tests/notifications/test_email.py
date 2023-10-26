@@ -4,6 +4,7 @@ import uuid
 
 import pytest
 
+from polar.models.organization import Organization
 from polar.models.user import User
 from polar.notifications.notification import (
     MaintainerPledgeConfirmationPendingNotification,
@@ -14,6 +15,7 @@ from polar.notifications.notification import (
     MaintainerPledgePendingNotification,
     PledgerPledgePendingNotification,
     RewardPaidNotification,
+    TeamAdminMemberPledgedNotification,
 )
 from polar.pledge.schemas import PledgeType
 
@@ -327,6 +329,26 @@ async def test_MaintainerPledgedIssuePendingNotification_with_account(
         issue_org_name="testorg",
         issue_repo_name="testrepo",
         maintainer_has_account=True,
+    )
+
+    await check_diff(n.render(predictable_user))
+
+
+@pytest.mark.asyncio
+async def test_TeamAdminMemberPledgedNotification(
+    predictable_user: User,
+    predictable_organization: Organization,
+) -> None:
+    n = TeamAdminMemberPledgedNotification(
+        issue_url="https://github.com/testorg/testrepo/issues/123",
+        issue_title="issue title",
+        issue_number=123,
+        issue_org_name="testorg",
+        issue_repo_name="testrepo",
+        team_name=predictable_organization.name,
+        team_member_name=predictable_user.username,
+        pledge_amount="500.00",
+        pledge_id=uuid.uuid4(),
     )
 
     await check_diff(n.render(predictable_user))

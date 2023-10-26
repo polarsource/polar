@@ -12,6 +12,7 @@ from polar.notifications.notification import (
     MaintainerPledgePendingNotification,
     PledgerPledgePendingNotification,
     RewardPaidNotification,
+    TeamAdminMemberPledgedNotification,
 )
 from polar.postgres import AsyncSession, get_db_session
 
@@ -63,6 +64,8 @@ async def get(
                 notif.maintainer_pledged_issue_confirmation_pending = payload
             if isinstance(payload, MaintainerPledgedIssuePendingNotification):
                 notif.maintainer_pledged_issue_pending = payload
+            if isinstance(payload, TeamAdminMemberPledgedNotification):
+                notif.team_admin_member_pledged = payload
 
             return notif
         except Exception as e:

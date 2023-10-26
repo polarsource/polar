@@ -10,6 +10,7 @@ import {
   NotificationType,
   PledgerPledgePendingNotification,
   RewardPaidNotification,
+  TeamAdminMemberPledgedNotification,
 } from '@polar-sh/sdk'
 import { GitMergeIcon } from 'polarkit/components/icons'
 import { Button, PolarTimeAgo } from 'polarkit/components/ui/atoms'
@@ -555,6 +556,34 @@ const PledgerPledgePending = ({
   )
 }
 
+const TeamAdminMemberPledged = ({
+  n,
+  payload,
+}: {
+  n: NotificationRead
+  payload: TeamAdminMemberPledgedNotification
+}) => {
+  return (
+    <Item n={n} iconClasses="bg-blue-200 text-blue-600">
+      {{
+        text: (
+          <>
+            {payload.team_member_name} pledged ${payload.pledge_amount} towards{' '}
+            <Link href={payload.issue_url}>
+              <>
+                {payload.issue_org_name}/{payload.issue_repo_name}#
+                {payload.issue_number}
+              </>
+            </Link>{' '}
+            on behalf of {payload.team_name}.
+          </>
+        ),
+        icon: <DollarSignIcon />,
+      }}
+    </Item>
+  )
+}
+
 export const Notification = ({
   n,
   setIsInNestedModal,
@@ -626,6 +655,13 @@ export const Notification = ({
     case NotificationType.PLEDGER_PLEDGE_PENDING_NOTIFICATION:
       if (n.pledger_pledge_pending) {
         return <PledgerPledgePending n={n} payload={n.pledger_pledge_pending} />
+      }
+
+    case NotificationType.TEAM_ADMIN_MEMBER_PLEDGED_NOTIFICATION:
+      if (n.team_admin_member_pledged) {
+        return (
+          <TeamAdminMemberPledged n={n} payload={n.team_admin_member_pledged} />
+        )
       }
   }
 

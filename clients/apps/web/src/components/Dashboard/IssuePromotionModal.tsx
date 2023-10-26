@@ -1,6 +1,7 @@
 import { useRequireAuth } from '@/hooks'
 import { githubIssueLink } from '@/utils/github'
-import { GiftIcon, HeartIcon, MegaphoneIcon } from '@heroicons/react/24/outline'
+import { HeartIcon } from '@heroicons/react/24/outline'
+import { CardGiftcardOutlined, WifiTethering } from '@mui/icons-material'
 import { CurrencyAmount, Issue, Pledge, UserRead } from '@polar-sh/sdk'
 import Image from 'next/image'
 import { api, queryClient } from 'polarkit/api'
@@ -236,12 +237,12 @@ export const BadgePromotionModal = (props: {
           />
           <Tab
             value="rewards"
-            icon={<GiftIcon className="h-4 w-4" />}
+            icon={<CardGiftcardOutlined fontSize="small" />}
             title="Rewards"
           />
           <Tab
             value="promote"
-            icon={<MegaphoneIcon className="h-4 w-4" />}
+            icon={<WifiTethering fontSize="small" />}
             title="Promote"
           />
         </TabsList>

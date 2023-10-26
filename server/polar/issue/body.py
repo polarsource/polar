@@ -39,7 +39,7 @@ class IssueBodyRenderer:
         cached_body = await self.redis.get(cache_key)
         if cached_body is not None:
             bounded_logger.debug("cache hit")
-            return str(cached_body)
+            return cached_body
 
         body = self._preprocess(issue.body)
 

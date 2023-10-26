@@ -727,7 +727,7 @@ class GithubIssueService(IssueService):
         if val:
             res_issues: list[Issue] = []
             for id in val:
-                issue = await github_issue.get(session, UUID(str(id)))
+                issue = await github_issue.get(session, UUID(id))
                 if issue:
                     res_issues.append(issue)
             return res_issues

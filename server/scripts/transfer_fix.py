@@ -95,8 +95,10 @@ async def organizations_renamed(
 
                 try:
                     if organization.is_personal:
-                        user_data = client.rest.users.get_by_username(
-                            str(organization.name)
+                        user_data = (
+                            await client.rest.users.async_get_by_username(
+                                str(organization.name)
+                            )
                         ).parsed_data
                         login = user_data.login
                     else:
@@ -174,10 +176,10 @@ async def repositories_transferred(
 
                 try:
                     paginator = client.paginate(
-                        client.rest.apps.list_repos_accessible_to_installation,
+                        client.rest.apps.async_list_repos_accessible_to_installation,
                         map_func=mapper,
                     )
-                    for repository_data in paginator:
+                    async for repository_data in paginator:
                         repository = await github_repository_service.get_by_external_id(
                             session, repository_data.id
                         )
@@ -260,8 +262,10 @@ async def issues_transferred(
                 client = get_app_installation_client(organization.safe_installation_id)
 
                 try:
-                    issue_data = client.rest.issues.get(
-                        organization.name, repository.name, issue.number
+                    issue_data = (
+                        await client.rest.issues.async_get(
+                            organization.name, repository.name, issue.number
+                        )
                     ).parsed_data
                 except RequestError:
                     typer.echo(typer.style("\tUnauthenticated app", fg="yellow"))

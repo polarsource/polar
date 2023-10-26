@@ -224,7 +224,7 @@ class GithubOrganizationService(OrganizationService):
         self, session: AsyncSession, org: Organization
     ) -> None:
         client = github.get_app_installation_client(org.safe_installation_id)
-        github_org = client.rest.orgs.get(org.name)
+        github_org = await client.rest.orgs.async_get(org.name)
 
         gh = github_org.parsed_data
 
@@ -242,7 +242,7 @@ class GithubOrganizationService(OrganizationService):
         self, session: AsyncSession, org: Organization
     ) -> None:
         client = github.get_app_installation_client(org.safe_installation_id)
-        github_org = client.rest.users.get_by_username(org.name)
+        github_org = await client.rest.users.async_get_by_username(org.name)
 
         gh = github_org.parsed_data
 

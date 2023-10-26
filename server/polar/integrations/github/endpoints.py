@@ -187,7 +187,9 @@ async def lookup_user(
 ) -> GithubUser:
     try:
         client = await github.get_user_client(session, auth.user)
-        github_user = client.rest.users.get_by_username(username=body.username)
+        github_user = await client.rest.users.async_get_by_username(
+            username=body.username
+        )
     except Exception:
         raise HTTPException(status_code=404, detail="user not found")
 

@@ -22,14 +22,17 @@ export default async function Page({
   params: { organization: string }
 }) {
   const api = getServerSideAPI()
-  const organization = await api.organizations.lookup({
-    organizationName: params.organization,
-    platform: Platforms.GITHUB,
-  })
-  const subscriptionTiers = await api.subscriptions.searchSubscriptionTiers({
-    organizationName: params.organization,
-    platform: Platforms.GITHUB,
-  })
+
+  const [organization, subscriptionTiers] = await Promise.all([
+    api.organizations.lookup({
+      organizationName: params.organization,
+      platform: Platforms.GITHUB,
+    }),
+    api.subscriptions.searchSubscriptionTiers({
+      organizationName: params.organization,
+      platform: Platforms.GITHUB,
+    }),
+  ])
 
   return (
     <TiersPage

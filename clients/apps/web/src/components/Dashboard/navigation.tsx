@@ -118,11 +118,6 @@ export const maintainerRoutes = (org: Organization): Route[] => [
     if: false, // Hidden for now
     subs: [
       {
-        title: 'Overview',
-        link: `/team/${org.name}`,
-        icon: <ShortTextOutlined fontSize="inherit" />,
-      },
-      {
         title: 'Funding',
         link: `/team/${org.name}/funding`,
         icon: <AttachMoneyOutlined fontSize="inherit" />,

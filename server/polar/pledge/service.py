@@ -330,7 +330,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             issue_id=issue.id,
         )
 
-        await notification_service.send_to_org(
+        await notification_service.send_to_org_admins(
             session=session,
             org_id=org.id,
             notif=PartialNotification(issue_id=issue.id, payload=n),
@@ -423,7 +423,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             issue_id=issue_id,
         )
 
-        await notification_service.send_to_org(
+        await notification_service.send_to_org_admins(
             session=session,
             org_id=org.id,
             notif=PartialNotification(issue_id=issue_id, payload=n),
@@ -843,7 +843,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         )
 
         if split.organization_id:
-            await notification_service.send_to_org(
+            await notification_service.send_to_org_admins(
                 session=session,
                 org_id=split.organization_id,
                 notif=PartialNotification(

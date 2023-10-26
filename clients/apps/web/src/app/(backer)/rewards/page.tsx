@@ -112,7 +112,7 @@ const AccountBanner = (props: { user: UserRead; accounts: Account[] }) => {
         color="default"
         right={
           <Button
-            size="small"
+            size="sm"
             onClick={(e) => {
               e.preventDefault()
               goToOnboarding(accounts[0])

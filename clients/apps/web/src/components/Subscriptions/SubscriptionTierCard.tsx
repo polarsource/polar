@@ -32,21 +32,6 @@ const hexToRGBA = (hex: string, opacity: number): string => {
     : ''
 }
 
-const mockedBenefits = [
-  {
-    id: '123',
-    summary: 'Badge on Profile',
-  },
-  {
-    id: '456',
-    summary: 'Small Logo in README',
-  },
-  {
-    id: '789',
-    summary: 'Discord Support Channel',
-  },
-]
-
 const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   subscriptionTier,
   children,
@@ -144,13 +129,13 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
       </CardHeader>
       <Separator className="bg-[--var-border-color] dark:bg-[--var-dark-border-color]" />
       <CardContent className="flex shrink flex-col gap-y-1 p-0">
-        {mockedBenefits.map((benefit) => (
+        {(subscriptionTier.benefits ?? []).map((benefit) => (
           <div
             key={benefit.id}
             className="flex flex-row items-center text-[--var-fg-color] dark:text-[--var-dark-fg-color]"
           >
             <CheckOutlined className="h-4 w-4" fontSize="small" />
-            <span className="ml-2 text-sm">{benefit.summary}</span>
+            <span className="ml-2 text-sm">{benefit.description}</span>
           </div>
         ))}
       </CardContent>

@@ -13,7 +13,7 @@ log = structlog.get_logger()
 
 class UserOrganizationervice:
     async def list_by_org(
-        self, session: AsyncSession, org_id: UUID
+        self, session: AsyncSession, org_id: UUID, is_admin: bool | None = None
     ) -> Sequence[UserOrganization]:
         stmt = (
             sql.select(UserOrganization)
@@ -26,6 +26,9 @@ class UserOrganizationervice:
                 joinedload(UserOrganization.organization),
             )
         )
+
+        if is_admin is not None:
+            stmt = stmt.where(UserOrganization.is_admin == is_admin)
 
         res = await session.execute(stmt)
         return res.scalars().unique().all()

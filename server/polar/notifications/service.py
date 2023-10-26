@@ -83,13 +83,17 @@ class NotificationsService:
         await enqueue_job("notifications.send", notification_id=notification.id)
         return True
 
-    async def send_to_org(
+    async def send_to_org_admins(
         self,
         session: AsyncSession,
         org_id: UUID,
         notif: PartialNotification,
     ) -> None:
-        members = await user_organization_service.list_by_org(session, org_id)
+        members = await user_organization_service.list_by_org(
+            session,
+            org_id,
+            is_admin=True,
+        )
         for member in members:
             await self.send_to_user(
                 session=session,
@@ -125,7 +129,7 @@ class NotificationsService:
         notif: PartialNotification,
     ) -> None:
         if pledge.by_organization_id:
-            await self.send_to_org(
+            await self.send_to_org_admins(
                 session=session,
                 org_id=pledge.by_organization_id,
                 notif=notif,

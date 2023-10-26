@@ -27,7 +27,9 @@ async def test_create_pledge_from_created(
     issue: Issue,
     mocker: MockerFixture,
 ) -> None:
-    m = mocker.patch("polar.notifications.service.NotificationsService.send_to_org")
+    m = mocker.patch(
+        "polar.notifications.service.NotificationsService.send_to_org_admins"
+    )
 
     payment_id = "xxx-1"
 
@@ -82,7 +84,9 @@ async def test_create_pledge_from_created_by_user(
     mocker: MockerFixture,
     user: User,
 ) -> None:
-    m = mocker.patch("polar.notifications.service.NotificationsService.send_to_org")
+    m = mocker.patch(
+        "polar.notifications.service.NotificationsService.send_to_org_admins"
+    )
 
     payment_id = "xxx-1"
 
@@ -137,7 +141,9 @@ async def test_create_pledge_from_created_on_behalf_of(
     mocker: MockerFixture,
     user: User,
 ) -> None:
-    m = mocker.patch("polar.notifications.service.NotificationsService.send_to_org")
+    m = mocker.patch(
+        "polar.notifications.service.NotificationsService.send_to_org_admins"
+    )
 
     payment_id = "xxx-1"
 
@@ -194,7 +200,13 @@ async def test_deduplicate(
     user_organization_second: UserOrganization,  # two members
     mocker: MockerFixture,
 ) -> None:
-    spy = mocker.spy(NotificationsService, "send_to_org")
+    user_organization.is_admin = True
+    await user_organization.save(session)
+
+    user_organization_second.is_admin = True
+    await user_organization_second.save(session)
+
+    spy = mocker.spy(NotificationsService, "send_to_org_admins")
     mocker.patch("polar.worker._enqueue_job")
 
     pledge = await Pledge.create(

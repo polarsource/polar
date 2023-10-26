@@ -98,7 +98,7 @@ export const NotificationSettingsBox = (props: {
 
       <Button
         fullWidth={false}
-        classNames="min-w-[100px]"
+        className="min-w-[100px]"
         loading={props.isSaving}
         onClick={props.save}
         disabled={!props.canSave}

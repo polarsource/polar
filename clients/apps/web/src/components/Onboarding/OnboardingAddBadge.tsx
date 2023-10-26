@@ -29,7 +29,7 @@ const OnboardingAddBadge = () => {
 
         <IconCounter icon="thumbs_up" count={21} />
 
-        <Button fullWidth={false} size="small">
+        <Button fullWidth={false} size="sm">
           <span>Add badge</span>
         </Button>
         <div className="absolute bottom-0 left-0 right-0 top-0">

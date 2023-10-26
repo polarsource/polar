@@ -38,7 +38,7 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({}) => {
         className="w-full"
       />
       <div className="absolute inset-y-0 right-0 flex items-center pr-2">
-        <Button type="submit" size="small" loading={loading} disabled={loading}>
+        <Button type="submit" size="sm" loading={loading} disabled={loading}>
           Sign in
         </Button>
       </div>

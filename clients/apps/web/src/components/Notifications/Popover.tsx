@@ -385,7 +385,7 @@ export const MaintainerPledgeConfirmationPending = ({
               {canMarkSolved && (
                 <Button
                   fullWidth={false}
-                  size="small"
+                  size="sm"
                   loading={isLoading}
                   disabled={isLoading}
                   onClick={onMarkSoved}

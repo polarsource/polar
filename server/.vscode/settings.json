@@ -1,16 +1,11 @@
 {
   "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
   "python.envFile": "${workspaceFolder}/.env.testing",
   "python.terminal.activateEnvironment": true,
   "python.terminal.activateEnvInCurrentTerminal": true,
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
-  "editor.defaultFormatter": "charliermarsh.ruff",
-  "editor.formatOnSave": true,
-  "editor.codeActionsOnSave": {
-    "source.organizeImports.ruff": true,
-    "source.fixAll": true
-  },
   "files.exclude": {
     "**/.git": true,
     "**/.pytest_cache": true,
@@ -22,4 +17,12 @@
   "editor.rulers": [88],
   "python.testing.pytestPath": "${workspaceFolder}/.venv/bin/pytest",
   "python.testing.cwd": "${workspaceFolder}",
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": true,
+      "source.organizeImports": true
+    },
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  },
 }

@@ -49,6 +49,7 @@ from polar.notifications.notification import (
     MaintainerPledgedIssuePendingNotification,
     PledgerPledgePendingNotification,
     RewardPaidNotification,
+    TeamAdminMemberPledgedNotification,
 )
 from polar.notifications.service import (
     PartialNotification,
@@ -427,6 +428,51 @@ class PledgeService(ResourceServiceReader[Pledge]):
             session=session,
             org_id=org.id,
             notif=PartialNotification(issue_id=issue_id, payload=n),
+        )
+
+    async def send_team_admin_member_pledged_notification(
+        self,
+        session: AsyncSession,
+        pledge: Pledge,
+        created_by_user: User,
+    ) -> None:
+        if not pledge.by_organization_id:
+            return None
+
+        issue = await issue_service.get(session, pledge.issue_id)
+        if not issue:
+            raise Exception("issue not found")
+
+        org = await organization_service.get(session, issue.organization_id)
+        if not org:
+            raise Exception("org not found")
+
+        repo = await repository_service.get(session, issue.repository_id)
+        if not repo:
+            raise Exception("repo not found")
+
+        pledging_org = await organization_service.get(
+            session, pledge.by_organization_id
+        )
+        if not pledging_org:
+            raise Exception("pledging org not found")
+
+        n = TeamAdminMemberPledgedNotification(
+            pledge_amount=get_cents_in_dollar_string(pledge.amount),
+            issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
+            issue_title=issue.title,
+            issue_org_name=org.name,
+            issue_repo_name=repo.name,
+            issue_number=issue.number,
+            team_member_name=created_by_user.username,
+            team_name=pledging_org.name,
+            pledge_id=pledge.id,
+        )
+
+        await notification_service.send_to_org_admins(
+            session=session,
+            org_id=pledge.by_organization_id,
+            notif=PartialNotification(issue_id=pledge.issue_id, payload=n),
         )
 
     async def send_pledger_pending_notification(
@@ -960,6 +1006,11 @@ class PledgeService(ResourceServiceReader[Pledge]):
         await loops_service.user_update(authenticated_user, isBacker=True)
 
         await pledge_created.call(PledgeHook(session, pledge))
+
+        if by_organization_id:
+            await self.send_team_admin_member_pledged_notification(
+                session, pledge, authenticated_user
+            )
 
         return pledge
 

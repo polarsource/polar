@@ -426,3 +426,99 @@ async def test_summary_private_repo(
     )
 
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_create_pay_on_completion_total_monthly_spending_limit(
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+    auth_jwt: str,
+    client: AsyncClient,
+    session: AsyncSession,
+) -> None:
+    # configure org spending limit
+    organization.total_monthly_spending_limit = 10000
+    await organization.save(session)
+
+    # first pledge is OK
+    create_pledge = await client.post(
+        "/api/v1/pledges/pay_on_completion",
+        json={
+            "issue_id": str(issue.id),
+            "amount": 6000,
+            "by_organization_id": str(organization.id),
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert create_pledge.status_code == 200
+
+    pledge = create_pledge.json()
+    assert pledge["state"] == "created"
+
+    # not OK, reached spending limit
+    create_pledge = await client.post(
+        "/api/v1/pledges/pay_on_completion",
+        json={
+            "issue_id": str(issue.id),
+            "amount": 6000,
+            "by_organization_id": str(organization.id),
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert create_pledge.status_code == 400
+
+    assert (
+        create_pledge.text
+        == '{"type":"BadRequest","detail":"The team spending limit has been reached"}'
+    )
+
+
+@pytest.mark.asyncio
+async def test_create_pay_on_completion_per_user_monthly_spending_limit(
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+    auth_jwt: str,
+    client: AsyncClient,
+    session: AsyncSession,
+) -> None:
+    # configure org spending limit
+    organization.per_user_monthly_spending_limit = 10000
+    await organization.save(session)
+
+    # first pledge is OK
+    create_pledge = await client.post(
+        "/api/v1/pledges/pay_on_completion",
+        json={
+            "issue_id": str(issue.id),
+            "amount": 6000,
+            "by_organization_id": str(organization.id),
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert create_pledge.status_code == 200
+
+    pledge = create_pledge.json()
+    assert pledge["state"] == "created"
+
+    # not OK, reached spending limit
+    create_pledge = await client.post(
+        "/api/v1/pledges/pay_on_completion",
+        json={
+            "issue_id": str(issue.id),
+            "amount": 6000,
+            "by_organization_id": str(organization.id),
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert create_pledge.status_code == 400
+
+    assert (
+        create_pledge.text
+        == '{"type":"BadRequest","detail":"The user spending limit has been reached"}'
+    )

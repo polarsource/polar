@@ -27,6 +27,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
     number,
     state,
     issue_created_at,
+    issue_closed_at,
     reactions,
     comments,
     repository,
@@ -35,7 +36,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
   const isOpen = state === IssueStateEnum.OPEN
 
   const createdAt = new Date(issue_created_at)
-  const closedAt = new Date(issue_created_at)
+  const closedAt = issue_closed_at ? new Date(issue_closed_at) : undefined
 
   const showCommentsCount = !!(comments && comments > 0)
   const showReactionsThumbs = !!(reactions && reactions.plus_one > 0)
@@ -77,11 +78,11 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
               #{number}{' '}
               {isOpen ? (
                 <>
-                  opened <PolarTimeAgo date={new Date(createdAt)} />
+                  opened <PolarTimeAgo date={createdAt} />
                 </>
               ) : (
                 <>
-                  closed <PolarTimeAgo date={new Date(closedAt)} />
+                  closed <PolarTimeAgo date={closedAt as Date} />
                 </>
               )}{' '}
               in {organization.name}/{repository.name}

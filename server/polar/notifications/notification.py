@@ -276,3 +276,24 @@ You made a ${{pledge_amount}} pledge behind it on {{pledge_date}}, to be paid on
 Best,<br>
 Polar
 """  # noqa: E501
+
+
+class TeamAdminMemberPledgedNotification(NotificationBase):
+    team_member_name: str
+    team_name: str
+    pledge_amount: str
+    issue_url: str
+    issue_title: str
+    issue_number: int
+    issue_org_name: str
+    issue_repo_name: str
+    pledge_id: UUID
+
+    def subject(self) -> str:
+        return "{{team_member_name}} pledged ${{pledge_amount}} to {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}"
+
+    def body(self) -> str:
+        return """Hi,<br><br>
+
+{{team_member_name}} just made a ${{pledge_amount}} pledge towards <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}</a> on behalf of {{team_name}}.
+"""  # noqa: E501

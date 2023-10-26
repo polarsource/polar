@@ -22,6 +22,7 @@ from polar.notifications.notification import (
     NotificationBase,
     PledgerPledgePendingNotification,
     RewardPaidNotification,
+    TeamAdminMemberPledgedNotification,
 )
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
@@ -163,6 +164,7 @@ class NotificationsService:
         | RewardPaidNotification
         | MaintainerPledgedIssueConfirmationPendingNotification
         | MaintainerPledgedIssuePendingNotification
+        | TeamAdminMemberPledgedNotification
     ):
         match n.type:
             case "MaintainerPledgeCreatedNotification":
@@ -187,6 +189,8 @@ class NotificationsService:
                 return parse_obj_as(
                     MaintainerPledgedIssuePendingNotification, n.payload
                 )
+            case "TeamAdminMemberPledgedNotification":
+                return parse_obj_as(TeamAdminMemberPledgedNotification, n.payload)
 
         raise ValueError(f"unknown notificaiton type {n.type}")
 

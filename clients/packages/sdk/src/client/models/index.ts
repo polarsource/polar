@@ -1983,6 +1983,12 @@ export interface NotificationRead {
      * @memberof NotificationRead
      */
     maintainer_pledged_issue_pending?: MaintainerPledgedIssuePendingNotification;
+    /**
+     * 
+     * @type {TeamAdminMemberPledgedNotification}
+     * @memberof NotificationRead
+     */
+    team_admin_member_pledged?: TeamAdminMemberPledgedNotification;
 }
 
 /**
@@ -1997,7 +2003,8 @@ export const NotificationType = {
     PLEDGER_PLEDGE_PENDING_NOTIFICATION: 'PledgerPledgePendingNotification',
     REWARD_PAID_NOTIFICATION: 'RewardPaidNotification',
     MAINTAINER_PLEDGED_ISSUE_CONFIRMATION_PENDING_NOTIFICATION: 'MaintainerPledgedIssueConfirmationPendingNotification',
-    MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION: 'MaintainerPledgedIssuePendingNotification'
+    MAINTAINER_PLEDGED_ISSUE_PENDING_NOTIFICATION: 'MaintainerPledgedIssuePendingNotification',
+    TEAM_ADMIN_MEMBER_PLEDGED_NOTIFICATION: 'TeamAdminMemberPledgedNotification'
 } as const;
 export type NotificationType = typeof NotificationType[keyof typeof NotificationType];
 
@@ -4149,6 +4156,67 @@ export interface SynchronizeMembersResponse {
      * @memberof SynchronizeMembersResponse
      */
     status: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface TeamAdminMemberPledgedNotification
+ */
+export interface TeamAdminMemberPledgedNotification {
+    /**
+     * 
+     * @type {string}
+     * @memberof TeamAdminMemberPledgedNotification
+     */
+    team_member_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TeamAdminMemberPledgedNotification
+     */
+    team_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TeamAdminMemberPledgedNotification
+     */
+    pledge_amount: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TeamAdminMemberPledgedNotification
+     */
+    issue_url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TeamAdminMemberPledgedNotification
+     */
+    issue_title: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof TeamAdminMemberPledgedNotification
+     */
+    issue_number: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof TeamAdminMemberPledgedNotification
+     */
+    issue_org_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TeamAdminMemberPledgedNotification
+     */
+    issue_repo_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TeamAdminMemberPledgedNotification
+     */
+    pledge_id: string;
 }
 /**
  * 

@@ -6,6 +6,7 @@ import {
   NotificationType,
 } from '@polar-sh/sdk'
 import {
+  addDays,
   notification_maintainerPledgeConfirmationPendingNotification,
   notification_maintainerPledgeCreatedNotification,
   notification_maintainerPledgePaidNotification,
@@ -159,3 +160,24 @@ export const MaintainerPledgedIssueConfirmationPendingNotificationItem: StoryCon
       )
     },
   }
+
+export const TeamAdminMemberPledgedNotificationItem: Story = {
+  args: {
+    n: {
+      id: 'x',
+      created_at: addDays(new Date(), -2).toISOString(),
+      type: NotificationType.TEAM_ADMIN_MEMBER_PLEDGED_NOTIFICATION,
+      team_admin_member_pledged: {
+        pledge_amount: '123.50',
+        issue_url: '#',
+        issue_title: 'Hello World',
+        issue_org_name: 'polarsource',
+        issue_repo_name: 'polar',
+        issue_number: 123,
+        team_member_name: 'zegl',
+        team_name: 'polarsource',
+        pledge_id: 'x',
+      },
+    },
+  },
+}

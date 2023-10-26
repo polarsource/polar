@@ -5,9 +5,9 @@ from .client import get_app_client
 log = structlog.get_logger()
 
 
-def verify_app_configuration() -> None:
+async def verify_app_configuration() -> None:
     client = get_app_client()
-    app = client.rest.apps.get_authenticated()
+    app = await client.rest.apps.async_get_authenticated()
 
     permissions = app.parsed_data.permissions
     events = app.parsed_data.events

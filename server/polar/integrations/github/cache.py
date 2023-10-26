@@ -1,9 +1,8 @@
 import datetime
-from typing import Optional
 
 from githubkit.cache.base import BaseCache
 
-from polar.redis import sync_redis
+from polar.redis import redis
 
 
 class RedisCache(BaseCache):
@@ -13,16 +12,13 @@ class RedisCache(BaseCache):
         pass
 
     def get(self, key: str) -> str | None:
-        val = sync_redis.get("githubkit:" + key)
-        if val:
-            return str(val)
-        return None
+        raise NotImplementedError()
 
     async def aget(self, key: str) -> str | None:
-        return self.get(key)
+        return await redis.get("githubkit:" + key)
 
     def set(self, key: str, value: str, ex: datetime.timedelta) -> None:
-        sync_redis.setex("githubkit:" + key, time=ex, value=value)
+        raise NotImplementedError()
 
     async def aset(self, key: str, value: str, ex: datetime.timedelta) -> None:
-        return self.set(key, value, ex)
+        await redis.setex("githubkit:" + key, time=ex, value=value)

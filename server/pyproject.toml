@@ -64,11 +64,8 @@ lint_types = { cmd = "mypy polar scripts tests", help = "run mypy type verify" }
 db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade" }
 db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }
 clean = { cmd = "find * -name '*.pyc' -delete && find * -name '__pycache__' -delete", help = "clean up .pyc and __pycache__" }
-verify_github_app = { cmd = "poetry run verify_github_app", help = "verify that the github app is correctly configured" }
+verify_github_app = { cmd = "python -m polar.verify_github_app", help = "verify that the github app is correctly configured" }
 pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render"}
-
-[tool.poetry.scripts]
-verify_github_app = "polar.verify_github_app:main"
 
 [tool.pytest.ini_options]
 markers = ["authenticated"]

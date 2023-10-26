@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+import calendar
 import datetime
 from collections.abc import Awaitable, Callable, Sequence
 from datetime import timedelta
-from typing import Any
+from typing import Any, Tuple
 from uuid import UUID
 
 import stripe as stripe_lib
 import structlog
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import (
     joinedload,
 )
@@ -1172,6 +1173,48 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
 
         return res
+
+    async def sum_pledges_period(
+        self,
+        session: AsyncSession,
+        organization_id: UUID,
+        user_id: UUID | None = None,
+    ) -> int:
+        stmt = sql.select(func.sum(Pledge.amount)).where(
+            Pledge.by_organization_id == organization_id
+        )
+
+        if user_id:
+            stmt = stmt.where(Pledge.created_by_user_id == user_id)
+
+        now = utc_now()
+        (start, end) = self.month_range(now)
+        stmt = stmt.where(
+            Pledge.created_at >= start,
+            Pledge.created_at <= end,
+        )
+
+        res = await session.execute(stmt)
+        return res.scalar_one()
+
+    """
+    month_range returns the first and the last second of the month that ts is in
+    """
+
+    def month_range(
+        self, ts: datetime.datetime
+    ) -> tuple[datetime.datetime, datetime.datetime]:
+        # go to first day and second of the month
+        start = ts.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        # add 35 days to skip to the next month
+        end = start + timedelta(days=35)
+        # go to the first day of the next month
+        end = end.replace(day=1)
+        # go back one second to find the last second of the "current" month
+        end = end - timedelta(seconds=1)
+
+        return (start, end)
 
 
 pledge = PledgeService(Pledge)

@@ -1,7 +1,7 @@
 import re
 import uuid
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pytest
 from pytest_mock import MockerFixture
@@ -767,3 +767,128 @@ async def test_mark_created_by_payment_id(
     got = await pledge_service.get(session, pledge.id)
     assert got
     assert got.state == PledgeState.created
+
+
+@pytest.mark.asyncio
+async def test_sum_pledges_period(
+    session: AsyncSession,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+    user: User,
+) -> None:
+    p1 = await Pledge.create(
+        session=session,
+        issue_id=issue.id,
+        repository_id=repository.id,
+        organization_id=organization.id,
+        amount=12300,
+        fee=123,
+        by_organization_id=organization.id,
+        state=PledgeState.created,
+        created_at=utc_now(),
+    )
+
+    p2 = await Pledge.create(
+        session=session,
+        issue_id=issue.id,
+        repository_id=repository.id,
+        organization_id=organization.id,
+        amount=800,
+        fee=123,
+        by_organization_id=organization.id,
+        state=PledgeState.created,
+        created_at=utc_now(),
+        created_by_user_id=user.id,
+    )
+
+    p3 = await Pledge.create(
+        session=session,
+        issue_id=issue.id,
+        repository_id=repository.id,
+        organization_id=organization.id,
+        amount=800,
+        fee=123,
+        by_organization_id=organization.id,
+        state=PledgeState.created,
+        created_at=utc_now() + timedelta(days=60),  # not in current period
+    )
+
+    period_sum = await pledge_service.sum_pledges_period(
+        session, organization_id=organization.id
+    )
+
+    assert period_sum == 12300 + 800
+
+    period_sum_user = await pledge_service.sum_pledges_period(
+        session, organization_id=organization.id, user_id=user.id
+    )
+
+    assert period_sum_user == 800
+
+
+@pytest.mark.asyncio
+async def test_month_range() -> None:
+    # 31 day month
+    assert pledge_service.month_range(
+        datetime(year=2023, month=10, day=26, hour=3, minute=2)
+    ) == (
+        datetime(year=2023, month=10, day=1, hour=0, minute=0),
+        datetime(year=2023, month=10, day=31, hour=23, minute=59, second=59),
+    )
+
+    # 30 day month
+    assert pledge_service.month_range(
+        datetime(year=2023, month=9, day=26, hour=3, minute=2)
+    ) == (
+        datetime(year=2023, month=9, day=1, hour=0, minute=0),
+        datetime(year=2023, month=9, day=30, hour=23, minute=59, second=59),
+    )
+
+    # february
+    assert pledge_service.month_range(
+        datetime(year=2023, month=2, day=3, hour=3, minute=2)
+    ) == (
+        datetime(year=2023, month=2, day=1, hour=0, minute=0),
+        datetime(year=2023, month=2, day=28, hour=23, minute=59, second=59),
+    )
+
+    # first month of year
+    assert pledge_service.month_range(
+        datetime(year=2023, month=1, day=3, hour=3, minute=2)
+    ) == (
+        datetime(year=2023, month=1, day=1, hour=0, minute=0),
+        datetime(year=2023, month=1, day=31, hour=23, minute=59, second=59),
+    )
+
+    # last month of year
+    assert pledge_service.month_range(
+        datetime(year=2023, month=12, day=3, hour=3, minute=2)
+    ) == (
+        datetime(year=2023, month=12, day=1, hour=0, minute=0),
+        datetime(year=2023, month=12, day=31, hour=23, minute=59, second=59),
+    )
+
+    # leap year
+    assert pledge_service.month_range(
+        datetime(year=2024, month=1, day=31, hour=3, minute=2)
+    ) == (
+        datetime(year=2024, month=1, day=1, hour=0, minute=0),
+        datetime(year=2024, month=1, day=31, hour=23, minute=59, second=59),
+    )
+
+    # leap year
+    assert pledge_service.month_range(
+        datetime(year=2024, month=2, day=3, hour=3, minute=2)
+    ) == (
+        datetime(year=2024, month=2, day=1, hour=0, minute=0),
+        datetime(year=2024, month=2, day=29, hour=23, minute=59, second=59),
+    )
+
+    # ts is at year split
+    assert pledge_service.month_range(
+        datetime(year=2024, month=1, day=1, hour=0, minute=0)
+    ) == (
+        datetime(year=2024, month=1, day=1, hour=0, minute=0),
+        datetime(year=2024, month=1, day=31, hour=23, minute=59, second=59),
+    )

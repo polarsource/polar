@@ -1,6 +1,6 @@
 import { PlusIcon } from '@heroicons/react/20/solid'
 import Image from 'next/image'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/atoms'
 import { useStore } from 'polarkit/store'
 import { MouseEvent, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -54,7 +54,7 @@ const OnboardingInstallChromeExtension = () => {
               pledges and more in the future.
             </p>
             <div className="flex items-center justify-between gap-4 pt-2 lg:justify-start">
-              <PrimaryButton
+              <Button
                 color="blue"
                 fullWidth={false}
                 onClick={onPrimary}
@@ -62,7 +62,7 @@ const OnboardingInstallChromeExtension = () => {
               >
                 <PlusIcon className="mr-2 h-6 w-6" />
                 <span>Install Chrome Extension</span>
-              </PrimaryButton>
+              </Button>
               <button
                 type="button"
                 className="text-md text-blue-600 transition-colors duration-200 hover:text-blue-400"

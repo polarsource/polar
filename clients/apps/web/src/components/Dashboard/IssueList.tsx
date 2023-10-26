@@ -7,7 +7,7 @@ import {
 import { IssueListResponse, IssueListType, IssueSortBy } from '@polar-sh/sdk'
 import { InfiniteData } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { Input, PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button, Input } from 'polarkit/components/ui/atoms'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -60,13 +60,13 @@ const IssueList = (props: {
           )}
 
           {hasNextPage && (
-            <PrimaryButton
+            <Button
               loading={isFetchingNextPage}
               disabled={isFetchingNextPage}
               onClick={fetchNextPage}
             >
               Load more
-            </PrimaryButton>
+            </Button>
           )}
 
           {props &&

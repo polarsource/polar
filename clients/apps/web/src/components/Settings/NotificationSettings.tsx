@@ -1,5 +1,5 @@
 import { InfoOutlined } from '@mui/icons-material'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/atoms'
 import { useUser, useUserPreferencesMutation } from 'polarkit/hooks'
 import { useEffect, useState } from 'react'
 import Box from './Box'
@@ -96,7 +96,7 @@ export const NotificationSettingsBox = (props: {
         </span>
       </Box>
 
-      <PrimaryButton
+      <Button
         fullWidth={false}
         classNames="min-w-[100px]"
         loading={props.isSaving}
@@ -104,7 +104,7 @@ export const NotificationSettingsBox = (props: {
         disabled={!props.canSave}
       >
         <span>Save</span>
-      </PrimaryButton>
+      </Button>
     </div>
   )
 }

@@ -5,7 +5,7 @@ import {
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Button } from 'polarkit/components/ui/button'
+import { Button } from 'polarkit/components/ui/atoms'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 import SubscriptionTierCard from './SubscriptionTierCard'
 
@@ -38,7 +38,7 @@ const SubscriptionGroup: React.FC<SubscriptionGroupProps> = ({
               query: { type },
             }}
           >
-            <Button size="sm">
+            <Button>
               <Add className="mr-2" fontSize="small" />
               New Tier
             </Button>

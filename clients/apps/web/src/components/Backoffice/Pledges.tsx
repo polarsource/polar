@@ -3,7 +3,7 @@
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
 import { BackofficePledge } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { ThinButton } from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/atoms'
 import { useBackofficeAllPledges } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useMemo } from 'react'
@@ -28,7 +28,7 @@ const Pledges = () => {
   return (
     <div className="space-y-4">
       {issueList.map((i) => (
-        <div>
+        <div key={i[0].id}>
           <div className="flex gap-2">
             <Link
               className="text-blue-600"
@@ -60,13 +60,14 @@ const Pledges = () => {
               </div>
             )}
 
-            <ThinButton
-              color="gray"
+            <a
               href={`https://github.com/${i[0].issue.repository.organization.name}/${i[0].issue.repository.name}/issues/${i[0].issue.number}`}
             >
-              <span>GitHub</span>
-              <ArrowTopRightOnSquareIcon />
-            </ThinButton>
+              <Button size="sm">
+                <span>GitHub</span>
+                <ArrowTopRightOnSquareIcon />
+              </Button>
+            </a>
           </div>
           <div className="flex flex-col gap-2 p-4">
             {i.map((p) => (
@@ -107,13 +108,14 @@ const Pledges = () => {
                     {p.type}
                   </div>
 
-                  <ThinButton
-                    color="gray"
+                  <a
                     href={`https://dashboard.stripe.com/payments/${p.payment_id}`}
                   >
-                    <span>Payment</span>
-                    <ArrowTopRightOnSquareIcon />
-                  </ThinButton>
+                    <Button size="sm">
+                      <span>Payment</span>
+                      <ArrowTopRightOnSquareIcon />
+                    </Button>
+                  </a>
                 </div>
                 {p.disputed_at && (
                   <div className="bg-red-700 p-2">

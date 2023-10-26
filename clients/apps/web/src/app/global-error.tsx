@@ -1,6 +1,6 @@
 'use client'
 
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/atoms'
 
 export default function GlobalError({
   error,
@@ -15,14 +15,14 @@ export default function GlobalError({
         <div className="flex grow flex-col items-center justify-center space-y-4 p-16">
           <h2 className="text-xl">Something went wrong!</h2>
 
-          <PrimaryButton
+          <Button
             fullWidth={false}
             onClick={() => {
               window.location.href = '/'
             }}
           >
             <span>Go back to Polar</span>
-          </PrimaryButton>
+          </Button>
 
           <p className="pt-24 text-gray-400"></p>
 

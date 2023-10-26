@@ -21,9 +21,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
 import {
+  Button,
   Input,
   MoneyInput,
-  PrimaryButton,
   Select,
   SelectContent,
   SelectItem,
@@ -716,13 +716,9 @@ const FundToday = ({
        */}
       {!showStripeForm && (
         <div className="mt-6">
-          <PrimaryButton
-            disabled={true}
-            loading={isSyncing}
-            onClick={() => false}
-          >
+          <Button disabled={true} loading={isSyncing} onClick={() => false}>
             Fund this issue
-          </PrimaryButton>
+          </Button>
         </div>
       )}
 

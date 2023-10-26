@@ -8,7 +8,7 @@ import {
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
-import { Button } from 'polarkit/components/ui/button'
+import { Button } from 'polarkit/components/ui/atoms'
 import { Form } from 'polarkit/components/ui/form'
 import React, { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
@@ -59,9 +59,7 @@ const SubscriptionTierEditPage: React.FC<SubscriptionTierEditPageProps> = ({
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="default">
-                Save Tier
-              </Button>
+              <Button type="submit">Save Tier</Button>
             </div>
           </div>
           <div className="flex flex-row justify-between gap-x-24">

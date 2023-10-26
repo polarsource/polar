@@ -1,7 +1,7 @@
 import { githubIssueLink } from '@/utils/github'
 import { ConfirmIssueSplit, Issue, Pledge, UserRead } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
-import { PrimaryButton, TextArea } from 'polarkit/components/ui/atoms'
+import { Button, TextArea } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useState } from 'react'
@@ -102,18 +102,18 @@ _If you already have a Polar account setup, you don't need to do anything._
         <div className="bg-gray-75 dark:bg-polar-800 dark:text-polar-400 flex items-center px-4 py-2 text-gray-500">
           <div className="flex-1"></div>
           <div>
-            <button className="mr-4 text-blue-600" onClick={props.onCancel}>
+            <Button variant="ghost" className="mr-4" onClick={props.onCancel}>
               Cancel
-            </button>
+            </Button>
           </div>
           <div>
-            <PrimaryButton
+            <Button
               disabled={!canSubmit}
               onClick={onConfirm}
               loading={isLoading}
             >
               <span>Post comment</span>
-            </PrimaryButton>
+            </Button>
           </div>
         </div>
       </div>

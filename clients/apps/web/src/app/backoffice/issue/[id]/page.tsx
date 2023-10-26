@@ -1,7 +1,7 @@
 'use client'
 
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
-import { ThinButton } from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/atoms'
 import {
   useBackofficeIssue,
   useBackofficePledgeRewardTransfer,
@@ -62,7 +62,7 @@ export default function Page({ params }: { params: { id: string } }) {
       <h3 className="mt-9 text-xl">Rewards</h3>
       <div className="flex flex-col gap-2">
         {rewardsData.map((r) => (
-          <div className="flex gap-2">
+          <div className="flex gap-2" key={r.issue_reward_id}>
             <div>
               ${getCentsInDollarString(r.amount.amount, true, true)}{' '}
               <span className="text-gray-500">
@@ -97,21 +97,22 @@ export default function Page({ params }: { params: { id: string } }) {
               {r.state}
             </div>
             {r.transfer_id && (
-              <ThinButton
-                color="gray"
+              <a
                 href={`https://dashboard.stripe.com/connect/transfers/${r.transfer_id}`}
               >
-                <span>Transfer</span>
-                <ArrowTopRightOnSquareIcon />
-              </ThinButton>
+                <Button size="sm">
+                  <span>Transfer</span>
+                  <ArrowTopRightOnSquareIcon />
+                </Button>
+              </a>
             )}
             {!r.transfer_id && (
-              <ThinButton
-                color="green"
+              <Button
+                size="sm"
                 onClick={() => createTransfer(r.pledge.id, r.issue_reward_id)}
               >
                 <span>Create Transfer</span>
-              </ThinButton>
+              </Button>
             )}
           </div>
         ))}

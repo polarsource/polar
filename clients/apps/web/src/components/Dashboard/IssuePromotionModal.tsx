@@ -5,9 +5,9 @@ import { CurrencyAmount, Issue, Pledge, UserRead } from '@polar-sh/sdk'
 import Image from 'next/image'
 import { api, queryClient } from 'polarkit/api'
 import {
+  Button,
   CopyToClipboardInput,
   MoneyInput,
-  PrimaryButton,
   Tabs,
   TabsContent,
   TabsList,
@@ -265,10 +265,10 @@ export const BadgePromotionModal = (props: {
             upfrontSplit={upfrontRewards}
           />
         </TabsContent>
-        <TabsContent value="rewards" className="p-8">
+        <TabsContent value="rewards" className="p-6">
           <RewardsTab {...props} />
         </TabsContent>
-        <TabsContent value="promote" className="p-8">
+        <TabsContent value="promote" className="p-6">
           <PromoteTab {...props} />
         </TabsContent>
       </Tabs>
@@ -594,10 +594,10 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
           <div className="flex w-full flex-col space-y-2">
             <div className="flex items-center justify-between">
               <div>
-                <div className="dark:text-polar-200 text-sm font-medium text-gray-900">
+                <div className="dark:text-polar-100 text-sm font-medium text-gray-900">
                   Boost reward
                 </div>
-                <div className="dark:text-polar-400 text-xs text-gray-600">
+                <div className="dark:text-polar-400 mt-1 text-xs text-gray-600">
                   You have pledged{' '}
                   <b>${getCentsInDollarString(selfSeededAmount)} </b>
                   to be paid on completion.
@@ -622,14 +622,15 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
                   className="max-w-[150px]"
                 />
 
-                <PrimaryButton
+                <Button
                   fullWidth={false}
                   disabled={selfPledgeAmount === 0}
                   loading={pledgeIsLoading}
                   onClick={onSubmitSeedReward}
+                  size="lg"
                 >
-                  Pledge ${getCentsInDollarString(selfPledgeAmount)}
-                </PrimaryButton>
+                  Pledge
+                </Button>
               </div>
             </div>
           </div>

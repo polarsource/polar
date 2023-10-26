@@ -110,7 +110,7 @@ export const SubscriptionSuccess = (props: {
                     You now have an account with Polar! Sign in now to manage
                     your subscriptions and benefits.
                   </p>
-                  <Button className="w-full" onClick={onEmailSignin}>
+                  <Button className="w-full" size="lg" onClick={onEmailSignin}>
                     Sign in with email
                   </Button>
                 </div>

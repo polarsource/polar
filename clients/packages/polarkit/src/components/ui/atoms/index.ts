@@ -1,5 +1,6 @@
 import Alert from './Alert'
 import Avatar from './Avatar'
+import Button from './Button'
 import CopyToClipboardInput from './CopyToClipboardInput'
 import CountryPicker from './CountryPicker'
 import FormattedDateTime from './FormattedDateTime'
@@ -10,7 +11,6 @@ import LabeledSeparator from './LabeledSeparator'
 import MoneyInput from './MoneyInput'
 import Pill from './Pill'
 import PolarTimeAgo from './PolarTimeAgo'
-import { PrimaryButton, ThinButton } from './PrimaryButton'
 import {
   Select,
   SelectContent,
@@ -29,6 +29,7 @@ import TextArea from './TextArea'
 
 export {
   Alert,
+  Button,
   ShadowBox,
   ShadowBoxOnLg,
   ShadowListGroup,
@@ -49,9 +50,7 @@ export {
   LabeledRadioButton,
   LabeledSeparator,
   MoneyInput,
-  PrimaryButton,
   TextArea,
-  ThinButton,
   Avatar,
   Pill,
   Tabs,

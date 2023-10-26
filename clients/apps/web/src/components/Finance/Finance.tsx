@@ -16,7 +16,7 @@ import {
   ALL_ACCOUNT_TYPES,
 } from 'polarkit/account'
 import { api } from 'polarkit/api'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useState } from 'react'
@@ -273,15 +273,15 @@ const AccountBanner = (props: { org: Organization; accounts: Account[] }) => {
         <Banner
           color="default"
           right={
-            <PrimaryButton
-              size="small"
+            <Button
+              size="sm"
               onClick={(e) => {
                 e.preventDefault()
                 setShowSetupModal(true)
               }}
             >
               <span>Setup</span>
-            </PrimaryButton>
+            </Button>
           }
         >
           <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
@@ -312,7 +312,7 @@ const AccountBanner = (props: { org: Organization; accounts: Account[] }) => {
       <Banner
         color="default"
         right={
-          <PrimaryButton
+          <Button
             size="small"
             onClick={(e) => {
               e.preventDefault()
@@ -320,7 +320,7 @@ const AccountBanner = (props: { org: Organization; accounts: Account[] }) => {
             }}
           >
             <span>Continue setup</span>
-          </PrimaryButton>
+          </Button>
         }
       >
         <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />

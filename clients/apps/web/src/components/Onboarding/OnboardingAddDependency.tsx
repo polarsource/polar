@@ -12,7 +12,7 @@ import {
   Visibility,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
-import { Input, PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button, Input } from 'polarkit/components/ui/atoms'
 import { CONFIG } from 'polarkit/config'
 import { parseGitHubIssueLink } from 'polarkit/github'
 import { posthog } from 'posthog-js'
@@ -164,9 +164,9 @@ const OnboardingAddDependency = () => {
               />
 
               <div>
-                <PrimaryButton onClick={pledgeToIssue} disabled={disabled}>
+                <Button onClick={pledgeToIssue} disabled={disabled}>
                   <span>Pledge</span>
-                </PrimaryButton>
+                </Button>
               </div>
             </div>
 
@@ -183,7 +183,7 @@ const OnboardingAddDependency = () => {
               issues
             </p>
             <div>
-              <PrimaryButton
+              <Button
                 onClick={() => {
                   posthog.capture(
                     'Connect Repository Clicked',
@@ -196,7 +196,7 @@ const OnboardingAddDependency = () => {
                 }}
               >
                 <span>Connect repository</span>
-              </PrimaryButton>
+              </Button>
             </div>
           </div>
         </div>

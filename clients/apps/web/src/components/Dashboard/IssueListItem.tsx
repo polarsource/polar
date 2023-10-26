@@ -15,7 +15,7 @@ import {
   IssueListItemDecoration,
   IssueSummary,
 } from 'polarkit/components/Issue'
-import { PrimaryButton, TextArea } from 'polarkit/components/ui/atoms'
+import { Button, TextArea } from 'polarkit/components/ui/atoms'
 import { getCentsInDollarString } from 'polarkit/money'
 import { ChangeEvent, useState } from 'react'
 import SplitRewardModal from '../Finance/SplitRewardModal'
@@ -238,13 +238,9 @@ const DisputeModal = (props: { pledge: Pledge }) => {
           </>
         )}
 
-        <PrimaryButton
-          disabled={!canSubmit}
-          onClick={submit}
-          loading={isLoading}
-        >
+        <Button disabled={!canSubmit} onClick={submit} loading={isLoading}>
           Submit
-        </PrimaryButton>
+        </Button>
 
         {message && <p>{message}</p>}
       </>

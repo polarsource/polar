@@ -1,7 +1,7 @@
 import { PlusIcon } from '@heroicons/react/20/solid'
 import Image from 'next/image'
 import { CONFIG } from 'polarkit'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/atoms'
 import { useStore } from 'polarkit/store'
 import { posthog } from 'posthog-js'
 import { MouseEvent, useEffect, useState } from 'react'
@@ -46,9 +46,9 @@ const OnboardingConnectPersonalDashboard = () => {
               </p>
             </div>
             <div className="flex items-center justify-between gap-4 pt-2 xl:justify-start">
-              <PrimaryButton
+              <Button
                 color="blue"
-                classNames="pl-3.5"
+                className="pl-3.5"
                 fullWidth={false}
                 onClick={() => {
                   posthog.capture(
@@ -63,14 +63,14 @@ const OnboardingConnectPersonalDashboard = () => {
               >
                 <PlusIcon className="mr-2 h-6 w-6" />
                 <span>Connect a repository</span>
-              </PrimaryButton>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className="text-md text-blue-600 transition-colors duration-200 hover:text-blue-400"
+                variant="ghost"
                 onClick={hideDashboardBanner}
               >
                 Skip
-              </button>
+              </Button>
             </div>
           </div>
         </div>

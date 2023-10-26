@@ -5,7 +5,7 @@ import {
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import { WhiteCard } from 'polarkit/components/ui/Cards'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/atoms'
 import GitHubIcon from '../Icons/GitHubIcon'
 import screenshot from './dashboard.png'
 
@@ -64,14 +64,15 @@ const ThankYouUpsell = (props: {
               <div className="text-sm">Connect GitHub account for more</div>
             </li>
           </ul>
-          <PrimaryButton
+          <Button
             type="button"
+            size="lg"
             disabled={emailSigninLoading}
             loading={emailSigninLoading}
             onClick={onEmailSignin}
           >
             Sign in with email
-          </PrimaryButton>
+          </Button>
         </div>
         <div className="bg-grid-pattern dark:bg-grid-pattern-dark relative hidden w-3/5 overflow-hidden border-l border-blue-100 bg-blue-50 dark:border-blue-500/20 dark:bg-blue-500/20 md:block">
           <Image

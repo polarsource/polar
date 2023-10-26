@@ -1,6 +1,6 @@
 import { Organization, SubscriptionTier } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/atoms'
 import SubscriptionTierCard from './SubscriptionTierCard'
 
 interface PublicSubscriptionUpsellProps {
@@ -24,7 +24,7 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
           </p>
         </div>
         <Link href={{ pathname: `/${organization.name}/subscriptions` }}>
-          <PrimaryButton fullWidth={false}>View all Tiers</PrimaryButton>
+          <Button fullWidth={false}>View all Tiers</Button>
         </Link>
       </div>
       <div className="flex h-fit flex-row gap-6 pb-6 pt-10">
@@ -44,12 +44,12 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
                   query: { tier: tier.id },
                 }}
               >
-                <PrimaryButton
+                <Button
                   classNames="bg-[--var-border-color] hover:bg-[--var-border-color] dark:bg-[--var-dark-border-color] text-[--var-fg-color] dark:text-[--var-dark-fg-color] transition-colors hover:text-white dark:hover:text-white"
                   fullWidth
                 >
                   Subscribe
-                </PrimaryButton>
+                </Button>
               </Link>
             </SubscriptionTierCard>
           ))}

@@ -12,7 +12,7 @@ import {
 } from '@polar-sh/sdk'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from 'polarkit'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/atoms'
 import { useEffect, useState } from 'react'
 
 export default function Page() {
@@ -145,9 +145,9 @@ export default function Page() {
             Thank you! Installation request sent to your organization
             administrators.
           </p>
-          <PrimaryButton fullWidth={false} onClick={redirectToDashboard}>
+          <Button fullWidth={false} onClick={redirectToDashboard}>
             Go to dashboard
-          </PrimaryButton>
+          </Button>
         </div>
       </LoadingScreen>
     )

@@ -5,7 +5,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { PaymentMethod } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/atoms'
 import {
   useDetachPaymentMethodMutation,
   useListPaymentMethods,
@@ -44,15 +44,14 @@ const PaymentMethodSettings = () => {
       ))}
 
       <div className="dark:text-polar:300 space-y-2 p-4 text-sm text-gray-500">
-        <PrimaryButton
+        <Button
           fullWidth={false}
-          classNames=""
           loading={stripePortalLoading}
           onClick={onGotoStripeCustomerPortal}
         >
-          <ArrowTopRightOnSquareIcon className="mr-2 h-5 w-5" />
+          <ArrowTopRightOnSquareIcon className="mr-2 h-4 w-4" />
           <span>Invoice settings and receipts</span>
-        </PrimaryButton>
+        </Button>
       </div>
     </div>
   )

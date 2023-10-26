@@ -10,7 +10,7 @@ import {
 import { BackofficeReward, PledgeState, PledgeType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { api } from 'polarkit/api'
-import { ThinButton } from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/atoms'
 import {
   useBackofficePledgeCreateInvoice,
   useBackofficeRewardsPending,
@@ -75,7 +75,7 @@ const Pledges = () => {
   return (
     <div className="space-y-4">
       {issueList.map((i) => (
-        <div>
+        <div key={i[0][0].pledge.issue.id}>
           <div className="flex gap-2">
             <Link
               className="text-blue-600"
@@ -108,13 +108,14 @@ const Pledges = () => {
               </div>
             )}
 
-            <ThinButton
-              color="gray"
+            <a
               href={`https://github.com/${i[0][0].pledge.issue.repository.organization.name}/${i[0][0].pledge.issue.repository.name}/issues/${i[0][0].pledge.issue.number}`}
             >
-              <span>GitHub</span>
-              <ArrowTopRightOnSquareIcon />
-            </ThinButton>
+              <Button size="sm">
+                <span>GitHub</span>
+                <ArrowTopRightOnSquareIcon />
+              </Button>
+            </a>
           </div>
           <div className="flex flex-col gap-2 p-4">
             {i.map((p) => (
@@ -179,32 +180,33 @@ const Pledges = () => {
                   {p[0].pledge.type === PledgeType.ON_COMPLETION && (
                     <>
                       {p[0].pledge.hosted_invoice_url ? (
-                        <ThinButton
-                          color="gray"
-                          href={p[0].pledge.hosted_invoice_url}
-                        >
-                          <span>Open Invoice</span>
-                          <ArrowTopRightOnSquareIcon />
-                        </ThinButton>
+                        <a href={p[0].pledge.hosted_invoice_url}>
+                          <Button size="sm">
+                            <span>Open Invoice</span>
+                            <ArrowTopRightOnSquareIcon />
+                          </Button>
+                        </a>
                       ) : (
-                        <ThinButton
+                        <Button
                           color="gray"
+                          size="sm"
                           onClick={() => onClickCreateInvoice(p[0].pledge.id)}
                         >
                           <span>Send Invoice</span>
                           <BanknotesIcon />
-                        </ThinButton>
+                        </Button>
                       )}
                     </>
                   )}
 
-                  <ThinButton
-                    color="gray"
+                  <a
                     href={`https://dashboard.stripe.com/payments/${p[0].pledge_payment_id}`}
                   >
-                    <span>Payment</span>
-                    <ArrowTopRightOnSquareIcon />
-                  </ThinButton>
+                    <Button>
+                      <span>Payment</span>
+                      <ArrowTopRightOnSquareIcon />
+                    </Button>
+                  </a>
 
                   <div>
                     scheduled_payout_at ={' '}
@@ -213,7 +215,10 @@ const Pledges = () => {
                 </div>
 
                 {p.map((r) => (
-                  <div className="flex items-center gap-2">
+                  <div
+                    className="flex items-center gap-2"
+                    key={r.issue_reward_id}
+                  >
                     <ArrowRightIcon className="h-4 w-4 text-blue-600" />
                     <div>
                       ${getCentsInDollarString(r.amount.amount, true, true)} to
@@ -239,8 +244,8 @@ const Pledges = () => {
                           not paid out
                         </div>
 
-                        <ThinButton
-                          color="blue"
+                        <Button
+                          size="sm"
                           onClick={async () => {
                             await api.backoffice.pledgeRewardTransfer({
                               pledgeRewardTransfer: {
@@ -253,7 +258,7 @@ const Pledges = () => {
                         >
                           <span>Create transfer</span>
                           <CurrencyDollarIcon />
-                        </ThinButton>
+                        </Button>
                       </>
                     )}
 

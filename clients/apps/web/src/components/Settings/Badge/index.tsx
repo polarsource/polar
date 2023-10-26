@@ -10,7 +10,7 @@ import {
 } from '@polar-sh/sdk'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button, MoneyInput } from 'polarkit/components/ui/atoms'
 import {
   useOrganizationBadgeSettings,
   useSSE,
@@ -582,15 +582,15 @@ export const Controls = ({
 
       {isSettingPage && (
         <div className="flex items-center space-x-8">
-          <PrimaryButton
+          <Button
             fullWidth={false}
             loading={isSaving}
             onClick={clickedSave}
             disabled={!canSave}
-            classNames="min-w-[100px]"
+            className="min-w-[100px]"
           >
             <span>Save</span>
-          </PrimaryButton>
+          </Button>
 
           <span
             className={twMerge(
@@ -614,12 +614,9 @@ export const Controls = ({
 
       {!isSettingPage && (
         <div className="flex flex-col items-center">
-          <button
-            className="rounded-xl bg-blue-600 px-8 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-500"
-            onClick={clickedContinue}
-          >
+          <Button onClick={clickedContinue} size="lg">
             {showControls ? 'Confirm' : 'Continue'}
-          </button>
+          </Button>
         </div>
       )}
     </>

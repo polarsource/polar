@@ -5,12 +5,11 @@ import {
   PersonalAccessToken,
 } from '@polar-sh/sdk'
 import {
+  Button,
   CopyToClipboardInput,
   FormattedDateTime,
   Input,
-  PrimaryButton,
   ShadowListGroup,
-  ThinButton,
 } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import {
@@ -95,14 +94,15 @@ const AccessToken = (
           {props.last_used_at && (
             <FormattedDateTime datetime={props.last_used_at} dateStyle="long" />
           )}
-          <ThinButton
-            color="red"
+          <Button
+            variant="destructive"
+            size="sm"
             onClick={async () => {
               await deleteToken.mutateAsync({ id: props.id })
             }}
           >
             <span>Revoke</span>
-          </ThinButton>
+          </Button>
         </div>
       </div>
       {props.createdTokenJWT && (
@@ -179,13 +179,14 @@ export const AccessTokensBox = (props: {
               name="name"
               placeholder="Name your Access Token"
             />
-            <PrimaryButton
+            <Button
               fullWidth={false}
+              size="lg"
               onClick={onCreate}
               disabled={accessTokenName.length < 1}
             >
-              New Access Token
-            </PrimaryButton>
+              Create
+            </Button>
           </div>
         </ShadowListGroup.Item>
       </ShadowListGroup>

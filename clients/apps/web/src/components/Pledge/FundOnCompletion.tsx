@@ -8,7 +8,7 @@ import { Issue, Organization, UserSignupType } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
 import { LogoIcon } from 'polarkit/components/brand'
-import { MoneyInput, PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button, MoneyInput } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useState } from 'react'
@@ -145,13 +145,13 @@ const FundOnCompletion = ({
       </div>
 
       <div className="">
-        <PrimaryButton
+        <Button
           disabled={!hasValidDetails}
           loading={isLoading}
           onClick={submit}
         >
           Fund this issue
-        </PrimaryButton>
+        </Button>
       </div>
 
       {errorMessage && (

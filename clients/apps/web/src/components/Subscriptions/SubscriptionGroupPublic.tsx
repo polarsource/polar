@@ -1,6 +1,6 @@
 import { SubscriptionTier, SubscriptionTierType } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/atoms'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 import SubscriptionTierCard from './SubscriptionTierCard'
 
@@ -44,12 +44,12 @@ const SubscriptionGroupPublic = ({
                 query: { tier: tier.id },
               }}
             >
-              <PrimaryButton
+              <Button
                 classNames="bg-[--var-border-color] hover:bg-[--var-border-color] dark:bg-[--var-dark-border-color] text-[--var-fg-color] dark:text-[--var-dark-fg-color] transition-colors hover:text-white dark:hover:text-white"
                 fullWidth
               >
                 Subscribe
-              </PrimaryButton>
+              </Button>
             </Link>
           </SubscriptionTierCard>
         ))}

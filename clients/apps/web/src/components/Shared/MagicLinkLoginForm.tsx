@@ -1,6 +1,6 @@
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
-import { Input, PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button, Input } from 'polarkit/components/ui/atoms'
 import { useState } from 'react'
 
 interface MagicLinkLoginFormProps {}
@@ -38,14 +38,9 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({}) => {
         className="w-full"
       />
       <div className="absolute inset-y-0 right-0 flex items-center pr-2">
-        <PrimaryButton
-          type="submit"
-          size="small"
-          loading={loading}
-          disabled={loading}
-        >
+        <Button type="submit" size="small" loading={loading} disabled={loading}>
           Sign in
-        </PrimaryButton>
+        </Button>
       </div>
     </form>
   )

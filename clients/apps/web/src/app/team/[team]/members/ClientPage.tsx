@@ -3,7 +3,7 @@
 import Spinner from '@/components/Shared/Spinner'
 import { useCurrentTeamFromURL } from '@/hooks/org'
 import { ArrowPathIcon } from '@heroicons/react/24/outline'
-import { Avatar, Pill, PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Avatar, Button, Pill } from 'polarkit/components/ui/atoms'
 
 import {
   Table,
@@ -43,7 +43,7 @@ export default function ClientPage() {
     <div>
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-medium">Members</h2>
-        <PrimaryButton
+        <Button
           fullWidth={false}
           color="gray"
           onClick={onClickRefresh}
@@ -51,7 +51,7 @@ export default function ClientPage() {
         >
           <ArrowPathIcon className="mr-2 h-5 w-5" />
           <span>Refresh</span>
-        </PrimaryButton>
+        </Button>
       </div>
 
       <Table>

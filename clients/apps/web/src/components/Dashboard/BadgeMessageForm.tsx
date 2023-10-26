@@ -3,9 +3,9 @@ import { Marked } from '@ts-stack/markdown'
 import { useTheme } from 'next-themes'
 import { Badge } from 'polarkit/components/badge'
 import {
+  Button,
   LabeledRadioButton,
   MoneyInput,
-  PrimaryButton,
   TextArea,
 } from 'polarkit/components/ui/atoms'
 import { ChangeEvent, MouseEvent, useEffect, useRef, useState } from 'react'
@@ -160,14 +160,14 @@ const BadgeMessageForm = (props: {
 
         {props.showUpdateButton && (
           <div className="mt-4">
-            <PrimaryButton
+            <Button
               onClick={onClickUpdate}
               disabled={!canSave}
               fullWidth={false}
               loading={isLoading}
             >
               Update
-            </PrimaryButton>
+            </Button>
           </div>
         )}
       </div>

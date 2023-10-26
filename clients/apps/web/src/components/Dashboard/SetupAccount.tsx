@@ -9,11 +9,7 @@ import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
 import { ACCOUNT_TYPE_DISPLAY_NAMES } from 'polarkit/account'
 import { getValidationErrorsMap } from 'polarkit/api/errors'
-import {
-  CountryPicker,
-  Input,
-  PrimaryButton,
-} from 'polarkit/components/ui/atoms'
+import { Button, CountryPicker, Input } from 'polarkit/components/ui/atoms'
 import { ChangeEvent, useState } from 'react'
 import { ModalBox } from '../Modal'
 
@@ -197,9 +193,9 @@ const SetupAccount = ({
 
         <div className="md:flex-1"></div>
 
-        <PrimaryButton onClick={onConfirm} loading={loading} disabled={loading}>
+        <Button onClick={onConfirm} loading={loading} disabled={loading}>
           Set up account
-        </PrimaryButton>
+        </Button>
       </>
     </ModalBox>
   )

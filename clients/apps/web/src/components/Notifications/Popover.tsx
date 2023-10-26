@@ -12,7 +12,7 @@ import {
   RewardPaidNotification,
 } from '@polar-sh/sdk'
 import { GitMergeIcon } from 'polarkit/components/icons'
-import { PolarTimeAgo, PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button, PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import {
   useGetPledge,
   useIssueMarkConfirmed,
@@ -383,7 +383,7 @@ export const MaintainerPledgeConfirmationPending = ({
             </div>
             <div>
               {canMarkSolved && (
-                <PrimaryButton
+                <Button
                   fullWidth={false}
                   size="small"
                   loading={isLoading}
@@ -391,7 +391,7 @@ export const MaintainerPledgeConfirmationPending = ({
                   onClick={onMarkSoved}
                 >
                   <span>Mark as solved</span>
-                </PrimaryButton>
+                </Button>
               )}
               {isMarkedSolved && (
                 <div className="font-medium text-green-600">

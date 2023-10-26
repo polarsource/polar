@@ -1,5 +1,5 @@
 import { useRouter } from 'next/navigation'
-import { Input, PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button, Input } from 'polarkit/components/ui/atoms'
 import { parseGitHubIssueLink } from 'polarkit/github'
 import { ChangeEvent, MouseEvent, useState } from 'react'
 
@@ -33,7 +33,7 @@ const FundAGithubIssue = () => {
 
   return (
     <>
-      <div className="dark:bg-polar-800 dark:ring-polar-700 flex flex-col items-start space-y-4 rounded-xl bg-white px-6 py-4 shadow dark:ring-1">
+      <div className="dark:bg-polar-800 dark:ring-polar-700 flex flex-col items-start space-y-4 rounded-xl bg-white p-6 shadow dark:ring-1">
         <h2 className="dark:text-polar-50 text-center text-lg text-gray-900">
           Fund a GitHub issue
         </h2>
@@ -58,9 +58,9 @@ const FundAGithubIssue = () => {
           />
 
           <div>
-            <PrimaryButton onClick={pledgeToIssue} disabled={disabled}>
+            <Button onClick={pledgeToIssue} disabled={disabled} size="lg">
               <span>Continue</span>
-            </PrimaryButton>
+            </Button>
           </div>
         </div>
 

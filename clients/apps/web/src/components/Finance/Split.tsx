@@ -3,7 +3,7 @@ import { XMarkIcon } from '@heroicons/react/24/solid'
 import { Issue, Pledge } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
 import { PublicRewardPill } from 'polarkit/components/Issue'
-import { Input, PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button, Input } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { getCentsInDollarString } from 'polarkit/money'
 import { FormEvent, useEffect, useMemo, useState } from 'react'
@@ -337,18 +337,18 @@ const Split = (props: {
             been subtracted from the total
           </div>
           <div>
-            <button className="mr-4 text-blue-600" onClick={props.onCancel}>
+            <Button variant="ghost" className="mr-4" onClick={props.onCancel}>
               Cancel
-            </button>
+            </Button>
           </div>
           <div>
-            <PrimaryButton
+            <Button
               disabled={!canSubmit}
               onClick={onConfirm}
               loading={isLoading}
             >
               <span>Confirm</span>
-            </PrimaryButton>
+            </Button>
           </div>
         </div>
       </div>

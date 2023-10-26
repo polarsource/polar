@@ -3,8 +3,8 @@ import { AtSymbolIcon } from '@heroicons/react/24/solid'
 import { OAuthAccountRead, UserRead } from '@polar-sh/sdk'
 import { api } from 'polarkit'
 import {
+  Button,
   FormattedDateTime,
-  PrimaryButton,
   ShadowListGroup,
 } from 'polarkit/components/ui/atoms'
 import { useCallback, useState } from 'react'
@@ -94,13 +94,9 @@ const GitHubAuthenticationMethod: React.FC<GitHubAuthenticationMethodProps> = ({
             </div>
           )}
           {!oauthAccount && (
-            <PrimaryButton
-              onClick={connect}
-              loading={loading}
-              disabled={loading}
-            >
+            <Button onClick={connect} loading={loading} disabled={loading}>
               Connect
-            </PrimaryButton>
+            </Button>
           )}
         </>
       }

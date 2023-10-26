@@ -1,7 +1,7 @@
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/atoms'
 import { CONFIG } from 'polarkit/config'
 import { posthog } from 'posthog-js'
 import screenshot from './Screenshot.jpg'
@@ -18,7 +18,7 @@ const OnboardingConnectReposToGetStarted = () => {
         your repositories to get started.
       </p>
       <div className="py-2">
-        <PrimaryButton
+        <Button
           color="lightblue"
           onClick={() => {
             posthog.capture(
@@ -33,7 +33,7 @@ const OnboardingConnectReposToGetStarted = () => {
         >
           <PlusIcon className="mr-2 h-6 w-6" />
           <span>Connect a repository</span>
-        </PrimaryButton>
+        </Button>
       </div>
       <Image
         src={resolvedTheme === 'dark' ? screenshotDark : screenshot}

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { PrimaryButton } from '../atoms'
+import { Button } from '../atoms'
 import Banner from './Banner'
 
 const meta: Meta<typeof Banner> = {
@@ -33,14 +33,14 @@ export const ColorRed: Story = {
   },
 }
 
-export const Button: Story = {
+export const WithButton: Story = {
   args: {
     children: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
     color: 'default',
     right: (
-      <PrimaryButton size="small">
+      <Button size="sm">
         <span>Click me</span>
-      </PrimaryButton>
+      </Button>
     ),
   },
 }

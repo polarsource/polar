@@ -1,6 +1,6 @@
 import { CONFIG } from 'polarkit'
 import { IconCounter, IssueLabel } from 'polarkit/components/Issue'
-import { PrimaryButton } from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/atoms'
 
 const OnboardingAddBadge = () => {
   return (
@@ -29,9 +29,9 @@ const OnboardingAddBadge = () => {
 
         <IconCounter icon="thumbs_up" count={21} />
 
-        <PrimaryButton fullWidth={false} size="small">
+        <Button fullWidth={false} size="small">
           <span>Add badge</span>
-        </PrimaryButton>
+        </Button>
         <div className="absolute bottom-0 left-0 right-0 top-0">
           {/* Just here to add an overlay on top of the buttons etc, so that they are not clickable. */}
         </div>

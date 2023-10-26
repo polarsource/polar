@@ -6,6 +6,7 @@ import structlog
 from sqlalchemy.exc import IntegrityError
 
 from polar.enums import Platforms
+from polar.exceptions import BadRequest
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.services import ResourceService
 from polar.models import Organization, User, UserOrganization
@@ -148,6 +149,24 @@ class OrganizationService(
             )
 
         if settings.set_per_user_monthly_spending_limit:
+            if (
+                settings.per_user_monthly_spending_limit
+                and not organization.total_monthly_spending_limit
+            ):
+                raise BadRequest(
+                    "per_user_monthly_spending_limit requires total_monthly_spending_limit to be set"
+                )
+
+            if (
+                settings.per_user_monthly_spending_limit is not None
+                and organization.total_monthly_spending_limit is not None
+                and settings.per_user_monthly_spending_limit
+                > organization.total_monthly_spending_limit
+            ):
+                raise BadRequest(
+                    "per_user_monthly_spending_limit can not be higher than total_monthly_spending_limit"
+                )
+
             organization.per_user_monthly_spending_limit = (
                 settings.per_user_monthly_spending_limit
             )

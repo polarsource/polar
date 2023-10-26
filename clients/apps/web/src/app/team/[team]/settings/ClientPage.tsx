@@ -232,6 +232,12 @@ const PerUserMonthlySpendingLimit = () => {
           required: 'This field is required',
           min: 0,
           max: 99999999,
+          validate: (value, form) => {
+            if (value > form.total_monthly_spending_limit) {
+              return 'The per user spending limit can not be higher than the total limit.'
+            }
+            return true
+          },
         }}
         render={({ field }) => (
           <FormItem className="max-w-[300px]">

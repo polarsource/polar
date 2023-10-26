@@ -717,6 +717,7 @@ const FundToday = ({
       {!showStripeForm && (
         <div className="mt-6">
           <Button
+            size="lg"
             disabled={true}
             loading={isSyncing}
             onClick={() => false}

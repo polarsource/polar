@@ -254,6 +254,7 @@ const PaymentForm = ({
 
       <div>
         <Button
+          size="lg"
           disabled={!canSubmit}
           loading={isSyncing}
           onClick={onSubmit}

@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -6,8 +6,17 @@ import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.integrations.stripe.service import StripeService
-from polar.models import Subscription, SubscriptionBenefit, SubscriptionTier, User
+from polar.models import (
+    Organization,
+    Subscription,
+    SubscriptionBenefit,
+    SubscriptionTier,
+    User,
+    UserOrganization,
+)
+from polar.models.repository import Repository
 from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription_tier import SubscriptionTierType
 from polar.postgres import AsyncSession
 from polar.subscription.service.subscription import (
     AssociatedSubscriptionTierDoesNotExist,
@@ -15,8 +24,13 @@ from polar.subscription.service.subscription import (
 )
 from polar.subscription.service.subscription import subscription as subscription_service
 from polar.user.service import user as user_service
+from tests.fixtures.random_objects import create_user
 
-from ..conftest import add_subscription_benefits, create_subscription
+from ..conftest import (
+    add_subscription_benefits,
+    create_active_subscription,
+    create_subscription,
+)
 
 
 def construct_stripe_subscription(
@@ -153,18 +167,20 @@ class TestUpdateSubscription:
         stripe_subscription = construct_stripe_subscription(
             status=SubscriptionStatus.active
         )
-        await create_subscription(
+        subscription = await create_subscription(
             session,
             subscription_tier=subscription_tier_organization,
             user=user,
             stripe_subscription_id=stripe_subscription.stripe_id,
         )
+        assert subscription.started_at is None
 
         updated_subscription = await subscription_service.update_subscription(
             session, stripe_subscription=stripe_subscription
         )
 
         assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.started_at is not None
 
         enqueue_job_mock.assert_awaited_once_with(
             "subscription.subscription.enqueue_benefits_grants",
@@ -277,3 +293,305 @@ class TestEnqueueBenefitsGrants:
                 for benefit in subscription_benefits
             ]
         )
+
+
+@pytest.mark.asyncio
+class TestGetSummary:
+    async def test_not_organization_member(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        results = await subscription_service.get_periods_summary(
+            session,
+            user,
+            start_date=date(2023, 1, 1),
+            end_date=date(2023, 12, 31),
+            organization=organization,
+        )
+
+        assert len(results) == 12
+
+        for result in results:
+            assert result.subscribers == 0
+            assert result.mrr == 0
+            assert result.cumulative == 0
+
+    async def test_organization_member(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        results = await subscription_service.get_periods_summary(
+            session,
+            user,
+            start_date=date(2023, 1, 1),
+            end_date=date(2023, 12, 31),
+            organization=organization,
+        )
+
+        assert len(results) == 12
+
+        for i, result in enumerate(results[0:6]):
+            assert result.subscribers == 1
+            assert result.mrr == subscription_tier_organization.price_amount
+            assert result.cumulative == subscription_tier_organization.price_amount * (
+                i + 1
+            )
+
+        for result in results[6:]:
+            assert result.subscribers == 0
+            assert result.mrr == 0
+            assert result.cumulative == subscription_tier_organization.price_amount * 6
+
+    async def test_multiple_users_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        user2 = await create_user(session)
+        await UserOrganization.create(
+            session=session,
+            user_id=user2.id,
+            organization_id=organization.id,
+        )
+        user3 = await create_user(session)
+        await UserOrganization.create(
+            session=session,
+            user_id=user3.id,
+            organization_id=organization.id,
+        )
+
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        results = await subscription_service.get_periods_summary(
+            session,
+            user,
+            start_date=date(2023, 1, 1),
+            end_date=date(2023, 12, 31),
+            organization=organization,
+        )
+
+        assert len(results) == 12
+
+        for i, result in enumerate(results[0:6]):
+            assert result.subscribers == 1
+            assert result.mrr == subscription_tier_organization.price_amount
+            assert result.cumulative == subscription_tier_organization.price_amount * (
+                i + 1
+            )
+
+        for result in results[6:]:
+            assert result.subscribers == 0
+            assert result.mrr == 0
+            assert result.cumulative == subscription_tier_organization.price_amount * 6
+
+    async def test_filter_indirect_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_tier_repository: SubscriptionTier,
+    ) -> None:
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_repository,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        results = await subscription_service.get_periods_summary(
+            session,
+            user,
+            start_date=date(2023, 1, 1),
+            end_date=date(2023, 12, 31),
+            organization=organization,
+            direct_organization=False,
+        )
+
+        assert len(results) == 12
+
+        for i, result in enumerate(results[0:6]):
+            assert result.subscribers == 2
+            assert (
+                result.mrr
+                == subscription_tier_organization.price_amount
+                + subscription_tier_repository.price_amount
+            )
+            assert result.cumulative == (
+                subscription_tier_organization.price_amount
+                + subscription_tier_repository.price_amount
+            ) * (i + 1)
+
+        for result in results[6:]:
+            assert result.subscribers == 0
+            assert result.mrr == 0
+            assert (
+                result.cumulative
+                == (
+                    subscription_tier_organization.price_amount
+                    + subscription_tier_repository.price_amount
+                )
+                * 6
+            )
+
+    async def test_filter_repository(
+        self,
+        session: AsyncSession,
+        public_repository: Repository,
+        user: User,
+        user_organization: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_tier_repository: SubscriptionTier,
+    ) -> None:
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_repository,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        results = await subscription_service.get_periods_summary(
+            session,
+            user,
+            start_date=date(2023, 1, 1),
+            end_date=date(2023, 12, 31),
+            repository=public_repository,
+        )
+
+        assert len(results) == 12
+
+        for i, result in enumerate(results[0:6]):
+            assert result.subscribers == 1
+            assert result.mrr == subscription_tier_repository.price_amount
+            assert result.cumulative == subscription_tier_repository.price_amount * (
+                i + 1
+            )
+
+        for result in results[6:]:
+            assert result.subscribers == 0
+            assert result.mrr == 0
+            assert result.cumulative == subscription_tier_repository.price_amount * 6
+
+    async def test_filter_type(
+        self,
+        session: AsyncSession,
+        user: User,
+        user_organization: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        results = await subscription_service.get_periods_summary(
+            session,
+            user,
+            start_date=date(2023, 1, 1),
+            end_date=date(2023, 12, 31),
+            type=SubscriptionTierType.business,
+        )
+
+        assert len(results) == 12
+
+        for result in results:
+            assert result.subscribers == 0
+            assert result.mrr == 0
+            assert result.cumulative == 0
+
+    async def test_filter_subscription_tier_id(
+        self,
+        session: AsyncSession,
+        user: User,
+        user_organization: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+        subscription_tier_repository: SubscriptionTier,
+    ) -> None:
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_repository,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        results = await subscription_service.get_periods_summary(
+            session,
+            user,
+            start_date=date(2023, 1, 1),
+            end_date=date(2023, 12, 31),
+            subscription_tier_id=subscription_tier_organization.id,
+        )
+
+        assert len(results) == 12
+
+        for i, result in enumerate(results[0:6]):
+            assert result.subscribers == 1
+            assert result.mrr == subscription_tier_organization.price_amount
+            assert result.cumulative == subscription_tier_organization.price_amount * (
+                i + 1
+            )
+
+        for result in results[6:]:
+            assert result.subscribers == 0
+            assert result.mrr == 0
+            assert result.cumulative == subscription_tier_organization.price_amount * 6

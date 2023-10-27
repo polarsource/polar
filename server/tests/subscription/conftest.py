@@ -116,16 +116,20 @@ async def create_subscription(
     *,
     subscription_tier: SubscriptionTier,
     user: User,
+    status: SubscriptionStatus = SubscriptionStatus.incomplete,
+    started_at: datetime | None = None,
+    ended_at: datetime | None = None,
     stripe_subscription_id: str = "SUBSCRIPTION_ID",
 ) -> Subscription:
     now = datetime.now(UTC)
     subscription = Subscription(
         stripe_subscription_id=stripe_subscription_id,
-        status=SubscriptionStatus.incomplete,
+        status=status,
         current_period_start=now,
         current_period_end=now + timedelta(days=30),
         cancel_at_period_end=False,
-        ended_at=None,
+        started_at=started_at,
+        ended_at=ended_at,
         price_amount=subscription_tier.price_amount,
         price_currency=subscription_tier.price_currency,
         user_id=user.id,
@@ -134,6 +138,24 @@ async def create_subscription(
     session.add(subscription)
     await session.commit()
     return subscription
+
+
+async def create_active_subscription(
+    session: AsyncSession,
+    *,
+    subscription_tier: SubscriptionTier,
+    user: User,
+    started_at: datetime,
+    ended_at: datetime | None = None,
+) -> Subscription:
+    return await create_subscription(
+        session,
+        subscription_tier=subscription_tier,
+        user=user,
+        status=SubscriptionStatus.active,
+        started_at=started_at,
+        ended_at=ended_at,
+    )
 
 
 @pytest_asyncio.fixture

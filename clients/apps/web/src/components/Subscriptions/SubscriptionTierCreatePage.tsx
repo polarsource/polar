@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
 import { Button } from 'polarkit/components/ui/atoms'
 import { Form } from 'polarkit/components/ui/form'
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import SubscriptionTierBenefitsForm from './SubscriptionTierBenefitsForm'
 import SubscriptionTierCard from './SubscriptionTierCard'
@@ -30,7 +30,9 @@ const SubscriptionTierCreatePage: React.FC<SubscriptionTierCreatePageProps> = ({
   organizationBenefits,
 }) => {
   const router = useRouter()
-  const [benefits, setBenefits] = useState<SubscriptionTierBenefit[]>([])
+  const [enabledBenefits, setEnabledBenefits] = useState<
+    SubscriptionTierBenefit[]
+  >([])
 
   const form = useForm<SubscriptionTierCreate>({
     defaultValues: {
@@ -53,33 +55,45 @@ const SubscriptionTierCreatePage: React.FC<SubscriptionTierCreatePageProps> = ({
       await api.subscriptions.updateSubscriptionTierBenefits({
         id: tier.id,
         subscriptionTierBenefitsUpdate: {
-          benefits: benefits.map((benefit) => benefit.id),
+          benefits: enabledBenefits.map((benefit) => benefit.id),
         },
       })
 
       router.push(`/maintainer/${organization.name}/subscriptions/tiers`)
       router.refresh()
     },
-    [router, organization, benefits],
+    [router, organization, enabledBenefits],
   )
 
   const onSelectBenefit = useCallback(
     (benefit: SubscriptionTierBenefit) => {
-      setBenefits((benefits) => [...benefits, benefit])
+      setEnabledBenefits((benefits) => [...benefits, benefit])
     },
-    [setBenefits],
+    [setEnabledBenefits],
   )
 
   const onRemoveBenefit = useCallback(
     (benefit: SubscriptionTierBenefit) => {
-      setBenefits((benefits) => benefits.filter((b) => b.id !== benefit.id))
+      setEnabledBenefits((benefits) =>
+        benefits.filter((b) => b.id !== benefit.id),
+      )
     },
-    [setBenefits],
+    [setEnabledBenefits],
+  )
+
+  const newAndExistingBenefits = useMemo(
+    () => [
+      ...new Set([
+        ...(organizationBenefits.items ?? []),
+        ...enabledBenefits,
+      ]).values(),
+    ],
+    [enabledBenefits, organizationBenefits.items],
   )
 
   return (
     <DashboardBody>
-      <div className="flex flex-col gap-y-6">
+      <div className="flex flex-col gap-y-12">
         <Form {...form}>
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="mb-16 flex items-center justify-between">
@@ -95,14 +109,17 @@ const SubscriptionTierCreatePage: React.FC<SubscriptionTierCreatePageProps> = ({
                 <Button type="submit">Save Tier</Button>
               </div>
             </div>
-            <div className="flex flex-row justify-between gap-x-24">
+            <div className="relative flex flex-row justify-between gap-x-24">
               <div className="flex w-1/2 flex-col gap-y-6">
                 <SubscriptionTierForm update={false} />
               </div>
-              <div className="flex flex-col">
+              <div className="absolute right-0 top-0 flex flex-col">
                 {selectedSubscriptionTierType && (
                   <SubscriptionTierCard
-                    subscriptionTier={{ ...newSubscriptionTier, benefits }}
+                    subscriptionTier={{
+                      ...newSubscriptionTier,
+                      benefits: enabledBenefits,
+                    }}
                   />
                 )}
               </div>
@@ -111,9 +128,9 @@ const SubscriptionTierCreatePage: React.FC<SubscriptionTierCreatePageProps> = ({
         </Form>
         <SubscriptionTierBenefitsForm
           className="w-1/2"
-          benefits={benefits}
+          benefits={enabledBenefits}
           organization={organization}
-          organizationBenefits={organizationBenefits.items ?? []}
+          organizationBenefits={newAndExistingBenefits}
           onSelectBenefit={onSelectBenefit}
           onRemoveBenefit={onRemoveBenefit}
         />

@@ -57,7 +57,7 @@ Great news! You received <strong>${{pledge_amount}}</strong> in funding for:
 {% if pledge_type == "pay_upfront" %}
 The funding has been paid upfront. Once you've completed the issue, the money will be paid out to after the 7 day dispute window.<br><br>
 {% elif pledge_type == "pay_on_completion" %}
-The pledge is due to be paid on completion. Once you've completed the issue, we'll send an invoice to the backer. As soon as it's paid we'll transfer the money to you.<br><br>.br><br>
+The pledge is due to be paid on completion. Once you've completed the issue, we'll send an invoice to the backer. As soon as it's paid we'll transfer the money to you.<br><br>
 {% endif %}
 
 We'll notify you about the next steps when {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}} is completed.

@@ -1,9 +1,11 @@
 import { CheckOutlined, CloseOutlined } from '@mui/icons-material'
 import {
-  SubscriptionBenefitBuiltin,
-  SubscriptionBenefitCustom,
+  Organization,
+  SubscriptionBenefitCreate,
+  SubscriptionTierBenefit,
 } from '@polar-sh/sdk'
 import { Command } from 'cmdk'
+import { api } from 'polarkit'
 import {
   Button,
   Input,
@@ -13,21 +15,28 @@ import {
   TabsTrigger,
 } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
-import { Separator } from 'polarkit/components/ui/separator'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from 'polarkit/components/ui/form'
 import { TabsContent } from 'polarkit/components/ui/tabs'
 import { useOutsideClick } from 'polarkit/utils'
 import { useCallback, useRef, useState } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { Item, Left, SelectedBox, Text } from '../Dropdown'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 
-const BenefitRow = ({
-  benefit,
-}: {
-  benefit: SubscriptionBenefitBuiltin | SubscriptionBenefitCustom
-}) => {
+interface BenefitRowProps {
+  benefit: SubscriptionTierBenefit
+  onRemove: (benefit: SubscriptionTierBenefit) => void
+}
+
+const BenefitRow = ({ benefit, onRemove }: BenefitRowProps) => {
   return (
     <div className="flex flex-row items-center justify-between py-2">
       <div className="flex flex-row items-center gap-x-3">
@@ -38,6 +47,7 @@ const BenefitRow = ({
         <CloseOutlined
           className="h-4 w-4 cursor-pointer opacity-30 hover:opacity-100"
           fontSize="inherit"
+          onClick={() => onRemove(benefit)}
         />
       </div>
     </div>
@@ -45,77 +55,46 @@ const BenefitRow = ({
 }
 
 interface SubscriptionTierBenefitsFormProps {
-  organizationBenefits: (
-    | SubscriptionBenefitBuiltin
-    | SubscriptionBenefitCustom
-  )[]
+  organization: Organization
+  benefits: SubscriptionTierBenefit[]
+  organizationBenefits: SubscriptionTierBenefit[]
+  onSelectBenefit: (benefit: SubscriptionTierBenefit) => void
+  onRemoveBenefit: (benefit: SubscriptionTierBenefit) => void
+  className?: string
 }
 
 const SubscriptionTierBenefitsForm = ({
+  benefits,
+  organization,
   organizationBenefits,
+  onSelectBenefit,
+  onRemoveBenefit,
+  className,
 }: SubscriptionTierBenefitsFormProps) => {
-  const { watch, setValue } = useFormContext<{
-    benefits: (SubscriptionBenefitBuiltin | SubscriptionBenefitCustom)[]
-  }>()
-
   const { isShown, toggle, hide } = useModal()
-  const benefits = watch('benefits')
 
   return (
     <>
-      <div className="flex flex-col gap-y-4">
+      <div className={twMerge('flex flex-col gap-y-4', className)}>
         <h2 className="dark:text-polar-50 text-lg text-gray-950">Benefits</h2>
         <ShadowBox>
           <div className="flex flex-col gap-y-6">
             <div className="flex flex-col gap-y-4">
-              <h3 className="dark:text-polar-500 text-gray-700">
-                Inherited from previous tier
-              </h3>
               <div className="flex flex-col">
-                {[
-                  {
-                    id: '123',
-                    description: 'This is a simple benefit',
-                    created_at: '',
-                    type: 'custom' as const,
-                    properties: {},
-                    is_tax_applicable: true,
-                  },
-                  {
-                    id: '123',
-                    description: 'This is a simple benefit',
-                    created_at: '',
-                    type: 'custom' as const,
-                    properties: {},
-                    is_tax_applicable: true,
-                  },
-                  {
-                    id: '123',
-                    description: 'This is a simple benefit',
-                    created_at: '',
-                    type: 'custom' as const,
-                    properties: {},
-                    is_tax_applicable: true,
-                  },
-                ].map((benefit) => (
-                  <BenefitRow key={benefit.id} benefit={benefit} />
-                ))}
+                {benefits.length > 0 ? (
+                  benefits.map((benefit) => (
+                    <BenefitRow
+                      key={benefit.id}
+                      benefit={benefit}
+                      onRemove={onRemoveBenefit}
+                    />
+                  ))
+                ) : (
+                  <h4 className="text-sm">
+                    Add benefits to this tier by pressing the button below
+                  </h4>
+                )}
               </div>
-            </div>
-            <Separator className="dark:bg-polar-600" />
-            <div>
-              {[
-                {
-                  id: '123',
-                  description: 'This is a simple benefit',
-                  created_at: '',
-                  type: 'custom' as const,
-                  properties: {},
-                  is_tax_applicable: true,
-                },
-              ].map((benefit) => (
-                <BenefitRow key={benefit.id} benefit={benefit} />
-              ))}
             </div>
             <Button className="self-start" onClick={toggle}>
               Add Benefit
@@ -129,10 +108,11 @@ const SubscriptionTierBenefitsForm = ({
         hide={toggle}
         modalContent={
           <NewSubscriptionTierBenefitModalContent
+            organization={organization}
             organizationBenefits={organizationBenefits}
             hideModal={hide}
             onSelectBenefit={(benefit) => {
-              setValue('benefits', [...benefits, benefit])
+              onSelectBenefit(benefit)
               hide()
             }}
           />
@@ -145,35 +125,63 @@ const SubscriptionTierBenefitsForm = ({
 export default SubscriptionTierBenefitsForm
 
 interface NewSubscriptionTierBenefitModalContentProps {
-  organizationBenefits: (
-    | SubscriptionBenefitBuiltin
-    | SubscriptionBenefitCustom
-  )[]
-  onSelectBenefit: (
-    benefit: SubscriptionBenefitBuiltin | SubscriptionBenefitCustom,
-  ) => void
+  organization: Organization
+  organizationBenefits: SubscriptionTierBenefit[]
+  onSelectBenefit: (benefit: SubscriptionTierBenefit) => void
   hideModal: () => void
 }
 
 const NewSubscriptionTierBenefitModalContent = ({
+  organization,
   organizationBenefits,
   onSelectBenefit,
   hideModal,
 }: NewSubscriptionTierBenefitModalContentProps) => {
-  const [benefit, setBenefit] = useState<
-    SubscriptionBenefitBuiltin | SubscriptionBenefitCustom
-  >()
+  const [benefit, setBenefit] = useState<SubscriptionTierBenefit>()
   const [inputValue, setInputValue] = useState<string>()
+  const [isLoading, setIsLoading] = useState(false)
   const [isOpen, toggle] = useState(false)
   const commandRef = useRef(null)
 
   const handleSelectBenefit = useCallback(
-    (benefit: SubscriptionBenefitBuiltin | SubscriptionBenefitCustom) => () => {
+    (benefit: SubscriptionTierBenefit) => () => {
       setBenefit(benefit)
       toggle(false)
     },
     [],
   )
+
+  const handleCreateNewBenefit = useCallback(
+    async (subscriptionBenefitCreate: SubscriptionBenefitCreate) => {
+      try {
+        setIsLoading(true)
+        const benefit = await api.subscriptions.createSubscriptionBenefit({
+          subscriptionBenefitCreate,
+        })
+
+        if (benefit) {
+          onSelectBenefit(benefit)
+          hideModal()
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [hideModal, onSelectBenefit],
+  )
+
+  const form = useForm<SubscriptionBenefitCreate>({
+    defaultValues: {
+      organization_id: organization.id,
+      properties: {},
+      type: 'custom',
+      is_tax_applicable: false,
+    },
+  })
+
+  const { handleSubmit } = form
 
   useOutsideClick([commandRef], () => {
     toggle(false)
@@ -183,15 +191,19 @@ const NewSubscriptionTierBenefitModalContent = ({
     <div className="flex flex-col gap-y-6 px-8 py-10">
       <div>
         <h2 className="text-lg">Add Subscription Benefit</h2>
-        <p className="dark:text-polar-400 mt-1 text-sm text-gray-400">
-          Associate an existing benefit with your new tier, or create a new
+        <p className="dark:text-polar-400 mt-2 text-sm text-gray-400">
+          Associate an existing benefit or create a new
         </p>
       </div>
 
-      <Tabs>
-        <TabsList defaultValue="existing">
-          <TabsTrigger value="existing">Existing Benefit</TabsTrigger>
-          <TabsTrigger value="new">Create New</TabsTrigger>
+      <Tabs defaultValue="existing">
+        <TabsList>
+          <TabsTrigger value="existing" size="small">
+            Existing Benefit
+          </TabsTrigger>
+          <TabsTrigger value="new" size="small">
+            Create New
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="existing">
           <div
@@ -268,26 +280,74 @@ const NewSubscriptionTierBenefitModalContent = ({
         </TabsContent>
         <TabsContent value="new">
           <div className="mt-6 flex flex-col gap-y-6">
-            <Input placeholder="Benefit Description" />
-            <div className="flex flex-row items-center gap-x-2">
-              <Checkbox />
-              <p className="dark:text-polar-400 text-sm text-gray-600">
-                Is Tax Applicable
-              </p>
-            </div>
-            <div className="flex flex-row items-center gap-x-4">
-              <Button className="self-start">Create</Button>
-              <Button
-                variant="ghost"
-                className="self-start"
-                onClick={hideModal}
+            <Form {...form}>
+              <form
+                className="flex flex-col gap-y-6"
+                onSubmit={handleSubmit(handleCreateNewBenefit)}
               >
-                Cancel
-              </Button>
-            </div>
+                <NewBenefitForm />
+                <div className="flex flex-row items-center gap-x-4">
+                  <Button
+                    className="self-start"
+                    type="submit"
+                    loading={isLoading}
+                  >
+                    Create
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="self-start"
+                    onClick={hideModal}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </Form>
           </div>
         </TabsContent>
       </Tabs>
     </div>
+  )
+}
+
+const NewBenefitForm = () => {
+  const { control } = useFormContext<SubscriptionBenefitCreate>()
+
+  return (
+    <>
+      <FormField
+        control={control}
+        name="description"
+        render={({ field }) => {
+          return (
+            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+              <FormControl>
+                <Input placeholder="Benefit Description" {...field} />
+              </FormControl>
+            </FormItem>
+          )
+        }}
+      />
+      <FormField
+        control={control}
+        name="is_tax_applicable"
+        render={({ field }) => {
+          return (
+            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+              <FormControl>
+                <Checkbox
+                  defaultChecked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <FormLabel className="text-sm leading-none">
+                Is Tax Applicable
+              </FormLabel>
+            </FormItem>
+          )
+        }}
+      />
+    </>
   )
 }

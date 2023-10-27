@@ -28,14 +28,21 @@ export default async function Page({
     platform: Platforms.GITHUB,
   })
   try {
-    const subscriptionTier = await api.subscriptions.lookupSubscriptionTier({
-      subscriptionTierId: params.tier,
-    })
+    const [subscriptionTier, benefits] = await Promise.all([
+      api.subscriptions.lookupSubscriptionTier({
+        subscriptionTierId: params.tier,
+      }),
+      api.subscriptions.searchSubscriptionBenefits({
+        organizationName: params.organization,
+        platform: Platforms.GITHUB,
+      }),
+    ])
 
     return (
       <SubscriptionTierEditPage
         subscriptionTier={subscriptionTier}
         organization={organization}
+        organizationBenefits={benefits}
       />
     )
   } catch (e) {

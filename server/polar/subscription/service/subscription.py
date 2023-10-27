@@ -1,17 +1,31 @@
-from datetime import UTC, datetime
+import uuid
+from datetime import UTC, date, datetime
+from typing import Any
 
 import stripe as stripe_lib
+from sqlalchemy import Select, and_, func, or_, select, text
+from sqlalchemy.orm import aliased
 
+from polar.authz.service import Anonymous, Subject
 from polar.enums import UserSignupType
 from polar.exceptions import PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.services import ResourceServiceReader
-from polar.models import Subscription
+from polar.models import (
+    Organization,
+    Repository,
+    Subscription,
+    SubscriptionTier,
+    User,
+    UserOrganization,
+)
+from polar.models.subscription_tier import SubscriptionTierType
 from polar.user.service import user as user_service
 from polar.worker import enqueue_job
 
+from ..schemas import SubscriptionsSummaryPeriod
 from .subscription_tier import subscription_tier as subscription_tier_service
 
 
@@ -119,6 +133,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             ended_at=_from_timestamp(stripe_subscription.ended_at),
         )
 
+        # When the subscription becomes active for the first time, store its start date
+        if updated_subscription.is_active() and updated_subscription.started_at is None:
+            updated_subscription.started_at = datetime.now(UTC)
+
         await enqueue_job(
             "subscription.subscription.enqueue_benefits_grants",
             updated_subscription.id,
@@ -144,6 +162,149 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 subscription_id=subscription.id,
                 subscription_benefit_id=benefit.id,
             )
+
+    async def get_periods_summary(
+        self,
+        session: AsyncSession,
+        user: User,
+        *,
+        start_date: date,
+        end_date: date,
+        organization: Organization | None = None,
+        repository: Repository | None = None,
+        direct_organization: bool = True,
+        type: SubscriptionTierType | None = None,
+        subscription_tier_id: uuid.UUID | None = None,
+    ) -> list[SubscriptionsSummaryPeriod]:
+        subscriptions_statement = self._get_readable_subscriptions_statement(user)
+
+        if organization is not None:
+            clauses = [SubscriptionTier.organization_id == organization.id]
+            if not direct_organization:
+                clauses.append(Repository.organization_id == organization.id)
+            subscriptions_statement = subscriptions_statement.where(or_(*clauses))
+
+        if repository is not None:
+            subscriptions_statement = subscriptions_statement.where(
+                SubscriptionTier.repository_id == repository.id
+            )
+
+        if type is not None:
+            subscriptions_statement = subscriptions_statement.where(
+                SubscriptionTier.type == type
+            )
+
+        if subscription_tier_id is not None:
+            subscriptions_statement = subscriptions_statement.where(
+                SubscriptionTier.id == subscription_tier_id
+            )
+
+        # Set the interval to 1 month
+        # Supporting dynamic interval is difficult for the cumulative column
+        interval = text("interval 'P1M'")
+
+        start_date_column = func.generate_series(
+            start_date, end_date, interval
+        ).column_valued("start_date")
+        end_date_column = start_date_column + interval
+
+        cumulative_column = func.coalesce(
+            func.sum(func.sum(Subscription.price_amount))
+            # ORDER_BY makes the window implicitly stops at the current row
+            .over(order_by=start_date_column),
+            0,
+        )
+
+        statement = (
+            select(start_date_column)
+            .add_columns(
+                end_date_column,
+                func.count(Subscription.id),
+                func.coalesce(func.sum(Subscription.price_amount), 0),
+                cumulative_column,
+            )
+            .join(
+                Subscription,
+                onclause=and_(
+                    Subscription.id.in_(
+                        subscriptions_statement.with_only_columns(Subscription.id)
+                    ),
+                    or_(
+                        and_(
+                            or_(
+                                start_date_column <= Subscription.ended_at,
+                                Subscription.ended_at.is_(None),
+                            ),
+                            end_date_column >= Subscription.started_at,
+                        ),
+                        and_(
+                            Subscription.started_at <= end_date_column,
+                            or_(
+                                Subscription.ended_at >= start_date_column,
+                                Subscription.ended_at.is_(None),
+                            ),
+                        ),
+                    ),
+                ),
+                isouter=True,
+            )
+            .group_by(start_date_column)
+            .order_by(start_date_column)
+        )
+
+        result = await session.execute(statement)
+
+        return [
+            SubscriptionsSummaryPeriod(
+                start_date=start_date,
+                end_date=end_date,
+                subscribers=subscribers,
+                mrr=mrr,
+                cumulative=cumulative,
+            )
+            for (start_date, end_date, subscribers, mrr, cumulative) in result.all()
+        ]
+
+    def _get_readable_subscriptions_statement(self, user: User) -> Select[Any]:
+        statement = (
+            select(Subscription)
+            .join(Subscription.subscription_tier)
+            .join(
+                Repository,
+                onclause=SubscriptionTier.repository_id == Repository.id,
+                isouter=True,
+            )
+        )
+
+        RepositoryUserOrganization = aliased(UserOrganization)
+
+        return (
+            statement.join(
+                UserOrganization,
+                isouter=True,
+                onclause=and_(
+                    UserOrganization.organization_id
+                    == SubscriptionTier.organization_id,
+                    UserOrganization.user_id == user.id,
+                ),
+            )
+            .join(
+                RepositoryUserOrganization,
+                isouter=True,
+                onclause=and_(
+                    RepositoryUserOrganization.organization_id
+                    == Repository.organization_id,
+                    RepositoryUserOrganization.user_id == user.id,
+                ),
+            )
+            .where(
+                Subscription.deleted_at.is_(None),
+                or_(
+                    UserOrganization.user_id == user.id,
+                    RepositoryUserOrganization.user_id == user.id,
+                ),
+            )
+        )
 
 
 subscription = SubscriptionService(Subscription)

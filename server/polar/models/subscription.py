@@ -38,6 +38,9 @@ class Subscription(RecordModel):
         TIMESTAMP(timezone=True), nullable=False
     )
     cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    started_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
     ended_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )

@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from datetime import date
 from typing import Any, Literal, Self
 
 import stripe as stripe_lib
@@ -256,3 +257,15 @@ class SubscribeSession(Schema):
             if subscription_tier.repository is not None
             else None,
         )
+
+
+class SubscriptionsSummaryPeriod(Schema):
+    start_date: date
+    end_date: date
+    subscribers: int
+    mrr: int
+    cumulative: int
+
+
+class SubscriptionsSummary(Schema):
+    periods: list[SubscriptionsSummaryPeriod]

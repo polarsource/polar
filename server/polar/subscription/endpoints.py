@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import UUID4
 
@@ -22,6 +24,7 @@ from .schemas import (
     SubscribeSessionCreate,
     SubscriptionBenefitCreate,
     SubscriptionBenefitUpdate,
+    SubscriptionsSummary,
     SubscriptionTierBenefitsUpdate,
     SubscriptionTierCreate,
     SubscriptionTierUpdate,
@@ -29,6 +32,7 @@ from .schemas import (
 )
 from .schemas import SubscriptionBenefit as SubscriptionBenefitSchema
 from .schemas import SubscriptionTier as SubscriptionTierSchema
+from .service.subscription import subscription as subscription_service
 from .service.subscription_benefit import (
     subscription_benefit as subscription_benefit_service,
 )
@@ -344,3 +348,46 @@ async def get_subscribe_session(
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscribeSession:
     return await subscription_tier_service.get_subscribe_session(session, id)
+
+
+@router.get(
+    "/subscriptions/summary", response_model=SubscriptionsSummary, tags=[Tags.PUBLIC]
+)
+async def get_subscriptions_summary(
+    auth: UserRequiredAuth,
+    organization_name: OrganizationNameQuery,
+    repository_name: OptionalRepositoryNameQuery = None,
+    platform: Platforms = Query(...),
+    start_date: date = Query(...),
+    end_date: date = Query(...),
+    direct_organization: bool = Query(True),
+    type: SubscriptionTierType | None = Query(None),
+    subscription_tier_id: UUID4 | None = Query(None),
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionsSummary:
+    organization = await organization_service.get_by_name(
+        session, platform, organization_name
+    )
+    if organization is None:
+        raise ResourceNotFound("Organization not found")
+
+    repository: Repository | None = None
+    if repository_name is not None:
+        repository = await repository_service.get_by_org_and_name(
+            session, organization.id, repository_name
+        )
+        if repository is None:
+            raise ResourceNotFound("Repository not found")
+
+    periods = await subscription_service.get_periods_summary(
+        session,
+        auth.user,
+        start_date=start_date,
+        end_date=end_date,
+        organization=organization,
+        repository=repository,
+        direct_organization=direct_organization,
+        type=type,
+        subscription_tier_id=subscription_tier_id,
+    )
+    return SubscriptionsSummary(periods=periods)

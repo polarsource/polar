@@ -1025,3 +1025,74 @@ class TestGetSubscribeSession:
         assert json["customer_name"] == "John"
         assert json["customer_email"] == "backer@example.com"
         assert json["subscription_tier"]["id"] == str(subscription_tier_repository.id)
+
+
+@pytest.mark.asyncio
+class TestGetSubscriptionsSummary:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/subscriptions/summary",
+            params={
+                "platform": "github",
+                "organization_name": organization.name,
+                "start_date": "2023-01-01",
+                "end_date": "2023-12-31",
+            },
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_not_existing_organization(self, client: AsyncClient) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/subscriptions/summary",
+            params={
+                "platform": "github",
+                "organization_name": "not_existing",
+                "start_date": "2023-01-01",
+                "end_date": "2023-12-31",
+            },
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.authenticated
+    async def test_not_existing_repository(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/subscriptions/summary",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+                "repository_name": "not_existing",
+                "start_date": "2023-01-01",
+                "end_date": "2023-12-31",
+            },
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.authenticated
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        subscription_tiers: list[SubscriptionTier],
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/subscriptions/summary",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+                "start_date": "2023-01-01",
+                "end_date": "2023-12-31",
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert len(json["periods"]) == 12

@@ -37,14 +37,25 @@ const PledgeCheckoutFundByTeam = ({
 
   const [paymentPromise, setPaymentPromise] = useState(false)
 
+  const [selectedOrg, setSelectedOrg] = useState<Organization | undefined>(
+    undefined,
+  )
+
   const hasValidDetails =
     formState.amount >= issue.repository.organization.pledge_minimum_amount &&
     !!currentUser &&
-    paymentPromise
+    paymentPromise &&
+    formState.by_organization_id &&
+    selectedOrg
 
   const submit = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
     event.stopPropagation()
+
+    if (!hasValidDetails) {
+      setErrorMessage('Invalid details')
+      return
+    }
 
     setIsLoading(true)
     setErrorMessage('')
@@ -57,7 +68,7 @@ const PledgeCheckoutFundByTeam = ({
         },
       })
 
-      router.push('/feed')
+      router.push(`/team/${selectedOrg.name}/funding`)
     } catch (e) {
       setErrorMessage('Something went wrong, please try again.')
       setIsLoading(false)
@@ -76,6 +87,7 @@ const PledgeCheckoutFundByTeam = ({
       ...formState,
       by_organization_id: org ? org.id : undefined,
     })
+    setSelectedOrg(org)
   }
 
   return (

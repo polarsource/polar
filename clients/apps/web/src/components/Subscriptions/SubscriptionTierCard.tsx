@@ -1,6 +1,6 @@
 'use client'
 
-import { AddOutlined, CheckOutlined } from '@mui/icons-material'
+import { AddOutlined } from '@mui/icons-material'
 import { SubscriptionTier } from '@polar-sh/sdk'
 import {
   Card,
@@ -14,7 +14,7 @@ import { getCentsInDollarString } from 'polarkit/money'
 import { MouseEventHandler, useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
-import { getSubscriptionColorByType } from './utils'
+import { getSubscriptionColorByType, resolveBenefitIcon } from './utils'
 
 interface SubscriptionTierCardProps {
   subscriptionTier: Partial<SubscriptionTier>
@@ -130,14 +130,16 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
           )}
         </div>
       </CardHeader>
-      <Separator className="bg-[--var-border-color] dark:bg-[--var-dark-border-color]" />
-      <CardContent className="flex shrink flex-col gap-y-1 p-0">
+      {benefitsToDisplay.length > 0 && (
+        <Separator className="bg-[--var-border-color] dark:bg-[--var-dark-border-color]" />
+      )}
+      <CardContent className="flex shrink flex-col gap-y-2 p-0">
         {benefitsToDisplay.map((benefit) => (
           <div
             key={benefit.id}
             className="flex flex-row items-center text-[--var-fg-color] dark:text-[--var-dark-fg-color]"
           >
-            <CheckOutlined className="h-4 w-4" fontSize="small" />
+            {resolveBenefitIcon(benefit, false)}
             <span className="ml-2 text-sm">{benefit.description}</span>
           </div>
         ))}

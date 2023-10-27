@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import Contribute from './Contribute'
+import PledgeCheckoutContribute from './PledgeCheckoutContribute'
 
 import { issue } from 'polarkit/testdata'
 
-const meta: Meta<typeof Contribute> = {
-  title: 'Organisms/Contribute',
-  component: Contribute,
+const meta: Meta<typeof PledgeCheckoutContribute> = {
+  title: 'Organisms/PledgeCheckoutContribute',
+  component: PledgeCheckoutContribute,
   tags: ['autodocs'],
   parameters: {
     themes: ['light', 'dark'],
@@ -16,14 +16,14 @@ const meta: Meta<typeof Contribute> = {
   },
   render: (args) => (
     <div className="max-w-[350px]">
-      <Contribute {...args} />
+      <PledgeCheckoutContribute {...args} />
     </div>
   ),
 }
 
 export default meta
 
-type Story = StoryObj<typeof Contribute>
+type Story = StoryObj<typeof PledgeCheckoutContribute>
 
 export const Default: Story = {
   args: {

@@ -1,10 +1,5 @@
 import { useAuth } from '@/hooks/auth'
-import {
-  ClockIcon,
-  CurrencyDollarIcon,
-  EnvelopeIcon,
-} from '@heroicons/react/24/outline'
-import { CommandLineIcon, HeartIcon } from '@heroicons/react/24/solid'
+import { EnvelopeIcon } from '@heroicons/react/24/outline'
 import {
   Issue,
   Organization,
@@ -17,7 +12,6 @@ import { Elements } from '@stripe/react-stripe-js'
 import { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { useTheme } from 'next-themes'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
 import {
@@ -29,21 +23,15 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
 } from 'polarkit/components/ui/atoms'
 import { useListPaymentMethods } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import posthog from 'posthog-js'
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Contribute from './Contribute'
-import FundOnCompletion from './FundOnCompletion'
 import OnBehalfOf from './OnBehalfOf'
 import PaymentForm from './PaymentForm'
-import { prettyCardName, validateEmail } from './payment'
+import { generateRedirectURL, prettyCardName, validateEmail } from './payment'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
@@ -56,187 +44,7 @@ type PledgeFormState = {
   on_behalf_of_organization_id: string | undefined
 }
 
-const generateRedirectURL = (
-  gotoURL?: string,
-  paymentIntent?: PaymentIntent,
-  email?: string,
-) => {
-  const redirectURL = new URL(
-    window.location.origin + window.location.pathname + '/status',
-  )
-
-  if (gotoURL) {
-    redirectURL.searchParams.append('goto_url', gotoURL)
-  }
-
-  if (email) {
-    redirectURL.searchParams.append('email', email)
-  }
-
-  // Only in case we pass our redirect to Stripe which in turn will add it
-  if (!paymentIntent) {
-    return redirectURL.toString()
-  }
-
-  /*
-   * Same location & query params as the serverside redirect from Stripe if required
-   * by the payment method - easing the implementation.
-   */
-  redirectURL.searchParams.append('payment_intent_id', paymentIntent.id)
-  if (paymentIntent.client_secret) {
-    redirectURL.searchParams.append(
-      'payment_intent_client_secret',
-      paymentIntent.client_secret,
-    )
-  }
-  redirectURL.searchParams.append('redirect_status', paymentIntent.status)
-  return redirectURL.toString()
-}
-
-const PledgeForm = ({
-  issue,
-  gotoURL,
-  onAmountChange: onAmountChangeProp,
-}: {
-  issue: Issue
-  gotoURL?: string
-  onAmountChange?: (amount: number) => void
-}) => {
-  return (
-    <>
-      <form className="flex flex-col">
-        <label
-          htmlFor="action"
-          className="dark:text-polar-200 mb-2 text-sm font-medium text-gray-500"
-        >
-          I want to&hellip;
-        </label>
-
-        <Tabs defaultValue="fund" className="">
-          <TabsList className="w-full">
-            <TabsTrigger
-              value="fund"
-              className="data-[state=active]:text-red-600 dark:data-[state=active]:text-red-600"
-            >
-              <HeartIcon className="h-4 w-4" />
-              <div className="dark:text-polar-300 text-gray-700">Fund</div>
-            </TabsTrigger>
-
-            <TabsTrigger
-              value="contribute"
-              className="data-[state=active]:text-green-400 dark:data-[state=active]:text-green-400"
-            >
-              <CommandLineIcon className="h-4 w-4" />
-              <div className="dark:text-polar-300 text-gray-700">
-                Contribute
-              </div>
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="fund">
-            <Fund
-              issue={issue}
-              gotoURL={gotoURL}
-              onAmountChange={onAmountChangeProp}
-            />
-          </TabsContent>
-          <TabsContent value="contribute">
-            <Contribute issue={issue} />
-          </TabsContent>
-        </Tabs>
-      </form>
-    </>
-  )
-}
-
-export default PledgeForm
-
-const Fund = ({
-  issue,
-  gotoURL,
-  onAmountChange: onAmountChangeProp,
-}: {
-  issue: Issue
-  gotoURL?: string
-  onAmountChange?: (amount: number) => void
-}) => {
-  return (
-    <div className="space-y-4 py-4">
-      <div>
-        <label
-          htmlFor="funding_method"
-          className="dark:text-polar-200 mb-2 text-sm font-medium text-gray-500"
-        >
-          Funding method
-        </label>
-
-        <Tabs defaultValue="fund_today" className="mt-2">
-          <TabsList className="w-full" vertical>
-            <FundingMethodTab
-              value="fund_today"
-              icon={<CurrencyDollarIcon className="h-6 w-6" />}
-              title="Fund today"
-              subtitle="Paid today. Held by Polar until completion."
-            />
-            <FundingMethodTab
-              value="fund_on_completion"
-              icon={<ClockIcon className="h-6 w-6" />}
-              title="Fund on completion"
-              subtitle="Get an invoice when the issue is completed."
-            />
-          </TabsList>
-          <TabsContent value="fund_today">
-            <FundToday
-              issue={issue}
-              gotoURL={gotoURL}
-              onAmountChange={onAmountChangeProp}
-            />
-          </TabsContent>
-          <TabsContent value="fund_on_completion">
-            <FundOnCompletion issue={issue} gotoURL={gotoURL} />
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      <p className="dark:text-polar-500 text-sm text-gray-600">
-        By funding this issue, you agree to our{' '}
-        <Link href="https://polar.sh/legal/terms" className="underline">
-          Terms of Service
-        </Link>{' '}
-        and understand our{' '}
-        <Link href="https://polar.sh/legal/privacy" className="underline">
-          Privacy Policy
-        </Link>
-        .
-      </p>
-    </div>
-  )
-}
-
-const FundingMethodTab = ({
-  value,
-  icon,
-  title,
-  subtitle,
-}: {
-  value: string
-  icon: React.ReactElement
-  title: string
-  subtitle: string
-}) => (
-  <TabsTrigger value={value} className="w-full md:flex-col md:items-center">
-    <div className="flex w-full items-center gap-4 px-1 text-left">
-      <div className="shrink-0">{icon}</div>
-      <div className="w-full">
-        <div>{title}</div>
-        <div className="w-full truncate text-xs font-normal opacity-50">
-          {subtitle}
-        </div>
-      </div>
-    </div>
-  </TabsTrigger>
-)
-
-const FundToday = ({
+const PledgeCheckoutFundToday = ({
   issue,
   gotoURL,
   onAmountChange: onAmountChangeProp,
@@ -736,3 +544,5 @@ const FundToday = ({
     </div>
   )
 }
+
+export default PledgeCheckoutFundToday

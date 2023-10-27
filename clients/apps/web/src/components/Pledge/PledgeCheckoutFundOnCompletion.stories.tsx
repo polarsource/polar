@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react'
 
-import FundOnCompletion from './FundOnCompletion'
+import PledgeCheckoutFundOnCompletion from './PledgeCheckoutFundOnCompletion'
 
 import { issue } from 'polarkit/testdata'
 
-const meta: Meta<typeof FundOnCompletion> = {
-  title: 'Organisms/FundOnCompletion',
-  component: FundOnCompletion,
+const meta: Meta<typeof PledgeCheckoutFundOnCompletion> = {
+  title: 'Organisms/PledgeCheckoutFundOnCompletion',
+  component: PledgeCheckoutFundOnCompletion,
   tags: ['autodocs'],
   parameters: {
     themes: ['light', 'dark'],
@@ -16,14 +16,14 @@ const meta: Meta<typeof FundOnCompletion> = {
   },
   render: (args) => (
     <div className="max-w-[400px]">
-      <FundOnCompletion {...args} />
+      <PledgeCheckoutFundOnCompletion {...args} />
     </div>
   ),
 }
 
 export default meta
 
-type Story = StoryObj<typeof FundOnCompletion>
+type Story = StoryObj<typeof PledgeCheckoutFundOnCompletion>
 
 export const Default: Story = {
   args: {

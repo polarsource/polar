@@ -85,7 +85,7 @@ const SubscriptionTierBenefitsForm = ({
         <div className="flex flex-row items-center justify-between">
           <h2 className="dark:text-polar-50 text-lg text-gray-950">Benefits</h2>
           <Button size="sm" className="self-start" onClick={toggle}>
-            Add Benefit
+            Create New
           </Button>
         </div>
         <ShadowBox>

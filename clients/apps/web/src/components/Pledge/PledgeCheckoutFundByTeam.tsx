@@ -1,22 +1,16 @@
 import { useAuth } from '@/hooks/auth'
-import {
-  BellIcon,
-  ClockIcon,
-  UserCircleIcon,
-} from '@heroicons/react/24/outline'
-import { Issue, Organization, UserSignupType } from '@polar-sh/sdk'
+import { ClockIcon } from '@heroicons/react/24/outline'
+import { Issue, Organization } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
-import { LogoIcon } from 'polarkit/components/brand'
 import { Button, MoneyInput } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import GithubLoginButton from '../Shared/GithubLoginButton'
 import TeamSelect from './TeamSelect'
 
-const PledgeCheckoutFundOnCompletion = ({
+const PledgeCheckoutFundByTeam = ({
   issue,
   gotoURL,
 }: {
@@ -27,10 +21,10 @@ const PledgeCheckoutFundOnCompletion = ({
 
   const [formState, setFormState] = useState<{
     amount: number
-    on_behalf_of_organization_id: string | undefined
+    by_organization_id: string | undefined
   }>({
     amount: issue.repository.organization.pledge_minimum_amount,
-    on_behalf_of_organization_id: undefined,
+    by_organization_id: undefined,
   })
 
   const [errorMessage, setErrorMessage] = useState<string>('')
@@ -59,7 +53,7 @@ const PledgeCheckoutFundOnCompletion = ({
         createPledgePayLater: {
           issue_id: issue.id,
           amount: formState.amount,
-          on_behalf_of_organization_id: formState.on_behalf_of_organization_id,
+          by_organization_id: formState.by_organization_id,
         },
       })
 
@@ -80,14 +74,12 @@ const PledgeCheckoutFundOnCompletion = ({
   const onChangeOnBehalfOf = (org: Organization | undefined) => {
     setFormState({
       ...formState,
-      on_behalf_of_organization_id: org ? org.id : undefined,
+      by_organization_id: org ? org.id : undefined,
     })
   }
 
   return (
     <div className="flex flex-col gap-4 py-4">
-      {!currentUser && <NotLoggedInBanner />}
-
       <div>
         <label
           htmlFor="amount"
@@ -120,9 +112,12 @@ const PledgeCheckoutFundOnCompletion = ({
         </div>
       </div>
 
-      {currentUser && (
-        <TeamSelect onChange={onChangeOnBehalfOf} allowSelfSelect={true} />
-      )}
+      <TeamSelect
+        onChange={onChangeOnBehalfOf}
+        allowSelfSelect={false}
+        title="Team"
+        defaultToFirstOrganization={true}
+      />
 
       <NextSteps />
 
@@ -167,51 +162,7 @@ const PledgeCheckoutFundOnCompletion = ({
   )
 }
 
-export default PledgeCheckoutFundOnCompletion
-
-const NotLoggedInBanner = () => {
-  return (
-    <div className="dark:bg-polar-900 flex flex-col gap-4 rounded-lg border border-red-200 px-4 py-4 dark:border-red-700">
-      <div className="flex items-center justify-between">
-        <div className="dark:text-polar-400 text-base font-medium text-gray-700">
-          Sign in with GitHub
-        </div>
-        <div className="rounded-sm border border-red-200 bg-red-50 px-1 text-xs text-red-500 dark:border-red-700 dark:bg-red-900">
-          Required
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <UserCircleIcon className="dark:text-polar-400 h-5 w-5 text-gray-500" />
-          <div className="dark:text-polar-500 text-xs font-semibold text-gray-600">
-            Show profile in connection with funding
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <BellIcon className="h-5 w-5 text-gray-500" />
-          <div className="dark:text-polar-500 text-xs text-gray-600">
-            + Track funding on funded issue
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <LogoIcon className="h-5 w-5" />
-          <div className="dark:text-polar-500 text-xs text-gray-600">
-            + Polar account for future funding & rewards
-          </div>
-        </div>
-      </div>
-
-      <GithubLoginButton
-        size="large"
-        text="Continue with GitHub"
-        fullWidth={true}
-        gotoUrl={window.location.href}
-        userSignupType={UserSignupType.BACKER}
-      />
-    </div>
-  )
-}
+export default PledgeCheckoutFundByTeam
 
 const NextSteps = () => (
   <div className="dark:text-polar-400 flex flex-col gap-3 text-sm  text-gray-600 ">

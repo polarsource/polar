@@ -1,8 +1,6 @@
 'use client'
 
 import {
-  SubscriptionBenefitBuiltin,
-  SubscriptionBenefitCustom,
   SubscriptionTierCreate,
   SubscriptionTierType,
   SubscriptionTierUpdate,
@@ -35,10 +33,9 @@ interface SubscriptionTierFormProps {
 const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
   update,
 }) => {
-  const { control } = useFormContext<{
-    tier: SubscriptionTierCreate | SubscriptionTierUpdate
-    benefits: (SubscriptionBenefitBuiltin | SubscriptionBenefitCustom)[]
-  }>()
+  const { control } = useFormContext<
+    SubscriptionTierCreate | SubscriptionTierUpdate
+  >()
 
   const subscriptionTierTypes = useMemo(
     () =>
@@ -54,7 +51,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
     <>
       <FormField
         control={control}
-        name="tier.name"
+        name="name"
         rules={{
           required: 'This field is required',
           minLength: 3,
@@ -79,7 +76,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
       {!update && (
         <FormField
           control={control}
-          name="tier.type"
+          name="type"
           rules={{ required: 'This field is required' }}
           render={({ field }) => (
             <FormItem className="max-w-[300px]">
@@ -112,7 +109,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
       )}
       <FormField
         control={control}
-        name="tier.is_highlighted"
+        name="is_highlighted"
         render={({ field }) => {
           return (
             <FormItem className="flex flex-row items-center space-x-3 space-y-0">
@@ -131,7 +128,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
       />
       <FormField
         control={control}
-        name="tier.price_amount"
+        name="price_amount"
         rules={{ required: 'This field is required', min: 0 }}
         render={({ field }) => {
           const displayValue =
@@ -163,7 +160,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
       />
       <FormField
         control={control}
-        name="tier.description"
+        name="description"
         rules={{
           maxLength: 240,
         }}

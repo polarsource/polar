@@ -39,7 +39,7 @@ export default async function Page({
   return (
     <SubscriptionTierCreatePage
       organization={organization}
-      benefits={benefits}
+      organizationBenefits={benefits}
       type={searchParams.type}
     />
   )

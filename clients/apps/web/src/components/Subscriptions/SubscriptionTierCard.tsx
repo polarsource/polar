@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckOutlined } from '@mui/icons-material'
+import { AddOutlined, CheckOutlined } from '@mui/icons-material'
 import { SubscriptionTier } from '@polar-sh/sdk'
 import {
   Card,
@@ -71,11 +71,14 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     setShineActive(false)
   }, [setShineActive])
 
+  const benefitsToDisplay = (subscriptionTier.benefits ?? []).slice(0, 3)
+  const additionalBenefits = (subscriptionTier.benefits ?? []).slice(3)
+
   return (
     <Card
       ref={containerRef}
       className={twMerge(
-        'dark:bg-polar-900 dark:border-polar-700 relative flex min-w-[280px] max-w-[320px] flex-col gap-y-4 overflow-hidden rounded-3xl border border-transparent bg-[--var-bg-color] p-8 dark:shadow-none',
+        'dark:bg-polar-900 dark:border-polar-700 relative flex min-w-[280px] max-w-[320px] flex-col gap-y-6 overflow-hidden rounded-3xl border border-transparent bg-[--var-bg-color] p-8 dark:shadow-none',
         className,
       )}
       style={style}
@@ -129,7 +132,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
       </CardHeader>
       <Separator className="bg-[--var-border-color] dark:bg-[--var-dark-border-color]" />
       <CardContent className="flex shrink flex-col gap-y-1 p-0">
-        {(subscriptionTier.benefits ?? []).map((benefit) => (
+        {benefitsToDisplay.map((benefit) => (
           <div
             key={benefit.id}
             className="flex flex-row items-center text-[--var-fg-color] dark:text-[--var-dark-fg-color]"
@@ -138,6 +141,15 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             <span className="ml-2 text-sm">{benefit.description}</span>
           </div>
         ))}
+        {additionalBenefits.length > 0 && (
+          <div className="dark:text-polar-400 mt-2 flex flex-row items-center text-[--var-muted-color]">
+            <AddOutlined className="h-4 w-4" fontSize="small" />
+            <span className="ml-2 text-sm">
+              {additionalBenefits.length} more{' '}
+              {additionalBenefits.length > 1 ? 'benefits' : 'benefit'}
+            </span>
+          </div>
+        )}
       </CardContent>
       {children && (
         <CardFooter className="mt-4 flex w-full flex-row p-0">

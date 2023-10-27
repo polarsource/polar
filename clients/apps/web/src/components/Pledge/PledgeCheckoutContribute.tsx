@@ -1,8 +1,8 @@
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline'
 import { Issue } from '@polar-sh/sdk'
-import { CircledNumber } from './FundOnCompletion'
+import CircledNumber from './CircledNumber'
 
-const Contribute = ({ issue }: { issue: Issue }) => {
+const PledgeCheckoutContribute = ({ issue }: { issue: Issue }) => {
   return (
     <div className="flex flex-col gap-6 py-4">
       <div className="flex items-center gap-4">
@@ -77,7 +77,7 @@ const Contribute = ({ issue }: { issue: Issue }) => {
   )
 }
 
-export default Contribute
+export default PledgeCheckoutContribute
 
 const Title = ({ children }: { children: React.ReactNode }) => (
   <div className="dark:text-polar-200 text-sm font-medium text-gray-600">

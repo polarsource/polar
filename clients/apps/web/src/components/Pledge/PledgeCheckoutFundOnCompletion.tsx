@@ -16,7 +16,7 @@ import { twMerge } from 'tailwind-merge'
 import GithubLoginButton from '../Shared/GithubLoginButton'
 import OnBehalfOf from './OnBehalfOf'
 
-const FundOnCompletion = ({
+const PledgeCheckoutFundOnCompletion = ({
   issue,
   gotoURL,
 }: {
@@ -165,7 +165,7 @@ const FundOnCompletion = ({
   )
 }
 
-export default FundOnCompletion
+export default PledgeCheckoutFundOnCompletion
 
 const NotLoggedInBanner = () => {
   return (

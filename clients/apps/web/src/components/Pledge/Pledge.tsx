@@ -14,7 +14,7 @@ import posthog from 'posthog-js'
 import { useEffect, useState } from 'react'
 import Footer from '../Organization/Footer'
 import HowItWorks from './HowItWorks'
-import PledgeForm from './PledgeForm'
+import PledgeCheckoutPanel from './PledgeCheckoutPanel'
 
 const Pledge = ({
   issue,
@@ -74,7 +74,7 @@ const Pledge = ({
         {/* Right side */}
         <div>
           <WhiteCard padding>
-            <PledgeForm
+            <PledgeCheckoutPanel
               issue={issue}
               gotoURL={gotoURL}
               onAmountChange={onAmountChange}

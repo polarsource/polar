@@ -9,12 +9,18 @@ import {
   SelectValue,
 } from 'polarkit/components/ui/atoms'
 import { useListAllOrganizations } from 'polarkit/hooks'
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
-const OnBehalfOf = ({
+const TeamSelect = ({
   onChange,
+  allowSelfSelect,
+  title,
+  defaultToFirstOrganization,
 }: {
   onChange: (o: Organization | undefined) => void
+  allowSelfSelect: boolean
+  title?: string
+  defaultToFirstOrganization?: boolean
 }) => {
   const { currentUser } = useAuth()
 
@@ -30,11 +36,33 @@ const OnBehalfOf = ({
 
   const show = canAttributeAsOrganizations.length > 0
 
-  const onAttributePledgeChange = (id: string) => {
-    const o = canAttributeAsOrganizations.find((o) => o.id === id)
-    setAttributePledgeTo(o)
-    onChange(o)
-  }
+  const onAttributePledgeChange = useCallback(
+    (id: string) => {
+      const o = canAttributeAsOrganizations.find((o) => o.id === id)
+      setAttributePledgeTo(o)
+      onChange(o)
+    },
+    [canAttributeAsOrganizations, onChange],
+  )
+
+  const [userSelectedTeam, setUserSelectedTeam] = useState(false)
+
+  useEffect(() => {
+    if (
+      defaultToFirstOrganization &&
+      !userSelectedTeam &&
+      canAttributeAsOrganizations.length > 0 &&
+      canAttributeAsOrganizations[0].id !== attributePledgeTo?.id
+    ) {
+      onAttributePledgeChange(canAttributeAsOrganizations[0].id)
+    }
+  }, [
+    defaultToFirstOrganization,
+    canAttributeAsOrganizations,
+    attributePledgeTo,
+    userSelectedTeam,
+    onAttributePledgeChange,
+  ])
 
   return (
     <>
@@ -44,11 +72,14 @@ const OnBehalfOf = ({
             htmlFor="attribute_pledge"
             className="dark:text-polar-400 text-sm font-medium text-gray-500"
           >
-            Fund on behalf of
+            {title || 'Fund on behalf of'}
           </label>
 
           <Select
-            onValueChange={onAttributePledgeChange}
+            onValueChange={(v) => {
+              setUserSelectedTeam(true)
+              onAttributePledgeChange(v)
+            }}
             value={attributePledgeTo?.id ?? ''}
             name="attribute_pledge"
           >
@@ -73,15 +104,17 @@ const OnBehalfOf = ({
                   </div>
                 </SelectItem>
               ))}
-              <SelectItem value="">
-                <div className="flex items-center space-x-2">
-                  <Avatar
-                    avatar_url={currentUser?.avatar_url}
-                    name={currentUser?.username ?? ''}
-                  />
-                  <span>{currentUser?.username || currentUser?.email}</span>
-                </div>
-              </SelectItem>
+              {allowSelfSelect ? (
+                <SelectItem value="">
+                  <div className="flex items-center space-x-2">
+                    <Avatar
+                      avatar_url={currentUser?.avatar_url}
+                      name={currentUser?.username ?? ''}
+                    />
+                    <span>{currentUser?.username || currentUser?.email}</span>
+                  </div>
+                </SelectItem>
+              ) : null}
             </SelectContent>
           </Select>
 
@@ -98,4 +131,4 @@ const OnBehalfOf = ({
   )
 }
 
-export default OnBehalfOf
+export default TeamSelect

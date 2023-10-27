@@ -1,4 +1,8 @@
-import { ClockIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline'
+import {
+  BuildingOfficeIcon,
+  ClockIcon,
+  CurrencyDollarIcon,
+} from '@heroicons/react/24/outline'
 import { Issue } from '@polar-sh/sdk'
 import Link from 'next/link'
 import {
@@ -7,6 +11,7 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms'
+import PledgeCheckoutFundByTeam from './PledgeCheckoutFundByTeam'
 import PledgeCheckoutFundOnCompletion from './PledgeCheckoutFundOnCompletion'
 import PledgeCheckoutFundToday from './PledgeCheckoutFundToday'
 
@@ -43,6 +48,12 @@ const PledgeCheckoutFund = ({
               title="Fund on completion"
               subtitle="Get an invoice when the issue is completed."
             />
+            <FundingMethodTab
+              value="fund_by_team"
+              icon={<BuildingOfficeIcon className="h-6 w-6" />}
+              title="Fund by team"
+              subtitle="Your boss will pay it."
+            />
           </TabsList>
           <TabsContent value="fund_today">
             <PledgeCheckoutFundToday
@@ -53,6 +64,9 @@ const PledgeCheckoutFund = ({
           </TabsContent>
           <TabsContent value="fund_on_completion">
             <PledgeCheckoutFundOnCompletion issue={issue} gotoURL={gotoURL} />
+          </TabsContent>
+          <TabsContent value="fund_by_team">
+            <PledgeCheckoutFundByTeam issue={issue} gotoURL={gotoURL} />
           </TabsContent>
         </Tabs>
       </div>

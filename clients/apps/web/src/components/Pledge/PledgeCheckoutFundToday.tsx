@@ -29,8 +29,8 @@ import { getCentsInDollarString } from 'polarkit/money'
 import posthog from 'posthog-js'
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import OnBehalfOf from './OnBehalfOf'
 import PaymentForm from './PaymentForm'
+import TeamSelect from './TeamSelect'
 import { generateRedirectURL, prettyCardName, validateEmail } from './payment'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
@@ -389,7 +389,7 @@ const PledgeCheckoutFundToday = ({
         </div>
       </div>
 
-      <OnBehalfOf onChange={onChangeOnBehalfOf} />
+      <TeamSelect onChange={onChangeOnBehalfOf} allowSelfSelect={true} />
 
       <div>
         <label

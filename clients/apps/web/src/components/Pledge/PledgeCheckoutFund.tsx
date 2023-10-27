@@ -1,3 +1,4 @@
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import {
   BuildingOfficeIcon,
   ClockIcon,
@@ -24,6 +25,8 @@ const PledgeCheckoutFund = ({
   gotoURL?: string
   onAmountChange?: (amount: number) => void
 }) => {
+  const teamsEnabled = isFeatureEnabled('teams')
+
   return (
     <div className="space-y-4 py-4">
       <div>
@@ -48,12 +51,14 @@ const PledgeCheckoutFund = ({
               title="Fund on completion"
               subtitle="Get an invoice when the issue is completed."
             />
-            <FundingMethodTab
-              value="fund_by_team"
-              icon={<BuildingOfficeIcon className="h-6 w-6" />}
-              title="Fund by team"
-              subtitle="Your boss will pay it."
-            />
+            {teamsEnabled && (
+              <FundingMethodTab
+                value="fund_by_team"
+                icon={<BuildingOfficeIcon className="h-6 w-6" />}
+                title="Fund by team"
+                subtitle="Your boss will pay it."
+              />
+            )}
           </TabsList>
           <TabsContent value="fund_today">
             <PledgeCheckoutFundToday

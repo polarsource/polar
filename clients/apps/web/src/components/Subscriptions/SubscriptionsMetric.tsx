@@ -49,7 +49,9 @@ const SubscriptionsMetric: React.FC<SubscriptionsMetricProps> = ({
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <div className="font-medium">{title}</div>
-        <IconComponent className="h-4 w-4" />
+        <span className="text-blue-500">
+          <IconComponent className="h-4 w-4" />
+        </span>
       </CardHeader>
       <CardContent>
         <div className="text-5xl !font-light">{formattedData}</div>

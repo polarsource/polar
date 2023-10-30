@@ -4,7 +4,6 @@ from uuid import UUID
 
 import structlog
 
-from polar.config import settings
 from polar.context import ExecutionContext
 from polar.exceptions import PolarError
 from polar.integrations.github import client as github
@@ -24,11 +23,7 @@ from polar.worker import (
 
 from .. import service
 from .utils import (
-    get_event_issue,
     get_organization_and_repo,
-    remove_repositories,
-    upsert_issue,
-    upsert_pull_request,
 )
 
 log = structlog.get_logger()
@@ -185,6 +180,24 @@ async def create_from_installation(
     )
 
     return organization
+
+
+async def remove_repositories(
+    session: AsyncSession,
+    repositories: Sequence[
+        github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems
+        | github.webhooks.InstallationRepositoriesAddedPropRepositoriesRemovedItems
+        | github.webhooks.InstallationRepositoriesRemovedPropRepositoriesRemovedItems
+    ],
+) -> None:
+    for repo in repositories:
+        if not repo.id:
+            continue
+        r = await service.github_repository.get_by_external_id(session, repo.id)
+        if not r:
+            continue
+
+        await service.github_repository.soft_delete(session, r.id)
 
 
 @task("github.webhook.installation_repositories.added")
@@ -421,7 +434,29 @@ async def handle_issue(
     | github.webhooks.IssuesReopened
     | github.webhooks.IssuesDeleted,
 ) -> Issue:
-    issue = await upsert_issue(session, event)
+    owner_id = event.repository.owner.id
+    repository_id = event.repository.id
+
+    organization = await service.github_organization.get_by_external_id(
+        session, owner_id
+    )
+    if not organization:
+        raise Exception(
+            f"failed to save issue (org not found) external_id={event.issue.id}"
+        )
+
+    repository = await service.github_repository.get_by_external_id(
+        session, repository_id
+    )
+    if not repository:
+        raise Exception(
+            f"failed to save issue (repo not found) external_id={event.issue.id}"
+        )
+
+    issue = await service.github_issue.store(
+        session, data=event.issue, organization=organization, repository=repository
+    )
+
     if not issue:
         raise Exception(f"failed to save issue external_id={event.issue.id}")
 
@@ -572,7 +607,9 @@ async def issue_deleted(
             await handle_issue(session, scope, action, parsed)
 
             # Mark as deleted
-            issue = await get_event_issue(session, parsed)
+            issue = await service.github_issue.get_by_external_id(
+                session, parsed.issue.id
+            )
             if not issue:
                 return None
 
@@ -801,7 +838,26 @@ async def handle_pull_request(
     | github.webhooks.PullRequestReopened
     | github.webhooks.PullRequestSynchronize,
 ) -> None:
-    await upsert_pull_request(session, event)
+    owner_id = event.repository.owner.id
+    repository_id = event.repository.id
+
+    organization = await service.github_organization.get_by_external_id(
+        session, owner_id
+    )
+    if not organization:
+        return None
+
+    repository = await service.github_repository.get_by_external_id(
+        session, repository_id
+    )
+    if not repository:
+        return None
+
+    await service.github_pull_request.store_many_full(
+        session, [event.pull_request], organization=organization, repository=repository
+    )
+
+    return
 
 
 @task("github.webhook.pull_request.opened")

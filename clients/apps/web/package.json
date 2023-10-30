@@ -21,6 +21,7 @@
     "@heroicons/react": "^2.0.16",
     "@mui/icons-material": "^5.14.12",
     "@mui/material": "^5.14.12",
+    "@observablehq/plot": "^0.6.11",
     "@polar-sh/sdk": "workspace:*",
     "@radix-ui/react-dropdown-menu": "^2.0.5",
     "@radix-ui/react-toast": "^1.1.3",

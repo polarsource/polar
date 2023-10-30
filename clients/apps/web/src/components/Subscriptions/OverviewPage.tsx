@@ -1,9 +1,9 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/MaintainerLayout'
-import { ListResourceSubscriptionTier, Organization } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/sdk'
 import { api } from 'polarkit'
-import { Card, CardContent, CardHeader } from 'polarkit/components/ui/card'
+import { Card, CardContent, CardHeader } from 'polarkit/components/ui/atoms'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
 import React, { useEffect, useMemo, useState } from 'react'
 import {
@@ -16,17 +16,14 @@ import {
   MRRMetric,
   SubscribersMetric,
 } from './SubscriptionsMetric'
-import { getSubscriptionTiersByType } from './utils'
 
 interface OverviewPageProps {
-  subscriptionTiers: ListResourceSubscriptionTier
   organization: Organization
   startDate: Date
   endDate: Date
 }
 
 const OverviewPage: React.FC<OverviewPageProps> = ({
-  subscriptionTiers,
   organization,
   startDate,
   endDate,
@@ -74,15 +71,10 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
       })
   }, [startDate, endDate, organization])
 
-  const subscriptionTiersByType = useMemo(
-    () => getSubscriptionTiersByType(subscriptionTiers.items ?? []),
-    [subscriptionTiers],
-  )
-
   return (
     <DashboardBody>
-      <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="flex flex-col gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {displayedPeriod && (
             <>
               <SubscribersMetric
@@ -127,12 +119,12 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
               </Card>
             ))}
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {summaryPeriods.length > 0 && (
             <>
               <Card>
                 <CardHeader>
-                  <div className="text-xl">Subscribers</div>
+                  <div className="text-lg font-medium">Subscribers</div>
                 </CardHeader>
                 <CardContent>
                   <SubscribersChart
@@ -144,7 +136,9 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
               </Card>
               <Card>
                 <CardHeader>
-                  <div className="text-xl">Monthly recurring revenue</div>
+                  <div className="text-lg font-medium">
+                    Monthly recurring revenue
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <MRRChart

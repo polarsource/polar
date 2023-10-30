@@ -6,14 +6,14 @@ import { SubscribeSession } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
-import { Button } from 'polarkit/components/ui/button'
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from 'polarkit/components/ui/card'
+} from 'polarkit/components/ui/atoms'
+import { Button } from 'polarkit/components/ui/button'
 import { useCallback, useState } from 'react'
 import SubscriptionTierCelebration from './SubscriptionTierCelebration'
 

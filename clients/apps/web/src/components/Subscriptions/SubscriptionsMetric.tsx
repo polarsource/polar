@@ -1,8 +1,13 @@
 import { AllInclusive, AttachMoney, Face } from '@mui/icons-material'
 import { SvgIconTypeMap } from '@mui/material'
 import { OverridableComponent } from '@mui/material/OverridableComponent'
-import { FormattedDateTime } from 'polarkit/components/ui/atoms'
-import { Card, CardContent, CardHeader } from 'polarkit/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  FormattedDateTime,
+} from 'polarkit/components/ui/atoms'
+import { CardFooter } from 'polarkit/components/ui/card'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useMemo } from 'react'
 
@@ -47,7 +52,9 @@ const SubscriptionsMetric: React.FC<SubscriptionsMetricProps> = ({
         <IconComponent className="h-4 w-4" />
       </CardHeader>
       <CardContent>
-        <div className="text-4xl">{formattedData}</div>
+        <div className="text-5xl !font-light">{formattedData}</div>
+      </CardContent>
+      <CardFooter>
         <div className="dark:text-polar-500 text-gray-400">
           {previousData !== undefined &&
             getEvolutionPercentage(data, previousData)}
@@ -55,7 +62,7 @@ const SubscriptionsMetric: React.FC<SubscriptionsMetricProps> = ({
             <FormattedDateTime datetime={dataDate} />
           )}
         </div>
-      </CardContent>
+      </CardFooter>
     </Card>
   )
 }
@@ -122,7 +129,7 @@ export const CumulativeRevenueMetric: React.FC<
       data={data}
       dataDate={dataDate}
       previousData={previousData}
-      title="Total Revenue over period"
+      title="Total Revenue"
       IconComponent={AttachMoney}
       dataFormatter={(data) =>
         `$${getCentsInDollarString(data, undefined, true)}`

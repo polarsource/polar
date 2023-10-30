@@ -1,6 +1,14 @@
 import Alert from './Alert'
 import Avatar from './Avatar'
 import Button from './Button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from './Card'
 import CopyToClipboardInput from './CopyToClipboardInput'
 import CountryPicker from './CountryPicker'
 import FormattedDateTime from './FormattedDateTime'
@@ -42,6 +50,12 @@ export {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
   FormattedDateTime,
   Input,
   IssueBodyRenderer,

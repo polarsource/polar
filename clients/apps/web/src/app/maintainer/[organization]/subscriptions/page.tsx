@@ -26,10 +26,6 @@ export default async function Page({
     organizationName: params.organization,
     platform: Platforms.GITHUB,
   })
-  const subscriptionTiers = await api.subscriptions.searchSubscriptionTiers({
-    organizationName: params.organization,
-    platform: Platforms.GITHUB,
-  })
 
   const startOfMonth = new Date()
   startOfMonth.setUTCHours(0, 0, 0, 0)
@@ -44,7 +40,6 @@ export default async function Page({
 
   return (
     <OverviewPage
-      subscriptionTiers={subscriptionTiers}
       organization={organization}
       startDate={startOfMonthOneYearAgo}
       endDate={startOfMonth}

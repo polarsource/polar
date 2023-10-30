@@ -4,7 +4,6 @@ import {
   SubscriptionBenefitCreate,
   SubscriptionTierBenefit,
 } from '@polar-sh/sdk'
-import { api } from 'polarkit'
 import { Button, Input, ShadowBox } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
@@ -15,6 +14,7 @@ import {
   FormLabel,
 } from 'polarkit/components/ui/form'
 import { Switch } from 'polarkit/components/ui/switch'
+import { useCreateSubscriptionBenefit } from 'polarkit/hooks'
 import { useCallback, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
@@ -97,7 +97,7 @@ const SubscriptionTierBenefitsForm = ({
                     <BenefitRow
                       key={benefit.id}
                       benefit={benefit}
-                      checked={benefits.includes(benefit)}
+                      checked={benefits.some((b) => b.id === benefit.id)}
                       onCheckedChange={handleCheckedChange(benefit)}
                     />
                   ))
@@ -148,13 +148,15 @@ const NewSubscriptionTierBenefitModalContent = ({
 }: NewSubscriptionTierBenefitModalContentProps) => {
   const [isLoading, setIsLoading] = useState(false)
 
+  const createSubscriptionBenefit = useCreateSubscriptionBenefit()
+
   const handleCreateNewBenefit = useCallback(
     async (subscriptionBenefitCreate: SubscriptionBenefitCreate) => {
       try {
         setIsLoading(true)
-        const benefit = await api.subscriptions.createSubscriptionBenefit({
+        const benefit = await createSubscriptionBenefit.mutateAsync(
           subscriptionBenefitCreate,
-        })
+        )
 
         if (benefit) {
           onSelectBenefit(benefit)
@@ -166,7 +168,7 @@ const NewSubscriptionTierBenefitModalContent = ({
         setIsLoading(false)
       }
     },
-    [hideModal, onSelectBenefit],
+    [hideModal, onSelectBenefit, createSubscriptionBenefit],
   )
 
   const form = useForm<SubscriptionBenefitCreate>({

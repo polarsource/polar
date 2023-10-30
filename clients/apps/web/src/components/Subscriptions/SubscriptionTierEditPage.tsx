@@ -2,33 +2,64 @@
 
 import { DashboardBody } from '@/components/Layout/MaintainerLayout'
 import {
-  ListResourceUnionSubscriptionBenefitBuiltinSubscriptionBenefitCustom,
   Organization,
   SubscriptionTier,
   SubscriptionTierBenefit,
   SubscriptionTierUpdate,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
-import { api } from 'polarkit'
 import { Button } from 'polarkit/components/ui/atoms'
 import { Form } from 'polarkit/components/ui/form'
-import React, { useCallback, useMemo, useState } from 'react'
+import {
+  useSubscriptionBenefits,
+  useSubscriptionTier,
+  useUpdateSubscriptionTier,
+  useUpdateSubscriptionTierBenefits,
+} from 'polarkit/hooks'
+import React, { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import SubscriptionTierBenefitsForm from './SubscriptionTierBenefitsForm'
 import SubscriptionTierCard from './SubscriptionTierCard'
 import SubscriptionTierForm from './SubscriptionTierForm'
 
 interface SubscriptionTierEditPageProps {
-  subscriptionTier: SubscriptionTier
   organization: Organization
-  organizationBenefits: ListResourceUnionSubscriptionBenefitBuiltinSubscriptionBenefitCustom
+  tier: string
 }
 
 const SubscriptionTierEditPage: React.FC<SubscriptionTierEditPageProps> = ({
-  subscriptionTier,
   organization,
-  organizationBenefits,
+  tier,
 }) => {
+  const subscriptionTier = useSubscriptionTier(tier)
+  const organizationBenefits = useSubscriptionBenefits(organization.name)
+
+  if (!subscriptionTier.data || !organizationBenefits.data) {
+    return null
+  }
+
+  return (
+    <SubscriptionTierEdit
+      organization={organization}
+      subscriptionTier={subscriptionTier.data}
+      organizationBenefits={organizationBenefits.data.items ?? []}
+    />
+  )
+}
+
+export default SubscriptionTierEditPage
+
+interface SubscriptionTierEditProps {
+  organization: Organization
+  subscriptionTier: SubscriptionTier
+  organizationBenefits: SubscriptionTierBenefit[]
+}
+
+const SubscriptionTierEdit = ({
+  organization,
+  subscriptionTier,
+  organizationBenefits,
+}: SubscriptionTierEditProps) => {
   const router = useRouter()
   const [enabledBenefits, setEnabledBenefits] = useState<
     SubscriptionTierBenefit[]
@@ -41,14 +72,17 @@ const SubscriptionTierEditPage: React.FC<SubscriptionTierEditPageProps> = ({
 
   const editingSubscriptionTier = watch()
 
+  const updateSubscriptionTier = useUpdateSubscriptionTier()
+  const updateSubscriptionTierBenefits = useUpdateSubscriptionTierBenefits()
+
   const onSubmit = useCallback(
     async (subscriptionTierUpdate: SubscriptionTierUpdate) => {
-      await api.subscriptions.updateSubscriptionTier({
+      await updateSubscriptionTier.mutateAsync({
         id: subscriptionTier.id,
         subscriptionTierUpdate,
       })
 
-      await api.subscriptions.updateSubscriptionTierBenefits({
+      await updateSubscriptionTierBenefits.mutateAsync({
         id: subscriptionTier.id,
         subscriptionTierBenefitsUpdate: {
           benefits: enabledBenefits.map((benefit) => benefit.id),
@@ -58,7 +92,14 @@ const SubscriptionTierEditPage: React.FC<SubscriptionTierEditPageProps> = ({
       router.push(`/maintainer/${organization.name}/subscriptions/tiers`)
       router.refresh()
     },
-    [router, organization, subscriptionTier, enabledBenefits],
+    [
+      router,
+      organization,
+      subscriptionTier,
+      enabledBenefits,
+      updateSubscriptionTier,
+      updateSubscriptionTierBenefits,
+    ],
   )
 
   const onSelectBenefit = useCallback(
@@ -75,16 +116,6 @@ const SubscriptionTierEditPage: React.FC<SubscriptionTierEditPageProps> = ({
       )
     },
     [setEnabledBenefits],
-  )
-
-  const newAndExistingBenefits = useMemo(
-    () => [
-      ...new Set([
-        ...(organizationBenefits.items ?? []),
-        ...enabledBenefits,
-      ]).values(),
-    ],
-    [enabledBenefits, organizationBenefits.items],
   )
 
   return (
@@ -123,7 +154,7 @@ const SubscriptionTierEditPage: React.FC<SubscriptionTierEditPageProps> = ({
         <SubscriptionTierBenefitsForm
           className="w-1/2"
           organization={organization}
-          organizationBenefits={newAndExistingBenefits}
+          organizationBenefits={organizationBenefits}
           benefits={enabledBenefits}
           onSelectBenefit={onSelectBenefit}
           onRemoveBenefit={onRemoveBenefit}
@@ -132,5 +163,3 @@ const SubscriptionTierEditPage: React.FC<SubscriptionTierEditPageProps> = ({
     </DashboardBody>
   )
 }
-
-export default SubscriptionTierEditPage

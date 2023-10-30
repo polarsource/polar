@@ -1,27 +1,22 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/MaintainerLayout'
-import {
-  ListResourceSubscriptionTier,
-  Organization,
-  SubscriptionTierType,
-} from '@polar-sh/sdk'
+import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
+import { useSubscriptionTiers } from 'polarkit/hooks'
 import React, { useMemo } from 'react'
 import SubscriptionGroup from './SubscriptionGroup'
 import { getSubscriptionTiersByType } from './utils'
 
 interface TiersPageProps {
-  subscriptionTiers: ListResourceSubscriptionTier
   organization: Organization
 }
 
-const TiersPage: React.FC<TiersPageProps> = ({
-  subscriptionTiers,
-  organization,
-}) => {
+const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
+  const subscriptionTiers = useSubscriptionTiers(organization.name)
+
   const subscriptionTiersByType = useMemo(
-    () => getSubscriptionTiersByType(subscriptionTiers.items ?? []),
-    [subscriptionTiers],
+    () => getSubscriptionTiersByType(subscriptionTiers.data?.items ?? []),
+    [subscriptionTiers.data],
   )
 
   return (

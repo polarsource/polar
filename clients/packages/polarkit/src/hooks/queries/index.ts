@@ -14,6 +14,7 @@ export * from './issue'
 export * from './org'
 export * from './pledges'
 export * from './rewards'
+export * from './subscriptions'
 export * from './user'
 
 export const useListRepositories: () => UseQueryResult<

@@ -4,7 +4,7 @@ import {
   SubscriptionBenefitCreate,
   SubscriptionTierBenefit,
 } from '@polar-sh/sdk'
-import { Button, Input, ShadowBox } from 'polarkit/components/ui/atoms'
+import { Button, Input, ShadowBox, Switch } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   Form,
@@ -13,7 +13,6 @@ import {
   FormItem,
   FormLabel,
 } from 'polarkit/components/ui/form'
-import { Switch } from 'polarkit/components/ui/switch'
 import { useCreateSubscriptionBenefit } from 'polarkit/hooks'
 import { useCallback, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
@@ -34,8 +33,9 @@ const BenefitRow = ({ benefit, checked, onCheckedChange }: BenefitRowProps) => {
       <div className="flex flex-row items-center gap-x-4">
         <div
           className={twMerge(
-            'dark:bg-polar-700 dark:border-polar-600 flex h-10 w-10 items-center justify-center rounded-lg bg-white text-blue-500 shadow dark:border',
-            checked && 'bg-blue-700 dark:border-blue-500 dark:bg-blue-700',
+            'dark:bg-polar-700 dark:text-polar-400 flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-300 shadow',
+            checked &&
+              'bg-blue-700 text-blue-500 dark:border dark:border-blue-600 dark:bg-blue-800',
           )}
         >
           {resolveBenefitIcon(benefit, checked)}
@@ -248,7 +248,7 @@ const NewBenefitForm = () => {
                 />
               </FormControl>
               <FormLabel className="text-sm leading-none">
-                Is Tax Applicable
+                Tax Applicable
               </FormLabel>
             </FormItem>
           )

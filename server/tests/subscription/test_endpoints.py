@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import MagicMock
@@ -12,11 +13,12 @@ from polar.models import (
     Repository,
     SubscriptionBenefit,
     SubscriptionTier,
+    User,
     UserOrganization,
 )
 from polar.postgres import AsyncSession
 
-from .conftest import add_subscription_benefits
+from .conftest import add_subscription_benefits, create_active_subscription
 
 
 @pytest.mark.asyncio
@@ -1025,6 +1027,81 @@ class TestGetSubscribeSession:
         assert json["customer_name"] == "John"
         assert json["customer_email"] == "backer@example.com"
         assert json["subscription_tier"]["id"] == str(subscription_tier_repository.id)
+
+
+@pytest.mark.asyncio
+class TestSearchSubscriptions:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/subscriptions/search",
+            params={"platform": "github", "organization_name": organization.name},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_not_existing_organization(self, client: AsyncClient) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/subscriptions/search",
+            params={"platform": "github", "organization_name": "not_existing"},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.authenticated
+    async def test_not_existing_repository(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/subscriptions/search",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+                "repository_name": "not_existing",
+            },
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.authenticated
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        response = await client.get(
+            "/api/v1/subscriptions/subscriptions/search",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        for item in json["items"]:
+            assert "user" in item
+            assert item["user"]["username"] == user.username
+            assert "subscription_tier" in item
+            assert item["subscription_tier"]["id"] == str(
+                subscription_tier_organization.id
+            )
 
 
 @pytest.mark.asyncio

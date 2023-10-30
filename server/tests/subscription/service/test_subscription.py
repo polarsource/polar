@@ -6,6 +6,7 @@ import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.integrations.stripe.service import StripeService
+from polar.kit.pagination import PaginationParams
 from polar.models import (
     Organization,
     Subscription,
@@ -314,6 +315,54 @@ class TestEnqueueBenefitsGrants:
                 for benefit in subscription_benefits
             ]
         )
+
+
+@pytest.mark.asyncio
+class TestSearch:
+    async def test_not_organization_member(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        results, count = await subscription_service.search(
+            session, user, organization=organization, pagination=PaginationParams(1, 10)
+        )
+
+        assert len(results) == 0
+        assert count == 0
+
+    async def test_organization_member(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        results, count = await subscription_service.search(
+            session, user, organization=organization, pagination=PaginationParams(1, 10)
+        )
+
+        assert len(results) == 1
+        assert count == 1
 
 
 @pytest.mark.asyncio

@@ -87,6 +87,7 @@ export const useCreateSubscriptionTier = () =>
 
 export const useSubscriptionBenefits = (
   orgName: string,
+  limit = 30,
   platform: Platforms = Platforms.GITHUB,
 ): UseQueryResult<
   ListResourceUnionSubscriptionBenefitBuiltinSubscriptionBenefitCustom,
@@ -98,7 +99,7 @@ export const useSubscriptionBenefits = (
       api.subscriptions.searchSubscriptionBenefits({
         organizationName: orgName,
         platform,
-        limit: 100,
+        limit,
       }),
     retry: defaultRetry,
   })
@@ -117,13 +118,16 @@ export const useSubscriptionBenefit = (id?: string) =>
 
 export const useUpdateSubscriptionBenefit = () =>
   useMutation({
-    mutationFn: (variables: {
+    mutationFn: ({
+      id,
+      subscriptionBenefitUpdate,
+    }: {
       id: string
-      settings: SubscriptionBenefitUpdate
+      subscriptionBenefitUpdate: SubscriptionBenefitUpdate
     }) => {
       return api.subscriptions.updateSubscriptionBenefit({
-        id: variables.id,
-        subscriptionBenefitUpdate: variables.settings,
+        id,
+        subscriptionBenefitUpdate,
       })
     },
     onSuccess: (result, variables, ctx) => {

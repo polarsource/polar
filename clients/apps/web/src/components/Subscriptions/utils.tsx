@@ -1,6 +1,6 @@
 import {
   CheckOutlined,
-  FaceOutlined,
+  Face,
   GestureOutlined,
   LanguageOutlined,
   ScheduleOutlined,
@@ -59,7 +59,7 @@ export const resolveBenefitIcon = (
   } else if (description.includes('hour')) {
     return <ScheduleOutlined className={className} fontSize="small" />
   } else if (description.includes('avatar')) {
-    return <FaceOutlined className={className} fontSize="small" />
+    return <Face className={className} fontSize="small" />
   } else if (description.includes('website')) {
     return <LanguageOutlined className={className} fontSize="small" />
   } else {

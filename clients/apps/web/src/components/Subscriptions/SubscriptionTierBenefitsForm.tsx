@@ -35,12 +35,19 @@ const BenefitRow = ({ benefit, checked, onCheckedChange }: BenefitRowProps) => {
           className={twMerge(
             'dark:bg-polar-700 dark:text-polar-400 flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-300 shadow',
             checked &&
-              'bg-blue-700 text-blue-500 dark:border dark:border-blue-600 dark:bg-blue-800',
+              'bg-blue-700 text-blue-500 dark:border dark:border-blue-600 dark:bg-blue-700',
           )}
         >
           {resolveBenefitIcon(benefit, checked)}
         </div>
-        <span className="text-sm">{benefit.description}</span>
+        <span
+          className={twMerge(
+            'text-sm',
+            !checked && 'dark:text-polar-500 text-gray-400',
+          )}
+        >
+          {benefit.description}
+        </span>
       </div>
       <div className="text-[14px]">
         <Switch checked={checked} onCheckedChange={onCheckedChange} />

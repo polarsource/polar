@@ -155,7 +155,9 @@ const NewSubscriptionTierBenefitModalContent = ({
 }: NewSubscriptionTierBenefitModalContentProps) => {
   const [isLoading, setIsLoading] = useState(false)
 
-  const createSubscriptionBenefit = useCreateSubscriptionBenefit()
+  const createSubscriptionBenefit = useCreateSubscriptionBenefit(
+    organization.name,
+  )
 
   const handleCreateNewBenefit = useCallback(
     async (subscriptionBenefitCreate: SubscriptionBenefitCreate) => {

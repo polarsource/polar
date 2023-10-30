@@ -25,21 +25,14 @@ export default async function Page({
 }) {
   const api = getServerSideAPI()
 
-  const [organization, benefits] = await Promise.all([
-    api.organizations.lookup({
-      organizationName: params.organization,
-      platform: Platforms.GITHUB,
-    }),
-    api.subscriptions.searchSubscriptionBenefits({
-      organizationName: params.organization,
-      platform: Platforms.GITHUB,
-    }),
-  ])
+  const organization = await api.organizations.lookup({
+    organizationName: params.organization,
+    platform: Platforms.GITHUB,
+  })
 
   return (
     <SubscriptionTierCreatePage
       organization={organization}
-      organizationBenefits={benefits}
       type={searchParams.type}
     />
   )

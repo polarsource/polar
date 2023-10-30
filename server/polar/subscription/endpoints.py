@@ -19,9 +19,11 @@ from polar.repository.dependencies import OptionalRepositoryNameQuery
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 
+from .dependencies import SearchSorting
 from .schemas import (
     SubscribeSession,
     SubscribeSessionCreate,
+    Subscription,
     SubscriptionBenefitCreate,
     SubscriptionBenefitUpdate,
     SubscriptionsSummary,
@@ -32,6 +34,7 @@ from .schemas import (
 )
 from .schemas import SubscriptionBenefit as SubscriptionBenefitSchema
 from .schemas import SubscriptionTier as SubscriptionTierSchema
+from .service.subscription import SearchSortProperty
 from .service.subscription import subscription as subscription_service
 from .service.subscription_benefit import (
     subscription_benefit as subscription_benefit_service,
@@ -391,3 +394,53 @@ async def get_subscriptions_summary(
         subscription_tier_id=subscription_tier_id,
     )
     return SubscriptionsSummary(periods=periods)
+
+
+@router.get(
+    "/subscriptions/search",
+    response_model=ListResource[Subscription],
+    tags=[Tags.PUBLIC],
+)
+async def search_subscriptions(
+    auth: UserRequiredAuth,
+    pagination: PaginationParamsQuery,
+    sorting: SearchSorting,
+    organization_name: OrganizationNameQuery,
+    repository_name: OptionalRepositoryNameQuery = None,
+    direct_organization: bool = Query(True),
+    type: SubscriptionTierType | None = Query(None),
+    subscription_tier_id: UUID4 | None = Query(None),
+    platform: Platforms = Query(...),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[Subscription]:
+    organization = await organization_service.get_by_name(
+        session, platform, organization_name
+    )
+    if organization is None:
+        raise ResourceNotFound("Organization not found")
+
+    repository: Repository | None = None
+    if repository_name is not None:
+        repository = await repository_service.get_by_org_and_name(
+            session, organization.id, repository_name
+        )
+        if repository is None:
+            raise ResourceNotFound("Repository not found")
+
+    results, count = await subscription_service.search(
+        session,
+        auth.user,
+        type=type,
+        organization=organization,
+        repository=repository,
+        direct_organization=direct_organization,
+        subscription_tier_id=subscription_tier_id,
+        pagination=pagination,
+        sorting=sorting,
+    )
+
+    return ListResource.from_paginated_results(
+        [Subscription.from_orm(result) for result in results],
+        count,
+        pagination,
+    )

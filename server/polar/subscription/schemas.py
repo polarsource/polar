@@ -1,11 +1,12 @@
 from collections.abc import Iterable
-from datetime import date
+from datetime import date, datetime
 from typing import Any, Literal, Self
 
 import stripe as stripe_lib
 from pydantic import UUID4, AnyHttpUrl, EmailStr, Field, root_validator, validator
 
 from polar.kit.schemas import Schema, TimestampedSchema
+from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_benefit import (
     SubscriptionBenefitBuiltinProperties,
     SubscriptionBenefitCustomProperties,
@@ -257,6 +258,30 @@ class SubscribeSession(Schema):
             if subscription_tier.repository is not None
             else None,
         )
+
+
+# Subscriptions
+
+
+class User(Schema):
+    username: str
+    avatar_url: str | None
+
+
+class Subscription(TimestampedSchema):
+    id: UUID4
+    status: SubscriptionStatus
+    current_period_start: datetime
+    current_period_end: datetime
+    cancel_at_period_end: bool
+    started_at: datetime | None
+    ended_at: datetime | None
+
+    price_currency: str
+    price_amount: int
+
+    user: User
+    subscription_tier: SubscriptionTier
 
 
 class SubscriptionsSummaryPeriod(Schema):

@@ -115,13 +115,13 @@ export const SubscriptionsChart: React.FC<SubscriptionsChartProps> = ({
         Plot.areaY(data, {
           x: 'parsedStartDate',
           y,
-          curve: 'basis',
+          curve: 'bump-x',
           fill: `url(#${gradientId})`,
         }),
         Plot.lineY(data, {
           x: 'parsedStartDate',
           y,
-          curve: 'basis',
+          curve: 'bump-x',
           stroke: primaryColor,
           strokeWidth: 3,
         }),

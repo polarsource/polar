@@ -453,6 +453,10 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         if not issue:
             return False
 
+        # issue needs to be closed
+        if issue.state != Issue.State.CLOSED:
+            return False
+
         # Already marked as needs solving or confirmed solved
         if issue.needs_confirmation_solved:
             return False

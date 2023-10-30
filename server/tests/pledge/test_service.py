@@ -1,14 +1,24 @@
+import dataclasses
+import json
 import re
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import Any
+from unittest.mock import ANY
 
 import pytest
+from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.config import settings
 from polar.enums import AccountType
+from polar.eventstream.service import send
 from polar.exceptions import NotPermitted
+from polar.integrations.github.service.issue import github_issue as github_issue_service
+from polar.issue.hooks import IssueHook, issue_upserted
 from polar.issue.schemas import ConfirmIssueSplit
+from polar.issue.service import issue as issue_service
 from polar.kit.utils import utc_now
 from polar.models.account import Account
 from polar.models.issue import Issue
@@ -18,13 +28,22 @@ from polar.models.pledge import Pledge
 from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
 from polar.models.user import OAuthAccount, User
+from polar.models.user_organization import UserOrganization
+from polar.notifications.notification import (
+    MaintainerPledgeCreatedNotification,
+    MaintainerPledgedIssueConfirmationPendingNotification,
+)
+from polar.notifications.service import PartialNotification
+from polar.pledge.hooks import PledgeHook, pledge_created
 from polar.pledge.schemas import PledgeState, PledgeTransactionType, PledgeType
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
+from polar.receivers.pledges import issue_url
 from tests.fixtures.random_objects import (
     create_issue,
     create_organization,
     create_repository,
+    create_user,
 )
 
 
@@ -892,3 +911,314 @@ async def test_month_range() -> None:
         datetime(year=2024, month=1, day=1, hour=0, minute=0),
         datetime(year=2024, month=1, day=31, hour=23, minute=59, second=59),
     )
+
+
+@pytest.mark.asyncio
+async def test_pledge_states(
+    session: AsyncSession,
+    subtests: Any,
+    mocker: MockerFixture,
+    client: AsyncClient,
+    auth_jwt: str,
+    user: User,
+) -> None:
+    # Capture and prevent any calls to enqueue_job
+    mocker.patch("polar.worker._enqueue_job")
+
+    notifications_sent: dict[str, int] = {}
+
+    async def _mocked_notifications(
+        self: Any,
+        session: AsyncSession,
+        org_id: uuid.UUID,
+        notif: PartialNotification,
+    ) -> None:
+        k = notif.payload.__class__.__name__
+        c = notifications_sent.get(k, 0)
+        notifications_sent[k] = c + 1
+        return None
+
+    send_to_org_admins = mocker.patch(
+        "polar.notifications.service.NotificationsService.send_to_org_admins",
+        new=_mocked_notifications,
+    )
+    send_to_pledger = mocker.patch(
+        "polar.notifications.service.NotificationsService.send_to_pledger",
+        new=_mocked_notifications,
+    )
+
+    transfer = mocker.patch(
+        "polar.integrations.stripe.service.StripeService.create_user_pledge_invoice"
+    )
+    transfer.return_value = Invoice()
+
+    @dataclass
+    class TestCase:
+        pay_on_completion: bool
+        other_pledged_first: bool
+        issue_closed_before_test_peldge: bool
+        is_confirm_before_test_pledge: bool
+
+        close_issue_after_test_pledge: bool
+
+        expected_pre_pledge_close_notifications: dict[str, int]
+        expected_post_pledge_notifications: dict[str, int]
+        expected_post_close_notifications: dict[str, int]
+
+    for idx, tc in enumerate(
+        [
+            TestCase(
+                pay_on_completion=False,
+                other_pledged_first=False,
+                issue_closed_before_test_peldge=False,
+                is_confirm_before_test_pledge=False,
+                close_issue_after_test_pledge=True,
+                expected_pre_pledge_close_notifications={},
+                expected_post_pledge_notifications={
+                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
+                },
+                expected_post_close_notifications={
+                    "MaintainerPledgedIssueConfirmationPendingNotification": 1,  # Your backers funded ... please confirm it
+                },
+            ),
+            TestCase(
+                pay_on_completion=True,
+                other_pledged_first=False,
+                issue_closed_before_test_peldge=False,
+                is_confirm_before_test_pledge=False,
+                close_issue_after_test_pledge=True,
+                expected_pre_pledge_close_notifications={},
+                expected_post_pledge_notifications={
+                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
+                },
+                expected_post_close_notifications={
+                    "MaintainerPledgedIssueConfirmationPendingNotification": 1,  # Your backers funded ... please confirm it
+                },
+            ),
+            #
+            # pay on completion: closed before pledge
+            #
+            TestCase(
+                pay_on_completion=True,
+                other_pledged_first=False,
+                issue_closed_before_test_peldge=True,
+                is_confirm_before_test_pledge=False,
+                close_issue_after_test_pledge=False,
+                expected_pre_pledge_close_notifications={},
+                expected_post_pledge_notifications={
+                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
+                    "MaintainerPledgedIssueConfirmationPendingNotification": 1,  # Your backers funded ... please confirm it
+                },
+                expected_post_close_notifications={},
+            ),
+            #
+            # pay on completion: closed and confirmed before pledge
+            #
+            TestCase(
+                pay_on_completion=True,
+                other_pledged_first=False,
+                issue_closed_before_test_peldge=True,
+                is_confirm_before_test_pledge=True,
+                close_issue_after_test_pledge=False,
+                expected_pre_pledge_close_notifications={},
+                expected_post_pledge_notifications={
+                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
+                    "MaintainerPledgedIssuePendingNotification": 1,  # Thanks for confirming that X is completed...
+                    "PledgerPledgePendingNotification": 1,  # Good news: X is completed!
+                },
+                expected_post_close_notifications={},
+            ),
+            #
+            # pay upfront: closed before pledge
+            #
+            TestCase(
+                pay_on_completion=False,
+                other_pledged_first=False,
+                issue_closed_before_test_peldge=True,
+                is_confirm_before_test_pledge=False,
+                close_issue_after_test_pledge=False,
+                expected_pre_pledge_close_notifications={},
+                expected_post_pledge_notifications={
+                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
+                    "MaintainerPledgedIssueConfirmationPendingNotification": 1,  # Your backers funded ... please confirm it
+                },
+                expected_post_close_notifications={},
+            ),
+            #
+            # pay upfront: closed and confirmed before pledge
+            #
+            TestCase(
+                pay_on_completion=False,
+                other_pledged_first=False,
+                issue_closed_before_test_peldge=True,
+                is_confirm_before_test_pledge=True,
+                close_issue_after_test_pledge=False,
+                expected_pre_pledge_close_notifications={},
+                expected_post_pledge_notifications={
+                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
+                    "MaintainerPledgedIssuePendingNotification": 1,  # Thanks for confirming that X is completed...
+                    "PledgerPledgePendingNotification": 1,  # Good news: X is completed!
+                },
+                expected_post_close_notifications={},
+            ),
+            #
+            # pay upfront: closed and confirmed before pledge, other pledged first
+            #
+            TestCase(
+                pay_on_completion=False,
+                other_pledged_first=True,
+                issue_closed_before_test_peldge=True,
+                is_confirm_before_test_pledge=True,
+                close_issue_after_test_pledge=False,
+                expected_pre_pledge_close_notifications={
+                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
+                    "MaintainerPledgedIssueConfirmationPendingNotification": 1,  # Your backers funded ... please confirm it
+                    "MaintainerPledgedIssuePendingNotification": 1,  # Thanks for confirming that X is completed...
+                    "PledgerPledgePendingNotification": 1,  # Good news: X is completed!
+                },
+                expected_post_pledge_notifications={
+                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
+                    "MaintainerPledgedIssuePendingNotification": 1,  # Thanks for confirming that X is completed...
+                    "PledgerPledgePendingNotification": 1,  # Good news: X is completed!
+                },
+                expected_post_close_notifications={},
+            ),
+            #
+            # pay on completion: closed and confirmed before pledge, other pledged first
+            #
+            TestCase(
+                pay_on_completion=True,
+                other_pledged_first=True,
+                issue_closed_before_test_peldge=True,
+                is_confirm_before_test_pledge=True,
+                close_issue_after_test_pledge=False,
+                expected_pre_pledge_close_notifications={
+                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
+                    "MaintainerPledgedIssueConfirmationPendingNotification": 1,  # Your backers funded ... please confirm it
+                    "MaintainerPledgedIssuePendingNotification": 1,  # Thanks for confirming that X is completed...
+                    "PledgerPledgePendingNotification": 1,  # Good news: X is completed!
+                },
+                expected_post_pledge_notifications={
+                    "MaintainerPledgeCreatedNotification": 1,  # You received a pledge!
+                    "MaintainerPledgedIssuePendingNotification": 1,  # Thanks for confirming that X is completed...
+                    "PledgerPledgePendingNotification": 1,  # Good news: X is completed!
+                },
+                expected_post_close_notifications={},
+            ),
+        ]
+    ):
+        with subtests.test(
+            msg=str(json.dumps(dataclasses.asdict(tc))),
+            id=idx,
+        ):
+            notifications_sent = {}
+
+            org = await create_organization(session)
+            repo = await create_repository(session, org)
+            issue = await create_issue(session, org, repo)
+            pledging_user = await create_user(session)
+
+            await UserOrganization.create(
+                session=session,
+                user_id=user.id,
+                organization_id=org.id,
+                is_admin=True,
+            )
+            await session.commit()
+
+            if tc.other_pledged_first:
+                await pledge_service.create_pay_on_completion(
+                    session,
+                    issue_id=issue.id,
+                    by_user=pledging_user,
+                    amount=2500,
+                    on_behalf_of_organization_id=None,
+                    by_organization_id=None,
+                    authenticated_user=pledging_user,
+                )
+
+            if tc.issue_closed_before_test_peldge:
+                # this is not 100% realistic, but it's good enough
+                issue.state = Issue.State.CLOSED
+                await issue.save(session)
+                await issue_upserted.call(IssueHook(session, issue))
+
+            async def confirm_solved() -> None:
+                response = await client.post(
+                    f"/api/v1/issues/{issue.id}/confirm_solved",
+                    json={
+                        "splits": [
+                            {
+                                "github_username": "zegl",
+                                "share_thousands": 300,
+                            },
+                            {
+                                "organization_id": str(org.id),
+                                "share_thousands": 700,
+                            },
+                        ]
+                    },
+                    cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+                )
+                assert response.status_code == 200
+
+            if tc.is_confirm_before_test_pledge:
+                await confirm_solved()
+                assert notifications_sent == tc.expected_pre_pledge_close_notifications
+            notifications_sent = {}
+
+            if tc.pay_on_completion:
+                pledge = await pledge_service.create_pay_on_completion(
+                    session,
+                    issue_id=issue.id,
+                    by_user=pledging_user,
+                    amount=2500,
+                    on_behalf_of_organization_id=None,
+                    by_organization_id=None,
+                    authenticated_user=pledging_user,
+                )
+            else:
+                pledge = await Pledge.create(
+                    session=session,
+                    issue_id=issue.id,
+                    repository_id=repo.id,
+                    organization_id=org.id,
+                    amount=2500,
+                    fee=0,
+                    state=PledgeState.created,
+                    type=PledgeType.pay_upfront,
+                    by_user_id=pledging_user.id,
+                    by_organization_id=None,
+                    on_behalf_of_organization_id=None,
+                )
+                # TODO: this should be in a service somewhere
+                await pledge_created.call(PledgeHook(session, pledge))
+                await pledge_service.after_pledge_created(session, pledge, issue, None)
+
+            assert pledge is not None
+            assert notifications_sent == tc.expected_post_pledge_notifications
+
+            # reset
+            notifications_sent = {}
+
+            if tc.close_issue_after_test_pledge:
+                # this is not 100% realistic, but it's good enough
+                issue.state = Issue.State.CLOSED
+                await issue.save(session)
+                await issue_upserted.call(IssueHook(session, issue))
+
+            assert notifications_sent == tc.expected_post_close_notifications
+
+            # reset
+            notifications_sent = {}
+
+            if not tc.is_confirm_before_test_pledge:
+                await confirm_solved()
+
+                assert (
+                    notifications_sent
+                    == {
+                        "PledgerPledgePendingNotification": 1,  # Good news: X is completed!
+                        "MaintainerPledgedIssuePendingNotification": 1,  # Thanks for confirming that X is completed...
+                    }
+                )

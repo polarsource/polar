@@ -115,13 +115,13 @@ export const SubscriptionsChart: React.FC<SubscriptionsChartProps> = ({
         Plot.areaY(data, {
           x: 'parsedStartDate',
           y,
-          curve: 'bump-x',
+          curve: 'basis',
           fill: `url(#${gradientId})`,
         }),
         Plot.lineY(data, {
           x: 'parsedStartDate',
           y,
-          curve: 'bump-x',
+          curve: 'basis',
           stroke: primaryColor,
           strokeWidth: 3,
         }),
@@ -191,6 +191,7 @@ export const SubscribersChart: React.FC<SubscribersChartProps> = ({
       axisYOptions={{
         label: null,
         ticks: Array.from({ length: maxSubscribers + 1 }, (_, i) => i),
+        stroke: 'none',
       }}
       onDataIndexHover={onDataIndexHover}
       hoveredIndex={hoveredIndex}

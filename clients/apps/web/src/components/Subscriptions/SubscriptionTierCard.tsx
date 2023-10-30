@@ -7,7 +7,7 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
-} from 'polarkit/components/ui/card'
+} from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
 import { getCentsInDollarString } from 'polarkit/money'

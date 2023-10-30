@@ -110,7 +110,7 @@ export const SubscriptionsChart: React.FC<SubscriptionsChartProps> = ({
       marks: [
         () => createAreaGradient(gradientId),
         Plot.gridY(axisYOptions),
-        Plot.axisX({ ticks: 'month', label: null }),
+        Plot.axisX({ ticks: 'month', label: null, stroke: 'none' }),
         Plot.axisY(axisYOptions),
         Plot.areaY(data, {
           x: 'parsedStartDate',
@@ -164,7 +164,9 @@ export const SubscriptionsChart: React.FC<SubscriptionsChartProps> = ({
     return () => plot.remove()
   }, [data, y, axisYOptions, onDataIndexHover, hoveredIndex])
 
-  return <div ref={containerRef} />
+  return (
+    <div className="dark:text-polar-500 text-gray-300" ref={containerRef} />
+  )
 }
 
 interface SubscribersChartProps {

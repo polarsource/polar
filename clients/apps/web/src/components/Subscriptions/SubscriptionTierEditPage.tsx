@@ -72,8 +72,10 @@ const SubscriptionTierEdit = ({
 
   const editingSubscriptionTier = watch()
 
-  const updateSubscriptionTier = useUpdateSubscriptionTier()
-  const updateSubscriptionTierBenefits = useUpdateSubscriptionTierBenefits()
+  const updateSubscriptionTier = useUpdateSubscriptionTier(organization.name)
+  const updateSubscriptionTierBenefits = useUpdateSubscriptionTierBenefits(
+    organization.name,
+  )
 
   const onSubmit = useCallback(
     async (subscriptionTierUpdate: SubscriptionTierUpdate) => {

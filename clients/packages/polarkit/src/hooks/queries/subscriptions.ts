@@ -16,6 +16,7 @@ import { defaultRetry } from './retry'
 
 export const useSubscriptionTiers = (
   orgName: string,
+  limit = 30,
   platform: Platforms = Platforms.GITHUB,
 ): UseQueryResult<ListResourceSubscriptionTier, Error> =>
   useQuery({
@@ -24,6 +25,7 @@ export const useSubscriptionTiers = (
       api.subscriptions.searchSubscriptionTiers({
         organizationName: orgName,
         platform,
+        limit,
       }),
     retry: defaultRetry,
   })
@@ -140,7 +142,7 @@ export const useUpdateSubscriptionBenefit = (orgName?: string) =>
     },
   })
 
-export const useUpdateSubscriptionTierBenefits = () =>
+export const useUpdateSubscriptionTierBenefits = (orgName?: string) =>
   useMutation({
     mutationFn: ({
       id,
@@ -160,12 +162,12 @@ export const useUpdateSubscriptionTierBenefits = () =>
       })
 
       queryClient.invalidateQueries({
-        queryKey: ['subscriptionTiers', 'organization'],
+        queryKey: ['subscriptionTiers', 'organization', orgName],
       })
     },
   })
 
-export const useCreateSubscriptionBenefit = () =>
+export const useCreateSubscriptionBenefit = (orgName?: string) =>
   useMutation({
     mutationFn: (subscriptionBenefitCreate: SubscriptionBenefitCreate) => {
       return api.subscriptions.createSubscriptionBenefit({
@@ -178,7 +180,7 @@ export const useCreateSubscriptionBenefit = () =>
       })
 
       queryClient.invalidateQueries({
-        queryKey: ['subscriptionBenefits', 'organization'],
+        queryKey: ['subscriptionBenefits', 'organization', orgName],
       })
 
       queryClient.invalidateQueries({

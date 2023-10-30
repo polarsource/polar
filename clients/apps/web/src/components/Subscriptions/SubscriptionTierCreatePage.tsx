@@ -75,8 +75,10 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
 
   const selectedSubscriptionTierType = watch('type')
 
-  const createSubscriptionTier = useCreateSubscriptionTier()
-  const updateSubscriptionTierBenefits = useUpdateSubscriptionTierBenefits()
+  const createSubscriptionTier = useCreateSubscriptionTier(organization.name)
+  const updateSubscriptionTierBenefits = useUpdateSubscriptionTierBenefits(
+    organization.name,
+  )
 
   const onSubmit = useCallback(
     async (subscriptionTierCreate: SubscriptionTierCreate) => {

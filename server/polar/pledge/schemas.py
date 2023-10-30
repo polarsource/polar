@@ -261,6 +261,10 @@ class PledgePledgesSummary(Schema):
     pledges: list[SummaryPledge]
 
 
+class PledgeSpending(Schema):
+    amount: CurrencyAmount
+
+
 # Internal APIs below
 
 

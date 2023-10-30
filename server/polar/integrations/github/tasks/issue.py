@@ -7,6 +7,7 @@ from polar.integrations.github import service
 from polar.integrations.github.client import get_app_installation_client
 from polar.locker import Locker
 from polar.organization.service import organization as organization_service
+from polar.redis import get_redis
 from polar.worker import (
     AsyncSessionMaker,
     JobContext,
@@ -108,7 +109,8 @@ async def issue_sync_issue_dependencies(
                 session, issue.organization_id, issue.repository_id
             )
 
-            locker = Locker(ctx["redis"])
+            redis = get_redis()
+            locker = Locker(redis)
 
             await service.github_dependency.sync_issue_dependencies(
                 session,

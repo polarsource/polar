@@ -4141,6 +4141,56 @@ export interface SubscriptionTierUpdate {
 /**
  * 
  * @export
+ * @interface SubscriptionsSummary
+ */
+export interface SubscriptionsSummary {
+    /**
+     * 
+     * @type {Array<SubscriptionsSummaryPeriod>}
+     * @memberof SubscriptionsSummary
+     */
+    periods: Array<SubscriptionsSummaryPeriod>;
+}
+/**
+ * 
+ * @export
+ * @interface SubscriptionsSummaryPeriod
+ */
+export interface SubscriptionsSummaryPeriod {
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionsSummaryPeriod
+     */
+    start_date: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionsSummaryPeriod
+     */
+    end_date: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof SubscriptionsSummaryPeriod
+     */
+    subscribers: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof SubscriptionsSummaryPeriod
+     */
+    mrr: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof SubscriptionsSummaryPeriod
+     */
+    cumulative: number;
+}
+/**
+ * 
+ * @export
  * @interface SummaryPledge
  */
 export interface SummaryPledge {

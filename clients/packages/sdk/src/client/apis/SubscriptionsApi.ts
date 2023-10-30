@@ -32,6 +32,7 @@ import type {
   SubscriptionTierCreate,
   SubscriptionTierType,
   SubscriptionTierUpdate,
+  SubscriptionsSummary,
 } from '../models/index';
 
 export interface SubscriptionsApiArchiveSubscriptionTierRequest {
@@ -52,6 +53,17 @@ export interface SubscriptionsApiCreateSubscriptionTierRequest {
 
 export interface SubscriptionsApiGetSubscribeSessionRequest {
     id: string;
+}
+
+export interface SubscriptionsApiGetSubscriptionsSummaryRequest {
+    organizationName: string;
+    platform: Platforms;
+    startDate: string;
+    endDate: string;
+    repositoryName?: string;
+    directOrganization?: boolean;
+    type?: SubscriptionTierType;
+    subscriptionTierId?: string;
 }
 
 export interface SubscriptionsApiLookupSubscriptionBenefitRequest {
@@ -299,6 +311,88 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async getSubscribeSession(requestParameters: SubscriptionsApiGetSubscribeSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscribeSession> {
         const response = await this.getSubscribeSessionRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get Subscriptions Summary
+     */
+    async getSubscriptionsSummaryRaw(requestParameters: SubscriptionsApiGetSubscriptionsSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionsSummary>> {
+        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
+            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling getSubscriptionsSummary.');
+        }
+
+        if (requestParameters.platform === null || requestParameters.platform === undefined) {
+            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling getSubscriptionsSummary.');
+        }
+
+        if (requestParameters.startDate === null || requestParameters.startDate === undefined) {
+            throw new runtime.RequiredError('startDate','Required parameter requestParameters.startDate was null or undefined when calling getSubscriptionsSummary.');
+        }
+
+        if (requestParameters.endDate === null || requestParameters.endDate === undefined) {
+            throw new runtime.RequiredError('endDate','Required parameter requestParameters.endDate was null or undefined when calling getSubscriptionsSummary.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.organizationName !== undefined) {
+            queryParameters['organization_name'] = requestParameters.organizationName;
+        }
+
+        if (requestParameters.repositoryName !== undefined) {
+            queryParameters['repository_name'] = requestParameters.repositoryName;
+        }
+
+        if (requestParameters.platform !== undefined) {
+            queryParameters['platform'] = requestParameters.platform;
+        }
+
+        if (requestParameters.startDate !== undefined) {
+            queryParameters['start_date'] = requestParameters.startDate;
+        }
+
+        if (requestParameters.endDate !== undefined) {
+            queryParameters['end_date'] = requestParameters.endDate;
+        }
+
+        if (requestParameters.directOrganization !== undefined) {
+            queryParameters['direct_organization'] = requestParameters.directOrganization;
+        }
+
+        if (requestParameters.type !== undefined) {
+            queryParameters['type'] = requestParameters.type;
+        }
+
+        if (requestParameters.subscriptionTierId !== undefined) {
+            queryParameters['subscription_tier_id'] = requestParameters.subscriptionTierId;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/subscriptions/subscriptions/summary`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get Subscriptions Summary
+     */
+    async getSubscriptionsSummary(requestParameters: SubscriptionsApiGetSubscriptionsSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionsSummary> {
+        const response = await this.getSubscriptionsSummaryRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

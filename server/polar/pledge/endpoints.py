@@ -1,10 +1,12 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import desc
 
 from polar import locker
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import AccessType, Authz, Subject
+from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.issue.service import issue as issue_service
@@ -24,6 +26,7 @@ from .schemas import (
     CreatePledgeFromPaymentIntent,
     CreatePledgePayLater,
     PledgePledgesSummary,
+    PledgeSpending,
     PledgeStripePaymentIntentCreate,
     PledgeStripePaymentIntentMutationResponse,
     PledgeStripePaymentIntentUpdate,
@@ -281,6 +284,27 @@ async def summary(
         raise Unauthorized()
 
     return await pledge_service.issue_pledge_summary(session, issue)
+
+
+@router.get(
+    "/pledges/spending",
+    response_model=PledgeSpending,
+    tags=[Tags.PUBLIC],
+    description="Get current user spending in the current period. Used together with spending limits.",  # noqa: E501
+    summary="Get user spending (Public API)",
+    status_code=200,
+)
+async def spending(
+    auth: UserRequiredAuth,
+    organization_id: UUID = Query(
+        description="Spending in this organization. Required."
+    ),
+    session: AsyncSession = Depends(get_db_session),
+) -> PledgeSpending:
+    res = await pledge_service.sum_pledges_period(
+        session, organization_id, user_id=auth.user.id
+    )
+    return PledgeSpending(amount=CurrencyAmount(currency="USD", amount=res))
 
 
 @router.get(

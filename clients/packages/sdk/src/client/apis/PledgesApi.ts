@@ -22,6 +22,7 @@ import type {
   Platforms,
   Pledge,
   PledgePledgesSummary,
+  PledgeSpending,
   PledgeStripePaymentIntentCreate,
   PledgeStripePaymentIntentMutationResponse,
   PledgeStripePaymentIntentUpdate,
@@ -58,6 +59,10 @@ export interface PledgesApiSearchRequest {
     repositoryName?: string;
     issueId?: string;
     byOrganizationId?: string;
+}
+
+export interface PledgesApiSpendingRequest {
+    organizationId: string;
 }
 
 export interface PledgesApiSummaryRequest {
@@ -380,6 +385,50 @@ export class PledgesApi extends runtime.BaseAPI {
      */
     async search(requestParameters: PledgesApiSearchRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourcePledge> {
         const response = await this.searchRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get current user spending in the current period. Used together with spending limits.
+     * Get user spending (Public API)
+     */
+    async spendingRaw(requestParameters: PledgesApiSpendingRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PledgeSpending>> {
+        if (requestParameters.organizationId === null || requestParameters.organizationId === undefined) {
+            throw new runtime.RequiredError('organizationId','Required parameter requestParameters.organizationId was null or undefined when calling spending.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.organizationId !== undefined) {
+            queryParameters['organization_id'] = requestParameters.organizationId;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/pledges/spending`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get current user spending in the current period. Used together with spending limits.
+     * Get user spending (Public API)
+     */
+    async spending(requestParameters: PledgesApiSpendingRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PledgeSpending> {
+        const response = await this.spendingRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

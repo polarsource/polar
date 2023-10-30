@@ -86,3 +86,10 @@ export const useDetachPaymentMethodMutation: () => UseMutationResult<
       queryClient.invalidateQueries({ queryKey: ['paymentMethods'] })
     },
   })
+
+export const useSpending = (organizationId: string) =>
+  useQuery({
+    queryKey: ['spending', organizationId],
+    queryFn: () => api.pledges.spending({ organizationId }),
+    retry: defaultRetry,
+  })

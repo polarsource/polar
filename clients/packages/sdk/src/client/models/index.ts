@@ -2632,6 +2632,19 @@ export interface PledgeRewardTransfer {
      */
     issue_reward_id: string;
 }
+/**
+ * 
+ * @export
+ * @interface PledgeSpending
+ */
+export interface PledgeSpending {
+    /**
+     * 
+     * @type {CurrencyAmount}
+     * @memberof PledgeSpending
+     */
+    amount: CurrencyAmount;
+}
 
 /**
  * An enumeration.

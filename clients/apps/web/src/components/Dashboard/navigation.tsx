@@ -7,10 +7,10 @@ import {
   Bolt,
   CardGiftcardOutlined,
   CropFreeOutlined,
-  FaceOutlined,
+  DragIndicatorOutlined,
+  Face,
   FavoriteBorderOutlined,
   HowToVoteOutlined,
-  ShortTextOutlined,
   TuneOutlined,
   WidthNormalOutlined,
   WifiTethering,
@@ -55,7 +55,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
             {
               title: 'Overview',
               link: `/maintainer/${org.name}/subscriptions`,
-              icon: <ShortTextOutlined fontSize="inherit" />,
+              icon: <DragIndicatorOutlined fontSize="inherit" />,
             },
             {
               title: 'Tiers',
@@ -65,7 +65,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
             {
               title: 'Subscribers',
               link: `/maintainer/${org.name}/subscriptions/subscribers`,
-              icon: <FaceOutlined fontSize="inherit" />,
+              icon: <Face fontSize="inherit" />,
             },
           ],
         },
@@ -125,7 +125,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
       {
         title: 'Members',
         link: `/team/${org.name}/members`,
-        icon: <FaceOutlined fontSize="inherit" />,
+        icon: <Face fontSize="inherit" />,
       },
       {
         title: 'Settings',

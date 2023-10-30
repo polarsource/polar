@@ -315,7 +315,7 @@ const PostCommentForm = (props: {
       )}
       <div className="flex h-full flex-1 flex-col overflow-hidden rounded-md border ">
         <TextArea
-          className="focus:ring-none max-h-[10rem] w-full flex-1 overflow-hidden border-0 outline-0"
+          className="max-h-[10rem] w-full flex-1 overflow-hidden"
           resizable={false}
           value={message}
           disabled={posted || loading}

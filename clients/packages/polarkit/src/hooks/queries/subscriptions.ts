@@ -5,7 +5,6 @@ import {
   SubscriptionBenefitCreate,
   SubscriptionBenefitUpdate,
   SubscriptionTier,
-  SubscriptionTierBenefit,
   SubscriptionTierBenefitsUpdate,
   SubscriptionTierCreate,
   SubscriptionTierUpdate,
@@ -42,7 +41,7 @@ export const useSubscriptionTier = (
     enabled: !!id,
   })
 
-export const useUpdateSubscriptionTier = () =>
+export const useUpdateSubscriptionTier = (orgName?: string) =>
   useMutation({
     mutationFn: ({
       id,
@@ -57,19 +56,17 @@ export const useUpdateSubscriptionTier = () =>
       })
     },
     onSuccess: (result, variables, ctx) => {
-      updateSubscriptionTiersCache(result)
-
       queryClient.invalidateQueries({
-        queryKey: ['subscriptionTiers', 'organization'],
+        queryKey: ['subscriptionTiers', 'id', result.id],
       })
 
       queryClient.invalidateQueries({
-        queryKey: ['subscriptionBenefits'],
+        queryKey: ['subscriptionTiers', 'organization', orgName],
       })
     },
   })
 
-export const useCreateSubscriptionTier = () =>
+export const useCreateSubscriptionTier = (orgName?: string) =>
   useMutation({
     mutationFn: (subscriptionTierCreate: SubscriptionTierCreate) => {
       return api.subscriptions.createSubscriptionTier({
@@ -77,10 +74,8 @@ export const useCreateSubscriptionTier = () =>
       })
     },
     onSuccess: (result, variables, ctx) => {
-      updateSubscriptionTiersCache(result)
-
       queryClient.invalidateQueries({
-        queryKey: ['subscriptionTiers', 'organization'],
+        queryKey: ['subscriptionTiers', 'organization', orgName],
       })
     },
   })
@@ -116,7 +111,7 @@ export const useSubscriptionBenefit = (id?: string) =>
     enabled: !!id,
   })
 
-export const useUpdateSubscriptionBenefit = () =>
+export const useUpdateSubscriptionBenefit = (orgName?: string) =>
   useMutation({
     mutationFn: ({
       id,
@@ -131,10 +126,12 @@ export const useUpdateSubscriptionBenefit = () =>
       })
     },
     onSuccess: (result, variables, ctx) => {
-      updateSubscriptionBenefitsCache(result)
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptionBenefits', 'id', result.id],
+      })
 
       queryClient.invalidateQueries({
-        queryKey: ['subscriptionBenefits', 'organization'],
+        queryKey: ['subscriptionBenefits', 'organization', orgName],
       })
 
       queryClient.invalidateQueries({
@@ -158,14 +155,12 @@ export const useUpdateSubscriptionTierBenefits = () =>
       })
     },
     onSuccess: (result, variables, ctx) => {
-      updateSubscriptionTiersCache(result)
-
       queryClient.invalidateQueries({
-        queryKey: ['subscriptionTiers', 'organization'],
+        queryKey: ['subscriptionTiers', 'id', result.id],
       })
 
       queryClient.invalidateQueries({
-        queryKey: ['subscriptionBenefits'],
+        queryKey: ['subscriptionTiers', 'organization'],
       })
     },
   })
@@ -178,7 +173,9 @@ export const useCreateSubscriptionBenefit = () =>
       })
     },
     onSuccess: (result, variables, ctx) => {
-      updateSubscriptionBenefitsCache(result)
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptionBenefits', 'id', result.id],
+      })
 
       queryClient.invalidateQueries({
         queryKey: ['subscriptionBenefits', 'organization'],
@@ -189,55 +186,3 @@ export const useCreateSubscriptionBenefit = () =>
       })
     },
   })
-
-const updateSubscriptionTiersCache = (result: SubscriptionTier) => {
-  queryClient.setQueriesData<ListResourceSubscriptionTier>(
-    {
-      queryKey: ['subscriptionTiers', 'id', result.id],
-    },
-    (data) => {
-      if (!data) {
-        return data
-      }
-
-      return {
-        ...data,
-        items: data.items?.map((i) => {
-          if (i.id === result.id) {
-            return {
-              ...i,
-              issue: result,
-            }
-          }
-          return { ...i }
-        }),
-      }
-    },
-  )
-}
-
-const updateSubscriptionBenefitsCache = (result: SubscriptionTierBenefit) => {
-  queryClient.setQueriesData<ListResourceUnionSubscriptionBenefitBuiltinSubscriptionBenefitCustom>(
-    {
-      queryKey: ['subscriptionBenefits', 'id', result.id],
-    },
-    (data) => {
-      if (!data) {
-        return data
-      }
-
-      return {
-        ...data,
-        items: data.items?.map((i) => {
-          if (i.id === result.id) {
-            return {
-              ...i,
-              issue: result,
-            }
-          }
-          return { ...i }
-        }),
-      }
-    },
-  )
-}

@@ -358,7 +358,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             callback=send_pledger_notification,
         )
 
-        # send invoices for pay later peldges thate still don't have one sent
+        # send invoices for pay later peldges that still don't have one sent
         # sends notifications to pledgers that gets an invoice sent
         any_invoices_sent = await self.send_invoices(session, issue_id)
 
@@ -640,6 +640,10 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if pledge.type != PledgeType.pay_upfront:
             raise Exception(f"pledge is of unexpected type: {pledge.type}")
 
+        issue = await issue_service.get(session, pledge.issue_id)
+        if not issue:
+            raise Exception("issue not found")
+
         stmt = (
             sql.Update(Pledge)
             .where(
@@ -654,6 +658,8 @@ class PledgeService(ResourceServiceReader[Pledge]):
         await session.execute(stmt)
         await session.commit()
         await pledge_created.call(PledgeHook(session, pledge))
+
+        await self.after_pledge_created(session, pledge, issue, authenticated_user=None)
 
     async def handle_paid_invoice(
         self,
@@ -1007,12 +1013,34 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         await pledge_created.call(PledgeHook(session, pledge))
 
-        if by_organization_id:
+        await self.after_pledge_created(session, pledge, issue, authenticated_user)
+
+        return pledge
+
+    async def after_pledge_created(
+        self,
+        session: AsyncSession,
+        pledge: Pledge,
+        issue: Issue,
+        authenticated_user: User | None,
+    ) -> None:
+        if pledge.by_organization_id and authenticated_user:
             await self.send_team_admin_member_pledged_notification(
                 session, pledge, authenticated_user
             )
 
-        return pledge
+        # if the issue is already confirmed completed, mark this pledge as pending, and
+        # send invoices
+        if issue.confirmed_solved_at:
+            await self.mark_pending_by_issue_id(session, issue.id)
+
+        if not issue.confirmed_solved_at and issue.state == Issue.State.CLOSED:
+            changed = await issue_service.mark_needs_confirmation(session, issue.id)
+            if changed:
+                await self.pledge_confirmation_pending_notifications(
+                    session,
+                    issue.id,
+                )
 
     async def send_invoices(
         self,

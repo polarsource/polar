@@ -208,6 +208,10 @@ class PaymentIntentService:
         if state == PledgeState.created:
             await pledge_created.call(PledgeHook(session, pledge))
 
+        await pledge_service.after_pledge_created(
+            session, pledge, issue, authenticated_user=None
+        )
+
         return pledge
 
     @classmethod

@@ -3,11 +3,14 @@ import { ClockIcon } from '@heroicons/react/24/outline'
 import { Issue, Organization } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { api } from 'polarkit/api'
+import { toDetailError } from 'polarkit/api/errors'
 import { Button, MoneyInput } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
+import { useSpending } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import CircledNumber from './CircledNumber'
 import TeamSelect from './TeamSelect'
 
 const PledgeCheckoutFundByTeam = ({
@@ -70,7 +73,13 @@ const PledgeCheckoutFundByTeam = ({
 
       router.push(`/team/${selectedOrg.name}/funding`)
     } catch (e) {
-      setErrorMessage('Something went wrong, please try again.')
+      const detail = await toDetailError(e)
+      if (detail) {
+        setErrorMessage(detail.detail)
+      } else {
+        setErrorMessage('Something went wrong, please try again.')
+      }
+
       setIsLoading(false)
     }
   }
@@ -131,6 +140,8 @@ const PledgeCheckoutFundByTeam = ({
         defaultToFirstOrganization={true}
       />
 
+      {selectedOrg ? <SpendingLimit org={selectedOrg} /> : null}
+
       <NextSteps />
 
       <hr />
@@ -153,7 +164,7 @@ const PledgeCheckoutFundByTeam = ({
         </div>
       </div>
 
-      <div className="">
+      <div>
         <Button
           fullWidth
           size="lg"
@@ -208,8 +219,23 @@ const NextSteps = () => (
   </div>
 )
 
-export const CircledNumber = ({ children }: { children: React.ReactNode }) => (
-  <div className="dark:border-polar-500 m-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-around rounded-full border border-gray-200">
-    <span className="text-sm">{children}</span>
-  </div>
-)
+const SpendingLimit = ({ org }: { org: Organization }) => {
+  const spending = useSpending(org.id)
+
+  if (!org.per_user_monthly_spending_limit) {
+    return <></>
+  }
+
+  if (!spending.data) {
+    return <></>
+  }
+
+  return (
+    <div className="dark:text-polar-400 text-xs font-medium text-gray-500">
+      You&apos;ve pledged ${getCentsInDollarString(spending.data.amount.amount)}{' '}
+      of max $
+      {getCentsInDollarString(org.per_user_monthly_spending_limit, false, true)}{' '}
+      this month.
+    </div>
+  )
+}

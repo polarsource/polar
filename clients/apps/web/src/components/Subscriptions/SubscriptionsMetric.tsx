@@ -10,6 +10,9 @@ const percentageFormatter = new Intl.NumberFormat('en-US', { style: 'percent' })
 const numberFormatter = new Intl.NumberFormat('en-US', { style: 'decimal' })
 
 const getEvolutionPercentage = (current: number, previous: number): string => {
+  if (previous === 0) {
+    return 'Up ∞ since last month'
+  }
   const value = (current - previous) / Math.abs(previous)
   return `${value > 0 ? 'Up' : 'Down'} ${percentageFormatter.format(
     Math.abs(value),
@@ -46,8 +49,11 @@ const SubscriptionsMetric: React.FC<SubscriptionsMetricProps> = ({
       <CardContent>
         <div className="text-4xl">{formattedData}</div>
         <div className="dark:text-polar-500 text-gray-400">
-          {previousData && getEvolutionPercentage(data, previousData)}
-          {!previousData && <FormattedDateTime datetime={dataDate} />}
+          {previousData !== undefined &&
+            getEvolutionPercentage(data, previousData)}
+          {previousData === undefined && (
+            <FormattedDateTime datetime={dataDate} />
+          )}
         </div>
       </CardContent>
     </Card>

@@ -24,6 +24,7 @@ import {
 import ShadowBox from './ShadowBox'
 import ShadowBoxOnLg from './ShadowBoxOnLg'
 import ShadowListGroup from './ShadowListGroup'
+import Switch from './Switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './Tabs'
 import TextArea from './TextArea'
 
@@ -57,4 +58,5 @@ export {
   TabsContent,
   TabsList,
   TabsTrigger,
+  Switch,
 }

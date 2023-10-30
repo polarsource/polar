@@ -1,8 +1,7 @@
 import { UserIcon } from '@heroicons/react/24/outline'
 import { Organization } from '@polar-sh/sdk'
-import { Input } from 'polarkit/components/ui/atoms'
+import { Input, Switch } from 'polarkit/components/ui/atoms'
 import { Banner } from 'polarkit/components/ui/molecules'
-import { Switch } from 'polarkit/components/ui/switch'
 import { useMemo, useRef, useState } from 'react'
 
 const PublicRewardsSetting = (props: {
@@ -95,7 +94,6 @@ const PublicRewardsSetting = (props: {
               Users can "disable" rewards by explicitly setting the share to 0.
             */}
             <Switch
-              className="data-[state=checked]:bg-blue-600"
               checked={usePublicRewards}
               onCheckedChange={onCheckedChange}
               disabled={

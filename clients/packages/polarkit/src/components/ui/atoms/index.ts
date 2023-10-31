@@ -11,6 +11,8 @@ import {
 } from './Card'
 import CopyToClipboardInput from './CopyToClipboardInput'
 import CountryPicker from './CountryPicker'
+import { DataTable, DataTableColumnDef } from './DataTable'
+import { DataTableColumnHeader } from './DataTableColumnHeader'
 import FormattedDateTime from './FormattedDateTime'
 import Input from './Input'
 import IssueBodyRenderer from './IssueBodyRenderer'
@@ -36,9 +38,12 @@ import Switch from './Switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './Tabs'
 import TextArea from './TextArea'
 
+export type { DataTableColumnDef }
 export {
   Alert,
   Button,
+  DataTable,
+  DataTableColumnHeader,
   ShadowBox,
   ShadowBoxOnLg,
   ShadowListGroup,

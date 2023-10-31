@@ -6,6 +6,7 @@ import {
   ScheduleOutlined,
 } from '@mui/icons-material'
 import {
+  SubscriptionStatus,
   SubscriptionTier,
   SubscriptionTierBenefit,
   SubscriptionTierType,
@@ -32,6 +33,14 @@ const defaultSubscriptionTiersByType: SubscriptionTiersByType = {
   [SubscriptionTierType.HOBBY]: [],
   [SubscriptionTierType.PRO]: [],
   [SubscriptionTierType.BUSINESS]: [],
+}
+
+export const tiersTypeDisplayNames: {
+  [key in SubscriptionTierType]: string
+} = {
+  [SubscriptionTierType.HOBBY]: 'Hobby',
+  [SubscriptionTierType.PRO]: 'Pro',
+  [SubscriptionTierType.BUSINESS]: 'Business',
 }
 
 export const getSubscriptionTiersByType = (tiers: SubscriptionTier[]) =>
@@ -65,4 +74,16 @@ export const resolveBenefitIcon = (
   } else {
     return <CheckOutlined className={className} fontSize="small" />
   }
+}
+
+export const subscriptionStatusDisplayNames: {
+  [key in SubscriptionStatus]: string
+} = {
+  [SubscriptionStatus.INCOMPLETE]: 'Incomplete',
+  [SubscriptionStatus.INCOMPLETE_EXPIRED]: 'Incomplete',
+  [SubscriptionStatus.TRIALING]: 'Trialing',
+  [SubscriptionStatus.ACTIVE]: 'Active',
+  [SubscriptionStatus.PAST_DUE]: 'Past due',
+  [SubscriptionStatus.CANCELED]: 'Canceled',
+  [SubscriptionStatus.UNPAID]: 'Unpaid',
 }

@@ -1,7 +1,7 @@
 import uuid
 
 from polar.exceptions import PolarError
-from polar.worker import AsyncSessionMaker, JobContext, task
+from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 from .service.subscription import subscription as subscription_service
 from .service.subscription_benefit import (
@@ -34,7 +34,9 @@ class SubscriptionBenefitDoesNotExist(PolarError):
 
 
 @task("subscription.subscription.enqueue_benefits_grants")
-async def enqueue_benefits_grants(ctx: JobContext, subscription_id: uuid.UUID) -> None:
+async def enqueue_benefits_grants(
+    ctx: JobContext, subscription_id: uuid.UUID, polar_context: PolarWorkerContext
+) -> None:
     async with AsyncSessionMaker(ctx) as session:
         subscription = await subscription_service.get(session, subscription_id)
         if subscription is None:
@@ -45,7 +47,10 @@ async def enqueue_benefits_grants(ctx: JobContext, subscription_id: uuid.UUID) -
 
 @task("subscription.subscription_benefit.grant")
 async def subscription_benefit_grant(
-    ctx: JobContext, subscription_id: uuid.UUID, subscription_benefit_id: uuid.UUID
+    ctx: JobContext,
+    subscription_id: uuid.UUID,
+    subscription_benefit_id: uuid.UUID,
+    polar_context: PolarWorkerContext,
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
         subscription = await subscription_service.get(session, subscription_id)
@@ -65,7 +70,10 @@ async def subscription_benefit_grant(
 
 @task("subscription.subscription_benefit.revoke")
 async def subscription_benefit_revoke(
-    ctx: JobContext, subscription_id: uuid.UUID, subscription_benefit_id: uuid.UUID
+    ctx: JobContext,
+    subscription_id: uuid.UUID,
+    subscription_benefit_id: uuid.UUID,
+    polar_context: PolarWorkerContext,
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
         subscription = await subscription_service.get(session, subscription_id)

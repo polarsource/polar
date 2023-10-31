@@ -398,10 +398,10 @@ export interface BackofficeReward {
     pledge: Pledge;
     /**
      * 
-     * @type {User}
+     * @type {PolarUserSchemasUser}
      * @memberof BackofficeReward
      */
-    user?: User;
+    user?: PolarUserSchemasUser;
     /**
      * 
      * @type {Organization}
@@ -1447,6 +1447,25 @@ export interface ListResourceReward {
      * 
      * @type {Pagination}
      * @memberof ListResourceReward
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceSubscription
+ */
+export interface ListResourceSubscription {
+    /**
+     * 
+     * @type {Array<Subscription>}
+     * @memberof ListResourceSubscription
+     */
+    items?: Array<Subscription>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceSubscription
      */
     pagination: Pagination;
 }
@@ -2980,6 +2999,44 @@ export interface PolarIntegrationsStripeEndpointsWebhookResponse {
 /**
  * 
  * @export
+ * @interface PolarSubscriptionSchemasUser
+ */
+export interface PolarSubscriptionSchemasUser {
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarSubscriptionSchemasUser
+     */
+    username: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarSubscriptionSchemasUser
+     */
+    avatar_url?: string;
+}
+/**
+ * 
+ * @export
+ * @interface PolarUserSchemasUser
+ */
+export interface PolarUserSchemasUser {
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarUserSchemasUser
+     */
+    username: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PolarUserSchemasUser
+     */
+    avatar_url: string;
+}
+/**
+ * 
+ * @export
  * @interface PostIssueComment
  */
 export interface PostIssueComment {
@@ -3385,10 +3442,10 @@ export interface Reward {
     pledge: Pledge;
     /**
      * 
-     * @type {User}
+     * @type {PolarUserSchemasUser}
      * @memberof Reward
      */
-    user?: User;
+    user?: PolarUserSchemasUser;
     /**
      * 
      * @type {Organization}
@@ -3585,6 +3642,91 @@ export interface SubscribeSessionCreate {
      * @memberof SubscribeSessionCreate
      */
     customer_email?: string;
+}
+/**
+ * 
+ * @export
+ * @interface Subscription
+ */
+export interface Subscription {
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    id: string;
+    /**
+     * 
+     * @type {SubscriptionStatus}
+     * @memberof Subscription
+     */
+    status: SubscriptionStatus;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    current_period_start: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    current_period_end: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof Subscription
+     */
+    cancel_at_period_end: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    started_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    ended_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Subscription
+     */
+    price_currency: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof Subscription
+     */
+    price_amount: number;
+    /**
+     * 
+     * @type {PolarSubscriptionSchemasUser}
+     * @memberof Subscription
+     */
+    user: PolarSubscriptionSchemasUser;
+    /**
+     * 
+     * @type {SubscriptionTier}
+     * @memberof Subscription
+     */
+    subscription_tier: SubscriptionTier;
 }
 /**
  * 
@@ -3887,6 +4029,22 @@ export type SubscriptionBenefitType = typeof SubscriptionBenefitType[keyof typeo
  * @export
  */
 export type SubscriptionBenefitUpdate = SubscriptionBenefitBuiltinUpdate | SubscriptionBenefitCustomUpdate;
+
+/**
+ * An enumeration.
+ * @export
+ */
+export const SubscriptionStatus = {
+    INCOMPLETE: 'incomplete',
+    INCOMPLETE_EXPIRED: 'incomplete_expired',
+    TRIALING: 'trialing',
+    ACTIVE: 'active',
+    PAST_DUE: 'past_due',
+    CANCELED: 'canceled',
+    UNPAID: 'unpaid'
+} as const;
+export type SubscriptionStatus = typeof SubscriptionStatus[keyof typeof SubscriptionStatus];
+
 /**
  * 
  * @export
@@ -4305,25 +4463,6 @@ export interface UpdateIssue {
      * @memberof UpdateIssue
      */
     set_upfront_split_to_contributors?: boolean;
-}
-/**
- * 
- * @export
- * @interface User
- */
-export interface User {
-    /**
-     * 
-     * @type {string}
-     * @memberof User
-     */
-    username: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof User
-     */
-    avatar_url: string;
 }
 /**
  * 

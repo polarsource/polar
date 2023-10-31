@@ -262,7 +262,7 @@ const PerUserMonthlySpendingLimit = () => {
                 Member Spending Limit
               </FormLabel>
               <p className="text-sm">
-                A monthly limit for funds for each member
+                An optional monthly limit for each member
               </p>
               <FormMessage />
             </div>

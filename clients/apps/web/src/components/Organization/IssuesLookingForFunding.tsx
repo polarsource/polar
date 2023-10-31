@@ -1,4 +1,4 @@
-import { FavoriteOutlined } from '@mui/icons-material'
+import { FavoriteBorderOutlined } from '@mui/icons-material'
 import { IssueFunding } from '@polar-sh/sdk'
 import Link from 'next/link'
 import {
@@ -30,7 +30,7 @@ const IssuesLookingForFunding = ({
                   className="font-medium text-blue-600"
                 >
                   <Button size="sm" variant="secondary">
-                    <FavoriteOutlined fontSize="inherit" />
+                    <FavoriteBorderOutlined fontSize="inherit" />
                     <span className="ml-1.5">Fund</span>
                   </Button>
                 </Link>

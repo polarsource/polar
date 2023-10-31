@@ -947,10 +947,10 @@ async def test_pledge_states(
         new=_mocked_notifications,
     )
 
-    transfer = mocker.patch(
+    create_invoice = mocker.patch(
         "polar.integrations.stripe.service.StripeService.create_user_pledge_invoice"
     )
-    transfer.return_value = Invoice()
+    create_invoice.return_value = Invoice()
 
     @dataclass
     class TestCase:
@@ -1112,6 +1112,7 @@ async def test_pledge_states(
             id=idx,
         ):
             notifications_sent = {}
+            create_invoice.reset_mock()
 
             org = await create_organization(session)
             repo = await create_repository(session, org)
@@ -1222,3 +1223,6 @@ async def test_pledge_states(
                         "MaintainerPledgedIssuePendingNotification": 1,  # Thanks for confirming that X is completed...
                     }
                 )
+
+            if tc.pay_on_completion:
+                assert create_invoice.call_count == 2 if tc.other_pledged_first else 1

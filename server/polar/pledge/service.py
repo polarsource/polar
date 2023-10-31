@@ -413,6 +413,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         pledge_amount_sum = sum([p.amount for p in pledges])
 
+        # Thanks for confirming that X is completed...
         n = MaintainerPledgedIssuePendingNotification(
             pledge_amount_sum=get_cents_in_dollar_string(pledge_amount_sum),
             issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",

@@ -143,6 +143,27 @@ class TestCreateSubscription:
 
         assert subscription.user_id == user.id
 
+    async def test_set_started_at(
+        self,
+        session: AsyncSession,
+        subscription_tier_organization: SubscriptionTier,
+        user: User,
+    ) -> None:
+        assert subscription_tier_organization.stripe_product_id is not None
+        stripe_subscription = construct_stripe_subscription(
+            product_id=subscription_tier_organization.stripe_product_id,
+            status=SubscriptionStatus.active,
+        )
+
+        await user.update(session, stripe_customer_id=stripe_subscription.customer)
+
+        subscription = await subscription_service.create_subscription(
+            session, stripe_subscription=stripe_subscription
+        )
+
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.started_at is not None
+
 
 @pytest.mark.asyncio
 class TestUpdateSubscription:

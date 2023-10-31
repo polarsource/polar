@@ -1,12 +1,11 @@
 import uuid
 from datetime import UTC, date, datetime
-from typing import Any
+from typing import Any, overload
 
 import stripe as stripe_lib
 from sqlalchemy import Select, and_, func, or_, select, text
 from sqlalchemy.orm import aliased
 
-from polar.authz.service import Anonymous, Subject
 from polar.enums import UserSignupType
 from polar.exceptions import PolarError
 from polar.integrations.loops.service import loops as loops_service
@@ -53,6 +52,16 @@ class SubscriptionDoesNotExist(SubscriptionError):
             f"but no associated Subscription exists."
         )
         super().__init__(message)
+
+
+@overload
+def _from_timestamp(t: int) -> datetime:
+    ...
+
+
+@overload
+def _from_timestamp(t: None) -> None:
+    ...
 
 
 def _from_timestamp(t: int | None) -> datetime | None:
@@ -106,6 +115,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             user_id=user.id,
             subscription_tier_id=subscription_tier.id,
         )
+        subscription.set_started_at()
         session.add(subscription)
 
         await session.commit()
@@ -122,27 +132,26 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if subscription is None:
             raise SubscriptionDoesNotExist(stripe_subscription.stripe_id)
 
-        updated_subscription = await subscription.update(
-            session,
-            status=stripe_subscription.status,
-            current_period_start=_from_timestamp(
-                stripe_subscription.current_period_start
-            ),
-            current_period_end=_from_timestamp(stripe_subscription.current_period_end),
-            cancel_at_period_end=stripe_subscription.cancel_at_period_end,
-            ended_at=_from_timestamp(stripe_subscription.ended_at),
+        subscription.status = stripe_subscription.status
+        subscription.current_period_start = _from_timestamp(
+            stripe_subscription.current_period_start
         )
+        subscription.current_period_end = _from_timestamp(
+            stripe_subscription.current_period_end
+        )
+        subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
+        subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
+        subscription.set_started_at()
 
-        # When the subscription becomes active for the first time, store its start date
-        if updated_subscription.is_active() and updated_subscription.started_at is None:
-            updated_subscription.started_at = datetime.now(UTC)
+        session.add(subscription)
+        await session.commit()
 
         await enqueue_job(
             "subscription.subscription.enqueue_benefits_grants",
-            updated_subscription.id,
+            subscription.id,
         )
 
-        return updated_subscription
+        return subscription
 
     async def enqueue_benefits_grants(
         self, session: AsyncSession, subscription: Subscription

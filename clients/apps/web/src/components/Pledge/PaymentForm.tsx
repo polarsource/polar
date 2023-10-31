@@ -194,11 +194,12 @@ const PaymentForm = ({
           }
         }
         handlePayment(paymentIntent)
+        // syncing is still true here, to make sure that it keeps spinning until the user is redirected.
       })
       .catch((error) => {
         setErrorMessage(error.message)
+        setSyncing(false)
       })
-      .finally(() => setSyncing(false))
   }
 
   const [

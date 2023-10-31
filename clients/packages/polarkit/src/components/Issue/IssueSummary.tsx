@@ -64,6 +64,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
             <a
               className="text-md text-nowrap font-medium dark:text-white"
               href={githubIssueUrl(organization.name, repository.name, number)}
+              target="_blank"
             >
               {markdownTitle}
             </a>

@@ -10,7 +10,7 @@ const Switch = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SwitchPrimitives.Root
     className={twMerge(
-      'focus-visible:ring-ring focus-visible:ring-offset-background data-[state=checked]:bg-primary dark:data-[state=unchecked]:bg-polar-950 peer inline-flex h-[18px] w-[37px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=unchecked]:bg-gray-200',
+      'focus-visible:ring-ring focus-visible:ring-offset-background data-[state=checked]:bg-primary dark:data-[state=unchecked]:bg-polar-950 peer inline-flex h-[18px] w-[37px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=unchecked]:bg-gray-200 dark:data-[state=unchecked]:border dark:data-[state=unchecked]:border-white/10',
       className,
     )}
     {...props}
@@ -18,7 +18,7 @@ const Switch = React.forwardRef<
   >
     <SwitchPrimitives.Thumb
       className={twMerge(
-        'bg-background dark:data-[state=unchecked]:bg-polar-600 pointer-events-none block h-2 w-2 rounded-full shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-[22px] data-[state=unchecked]:translate-x-1 dark:data-[state=checked]:bg-white',
+        'bg-background dark:data-[state=unchecked]:bg-polar-500 pointer-events-none block h-2 w-2 rounded-full shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-[22px] data-[state=unchecked]:translate-x-1 dark:data-[state=checked]:bg-white',
       )}
     />
   </SwitchPrimitives.Root>

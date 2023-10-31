@@ -33,7 +33,7 @@ const FundAGithubIssue = () => {
 
   return (
     <>
-      <div className="dark:bg-polar-800 dark:ring-polar-700 flex flex-col items-start space-y-4 rounded-xl bg-white p-6 shadow dark:ring-1">
+      <div className="dark:bg-polar-900 dark:ring-polar-700 flex flex-col items-start space-y-4 rounded-xl bg-white p-6 shadow dark:ring-1">
         <h2 className="dark:text-polar-50 text-center text-lg text-gray-900">
           Fund a GitHub issue
         </h2>

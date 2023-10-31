@@ -120,31 +120,35 @@ export default function ClientPage() {
             issues that you&apos;re seeking funding for.
           </p>
           <ShadowBox>
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-8">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="dark:text-polar-200 font-medium text-gray-500">
+                    Preview
+                  </h3>
+
+                  <LabeledRadioButton
+                    values={['Issues', 'Shield']}
+                    value={currentEmbedTab}
+                    onSelected={setCurrentEmbedTab}
+                  />
+                </div>
+
+                <div className="dark:bg-polar-800 dark:border-polar-700 flex w-full justify-center rounded-2xl border border-gray-200 bg-gray-50 p-12">
+                  {previews[currentEmbedTab] || <></>}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4">
                 <h3 className="dark:text-polar-200 font-medium text-gray-500">
-                  Preview
+                  Embed code
                 </h3>
-
-                <LabeledRadioButton
-                  values={['Issues', 'Shield']}
-                  value={currentEmbedTab}
-                  onSelected={setCurrentEmbedTab}
-                />
-              </div>
-
-              <div className="dark:bg-polar-700 dark:border-polar-600 flex w-full justify-center rounded-md border border-gray-200 bg-gray-50 p-8">
-                {previews[currentEmbedTab] || <></>}
-              </div>
-
-              <h3 className="dark:text-polar-200 font-medium text-gray-500">
-                Embed code
-              </h3>
-              <div className="max-w-[600px]">
-                <CopyToClipboardInput
-                  id="embed-svg"
-                  value={embedCodes[currentEmbedTab] || ''}
-                />
+                <div className="max-w-[600px]">
+                  <CopyToClipboardInput
+                    id="embed-svg"
+                    value={embedCodes[currentEmbedTab] || ''}
+                  />
+                </div>
               </div>
             </div>
           </ShadowBox>

@@ -1,3 +1,4 @@
+import { FavoriteOutlined } from '@mui/icons-material'
 import { IssueFunding } from '@polar-sh/sdk'
 import Link from 'next/link'
 import {
@@ -5,6 +6,7 @@ import {
   IssueFundingDetails,
   IssueSummary,
 } from 'polarkit/components/Issue'
+import { Button } from 'polarkit/components/ui/atoms'
 
 const IssuesLookingForFunding = ({
   issuesFunding,
@@ -27,7 +29,10 @@ const IssuesLookingForFunding = ({
                   href={`/${i.issue.repository.organization.name}/${i.issue.repository.name}/issues/${i.issue.number}`}
                   className="font-medium text-blue-600"
                 >
-                  Fund
+                  <Button size="sm" variant="secondary">
+                    <FavoriteOutlined fontSize="inherit" />
+                    <span className="ml-1.5">Fund</span>
+                  </Button>
                 </Link>
               }
             />

@@ -1,18 +1,14 @@
-import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
+import { ChatBubbleOutline } from '@mui/icons-material'
 
 type Icon = 'thumbs_up' | 'comments'
 
 const IconCounter = (props: { icon: Icon; count: number }) => {
   return (
     <>
-      <div className="dark:text-polar-500 inline-flex items-center gap-1 text-[#7E7E7E]">
-        {props.icon === 'comments' && (
-          <ChatBubbleLeftIcon className="h-4 w-4" />
-        )}
-        {props.icon === 'thumbs_up' && <span className="text-lg">👍</span>}
-        <span className="dark:text-polar-400 text-sm text-gray-500">
-          {props.count}
-        </span>
+      <div className="dark:text-polar-500 inline-flex items-center gap-1 rounded-md text-sm text-gray-400">
+        {props.icon === 'comments' && <ChatBubbleOutline fontSize="inherit" />}
+        {props.icon === 'thumbs_up' && <span>👍</span>}
+        <span className="text-sm">{props.count}</span>
       </div>
     </>
   )

@@ -97,7 +97,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
           showLogo && 'md:pl-none pl-12',
         )}
       >
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           {showStatus && (
             <div className="dark:text-polar-400 flex flex-row items-center gap-2 text-sm text-gray-500">
               {isOpen ? (

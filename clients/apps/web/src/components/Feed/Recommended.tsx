@@ -1,6 +1,6 @@
 'use client'
 
-import { FavoriteOutlined } from '@mui/icons-material'
+import { FavoriteBorderOutlined } from '@mui/icons-material'
 import Link from 'next/link'
 import { Button, ShadowBoxOnLg } from 'polarkit/components/ui/atoms'
 import { useListForYouIssues } from 'polarkit/hooks'
@@ -49,7 +49,7 @@ const Recommended = () => {
                       className="font-medium text-blue-600"
                     >
                       <Button variant="secondary" size="sm">
-                        <FavoriteOutlined fontSize="inherit" />
+                        <FavoriteBorderOutlined fontSize="inherit" />
                         <span className="ml-1.5">Fund</span>
                       </Button>
                     </Link>

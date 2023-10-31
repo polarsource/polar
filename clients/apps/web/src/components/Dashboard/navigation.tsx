@@ -120,7 +120,7 @@ export const maintainerRoutes = (org: Organization): Route[] => [
       {
         title: 'Funding',
         link: `/team/${org.name}/funding`,
-        icon: <AttachMoneyOutlined fontSize="inherit" />,
+        icon: <FavoriteBorderOutlined fontSize="inherit" />,
       },
       {
         title: 'Members',

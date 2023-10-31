@@ -73,8 +73,8 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
 
   return (
     <DashboardBody>
-      <div className="flex flex-col gap-6">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="flex flex-col gap-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {displayedPeriod && (
             <>
               <SubscribersMetric
@@ -119,7 +119,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
               </Card>
             ))}
         </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           {summaryPeriods.length > 0 && (
             <>
               <Card>

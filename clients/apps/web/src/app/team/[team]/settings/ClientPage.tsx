@@ -6,7 +6,12 @@ import { useCurrentTeamFromURL } from '@/hooks/org'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import { CreditBalance, Organization } from '@polar-sh/sdk'
 import { api } from 'polarkit/api'
-import { Button, Input, MoneyInput } from 'polarkit/components/ui/atoms'
+import {
+  Button,
+  Input,
+  MoneyInput,
+  ShadowBox,
+} from 'polarkit/components/ui/atoms'
 import {
   Form,
   FormControl,
@@ -32,12 +37,15 @@ export default function ClientPage() {
   return (
     <>
       <div>
-        <h2 className="text-2xl font-medium">Team settings</h2>
+        <h2 className="text-xl font-medium">Team settings</h2>
       </div>
 
       <div className="dark:divide-polar-700 divide-y divide-gray-200">
         <Section>
-          <SectionDescription title="Payment methods" />
+          <SectionDescription
+            title="Payment"
+            description="Manage team invoicing, spending limits and payment methods"
+          />
           <PaymentMethodSettings org={org} credits={credits.data} />
         </Section>
       </div>
@@ -85,7 +93,7 @@ const PaymentMethodSettings = ({
 
   const { handleSubmit } = form
 
-  const [showDidSave, setShowDidSave] = useState(false)
+  const [didSave, setDidSave] = useState(false)
 
   const onSubmit = useCallback(
     async (teamSettings: TeamSettingsForm) => {
@@ -97,53 +105,51 @@ const PaymentMethodSettings = ({
           ...teamSettings,
         },
       })
-      setShowDidSave(true)
-
-      setTimeout(() => {
-        setShowDidSave(false)
-      }, 4000)
+      setDidSave(true)
     },
     [org, updateOrganization],
   )
 
   return (
-    <div className="dark:text-polar-200 dark:border-polar-700 dark:bg-polar-800 flex w-full flex-col divide-y rounded-xl border text-gray-900">
-      {credits && credits.amount.amount < 0 ? (
-        <div className="dark:text-polar:300 space-y-2 p-4 text-sm text-gray-500">
-          {org.name} has $
-          {getCentsInDollarString(credits.amount.amount * -1, true, true)} in
-          prepaid credits that will automatically be applied on future invoices.
+    <ShadowBox>
+      <>
+        {credits && credits.amount.amount < 0 ? (
+          <div className="dark:text-polar-500 space-y-2 p-4 text-sm text-gray-500">
+            {org.name} has $
+            {getCentsInDollarString(credits.amount.amount * -1, true, true)} in
+            prepaid credits that will automatically be applied on future
+            invoices.
+          </div>
+        ) : null}
+        <div className="dark:text-polar-500 space-y-2 p-4 text-sm text-gray-500">
+          <Form {...form}>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <BillingEmail />
+              <TotalMonthlySpendingLimit />
+              <PerUserMonthlySpendingLimit />
+
+              <div className="flex flex-row items-center gap-x-4">
+                <div className="flex items-center gap-2">
+                  <Button type="submit" variant="default" disabled={didSave}>
+                    Save
+                  </Button>
+                </div>
+
+                <Button
+                  fullWidth={false}
+                  variant="secondary"
+                  loading={stripePortalLoading}
+                  onClick={onGotoStripeCustomerPortal}
+                >
+                  <ArrowTopRightOnSquareIcon className="mr-2 h-4 w-4" />
+                  <span>Invoice settings and receipts</span>
+                </Button>
+              </div>
+            </form>
+          </Form>
         </div>
-      ) : null}
-      <div className="dark:text-polar:300 space-y-2 p-4 text-sm text-gray-500">
-        <Form {...form}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <BillingEmail />
-            <TotalMonthlySpendingLimit />
-            <PerUserMonthlySpendingLimit />
-
-            <div className="flex items-center gap-2">
-              <Button type="submit" variant="default">
-                Save
-              </Button>
-
-              {showDidSave && <div>Saved!</div>}
-            </div>
-          </form>
-        </Form>
-      </div>
-
-      <div className="dark:text-polar:300 space-y-2 p-4 text-sm text-gray-500">
-        <Button
-          fullWidth={false}
-          loading={stripePortalLoading}
-          onClick={onGotoStripeCustomerPortal}
-        >
-          <ArrowTopRightOnSquareIcon className="mr-2 h-4 w-4" />
-          <span>Invoice settings and receipts</span>
-        </Button>
-      </div>
-    </div>
+      </>
+    </ShadowBox>
   )
 }
 
@@ -166,14 +172,21 @@ const BillingEmail = () => {
         }}
         defaultValue="finance@example.com"
         render={({ field }) => (
-          <FormItem className="max-w-[300px]">
-            <div className="flex flex-row items-center justify-between">
-              <FormLabel>Billing email</FormLabel>
+          <FormItem className="flex flex-row items-center justify-between">
+            <div className="flex flex-col gap-y-2">
+              <FormLabel className="dark:text-polar-50 text-gray-950">
+                Billing email
+              </FormLabel>
+              <p className="text-sm">
+                An email where invoices should be sent to
+              </p>
+              <FormMessage />
             </div>
             <FormControl>
-              <Input {...field} type="email" />
+              <div className="w-[260px]">
+                <Input placeholder="Email" {...field} type="email" />
+              </div>
             </FormControl>
-            <FormMessage />
           </FormItem>
         )}
       />
@@ -196,20 +209,25 @@ const TotalMonthlySpendingLimit = () => {
         }}
         render={({ field }) => {
           return (
-            <FormItem className="max-w-[300px]">
-              <div className="flex flex-row items-center justify-between">
-                <FormLabel>Total Monthly Spending Limit</FormLabel>
+            <FormItem className="flex flex-row items-center justify-between">
+              <div className="flex flex-col gap-y-2">
+                <FormLabel className="dark:text-polar-50 text-gray-950">
+                  Spending Limit
+                </FormLabel>
+                <p className="text-sm">An optional monthly limit for funds</p>
+                <FormMessage />
               </div>
               <FormControl>
-                <MoneyInput
-                  id={field.name}
-                  name={field.name}
-                  placeholder={0}
-                  value={field.value}
-                  onAmountChangeInCents={(v) => field.onChange(v)}
-                />
+                <div className="w-[160px]">
+                  <MoneyInput
+                    id={field.name}
+                    name={field.name}
+                    placeholder={0}
+                    value={field.value}
+                    onAmountChangeInCents={(v) => field.onChange(v)}
+                  />
+                </div>
               </FormControl>
-              <FormMessage />
             </FormItem>
           )
         }}
@@ -238,20 +256,27 @@ const PerUserMonthlySpendingLimit = () => {
           },
         }}
         render={({ field }) => (
-          <FormItem className="max-w-[300px]">
-            <div className="flex flex-row items-center justify-between">
-              <FormLabel>Per User Spending Limit</FormLabel>
+          <FormItem className="flex flex-row items-center justify-between">
+            <div className="flex flex-col gap-y-2">
+              <FormLabel className="dark:text-polar-50 text-gray-950">
+                Member Spending Limit
+              </FormLabel>
+              <p className="text-sm">
+                A monthly limit for funds for each member
+              </p>
+              <FormMessage />
             </div>
             <FormControl>
-              <MoneyInput
-                id={field.name}
-                name={field.name}
-                placeholder={0}
-                value={field.value}
-                onAmountChangeInCents={(v) => field.onChange(v)}
-              />
+              <div className="w-[160px]">
+                <MoneyInput
+                  id={field.name}
+                  name={field.name}
+                  placeholder={0}
+                  value={field.value}
+                  onAmountChangeInCents={(v) => field.onChange(v)}
+                />
+              </div>
             </FormControl>
-            <FormMessage />
           </FormItem>
         )}
       />

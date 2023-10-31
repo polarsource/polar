@@ -40,16 +40,22 @@ export default function ClientPage() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-medium">Members</h2>
+    <div className="flex flex-col gap-y-8">
+      <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-y-2">
+          <h2 className="text-xl font-medium">Members</h2>
+          <p className="dark:text-polar-500 text-sm text-gray-400">
+            Members & their roles are synced from the underlying Github
+            organization
+          </p>
+        </div>
         <Button
-          fullWidth={false}
-          color="gray"
+          variant="secondary"
+          size="sm"
           onClick={onClickRefresh}
           loading={refresh.isPending}
         >
-          <ArrowPathIcon className="mr-2 h-5 w-5" />
+          <ArrowPathIcon className="mr-2 h-4 w-4" />
           <span>Refresh</span>
         </Button>
       </div>

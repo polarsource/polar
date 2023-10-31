@@ -1,5 +1,5 @@
-import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
 import { HeartIcon, StarIcon } from '@heroicons/react/24/solid'
+import { ChatBubbleOutline } from '@mui/icons-material'
 import {
   Assignee,
   Funding,
@@ -99,7 +99,7 @@ const IssueCard = ({
           <div className="flex flex-row items-center justify-center gap-4 sm:justify-end">
             {issue.comments !== undefined && (
               <div className="flex flex-row items-center gap-1">
-                <ChatBubbleLeftIcon className="h-5 w-5" />
+                <ChatBubbleOutline className="h-5 w-5" fontSize="small" />
                 {issue.comments}
               </div>
             )}

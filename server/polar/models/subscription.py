@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
@@ -81,3 +81,11 @@ class Subscription(RecordModel):
             SubscriptionStatus.canceled,
             SubscriptionStatus.unpaid,
         ]
+
+    def set_started_at(self) -> None:
+        """
+        Stores the starting date when the subscription
+        becomes active for the first time.
+        """
+        if self.is_active() and self.started_at is None:
+            self.started_at = datetime.now(UTC)

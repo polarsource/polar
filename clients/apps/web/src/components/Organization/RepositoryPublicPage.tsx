@@ -1,6 +1,6 @@
 import { IssueFunding, Organization, Repository } from '@polar-sh/sdk'
 import { formatStarsNumber } from 'polarkit/utils'
-import { prettyURL } from '.'
+import { externalURL, prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
 import Footer from './Footer'
 import Header from './Header'
@@ -48,7 +48,7 @@ const RepositoryPublicPage = ({
           {repository.homepage && (
             <a
               className="text-blue-600 hover:text-blue-700"
-              href={repository.homepage}
+              href={externalURL(repository.homepage)}
             >
               {prettyURL(repository.homepage)}
             </a>

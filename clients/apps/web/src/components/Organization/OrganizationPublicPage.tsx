@@ -11,7 +11,7 @@ import {
   SubscriptionTier,
 } from '@polar-sh/sdk'
 import { Avatar } from 'polarkit/components/ui/atoms'
-import { prettyURL } from '.'
+import { externalURL, prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
 import PublicSubscriptionUpsell from '../Subscriptions/PublicSubscriptionUpsell'
 import Footer from './Footer'
@@ -73,7 +73,7 @@ const OrganizationPublicPage = ({
                   <LanguageOutlined fontSize="small" />
                   <a
                     className="text-blue-600 hover:text-blue-700"
-                    href={organization.blog}
+                    href={externalURL(organization.blog)}
                   >
                     {prettyURL(organization.blog)}
                   </a>

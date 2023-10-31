@@ -10,3 +10,19 @@ export const prettyURL = (url: string): string => {
   }
   return url
 }
+
+export const externalURL = (url: string): string => {
+  if (url.startsWith('http://')) {
+    return url
+  }
+  if (url.startsWith('https://')) {
+    return url
+  }
+  if (url.startsWith('//')) {
+    return `https:${url}`
+  }
+  if (url.startsWith('://')) {
+    return `https${url}`
+  }
+  return `https://${url}`
+}

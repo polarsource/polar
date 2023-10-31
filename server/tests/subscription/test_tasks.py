@@ -17,17 +17,25 @@ from polar.subscription.tasks import (  # type: ignore[attr-defined]
     subscription_benefit_revoke,
     subscription_service,
 )
-from polar.worker import JobContext
+from polar.worker import JobContext, PolarWorkerContext
 
 
 @pytest.mark.asyncio
 class TestEnqueueBenefitsGrants:
-    async def test_not_existing_subscription(self, job_context: JobContext) -> None:
+    async def test_not_existing_subscription(
+        self, job_context: JobContext, polar_worker_context: PolarWorkerContext
+    ) -> None:
         with pytest.raises(SubscriptionDoesNotExist):
-            await enqueue_benefits_grants(job_context, uuid.uuid4())
+            await enqueue_benefits_grants(
+                job_context, uuid.uuid4(), polar_worker_context
+            )
 
     async def test_existing_subscription(
-        self, mocker: MockerFixture, job_context: JobContext, subscription: Subscription
+        self,
+        mocker: MockerFixture,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        subscription: Subscription,
     ) -> None:
         enqueue_benefits_grants_mock = mocker.patch.object(
             subscription_service,
@@ -35,7 +43,9 @@ class TestEnqueueBenefitsGrants:
             spec=SubscriptionService.enqueue_benefits_grants,
         )
 
-        await enqueue_benefits_grants(job_context, subscription.id)
+        await enqueue_benefits_grants(
+            job_context, subscription.id, polar_worker_context
+        )
 
         enqueue_benefits_grants_mock.assert_called_once()
 
@@ -45,23 +55,33 @@ class TestSubscriptionBenefitGrant:
     async def test_not_existing_subscription(
         self,
         job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
         subscription_benefit_organization: SubscriptionBenefit,
     ) -> None:
         with pytest.raises(SubscriptionDoesNotExist):
             await subscription_benefit_grant(
-                job_context, uuid.uuid4(), subscription_benefit_organization.id
+                job_context,
+                uuid.uuid4(),
+                subscription_benefit_organization.id,
+                polar_worker_context,
             )
 
     async def test_not_existing_subscription_benefit(
-        self, job_context: JobContext, subscription: Subscription
+        self,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        subscription: Subscription,
     ) -> None:
         with pytest.raises(SubscriptionBenefitDoesNotExist):
-            await subscription_benefit_grant(job_context, subscription.id, uuid.uuid4())
+            await subscription_benefit_grant(
+                job_context, subscription.id, uuid.uuid4(), polar_worker_context
+            )
 
     async def test_existing_subscription_and_benefit(
         self,
         mocker: MockerFixture,
         job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         subscription_benefit_organization: SubscriptionBenefit,
     ) -> None:
@@ -72,7 +92,10 @@ class TestSubscriptionBenefitGrant:
         )
 
         await subscription_benefit_grant(
-            job_context, subscription.id, subscription_benefit_organization.id
+            job_context,
+            subscription.id,
+            subscription_benefit_organization.id,
+            polar_worker_context,
         )
 
         grant_benefit_mock.assert_called_once()
@@ -83,25 +106,33 @@ class TestSubscriptionBenefitRevoke:
     async def test_not_existing_subscription(
         self,
         job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
         subscription_benefit_organization: SubscriptionBenefit,
     ) -> None:
         with pytest.raises(SubscriptionDoesNotExist):
             await subscription_benefit_revoke(
-                job_context, uuid.uuid4(), subscription_benefit_organization.id
+                job_context,
+                uuid.uuid4(),
+                subscription_benefit_organization.id,
+                polar_worker_context,
             )
 
     async def test_not_existing_subscription_benefit(
-        self, job_context: JobContext, subscription: Subscription
+        self,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        subscription: Subscription,
     ) -> None:
         with pytest.raises(SubscriptionBenefitDoesNotExist):
             await subscription_benefit_revoke(
-                job_context, subscription.id, uuid.uuid4()
+                job_context, subscription.id, uuid.uuid4(), polar_worker_context
             )
 
     async def test_existing_subscription_and_benefit(
         self,
         mocker: MockerFixture,
         job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
         subscription: Subscription,
         subscription_benefit_organization: SubscriptionBenefit,
     ) -> None:
@@ -112,7 +143,10 @@ class TestSubscriptionBenefitRevoke:
         )
 
         await subscription_benefit_revoke(
-            job_context, subscription.id, subscription_benefit_organization.id
+            job_context,
+            subscription.id,
+            subscription_benefit_organization.id,
+            polar_worker_context,
         )
 
         revoke_benefit_mock.assert_called_once()

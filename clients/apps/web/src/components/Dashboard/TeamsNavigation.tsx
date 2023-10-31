@@ -68,9 +68,7 @@ const Team = ({ org }: { org: Organization }) => {
           name={org.name}
           className="h-8 w-8"
         />
-        <span className="shrink grow-0 truncate">
-          {org.name}asdnakjdsna kjnsdkajn kdajsn ka
-        </span>
+        <span className="shrink grow-0 truncate">{org.name}</span>
       </div>
 
       <div className="flex flex-shrink-0 items-center -space-x-2.5">

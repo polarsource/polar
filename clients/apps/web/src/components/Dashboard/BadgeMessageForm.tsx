@@ -89,7 +89,7 @@ const BadgeMessageForm = (props: {
   }
 
   return (
-    <div className="flex flex-col space-y-3">
+    <div className="flex flex-col space-y-4">
       <div className="text-gray flex items-center justify-between">
         <div>
           <div className="dark:text-polar-50 text-sm font-medium">
@@ -111,7 +111,7 @@ const BadgeMessageForm = (props: {
       <div
         className={twMerge(
           props.innerClassNames,
-          'dark:bg-polar-800 dark:border-polar-700 rounded-2xl bg-white p-8 dark:border',
+          'dark:bg-polar-900 dark:border-polar-700 rounded-2xl bg-white p-8 dark:border',
         )}
       >
         {descriptionMode === 'View' && (

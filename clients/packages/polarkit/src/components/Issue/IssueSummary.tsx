@@ -44,7 +44,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
   const markdownTitle = generateMarkdownTitle(title)
 
   return (
-    <div className="dark:hover:bg-polar-700 duration-50 dark:text-polar-50 group flex flex-col items-start justify-between gap-4 overflow-hidden rounded-2xl px-6 py-4 pb-5 hover:bg-blue-50 md:flex-row md:items-center">
+    <div className="dark:hover:bg-polar-800 duration-50 dark:text-polar-50 group flex flex-col items-start justify-between gap-4 overflow-hidden rounded-2xl px-6 py-4 pb-5 hover:bg-blue-50 md:flex-row md:items-center">
       <div className="flex flex-row items-center">
         {showLogo && (
           <div className="mr-4 flex-shrink-0 justify-center rounded-full bg-white p-[1px] shadow">
@@ -62,7 +62,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
             <a
-              className="text-md text-nowrap font-medium"
+              className="text-md text-nowrap font-medium dark:text-white"
               href={githubIssueUrl(organization.name, repository.name, number)}
             >
               {markdownTitle}

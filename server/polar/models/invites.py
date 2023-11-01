@@ -3,12 +3,12 @@ from uuid import UUID
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from polar.kit.db.models.base import RecordModel
+from polar.kit.db.models.base import RecordModel, RecordModelMappedAsDataclass
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.user import User
 
 
-class Invite(RecordModel):
+class Invite(RecordModelMappedAsDataclass, kw_only=True):
     __tablename__ = "invites"
 
     created_by: Mapped[UUID] = mapped_column(

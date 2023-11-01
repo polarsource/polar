@@ -58,10 +58,12 @@ class User(RecordModelMappedAsDataclass, kw_only=True):
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    avatar_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    avatar_url: Mapped[str | None] = mapped_column(
+        String(1024), nullable=True, default=None
+    )
 
     profile: Mapped[dict[str, Any] | None] = mapped_column(
-        JSONB, default=None, nullable=True
+        JSONB, default=None, nullable=True, insert_default={}
     )
 
     @declared_attr

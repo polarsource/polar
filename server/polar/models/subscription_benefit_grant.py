@@ -7,13 +7,14 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
+from polar.kit.db.models.base import RecordModelMappedAsDataclass
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
     from polar.models import Subscription, SubscriptionBenefit
 
 
-class SubscriptionBenefitGrant(RecordModel):
+class SubscriptionBenefitGrant(RecordModelMappedAsDataclass, kw_only=True):
     __tablename__ = "subscription_benefit_grants"
 
     granted_at: Mapped[datetime | None] = mapped_column(

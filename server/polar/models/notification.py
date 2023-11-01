@@ -5,11 +5,12 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.db.models import RecordModel
+from polar.kit.db.models.base import RecordModelMappedAsDataclass
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.types import JSONDict
 
 
-class Notification(RecordModel):
+class Notification(RecordModelMappedAsDataclass, kw_only=True):
     __tablename__ = "notifications"
     __table_args__ = (
         Index(

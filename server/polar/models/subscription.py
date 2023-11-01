@@ -7,6 +7,7 @@ from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
+from polar.kit.db.models.base import RecordModelMappedAsDataclass
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
@@ -23,7 +24,7 @@ class SubscriptionStatus(StrEnum):
     unpaid = "unpaid"
 
 
-class Subscription(RecordModel):
+class Subscription(RecordModelMappedAsDataclass, kw_only=True):
     __tablename__ = "subscriptions"
 
     stripe_subscription_id: Mapped[str] = mapped_column(

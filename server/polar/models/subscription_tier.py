@@ -7,6 +7,7 @@ from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
+from polar.kit.db.models.base import RecordModelMappedAsDataclass
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
@@ -24,7 +25,7 @@ class SubscriptionTierType(StrEnum):
     business = "business"
 
 
-class SubscriptionTier(RecordModel):
+class SubscriptionTier(RecordModelMappedAsDataclass, kw_only=True):
     __tablename__ = "subscription_tiers"
 
     type: Mapped[SubscriptionTierType] = mapped_column(

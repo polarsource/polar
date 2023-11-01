@@ -18,11 +18,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from polar.config import settings
 from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
+from polar.kit.db.models.base import RecordModelMappedAsDataclass
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 from polar.models.organization import Organization
 
 
-class Repository(RecordModel):
+class Repository(RecordModelMappedAsDataclass, kw_only=True):
     __tablename__ = "repositories"
     __table_args__ = (
         UniqueConstraint("external_id"),

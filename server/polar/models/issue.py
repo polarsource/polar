@@ -31,6 +31,7 @@ from sqlalchemy_utils.types.ts_vector import TSVectorType
 
 from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
+from polar.kit.db.models.base import RecordModelMappedAsDataclass
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 from polar.types import JSONAny
 
@@ -128,7 +129,7 @@ issue_fields_mutables = {
 }
 
 
-class Issue(IssueFields, RecordModel):
+class Issue(IssueFields, RecordModelMappedAsDataclass, kw_only=True):
     __tablename__ = "issues"
     __table_args__ = (
         UniqueConstraint("external_id"),

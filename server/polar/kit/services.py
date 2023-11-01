@@ -6,13 +6,14 @@ from uuid import UUID
 
 from sqlalchemy.orm import InstrumentedAttribute
 
+from polar.kit.db.models.base import RecordModelMappedAsDataclass
 from polar.kit.utils import utc_now
 
 from .db.models import RecordModel
 from .db.postgres import AsyncSession, sql
 from .schemas import Schema
 
-ModelType = TypeVar("ModelType", bound=RecordModel)
+ModelType = TypeVar("ModelType", bound=RecordModelMappedAsDataclass)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=Schema)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=Schema)
 SchemaType = TypeVar("SchemaType", bound=Schema)

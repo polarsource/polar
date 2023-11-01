@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import TimestampedModel
+from polar.kit.db.models.base import TimestampedModelMappedAsDataclass
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.schemas import Schema
@@ -50,7 +51,7 @@ class ReferenceType(str, enum.Enum):
     EXTERNAL_GITHUB_COMMIT = "external_github_commit"
 
 
-class IssueReference(TimestampedModel):
+class IssueReference(TimestampedModelMappedAsDataclass, kw_only=True):
     __tablename__ = "issue_references"
 
     issue_id: Mapped[UUID] = mapped_column(

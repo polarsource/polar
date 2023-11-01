@@ -5,11 +5,12 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.db.models import RecordModel
+from polar.kit.db.models.base import RecordModelMappedAsDataclass
 from polar.models.issue import IssueFields
 from polar.types import JSONDict, JSONList
 
 
-class PullRequest(IssueFields, RecordModel):
+class PullRequest(IssueFields, RecordModelMappedAsDataclass, kw_only=True):
     __tablename__ = "pull_requests"
     __table_args__ = (
         UniqueConstraint("external_id"),

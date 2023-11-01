@@ -10,6 +10,7 @@ from polar.config import settings
 from polar.enums import Platforms
 from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
+from polar.kit.db.models.base import RecordModelMappedAsDataclass
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 
 
@@ -18,7 +19,7 @@ class NotInstalledOrganization(PolarError):
         super().__init__("This organization is not installed.")
 
 
-class Organization(RecordModel):
+class Organization(RecordModelMappedAsDataclass, kw_only=True):
     class Status(Enum):
         INACTIVE = "inactive"
         ACTIVE = "active"

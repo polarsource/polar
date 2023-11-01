@@ -4,11 +4,12 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import TimestampedModel
+from polar.kit.db.models.base import TimestampedModelMappedAsDataclass
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.issue import Issue
 
 
-class IssueDependency(TimestampedModel):
+class IssueDependency(TimestampedModelMappedAsDataclass, kw_only=True):
     __tablename__ = "issue_dependencies"
 
     organization_id: Mapped[UUID] = mapped_column(

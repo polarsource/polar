@@ -109,8 +109,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         except stripe_lib_error.StripeError as e:
             raise AccountServiceError(e.user_message) from e
 
-        return await Account.create(
-            session=session,
+        return await Account(
             organization_id=organization_id,
             user_id=user_id,
             admin_id=admin_id,
@@ -124,7 +123,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             is_payouts_enabled=stripe_account.payouts_enabled,
             business_type=stripe_account.business_type,
             data=stripe_account.to_dict(),
-        )
+        ).save(session=session)
 
     async def _create_open_collective_account(
         self,
@@ -149,8 +148,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
                 "You can use Stripe instead."
             )
 
-        return await Account.create(
-            session=session,
+        return await Account(
             organization_id=organization_id,
             admin_id=admin_id,
             account_type=account.account_type,
@@ -164,6 +162,8 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             is_payouts_enabled=True,
             business_type="fiscal_host",
             data={},
+        ).save(
+            session=session,
         )
 
     async def onboarding_link(self, account: Account) -> AccountLink | None:

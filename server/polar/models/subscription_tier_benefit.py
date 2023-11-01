@@ -6,13 +6,14 @@ from sqlalchemy import ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
+from polar.kit.db.models.base import RecordModelMappedAsDataclass
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
     from polar.models import SubscriptionBenefit
 
 
-class SubscriptionTierBenefit(RecordModel):
+class SubscriptionTierBenefit(RecordModelMappedAsDataclass, kw_only=True):
     __tablename__ = "subscription_tier_benefits"
     __table_args__ = (UniqueConstraint("subscription_tier_id", "order"),)
 

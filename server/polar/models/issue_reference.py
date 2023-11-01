@@ -3,7 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import TimestampedModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -79,10 +79,12 @@ class IssueReference(TimestampedModel):
         nullable=True,
     )
 
-    pull_request: Mapped[PullRequest | None] = relationship(
-        "PullRequest",
-        lazy="raise",
-    )
+    @declared_attr
+    def pull_request(cls) -> Mapped[PullRequest | None]:
+        return relationship(
+            PullRequest,
+            lazy="raise",
+        )
 
     # If referenced by an external resource
     external_source: Mapped[

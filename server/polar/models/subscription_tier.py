@@ -4,7 +4,7 @@ from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -49,16 +49,20 @@ class SubscriptionTier(RecordModel):
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=True,
     )
-    organization: Mapped["Organization | None"] = relationship(
-        "Organization", lazy="raise"
-    )
+
+    @declared_attr
+    def organization(cls) -> Mapped["Organization | None"]:
+        return relationship("Organization", lazy="raise")
 
     repository_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("repositories.id", ondelete="cascade"),
         nullable=True,
     )
-    repository: Mapped["Repository | None"] = relationship("Repository", lazy="raise")
+
+    @declared_attr
+    def repository(cls) -> Mapped["Repository | None"]:
+        return relationship("Repository", lazy="raise")
 
     subscription_tier_benefits: Mapped[list["SubscriptionTierBenefit"]] = relationship(
         lazy="selectin",

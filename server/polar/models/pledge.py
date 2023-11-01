@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
@@ -34,17 +34,21 @@ class Pledge(RecordModel):
     )
 
     # Stripe Payment Intents (may or may not have been paid)
-    payment_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    payment_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, index=True, default=None
+    )
 
     # Stripe Invoice ID (if pay later and the invoice has been created)
-    invoice_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    invoice_id: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
 
     # Stripe URL for hosted invoice
-    invoice_hosted_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    invoice_hosted_url: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
 
     # Deprecated: Not relevant after introduction of split rewards.
     # Instead see pledge_transactions table.
-    transfer_id: Mapped[str] = mapped_column(String, nullable=True)
+    transfer_id: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
 
     email: Mapped[str] = mapped_column(String, nullable=True, index=True, default=None)
 
@@ -58,27 +62,32 @@ class Pledge(RecordModel):
     # For paid pledges, this is the amount of monye actually received.
     # For pledges paid by invoice, this amount can be smaller or larger than
     # amount_including_fee.
-    amount_received: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    amount_received: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True, default=None
+    )
 
     state: Mapped[str] = mapped_column(String, nullable=False, default="initiated")
     type: Mapped[str] = mapped_column(String, nullable=False, default="pay_upfront")
 
     # often 7 days after the state changes to pending
     scheduled_payout_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
-    dispute_reason: Mapped[str | None] = mapped_column(String, nullable=True)
+    dispute_reason: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
     disputed_by_user_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("users.id"),
         nullable=True,
+        default=None,
     )
     disputed_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
     refunded_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
     # by_user_id, by_organization_id are mutually exclusive
@@ -124,28 +133,46 @@ class Pledge(RecordModel):
         default=None,
     )
 
-    user: Mapped[User | None] = relationship(
-        "User", foreign_keys=[by_user_id], lazy="raise"
-    )
+    @declared_attr
+    def user(cls) -> Mapped[User | None]:
+        return relationship(User, primaryjoin=User.id == cls.by_user_id, lazy="raise")
 
-    by_organization: Mapped[Organization] = relationship(
-        "Organization", foreign_keys=[by_organization_id], lazy="raise"
-    )
+    @declared_attr
+    def by_organization(cls) -> Mapped[Organization]:
+        return relationship(
+            Organization,
+            primaryjoin=Organization.id == cls.by_organization_id,
+            lazy="raise",
+        )
 
-    on_behalf_of_organization: Mapped[Organization] = relationship(
-        "Organization", foreign_keys=[on_behalf_of_organization_id], lazy="raise"
-    )
+    @declared_attr
+    def on_behalf_of_organization(cls) -> Mapped[Organization]:
+        return relationship(
+            Organization,
+            primaryjoin=Organization.id == cls.on_behalf_of_organization_id,
+            lazy="raise",
+        )
 
-    to_repository: Mapped[Repository] = relationship(
-        "Repository", foreign_keys=[repository_id], lazy="raise"
-    )
+    @declared_attr
+    def to_repository(cls) -> Mapped[Repository]:
+        return relationship(
+            Repository, primaryjoin=Repository.id == cls.repository_id, lazy="raise"
+        )
 
-    to_organization: Mapped[Organization] = relationship(
-        "Organization", foreign_keys=[organization_id], lazy="raise"
-    )
+    @declared_attr
+    def to_organization(cls) -> Mapped[Organization]:
+        return relationship(
+            Organization,
+            primaryjoin=Organization.id == cls.organization_id,
+            lazy="raise",
+        )
 
-    created_by_user: Mapped[User | None] = relationship(
-        "User", foreign_keys=[created_by_user_id], lazy="raise"
-    )
+    @declared_attr
+    def created_by_user(cls) -> Mapped[User | None]:
+        return relationship(
+            User, primaryjoin=User.id == cls.created_by_user_id, lazy="raise"
+        )
 
-    issue: Mapped[Issue] = relationship("Issue", foreign_keys=[issue_id], lazy="raise")
+    @declared_attr
+    def issue(cls) -> Mapped[Issue]:
+        return relationship(Issue, primaryjoin=Issue.id == cls.issue_id, lazy="raise")

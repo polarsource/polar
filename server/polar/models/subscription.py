@@ -62,6 +62,7 @@ class Subscription(RecordModel):
         nullable=False,
         index=True,
     )
+
     subscription_tier: Mapped["SubscriptionTier"] = relationship(
         "SubscriptionTier", lazy="raise"
     )

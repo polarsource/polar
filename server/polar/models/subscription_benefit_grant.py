@@ -4,7 +4,7 @@ from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, Boolean, ColumnElement, ForeignKey, type_coerce
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -29,7 +29,10 @@ class SubscriptionBenefitGrant(RecordModel):
         nullable=False,
         index=True,
     )
-    subscription: Mapped["Subscription"] = relationship("Subscription", lazy="raise")
+
+    @declared_attr
+    def subscription(cls) -> Mapped["Subscription"]:
+        return relationship("Subscription", lazy="raise")
 
     subscription_benefit_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
@@ -37,9 +40,10 @@ class SubscriptionBenefitGrant(RecordModel):
         nullable=False,
         index=True,
     )
-    subscription_benefit: Mapped["SubscriptionBenefit"] = relationship(
-        "SubscriptionBenefit", lazy="raise"
-    )
+
+    @declared_attr
+    def subscription_benefit(cls) -> Mapped["SubscriptionBenefit"]:
+        return relationship("SubscriptionBenefit", lazy="raise")
 
     @hybrid_property
     def is_granted(self) -> bool:

@@ -13,7 +13,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.enums import Platforms
@@ -35,9 +35,9 @@ class Repository(RecordModel):
         PostgresUUID, ForeignKey("organizations.id"), nullable=False
     )
 
-    organization: Mapped[Organization] = relationship(
-        "Organization", foreign_keys=[organization_id], lazy="raise"
-    )
+    @declared_attr
+    def organization(cls) -> Mapped[Organization]:
+        return relationship(Organization, lazy="raise")
 
     name: Mapped[str] = mapped_column(CIText(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)

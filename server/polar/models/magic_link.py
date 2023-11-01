@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.kit.db.models import RecordModel
@@ -29,4 +29,7 @@ class MagicLink(RecordModel):
         ForeignKey("users.id", ondelete="cascade"),
         nullable=True,
     )
-    user: Mapped["User | None"] = relationship("User")
+
+    @declared_attr
+    def user(cls) -> Mapped[User | None]:
+        return relationship(User)

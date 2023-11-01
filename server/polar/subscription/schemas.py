@@ -127,7 +127,9 @@ class SubscriptionTierCreate(Schema):
     name: str = Field(
         ..., min_length=TIER_NAME_MIN_LENGTH, max_length=TIER_NAME_MAX_LENGTH
     )
-    description: str | None = Field(None, max_length=TIER_DESCRIPTION_MAX_LENGTH)
+    description: str | None = Field(
+        default=None, max_length=TIER_DESCRIPTION_MAX_LENGTH
+    )
     is_highlighted: bool = False
     price_amount: int = Field(..., ge=0)
     price_currency: str = Field("USD", regex="USD")
@@ -155,12 +157,14 @@ class SubscriptionTierCreate(Schema):
 
 class SubscriptionTierUpdate(Schema):
     name: str | None = Field(
-        None, min_length=TIER_NAME_MIN_LENGTH, max_length=TIER_NAME_MAX_LENGTH
+        default=None, min_length=TIER_NAME_MIN_LENGTH, max_length=TIER_NAME_MAX_LENGTH
     )
-    description: str | None = Field(None, max_length=TIER_DESCRIPTION_MAX_LENGTH)
+    description: str | None = Field(
+        default=None, max_length=TIER_DESCRIPTION_MAX_LENGTH
+    )
     is_highlighted: bool | None = None
-    price_amount: int | None = Field(None, ge=0)
-    price_currency: str | None = Field(None, regex="USD")
+    price_amount: int | None = Field(default=None, ge=0)
+    price_currency: str | None = Field(default=None, regex="USD")
 
 
 class SubscriptionTierBenefitsUpdate(Schema):

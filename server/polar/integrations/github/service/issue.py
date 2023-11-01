@@ -7,7 +7,7 @@ from typing import Any, Literal
 from uuid import UUID
 
 import structlog
-from githubkit import GitHub, Response
+from githubkit import GitHub, Paginator, Response
 from githubkit.exception import RequestFailed
 from githubkit.rest.models import Issue as GitHubIssue
 from githubkit.rest.models import Label
@@ -693,8 +693,8 @@ class GithubIssueService(IssueService):
 
         client = github.get_app_installation_client(installation_id)
 
-        paginator = client.paginate(
-            client.rest.issues.async_list_for_repo,
+        paginator: Paginator[github.rest.Issue] = client.paginate(
+            client.rest.issues.async_list_for_repo,  # type: ignore
             owner=organization.name,
             repo=repository.name,
             state=state,

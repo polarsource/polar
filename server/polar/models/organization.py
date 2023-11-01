@@ -4,7 +4,7 @@ from uuid import UUID
 
 from citext import CIText
 from sqlalchemy import TIMESTAMP, Boolean, Integer, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, MappedAsDataclass, mapped_column
 
 from polar.config import settings
 from polar.enums import Platforms
@@ -18,7 +18,7 @@ class NotInstalledOrganization(PolarError):
         super().__init__("This organization is not installed.")
 
 
-class Organization(RecordModel):
+class Organization(RecordModel, MappedAsDataclass, kw_only=True):
     class Status(Enum):
         INACTIVE = "inactive"
         ACTIVE = "active"

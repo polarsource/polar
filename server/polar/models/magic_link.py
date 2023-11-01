@@ -2,7 +2,13 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, ForeignKey, String
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    MappedAsDataclass,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 from polar.config import settings
 from polar.kit.db.models import RecordModel
@@ -15,7 +21,7 @@ def get_expires_at() -> datetime:
     return utc_now() + timedelta(seconds=settings.MAGIC_LINK_TTL_SECONDS)
 
 
-class MagicLink(RecordModel):
+class MagicLink(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "magic_links"
 
     token_hash: Mapped[str] = mapped_column(String, index=True, nullable=False)

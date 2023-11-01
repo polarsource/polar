@@ -4,7 +4,13 @@ from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    MappedAsDataclass,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
@@ -50,7 +56,7 @@ class SubscriptionBenefitBuiltinProperties(SubscriptionBenefitProperties):
 M = TypeVar("M", bound=SubscriptionBenefitProperties)
 
 
-class SubscriptionBenefit(RecordModel):
+class SubscriptionBenefit(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "subscription_benefits"
 
     type: Mapped[SubscriptionBenefitType] = mapped_column(
@@ -60,25 +66,30 @@ class SubscriptionBenefit(RecordModel):
     is_tax_applicable: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
-    properties: Mapped[SubscriptionBenefitProperties] = mapped_column(
-        "properties", JSONB, nullable=False, default=dict
-    )
+
+    @declared_attr
+    def properties(cls) -> Mapped[SubscriptionBenefitProperties]:
+        return mapped_column("properties", JSONB, nullable=False, default=dict)
 
     organization_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=True,
     )
-    organization: Mapped["Organization | None"] = relationship(
-        "Organization", lazy="raise"
-    )
+
+    @declared_attr
+    def organization(cls) -> Mapped["Organization | None"]:
+        return relationship("Organization", lazy="raise")
 
     repository_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("repositories.id", ondelete="cascade"),
         nullable=True,
     )
-    repository: Mapped["Repository | None"] = relationship("Repository", lazy="raise")
+
+    @declared_attr
+    def repository(cls) -> Mapped["Repository | None"]:
+        return relationship("Repository", lazy="raise")
 
     __mapper_args__ = {
         "polymorphic_on": "type",
@@ -86,9 +97,9 @@ class SubscriptionBenefit(RecordModel):
 
 
 class SubscriptionBenefitCustom(SubscriptionBenefit):
-    properties: Mapped[SubscriptionBenefitCustomProperties] = mapped_column(
-        use_existing_column=True
-    )
+    @declared_attr
+    def properties(cls) -> Mapped[SubscriptionBenefitCustomProperties]:
+        return mapped_column(use_existing_column=True)
 
     __mapper_args__ = {
         "polymorphic_identity": SubscriptionBenefitType.custom,
@@ -97,9 +108,9 @@ class SubscriptionBenefitCustom(SubscriptionBenefit):
 
 
 class SubscriptionBenefitBuiltin(SubscriptionBenefit):
-    properties: Mapped[SubscriptionBenefitBuiltinProperties] = mapped_column(
-        use_existing_column=True
-    )
+    @declared_attr
+    def properties(cls) -> Mapped[SubscriptionBenefitBuiltinProperties]:
+        return mapped_column(use_existing_column=True)
 
     __mapper_args__ = {
         "polymorphic_identity": SubscriptionBenefitType.builtin,

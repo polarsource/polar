@@ -4,7 +4,13 @@ from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, Boolean, ColumnElement, ForeignKey, type_coerce
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    MappedAsDataclass,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -13,14 +19,14 @@ if TYPE_CHECKING:
     from polar.models import Subscription, SubscriptionBenefit
 
 
-class SubscriptionBenefitGrant(RecordModel):
+class SubscriptionBenefitGrant(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "subscription_benefit_grants"
 
     granted_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
     revoked_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
     subscription_id: Mapped[UUID] = mapped_column(

@@ -1,13 +1,13 @@
 from uuid import UUID
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, MappedAsDataclass, mapped_column
 
 from polar.kit.db.models import Model
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 
-class UserNotification(Model):
+class UserNotification(Model, MappedAsDataclass, kw_only=True):
     __tablename__ = "user_notifications"
 
     user_id: Mapped[UUID] = mapped_column(

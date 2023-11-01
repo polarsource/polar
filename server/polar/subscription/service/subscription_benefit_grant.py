@@ -24,7 +24,8 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
 
         if grant is None:
             grant = SubscriptionBenefitGrant(
-                subscription=subscription, subscription_benefit=subscription_benefit
+                subscription_id=subscription.id,
+                subscription_benefit_id=subscription_benefit.id,
             )
         elif grant.is_granted:
             return grant
@@ -53,7 +54,8 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
 
         if grant is None:
             grant = SubscriptionBenefitGrant(
-                subscription=subscription, subscription_benefit=subscription_benefit
+                subscription_id=subscription.id,
+                subscription_benefit_id=subscription_benefit.id,
             )
         elif grant.is_revoked:
             return grant

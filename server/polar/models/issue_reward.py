@@ -1,7 +1,13 @@
 from uuid import UUID
 
 from sqlalchemy import BigInteger, ForeignKey, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    MappedAsDataclass,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -9,7 +15,7 @@ from polar.models.organization import Organization
 from polar.models.user import User
 
 
-class IssueReward(RecordModel):
+class IssueReward(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "issue_rewards"
 
     __table_args__ = (

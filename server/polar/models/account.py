@@ -4,7 +4,13 @@ from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    MappedAsDataclass,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 from polar.enums import AccountType
 from polar.kit.db.models import RecordModel
@@ -12,7 +18,7 @@ from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 from polar.models.organization import Organization
 
 
-class Account(RecordModel):
+class Account(RecordModel, MappedAsDataclass, kw_only=True):
     class Status(str, Enum):
         CREATED = "created"
         ONBOARDING_STARTED = "onboarding_started"
@@ -22,7 +28,11 @@ class Account(RecordModel):
     account_type: Mapped[AccountType] = mapped_column(String(255), nullable=False)
 
     organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID, ForeignKey("organizations.id"), unique=True, nullable=True
+        PostgresUUID,
+        ForeignKey("organizations.id"),
+        unique=True,
+        nullable=True,
+        default=None,
     )
 
     user_id: Mapped[UUID | None] = mapped_column(

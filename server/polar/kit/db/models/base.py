@@ -2,7 +2,13 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, MetaData
-from sqlalchemy.orm import DeclarativeBase, Mapped, MappedColumn, mapped_column
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    MappedAsDataclass,
+    MappedColumn,
+    mapped_column,
+)
 
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.kit.utils import generate_uuid, utc_now
@@ -20,13 +26,19 @@ my_metadata = MetaData(
 )
 
 
-class Model(DeclarativeBase, ActiveRecordMixin, SerializeMixin):
+class Model(
+    MappedAsDataclass,
+    DeclarativeBase,
+    ActiveRecordMixin,
+    SerializeMixin,
+    kw_only=True,
+):
     __abstract__ = True
 
     metadata = my_metadata
 
 
-class TimestampedModel(Model):
+class TimestampedModel(Model, MappedAsDataclass):
     __abstract__ = True
 
     created_at: Mapped[datetime] = mapped_column(
@@ -40,7 +52,7 @@ class TimestampedModel(Model):
     )
 
 
-class RecordModel(TimestampedModel):
+class RecordModel(TimestampedModel, MappedAsDataclass):
     __abstract__ = True
 
     id: MappedColumn[UUID] = mapped_column(

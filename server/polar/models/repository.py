@@ -13,7 +13,13 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    MappedAsDataclass,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 from polar.config import settings
 from polar.enums import Platforms
@@ -22,7 +28,7 @@ from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 from polar.models.organization import Organization
 
 
-class Repository(RecordModel):
+class Repository(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "repositories"
     __table_args__ = (
         UniqueConstraint("external_id"),

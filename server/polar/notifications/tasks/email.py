@@ -37,6 +37,9 @@ async def notifications_send(
             # TODO: support sending to "notif.email_addr"
 
             # Get users to send to
+            if not notif.user_id:
+                return
+
             user = await user_service.get(session, notif.user_id)
             if not user:
                 log.warning("notifications.send.user_not_found", user_id=notif.user_id)

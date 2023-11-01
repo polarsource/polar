@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import (
     Mapped,
+    MappedAsDataclass,
     declared_attr,
     mapped_column,
     relationship,
@@ -28,7 +29,7 @@ class SubscriptionStatus(StrEnum):
     unpaid = "unpaid"
 
 
-class Subscription(RecordModel):
+class Subscription(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "subscriptions"
 
     stripe_subscription_id: Mapped[str] = mapped_column(

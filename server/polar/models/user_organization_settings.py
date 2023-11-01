@@ -1,13 +1,13 @@
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, MappedAsDataclass, mapped_column
 
 from polar.kit.db.models import TimestampedModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 
-class UserOrganizationSettings(TimestampedModel):
+class UserOrganizationSettings(TimestampedModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "user_organization_settings"
 
     user_id: Mapped[UUID] = mapped_column(

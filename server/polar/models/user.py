@@ -4,7 +4,13 @@ from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, Boolean, Column, ForeignKey, Integer, String, func
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    MappedAsDataclass,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 from sqlalchemy.schema import Index, UniqueConstraint
 
 from polar.enums import Platforms
@@ -12,7 +18,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 
 
-class OAuthAccount(RecordModel):
+class OAuthAccount(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "oauth_accounts"
     __table_args__ = (
         UniqueConstraint(
@@ -35,10 +41,12 @@ class OAuthAccount(RecordModel):
         nullable=False,
     )
 
-    user: Mapped["User"] = relationship("User", back_populates="oauth_accounts")
+    @declared_attr
+    def user(cls) -> Mapped["User"]:
+        return relationship("User", back_populates="oauth_accounts")
 
 
-class User(RecordModel):
+class User(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "users"
     __table_args__ = (
         Index(

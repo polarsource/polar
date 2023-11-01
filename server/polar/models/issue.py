@@ -22,6 +22,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (
     Mapped,
+    MappedAsDataclass,
     MappedColumn,
     declared_attr,
     mapped_column,
@@ -41,7 +42,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from polar.models.repository import Repository
 
 
-class IssueFields:
+class IssueFields(MappedAsDataclass, kw_only=True):
     class State(str, enum.Enum):
         OPEN = "open"
         CLOSED = "closed"
@@ -49,27 +50,23 @@ class IssueFields:
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
     external_id: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    @declared_attr
-    def organization_id(cls) -> MappedColumn[UUID]:
-        return mapped_column(
-            PostgresUUID,
-            ForeignKey("organizations.id"),
-            nullable=False,
-            index=True,
-        )
+    organization_id: MappedColumn[UUID] = mapped_column(
+        PostgresUUID,
+        ForeignKey("organizations.id"),
+        nullable=False,
+        index=True,
+    )
 
     @declared_attr
     def organization(cls) -> "Mapped[Organization]":
         return relationship("Organization", lazy="raise")
 
-    @declared_attr
-    def repository_id(cls) -> "MappedColumn[UUID]":
-        return mapped_column(
-            PostgresUUID,
-            ForeignKey("repositories.id"),
-            nullable=False,
-            index=True,
-        )
+    repository_id: "MappedColumn[UUID]" = mapped_column(
+        PostgresUUID,
+        ForeignKey("repositories.id"),
+        nullable=False,
+        index=True,
+    )
 
     @declared_attr
     def repository(cls) -> "Mapped[Repository]":
@@ -78,35 +75,55 @@ class IssueFields:
     number: Mapped[int] = mapped_column(Integer, nullable=False)
 
     title: Mapped[str] = mapped_column(String, nullable=False)
-    body: Mapped[str | None] = mapped_column(Text, nullable=True)
-    comments: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    body: Mapped[str | None] = mapped_column(Text, nullable=True, default=True)
+    comments: Mapped[int | None] = mapped_column(Integer, nullable=True, default=True)
 
-    author: Mapped[JSONAny] = mapped_column(JSONB(none_as_null=True), nullable=True)
-    author_association: Mapped[str | None] = mapped_column(String, nullable=True)
-    labels: Mapped[JSONAny] = mapped_column(JSONB(none_as_null=True), nullable=True)
-    assignee: Mapped[JSONAny] = mapped_column(JSONB(none_as_null=True), nullable=True)
-    assignees: Mapped[JSONAny] = mapped_column(JSONB(none_as_null=True), nullable=True)
-    milestone: Mapped[JSONAny] = mapped_column(JSONB(none_as_null=True), nullable=True)
-    closed_by: Mapped[JSONAny] = mapped_column(JSONB(none_as_null=True), nullable=True)
-    reactions: Mapped[JSONAny] = mapped_column(JSONB(none_as_null=True), nullable=True)
+    author: Mapped[JSONAny] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=True
+    )
+    author_association: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=True
+    )
+    labels: Mapped[JSONAny] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=True
+    )
+    assignee: Mapped[JSONAny] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=True
+    )
+    assignees: Mapped[JSONAny] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=True
+    )
+    milestone: Mapped[JSONAny] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=True
+    )
+    closed_by: Mapped[JSONAny] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=True
+    )
+    reactions: Mapped[JSONAny] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=True
+    )
 
     state: Mapped[str] = mapped_column(StringEnum(State), nullable=False)
-    state_reason: Mapped[str | None] = mapped_column(String, nullable=True)
+    state_reason: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=True
+    )
 
     issue_closed_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
+        TIMESTAMP(timezone=True), nullable=True, default=True
     )
     issue_created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )
     issue_modified_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
+        TIMESTAMP(timezone=True), nullable=True, default=True
     )
 
-    title_tsv: Mapped[TSVectorType] = mapped_column(
-        TSVectorType("title", regconfig="simple"),
-        sa.Computed("to_tsvector('simple', \"title\")", persisted=True),
-    )
+    @declared_attr
+    def title_tsv(cls) -> Mapped[TSVectorType]:
+        return mapped_column(
+            TSVectorType("title", regconfig="simple"),
+            sa.Computed("to_tsvector('simple', \"title\")", persisted=True),
+        )
 
 
 issue_fields_mutables = {
@@ -128,7 +145,7 @@ issue_fields_mutables = {
 }
 
 
-class Issue(IssueFields, RecordModel):
+class Issue(IssueFields, RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "issues"
     __table_args__ = (
         UniqueConstraint("external_id"),
@@ -174,10 +191,12 @@ class Issue(IssueFields, RecordModel):
         "confirmed_solved_by",
     }
 
-    external_lookup_key: Mapped[str] = mapped_column(String, nullable=True, index=True)
+    external_lookup_key: Mapped[str | None] = mapped_column(
+        String, nullable=True, index=True, default=None
+    )
 
     pledge_badge_embedded_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
     pledge_badge_ever_embedded: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
@@ -193,14 +212,18 @@ class Issue(IssueFields, RecordModel):
         default=None,
     )
 
-    github_issue_etag: Mapped[str | None] = mapped_column(String, nullable=True)
+    github_issue_etag: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
     github_issue_fetched_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
-    github_timeline_etag: Mapped[str | None] = mapped_column(String, nullable=True)
+    github_timeline_etag: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
     github_timeline_fetched_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
     @declared_attr
@@ -245,19 +268,20 @@ class Issue(IssueFields, RecordModel):
     )
 
     confirmed_solved_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
     confirmed_solved_by: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("users.id"),
         nullable=True,
+        default=None,
     )
 
     # a number between 0 and 100
     # share of rewards that will go to contributors of this issue
     upfront_split_to_contributors: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
+        Integer, nullable=True, default=None
     )
 
     @classmethod

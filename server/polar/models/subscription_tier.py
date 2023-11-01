@@ -4,7 +4,13 @@ from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    MappedAsDataclass,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -24,7 +30,7 @@ class SubscriptionTierType(StrEnum):
     business = "business"
 
 
-class SubscriptionTier(RecordModel):
+class SubscriptionTier(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "subscription_tiers"
 
     type: Mapped[SubscriptionTierType] = mapped_column(

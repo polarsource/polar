@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import TIMESTAMP, ForeignKey, String
 from sqlalchemy.orm import (
     Mapped,
+    MappedAsDataclass,
     declared_attr,
     mapped_column,
     relationship,
@@ -14,7 +15,7 @@ from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.user import User
 
 
-class PersonalAccessToken(RecordModel):
+class PersonalAccessToken(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "personal_access_tokens"
 
     user_id: Mapped[UUID] = mapped_column(

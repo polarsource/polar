@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.orm import (
     Mapped,
+    MappedAsDataclass,
     declared_attr,
     mapped_column,
     relationship,
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
     from polar.models import SubscriptionBenefit
 
 
-class SubscriptionTierBenefit(RecordModel):
+class SubscriptionTierBenefit(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "subscription_tier_benefits"
     __table_args__ = (UniqueConstraint("subscription_tier_id", "order"),)
 

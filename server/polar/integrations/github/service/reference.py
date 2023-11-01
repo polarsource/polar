@@ -449,6 +449,9 @@ class GitHubIssueReferencesService:
             is_merged=True if i.pull_request.merged_at else False,
         )
 
+        if not i.pull_request.html_url:
+            return None
+
         ref = IssueReference(
             issue_id=issue.id,
             external_id=i.pull_request.html_url,

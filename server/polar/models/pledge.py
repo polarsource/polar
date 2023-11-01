@@ -2,7 +2,13 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, String
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    MappedAsDataclass,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
@@ -20,7 +26,7 @@ class PledgeWithoutPledgerError(PolarError):
         super().__init__(message)
 
 
-class Pledge(RecordModel):
+class Pledge(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "pledges"
 
     issue_id: Mapped[UUID] = mapped_column(
@@ -141,7 +147,7 @@ class Pledge(RecordModel):
     def by_organization(cls) -> Mapped[Organization]:
         return relationship(
             Organization,
-            primaryjoin=Organization.id == cls.by_organization_id,
+            primaryjoin=Organization.id == "Pledge.by_organization_id",
             lazy="raise",
         )
 
@@ -149,30 +155,34 @@ class Pledge(RecordModel):
     def on_behalf_of_organization(cls) -> Mapped[Organization]:
         return relationship(
             Organization,
-            primaryjoin=Organization.id == cls.on_behalf_of_organization_id,
+            primaryjoin=Organization.id == "Pledge.on_behalf_of_organization_id",
             lazy="raise",
         )
 
     @declared_attr
     def to_repository(cls) -> Mapped[Repository]:
         return relationship(
-            Repository, primaryjoin=Repository.id == cls.repository_id, lazy="raise"
+            Repository,
+            primaryjoin=Repository.id == "Pledge.repository_id",
+            lazy="raise",
         )
 
     @declared_attr
     def to_organization(cls) -> Mapped[Organization]:
         return relationship(
             Organization,
-            primaryjoin=Organization.id == cls.organization_id,
+            primaryjoin=Organization.id == "Pledge.organization_id",
             lazy="raise",
         )
 
     @declared_attr
     def created_by_user(cls) -> Mapped[User | None]:
         return relationship(
-            User, primaryjoin=User.id == cls.created_by_user_id, lazy="raise"
+            User, primaryjoin=User.id == "Pledge.created_by_user_id", lazy="raise"
         )
 
     @declared_attr
     def issue(cls) -> Mapped[Issue]:
-        return relationship(Issue, primaryjoin=Issue.id == cls.issue_id, lazy="raise")
+        return relationship(
+            Issue, primaryjoin=Issue.id == "Pledge.issue_id", lazy="raise"
+        )

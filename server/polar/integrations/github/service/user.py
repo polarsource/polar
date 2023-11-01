@@ -119,25 +119,26 @@ class GithubUserService(UserService):
     ) -> User:
         profile = self.generate_profile_json(github_user=github_user)
         email, email_verified = github_email
-        new_user = User(
+        new_user = await User(
             username=github_user.login,
             email=email,
             email_verified=email_verified,
             avatar_url=github_user.avatar_url,
             profile=profile,
-            oauth_accounts=[
-                OAuthAccount(
-                    platform=Platforms.github,
-                    access_token=tokens.access_token,
-                    expires_at=tokens.expires_at,
-                    refresh_token=tokens.refresh_token,
-                    account_id=str(github_user.id),
-                    account_email=email,
-                )
-            ],
-        )
-        session.add(new_user)
+        ).save(session, autocommit=False)
+
+        await OAuthAccount(
+            platform=Platforms.github,
+            access_token=tokens.access_token,
+            expires_at=tokens.expires_at,
+            refresh_token=tokens.refresh_token,
+            account_id=str(github_user.id),
+            account_email=email,
+            user_id=new_user.id,
+        ).save(session, autocommit=False)
+
         await session.commit()
+
         log.info("github.user.signup", user_id=new_user.id, username=github_user.login)
         return new_user
 
@@ -167,7 +168,10 @@ class GithubUserService(UserService):
                 platform=Platforms.github,
                 account_id=str(github_user.id),
                 account_email=email,
-                user=user,
+                user_id=user.id,
+                access_token=tokens.access_token,
+                expires_at=tokens.expires_at,
+                refresh_token=tokens.refresh_token,
             )
 
         oauth_account.access_token = tokens.access_token
@@ -283,6 +287,10 @@ class GithubUserService(UserService):
                 platform=Platforms.github,
                 account_id=account_id,
                 account_email=email,
+                access_token=tokens.access_token,
+                expires_at=tokens.expires_at,
+                refresh_token=tokens.refresh_token,
+                user_id=user.id,
             )
             user.oauth_accounts.append(oauth_account)
 

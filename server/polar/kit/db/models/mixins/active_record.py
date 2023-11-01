@@ -18,21 +18,6 @@ class ActiveRecordMixin:
     __table__: ClassVar[FromClause]
 
     @classmethod
-    async def find(cls, session: AsyncSession, id: Any, key: str = "id") -> Self | None:
-        params = {key: id}
-        return await cls.find_by(session, **params)
-
-    @classmethod
-    async def find_by(
-        cls,
-        session: AsyncSession,
-        **params: Any,
-    ) -> Self | None:
-        query = sql.select(cls).filter_by(**params)
-        res = await session.execute(query)
-        return res.scalars().unique().one_or_none()
-
-    @classmethod
     async def create(
         cls,
         session: AsyncSession,

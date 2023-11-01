@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.enums import Platforms
 from polar.integrations.github import tasks
 from polar.integrations.github.tasks import webhook as webhook_tasks
 from polar.models.organization import Organization
@@ -14,7 +15,9 @@ from polar.models.user_organization import UserOrganization
 from polar.notifications.service import (
     notifications,
 )
+from polar.organization.service import organization
 from polar.postgres import AsyncSession
+from polar.user_organization.service import user_organization
 from polar.worker import JobContext, PolarWorkerContext
 
 
@@ -92,13 +95,13 @@ async def test_installation_no_notifications(
     )
 
     # Find org
-    org = await Organization.find_by(
-        session=session, name=cassette["installation"]["account"]["login"]
+    org = await organization.get_by_name(
+        session, Platforms.github, cassette["installation"]["account"]["login"]
     )
     assert org is not None
 
-    member = await UserOrganization.find_by(
-        session=session,
+    member = await user_organization.get_by_user_and_org(
+        session,
         user_id=user.id,
         organization_id=org.id,
     )

@@ -104,6 +104,13 @@ class PledgeService(ResourceServiceReader[Pledge]):
         res = await session.execute(statement)
         return res.scalars().unique().one_or_none()
 
+    async def get_by_payment_id(
+        self, session: AsyncSession, payment_id: str
+    ) -> Pledge | None:
+        statement = sql.select(Pledge).filter(Pledge.payment_id == payment_id)
+        res = await session.execute(statement)
+        return res.scalars().unique().one_or_none()
+
     async def list_by(
         self,
         session: AsyncSession,
@@ -911,14 +918,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
                     issue_id=pledge.issue_id, pledge_id=pledge.id, payload=n
                 ),
             )
-
-    async def get_by_payment_id(
-        self, session: AsyncSession, payment_id: str
-    ) -> Pledge | None:
-        return await Pledge.find_by(
-            session=session,
-            payment_id=payment_id,
-        )
 
     async def set_issue_pledged_amount_sum(
         self,

@@ -4,6 +4,7 @@ from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository
+from polar.pledge.service import pledge
 from polar.postgres import AsyncSession
 
 
@@ -36,7 +37,7 @@ async def test_pledge(
     await session.commit()
     await session.refresh(created)
 
-    got = await Pledge.find(session, created.id)
+    got = await pledge.get(session, created.id)
     assert got is not None
     assert got.email == email
     assert got.amount == int(test_amount)

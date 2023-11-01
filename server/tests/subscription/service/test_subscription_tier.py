@@ -438,10 +438,13 @@ class TestUserCreate:
                 session, authz, create_schema, user
             )
 
-        subscription_tier = await SubscriptionTier.find_by(
-            session, name="Subscription Tier"
+        (tiers, _) = await subscription_tier_service.search(
+            session,
+            organization=organization,
+            auth_subject=user,
+            pagination=PaginationParams(page=1, limit=10),
         )
-        assert subscription_tier is None
+        assert len(tiers) == 0
 
     async def test_valid_highlighted(
         self,

@@ -73,10 +73,11 @@ class IssueReference(TimestampedModel):
     )
 
     # Either pull_request_id or external_source will be set
-    pull_request_id: Mapped[UUID] = mapped_column(
+    pull_request_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("pull_requests.id"),
         nullable=True,
+        default=None,
     )
 
     @declared_attr

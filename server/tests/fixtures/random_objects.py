@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime
 
 import pytest_asyncio
+from respx import add
 
 from polar.enums import Platforms
 from polar.integrations.github.service import (
@@ -110,8 +111,7 @@ async def issue(
 async def create_issue(
     session: AsyncSession, organization: Organization, repository: Repository
 ) -> Issue:
-    issue = await Issue.create(
-        session=session,
+    issue = await Issue(
         id=uuid.uuid4(),
         organization_id=organization.id,
         repository_id=repository.id,
@@ -122,6 +122,11 @@ async def create_issue(
         state="open",
         issue_created_at=datetime.now(),
         issue_modified_at=datetime.now(),
+        external_lookup_key=str(uuid.uuid4()),  # not realistic
+        issue_has_in_progress_relationship=False,
+        issue_has_pull_request_relationship=False,
+    ).save(
+        session=session,
     )
 
     await session.commit()
@@ -138,13 +143,12 @@ async def user(
 async def create_user(
     session: AsyncSession,
 ) -> User:
-    user = await User.create(
-        session=session,
+    user = await User(
         id=uuid.uuid4(),
         username=rstr("testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
-    )
+    ).save(session=session)
 
     await session.commit()
     return user
@@ -154,12 +158,13 @@ async def create_user(
 async def user_second(
     session: AsyncSession,
 ) -> User:
-    user = await User.create(
-        session=session,
+    user = await User(
         id=uuid.uuid4(),
         username=rstr("testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
+    ).save(
+        session=session,
     )
 
     await session.commit()
@@ -178,8 +183,7 @@ async def create_pledge(
 ) -> Pledge:
     amount = secrets.randbelow(100000) + 1
     fee = round(amount * 0.05)
-    pledge = await Pledge.create(
-        session=session,
+    pledge = await Pledge(
         id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=issue.id,
@@ -189,7 +193,7 @@ async def create_pledge(
         fee=fee,
         state=state,
         type=type,
-    )
+    ).save(session=session)
 
     await session.commit()
     return pledge
@@ -219,10 +223,8 @@ async def pledge_by_user(
 
     amount = secrets.randbelow(100000) + 1
     fee = round(amount * 0.05)
-    pledge = await Pledge.create(
-        session=session,
+    pledge = await Pledge(
         id=uuid.uuid4(),
-        # by_organization_id=pledging_organization.id,
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
@@ -231,6 +233,8 @@ async def pledge_by_user(
         fee=fee,
         state=PledgeState.created,
         type=PledgeType.pay_upfront,
+    ).save(
+        session=session,
     )
 
     await session.commit()
@@ -243,8 +247,7 @@ async def pull_request(
     organization: Organization,
     repository: Repository,
 ) -> PullRequest:
-    pr = await PullRequest.create(
-        session=session,
+    pr = await PullRequest(
         id=uuid.uuid4(),
         repository_id=repository.id,
         organization_id=organization.id,
@@ -261,6 +264,21 @@ async def pull_request(
         state="open",
         issue_created_at=datetime.now(),
         issue_modified_at=datetime.now(),
+        commits=1,
+        additions=2,
+        deletions=3,
+        changed_files=4,
+        is_draft=False,
+        is_rebaseable=True,
+        is_mergeable=True,
+        is_merged=False,
+        review_comments=5,
+        maintainer_can_modify=True,
+        merged_at=None,
+        merge_commit_sha=None,
+        body="x",
+    ).save(
+        session=session,
     )
 
     await session.commit()
@@ -273,10 +291,11 @@ async def user_organization(
     organization: Organization,
     user: User,
 ) -> UserOrganization:
-    a = await UserOrganization.create(
-        session=session,
+    a = await UserOrganization(
         user_id=user.id,
         organization_id=organization.id,
+    ).save(
+        session=session,
     )
 
     await session.commit()
@@ -289,8 +308,12 @@ async def user_organization_admin(
     organization: Organization,
     user: User,
 ) -> UserOrganization:
-    a = await UserOrganization.create(
-        session=session, user_id=user.id, organization_id=organization.id, is_admin=True
+    a = await UserOrganization(
+        user_id=user.id,
+        organization_id=organization.id,
+        is_admin=True,
+    ).save(
+        session=session,
     )
 
     await session.commit()
@@ -303,10 +326,11 @@ async def user_organization_second(
     organization: Organization,
     user_second: User,
 ) -> UserOrganization:
-    a = await UserOrganization.create(
-        session=session,
+    a = await UserOrganization(
         user_id=user_second.id,
         organization_id=organization.id,
+    ).save(
+        session=session,
     )
 
     await session.commit()

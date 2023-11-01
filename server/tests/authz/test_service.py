@@ -447,23 +447,21 @@ async def test_can_read_issue_reward(
             repo = await create_repository(session, org)
             issue = await create_issue(session, org, repo)
 
-            reward = await IssueReward.create(
-                session,
+            reward = await IssueReward(
                 issue_id=issue.id,
                 share_thousands=700,
-            )
+            ).save(session)
 
             if tc.is_reward_receiver and isinstance(tc.subject, User):
                 reward.user_id = tc.subject.id
                 await reward.save(session)
 
             if tc.is_pledge_issue_member and isinstance(tc.subject, User):
-                await UserOrganization.create(
-                    session=session,
+                await UserOrganization(
                     user_id=tc.subject.id,
                     organization_id=org.id,
                     is_admin=tc.is_pledge_issue_member_admin,
-                )
+                ).save(session)
 
             assert (
                 await authz.can(
@@ -539,27 +537,25 @@ async def test_can_read_pledge(
             repo = await create_repository(session, org)
             issue = await create_issue(session, org, repo)
 
-            pledge = await Pledge.create(
-                session,
+            pledge = await Pledge(
                 issue_id=issue.id,
                 amount=12345,
                 fee=0,
                 repository_id=repo.id,
                 organization_id=org.id,
                 state=PledgeState.created,
-            )
+            ).save(session)
 
             if tc.is_pledging_user and isinstance(tc.subject, User):
                 pledge.by_user_id = tc.subject.id
                 await pledge.save(session)
 
             if tc.receiving_org_member and isinstance(tc.subject, User):
-                await UserOrganization.create(
-                    session=session,
+                await UserOrganization(
                     user_id=tc.subject.id,
                     organization_id=org.id,
                     is_admin=tc.receiving_org_member_admin,
-                )
+                ).save(session)
 
             if tc.is_pledging_org_member and isinstance(tc.subject, User):
                 pledging_org = await create_organization(session)
@@ -567,12 +563,11 @@ async def test_can_read_pledge(
                 pledge.by_organization_id = pledging_org.id
                 await pledge.save(session)
 
-                await UserOrganization.create(
-                    session=session,
+                await UserOrganization(
                     user_id=tc.subject.id,
                     organization_id=pledging_org.id,
                     is_admin=tc.is_pledging_org_member_admin,
-                )
+                ).save(session)
 
             assert (
                 await authz.can(
@@ -648,27 +643,25 @@ async def test_can_write_pledge(
             repo = await create_repository(session, org)
             issue = await create_issue(session, org, repo)
 
-            pledge = await Pledge.create(
-                session,
+            pledge = await Pledge(
                 issue_id=issue.id,
                 amount=12345,
                 fee=0,
                 repository_id=repo.id,
                 organization_id=org.id,
                 state=PledgeState.created,
-            )
+            ).save(session)
 
             if tc.is_pledging_user and isinstance(tc.subject, User):
                 pledge.by_user_id = tc.subject.id
                 await pledge.save(session)
 
             if tc.receiving_org_member and isinstance(tc.subject, User):
-                await UserOrganization.create(
-                    session=session,
+                await UserOrganization(
                     user_id=tc.subject.id,
                     organization_id=org.id,
                     is_admin=tc.receiving_org_member_admin,
-                )
+                ).save(session)
 
             if tc.is_pledging_org_member and isinstance(tc.subject, User):
                 pledging_org = await create_organization(session)
@@ -676,12 +669,11 @@ async def test_can_write_pledge(
                 pledge.by_organization_id = pledging_org.id
                 await pledge.save(session)
 
-                await UserOrganization.create(
-                    session=session,
+                await UserOrganization(
                     user_id=tc.subject.id,
                     organization_id=pledging_org.id,
                     is_admin=tc.is_pledging_org_member_admin,
-                )
+                ).save(session)
 
             assert (
                 await authz.can(

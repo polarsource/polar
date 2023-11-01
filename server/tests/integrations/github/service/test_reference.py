@@ -30,62 +30,36 @@ async def test_parse_repository_issues() -> None:
 @pytest.mark.asyncio
 async def test_parse_issue_timeline(
     session: AsyncSession,
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+    pull_request: PullRequest,
 ) -> None:
     raw = read_cassette("github/references/issue_timeline.json")
     payload = parse_obj_as(list[TimelineEventType], raw)
 
-    # Create Org/Repo/Issue
-    org = Organization(
-        id=uuid.uuid4(),
-        name="zegloforko",
-        platform=Platforms.github,
-        created_at=utils.utc_now(),
-        external_id=456,
-        is_personal=False,
-        installation_id=123,
-        installation_created_at=utils.utc_now(),
-        avatar_url="http://example.com/image.jpg",
-    )
-    await org.save(session)
+    # Create Org/Repo/Issue (setup to match names and ids in issue_timeline.json)
+    organization.name = "zegloforko"
+    organization.external_id = 456
+    await organization.save(session)
 
-    repo = Repository(
-        id=uuid.uuid4(),
-        name="polarforkotest",
-        external_id=617059064,
-        platform=Platforms.github,
-        created_at=utils.utc_now(),
-        is_private=False,
-        organization_id=org.id,
-    )
+    repository.name = "polarforkotest"
+    repository.external_id = 617059064
+    await repository.save(session)
 
-    await repo.save(session)
-
-    issue = Issue(
-        id=uuid.uuid4(),
-    )
-
-    existing_pr = PullRequest(
-        id=uuid.uuid4(),
-        repository_id=repo.id,
-        organization_id=org.id,
-        number=1,
-        platform=Platforms.github,
-        external_id=1234,
-        title="a pr",
-        state="open",
-        issue_created_at=utils.utc_now(),
-    )
-
-    await existing_pr.save(session)
+    pull_request.number = 1
+    pull_request.external_id = 1234
+    await pull_request.save(session)
     await session.commit()
+    await session.flush()
 
     client = github.get_client("fake")
 
     parsed = [
         await github_reference.parse_issue_timeline_event(
             session,
-            org,
-            repo,
+            organization,
+            repository,
             issue,
             event,
             client=client,
@@ -107,8 +81,8 @@ async def test_parse_issue_timeline(
     assert parsed[0].external_source is not None
     assert parsed[0].reference_type == ReferenceType.EXTERNAL_GITHUB_COMMIT
 
-    assert str(parsed[1].pull_request_id) == str(existing_pr.id)
-    assert parsed[1].external_id == str(existing_pr.id)
+    assert str(parsed[1].pull_request_id) == str(pull_request.id)
+    assert parsed[1].external_id == str(pull_request.id)
     assert parsed[1].reference_type == ReferenceType.PULL_REQUEST
 
     assert parsed[2].external_id == "53ea67e6b5ece5d3dbe8ec053ba0ffa57e693b61"

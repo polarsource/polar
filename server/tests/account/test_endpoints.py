@@ -30,11 +30,10 @@ async def open_collective_account(
     session: AsyncSession,
     user: User,
     organization: Organization,
-    # user_organization: UserOrganization,
 ) -> Account:
     account = Account(
         account_type=AccountType.open_collective,
-        organization=organization,
+        organization_id=organization.id,
         admin_id=user.id,
         open_collective_slug="polar",
         country="US",

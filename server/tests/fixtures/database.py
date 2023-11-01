@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator
 from uuid import UUID
 
 import pytest_asyncio
-from sqlalchemy import Integer, String
+from sqlalchemy import Integer, String, null
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import text
 
@@ -17,10 +17,10 @@ class TestModel(Model):
     __test__ = False  # This is a base class, not a test
 
     __tablename__ = "test_model"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=None)
     uuid: Mapped[UUID] = mapped_column(PostgresUUID, default=generate_uuid)
-    int_column: Mapped[int | None] = mapped_column(Integer)
-    str_column: Mapped[str | None] = mapped_column(String)
+    int_column: Mapped[int | None] = mapped_column(Integer, default=None, nullable=True)
+    str_column: Mapped[str | None] = mapped_column(String, default=None, nullable=True)
 
 
 @pytest_asyncio.fixture(scope="session")

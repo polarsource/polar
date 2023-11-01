@@ -29,9 +29,7 @@ async def notifications_send(
 ) -> None:
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:
-            notif: Notification | None = await Notification.find(
-                session, notification_id
-            )
+            notif = await notifications.get(session, notification_id)
             if not notif:
                 log.warning("notifications.send.not_found")
                 return

@@ -42,6 +42,12 @@ class PartialNotification(BaseModel):
 
 
 class NotificationsService:
+    async def get(self, session: AsyncSession, id: UUID) -> Notification | None:
+        stmt = sql.select(Notification).where(Notification.id == id)
+
+        res = await session.execute(stmt)
+        return res.scalars().unique().one_or_none()
+
     async def get_for_user(
         self, session: AsyncSession, user_id: UUID
     ) -> Sequence[Notification]:

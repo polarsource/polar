@@ -19,6 +19,7 @@ from polar.organization.schemas import OrganizationCreate
 from polar.postgres import AsyncEngineLocal, AsyncSession, sql
 from polar.repository.schemas import RepositoryCreate
 from polar.user.service import user as user_service
+from polar.user_organization.service import user_organization
 from polar.worker import enqueue_job
 
 cli = typer.Typer()
@@ -219,9 +220,10 @@ async def add_external_repo(
             print("user not found")
             return
 
-        if not await UserOrganization.find_by(
-            session, organization_id=organization.id, user_id=user.id
-        ):
+        uc = await user_organization.get_by_user_and_org(
+            session, user_id=user.id, organization_id=organization.id
+        )
+        if not uc:
             uc = await UserOrganization.create(
                 session=session,
                 organization_id=organization.id,

@@ -5,6 +5,7 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.config import settings
+from polar.kit.utils import generate_uuid
 from polar.magic_link.service import InvalidMagicLink
 from polar.magic_link.service import magic_link as magic_link_service
 from polar.models import MagicLink, User
@@ -15,7 +16,16 @@ async def test_request(client: AsyncClient, mocker: MockerFixture) -> None:
     magic_link_service_request_mock = mocker.patch.object(
         magic_link_service,
         "request",
-        new=AsyncMock(return_value=(MagicLink(), "TOKEN")),
+        new=AsyncMock(
+            return_value=(
+                MagicLink(
+                    token_hash="x",
+                    user_email="x",
+                    user_id=generate_uuid(),
+                ),
+                "TOKEN",
+            )
+        ),
     )
     magic_link_service_send_mock = mocker.patch.object(
         magic_link_service, "send", new=AsyncMock()

@@ -28,8 +28,7 @@ async def test_list_by_repository_type_and_status_sorting(
     organization: Organization,
 ) -> None:
     # create testdata
-    issue_1 = await Issue.create(
-        session=session,
+    issue_1 = await Issue(
         id=uuid.uuid4(),
         organization_id=organization.id,
         repository_id=repository.id,
@@ -40,10 +39,11 @@ async def test_list_by_repository_type_and_status_sorting(
         state="open",
         issue_created_at=datetime(2023, 1, 10),
         issue_modified_at=datetime(2023, 1, 10),
-    )
+        issue_has_in_progress_relationship=False,
+        issue_has_pull_request_relationship=False,
+    ).save(session)
 
-    issue_2 = await Issue.create(
-        session=session,
+    issue_2 = await Issue(
         id=uuid.uuid4(),
         organization_id=organization.id,
         repository_id=repository.id,
@@ -56,10 +56,11 @@ async def test_list_by_repository_type_and_status_sorting(
         issue_modified_at=datetime(2023, 1, 11),
         positive_reactions_count=3,
         total_engagement_count=3,
-    )
+        issue_has_in_progress_relationship=False,
+        issue_has_pull_request_relationship=False,
+    ).save(session)
 
-    issue_3 = await Issue.create(
-        session=session,
+    issue_3 = await Issue(
         id=uuid.uuid4(),
         organization_id=organization.id,
         repository_id=repository.id,
@@ -72,10 +73,11 @@ async def test_list_by_repository_type_and_status_sorting(
         issue_modified_at=datetime(2023, 1, 15),
         positive_reactions_count=2,
         total_engagement_count=10,
-    )
+        issue_has_in_progress_relationship=False,
+        issue_has_pull_request_relationship=False,
+    ).save(session)
 
-    issue_4 = await Issue.create(
-        session=session,
+    issue_4 = await Issue(
         id=uuid.uuid4(),
         organization_id=organization.id,
         repository_id=repository.id,
@@ -88,7 +90,9 @@ async def test_list_by_repository_type_and_status_sorting(
         issue_modified_at=datetime(2023, 2, 1),
         positive_reactions_count=1,
         pledged_amount_sum=5000,
-    )
+        issue_has_in_progress_relationship=False,
+        issue_has_pull_request_relationship=False,
+    ).save(session)
 
     (issues, count) = await issue_service.list_by_repository_type_and_status(
         session,
@@ -181,8 +185,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
     await third_party_issue_3.save(session)
 
     # Create pledge
-    pledge = await Pledge.create(
-        session=session,
+    pledge = await Pledge(
         id=uuid.uuid4(),
         by_organization_id=organization.id,
         issue_id=third_party_issue.id,
@@ -191,11 +194,10 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         amount=2000,
         fee=200,
         state=PledgeState.created,
-    )
+    ).save(session)
 
     # Create other pledge to this issue (not by the org)
-    pledge_other = await Pledge.create(
-        session=session,
+    pledge_other = await Pledge(
         id=uuid.uuid4(),
         issue_id=third_party_issue.id,
         repository_id=third_party_repo.id,
@@ -203,11 +205,10 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         amount=2100,
         fee=200,
         state=PledgeState.created,
-    )
+    ).save(session)
 
     # pledges to issue 3
-    pledge_issue_3_user = await Pledge.create(
-        session=session,
+    pledge_issue_3_user = await Pledge(
         id=uuid.uuid4(),
         issue_id=third_party_issue_3.id,
         repository_id=third_party_repo.id,
@@ -216,9 +217,9 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         fee=200,
         state=PledgeState.created,
         by_user_id=user.id,
-    )
-    pledge_issue_3_org = await Pledge.create(
-        session=session,
+    ).save(session)
+
+    pledge_issue_3_org = await Pledge(
         id=uuid.uuid4(),
         issue_id=third_party_issue_3.id,
         repository_id=third_party_repo.id,
@@ -227,7 +228,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         fee=200,
         state=PledgeState.created,
         by_organization_id=organization.id,
-    )
+    ).save(session)
 
     # TODO: test pledge statuses filter
 
@@ -288,8 +289,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge_state(
         await third_party_issue.save(session)
 
         # Create pledge
-        pledge = await Pledge.create(
-            session=session,
+        pledge = await Pledge(
             id=uuid.uuid4(),
             by_organization_id=organization.id,
             issue_id=third_party_issue.id,
@@ -298,7 +298,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge_state(
             amount=2000,
             fee=200,
             state=state,
-        )
+        ).save(session)
 
     (issues, count) = await issue_service.list_by_repository_type_and_status(
         session,

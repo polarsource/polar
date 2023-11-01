@@ -5,7 +5,7 @@ from datetime import timedelta
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.enums import AccountType
+from polar.enums import AccountType, Platforms
 from polar.issue.schemas import ConfirmIssueSplit
 from polar.kit.utils import utc_now
 from polar.models.account import Account
@@ -114,18 +114,16 @@ async def test_list_rewards_to_user(
     user.username = "test_gh_user"
     await user.save(session)
 
-    oauth = await OAuthAccount.create(
-        session=session,
-        platform="github",
+    oauth = await OAuthAccount(
+        platform=Platforms.github,
         user_id=user.id,
         access_token="access_token",
         account_id="1337",
         account_email="test_gh_user@polar.sh",
-    )
+    ).save(session)
 
     # create two pledges
-    pledge_1 = await Pledge.create(
-        session=session,
+    pledge_1 = await Pledge(
         id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=issue.id,
@@ -136,10 +134,9 @@ async def test_list_rewards_to_user(
         state=PledgeState.created,
         scheduled_payout_at=utc_now() - timedelta(days=2),
         payment_id="test_transfer_payment_id",
-    )
+    ).save(session)
 
-    pledge_2 = await Pledge.create(
-        session=session,
+    pledge_2 = await Pledge(
         id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=issue.id,
@@ -150,10 +147,9 @@ async def test_list_rewards_to_user(
         state=PledgeState.created,
         scheduled_payout_at=utc_now() - timedelta(days=2),
         payment_id="test_transfer_payment_id",
-    )
+    ).save(session)
 
-    account = await Account.create(
-        session=session,
+    account = await Account(
         user_id=user.id,
         account_type=AccountType.stripe,
         admin_id=user.id,
@@ -162,7 +158,10 @@ async def test_list_rewards_to_user(
         is_charges_enabled=True,
         is_payouts_enabled=True,
         business_type="individual",
-    )
+        currency="SEK",
+        country="SE",
+    ).save(session)
+
     await session.flush()
     await organization.save(session)
 

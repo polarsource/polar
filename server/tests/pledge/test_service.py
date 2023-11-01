@@ -12,7 +12,7 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.config import settings
-from polar.enums import AccountType
+from polar.enums import AccountType, Platforms
 from polar.eventstream.service import send
 from polar.exceptions import NotPermitted
 from polar.integrations.github.service.issue import github_issue as github_issue_service
@@ -94,8 +94,7 @@ async def test_mark_pending_by_issue_id(
 
     # create multiple pledges
     pledges: list[Pledge] = [
-        await Pledge.create(
-            session=session,
+        await Pledge(
             id=uuid.uuid4(),
             by_organization_id=pledging_organization.id,
             issue_id=issue.id,
@@ -105,6 +104,8 @@ async def test_mark_pending_by_issue_id(
             fee=fee,
             state=PledgeState.created,
             type=PledgeType.pay_upfront,
+        ).save(
+            session=session,
         )
         for x in range(4)
     ]
@@ -118,8 +119,7 @@ async def test_mark_pending_by_issue_id(
     await pledges[1].save(session)
 
     # Create a pay on completion pledge
-    await Pledge.create(
-        session=session,
+    await Pledge(
         id=uuid.uuid4(),
         by_user_id=user.id,
         issue_id=issue.id,
@@ -129,6 +129,8 @@ async def test_mark_pending_by_issue_id(
         fee=fee,
         state=PledgeState.created,
         type=PledgeType.pay_on_completion,
+    ).save(
+        session=session,
     )
 
     await session.commit()
@@ -185,8 +187,7 @@ async def test_mark_pending_already_pending_no_notification(
 
     # create multiple pledges
     pledges: list[Pledge] = [
-        await Pledge.create(
-            session=session,
+        await Pledge(
             id=uuid.uuid4(),
             by_organization_id=pledging_organization.id,
             issue_id=issue.id,
@@ -196,6 +197,8 @@ async def test_mark_pending_already_pending_no_notification(
             fee=fee,
             state=PledgeState.pending,
             type=PledgeType.pay_upfront,
+        ).save(
+            session=session,
         )
         for x in range(2)
     ]
@@ -233,11 +236,12 @@ async def test_transfer_unexpected_state(
     pledge: Pledge,
     mocker: MockerFixture,
 ) -> None:
-    reward = await IssueReward.create(
-        session,
+    reward = await IssueReward(
         issue_id=pledge.issue_id,
         organization_id=pledge.organization_id,
         share_thousands=1000,
+    ).save(
+        session,
     )
 
     with pytest.raises(Exception, match="Pledge is not in pending state") as excinfo:
@@ -252,11 +256,12 @@ async def test_transfer_early(
 ) -> None:
     await pledge_service.mark_pending_by_issue_id(session, pledge.issue_id)
 
-    reward = await IssueReward.create(
-        session,
+    reward = await IssueReward(
         issue_id=pledge.issue_id,
         organization_id=pledge.organization_id,
         share_thousands=1000,
+    ).save(
+        session,
     )
 
     with pytest.raises(
@@ -286,8 +291,7 @@ async def test_transfer_org(
     got.payment_id = "test_transfer_payment_id"
     await got.save(session)
 
-    account = await Account.create(
-        session=session,
+    account = await Account(
         organization_id=organization.id,
         account_type=AccountType.stripe,
         admin_id=user.id,
@@ -296,14 +300,19 @@ async def test_transfer_org(
         is_charges_enabled=True,
         is_payouts_enabled=True,
         business_type="company",
+        country="SE",
+        currency="USD",
+    ).save(
+        session=session,
     )
     await session.flush()
 
-    reward = await IssueReward.create(
-        session,
+    reward = await IssueReward(
         issue_id=pledge.issue_id,
         organization_id=organization.id,
         share_thousands=1000,
+    ).save(
+        session,
     )
 
     @dataclass
@@ -345,11 +354,12 @@ async def test_transfer_org_no_account(
     await got.save(session)
     await session.flush()
 
-    reward = await IssueReward.create(
-        session,
+    reward = await IssueReward(
         issue_id=pledge.issue_id,
         organization_id=organization.id,
         share_thousands=1000,
+    ).save(
+        session,
     )
 
     @dataclass
@@ -387,8 +397,7 @@ async def test_transfer_user(
     got.payment_id = "test_transfer_payment_id"
     await got.save(session)
 
-    account = await Account.create(
-        session=session,
+    account = await Account(
         user_id=user.id,
         account_type=AccountType.stripe,
         admin_id=user.id,
@@ -397,14 +406,19 @@ async def test_transfer_user(
         is_charges_enabled=True,
         is_payouts_enabled=True,
         business_type="individual",
+        country="SE",
+        currency="USD",
+    ).save(
+        session=session,
     )
     await session.flush()
 
-    reward = await IssueReward.create(
-        session,
+    reward = await IssueReward(
         issue_id=pledge.issue_id,
         user_id=user.id,
         share_thousands=1000,
+    ).save(
+        session,
     )
 
     @dataclass
@@ -446,11 +460,12 @@ async def test_transfer_user_no_account(
     await got.save(session)
     await session.flush()
 
-    reward = await IssueReward.create(
-        session,
+    reward = await IssueReward(
         issue_id=pledge.issue_id,
         user_id=user.id,
         share_thousands=1000,
+    ).save(
+        session,
     )
 
     @dataclass
@@ -566,19 +581,17 @@ async def test_create_issue_rewards_associate_username(
     organization: Organization,
 ) -> None:
     # create user and github auth
-    user = await User.create(
-        session=session,
+    user = await User(
         username="test_gh_user",
         email="test_gh_user@polar.sh",
-    )
-    oauth = await OAuthAccount.create(
-        session=session,
-        platform="github",
+    ).save(session)
+    oauth = await OAuthAccount(
+        platform=Platforms.github,
         user_id=user.id,
         access_token="access_token",
         account_id="1337",
         account_email="test_gh_user@polar.sh",
-    )
+    ).save(session)
 
     rewards = await pledge_service.create_issue_rewards(
         session,
@@ -669,8 +682,7 @@ async def test_generate_pledge_testdata(
     # fee = round(amount * 0.05)
     pledges = [
         [
-            await Pledge.create(
-                session=session,
+            await Pledge(
                 id=uuid.uuid4(),
                 # by_organization_id=pledging_organization.id,
                 issue_id=issue.id,
@@ -680,9 +692,8 @@ async def test_generate_pledge_testdata(
                 fee=0,
                 state=PledgeState.created,
                 email="pledger@example.com",
-            ),
-            await Pledge.create(
-                session=session,
+            ).save(session),
+            await Pledge(
                 id=uuid.uuid4(),
                 by_organization_id=pledging_org.id,
                 issue_id=issue.id,
@@ -692,49 +703,44 @@ async def test_generate_pledge_testdata(
                 fee=500,
                 state=PledgeState.created,
                 # email="pledger@example.com",
-            ),
+            ).save(session),
         ]
         for issue in issues
     ]
 
     for p in pledges[0]:
         p.state = PledgeState.pending
-    await IssueReward.create(
-        session,
+    await IssueReward(
         issue_id=pledges[0][0].issue_id,
         organization_id=org.id,
         share_thousands=800,
-    )
-    await IssueReward.create(
-        session,
+    ).save(session)
+    await IssueReward(
         issue_id=pledges[0][0].issue_id,
         github_username="zegl",
         share_thousands=200,
-    )
+    ).save(session)
 
     for p in pledges[1]:
         p.state = PledgeState.pending
-    await IssueReward.create(
-        session,
+    await IssueReward(
         issue_id=pledges[1][0].issue_id,
         organization_id=org.id,
         share_thousands=800,
-    )
-    reward = await IssueReward.create(
-        session,
+    ).save(session)
+    reward = await IssueReward(
         issue_id=pledges[1][0].issue_id,
         github_username="zegl",
         share_thousands=200,  # 20%
-    )
+    ).save(session)
 
-    await PledgeTransaction.create(
-        session,
+    await PledgeTransaction(
         pledge_id=pledges[1][0].id,
         type=PledgeTransactionType.transfer,
         amount=5000,  # ?
         transaction_id="text_123",
         issue_reward_id=reward.id,
-    )
+    ).save(session)
 
     pledges[3][0].state = PledgeState.disputed
     pledges[3][0].dispute_reason = "I've been fooled."
@@ -755,8 +761,7 @@ async def test_mark_created_by_payment_id(
 ) -> None:
     mocker.patch("polar.worker._enqueue_job")
 
-    pledge = await Pledge.create(
-        session=session,
+    pledge = await Pledge(
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
@@ -765,7 +770,7 @@ async def test_mark_created_by_payment_id(
         by_organization_id=organization.id,
         state=PledgeState.initiated,
         payment_id="xxx-2",
-    )
+    ).save(session)
 
     assert pledge.payment_id
 
@@ -796,8 +801,7 @@ async def test_sum_pledges_period(
     issue: Issue,
     user: User,
 ) -> None:
-    p1 = await Pledge.create(
-        session=session,
+    p1 = await Pledge(
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
@@ -806,10 +810,9 @@ async def test_sum_pledges_period(
         by_organization_id=organization.id,
         state=PledgeState.created,
         created_at=utc_now(),
-    )
+    ).save(session)
 
-    p2 = await Pledge.create(
-        session=session,
+    p2 = await Pledge(
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
@@ -819,10 +822,9 @@ async def test_sum_pledges_period(
         state=PledgeState.created,
         created_at=utc_now(),
         created_by_user_id=user.id,
-    )
+    ).save(session)
 
-    p3 = await Pledge.create(
-        session=session,
+    p3 = await Pledge(
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
@@ -831,7 +833,7 @@ async def test_sum_pledges_period(
         by_organization_id=organization.id,
         state=PledgeState.created,
         created_at=utc_now() + timedelta(days=60),  # not in current period
-    )
+    ).save(session)
 
     period_sum = await pledge_service.sum_pledges_period(
         session, organization_id=organization.id
@@ -1119,12 +1121,11 @@ async def test_pledge_states(
             issue = await create_issue(session, org, repo)
             pledging_user = await create_user(session)
 
-            await UserOrganization.create(
-                session=session,
+            await UserOrganization(
                 user_id=user.id,
                 organization_id=org.id,
                 is_admin=True,
-            )
+            ).save(session)
             await session.commit()
 
             if tc.other_pledged_first:
@@ -1179,8 +1180,7 @@ async def test_pledge_states(
                     authenticated_user=pledging_user,
                 )
             else:
-                pledge = await Pledge.create(
-                    session=session,
+                pledge = await Pledge(
                     issue_id=issue.id,
                     repository_id=repo.id,
                     organization_id=org.id,
@@ -1191,7 +1191,7 @@ async def test_pledge_states(
                     by_user_id=pledging_user.id,
                     by_organization_id=None,
                     on_behalf_of_organization_id=None,
-                )
+                ).save(session)
                 # TODO: this should be in a service somewhere
                 await pledge_created.call(PledgeHook(session, pledge))
                 await pledge_service.after_pledge_created(session, pledge, issue, None)

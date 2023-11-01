@@ -30,6 +30,10 @@ async def generate_magic_link_token(
         user_email: str, user_id: UUID | None, expires_at: datetime | None
     ) -> tuple[MagicLink, str]:
         token, token_hash = generate_token(secret=settings.SECRET)
+
+        if not expires_at:
+            expires_at = datetime.now(UTC) + timedelta(hours=1)
+
         magic_link = MagicLink(
             token_hash=token_hash,
             user_email=user_email,

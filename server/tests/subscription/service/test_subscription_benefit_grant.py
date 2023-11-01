@@ -48,8 +48,8 @@ class TestGrantBenefit:
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefit_organization.id,
         )
         session.add(grant)
         await session.commit()
@@ -70,8 +70,8 @@ class TestGrantBenefit:
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefit_organization.id,
         )
         grant.set_granted()
         session.add(grant)
@@ -112,8 +112,8 @@ class TestRevokeBenefit:
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefit_organization.id,
         )
         session.add(grant)
         await session.commit()
@@ -134,8 +134,8 @@ class TestRevokeBenefit:
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefit_organization.id,
         )
         grant.set_revoked()
         session.add(grant)

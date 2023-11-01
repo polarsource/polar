@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy import BigInteger, ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -17,15 +17,23 @@ class PledgeTransaction(RecordModel):
     )
     type: Mapped[str] = mapped_column(String, nullable=False)
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    transaction_id: Mapped[str] = mapped_column(String, nullable=True)
-    issue_reward_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("issue_rewards.id"), nullable=True
+    transaction_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
+    issue_reward_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID, ForeignKey("issue_rewards.id"), nullable=True, default=None
     )
 
-    pledge: Mapped[Pledge] = relationship(
-        "Pledge", foreign_keys=[pledge_id], lazy="raise"
-    )
+    @declared_attr
+    def pledge(cls) -> Mapped[Pledge]:
+        return relationship(
+            Pledge,
+            lazy="raise",
+        )
 
-    issue_reward: Mapped[IssueReward] = relationship(
-        "IssueReward", foreign_keys=[issue_reward_id], lazy="raise"
-    )
+    @declared_attr
+    def issue_reward(cls) -> Mapped[IssueReward]:
+        return relationship(
+            IssueReward,
+            lazy="raise",
+        )

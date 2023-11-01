@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import TimestampedModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -26,8 +26,12 @@ class UserOrganization(TimestampedModel):
         primary_key=True,
     )
 
-    user: "Mapped[User]" = relationship("User", lazy="raise")
+    @declared_attr
+    def user(cls) -> "Mapped[User]":
+        return relationship("User", lazy="raise")
 
-    organization: "Mapped[Organization]" = relationship("Organization", lazy="raise")
+    @declared_attr
+    def organization(cls) -> "Mapped[Organization]":
+        return relationship("Organization", lazy="raise")
 
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

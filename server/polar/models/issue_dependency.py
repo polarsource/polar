@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import TimestampedModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -33,10 +33,20 @@ class IssueDependency(TimestampedModel):
         nullable=False,
     )
 
-    dependent_issue: "Mapped[Issue]" = relationship(
-        "Issue", uselist=False, lazy="raise", foreign_keys=[dependent_issue_id]
-    )
+    @declared_attr
+    def dependent_issue(cls) -> Mapped[Issue]:
+        return relationship(
+            Issue,
+            uselist=False,
+            lazy="raise",
+            primaryjoin=Issue.id == cls.dependent_issue_id,
+        )
 
-    dependency_issue: "Mapped[Issue]" = relationship(
-        "Issue", uselist=False, lazy="raise", foreign_keys=[dependency_issue_id]
-    )
+    @declared_attr
+    def dependency_issue(cls) -> Mapped[Issue]:
+        return relationship(
+            Issue,
+            uselist=False,
+            lazy="raise",
+            primaryjoin=Issue.id == cls.dependency_issue_id,
+        )

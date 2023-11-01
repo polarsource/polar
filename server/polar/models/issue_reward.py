@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy import BigInteger, ForeignKey, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -25,18 +25,25 @@ class IssueReward(RecordModel):
     # 10% == 100
     share_thousands: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
-    github_username: Mapped[str] = mapped_column(String, nullable=True)
-
-    organization_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("organizations.id"), nullable=True
+    github_username: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
     )
 
-    user_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("users.id"), nullable=True
+    organization_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID, ForeignKey("organizations.id"), nullable=True, default=None
     )
 
-    organization: Mapped[Organization] = relationship(
-        "Organization", foreign_keys=[organization_id], lazy="raise"
+    user_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID, ForeignKey("users.id"), nullable=True, default=None
     )
 
-    user: Mapped[User] = relationship("User", foreign_keys=[user_id], lazy="raise")
+    @declared_attr
+    def organization(cls) -> Mapped[Organization]:
+        return relationship(
+            Organization,
+            lazy="raise",
+        )
+
+    @declared_attr
+    def user(cls) -> Mapped[User]:
+        return relationship(User, lazy="raise")

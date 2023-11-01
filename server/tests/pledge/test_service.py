@@ -12,7 +12,7 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.config import settings
-from polar.enums import AccountType
+from polar.enums import AccountType, Platforms
 from polar.eventstream.service import send
 from polar.exceptions import NotPermitted
 from polar.integrations.github.service.issue import github_issue as github_issue_service
@@ -566,18 +566,21 @@ async def test_create_issue_rewards_associate_username(
     organization: Organization,
 ) -> None:
     # create user and github auth
-    user = await User.create(
-        session=session,
+    user = await User(
         username="test_gh_user",
         email="test_gh_user@polar.sh",
-    )
-    oauth = await OAuthAccount.create(
+        avatar_url="xx",
+    ).save(
         session=session,
-        platform="github",
+    )
+    oauth = await OAuthAccount(
+        platform=Platforms.github,
         user_id=user.id,
         access_token="access_token",
         account_id="1337",
         account_email="test_gh_user@polar.sh",
+    ).save(
+        session=session,
     )
 
     rewards = await pledge_service.create_issue_rewards(

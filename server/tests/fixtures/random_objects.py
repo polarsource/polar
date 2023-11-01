@@ -138,13 +138,12 @@ async def user(
 async def create_user(
     session: AsyncSession,
 ) -> User:
-    user = await User.create(
-        session=session,
+    user = await User(
         id=uuid.uuid4(),
         username=rstr("testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
-    )
+    ).save(session=session)
 
     await session.commit()
     return user
@@ -154,13 +153,12 @@ async def create_user(
 async def user_second(
     session: AsyncSession,
 ) -> User:
-    user = await User.create(
-        session=session,
+    user = await User(
         id=uuid.uuid4(),
         username=rstr("testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
-    )
+    ).save(session=session)
 
     await session.commit()
     return user

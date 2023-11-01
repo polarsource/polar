@@ -106,11 +106,13 @@ async def predictable_issue(
 async def predictable_user(
     session: AsyncSession,
 ) -> User:
-    user = await User.create(
-        session=session,
+    user = await User(
         id=uuid.uuid4(),
         username="foobar",
         email="test@example.com",
+        avatar_url="http://example.com/",
+    ).save(
+        session=session,
     )
 
     await session.commit()

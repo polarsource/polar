@@ -5,7 +5,7 @@ from datetime import timedelta
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.enums import AccountType
+from polar.enums import AccountType, Platforms
 from polar.issue.schemas import ConfirmIssueSplit
 from polar.kit.utils import utc_now
 from polar.models.account import Account
@@ -114,14 +114,13 @@ async def test_list_rewards_to_user(
     user.username = "test_gh_user"
     await user.save(session)
 
-    oauth = await OAuthAccount.create(
-        session=session,
-        platform="github",
+    oauth = await OAuthAccount(
+        platform=Platforms.github,
         user_id=user.id,
         access_token="access_token",
         account_id="1337",
         account_email="test_gh_user@polar.sh",
-    )
+    ).save(session=session)
 
     # create two pledges
     pledge_1 = await Pledge.create(

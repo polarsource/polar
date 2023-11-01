@@ -13,10 +13,21 @@ from polar.kit.schemas import Schema
 from polar.postgres import AsyncSession, sql
 
 
-# Active Record-ish
-class ActiveRecordMixin:
-    __table__: ClassVar[FromClause]
+class ActiveRecordBase:
+    async def save(self, session: AsyncSession, autocommit: bool = True) -> Self:
+        session.add(self)
+        if autocommit:
+            await session.commit()
+        return self
 
+    async def delete(self: Any, session: AsyncSession) -> None:
+        # TODO: Can we get an affected rows or similar to verify delete?
+        await session.delete(self)
+        await session.commit()
+
+
+# Active Record for non-data class objects
+class ActiveRecordMixin(ActiveRecordBase):
     @classmethod
     async def create(
         cls,
@@ -36,12 +47,6 @@ class ActiveRecordMixin:
             setattr(self, col, value)
         return self
 
-    async def save(self, session: AsyncSession, autocommit: bool = True) -> Self:
-        session.add(self)
-        if autocommit:
-            await session.commit()
-        return self
-
     async def update(
         self,
         session: AsyncSession,
@@ -50,8 +55,3 @@ class ActiveRecordMixin:
     ) -> Self:
         updated = self.fill(**values)
         return await updated.save(session, autocommit=autocommit)
-
-    async def delete(self: Any, session: AsyncSession) -> None:
-        # TODO: Can we get an affected rows or similar to verify delete?
-        await session.delete(self)
-        await session.commit()

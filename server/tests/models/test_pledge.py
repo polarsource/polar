@@ -22,14 +22,15 @@ async def test_pledge(
 ) -> None:
     email = "alice@polar.sh"
 
-    created = await Pledge.create(
-        session,
+    created = await Pledge(
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
         email=email,
         amount=int(test_amount),
         fee=0,
+    ).save(
+        session,
     )
 
     assert created.id is not None

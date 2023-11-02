@@ -77,10 +77,11 @@ async def test_get_pledge_member_sending_org(
     await pledge.save(session)
 
     # make user member of the pledging organization
-    await UserOrganization.create(
-        session=session,
+    await UserOrganization(
         user_id=user.id,
         organization_id=pledging_organization.id,
+    ).save(
+        session=session,
     )
 
     response = await client.get(
@@ -124,10 +125,11 @@ async def test_get_pledge_member_receiving_org(
     await pledge.save(session)
 
     # make user member of the receiving organization
-    await UserOrganization.create(
-        session=session,
+    await UserOrganization(
         user_id=user.id,
         organization_id=organization.id,
+    ).save(
+        session=session,
     )
 
     response = await client.get(
@@ -272,8 +274,7 @@ async def test_search_pledge_by_issue_id(
         session, organization=organization, repository=repository
     )
 
-    other_pledge = await Pledge.create(
-        session=session,
+    other_pledge = await Pledge(
         id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=other_issue.id,
@@ -282,10 +283,11 @@ async def test_search_pledge_by_issue_id(
         amount=50000,
         fee=50,
         state=PledgeState.created,
+    ).save(
+        session=session,
     )
 
-    other_pledge_2 = await Pledge.create(
-        session=session,
+    other_pledge_2 = await Pledge(
         id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=other_issue.id,
@@ -294,6 +296,8 @@ async def test_search_pledge_by_issue_id(
         amount=50000,
         fee=50,
         state=PledgeState.created,
+    ).save(
+        session=session,
     )
 
     await session.commit()

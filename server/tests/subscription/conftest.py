@@ -7,6 +7,7 @@ import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.app import app
+from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
 from polar.models import (
     Account,
@@ -65,6 +66,7 @@ async def create_subscription_tier(
         stripe_product_id="PRODUCT_ID",
         stripe_price_id="PRICE_ID",
         subscription_tier_benefits=[],
+        description="x",
     )
     session.add(subscription_tier)
     await session.commit()
@@ -84,7 +86,7 @@ async def create_subscription_benefit(
     subscription_benefit = SubscriptionBenefit(
         type=type,
         description=description,
-        is_tax_applicable=is_tax_applicable,
+        is_tax_applicable=is_tax_applicable if is_tax_applicable is not None else False,
         organization_id=organization.id if organization is not None else None,
         repository_id=repository.id if repository is not None else None,
     )
@@ -101,11 +103,14 @@ async def add_subscription_benefits(
 ) -> SubscriptionTier:
     subscription_tier.subscription_tier_benefits = []
     for order, subscription_benefit in enumerate(subscription_benefits):
-        subscription_tier.subscription_tier_benefits.append(
-            SubscriptionTierBenefit(
-                subscription_benefit=subscription_benefit, order=order
-            )
+        benefit = SubscriptionTierBenefit(
+            subscription_tier_id=subscription_tier.id,
+            subscription_benefit_id=subscription_benefit.id,
+            order=order,
         )
+        # session.add(benefit)???
+
+        subscription_tier.subscription_tier_benefits.append(benefit)
     session.add(subscription_tier)
     await session.commit()
     return subscription_tier
@@ -234,9 +239,8 @@ async def subscription_benefits(
 async def organization_account(
     session: AsyncSession, organization: Organization, user: User
 ) -> Account:
-    return await Account.create(
-        session,
-        account_type="stripe",
+    return await Account(
+        account_type=AccountType.stripe,
         organization_id=organization.id,
         admin_id=user.id,
         country="US",
@@ -244,6 +248,8 @@ async def organization_account(
         is_details_submitted=True,
         is_charges_enabled=True,
         is_payouts_enabled=True,
+    ).save(
+        session,
     )
 
 

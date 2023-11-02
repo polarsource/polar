@@ -7,7 +7,10 @@ from pytest_mock import MockerFixture
 from polar.models import Subscription, SubscriptionBenefit, SubscriptionBenefitGrant
 from polar.postgres import AsyncSession
 from polar.subscription.schemas import SubscriptionBenefitCustomUpdate
-from polar.subscription.service.benefits import SubscriptionBenefitServiceProtocol
+from polar.subscription.service.benefits import (
+    SubscriptionBenefitPreconditionError,
+    SubscriptionBenefitServiceProtocol,
+)
 from polar.subscription.service.subscription_benefit_grant import (
     subscription_benefit_grant as subscription_benefit_grant_service,
 )
@@ -86,6 +89,23 @@ class TestGrantBenefit:
         assert updated_grant.id == grant.id
         assert updated_grant.is_granted
         subscription_benefit_service_mock.grant.assert_not_called()
+
+    async def test_precondition_error(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_service_mock: MagicMock,
+    ) -> None:
+        subscription_benefit_service_mock.grant.side_effect = (
+            SubscriptionBenefitPreconditionError("Error")
+        )
+
+        grant = await subscription_benefit_grant_service.grant_benefit(
+            session, subscription, subscription_benefit_organization
+        )
+
+        assert not grant.is_granted
 
 
 @pytest.mark.asyncio
@@ -270,6 +290,31 @@ class TestUpdateBenefitGrant:
         assert updated_grant.is_granted
         subscription_benefit_service_mock.grant.assert_called_once()
 
+    async def test_precondition_error(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_service_mock: MagicMock,
+    ) -> None:
+        grant = SubscriptionBenefitGrant(
+            subscription=subscription,
+            subscription_benefit=subscription_benefit_organization,
+        )
+        grant.set_granted()
+        session.add(grant)
+        await session.commit()
+
+        subscription_benefit_service_mock.grant.side_effect = (
+            SubscriptionBenefitPreconditionError("Error")
+        )
+
+        updated_grant = await subscription_benefit_grant_service.update_benefit_grant(
+            session, grant
+        )
+
+        assert not updated_grant.is_granted
+
 
 @pytest.mark.asyncio
 class TestEnqueueBenefitGrantDeletions:
@@ -364,3 +409,55 @@ class TestDeleteBenefitGrant:
         assert updated_grant.id == grant.id
         assert updated_grant.is_revoked
         subscription_benefit_service_mock.revoke.assert_called_once()
+
+
+@pytest.fixture
+def email_sender_mock(mocker: MockerFixture) -> MagicMock:
+    email_sender_mock = MagicMock()
+    mocker.patch(
+        "polar.subscription.service.subscription_benefit_grant.get_email_sender",
+        return_value=email_sender_mock,
+    )
+    return email_sender_mock
+
+
+@pytest.mark.asyncio
+class TestHandlePreconditionError:
+    async def test_no_email(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        subscription_benefit_organization: SubscriptionBenefit,
+        email_sender_mock: MagicMock,
+    ) -> None:
+        error = SubscriptionBenefitPreconditionError("Error")
+
+        await subscription_benefit_grant_service.handle_precondition_error(
+            session, error, subscription, subscription_benefit_organization
+        )
+
+        email_sender_mock.assert_not_called()
+
+    async def test_email(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        subscription_benefit_organization: SubscriptionBenefit,
+        email_sender_mock: MagicMock,
+    ) -> None:
+        error = SubscriptionBenefitPreconditionError(
+            "Error",
+            email_subject="Email subject",
+            email_body_template="benefits/custom/precondition_failed.html",
+            email_extra_context={"foo": "bar"},
+        )
+
+        await subscription_benefit_grant_service.handle_precondition_error(
+            session, error, subscription, subscription_benefit_organization
+        )
+
+        send_to_user_mock: MagicMock = email_sender_mock.send_to_user
+        assert send_to_user_mock.called
+        to_email_addr = send_to_user_mock.call_args[0][0]
+
+        assert subscription.user.email == to_email_addr

@@ -1,3 +1,4 @@
+from polar.models import Subscription
 from polar.models.subscription_benefit import SubscriptionBenefitCustom
 
 from ...schemas import SubscriptionBenefitCustomUpdate
@@ -9,10 +10,22 @@ class SubscriptionBenefitCustomService(
         SubscriptionBenefitCustom, SubscriptionBenefitCustomUpdate
     ]
 ):
-    async def grant(self, benefit: SubscriptionBenefitCustom) -> None:
+    async def grant(
+        self,
+        benefit: SubscriptionBenefitCustom,
+        subscription: Subscription,
+        *,
+        attempt: int = 1,
+    ) -> None:
         return
 
-    async def revoke(self, benefit: SubscriptionBenefitCustom) -> None:
+    async def revoke(
+        self,
+        benefit: SubscriptionBenefitCustom,
+        subscription: Subscription,
+        *,
+        attempt: int = 1,
+    ) -> None:
         return
 
     async def requires_update(

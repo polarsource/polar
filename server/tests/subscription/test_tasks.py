@@ -1,10 +1,12 @@
 import uuid
 
 import pytest
+from arq import Retry
 from pytest_mock import MockerFixture
 
 from polar.models import Subscription, SubscriptionBenefit, SubscriptionBenefitGrant
 from polar.postgres import AsyncSession
+from polar.subscription.service.benefits import SubscriptionBenefitRetriableError
 from polar.subscription.service.subscription import SubscriptionService
 from polar.subscription.service.subscription_benefit_grant import (
     SubscriptionBenefitGrantService,
@@ -104,6 +106,29 @@ class TestSubscriptionBenefitGrant:
 
         grant_benefit_mock.assert_called_once()
 
+    async def test_retry(
+        self,
+        mocker: MockerFixture,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        subscription: Subscription,
+        subscription_benefit_organization: SubscriptionBenefit,
+    ) -> None:
+        grant_benefit_mock = mocker.patch.object(
+            subscription_benefit_grant_service,
+            "grant_benefit",
+            spec=SubscriptionBenefitGrantService.grant_benefit,
+        )
+        grant_benefit_mock.side_effect = SubscriptionBenefitRetriableError(10)
+
+        with pytest.raises(Retry):
+            await subscription_benefit_grant(
+                job_context,
+                subscription.id,
+                subscription_benefit_organization.id,
+                polar_worker_context,
+            )
+
 
 @pytest.mark.asyncio
 class TestSubscriptionBenefitRevoke:
@@ -155,6 +180,29 @@ class TestSubscriptionBenefitRevoke:
 
         revoke_benefit_mock.assert_called_once()
 
+    async def test_retry(
+        self,
+        mocker: MockerFixture,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        subscription: Subscription,
+        subscription_benefit_organization: SubscriptionBenefit,
+    ) -> None:
+        revoke_benefit_mock = mocker.patch.object(
+            subscription_benefit_grant_service,
+            "revoke_benefit",
+            spec=SubscriptionBenefitGrantService.revoke_benefit,
+        )
+        revoke_benefit_mock.side_effect = SubscriptionBenefitRetriableError(10)
+
+        with pytest.raises(Retry):
+            await subscription_benefit_revoke(
+                job_context,
+                subscription.id,
+                subscription_benefit_organization.id,
+                polar_worker_context,
+            )
+
 
 @pytest.mark.asyncio
 class TestSubscriptionBenefitUpdate:
@@ -196,6 +244,35 @@ class TestSubscriptionBenefitUpdate:
 
         update_benefit_grant_mock.assert_called_once()
 
+    async def test_retry(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        subscription: Subscription,
+        subscription_benefit_organization: SubscriptionBenefit,
+    ) -> None:
+        grant = SubscriptionBenefitGrant(
+            subscription=subscription,
+            subscription_benefit=subscription_benefit_organization,
+        )
+        grant.set_granted()
+        session.add(grant)
+        await session.commit()
+
+        update_benefit_grant_mock = mocker.patch.object(
+            subscription_benefit_grant_service,
+            "update_benefit_grant",
+            spec=SubscriptionBenefitGrantService.update_benefit_grant,
+        )
+        update_benefit_grant_mock.side_effect = SubscriptionBenefitRetriableError(10)
+
+        with pytest.raises(Retry):
+            await subscription_benefit_update(
+                job_context, grant.id, polar_worker_context
+            )
+
 
 @pytest.mark.asyncio
 class TestSubscriptionBenefitDelete:
@@ -236,3 +313,32 @@ class TestSubscriptionBenefitDelete:
         await subscription_benefit_delete(job_context, grant.id, polar_worker_context)
 
         delete_benefit_grant_mock.assert_called_once()
+
+    async def test_retry(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        subscription: Subscription,
+        subscription_benefit_organization: SubscriptionBenefit,
+    ) -> None:
+        grant = SubscriptionBenefitGrant(
+            subscription=subscription,
+            subscription_benefit=subscription_benefit_organization,
+        )
+        grant.set_granted()
+        session.add(grant)
+        await session.commit()
+
+        delete_benefit_grant_mock = mocker.patch.object(
+            subscription_benefit_grant_service,
+            "delete_benefit_grant",
+            spec=SubscriptionBenefitGrantService.delete_benefit_grant,
+        )
+        delete_benefit_grant_mock.side_effect = SubscriptionBenefitRetriableError(10)
+
+        with pytest.raises(Retry):
+            await subscription_benefit_delete(
+                job_context, grant.id, polar_worker_context
+            )

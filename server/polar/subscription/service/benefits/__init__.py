@@ -7,8 +7,8 @@ from polar.postgres import AsyncSession
 from ...schemas import SubscriptionBenefitUpdate
 from .base import (
     SB,
-    SubscriptionBenefitGrantError,
-    SubscriptionBenefitRevokeError,
+    SubscriptionBenefitPreconditionError,
+    SubscriptionBenefitRetriableError,
     SubscriptionBenefitServiceError,
     SubscriptionBenefitServiceProtocol,
 )
@@ -30,8 +30,8 @@ def get_subscription_benefit_service(
 
 __all__ = [
     "SubscriptionBenefitServiceProtocol",
-    "SubscriptionBenefitGrantError",
-    "SubscriptionBenefitRevokeError",
+    "SubscriptionBenefitPreconditionError",
+    "SubscriptionBenefitRetriableError",
     "SubscriptionBenefitServiceError",
     "get_subscription_benefit_service",
 ]

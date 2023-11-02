@@ -82,6 +82,24 @@ export const useCreateSubscriptionTier = (orgName?: string) =>
     },
   })
 
+export const useArchiveSubscriptionTier = (orgName?: string) =>
+  useMutation({
+    mutationFn: ({ id }: { id: string }) => {
+      return api.subscriptions.archiveSubscriptionTier({
+        id,
+      })
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptionTiers', 'id', variables.id],
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptionTiers', 'organization', orgName],
+      })
+    },
+  })
+
 export const useSubscriptionBenefits = (
   orgName: string,
   limit = 30,

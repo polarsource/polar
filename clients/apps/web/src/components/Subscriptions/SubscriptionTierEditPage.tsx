@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from 'polarkit/components/ui/atoms'
 import { Form } from 'polarkit/components/ui/form'
 import {
+  useArchiveSubscriptionTier,
   useSubscriptionBenefits,
   useSubscriptionTier,
   useUpdateSubscriptionTier,
@@ -18,6 +19,8 @@ import {
 } from 'polarkit/hooks'
 import React, { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { useModal } from '../Modal/useModal'
+import { ConfirmModal } from '../Shared/ConfirmModal'
 import SubscriptionTierBenefitsForm from './SubscriptionTierBenefitsForm'
 import SubscriptionTierCard from './SubscriptionTierCard'
 import SubscriptionTierForm from './SubscriptionTierForm'
@@ -77,6 +80,12 @@ const SubscriptionTierEdit = ({
     organization.name,
   )
 
+  const {
+    isShown: isArchiveModalShown,
+    hide: hideArchiveModal,
+    show: showArchiveModal,
+  } = useModal()
+
   const onSubmit = useCallback(
     async (subscriptionTierUpdate: SubscriptionTierUpdate) => {
       await updateSubscriptionTier.mutateAsync({
@@ -119,6 +128,15 @@ const SubscriptionTierEdit = ({
     },
     [setEnabledBenefitIds],
   )
+
+  const archiveSubscriptionTier = useArchiveSubscriptionTier(organization.name)
+
+  const handleArchiveSubscriptionTier = useCallback(async () => {
+    await archiveSubscriptionTier.mutateAsync({ id: subscriptionTier.id })
+
+    router.push(`/maintainer/${organization.name}/subscriptions/tiers`)
+    router.refresh()
+  }, [subscriptionTier, archiveSubscriptionTier, router, organization])
 
   const enabledBenefits = React.useMemo(
     () =>
@@ -168,6 +186,25 @@ const SubscriptionTierEdit = ({
           benefits={enabledBenefits}
           onSelectBenefit={onSelectBenefit}
           onRemoveBenefit={onRemoveBenefit}
+        />
+        <div>
+          <h3 className="max-w-1/2">Archive Subscription Tier</h3>
+          <p className="dark:text-polar-500 mb-6 mt-2 text-sm text-gray-400">
+            Archiving a subscription tier will not affect its current
+            subscribers, only prevent new subscribers.
+          </p>
+          <Button variant="destructive" onClick={showArchiveModal}>
+            Archive
+          </Button>
+        </div>
+        <ConfirmModal
+          title="Archive Subscription Tier"
+          description="Archiving a subscription tier will not affect its current subscribers, only prevent new subscribers. An archived subscription tier is permanently archived. Are you sure?"
+          onConfirm={handleArchiveSubscriptionTier}
+          isShown={isArchiveModalShown}
+          hide={hideArchiveModal}
+          destructiveText="Archive"
+          destructive
         />
       </div>
     </DashboardBody>

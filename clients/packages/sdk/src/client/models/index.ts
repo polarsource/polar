@@ -2675,7 +2675,8 @@ export const PledgeState = {
     PENDING: 'pending',
     REFUNDED: 'refunded',
     DISPUTED: 'disputed',
-    CHARGE_DISPUTED: 'charge_disputed'
+    CHARGE_DISPUTED: 'charge_disputed',
+    CANCELLED: 'cancelled'
 } as const;
 export type PledgeState = typeof PledgeState[keyof typeof PledgeState];
 

@@ -1,7 +1,8 @@
-import { LoyaltyOutlined } from '@mui/icons-material'
+import { EditOutlined, LoyaltyOutlined } from '@mui/icons-material'
 import {
   Organization,
   SubscriptionBenefitCreate,
+  SubscriptionBenefitUpdate,
   SubscriptionTierBenefit,
 } from '@polar-sh/sdk'
 import { Button, Input, ShadowBox, Switch } from 'polarkit/components/ui/atoms'
@@ -13,7 +14,10 @@ import {
   FormItem,
   FormLabel,
 } from 'polarkit/components/ui/form'
-import { useCreateSubscriptionBenefit } from 'polarkit/hooks'
+import {
+  useCreateSubscriptionBenefit,
+  useUpdateSubscriptionBenefit,
+} from 'polarkit/hooks'
 import { useCallback, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
@@ -22,14 +26,35 @@ import { useModal } from '../Modal/useModal'
 import { resolveBenefitIcon } from './utils'
 
 interface BenefitRowProps {
+  organization: Organization
   benefit: SubscriptionTierBenefit
   checked: boolean
   onCheckedChange: (checked: boolean) => void
 }
 
-const BenefitRow = ({ benefit, checked, onCheckedChange }: BenefitRowProps) => {
+const BenefitRow = ({
+  organization,
+  benefit,
+  checked,
+  onCheckedChange,
+}: BenefitRowProps) => {
+  const [showEditButton, setShowEditButton] = useState(false)
+  const { isShown, toggle, hide } = useModal()
+
+  const handleMouseEnter = useCallback(() => {
+    setShowEditButton(true)
+  }, [])
+
+  const handleMouseLeave = useCallback(() => {
+    setShowEditButton(false)
+  }, [])
+
   return (
-    <div className="flex flex-row items-center justify-between py-2">
+    <div
+      className="flex flex-row items-center justify-between py-2"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <div className="flex flex-row items-center gap-x-4">
         <div
           className={twMerge(
@@ -49,9 +74,35 @@ const BenefitRow = ({ benefit, checked, onCheckedChange }: BenefitRowProps) => {
           {benefit.description}
         </span>
       </div>
-      <div className="text-[14px]">
+      <div className="flex flex-row items-center gap-x-4 text-[14px]">
+        <Button
+          className={twMerge(
+            'border-none text-sm opacity-0 transition-opacity',
+            showEditButton && 'opacity-100',
+          )}
+          size="icon"
+          variant="secondary"
+          onClick={() => {
+            toggle()
+            setShowEditButton(false)
+          }}
+        >
+          <EditOutlined fontSize="inherit" />
+        </Button>
         <Switch checked={checked} onCheckedChange={onCheckedChange} />
       </div>
+      <Modal
+        className="overflow-visible"
+        isShown={isShown}
+        hide={toggle}
+        modalContent={
+          <UpdateSubscriptionTierBenefitModalContent
+            organization={organization}
+            benefit={benefit}
+            hideModal={hide}
+          />
+        }
+      />
     </div>
   )
 }
@@ -103,6 +154,7 @@ const SubscriptionTierBenefitsForm = ({
                   organizationBenefits.map((benefit) => (
                     <BenefitRow
                       key={benefit.id}
+                      organization={organization}
                       benefit={benefit}
                       checked={benefits.some((b) => b.id === benefit.id)}
                       onCheckedChange={handleCheckedChange(benefit)}
@@ -226,7 +278,90 @@ const NewSubscriptionTierBenefitModalContent = ({
   )
 }
 
-const NewBenefitForm = () => {
+interface UpdateSubscriptionTierBenefitModalContentProps {
+  organization: Organization
+  benefit: SubscriptionTierBenefit
+  hideModal: () => void
+}
+
+const UpdateSubscriptionTierBenefitModalContent = ({
+  organization,
+  benefit,
+  hideModal,
+}: UpdateSubscriptionTierBenefitModalContentProps) => {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const updateSubscriptionBenefit = useUpdateSubscriptionBenefit(
+    organization.name,
+  )
+
+  const handleUpdateNewBenefit = useCallback(
+    async (subscriptionBenefitUpdate: SubscriptionBenefitUpdate) => {
+      try {
+        setIsLoading(true)
+        await updateSubscriptionBenefit.mutateAsync({
+          id: benefit.id,
+          subscriptionBenefitUpdate,
+        })
+
+        hideModal()
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [hideModal, updateSubscriptionBenefit, benefit],
+  )
+
+  const form = useForm<SubscriptionBenefitUpdate>({
+    defaultValues: {
+      organization_id: organization.id,
+      ...benefit,
+    },
+  })
+
+  const { handleSubmit } = form
+
+  return (
+    <div className="flex flex-col gap-y-6 px-8 py-10">
+      <div>
+        <h2 className="text-lg">Update Subscription Benefit</h2>
+        <p className="dark:text-polar-400 mt-2 text-sm text-gray-400">
+          Tax applicability and Benefit type cannot be updated
+        </p>
+      </div>
+      <div className="flex flex-col gap-y-6">
+        <Form {...form}>
+          <form
+            className="mt-4 flex flex-col gap-y-6"
+            onSubmit={handleSubmit(handleUpdateNewBenefit)}
+          >
+            <NewBenefitForm update={true} />
+            <div className="mt-4 flex flex-row items-center gap-x-4">
+              <Button className="self-start" type="submit" loading={isLoading}>
+                Update
+              </Button>
+              <Button
+                variant="ghost"
+                className="self-start"
+                onClick={hideModal}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </div>
+    </div>
+  )
+}
+
+interface NewBenefitFormProps {
+  update?: boolean
+}
+
+const NewBenefitForm = ({ update = false }: NewBenefitFormProps) => {
   const { control } = useFormContext<SubscriptionBenefitCreate>()
 
   return (
@@ -244,25 +379,27 @@ const NewBenefitForm = () => {
           )
         }}
       />
-      <FormField
-        control={control}
-        name="is_tax_applicable"
-        render={({ field }) => {
-          return (
-            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  defaultChecked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <FormLabel className="text-sm leading-none">
-                Tax Applicable
-              </FormLabel>
-            </FormItem>
-          )
-        }}
-      />
+      {!update && (
+        <FormField
+          control={control}
+          name="is_tax_applicable"
+          render={({ field }) => {
+            return (
+              <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                <FormControl>
+                  <Checkbox
+                    defaultChecked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <FormLabel className="text-sm leading-none">
+                  Tax Applicable
+                </FormLabel>
+              </FormItem>
+            )
+          }}
+        />
+      )}
     </>
   )
 }

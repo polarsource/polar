@@ -19,6 +19,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
 } from 'polarkit/components/ui/form'
 import {
   useCreateSubscriptionBenefit,
@@ -281,7 +282,7 @@ const NewSubscriptionTierBenefitModalContent = ({
       <div className="flex flex-col gap-y-6">
         <Form {...form}>
           <form
-            className="mt-4 flex flex-col gap-y-6"
+            className="flex flex-col gap-y-6"
             onSubmit={handleSubmit(handleCreateNewBenefit)}
           >
             <NewBenefitForm />
@@ -360,7 +361,7 @@ const UpdateSubscriptionTierBenefitModalContent = ({
       <div className="flex flex-col gap-y-6">
         <Form {...form}>
           <form
-            className="mt-4 flex flex-col gap-y-6"
+            className="flex flex-col gap-y-6"
             onSubmit={handleSubmit(handleUpdateNewBenefit)}
           >
             <NewBenefitForm update={true} />
@@ -395,12 +396,29 @@ const NewBenefitForm = ({ update = false }: NewBenefitFormProps) => {
       <FormField
         control={control}
         name="description"
+        rules={{
+          minLength: {
+            value: 3,
+            message: 'Description length must be at least 3 characters long',
+          },
+          maxLength: {
+            message: 'Description length must be less than 42 characters long',
+            value: 42,
+          },
+        }}
         render={({ field }) => {
           return (
-            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+            <FormItem>
+              <div className="flex flex-row items-center justify-between">
+                <FormLabel>Description</FormLabel>
+                <span className="dark:text-polar-400 text-sm text-gray-400">
+                  {field.value?.length ?? 0} / 42
+                </span>
+              </div>
               <FormControl>
-                <Input placeholder="Benefit Description" {...field} />
+                <Input {...field} />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )
         }}

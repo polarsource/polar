@@ -6,6 +6,7 @@ export interface ConfirmModalProps extends Omit<ModalProps, 'modalContent'> {
   title: string
   description: string
   destructive?: boolean
+  destructiveText?: string
   onConfirm: () => void
   onCancel?: () => void
 }
@@ -14,6 +15,7 @@ export const ConfirmModal = ({
   title,
   description,
   destructive,
+  destructiveText = 'Delete',
   onConfirm,
   onCancel,
   ...props
@@ -45,7 +47,7 @@ export const ConfirmModal = ({
                   variant={destructive ? 'destructive' : 'default'}
                   onClick={handleConfirm}
                 >
-                  {destructive ? 'Delete' : 'Confirm'}
+                  {destructive ? destructiveText : 'Confirm'}
                 </Button>
                 <Button variant="ghost" onClick={handleCancel}>
                   Cancel

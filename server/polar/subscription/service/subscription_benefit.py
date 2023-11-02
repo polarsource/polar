@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import Select, or_, select
+from sqlalchemy import Select, delete, or_, select
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import aliased, contains_eager
 
@@ -11,10 +11,12 @@ from polar.exceptions import NotPermitted, PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
+from polar.kit.utils import utc_now
 from polar.models import (
     Organization,
     Repository,
     SubscriptionBenefit,
+    SubscriptionTierBenefit,
     User,
     UserOrganization,
 )
@@ -165,6 +167,34 @@ class SubscriptionBenefitService(
         )
 
         return updated_subscription_benefit
+
+    async def user_delete(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        subscription_benefit: SubscriptionBenefit,
+        user: User,
+    ) -> SubscriptionBenefit:
+        subscription_benefit = await self._with_organization_or_repository(
+            session, subscription_benefit
+        )
+
+        if not await authz.can(user, AccessType.write, subscription_benefit):
+            raise NotPermitted()
+
+        subscription_benefit.deleted_at = utc_now()
+        session.add(subscription_benefit)
+        statement = delete(SubscriptionTierBenefit).where(
+            SubscriptionTierBenefit.subscription_benefit_id == subscription_benefit.id
+        )
+        await session.execute(statement)
+        await session.commit()
+
+        await subscription_benefit_grant_service.enqueue_benefit_grant_deletions(
+            session, subscription_benefit
+        )
+
+        return subscription_benefit
 
     async def _with_organization_or_repository(
         self, session: AsyncSession, subscription_benefit: SubscriptionBenefit

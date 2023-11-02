@@ -115,6 +115,40 @@ class SubscriptionBenefitGrantService(ResourceServiceReader[SubscriptionBenefitG
 
         return grant
 
+    async def enqueue_benefit_grant_deletions(
+        self, session: AsyncSession, subscription_benefit: SubscriptionBenefit
+    ) -> None:
+        grants = await self._get_granted_by_benefit(session, subscription_benefit)
+        for grant in grants:
+            await enqueue_job(
+                "subscription.subscription_benefit.delete",
+                subscription_benefit_grant_id=grant.id,
+            )
+
+    async def delete_benefit_grant(
+        self,
+        session: AsyncSession,
+        grant: SubscriptionBenefitGrant,
+    ) -> SubscriptionBenefitGrant:
+        # Already revoked, nothing to do
+        if grant.is_revoked:
+            return grant
+
+        await session.refresh(grant, {"subscription_benefit"})
+        subscription_benefit = grant.subscription_benefit
+
+        benefit_service = get_subscription_benefit_service(
+            subscription_benefit.type, session
+        )
+        await benefit_service.revoke(subscription_benefit)
+
+        grant.set_revoked()
+
+        session.add(grant)
+        await session.commit()
+
+        return grant
+
     async def _get_by_subscription_and_benefit(
         self,
         session: AsyncSession,

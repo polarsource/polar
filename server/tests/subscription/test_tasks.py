@@ -14,6 +14,7 @@ from polar.subscription.tasks import (  # type: ignore[attr-defined]
     SubscriptionBenefitGrantDoesNotExist,
     SubscriptionDoesNotExist,
     enqueue_benefits_grants,
+    subscription_benefit_delete,
     subscription_benefit_grant,
     subscription_benefit_grant_service,
     subscription_benefit_revoke,
@@ -194,3 +195,44 @@ class TestSubscriptionBenefitUpdate:
         await subscription_benefit_update(job_context, grant.id, polar_worker_context)
 
         update_benefit_grant_mock.assert_called_once()
+
+
+@pytest.mark.asyncio
+class TestSubscriptionBenefitDelete:
+    async def test_not_existing_grant(
+        self,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        subscription_benefit_organization: SubscriptionBenefit,
+    ) -> None:
+        with pytest.raises(SubscriptionBenefitGrantDoesNotExist):
+            await subscription_benefit_delete(
+                job_context, uuid.uuid4(), polar_worker_context
+            )
+
+    async def test_existing_grant(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        subscription: Subscription,
+        subscription_benefit_organization: SubscriptionBenefit,
+    ) -> None:
+        grant = SubscriptionBenefitGrant(
+            subscription=subscription,
+            subscription_benefit=subscription_benefit_organization,
+        )
+        grant.set_granted()
+        session.add(grant)
+        await session.commit()
+
+        delete_benefit_grant_mock = mocker.patch.object(
+            subscription_benefit_grant_service,
+            "delete_benefit_grant",
+            spec=SubscriptionBenefitGrantService.delete_benefit_grant,
+        )
+
+        await subscription_benefit_delete(job_context, grant.id, polar_worker_context)
+
+        delete_benefit_grant_mock.assert_called_once()

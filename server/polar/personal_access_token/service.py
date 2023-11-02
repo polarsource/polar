@@ -40,11 +40,12 @@ class PersonalAccessTokenService:
     async def create(
         self, session: AsyncSession, user_id: UUID, comment: str
     ) -> PersonalAccessToken:
-        pat = await PersonalAccessToken.create(
-            session=session,
+        pat = await PersonalAccessToken(
             user_id=user_id,
             comment=comment,
             expires_at=utc_now() + timedelta(days=365),
+        ).save(
+            session=session,
         )
         return pat
 

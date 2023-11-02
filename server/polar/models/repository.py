@@ -48,7 +48,9 @@ class Repository(RecordModel):
     watchers: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     main_branch: Mapped[str | None] = mapped_column(String, nullable=True)
-    topics: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=list)
+    topics: Mapped[list[str] | None] = mapped_column(
+        JSONB, nullable=False, default=list
+    )
 
     license: Mapped[str | None] = mapped_column(String, nullable=True)
     homepage: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -63,7 +65,7 @@ class Repository(RecordModel):
         TIMESTAMP(timezone=True), nullable=True
     )
     issues_references_synced_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
     # Automatically badge all new issues

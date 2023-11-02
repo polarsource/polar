@@ -55,8 +55,12 @@ class Organization(RecordModel):
         nullable=True,
         default=None,
     )
-    installation_suspended_by: Mapped[int | None] = mapped_column(Integer)
-    installation_suspender: Mapped[UUID | None] = mapped_column(PostgresUUID)
+    installation_suspended_by: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=None
+    )
+    installation_suspender: Mapped[UUID | None] = mapped_column(
+        PostgresUUID, nullable=True, default=None
+    )
 
     status: Mapped[Status] = mapped_column(
         StringEnum(Status), nullable=False, default=Status.ACTIVE
@@ -101,11 +105,13 @@ class Organization(RecordModel):
     total_monthly_spending_limit: Mapped[int | None] = mapped_column(
         Integer,
         nullable=True,
+        default=None,
     )
 
     per_user_monthly_spending_limit: Mapped[int | None] = mapped_column(
         Integer,
         nullable=True,
+        default=None,
     )
 
     #
@@ -113,13 +119,15 @@ class Organization(RecordModel):
     #
 
     # Org description or user bio
-    bio: Mapped[str | None] = mapped_column(String, nullable=True)
-    pretty_name: Mapped[str | None] = mapped_column(String, nullable=True)
-    company: Mapped[str | None] = mapped_column(String, nullable=True)
-    blog: Mapped[str | None] = mapped_column(String, nullable=True)
-    location: Mapped[str | None] = mapped_column(String, nullable=True)
-    email: Mapped[str | None] = mapped_column(String, nullable=True)
-    twitter_username: Mapped[str | None] = mapped_column(String, nullable=True)
+    bio: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    pretty_name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    company: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    blog: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    location: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    email: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    twitter_username: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
 
     #
     # End: Fields synced from GitHub

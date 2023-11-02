@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { Button } from 'polarkit/components/ui/atoms'
 import { Form } from 'polarkit/components/ui/form'
+import { Separator } from 'polarkit/components/ui/separator'
 import {
   useArchiveSubscriptionTier,
   useSubscriptionBenefits,
@@ -187,19 +188,22 @@ const SubscriptionTierEdit = ({
           onSelectBenefit={onSelectBenefit}
           onRemoveBenefit={onRemoveBenefit}
         />
-        <div>
-          <h3 className="max-w-1/2">Archive Subscription Tier</h3>
-          <p className="dark:text-polar-500 mb-6 mt-2 text-sm text-gray-400">
-            Archiving a subscription tier will not affect its current
-            subscribers, only prevent new subscribers.
-          </p>
+        <Separator className="w-1/2" />
+        <div className="flex w-1/2 flex-row items-start justify-between">
+          <div>
+            <h3 className="max-w-1/2">Archive Subscription Tier</h3>
+            <p className="dark:text-polar-500 mb-6 mt-2 w-3/4 text-sm  text-gray-400">
+              Archiving a subscription tier will not affect its current
+              subscribers, only prevent new subscribers.
+            </p>
+          </div>
           <Button variant="destructive" onClick={showArchiveModal}>
             Archive
           </Button>
         </div>
         <ConfirmModal
           title="Archive Subscription Tier"
-          description="Archiving a subscription tier will not affect its current subscribers, only prevent new subscribers. An archived subscription tier is permanently archived. Are you sure?"
+          description="Archiving a subscription tier will not affect its current subscribers, only prevent new subscribers. An archived subscription tier is permanently archived."
           onConfirm={handleArchiveSubscriptionTier}
           isShown={isArchiveModalShown}
           hide={hideArchiveModal}

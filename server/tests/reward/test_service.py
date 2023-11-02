@@ -127,7 +127,6 @@ async def test_list_rewards_to_user(
 
     # create two pledges
     pledge_1 = await Pledge(
-        id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=issue.id,
         repository_id=repository.id,
@@ -140,7 +139,6 @@ async def test_list_rewards_to_user(
     ).save(session)
 
     pledge_2 = await Pledge(
-        id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=issue.id,
         repository_id=repository.id,

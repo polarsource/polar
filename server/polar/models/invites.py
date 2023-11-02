@@ -30,14 +30,10 @@ class Invite(RecordModel, MappedAsDataclass, kw_only=True):
 
     @declared_attr
     def claimed_by_user(cls) -> Mapped[User | None]:
-        return relationship(
-            User, lazy="raise", primaryjoin=User.id == "Invite.claimed_by"
-        )
+        return relationship(User, lazy="raise", foreign_keys="[Invite.claimed_by]")
 
     @declared_attr
     def created_by_user(cls) -> Mapped[User]:
-        return relationship(
-            User, lazy="raise", primaryjoin=User.id == "Invite.created_by"
-        )
+        return relationship(User, lazy="raise", foreign_keys="[Invite.created_by]")
 
     note: Mapped[str | None] = mapped_column(String, nullable=True)

@@ -184,22 +184,22 @@ class TestEnqueueBenefitGrantUpdates:
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         granted_grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefit_organization.id,
         )
         granted_grant.set_granted()
         session.add(granted_grant)
 
         revoked_grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefit_organization.id,
         )
         revoked_grant.set_revoked()
         session.add(revoked_grant)
 
         other_benefit_grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            subscription_benefit=subscription_benefit_repository,
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefit_repository.id,
         )
         other_benefit_grant.set_granted()
         session.add(other_benefit_grant)
@@ -233,8 +233,8 @@ class TestUpdateBenefitGrant:
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefit_organization.id,
         )
         grant.set_revoked()
         session.add(grant)
@@ -255,8 +255,8 @@ class TestUpdateBenefitGrant:
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefit_organization.id,
         )
         grant.set_granted()
         session.add(grant)
@@ -282,22 +282,22 @@ class TestEnqueueBenefitGrantDeletions:
         subscription_benefit_repository: SubscriptionBenefit,
     ) -> None:
         granted_grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefit_organization.id,
         )
         granted_grant.set_granted()
         session.add(granted_grant)
 
         revoked_grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefit_organization.id,
         )
         revoked_grant.set_revoked()
         session.add(revoked_grant)
 
         other_benefit_grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            subscription_benefit=subscription_benefit_repository,
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefit_repository.id,
         )
         other_benefit_grant.set_granted()
         session.add(other_benefit_grant)
@@ -328,8 +328,8 @@ class TestDeleteBenefitGrant:
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefit_organization.id,
         )
         grant.set_revoked()
         session.add(grant)
@@ -350,8 +350,8 @@ class TestDeleteBenefitGrant:
         subscription_benefit_service_mock: MagicMock,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefit_organization.id,
         )
         grant.set_granted()
         session.add(grant)

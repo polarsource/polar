@@ -29,7 +29,6 @@ async def test_list_by_repository_type_and_status_sorting(
 ) -> None:
     # create testdata
     issue_1 = await Issue(
-        id=uuid.uuid4(),
         organization_id=organization.id,
         repository_id=repository.id,
         title="issue_1",
@@ -44,7 +43,6 @@ async def test_list_by_repository_type_and_status_sorting(
     ).save(session)
 
     issue_2 = await Issue(
-        id=uuid.uuid4(),
         organization_id=organization.id,
         repository_id=repository.id,
         title="issue_2",
@@ -61,7 +59,6 @@ async def test_list_by_repository_type_and_status_sorting(
     ).save(session)
 
     issue_3 = await Issue(
-        id=uuid.uuid4(),
         organization_id=organization.id,
         repository_id=repository.id,
         title="issue_3",
@@ -78,7 +75,6 @@ async def test_list_by_repository_type_and_status_sorting(
     ).save(session)
 
     issue_4 = await Issue(
-        id=uuid.uuid4(),
         organization_id=organization.id,
         repository_id=repository.id,
         title="issue_4",
@@ -186,7 +182,6 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
 
     # Create pledge
     pledge = await Pledge(
-        id=uuid.uuid4(),
         by_organization_id=organization.id,
         issue_id=third_party_issue.id,
         repository_id=third_party_repo.id,
@@ -198,7 +193,6 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
 
     # Create other pledge to this issue (not by the org)
     pledge_other = await Pledge(
-        id=uuid.uuid4(),
         issue_id=third_party_issue.id,
         repository_id=third_party_repo.id,
         organization_id=third_party_org.id,
@@ -209,7 +203,6 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
 
     # pledges to issue 3
     pledge_issue_3_user = await Pledge(
-        id=uuid.uuid4(),
         issue_id=third_party_issue_3.id,
         repository_id=third_party_repo.id,
         organization_id=third_party_org.id,
@@ -220,7 +213,6 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
     ).save(session)
 
     pledge_issue_3_org = await Pledge(
-        id=uuid.uuid4(),
         issue_id=third_party_issue_3.id,
         repository_id=third_party_repo.id,
         organization_id=third_party_org.id,
@@ -290,7 +282,6 @@ async def test_list_by_repository_type_and_status_dependencies_pledge_state(
 
         # Create pledge
         pledge = await Pledge(
-            id=uuid.uuid4(),
             by_organization_id=organization.id,
             issue_id=third_party_issue.id,
             repository_id=third_party_repo.id,
@@ -335,7 +326,6 @@ async def test_list_by_github_milestone_number(
             url="http://example.com/",
             html_url="http://example.com/",
             labels_url="http://example.com/",
-            id=1233333,
             node_id="xxxyyyyzzz",
             number=number,
             state="open",

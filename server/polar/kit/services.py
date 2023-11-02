@@ -5,6 +5,7 @@ from typing import Any, Generic, TypeVar
 from uuid import UUID
 
 from sqlalchemy.orm import InstrumentedAttribute
+from typing_extensions import deprecated
 
 from polar.kit.utils import utc_now
 
@@ -58,15 +59,15 @@ class ResourceService(
     # no state to retain. Unable to achieve this with mapping the model
     # and schema as class attributes though without breaking typing.
 
-    async def create(
-        self,
-        session: AsyncSession,
-        create_schema: CreateSchemaType,
-        autocommit: bool = True,
-    ) -> ModelType:
-        return await self.model.create(
-            session, **create_schema.dict(), autocommit=autocommit
-        )
+    # async def create(
+    #     self,
+    #     session: AsyncSession,
+    #     create_schema: CreateSchemaType,
+    #     autocommit: bool = True,
+    # ) -> ModelType:
+    #     return await self.model.create(
+    #         session, **create_schema.dict(), autocommit=autocommit
+    #     )
 
     # TODO: Investigate new bulk methods in SQLALchemy 2.0 for upsert_many
     async def upsert_many(

@@ -141,13 +141,13 @@ class Pledge(RecordModel, MappedAsDataclass, kw_only=True):
 
     @declared_attr
     def user(cls) -> Mapped[User | None]:
-        return relationship(User, primaryjoin=User.id == cls.by_user_id, lazy="raise")
+        return relationship(User, foreign_keys="Pledge.by_user_id", lazy="raise")
 
     @declared_attr
     def by_organization(cls) -> Mapped[Organization]:
         return relationship(
             Organization,
-            primaryjoin=Organization.id == "Pledge.by_organization_id",
+            foreign_keys="Pledge.by_organization_id",
             lazy="raise",
         )
 
@@ -155,7 +155,7 @@ class Pledge(RecordModel, MappedAsDataclass, kw_only=True):
     def on_behalf_of_organization(cls) -> Mapped[Organization]:
         return relationship(
             Organization,
-            primaryjoin=Organization.id == "Pledge.on_behalf_of_organization_id",
+            foreign_keys="Pledge.on_behalf_of_organization_id",
             lazy="raise",
         )
 
@@ -163,7 +163,7 @@ class Pledge(RecordModel, MappedAsDataclass, kw_only=True):
     def to_repository(cls) -> Mapped[Repository]:
         return relationship(
             Repository,
-            primaryjoin=Repository.id == "Pledge.repository_id",
+            foreign_keys="Pledge.repository_id",
             lazy="raise",
         )
 
@@ -171,18 +171,22 @@ class Pledge(RecordModel, MappedAsDataclass, kw_only=True):
     def to_organization(cls) -> Mapped[Organization]:
         return relationship(
             Organization,
-            primaryjoin=Organization.id == "Pledge.organization_id",
+            foreign_keys="Pledge.organization_id",
             lazy="raise",
         )
 
     @declared_attr
     def created_by_user(cls) -> Mapped[User | None]:
         return relationship(
-            User, primaryjoin=User.id == "Pledge.created_by_user_id", lazy="raise"
+            User,
+            foreign_keys="Pledge.created_by_user_id",
+            lazy="raise",
         )
 
     @declared_attr
     def issue(cls) -> Mapped[Issue]:
         return relationship(
-            Issue, primaryjoin=Issue.id == "Pledge.issue_id", lazy="raise"
+            Issue,
+            foreign_keys="Pledge.issue_id",
+            lazy="raise",
         )

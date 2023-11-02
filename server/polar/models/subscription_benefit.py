@@ -67,9 +67,9 @@ class SubscriptionBenefit(RecordModel, MappedAsDataclass, kw_only=True):
         Boolean, nullable=False, default=False
     )
 
-    @declared_attr
-    def properties(cls) -> Mapped[SubscriptionBenefitProperties]:
-        return mapped_column("properties", JSONB, nullable=False, default=dict)
+    properties: Mapped[SubscriptionBenefitProperties] = mapped_column(
+        "properties", JSONB, nullable=False, default=dict
+    )
 
     organization_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
@@ -97,9 +97,9 @@ class SubscriptionBenefit(RecordModel, MappedAsDataclass, kw_only=True):
 
 
 class SubscriptionBenefitCustom(SubscriptionBenefit):
-    @declared_attr
-    def properties(cls) -> Mapped[SubscriptionBenefitCustomProperties]:
-        return mapped_column(use_existing_column=True)
+    properties: Mapped[SubscriptionBenefitCustomProperties] = mapped_column(
+        use_existing_column=True, default=dict
+    )
 
     __mapper_args__ = {
         "polymorphic_identity": SubscriptionBenefitType.custom,
@@ -108,9 +108,9 @@ class SubscriptionBenefitCustom(SubscriptionBenefit):
 
 
 class SubscriptionBenefitBuiltin(SubscriptionBenefit):
-    @declared_attr
-    def properties(cls) -> Mapped[SubscriptionBenefitBuiltinProperties]:
-        return mapped_column(use_existing_column=True)
+    properties: Mapped[SubscriptionBenefitCustomProperties] = mapped_column(
+        use_existing_column=True, default=dict
+    )
 
     __mapper_args__ = {
         "polymorphic_identity": SubscriptionBenefitType.builtin,

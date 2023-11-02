@@ -189,8 +189,7 @@ class PaymentIntentService:
             else PledgeState.initiated
         )
 
-        pledge = await Pledge.create(
-            session=session,
+        pledge = await Pledge(
             payment_id=payment_intent_id,
             issue_id=issue.id,
             repository_id=repo.id,
@@ -202,7 +201,11 @@ class PaymentIntentService:
             type=PledgeType.pay_upfront,
             by_user_id=user_id,
             by_organization_id=None,
-            on_behalf_of_organization_id=metadata.on_behalf_of_organization_id,
+            on_behalf_of_organization_id=metadata.on_behalf_of_organization_id
+            if metadata.on_behalf_of_organization_id
+            else None,
+        ).save(
+            session=session,
         )
 
         if state == PledgeState.created:

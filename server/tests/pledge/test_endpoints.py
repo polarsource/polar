@@ -275,7 +275,6 @@ async def test_search_pledge_by_issue_id(
     )
 
     other_pledge = await Pledge(
-        id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=other_issue.id,
         repository_id=repository.id,
@@ -288,7 +287,6 @@ async def test_search_pledge_by_issue_id(
     )
 
     other_pledge_2 = await Pledge(
-        id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=other_issue.id,
         repository_id=repository.id,

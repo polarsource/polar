@@ -59,7 +59,7 @@ class IssueFields(MappedAsDataclass, kw_only=True):
 
     @declared_attr
     def organization(cls) -> "Mapped[Organization]":
-        return relationship("Organization", lazy="raise")
+        return relationship("Organization", lazy="raise", init=False)
 
     repository_id: "MappedColumn[UUID]" = mapped_column(
         PostgresUUID,
@@ -70,52 +70,52 @@ class IssueFields(MappedAsDataclass, kw_only=True):
 
     @declared_attr
     def repository(cls) -> "Mapped[Repository]":
-        return relationship("Repository", lazy="raise")
+        return relationship("Repository", lazy="raise", init=False)
 
     number: Mapped[int] = mapped_column(Integer, nullable=False)
 
     title: Mapped[str] = mapped_column(String, nullable=False)
-    body: Mapped[str | None] = mapped_column(Text, nullable=True, default=True)
-    comments: Mapped[int | None] = mapped_column(Integer, nullable=True, default=True)
+    body: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    comments: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
     author: Mapped[JSONAny] = mapped_column(
-        JSONB(none_as_null=True), nullable=True, default=True
+        JSONB(none_as_null=True), nullable=True, default=None
     )
     author_association: Mapped[str | None] = mapped_column(
-        String, nullable=True, default=True
+        String, nullable=True, default=None
     )
     labels: Mapped[JSONAny] = mapped_column(
-        JSONB(none_as_null=True), nullable=True, default=True
+        JSONB(none_as_null=True), nullable=True, default=None
     )
     assignee: Mapped[JSONAny] = mapped_column(
-        JSONB(none_as_null=True), nullable=True, default=True
+        JSONB(none_as_null=True), nullable=True, default=None
     )
     assignees: Mapped[JSONAny] = mapped_column(
-        JSONB(none_as_null=True), nullable=True, default=True
+        JSONB(none_as_null=True), nullable=True, default=None
     )
     milestone: Mapped[JSONAny] = mapped_column(
-        JSONB(none_as_null=True), nullable=True, default=True
+        JSONB(none_as_null=True), nullable=True, default=None
     )
     closed_by: Mapped[JSONAny] = mapped_column(
-        JSONB(none_as_null=True), nullable=True, default=True
+        JSONB(none_as_null=True), nullable=True, default=None
     )
     reactions: Mapped[JSONAny] = mapped_column(
-        JSONB(none_as_null=True), nullable=True, default=True
+        JSONB(none_as_null=True), nullable=True, default=None
     )
 
     state: Mapped[str] = mapped_column(StringEnum(State), nullable=False)
     state_reason: Mapped[str | None] = mapped_column(
-        String, nullable=True, default=True
+        String, nullable=True, default=None
     )
 
     issue_closed_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True, default=True
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
     issue_created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )
     issue_modified_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True, default=True
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
     @declared_attr
@@ -123,6 +123,7 @@ class IssueFields(MappedAsDataclass, kw_only=True):
         return mapped_column(
             TSVectorType("title", regconfig="simple"),
             sa.Computed("to_tsvector('simple', \"title\")", persisted=True),
+            init=False,
         )
 
 

@@ -85,7 +85,6 @@ async def predictable_issue(
     predictable_repository: Repository,
 ) -> Issue:
     issue = await Issue(
-        id=uuid.uuid4(),
         organization_id=predictable_organization.id,
         repository_id=predictable_repository.id,
         title="issue title",
@@ -111,7 +110,6 @@ async def predictable_user(
     session: AsyncSession,
 ) -> User:
     user = await User(
-        id=uuid.uuid4(),
         username="foobar",
         email="test@example.com",
     ).save(
@@ -131,7 +129,6 @@ async def predictable_pledge(
     predictable_pledging_organization: Organization,
 ) -> Pledge:
     pledge = await Pledge(
-        id=uuid.uuid4(),
         by_organization_id=predictable_pledging_organization.id,
         issue_id=predictable_issue.id,
         repository_id=predictable_repository.id,
@@ -154,7 +151,6 @@ async def predictable_pull_request(
     predictable_repository: Repository,
 ) -> PullRequest:
     pr = await PullRequest(
-        id=uuid.uuid4(),
         repository_id=predictable_repository.id,
         organization_id=predictable_organization.id,
         number=5555,

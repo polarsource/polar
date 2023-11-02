@@ -33,8 +33,7 @@ async def test_create_pledge_from_created(
 
     payment_id = "xxx-1"
 
-    pledge = await Pledge.create(
-        session=session,
+    pledge = await Pledge(
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
@@ -43,6 +42,8 @@ async def test_create_pledge_from_created(
         by_organization_id=organization.id,
         state=PledgeState.initiated,
         payment_id=payment_id,
+    ).save(
+        session=session,
     )
     await pledge_service.mark_created_by_payment_id(
         session,
@@ -90,8 +91,7 @@ async def test_create_pledge_from_created_by_user(
 
     payment_id = "xxx-1"
 
-    pledge = await Pledge.create(
-        session=session,
+    pledge = await Pledge(
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
@@ -100,6 +100,8 @@ async def test_create_pledge_from_created_by_user(
         by_user_id=user.id,
         state=PledgeState.initiated,
         payment_id=payment_id,
+    ).save(
+        session=session,
     )
     await pledge_service.mark_created_by_payment_id(
         session,
@@ -147,8 +149,7 @@ async def test_create_pledge_from_created_on_behalf_of(
 
     payment_id = "xxx-1"
 
-    pledge = await Pledge.create(
-        session=session,
+    pledge = await Pledge(
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
@@ -158,6 +159,8 @@ async def test_create_pledge_from_created_on_behalf_of(
         by_user_id=user.id,
         state=PledgeState.initiated,
         payment_id=payment_id,
+    ).save(
+        session=session,
     )
     await pledge_service.mark_created_by_payment_id(
         session,
@@ -209,8 +212,7 @@ async def test_deduplicate(
     spy = mocker.spy(NotificationsService, "send_to_org_admins")
     mocker.patch("polar.worker._enqueue_job")
 
-    pledge = await Pledge.create(
-        session=session,
+    pledge = await Pledge(
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
@@ -219,6 +221,8 @@ async def test_deduplicate(
         by_organization_id=organization.id,
         state=PledgeState.initiated,
         payment_id="xxx-2",
+    ).save(
+        session=session,
     )
 
     # Check notifictions

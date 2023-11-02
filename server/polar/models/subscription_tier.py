@@ -46,9 +46,11 @@ class SubscriptionTier(RecordModel, MappedAsDataclass, kw_only=True):
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     stripe_product_id: Mapped[str | None] = mapped_column(
-        String, nullable=True, index=True
+        String, nullable=True, index=True, default=None
     )
-    stripe_price_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    stripe_price_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
 
     organization_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
@@ -70,14 +72,19 @@ class SubscriptionTier(RecordModel, MappedAsDataclass, kw_only=True):
     def repository(cls) -> Mapped["Repository | None"]:
         return relationship("Repository", lazy="raise")
 
-    subscription_tier_benefits: Mapped[list["SubscriptionTierBenefit"]] = relationship(
-        lazy="selectin",
-        order_by="SubscriptionTierBenefit.order",
-        cascade="all, delete-orphan",
-    )
+    @declared_attr
+    def subscription_tier_benefits(cls) -> Mapped[list["SubscriptionTierBenefit"]]:
+        return relationship(
+            "SubscriptionTierBenefit",
+            lazy="selectin",
+            order_by="SubscriptionTierBenefit.order",
+            cascade="all, delete-orphan",
+        )
 
     benefits: AssociationProxy[list["SubscriptionBenefit"]] = association_proxy(
-        "subscription_tier_benefits", "subscription_benefit"
+        "subscription_tier_benefits",
+        "subscription_benefit",
+        init=False,
     )
 
     @property

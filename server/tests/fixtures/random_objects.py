@@ -112,7 +112,6 @@ async def create_issue(
     session: AsyncSession, organization: Organization, repository: Repository
 ) -> Issue:
     issue = await Issue(
-        id=uuid.uuid4(),
         organization_id=organization.id,
         repository_id=repository.id,
         title="issue title",
@@ -144,7 +143,6 @@ async def create_user(
     session: AsyncSession,
 ) -> User:
     user = await User(
-        id=uuid.uuid4(),
         username=rstr("testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
@@ -159,7 +157,6 @@ async def user_second(
     session: AsyncSession,
 ) -> User:
     user = await User(
-        id=uuid.uuid4(),
         username=rstr("testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
@@ -184,7 +181,6 @@ async def create_pledge(
     amount = secrets.randbelow(100000) + 1
     fee = round(amount * 0.05)
     pledge = await Pledge(
-        id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=issue.id,
         repository_id=repository.id,
@@ -224,7 +220,6 @@ async def pledge_by_user(
     amount = secrets.randbelow(100000) + 1
     fee = round(amount * 0.05)
     pledge = await Pledge(
-        id=uuid.uuid4(),
         issue_id=issue.id,
         repository_id=repository.id,
         organization_id=organization.id,
@@ -248,7 +243,6 @@ async def pull_request(
     repository: Repository,
 ) -> PullRequest:
     pr = await PullRequest(
-        id=uuid.uuid4(),
         repository_id=repository.id,
         organization_id=organization.id,
         number=secrets.randbelow(5000),

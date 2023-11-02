@@ -179,8 +179,8 @@ class TestSubscriptionBenefitUpdate:
         subscription_benefit_organization: SubscriptionBenefit,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefit_organization.id,
         )
         grant.set_granted()
         session.add(grant)
@@ -220,8 +220,8 @@ class TestSubscriptionBenefitDelete:
         subscription_benefit_organization: SubscriptionBenefit,
     ) -> None:
         grant = SubscriptionBenefitGrant(
-            subscription=subscription,
-            subscription_benefit=subscription_benefit_organization,
+            subscription_id=subscription.id,
+            subscription_benefit_id=subscription_benefit_organization.id,
         )
         grant.set_granted()
         session.add(grant)

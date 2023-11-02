@@ -38,14 +38,21 @@ class Model(
     metadata = my_metadata
 
 
-class TimestampedModel(Model, MappedAsDataclass):
+class TimestampedModel(Model, MappedAsDataclass, kw_only=True):
     __abstract__ = True
 
     created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False, default=utc_now
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=None,
+        insert_default=utc_now,
+        # init=False,
     )
     modified_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), onupdate=utc_now, nullable=True, default=None
+        TIMESTAMP(timezone=True),
+        onupdate=utc_now,
+        nullable=True,
+        default=None,
     )
     deleted_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
@@ -56,5 +63,9 @@ class RecordModel(TimestampedModel, MappedAsDataclass):
     __abstract__ = True
 
     id: MappedColumn[UUID] = mapped_column(
-        PostgresUUID, primary_key=True, default=generate_uuid
+        PostgresUUID,
+        primary_key=True,
+        init=False,
+        # default=generate_uuid,
+        insert_default=generate_uuid,
     )

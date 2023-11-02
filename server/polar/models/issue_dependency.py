@@ -45,7 +45,7 @@ class IssueDependency(TimestampedModel, MappedAsDataclass, kw_only=True):
             Issue,
             uselist=False,
             lazy="raise",
-            primaryjoin=Issue.id == "IssueDependency.dependent_issue_id",
+            foreign_keys="[IssueDependency.dependent_issue_id]",
         )
 
     @declared_attr
@@ -54,5 +54,5 @@ class IssueDependency(TimestampedModel, MappedAsDataclass, kw_only=True):
             Issue,
             uselist=False,
             lazy="raise",
-            primaryjoin=Issue.id == "IssueDependency.dependency_issue_id",
+            foreign_keys="[IssueDependency.dependency_issue_id]",
         )

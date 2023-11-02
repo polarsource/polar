@@ -26,6 +26,7 @@ from polar.repository.service import repository as repository_service
 
 from ..schemas import (
     SubscriptionBenefitCreate,
+    SubscriptionBenefitCustomCreate,
     SubscriptionBenefitUpdate,
 )
 from .subscription_benefit_grant import (
@@ -56,6 +57,23 @@ class SubscriptionBenefitService(
         SubscriptionBenefit, SubscriptionBenefitCreate, SubscriptionBenefitUpdate
     ]
 ):
+    async def create(
+        self,
+        session: AsyncSession,
+        create_schema: SubscriptionBenefitCreate,
+        autocommit: bool = True,
+    ) -> SubscriptionBenefit:
+        return await SubscriptionBenefit(
+            type=create_schema.type,
+            description=create_schema.description,
+            organization_id=create_schema.organization_id,
+            repository_id=create_schema.repository_id,
+            is_tax_applicable=create_schema.is_tax_applicable
+            if isinstance(create_schema, SubscriptionBenefitCustomCreate)
+            else False,
+            properties=create_schema.properties,
+        ).save(session, autocommit=autocommit)
+
     async def search(
         self,
         session: AsyncSession,
@@ -136,11 +154,9 @@ class SubscriptionBenefitService(
             ):
                 raise RepositoryDoesNotExist(create_schema.repository_id)
 
-        return await self.model.create(
+        return await self.create(
             session,
-            organization=organization,
-            repository=repository,
-            **create_schema.dict(exclude={"organization_id", "repository_id"}),
+            create_schema,
         )
 
     async def user_update(

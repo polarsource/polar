@@ -95,7 +95,6 @@ async def test_mark_pending_by_issue_id(
     # create multiple pledges
     pledges: list[Pledge] = [
         await Pledge(
-            id=uuid.uuid4(),
             by_organization_id=pledging_organization.id,
             issue_id=issue.id,
             repository_id=repository.id,
@@ -120,7 +119,6 @@ async def test_mark_pending_by_issue_id(
 
     # Create a pay on completion pledge
     await Pledge(
-        id=uuid.uuid4(),
         by_user_id=user.id,
         issue_id=issue.id,
         repository_id=repository.id,
@@ -188,7 +186,6 @@ async def test_mark_pending_already_pending_no_notification(
     # create multiple pledges
     pledges: list[Pledge] = [
         await Pledge(
-            id=uuid.uuid4(),
             by_organization_id=pledging_organization.id,
             issue_id=issue.id,
             repository_id=repository.id,
@@ -683,7 +680,6 @@ async def test_generate_pledge_testdata(
     pledges = [
         [
             await Pledge(
-                id=uuid.uuid4(),
                 # by_organization_id=pledging_organization.id,
                 issue_id=issue.id,
                 repository_id=issue.repository_id,
@@ -694,7 +690,6 @@ async def test_generate_pledge_testdata(
                 email="pledger@example.com",
             ).save(session),
             await Pledge(
-                id=uuid.uuid4(),
                 by_organization_id=pledging_org.id,
                 issue_id=issue.id,
                 repository_id=issue.repository_id,

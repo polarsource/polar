@@ -87,6 +87,23 @@ class NoAssociatedPayoutAccount(SubscriptionTierError):
 class SubscriptionTierService(
     ResourceService[SubscriptionTier, SubscriptionTierCreate, SubscriptionTierUpdate]
 ):
+    async def create(
+        self,
+        session: AsyncSession,
+        create_schema: SubscriptionTierCreate,
+        autocommit: bool = True,
+    ) -> SubscriptionTier:
+        return await SubscriptionTier(
+            type=create_schema.type,
+            name=create_schema.name,
+            description=create_schema.description,
+            is_highlighted=create_schema.is_highlighted,
+            price_amount=create_schema.price_amount,
+            price_currency=create_schema.price_currency,
+            organization_id=create_schema.organization_id,
+            repository_id=create_schema.repository_id,
+        ).save(session, autocommit=autocommit)
+
     async def search(
         self,
         session: AsyncSession,
@@ -183,12 +200,9 @@ class SubscriptionTierService(
                 repository_id=create_schema.repository_id,
             )
 
-        subscription_tier = await self.model.create(
+        subscription_tier = await self.create(
             session,
-            organization=organization,
-            repository=repository,
-            subscription_tier_benefits=[],
-            **create_schema.dict(exclude={"organization_id", "repository_id"}),
+            create_schema,
             autocommit=False,
         )
         await session.flush()
@@ -313,11 +327,14 @@ class SubscriptionTierService(
                 await nested.rollback()
                 raise SubscriptionBenefitDoesNotExist(subscription_benefit_id)
             new_benefits.add(subscription_benefit)
-            subscription_tier.subscription_tier_benefits.append(
-                SubscriptionTierBenefit(
-                    subscription_benefit=subscription_benefit, order=order
-                )
+
+            tier_benefit = SubscriptionTierBenefit(
+                subscription_tier_id=subscription_tier.id,
+                subscription_benefit_id=subscription_benefit.id,
+                order=order,
             )
+            session.add(tier_benefit)
+            subscription_tier.subscription_tier_benefits.append(tier_benefit)
 
         added_benefits = new_benefits - previous_benefits
         deleted_benefits = previous_benefits - new_benefits

@@ -37,7 +37,7 @@ export const ConfirmModal = ({
           <div className="flex flex-col items-center gap-y-4 px-6 py-12 text-center">
             <>
               <h3 className="text-xl font-medium">{title}</h3>
-              <p className="dark:text-polar-500 text-gray-300">{description}</p>
+              <p className="dark:text-polar-500 text-gray-400">{description}</p>
               <div className="flex flex-row items-center justify-center gap-x-4 pt-8">
                 <Button
                   variant={destructive ? 'destructive' : 'default'}

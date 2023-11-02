@@ -22,6 +22,7 @@ import {
 } from 'polarkit/components/ui/form'
 import {
   useCreateSubscriptionBenefit,
+  useDeleteSubscriptionBenefit,
   useUpdateSubscriptionBenefit,
 } from 'polarkit/hooks'
 import { useCallback, useState } from 'react'
@@ -55,6 +56,14 @@ const BenefitRow = ({
     hide: hideDelete,
     toggle: toggleDelete,
   } = useModal()
+
+  const deleteSubscriptionBenefit = useDeleteSubscriptionBenefit(
+    organization.name,
+  )
+
+  const handleDeleteSubscriptionBenefit = useCallback(() => {
+    deleteSubscriptionBenefit.mutateAsync({ id: benefit.id })
+  }, [deleteSubscriptionBenefit, benefit])
 
   return (
     <div className="flex flex-row items-center justify-between py-2">
@@ -117,7 +126,7 @@ const BenefitRow = ({
         hide={hideDelete}
         title="Delete Benefit"
         description={`You are about to delete a benefit. Are you sure?`}
-        onConfirm={console.log}
+        onConfirm={handleDeleteSubscriptionBenefit}
         destructive
       />
     </div>

@@ -258,11 +258,9 @@ const Split = (props: {
                 )}
               </div>
               <div className="flex w-[120px] items-center gap-2 py-2">
-                <span className="dark:text-polar-400 flex-shrink-0 text-gray-500">
-                  %
-                </span>
                 <div className="flex-1">
                   <Input
+                    postSlot="%"
                     className={twMerge(
                       'w-full',
                       s.is_fixed

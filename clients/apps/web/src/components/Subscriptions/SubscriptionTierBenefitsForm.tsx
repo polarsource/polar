@@ -125,7 +125,7 @@ const BenefitRow = ({
         isShown={isDeleteShown}
         hide={hideDelete}
         title="Delete Benefit"
-        description={`You are about to delete a benefit. Are you sure?`}
+        description={`Deleting a benefit will remove it from other Subscription tiers & revokes it for existing subscribers. Are you sure?`}
         onConfirm={handleDeleteSubscriptionBenefit}
         destructive
       />
@@ -160,7 +160,7 @@ const SubscriptionTierBenefitsForm = ({
         onRemoveBenefit(benefit)
       }
     },
-    [benefits, onSelectBenefit, onRemoveBenefit],
+    [onSelectBenefit, onRemoveBenefit],
   )
 
   return (

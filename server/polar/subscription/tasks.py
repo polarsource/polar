@@ -1,8 +1,11 @@
 import uuid
 
+from arq import Retry
+
 from polar.exceptions import PolarError
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
+from .service.benefits import SubscriptionBenefitRetriableError
 from .service.subscription import subscription as subscription_service
 from .service.subscription_benefit import (
     subscription_benefit as subscription_benefit_service,
@@ -73,9 +76,12 @@ async def subscription_benefit_grant(
         if subscription_benefit is None:
             raise SubscriptionBenefitDoesNotExist(subscription_benefit_id)
 
-        await subscription_benefit_grant_service.grant_benefit(
-            session, subscription, subscription_benefit
-        )
+        try:
+            await subscription_benefit_grant_service.grant_benefit(
+                session, subscription, subscription_benefit, attempt=ctx["job_try"]
+            )
+        except SubscriptionBenefitRetriableError as e:
+            raise Retry(e.defer_seconds) from e
 
 
 @task("subscription.subscription_benefit.revoke")
@@ -96,9 +102,12 @@ async def subscription_benefit_revoke(
         if subscription_benefit is None:
             raise SubscriptionBenefitDoesNotExist(subscription_benefit_id)
 
-        await subscription_benefit_grant_service.revoke_benefit(
-            session, subscription, subscription_benefit
-        )
+        try:
+            await subscription_benefit_grant_service.revoke_benefit(
+                session, subscription, subscription_benefit, attempt=ctx["job_try"]
+            )
+        except SubscriptionBenefitRetriableError as e:
+            raise Retry(e.defer_seconds) from e
 
 
 @task("subscription.subscription_benefit.update")
@@ -114,9 +123,12 @@ async def subscription_benefit_update(
         if subscription_benefit_grant is None:
             raise SubscriptionBenefitGrantDoesNotExist(subscription_benefit_grant_id)
 
-        await subscription_benefit_grant_service.update_benefit_grant(
-            session, subscription_benefit_grant
-        )
+        try:
+            await subscription_benefit_grant_service.update_benefit_grant(
+                session, subscription_benefit_grant, attempt=ctx["job_try"]
+            )
+        except SubscriptionBenefitRetriableError as e:
+            raise Retry(e.defer_seconds) from e
 
 
 @task("subscription.subscription_benefit.delete")
@@ -132,6 +144,9 @@ async def subscription_benefit_delete(
         if subscription_benefit_grant is None:
             raise SubscriptionBenefitGrantDoesNotExist(subscription_benefit_grant_id)
 
-        await subscription_benefit_grant_service.delete_benefit_grant(
-            session, subscription_benefit_grant
-        )
+        try:
+            await subscription_benefit_grant_service.delete_benefit_grant(
+                session, subscription_benefit_grant, attempt=ctx["job_try"]
+            )
+        except SubscriptionBenefitRetriableError as e:
+            raise Retry(e.defer_seconds) from e

@@ -4003,12 +4003,6 @@ export interface SubscriptionBenefitCustomUpdate {
     description?: string;
     /**
      * 
-     * @type {boolean}
-     * @memberof SubscriptionBenefitCustomUpdate
-     */
-    is_tax_applicable?: boolean;
-    /**
-     * 
      * @type {object}
      * @memberof SubscriptionBenefitCustomUpdate
      */

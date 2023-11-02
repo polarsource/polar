@@ -52,6 +52,10 @@ export interface SubscriptionsApiCreateSubscriptionTierRequest {
     subscriptionTierCreate: SubscriptionTierCreate;
 }
 
+export interface SubscriptionsApiDeleteSubscriptionBenefitRequest {
+    id: string;
+}
+
 export interface SubscriptionsApiGetSubscribeSessionRequest {
     id: string;
 }
@@ -287,6 +291,43 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     async createSubscriptionTier(requestParameters: SubscriptionsApiCreateSubscriptionTierRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionTier> {
         const response = await this.createSubscriptionTierRaw(requestParameters, initOverrides);
         return await response.value();
+    }
+
+    /**
+     * Delete Subscription Benefit
+     */
+    async deleteSubscriptionBenefitRaw(requestParameters: SubscriptionsApiDeleteSubscriptionBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        if (requestParameters.id === null || requestParameters.id === undefined) {
+            throw new runtime.RequiredError('id','Required parameter requestParameters.id was null or undefined when calling deleteSubscriptionBenefit.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/subscriptions/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters.id))),
+            method: 'DELETE',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.VoidApiResponse(response);
+    }
+
+    /**
+     * Delete Subscription Benefit
+     */
+    async deleteSubscriptionBenefit(requestParameters: SubscriptionsApiDeleteSubscriptionBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.deleteSubscriptionBenefitRaw(requestParameters, initOverrides);
     }
 
     /**

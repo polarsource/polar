@@ -115,9 +115,6 @@ const PublicRewardsSetting = (props: {
                 </div>
               </div>
               <div className="flex w-[120px] items-center gap-3 py-2">
-                <span className="dark:text-polar-400 flex-shrink-0 text-gray-500">
-                  %
-                </span>
                 <div className="flex-1">
                   <Input
                     className={
@@ -125,6 +122,7 @@ const PublicRewardsSetting = (props: {
                         ? 'dark:text-polar-100 font-medium text-black'
                         : 'dark:text-polar-400 text-gray-500'
                     }
+                    postSlot="%"
                     disabled={!usePublicRewards}
                     value={contributorsShare}
                     placeholder={'50'}
@@ -153,11 +151,8 @@ const PublicRewardsSetting = (props: {
                 </div>
               </div>
               <div className="flex w-[120px] items-center gap-3 py-2">
-                <span className="dark:text-polar-400 flex-shrink-0 text-gray-500">
-                  %
-                </span>
                 <div className="flex-1">
-                  <Input disabled value={maintainerShare} />
+                  <Input disabled value={maintainerShare} postSlot="%" />
                 </div>
               </div>
             </div>

@@ -40,6 +40,44 @@ log = structlog.get_logger()
 
 
 class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
+    async def create(
+        self,
+        session: AsyncSession,
+        create_schema: IssueCreate,
+        autocommit: bool = True,
+    ) -> Issue:
+        return await Issue(
+            platform=create_schema.platform,
+            external_id=create_schema.external_id,
+            organization_id=create_schema.organization_id,
+            repository_id=create_schema.repository_id,
+            number=create_schema.number,
+            title=create_schema.title,
+            body=create_schema.body,
+            comments=create_schema.comments,
+            author=create_schema.author,
+            author_association=create_schema.author_association,
+            labels=create_schema.labels,
+            assignee=create_schema.assignee,
+            assignees=create_schema.assignees,
+            milestone=create_schema.milestone,
+            closed_by=create_schema.closed_by,
+            reactions=create_schema.reactions,
+            state=create_schema.state,
+            state_reason=create_schema.state_reason,
+            issue_closed_at=create_schema.issue_closed_at,
+            issue_modified_at=create_schema.issue_modified_at,
+            issue_created_at=create_schema.issue_created_at,
+            external_lookup_key=create_schema.external_lookup_key,
+            has_pledge_badge_label=create_schema.has_pledge_badge_label,
+            pledge_badge_embedded_at=create_schema.pledge_badge_embedded_at,
+            positive_reactions_count=create_schema.positive_reactions_count,
+            total_engagement_count=create_schema.total_engagement_count,
+            #
+            issue_has_in_progress_relationship=False,
+            issue_has_pull_request_relationship=False,
+        ).save(session, autocommit=autocommit)
+
     async def get_loaded(
         self,
         session: AsyncSession,

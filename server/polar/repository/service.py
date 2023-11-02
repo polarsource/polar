@@ -22,6 +22,40 @@ log = structlog.get_logger()
 class RepositoryService(
     ResourceService[Repository, RepositoryCreate, RepositoryUpdate]
 ):
+    async def create(
+        self,
+        session: AsyncSession,
+        create_schema: RepositoryCreate,
+        autocommit: bool = True,
+    ) -> Repository:
+        return await Repository(
+            platform=create_schema.platform,
+            external_id=create_schema.external_id,
+            organization_id=create_schema.organization_id,
+            name=create_schema.name,
+            description=create_schema.description,
+            open_issues=create_schema.open_issues,
+            forks=create_schema.forks,
+            stars=create_schema.stars,
+            watchers=create_schema.watchers,
+            main_branch=create_schema.main_branch,
+            topics=create_schema.topics,
+            license=create_schema.license,
+            homepage=create_schema.homepage,
+            repository_pushed_at=create_schema.repository_pushed_at,
+            repository_created_at=create_schema.repository_created_at,
+            repository_modified_at=create_schema.repository_modified_at,
+            is_private=create_schema.is_private,
+            is_fork=create_schema.is_fork,
+            is_issues_enabled=create_schema.is_issues_enabled,
+            is_projects_enabled=create_schema.is_projects_enabled,
+            is_wiki_enabled=create_schema.is_wiki_enabled,
+            is_pages_enabled=create_schema.is_pages_enabled,
+            is_downloads_enabled=create_schema.is_downloads_enabled,
+            is_archived=create_schema.is_archived,
+            is_disabled=create_schema.is_disabled,
+        ).save(session, autocommit=autocommit)
+
     async def get(
         self,
         session: AsyncSession,

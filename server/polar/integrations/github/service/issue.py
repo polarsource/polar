@@ -14,10 +14,9 @@ from githubkit.rest.models import Label
 from githubkit.rest.models import Repository as GitHubRepository
 from githubkit.webhooks.models import Issue as GitHubWebhookIssue
 from githubkit.webhooks.models import Label as WebhookLabel
-from pydantic import parse_obj_as
 from sqlalchemy import asc, or_
 
-from polar.dashboard.schemas import IssueListType, IssueSortBy
+from polar.dashboard.schemas import IssueSortBy
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
 from polar.integrations.github import client as github
@@ -28,14 +27,13 @@ from polar.issue.schemas import IssueCreate, IssueUpdate
 from polar.issue.service import IssueService
 from polar.kit.db.postgres import (
     AsyncSession,
-    async_sessionmaker,
 )
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Issue, Organization, Repository
 from polar.models.user import User
-from polar.postgres import AsyncSessionMaker, get_db_session
+from polar.postgres import AsyncSessionMaker
 from polar.redis import redis
 from polar.repository.hooks import (
     repository_issue_synced,

@@ -22,6 +22,18 @@ class InvalidMagicLink(PolarError):
 
 
 class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpdate]):
+    async def create(
+        self,
+        session: AsyncSession,
+        create_schema: MagicLinkCreate,
+        autocommit: bool = True,
+    ) -> MagicLink:
+        return await MagicLink(
+            token_hash=create_schema.token_hash,
+            user_email=create_schema.user_email,
+            user_id=create_schema.user_id,
+        ).save(session, autocommit=autocommit)
+
     async def request(
         self, session: AsyncSession, magic_link_request: MagicLinkRequest
     ) -> tuple[MagicLink, str]:

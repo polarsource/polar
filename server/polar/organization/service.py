@@ -24,6 +24,27 @@ log = structlog.get_logger()
 class OrganizationService(
     ResourceService[Organization, OrganizationCreate, OrganizationGitHubUpdate]
 ):
+    async def create(
+        self,
+        session: AsyncSession,
+        create_schema: OrganizationCreate,
+        autocommit: bool = True,
+    ) -> Organization:
+        return await Organization(
+            platform=create_schema.platform,
+            name=create_schema.name,
+            avatar_url=create_schema.avatar_url,
+            external_id=create_schema.external_id,
+            is_personal=create_schema.is_personal,
+            installation_id=create_schema.installation_id,
+            installation_created_at=create_schema.installation_created_at,
+            installation_updated_at=create_schema.installation_updated_at,
+            installation_suspended_at=create_schema.installation_suspended_at,
+            onboarded_at=create_schema.onboarded_at,
+            pledge_minimum_amount=create_schema.pledge_minimum_amount,
+            default_badge_custom_content=create_schema.default_badge_custom_content,
+        ).save(session, autocommit=autocommit)
+
     async def list_installed(self, session: AsyncSession) -> Sequence[Organization]:
         stmt = sql.select(Organization).where(
             Organization.deleted_at.is_(None),

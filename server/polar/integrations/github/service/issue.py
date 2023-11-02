@@ -292,24 +292,6 @@ class GithubIssueService(IssueService):
 
         return True
 
-    # client.rest.issues_async_get
-    async def async_issues_get_with_headers(
-        self,
-        client: GitHub[Any],
-        owner: str,
-        repo: str,
-        issue_number: int,
-        etag: str | None = None,
-    ) -> Response[GitHubIssue]:
-        url = f"/repos/{owner}/{repo}/issues/{issue_number}"
-
-        return await github_api.async_request_with_headers(
-            client=client,
-            url=url,
-            etag=etag,
-            response_model=GitHubIssue,
-        )
-
     async def sync_issue(
         self,
         session: AsyncSession,
@@ -330,12 +312,13 @@ class GithubIssueService(IssueService):
         log.info("github.sync_issue", issue_id=issue.id)
 
         try:
-            res = await self.async_issues_get_with_headers(
-                client,
-                owner=org.name,
+            res = await client.rest.issues.async_get(
+                org.name,
                 repo=repo.name,
                 issue_number=issue.number,
-                etag=issue.github_issue_etag,
+                headers={"If-None-Match": issue.github_issue_etag}
+                if issue.github_issue_etag
+                else {},
             )
         except RequestFailed as e:
             if e.response.status_code == 404:

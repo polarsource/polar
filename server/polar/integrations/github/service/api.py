@@ -1,13 +1,8 @@
-from typing import Any, TypeVar
+from typing import Any
 
-from githubkit import GitHub, Response
-from githubkit.rest.models import BasicError
-from githubkit.typing import QueryParamTypes
-from githubkit.utils import UNSET, exclude_unset
+from githubkit import GitHub
 
 from polar.kit.schemas import Schema
-
-T = TypeVar("T")
 
 
 class RateLimit(Schema):
@@ -25,33 +20,6 @@ class GitHubApi:
             remaining=r.parsed_data.resources.core.remaining,
             used=r.parsed_data.resources.core.used,
             reset=r.parsed_data.resources.core.reset,
-        )
-
-    # Support for custom headers
-    # TODO: https://github.com/yanyongyu/githubkit/issues/29
-    async def async_request_with_headers(
-        self,
-        client: GitHub[Any],
-        url: str,
-        response_model: type[T],
-        params: QueryParamTypes | None = None,
-        etag: str | None = None,
-    ) -> Response[T]:
-        headers = {
-            "If-None-Match": etag if etag else UNSET,
-            "X-GitHub-Api-Version": "2022-11-28",
-        }
-
-        return await client.arequest(
-            "GET",
-            url,
-            params=params,
-            headers=exclude_unset(headers),
-            response_model=response_model,
-            error_models={
-                "404": BasicError,
-                "410": BasicError,
-            },
         )
 
 

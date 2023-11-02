@@ -6,9 +6,8 @@ from uuid import UUID
 
 import structlog
 from fastapi.encoders import jsonable_encoder
-from githubkit import GitHub, Response
+from githubkit import GitHub
 from githubkit.exception import RequestFailed
-from githubkit.utils import exclude_unset
 from pydantic import Field, ValidationError, parse_obj_as
 
 import polar.integrations.github.client as github
@@ -183,31 +182,6 @@ class GitHubIssueReferencesService:
 
         return res
 
-    async def async_list_events_for_timeline_with_headers(
-        self,
-        client: GitHub[Any],
-        owner: str,
-        repo: str,
-        issue_number: int,
-        per_page: int = 30,
-        page: int = 1,
-        etag: str | None = None,
-    ) -> Response[list[TimelineEventType]]:
-        url = f"/repos/{owner}/{repo}/issues/{issue_number}/timeline"
-
-        params = {
-            "per_page": per_page,
-            "page": page,
-        }
-
-        return await github_api.async_request_with_headers(
-            client=client,
-            url=url,
-            params=exclude_unset(params),
-            etag=etag,
-            response_model=list[TimelineEventType],
-        )
-
     async def sync_issue_references(
         self,
         session: AsyncSession,
@@ -238,14 +212,15 @@ class GitHubIssueReferencesService:
             first_page = page == 1
 
             try:
-                res = await self.async_list_events_for_timeline_with_headers(
-                    client,
+                res = await client.rest.issues.async_list_events_for_timeline(
                     owner=org.name,
                     repo=repo.name,
                     issue_number=issue.number,
                     page=page,
                     per_page=100,
-                    etag=issue.github_timeline_etag if first_page else None,
+                    headers={"If-None-Match": issue.github_timeline_etag}
+                    if issue.github_timeline_etag is not None and first_page
+                    else {},
                 )
             except RequestFailed as e:
                 if e.response.status_code == 404:

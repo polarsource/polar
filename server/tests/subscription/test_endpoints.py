@@ -734,6 +734,11 @@ class TestCreateSubscriptionBenefit:
                     "result in a very ugly output on the subscription page."
                 ),
             },
+            {
+                "is_tax_applicable": True,
+                "properties": {},
+                "description": "Th",
+            },
             {"description": "Subscription Benefit", "properties": {}},
         ],
     )

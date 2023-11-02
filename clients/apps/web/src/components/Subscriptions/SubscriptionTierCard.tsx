@@ -130,7 +130,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
           )}
         </div>
       </CardHeader>
-      {benefitsToDisplay.length > 0 && (
+      {benefitsToDisplay.length > 0 && subscriptionTier.description && (
         <Separator className="bg-[--var-border-color] dark:bg-[--var-dark-border-color]" />
       )}
       <CardContent className="flex shrink flex-col gap-y-2 p-0">

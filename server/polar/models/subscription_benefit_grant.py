@@ -13,13 +13,14 @@ from sqlalchemy.orm import (
 )
 
 from polar.kit.db.models import RecordModel
+from polar.kit.db.models.base import RecordModelNoDataClass
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
     from polar.models import Subscription, SubscriptionBenefit
 
 
-class SubscriptionBenefitGrant(RecordModel, MappedAsDataclass, kw_only=True):
+class SubscriptionBenefitGrant(RecordModelNoDataClass):
     __tablename__ = "subscription_benefit_grants"
 
     granted_at: Mapped[datetime | None] = mapped_column(

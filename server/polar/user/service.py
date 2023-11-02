@@ -50,7 +50,7 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         return user
 
     async def signup_by_email(self, session: AsyncSession, email: str) -> User:
-        user = User(username=email, email=email)
+        user = User(username=email, email=email, profile={})
         session.add(user)
         await session.commit()
 

@@ -14,6 +14,7 @@ from sqlalchemy.orm import (
 
 from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
+from polar.kit.db.models.base import RecordModelNoDataClass
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
@@ -56,7 +57,7 @@ class SubscriptionBenefitBuiltinProperties(SubscriptionBenefitProperties):
 M = TypeVar("M", bound=SubscriptionBenefitProperties)
 
 
-class SubscriptionBenefit(RecordModel, MappedAsDataclass, kw_only=True):
+class SubscriptionBenefit(RecordModelNoDataClass):
     __tablename__ = "subscription_benefits"
 
     type: Mapped[SubscriptionBenefitType] = mapped_column(

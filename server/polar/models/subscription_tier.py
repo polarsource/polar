@@ -13,6 +13,7 @@ from sqlalchemy.orm import (
 )
 
 from polar.kit.db.models import RecordModel
+from polar.kit.db.models.base import RecordModelNoDataClass
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
@@ -30,7 +31,7 @@ class SubscriptionTierType(StrEnum):
     business = "business"
 
 
-class SubscriptionTier(RecordModel, MappedAsDataclass, kw_only=True):
+class SubscriptionTier(RecordModelNoDataClass):
     __tablename__ = "subscription_tiers"
 
     type: Mapped[SubscriptionTierType] = mapped_column(
@@ -84,7 +85,6 @@ class SubscriptionTier(RecordModel, MappedAsDataclass, kw_only=True):
     benefits: AssociationProxy[list["SubscriptionBenefit"]] = association_proxy(
         "subscription_tier_benefits",
         "subscription_benefit",
-        init=False,
     )
 
     @property

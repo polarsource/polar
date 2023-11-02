@@ -146,6 +146,7 @@ async def create_user(
         username=rstr("testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
+        profile={},
     ).save(session=session)
 
     await session.commit()
@@ -160,6 +161,7 @@ async def user_second(
         username=rstr("testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
+        profile={},
     ).save(
         session=session,
     )

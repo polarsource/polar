@@ -27,7 +27,6 @@ class UserBase(Schema):
     username: str = Field(..., max_length=50)
     email: EmailStr
     avatar_url: str | None
-    profile: dict[str, Any]
 
     class Config:
         orm_mode = True
@@ -47,7 +46,7 @@ class UserRead(UserBase, TimestampedSchema):
     accepted_terms_of_service: bool
     email_newsletters_and_changelogs: bool
     email_promotions_and_events: bool
-    oauth_accounts: list[OAuthAccountRead]
+    oauth_accounts: list[OAuthAccountRead] = []
 
 
 # TODO: remove

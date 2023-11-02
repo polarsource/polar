@@ -14,7 +14,7 @@ from polar.integrations.stripe.service import ProductUpdateKwargs, StripeError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceService
+from polar.kit.services import ResourceService, ResourceServiceNoDataClass
 from polar.models import (
     Account,
     Organization,
@@ -85,7 +85,9 @@ class NoAssociatedPayoutAccount(SubscriptionTierError):
 
 
 class SubscriptionTierService(
-    ResourceService[SubscriptionTier, SubscriptionTierCreate, SubscriptionTierUpdate]
+    ResourceServiceNoDataClass[
+        SubscriptionTier, SubscriptionTierCreate, SubscriptionTierUpdate
+    ]
 ):
     async def create(
         self,

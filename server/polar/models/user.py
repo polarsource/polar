@@ -62,7 +62,10 @@ class User(RecordModel, MappedAsDataclass, kw_only=True):
     )
 
     profile: Mapped[dict[str, Any] | None] = mapped_column(
-        JSONB, default=None, nullable=True, insert_default={}
+        JSONB,
+        nullable=True,
+        default=None,
+        insert_default=dict,
     )
 
     @declared_attr

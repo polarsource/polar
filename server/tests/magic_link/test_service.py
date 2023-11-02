@@ -122,7 +122,7 @@ async def test_send(
 async def test_authenticate_existing_user(
     session: AsyncSession, generate_magic_link_token: GenerateMagicLinkToken
 ) -> None:
-    user = User(username="user@example.com", email="user@example.com")
+    user = User(username="user@example.com", email="user@example.com", profile={})
     session.add(user)
     await session.commit()
 
@@ -140,7 +140,7 @@ async def test_authenticate_existing_user(
 async def test_authenticate_existing_user_unlinked_from_magic_token(
     session: AsyncSession, generate_magic_link_token: GenerateMagicLinkToken
 ) -> None:
-    user = User(username="user@example.com", email="user@example.com")
+    user = User(username="user@example.com", email="user@example.com", profile={})
     session.add(user)
     await session.commit()
 

@@ -12,13 +12,14 @@ from sqlalchemy.orm import (
 )
 
 from polar.kit.db.models import RecordModel
+from polar.kit.db.models.base import RecordModelNoDataClass
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
     from polar.models import SubscriptionBenefit
 
 
-class SubscriptionTierBenefit(RecordModel, MappedAsDataclass, kw_only=True):
+class SubscriptionTierBenefit(RecordModelNoDataClass):
     __tablename__ = "subscription_tier_benefits"
     __table_args__ = (UniqueConstraint("subscription_tier_id", "order"),)
 
@@ -36,4 +37,4 @@ class SubscriptionTierBenefit(RecordModel, MappedAsDataclass, kw_only=True):
 
     @declared_attr
     def subscription_benefit(cls) -> Mapped["SubscriptionBenefit"]:
-        return relationship("SubscriptionBenefit", lazy="joined")
+        return relationship("SubscriptionBenefit", lazy="raise")

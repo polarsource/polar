@@ -26,7 +26,10 @@ class MagicLink(RecordModel, MappedAsDataclass, kw_only=True):
 
     token_hash: Mapped[str] = mapped_column(String, index=True, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False, default=get_expires_at
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=None,
+        insert_default=get_expires_at,
     )
 
     user_email: Mapped[str] = mapped_column(String, nullable=False)

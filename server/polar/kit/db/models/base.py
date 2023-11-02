@@ -69,3 +69,37 @@ class RecordModel(TimestampedModel, MappedAsDataclass):
         # default=generate_uuid,
         insert_default=generate_uuid,
     )
+
+
+# same as above, but without dataclass
+class RecordModelNoDataClass(
+    DeclarativeBase,
+    ActiveRecordMixin,
+    SerializeMixin,
+):
+    __abstract__ = True
+
+    metadata = my_metadata
+
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=utc_now,
+    )
+
+    modified_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True),
+        onupdate=utc_now,
+        nullable=True,
+        default=None,
+    )
+
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+
+    id: MappedColumn[UUID] = mapped_column(
+        PostgresUUID,
+        primary_key=True,
+        default=generate_uuid,
+    )

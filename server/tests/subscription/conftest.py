@@ -108,9 +108,8 @@ async def add_subscription_benefits(
             subscription_benefit_id=subscription_benefit.id,
             order=order,
         )
-        # session.add(benefit)???
-
-        subscription_tier.subscription_tier_benefits.append(benefit)
+        session.add(benefit)
+        # subscription_tier.subscription_tier_benefits.append(benefit)
     session.add(subscription_tier)
     await session.commit()
     return subscription_tier

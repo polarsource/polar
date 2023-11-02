@@ -61,9 +61,9 @@ const SubscriptionTierEdit = ({
   organizationBenefits,
 }: SubscriptionTierEditProps) => {
   const router = useRouter()
-  const [enabledBenefits, setEnabledBenefits] = useState<
-    SubscriptionTierBenefit[]
-  >(subscriptionTier.benefits ?? [])
+  const [enabledBenefitIds, setEnabledBenefitIds] = useState<
+    SubscriptionTierBenefit['id'][]
+  >(subscriptionTier.benefits.map((benefit) => benefit.id) ?? [])
 
   const form = useForm<SubscriptionTierUpdate>({
     defaultValues: subscriptionTier,
@@ -87,7 +87,7 @@ const SubscriptionTierEdit = ({
       await updateSubscriptionTierBenefits.mutateAsync({
         id: subscriptionTier.id,
         subscriptionTierBenefitsUpdate: {
-          benefits: enabledBenefits.map((benefit) => benefit.id),
+          benefits: enabledBenefitIds,
         },
       })
 
@@ -98,7 +98,7 @@ const SubscriptionTierEdit = ({
       router,
       organization,
       subscriptionTier,
-      enabledBenefits,
+      enabledBenefitIds,
       updateSubscriptionTier,
       updateSubscriptionTierBenefits,
     ],
@@ -106,18 +106,26 @@ const SubscriptionTierEdit = ({
 
   const onSelectBenefit = useCallback(
     (benefit: SubscriptionTierBenefit) => {
-      setEnabledBenefits((benefits) => [...benefits, benefit])
+      setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
     },
-    [setEnabledBenefits],
+    [setEnabledBenefitIds],
   )
 
   const onRemoveBenefit = useCallback(
     (benefit: SubscriptionTierBenefit) => {
-      setEnabledBenefits((benefits) =>
-        benefits.filter((b) => b.id !== benefit.id),
+      setEnabledBenefitIds((benefits) =>
+        benefits.filter((b) => b !== benefit.id),
       )
     },
-    [setEnabledBenefits],
+    [setEnabledBenefitIds],
+  )
+
+  const enabledBenefits = React.useMemo(
+    () =>
+      organizationBenefits.filter((benefit) =>
+        enabledBenefitIds.includes(benefit.id),
+      ),
+    [organizationBenefits, enabledBenefitIds],
   )
 
   return (

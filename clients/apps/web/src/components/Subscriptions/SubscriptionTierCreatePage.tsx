@@ -59,8 +59,8 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
   organizationBenefits,
 }) => {
   const router = useRouter()
-  const [enabledBenefits, setEnabledBenefits] = useState<
-    SubscriptionTierBenefit[]
+  const [enabledBenefitIds, setEnabledBenefitIds] = useState<
+    SubscriptionTierBenefit['id'][]
   >([])
 
   const form = useForm<SubscriptionTierCreate>({
@@ -89,7 +89,7 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
       await updateSubscriptionTierBenefits.mutateAsync({
         id: tier.id,
         subscriptionTierBenefitsUpdate: {
-          benefits: enabledBenefits.map((benefit) => benefit.id),
+          benefits: enabledBenefitIds,
         },
       })
 
@@ -99,7 +99,7 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
     [
       router,
       organization,
-      enabledBenefits,
+      enabledBenefitIds,
       createSubscriptionTier,
       updateSubscriptionTierBenefits,
     ],
@@ -107,18 +107,26 @@ const SubscriptionTierCreate: React.FC<SubscriptionTierCreateProps> = ({
 
   const onSelectBenefit = useCallback(
     (benefit: SubscriptionTierBenefit) => {
-      setEnabledBenefits((benefits) => [...benefits, benefit])
+      setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
     },
-    [setEnabledBenefits],
+    [setEnabledBenefitIds],
   )
 
   const onRemoveBenefit = useCallback(
     (benefit: SubscriptionTierBenefit) => {
-      setEnabledBenefits((benefits) =>
-        benefits.filter((b) => b.id !== benefit.id),
+      setEnabledBenefitIds((benefitIds) =>
+        benefitIds.filter((b) => b !== benefit.id),
       )
     },
-    [setEnabledBenefits],
+    [setEnabledBenefitIds],
+  )
+
+  const enabledBenefits = React.useMemo(
+    () =>
+      organizationBenefits.filter((benefit) =>
+        enabledBenefitIds.includes(benefit.id),
+      ),
+    [organizationBenefits, enabledBenefitIds],
   )
 
   return (

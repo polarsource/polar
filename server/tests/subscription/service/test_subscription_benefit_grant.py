@@ -269,3 +269,98 @@ class TestUpdateBenefitGrant:
         assert updated_grant.id == grant.id
         assert updated_grant.is_granted
         subscription_benefit_service_mock.grant.assert_called_once()
+
+
+@pytest.mark.asyncio
+class TestEnqueueBenefitGrantDeletions:
+    async def test_valid(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_repository: SubscriptionBenefit,
+    ) -> None:
+        granted_grant = SubscriptionBenefitGrant(
+            subscription=subscription,
+            subscription_benefit=subscription_benefit_organization,
+        )
+        granted_grant.set_granted()
+        session.add(granted_grant)
+
+        revoked_grant = SubscriptionBenefitGrant(
+            subscription=subscription,
+            subscription_benefit=subscription_benefit_organization,
+        )
+        revoked_grant.set_revoked()
+        session.add(revoked_grant)
+
+        other_benefit_grant = SubscriptionBenefitGrant(
+            subscription=subscription,
+            subscription_benefit=subscription_benefit_repository,
+        )
+        other_benefit_grant.set_granted()
+        session.add(other_benefit_grant)
+
+        await session.commit()
+
+        enqueue_job_mock = mocker.patch(
+            "polar.subscription.service.subscription_benefit_grant.enqueue_job"
+        )
+
+        await subscription_benefit_grant_service.enqueue_benefit_grant_deletions(
+            session, subscription_benefit_organization
+        )
+
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.subscription_benefit.delete",
+            subscription_benefit_grant_id=granted_grant.id,
+        )
+
+
+@pytest.mark.asyncio
+class TestDeleteBenefitGrant:
+    async def test_revoked_grant(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_service_mock: MagicMock,
+    ) -> None:
+        grant = SubscriptionBenefitGrant(
+            subscription=subscription,
+            subscription_benefit=subscription_benefit_organization,
+        )
+        grant.set_revoked()
+        session.add(grant)
+        await session.commit()
+
+        updated_grant = await subscription_benefit_grant_service.delete_benefit_grant(
+            session, grant
+        )
+
+        assert updated_grant.id == grant.id
+        subscription_benefit_service_mock.revoke.assert_not_called()
+
+    async def test_granted_grant(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        subscription_benefit_organization: SubscriptionBenefit,
+        subscription_benefit_service_mock: MagicMock,
+    ) -> None:
+        grant = SubscriptionBenefitGrant(
+            subscription=subscription,
+            subscription_benefit=subscription_benefit_organization,
+        )
+        grant.set_granted()
+        session.add(grant)
+        await session.commit()
+
+        updated_grant = await subscription_benefit_grant_service.delete_benefit_grant(
+            session, grant
+        )
+
+        assert updated_grant.id == grant.id
+        assert updated_grant.is_revoked
+        subscription_benefit_service_mock.revoke.assert_called_once()

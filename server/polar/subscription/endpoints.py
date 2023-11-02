@@ -313,6 +313,25 @@ async def update_subscription_benefit(
     )
 
 
+@router.delete("/benefits/{id}", status_code=204, tags=[Tags.PUBLIC])
+async def delete_subscription_benefit(
+    id: UUID4,
+    auth: UserRequiredAuth,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    subscription_benefit = await subscription_benefit_service.get_by_id(
+        session, auth.subject, id
+    )
+
+    if subscription_benefit is None:
+        raise ResourceNotFound()
+
+    await subscription_benefit_service.user_delete(
+        session, authz, subscription_benefit, auth.user
+    )
+
+
 @router.post(
     "/subscribe-sessions/",
     response_model=SubscribeSession,

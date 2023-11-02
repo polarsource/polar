@@ -354,3 +354,41 @@ class TestUserUpdate:
         assert updated_subscription_benefit.description == "Description update"
 
         enqueue_benefit_grant_updates_mock.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+class TestUserDelete:
+    async def test_not_writable_subscription_benefit(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        subscription_benefit_organization: SubscriptionBenefit,
+    ) -> None:
+        with pytest.raises(NotPermitted):
+            await subscription_benefit_service.user_delete(
+                session, authz, subscription_benefit_organization, user
+            )
+
+    async def test_valid(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        authz: Authz,
+        user: User,
+        subscription_benefit_organization: SubscriptionBenefit,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        enqueue_benefit_grant_updates_mock = mocker.patch.object(
+            subscription_benefit_grant_service,
+            "enqueue_benefit_grant_deletions",
+            spec=SubscriptionBenefitGrantService.enqueue_benefit_grant_updates,
+        )
+
+        updated_subscription_benefit = await subscription_benefit_service.user_delete(
+            session, authz, subscription_benefit_organization, user
+        )
+
+        assert updated_subscription_benefit.deleted_at is not None
+
+        enqueue_benefit_grant_updates_mock.assert_awaited_once()

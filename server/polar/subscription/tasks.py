@@ -117,3 +117,21 @@ async def subscription_benefit_update(
         await subscription_benefit_grant_service.update_benefit_grant(
             session, subscription_benefit_grant
         )
+
+
+@task("subscription.subscription_benefit.delete")
+async def subscription_benefit_delete(
+    ctx: JobContext,
+    subscription_benefit_grant_id: uuid.UUID,
+    polar_context: PolarWorkerContext,
+) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        subscription_benefit_grant = await subscription_benefit_grant_service.get(
+            session, subscription_benefit_grant_id
+        )
+        if subscription_benefit_grant is None:
+            raise SubscriptionBenefitGrantDoesNotExist(subscription_benefit_grant_id)
+
+        await subscription_benefit_grant_service.delete_benefit_grant(
+            session, subscription_benefit_grant
+        )

@@ -852,6 +852,39 @@ class TestUpdateSubscriptionBenefit:
 
 
 @pytest.mark.asyncio
+class TestDeleteSubscriptionBenefit:
+    async def test_anonymous(
+        self,
+        client: AsyncClient,
+        subscription_benefit_organization: SubscriptionBenefit,
+    ) -> None:
+        response = await client.delete(
+            f"/api/v1/subscriptions/benefits/{subscription_benefit_organization.id}"
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.authenticated
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.delete(f"/api/v1/subscriptions/benefits/{uuid.uuid4()}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.authenticated
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        subscription_benefit_organization: SubscriptionBenefit,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        response = await client.delete(
+            f"/api/v1/subscriptions/benefits/{subscription_benefit_organization.id}"
+        )
+
+        assert response.status_code == 204
+
+
+@pytest.mark.asyncio
 class TestCreateSubscribeSession:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.post(

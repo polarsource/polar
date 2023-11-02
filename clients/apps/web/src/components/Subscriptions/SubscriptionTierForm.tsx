@@ -7,6 +7,7 @@ import {
 } from '@polar-sh/sdk'
 import {
   Input,
+  MoneyInput,
   Select,
   SelectContent,
   SelectItem,
@@ -131,26 +132,16 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
         name="price_amount"
         rules={{ required: 'This field is required', min: 0 }}
         render={({ field }) => {
-          const displayValue =
-            field.value !== undefined ? field.value / 100 : undefined
-          const onChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
-            e.preventDefault()
-            if (e.currentTarget.value !== undefined) {
-              e.currentTarget.value = (
-                Number.parseInt(e.currentTarget.value) * 100
-              ).toString()
-              field.onChange(e)
-            }
-          }
           return (
             <FormItem className="max-w-[300px]">
               <FormLabel>Monthly Price</FormLabel>
               <FormControl>
-                <Input
-                  type="number"
-                  {...field}
-                  onChange={onChange}
-                  value={displayValue !== undefined ? displayValue : ''}
+                <MoneyInput
+                  id="monthly-price"
+                  name={field.name}
+                  value={field.value}
+                  onAmountChangeInCents={field.onChange}
+                  placeholder={0}
                 />
               </FormControl>
               <FormMessage />

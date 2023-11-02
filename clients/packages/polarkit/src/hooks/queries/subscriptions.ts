@@ -188,3 +188,32 @@ export const useCreateSubscriptionBenefit = (orgName?: string) =>
       })
     },
   })
+
+export const useDeleteSubscriptionBenefit = (orgName?: string) =>
+  useMutation({
+    mutationFn: ({
+      id,
+      subscriptionBenefitDelete,
+    }: {
+      id: string
+      subscriptionBenefitDelete: SubscriptionBenefitDelete
+    }) => {
+      return api.subscriptions.deleteSubscriptionBenefit({
+        id,
+        subscriptionBenefitDelete,
+      })
+    },
+    onSuccess: (result, variables, ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptionBenefits', 'id', result.id],
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptionBenefits', 'organization', orgName],
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptionTiers'],
+      })
+    },
+  })

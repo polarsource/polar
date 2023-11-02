@@ -1,4 +1,4 @@
-import { EditOutlined, LoyaltyOutlined } from '@mui/icons-material'
+import { LoyaltyOutlined, MoreVertOutlined } from '@mui/icons-material'
 import {
   Organization,
   SubscriptionBenefitCreate,
@@ -7,6 +7,12 @@ import {
 } from '@polar-sh/sdk'
 import { Button, Input, ShadowBox, Switch } from 'polarkit/components/ui/atoms'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from 'polarkit/components/ui/dropdown-menu'
 import {
   Form,
   FormControl,
@@ -23,6 +29,7 @@ import { useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
+import { ConfirmModal } from '../Shared/ConfirmModal'
 import { resolveBenefitIcon } from './utils'
 
 interface BenefitRowProps {
@@ -38,23 +45,19 @@ const BenefitRow = ({
   checked,
   onCheckedChange,
 }: BenefitRowProps) => {
-  const [showEditButton, setShowEditButton] = useState(false)
-  const { isShown, toggle, hide } = useModal()
-
-  const handleMouseEnter = useCallback(() => {
-    setShowEditButton(true)
-  }, [])
-
-  const handleMouseLeave = useCallback(() => {
-    setShowEditButton(false)
-  }, [])
+  const {
+    isShown: isEditShown,
+    toggle: toggleEdit,
+    hide: hideEdit,
+  } = useModal()
+  const {
+    isShown: isDeleteShown,
+    hide: hideDelete,
+    toggle: toggleDelete,
+  } = useModal()
 
   return (
-    <div
-      className="flex flex-row items-center justify-between py-2"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
+    <div className="flex flex-row items-center justify-between py-2">
       <div className="flex flex-row items-center gap-x-4">
         <div
           className={twMerge(
@@ -75,33 +78,47 @@ const BenefitRow = ({
         </span>
       </div>
       <div className="flex flex-row items-center gap-x-4 text-[14px]">
-        <Button
-          className={twMerge(
-            'border-none text-sm opacity-0 transition-opacity',
-            showEditButton && 'opacity-100',
-          )}
-          size="icon"
-          variant="secondary"
-          onClick={() => {
-            toggle()
-            setShowEditButton(false)
-          }}
-        >
-          <EditOutlined fontSize="inherit" />
-        </Button>
         <Switch checked={checked} onCheckedChange={onCheckedChange} />
+        <DropdownMenu>
+          <DropdownMenuTrigger className="focus:outline-none">
+            <Button
+              className={
+                'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+              }
+              size="icon"
+              variant="secondary"
+            >
+              <MoreVertOutlined fontSize="inherit" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className="dark:bg-polar-800 bg-gray-50 shadow-lg"
+          >
+            <DropdownMenuItem onClick={toggleEdit}>Edit</DropdownMenuItem>
+            <DropdownMenuItem onClick={toggleDelete}>Delete</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <Modal
         className="overflow-visible"
-        isShown={isShown}
-        hide={toggle}
+        isShown={isEditShown}
+        hide={hideEdit}
         modalContent={
           <UpdateSubscriptionTierBenefitModalContent
             organization={organization}
             benefit={benefit}
-            hideModal={hide}
+            hideModal={hideEdit}
           />
         }
+      />
+      <ConfirmModal
+        isShown={isDeleteShown}
+        hide={hideDelete}
+        title="Delete Benefit"
+        description={`You are about to delete a benefit. Are you sure?`}
+        onConfirm={console.log}
+        destructive
       />
     </div>
   )

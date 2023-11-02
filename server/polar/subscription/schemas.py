@@ -19,14 +19,19 @@ from polar.models.subscription_tier import SubscriptionTierType
 TIER_NAME_MIN_LENGTH = 3
 TIER_NAME_MAX_LENGTH = 24
 TIER_DESCRIPTION_MAX_LENGTH = 240
-BENEFIT_DESCRIPTION_MAX_LENGTH = 120
+BENEFIT_DESCRIPTION_MIN_LENGTH = 3
+BENEFIT_DESCRIPTION_MAX_LENGTH = 42
 
 
 # SubscriptionBenefitCreate
 
 
 class SubscriptionBenefitCreateBase(Schema):
-    description: str = Field(..., max_length=BENEFIT_DESCRIPTION_MAX_LENGTH)
+    description: str = Field(
+        ...,
+        min_length=BENEFIT_DESCRIPTION_MIN_LENGTH,
+        max_length=BENEFIT_DESCRIPTION_MAX_LENGTH,
+    )
     organization_id: UUID4 | None = None
     repository_id: UUID4 | None = None
     properties: SubscriptionBenefitProperties
@@ -70,7 +75,11 @@ SubscriptionBenefitCreate = (
 
 
 class SubscriptionBenefitUpdateBase(Schema):
-    description: str | None = Field(None, max_length=BENEFIT_DESCRIPTION_MAX_LENGTH)
+    description: str | None = Field(
+        None,
+        min_length=BENEFIT_DESCRIPTION_MIN_LENGTH,
+        max_length=BENEFIT_DESCRIPTION_MAX_LENGTH,
+    )
 
 
 class SubscriptionBenefitBuiltinUpdate(SubscriptionBenefitUpdateBase):

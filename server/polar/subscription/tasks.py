@@ -33,6 +33,16 @@ class SubscriptionBenefitDoesNotExist(PolarError):
         super().__init__(message, 500)
 
 
+class SubscriptionBenefitGrantDoesNotExist(PolarError):
+    def __init__(self, subscription_benefit_grant_id: uuid.UUID) -> None:
+        self.subscription_benefit_grant_id = subscription_benefit_grant_id
+        message = (
+            f"The susbcription benefit grant with id {subscription_benefit_grant_id} "
+            "does not exist."
+        )
+        super().__init__(message, 500)
+
+
 @task("subscription.subscription.enqueue_benefits_grants")
 async def enqueue_benefits_grants(
     ctx: JobContext, subscription_id: uuid.UUID, polar_context: PolarWorkerContext
@@ -88,4 +98,22 @@ async def subscription_benefit_revoke(
 
         await subscription_benefit_grant_service.revoke_benefit(
             session, subscription, subscription_benefit
+        )
+
+
+@task("subscription.subscription_benefit.update")
+async def subscription_benefit_update(
+    ctx: JobContext,
+    subscription_benefit_grant_id: uuid.UUID,
+    polar_context: PolarWorkerContext,
+) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        subscription_benefit_grant = await subscription_benefit_grant_service.get(
+            session, subscription_benefit_grant_id
+        )
+        if subscription_benefit_grant is None:
+            raise SubscriptionBenefitGrantDoesNotExist(subscription_benefit_grant_id)
+
+        await subscription_benefit_grant_service.update_benefit_grant(
+            session, subscription_benefit_grant
         )

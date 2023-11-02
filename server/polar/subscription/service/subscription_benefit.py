@@ -26,6 +26,9 @@ from ..schemas import (
     SubscriptionBenefitCreate,
     SubscriptionBenefitUpdate,
 )
+from .subscription_benefit_grant import (
+    subscription_benefit_grant as subscription_benefit_grant_service,
+)
 
 
 class SubscriptionBenefitError(PolarError):
@@ -153,9 +156,15 @@ class SubscriptionBenefitService(
         if not await authz.can(user, AccessType.write, subscription_benefit):
             raise NotPermitted()
 
-        return await subscription_benefit.update(
+        updated_subscription_benefit = await subscription_benefit.update(
             session, **update_schema.dict(exclude_unset=True)
         )
+
+        await subscription_benefit_grant_service.enqueue_benefit_grant_updates(
+            session, updated_subscription_benefit, update_schema
+        )
+
+        return updated_subscription_benefit
 
     async def _with_organization_or_repository(
         self, session: AsyncSession, subscription_benefit: SubscriptionBenefit

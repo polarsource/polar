@@ -1,6 +1,7 @@
 import uuid
 
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.authz.service import Authz
 from polar.exceptions import NotPermitted
@@ -17,14 +18,17 @@ from polar.postgres import AsyncSession
 from polar.subscription.schemas import (
     SubscriptionBenefitCustomCreate,
     SubscriptionBenefitCustomUpdate,
-    SubscriptionBenefitUpdate,
 )
-from polar.subscription.service.subscription_benefit import (
+from polar.subscription.service.subscription_benefit import (  # type: ignore[attr-defined]
     OrganizationDoesNotExist,
     RepositoryDoesNotExist,
+    subscription_benefit_grant_service,
 )
 from polar.subscription.service.subscription_benefit import (
     subscription_benefit as subscription_benefit_service,
+)
+from polar.subscription.service.subscription_benefit_grant import (
+    SubscriptionBenefitGrantService,
 )
 
 from ..conftest import create_subscription_benefit
@@ -328,12 +332,19 @@ class TestUserUpdate:
 
     async def test_valid_description_change(
         self,
+        mocker: MockerFixture,
         session: AsyncSession,
         authz: Authz,
         user: User,
         subscription_benefit_organization: SubscriptionBenefit,
         user_organization_admin: UserOrganization,
     ) -> None:
+        enqueue_benefit_grant_updates_mock = mocker.patch.object(
+            subscription_benefit_grant_service,
+            "enqueue_benefit_grant_updates",
+            spec=SubscriptionBenefitGrantService.enqueue_benefit_grant_updates,
+        )
+
         update_schema = SubscriptionBenefitCustomUpdate(
             description="Description update"
         )
@@ -341,3 +352,5 @@ class TestUserUpdate:
             session, authz, subscription_benefit_organization, update_schema, user
         )
         assert updated_subscription_benefit.description == "Description update"
+
+        enqueue_benefit_grant_updates_mock.assert_awaited_once()

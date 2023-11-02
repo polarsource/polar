@@ -4,6 +4,7 @@ from polar.models import SubscriptionBenefit
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.postgres import AsyncSession
 
+from ...schemas import SubscriptionBenefitUpdate
 from .base import (
     SB,
     SubscriptionBenefitGrantError,
@@ -15,7 +16,7 @@ from .custom import SubscriptionBenefitCustomService
 
 _SERVICE_CLASS_MAP: dict[
     SubscriptionBenefitType,
-    type[SubscriptionBenefitServiceProtocol[Any]],
+    type[SubscriptionBenefitServiceProtocol[Any, Any]],
 ] = {
     SubscriptionBenefitType.custom: SubscriptionBenefitCustomService,
 }
@@ -23,7 +24,7 @@ _SERVICE_CLASS_MAP: dict[
 
 def get_subscription_benefit_service(
     type: SubscriptionBenefitType, session: AsyncSession
-) -> SubscriptionBenefitServiceProtocol[SubscriptionBenefit]:
+) -> SubscriptionBenefitServiceProtocol[SubscriptionBenefit, SubscriptionBenefitUpdate]:
     return _SERVICE_CLASS_MAP[type](session)
 
 

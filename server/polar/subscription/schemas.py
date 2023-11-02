@@ -78,7 +78,6 @@ class SubscriptionBenefitBuiltinUpdate(SubscriptionBenefitUpdateBase):
 
 
 class SubscriptionBenefitCustomUpdate(SubscriptionBenefitUpdateBase):
-    is_tax_applicable: bool | None = None
     properties: SubscriptionBenefitCustomProperties | None = None
 
 

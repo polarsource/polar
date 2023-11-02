@@ -3,18 +3,21 @@ import uuid
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.models import Subscription, SubscriptionBenefit
+from polar.models import Subscription, SubscriptionBenefit, SubscriptionBenefitGrant
+from polar.postgres import AsyncSession
 from polar.subscription.service.subscription import SubscriptionService
 from polar.subscription.service.subscription_benefit_grant import (
     SubscriptionBenefitGrantService,
 )
 from polar.subscription.tasks import (  # type: ignore[attr-defined]
     SubscriptionBenefitDoesNotExist,
+    SubscriptionBenefitGrantDoesNotExist,
     SubscriptionDoesNotExist,
     enqueue_benefits_grants,
     subscription_benefit_grant,
     subscription_benefit_grant_service,
     subscription_benefit_revoke,
+    subscription_benefit_update,
     subscription_service,
 )
 from polar.worker import JobContext, PolarWorkerContext
@@ -150,3 +153,44 @@ class TestSubscriptionBenefitRevoke:
         )
 
         revoke_benefit_mock.assert_called_once()
+
+
+@pytest.mark.asyncio
+class TestSubscriptionBenefitUpdate:
+    async def test_not_existing_grant(
+        self,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        subscription_benefit_organization: SubscriptionBenefit,
+    ) -> None:
+        with pytest.raises(SubscriptionBenefitGrantDoesNotExist):
+            await subscription_benefit_update(
+                job_context, uuid.uuid4(), polar_worker_context
+            )
+
+    async def test_existing_grant(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        subscription: Subscription,
+        subscription_benefit_organization: SubscriptionBenefit,
+    ) -> None:
+        grant = SubscriptionBenefitGrant(
+            subscription=subscription,
+            subscription_benefit=subscription_benefit_organization,
+        )
+        grant.set_granted()
+        session.add(grant)
+        await session.commit()
+
+        update_benefit_grant_mock = mocker.patch.object(
+            subscription_benefit_grant_service,
+            "update_benefit_grant",
+            spec=SubscriptionBenefitGrantService.update_benefit_grant,
+        )
+
+        await subscription_benefit_update(job_context, grant.id, polar_worker_context)
+
+        update_benefit_grant_mock.assert_called_once()

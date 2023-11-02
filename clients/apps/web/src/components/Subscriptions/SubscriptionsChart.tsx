@@ -123,7 +123,7 @@ export const SubscriptionsChart: React.FC<SubscriptionsChartProps> = ({
           y,
           curve: 'bump-x',
           stroke: primaryColor,
-          strokeWidth: 3,
+          strokeWidth: 2,
         }),
         ...(onDataIndexHover
           ? [

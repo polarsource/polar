@@ -84,8 +84,7 @@ async def predictable_issue(
     predictable_organization: Organization,
     predictable_repository: Repository,
 ) -> Issue:
-    issue = await Issue.create(
-        session=session,
+    issue = await Issue(
         id=uuid.uuid4(),
         organization_id=predictable_organization.id,
         repository_id=predictable_repository.id,
@@ -96,6 +95,11 @@ async def predictable_issue(
         state="open",
         issue_created_at=datetime.now(),
         issue_modified_at=datetime.now(),
+        external_lookup_key=str(uuid.uuid4()),  # not realistic
+        issue_has_in_progress_relationship=False,
+        issue_has_pull_request_relationship=False,
+    ).save(
+        session=session,
     )
 
     await session.commit()
@@ -106,11 +110,12 @@ async def predictable_issue(
 async def predictable_user(
     session: AsyncSession,
 ) -> User:
-    user = await User.create(
-        session=session,
+    user = await User(
         id=uuid.uuid4(),
         username="foobar",
         email="test@example.com",
+    ).save(
+        session=session,
     )
 
     await session.commit()
@@ -125,8 +130,7 @@ async def predictable_pledge(
     predictable_issue: Issue,
     predictable_pledging_organization: Organization,
 ) -> Pledge:
-    pledge = await Pledge.create(
-        session=session,
+    pledge = await Pledge(
         id=uuid.uuid4(),
         by_organization_id=predictable_pledging_organization.id,
         issue_id=predictable_issue.id,
@@ -135,6 +139,8 @@ async def predictable_pledge(
         amount=12345,
         fee=123,
         state=PledgeState.created,
+    ).save(
+        session=session,
     )
 
     await session.commit()
@@ -147,8 +153,7 @@ async def predictable_pull_request(
     predictable_organization: Organization,
     predictable_repository: Repository,
 ) -> PullRequest:
-    pr = await PullRequest.create(
-        session=session,
+    pr = await PullRequest(
         id=uuid.uuid4(),
         repository_id=predictable_repository.id,
         organization_id=predictable_organization.id,
@@ -160,6 +165,21 @@ async def predictable_pull_request(
         state="open",
         issue_created_at=datetime.now(),
         issue_modified_at=datetime.now(),
+        commits=1,
+        additions=2,
+        deletions=3,
+        changed_files=4,
+        is_draft=False,
+        is_rebaseable=True,
+        is_mergeable=True,
+        is_merged=False,
+        review_comments=5,
+        maintainer_can_modify=True,
+        merged_at=None,
+        merge_commit_sha=None,
+        body="x",
+    ).save(
+        session=session,
     )
 
     await session.commit()

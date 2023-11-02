@@ -4,7 +4,12 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -39,7 +44,7 @@ class Subscription(RecordModel):
     )
     cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False)
     started_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
     ended_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
@@ -54,7 +59,10 @@ class Subscription(RecordModel):
         nullable=False,
         index=True,
     )
-    user: Mapped["User"] = relationship("User", lazy="raise")
+
+    @declared_attr
+    def user(cls) -> Mapped["User"]:
+        return relationship("User", lazy="raise")
 
     subscription_tier_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
@@ -63,9 +71,9 @@ class Subscription(RecordModel):
         index=True,
     )
 
-    subscription_tier: Mapped["SubscriptionTier"] = relationship(
-        "SubscriptionTier", lazy="raise"
-    )
+    @declared_attr
+    def subscription_tier(cls) -> Mapped["SubscriptionTier"]:
+        return relationship("SubscriptionTier", lazy="raise")
 
     def is_incomplete(self) -> bool:
         return self.status in [

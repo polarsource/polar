@@ -568,14 +568,15 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 if user:
                     user_id = user.id
 
-            s = await IssueReward.create(
-                session,
-                autocommit=False,
+            s = await IssueReward(
                 issue_id=issue_id,
                 share_thousands=split.share_thousands,
                 github_username=split.github_username,
                 organization_id=split.organization_id,
                 user_id=user_id,
+            ).save(
+                session=session,
+                autocommit=False,
             )
             created_splits.append(s)
 
@@ -994,8 +995,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not issue:
             raise ResourceNotFound("Issue Not Found")
 
-        pledge = await Pledge.create(
-            session=session,
+        pledge = await Pledge(
             issue_id=issue.id,
             repository_id=issue.repository_id,
             organization_id=issue.organization_id,
@@ -1007,6 +1007,8 @@ class PledgeService(ResourceServiceReader[Pledge]):
             on_behalf_of_organization_id=on_behalf_of_organization_id,
             by_organization_id=by_organization_id,
             created_by_user_id=authenticated_user.id,
+        ).save(
+            session=session,
         )
 
         await loops_service.user_update(authenticated_user, isBacker=True)

@@ -36,8 +36,7 @@ async def test_list_rewards(
     got.payment_id = "test_transfer_payment_id"
     await got.save(session)
 
-    account = await Account.create(
-        session=session,
+    account = await Account(
         organization_id=organization.id,
         account_type=AccountType.stripe,
         admin_id=user.id,
@@ -46,6 +45,10 @@ async def test_list_rewards(
         is_charges_enabled=True,
         is_payouts_enabled=True,
         business_type="company",
+        country="SE",
+        currency="USD",
+    ).save(
+        session=session,
     )
     await session.flush()
     await organization.save(session)

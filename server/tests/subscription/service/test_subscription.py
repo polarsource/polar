@@ -444,16 +444,18 @@ class TestGetSummary:
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         user2 = await create_user(session)
-        await UserOrganization.create(
-            session=session,
+        await UserOrganization(
             user_id=user2.id,
             organization_id=organization.id,
+        ).save(
+            session=session,
         )
         user3 = await create_user(session)
-        await UserOrganization.create(
-            session=session,
+        await UserOrganization(
             user_id=user3.id,
             organization_id=organization.id,
+        ).save(
+            session=session,
         )
 
         await create_active_subscription(

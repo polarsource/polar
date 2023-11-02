@@ -64,22 +64,24 @@ async def test_installation_no_notifications(
     mocker.patch("polar.worker._enqueue_job", new=in_process_enqueue_job)
 
     # Create user to match requesting user
-    user = await User.create(
-        session=session,
+    user = await User(
         username=cassette["sender"]["login"],
         email="test_installation_no_notifications@test.polar.se",
         accepted_terms_of_service=True,
+    ).save(
+        session=session,
     )
 
-    await OAuthAccount.create(
-        session=session,
-        platform="github",
+    await OAuthAccount(
+        platform=Platforms.github,
         access_token=os.environ.get("POLAR_TEST_GITHUB_ACCESS_TOKEN", "ghu_xxx"),
         expires_at=round(time.time() + 60 * 60 * 24),
         refresh_token=os.environ.get("POLAR_TEST_GITHUB_REFRESH_TOKEN", "ghr_xxx"),
         account_id=str(cassette["sender"]["id"]),
         account_email="test_installation_no_notifications@test.polar.se",
         user_id=user.id,
+    ).save(
+        session=session,
     )
 
     await session.commit()

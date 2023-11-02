@@ -3,7 +3,12 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Integer, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -28,4 +33,6 @@ class SubscriptionTierBenefit(RecordModel):
     )
     order: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
 
-    subscription_benefit: Mapped["SubscriptionBenefit"] = relationship(lazy="joined")
+    @declared_attr
+    def subscription_benefit(cls) -> Mapped["SubscriptionBenefit"]:
+        return relationship("SubscriptionBenefit", lazy="joined")

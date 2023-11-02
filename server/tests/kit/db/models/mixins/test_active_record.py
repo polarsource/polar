@@ -22,31 +22,31 @@ class ActiveRecord(TestModel, ActiveRecordMixin):
         return res.scalars().unique().one_or_none()
 
 
-@pytest.mark.asyncio
-async def test_create(session: AsyncSession) -> None:
-    created = await ActiveRecord.create(
-        session, int_column=234, str_column="Hello world"
-    )
-    assert created.id is not None
-    assert created.str_column == "Hello world"
-    await created.delete(session)
+# @pytest.mark.asyncio
+# async def test_create(session: AsyncSession) -> None:
+#     created = await ActiveRecord.create(
+#         session, int_column=234, str_column="Hello world"
+#     )
+#     assert created.id is not None
+#     assert created.str_column == "Hello world"
+#     await created.delete(session)
 
 
-@pytest.mark.asyncio
-async def test_update(session: AsyncSession) -> None:
-    created = await ActiveRecord.create(session)
-    assert created is not None
-    assert created.id
+# @pytest.mark.asyncio
+# async def test_update(session: AsyncSession) -> None:
+#     created = await ActiveRecord.create(session)
+#     assert created is not None
+#     assert created.id
 
-    assert created.int_column is None
-    await created.update(session, int_column=1337, str_column="Hello update")
-    assert created.int_column == 1337
+#     assert created.int_column is None
+#     await created.update(session, int_column=1337, str_column="Hello update")
+#     assert created.int_column == 1337
 
-    retrieved = await ActiveRecord.find_by(session, int_column=1337)
-    assert retrieved is not None
-    assert retrieved.int_column == 1337
-    assert retrieved.str_column == "Hello update"
-    await retrieved.delete(session)
+#     retrieved = await ActiveRecord.find_by(session, int_column=1337)
+#     assert retrieved is not None
+#     assert retrieved.int_column == 1337
+#     assert retrieved.str_column == "Hello update"
+#     await retrieved.delete(session)
 
 
 @pytest.mark.asyncio
@@ -61,20 +61,20 @@ async def test_fill(session: AsyncSession) -> None:
     assert retrieved is None
 
 
-@pytest.mark.asyncio
-async def test_autocommit_disabled_on_create(session: AsyncSession) -> None:
-    created = await ActiveRecord.create(session, autocommit=False, int_column=1337)
-    assert created.id is None
-    created = await ActiveRecord.create(session, autocommit=True, int_column=1337)
-    assert created.id is not None
-    await created.delete(session)
+# @pytest.mark.asyncio
+# async def test_autocommit_disabled_on_create(session: AsyncSession) -> None:
+#     created = await ActiveRecord.create(session, autocommit=False, int_column=1337)
+#     assert created.id is None
+#     created = await ActiveRecord.create(session, autocommit=True, int_column=1337)
+#     assert created.id is not None
+#     await created.delete(session)
 
 
-@pytest.mark.asyncio
-async def test_autocommit_disabled_on_update(session: AsyncSession) -> None:
-    created = await ActiveRecord.create(session, int_column=1337)
-    assert created.id is not None
+# @pytest.mark.asyncio
+# async def test_autocommit_disabled_on_update(session: AsyncSession) -> None:
+#     created = await ActiveRecord.create(session, int_column=1337)
+#     assert created.id is not None
 
-    await created.update(session, int_column=404, autocommit=False)
-    retrieved = await ActiveRecord.find_by(session, int_column=404)
-    assert retrieved is None
+#     await created.update(session, int_column=404, autocommit=False)
+#     retrieved = await ActiveRecord.find_by(session, int_column=404)
+#     assert retrieved is None

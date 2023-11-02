@@ -68,7 +68,7 @@ class SubscriptionBenefit(RecordModel, MappedAsDataclass, kw_only=True):
     )
 
     properties: Mapped[SubscriptionBenefitProperties] = mapped_column(
-        "properties", JSONB, nullable=False, default=dict
+        "properties", JSONB, nullable=False, default=None, insert_default=dict
     )
 
     organization_id: Mapped[UUID | None] = mapped_column(
@@ -98,7 +98,7 @@ class SubscriptionBenefit(RecordModel, MappedAsDataclass, kw_only=True):
 
 class SubscriptionBenefitCustom(SubscriptionBenefit):
     properties: Mapped[SubscriptionBenefitCustomProperties] = mapped_column(
-        use_existing_column=True, default=dict
+        use_existing_column=True, default=None, insert_default=dict
     )
 
     __mapper_args__ = {
@@ -109,7 +109,7 @@ class SubscriptionBenefitCustom(SubscriptionBenefit):
 
 class SubscriptionBenefitBuiltin(SubscriptionBenefit):
     properties: Mapped[SubscriptionBenefitCustomProperties] = mapped_column(
-        use_existing_column=True, default=dict
+        use_existing_column=True, default=None, insert_default=dict
     )
 
     __mapper_args__ = {

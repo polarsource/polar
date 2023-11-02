@@ -50,8 +50,8 @@ class Account(RecordModel, MappedAsDataclass, kw_only=True):
 
     email: Mapped[str | None] = mapped_column(String(254), nullable=True, default=None)
 
-    country: Mapped[str | None] = mapped_column(String(2))
-    currency: Mapped[str | None] = mapped_column(String(3))
+    country: Mapped[str] = mapped_column(String(2))
+    currency: Mapped[str] = mapped_column(String(3))
 
     is_details_submitted: Mapped[bool] = mapped_column(Boolean, nullable=False)
     is_charges_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
@@ -65,7 +65,9 @@ class Account(RecordModel, MappedAsDataclass, kw_only=True):
         StringEnum(Status), nullable=False, default=Status.CREATED
     )
 
-    data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    data: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=None, insert_default=dict
+    )
 
     @declared_attr
     def organization(cls) -> Mapped[Organization | None]:

@@ -55,7 +55,7 @@ class Repository(RecordModel, MappedAsDataclass, kw_only=True):
 
     main_branch: Mapped[str | None] = mapped_column(String, nullable=True)
     topics: Mapped[list[str] | None] = mapped_column(
-        JSONB, nullable=False, default=list
+        JSONB, nullable=False, default=None, insert_default=list
     )
 
     license: Mapped[str | None] = mapped_column(String, nullable=True)

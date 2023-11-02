@@ -26,10 +26,10 @@ class PullRequest(IssueFields, RecordModel, MappedAsDataclass, kw_only=True):
     changed_files: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     requested_reviewers: Mapped[JSONList | None] = mapped_column(
-        JSONB, nullable=True, default=list
+        JSONB, nullable=True, default=None, insert_default=list
     )
     requested_teams: Mapped[JSONList | None] = mapped_column(
-        JSONB, nullable=True, default=list
+        JSONB, nullable=True, default=None, insert_default=list
     )
 
     # Part of Full Pull Request object, must be nullable

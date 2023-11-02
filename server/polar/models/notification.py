@@ -41,4 +41,4 @@ class Notification(RecordModel, MappedAsDataclass, kw_only=True):
         PostgresUUID, ForeignKey("pull_requests.id"), nullable=True, default=None
     )
 
-    payload: Mapped[JSONDict | None] = mapped_column(JSONB, nullable=True, default=dict)
+    payload: Mapped[JSONDict | None] = mapped_column(JSONB, nullable=True, default=None)

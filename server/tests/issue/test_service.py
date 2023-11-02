@@ -323,6 +323,7 @@ async def test_list_by_github_milestone_number(
         )
 
         ms = github.rest.Milestone(
+            id=123,
             url="http://example.com/",
             html_url="http://example.com/",
             labels_url="http://example.com/",

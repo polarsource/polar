@@ -18,7 +18,9 @@ class TestModel(Model):
 
     __tablename__ = "test_model"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, default=None)
-    uuid: Mapped[UUID] = mapped_column(PostgresUUID, default=generate_uuid)
+    uuid: Mapped[UUID] = mapped_column(
+        PostgresUUID, default=None, insert_default=generate_uuid
+    )
     int_column: Mapped[int | None] = mapped_column(Integer, default=None, nullable=True)
     str_column: Mapped[str | None] = mapped_column(String, default=None, nullable=True)
 

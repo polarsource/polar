@@ -256,9 +256,9 @@ const FundingGoal = ({
         {/* Funding amount and goal */}
         <div className="flex flex-col items-center sm:items-start">
           <div className="dark:text-polar-300 text-lg text-gray-900">
-            ${getCentsInDollarString(pledges_sum?.amount || 0)}{' '}
+            ${getCentsInDollarString(pledges_sum?.amount || 0, false, true)}{' '}
             <span className="dark:text-polar-400 text-gray-400">
-              {`/ ${getCentsInDollarString(funding_goal.amount)} funded`}
+              {`/ ${getCentsInDollarString(funding_goal.amount, false, true)} funded`}
             </span>
           </div>
 
@@ -286,7 +286,7 @@ const FundingGoal = ({
         {/* Funding amount and goal */}
         <div className="flex flex-col items-center sm:items-start">
           <div className="dark:text-polar-300 text-lg text-gray-900">
-            ${getCentsInDollarString(pledges_sum?.amount || 0)}{' '}
+            ${getCentsInDollarString(pledges_sum?.amount || 0, false, true)}{' '}
             <span className="dark:text-polar-400 text-gray-400">funded</span>
           </div>
         </div>

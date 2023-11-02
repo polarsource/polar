@@ -38,6 +38,8 @@ class PledgeState(str, Enum):
     disputed = "disputed"
     # The charge was disputed by the customer (via Stripe, aka "chargeback")
     charge_disputed = "charge_disputed"
+    # Manually cancalled by a Polar admin.
+    cancelled = "cancelled"
 
     # The states in which this pledge is "active", i.e. is listed on the issue
     @classmethod

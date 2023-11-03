@@ -13,7 +13,6 @@ from sqlalchemy.orm import (
 )
 
 from polar.kit.db.models import RecordModel
-from polar.kit.db.models.base import RecordModelNoDataClass
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
@@ -30,7 +29,7 @@ class SubscriptionStatus(StrEnum):
     unpaid = "unpaid"
 
 
-class Subscription(RecordModelNoDataClass):
+class Subscription(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "subscriptions"
 
     stripe_subscription_id: Mapped[str] = mapped_column(

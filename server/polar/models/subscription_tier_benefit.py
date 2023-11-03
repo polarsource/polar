@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from polar.models import SubscriptionBenefit
 
 
-class SubscriptionTierBenefit(RecordModelNoDataClass):
+class SubscriptionTierBenefit(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "subscription_tier_benefits"
     __table_args__ = (UniqueConstraint("subscription_tier_id", "order"),)
 

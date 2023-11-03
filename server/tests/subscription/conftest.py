@@ -101,7 +101,7 @@ async def add_subscription_benefits(
     subscription_tier: SubscriptionTier,
     subscription_benefits: list[SubscriptionBenefit],
 ) -> SubscriptionTier:
-    subscription_tier.subscription_tier_benefits = []
+    # subscription_tier_benefits = []
     for order, subscription_benefit in enumerate(subscription_benefits):
         benefit = SubscriptionTierBenefit(
             subscription_tier_id=subscription_tier.id,

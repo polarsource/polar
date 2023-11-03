@@ -31,7 +31,7 @@ class SubscriptionTierType(StrEnum):
     business = "business"
 
 
-class SubscriptionTier(RecordModelNoDataClass):
+class SubscriptionTier(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "subscription_tiers"
 
     type: Mapped[SubscriptionTierType] = mapped_column(
@@ -77,7 +77,8 @@ class SubscriptionTier(RecordModelNoDataClass):
     def subscription_tier_benefits(cls) -> Mapped[list["SubscriptionTierBenefit"]]:
         return relationship(
             "SubscriptionTierBenefit",
-            lazy="selectin",
+            # lazy="selectin",
+            lazy="raise",
             order_by="SubscriptionTierBenefit.order",
             cascade="all, delete-orphan",
         )
@@ -85,6 +86,7 @@ class SubscriptionTier(RecordModelNoDataClass):
     benefits: AssociationProxy[list["SubscriptionBenefit"]] = association_proxy(
         "subscription_tier_benefits",
         "subscription_benefit",
+        init=False,
     )
 
     @property

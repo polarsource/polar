@@ -57,7 +57,7 @@ class SubscriptionBenefitBuiltinProperties(SubscriptionBenefitProperties):
 M = TypeVar("M", bound=SubscriptionBenefitProperties)
 
 
-class SubscriptionBenefit(RecordModelNoDataClass):
+class SubscriptionBenefit(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "subscription_benefits"
 
     type: Mapped[SubscriptionBenefitType] = mapped_column(

@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from polar.models import Subscription, SubscriptionBenefit
 
 
-class SubscriptionBenefitGrant(RecordModelNoDataClass):
+class SubscriptionBenefitGrant(RecordModel, MappedAsDataclass, kw_only=True):
     __tablename__ = "subscription_benefit_grants"
 
     granted_at: Mapped[datetime | None] = mapped_column(

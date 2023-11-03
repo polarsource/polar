@@ -4,7 +4,7 @@ from typing import Any
 
 from sqlalchemy import ColumnExpressionArgument, Select, or_, select, update
 from sqlalchemy.exc import InvalidRequestError
-from sqlalchemy.orm import aliased, contains_eager
+from sqlalchemy.orm import aliased, contains_eager, joinedload, selectinload
 
 from polar.account.service import account as account_service
 from polar.auth.dependencies import AuthMethod
@@ -13,6 +13,7 @@ from polar.exceptions import NotPermitted, PolarError
 from polar.integrations.stripe.service import ProductUpdateKwargs, StripeError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService, ResourceServiceNoDataClass
 from polar.models import (
@@ -85,9 +86,7 @@ class NoAssociatedPayoutAccount(SubscriptionTierError):
 
 
 class SubscriptionTierService(
-    ResourceServiceNoDataClass[
-        SubscriptionTier, SubscriptionTierCreate, SubscriptionTierUpdate
-    ]
+    ResourceService[SubscriptionTier, SubscriptionTierCreate, SubscriptionTierUpdate]
 ):
     async def create(
         self,
@@ -105,6 +104,25 @@ class SubscriptionTierService(
             organization_id=create_schema.organization_id,
             repository_id=create_schema.repository_id,
         ).save(session, autocommit=autocommit)
+
+    async def get(
+        self, session: AsyncSession, id: uuid.UUID, allow_deleted: bool = False
+    ) -> SubscriptionTier | None:
+        statement = (
+            sql.select(SubscriptionTier)
+            .where(SubscriptionTier.id == id)
+            .options(
+                selectinload(SubscriptionTier.subscription_tier_benefits).joinedload(
+                    SubscriptionTierBenefit.subscription_benefit
+                ),
+            )
+        )
+
+        if not allow_deleted:
+            statement = statement.where(SubscriptionTier.deleted_at.is_(None))
+
+        res = await session.execute(statement)
+        return res.scalars().unique().one_or_none()
 
     async def search(
         self,
@@ -134,6 +152,12 @@ class SubscriptionTierService(
 
         if not show_archived:
             statement = statement.where(SubscriptionTier.is_archived.is_(False))
+
+        statement = statement.options(
+            selectinload(SubscriptionTier.subscription_tier_benefits).joinedload(
+                SubscriptionTierBenefit.subscription_benefit
+            ),
+        )
 
         statement = statement.order_by(
             SubscriptionTier.type,

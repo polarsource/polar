@@ -212,15 +212,23 @@ class GitHubIssueReferencesService:
             first_page = page == 1
 
             try:
-                res = await client.rest.issues.async_list_events_for_timeline(
-                    owner=org.name,
-                    repo=repo.name,
-                    issue_number=issue.number,
-                    page=page,
-                    per_page=100,
-                    headers={"If-None-Match": issue.github_timeline_etag}
+                headers: dict[str, str] = (
+                    {"If-None-Match": issue.github_timeline_etag}
                     if issue.github_timeline_etag is not None and first_page
-                    else {},
+                    else {}
+                )
+                # Manual request because the builtin one has a too restrictive type.
+                # Our flavor of `TimelineEventType` includes `UnknownIssueEvent` schema
+                # which is an escape hatch for type-inconsistent events.
+                res = await client.arequest(
+                    "GET",
+                    f"/repos/{org.name}/{repo.name}/issues/{issue.number}/timeline",
+                    params={
+                        "per_page": 100,
+                        "page": page,
+                    },
+                    headers=headers,
+                    response_model=list[TimelineEventType],
                 )
             except RequestFailed as e:
                 if e.response.status_code == 404:

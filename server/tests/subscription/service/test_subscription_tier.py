@@ -164,7 +164,7 @@ class TestSearch:
         assert len(results) == 1
         assert results[0].id == subscription_tier_private_repository.id
 
-    async def test_filter_is_archived(
+    async def test_filter_include_archived(
         self,
         session: AsyncSession,
         user: User,
@@ -179,25 +179,28 @@ class TestSearch:
         results, count = await subscription_tier_service.search(
             session,
             Anonymous(),
-            show_archived=False,
+            include_archived=False,
             pagination=PaginationParams(1, 10),
         )
         assert count == 0
         assert len(results) == 0
         results, count = await subscription_tier_service.search(
-            session, Anonymous(), show_archived=True, pagination=PaginationParams(1, 10)
+            session,
+            Anonymous(),
+            include_archived=True,
+            pagination=PaginationParams(1, 10),
         )
         assert count == 0
         assert len(results) == 0
 
         # User
         results, count = await subscription_tier_service.search(
-            session, user, show_archived=False, pagination=PaginationParams(1, 10)
+            session, user, include_archived=False, pagination=PaginationParams(1, 10)
         )
         assert count == 0
         assert len(results) == 0
         results, count = await subscription_tier_service.search(
-            session, user, show_archived=True, pagination=PaginationParams(1, 10)
+            session, user, include_archived=True, pagination=PaginationParams(1, 10)
         )
         assert count == 1
         assert len(results) == 1

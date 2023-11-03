@@ -24,6 +24,9 @@ from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.postgres import AsyncSession
 from polar.subscription.endpoints import is_feature_flag_enabled
+from polar.subscription.service.subscription_tier import (
+    subscription_tier as subscription_tier_service,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -70,7 +73,12 @@ async def create_subscription_tier(
     )
     session.add(subscription_tier)
     await session.commit()
-    return subscription_tier
+
+    res = await subscription_tier_service.get(session, subscription_tier.id)
+    if not res:
+        raise Exception("not found")
+
+    return res
 
 
 async def create_subscription_benefit(
@@ -112,7 +120,14 @@ async def add_subscription_benefits(
         # subscription_tier.subscription_tier_benefits.append(benefit)
     session.add(subscription_tier)
     await session.commit()
-    return subscription_tier
+
+    res = await subscription_tier_service.get(session, subscription_tier.id)
+    if not res:
+        raise Exception("not found")
+
+    return res
+
+    # return subscription_tier
 
 
 async def create_subscription(

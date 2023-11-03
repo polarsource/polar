@@ -15,19 +15,16 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
   subscribePath,
 }) => {
   return (
-    <div className="flex flex-col py-6">
-      <div className="flex flex-row items-center justify-between">
-        <div className="flex flex-col">
-          <h2 className="text-xl">Subscriptions</h2>
-          <p className="dark:text-polar-400 mt-3 text-gray-400">
-            Say thanks with a subscription & gain benefits as a bonus
-          </p>
-        </div>
+    <div className="flex flex-col">
+      <div className="flex flex-row items-start justify-between">
+        <h2 className="text-xl">Subscriptions</h2>
         <Link href={{ pathname: `/${organization.name}/subscriptions` }}>
-          <Button fullWidth={false}>View all Tiers</Button>
+          <Button variant="secondary" size="sm">
+            View all Tiers
+          </Button>
         </Link>
       </div>
-      <div className="flex h-fit flex-row gap-6 pb-6 pt-10">
+      <div className="flex h-fit flex-row gap-6 py-6">
         {subscriptionTiers
           .filter((tier) => tier.is_highlighted)
           .sort((a, b) => a.price_amount - b.price_amount)

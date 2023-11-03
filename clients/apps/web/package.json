@@ -36,6 +36,7 @@
     "@tanstack/react-query-next-experimental": "^5.0.5",
     "@tanstack/react-query-persist-client": "^5.0.5",
     "@ts-stack/markdown": "^1.4.0",
+    "@vercel/blob": "^0.14.1",
     "@vercel/og": "^0.5.7",
     "class-variance-authority": "^0.6.0",
     "cmdk": "^0.2.0",

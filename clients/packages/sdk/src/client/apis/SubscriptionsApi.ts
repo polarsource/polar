@@ -94,7 +94,7 @@ export interface SubscriptionsApiSearchSubscriptionTiersRequest {
     platform: Platforms;
     repositoryName?: string;
     directOrganization?: boolean;
-    showArchived?: boolean;
+    includeArchived?: boolean;
     type?: SubscriptionTierType;
     page?: number;
     limit?: number;
@@ -630,8 +630,8 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             queryParameters['direct_organization'] = requestParameters.directOrganization;
         }
 
-        if (requestParameters.showArchived !== undefined) {
-            queryParameters['show_archived'] = requestParameters.showArchived;
+        if (requestParameters.includeArchived !== undefined) {
+            queryParameters['include_archived'] = requestParameters.includeArchived;
         }
 
         if (requestParameters.type !== undefined) {

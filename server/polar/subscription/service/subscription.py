@@ -97,6 +97,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         direct_organization: bool = True,
         type: SubscriptionTierType | None = None,
         subscription_tier_id: uuid.UUID | None = None,
+        subscriber_user_id: uuid.UUID | None = None,
         pagination: PaginationParams,
         sorting: list[SearchSort] = [(SearchSortProperty.started_at, True)],
     ) -> tuple[Sequence[Subscription], int]:
@@ -120,6 +121,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         if subscription_tier_id is not None:
             statement = statement.where(SubscriptionTier.id == subscription_tier_id)
+
+        if subscriber_user_id is not None:
+            statement = statement.where(Subscription.user_id == subscriber_user_id)
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
@@ -389,6 +393,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             .where(
                 Subscription.deleted_at.is_(None),
                 or_(
+                    Subscription.user_id == user.id,
                     UserOrganization.user_id == user.id,
                     RepositoryUserOrganization.user_id == user.id,
                 ),

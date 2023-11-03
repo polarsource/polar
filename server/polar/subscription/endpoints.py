@@ -429,6 +429,7 @@ async def search_subscriptions(
     direct_organization: bool = Query(True),
     type: SubscriptionTierType | None = Query(None),
     subscription_tier_id: UUID4 | None = Query(None),
+    subscriber_user_id: UUID4 | None = Query(None),
     platform: Platforms = Query(...),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[Subscription]:
@@ -454,6 +455,7 @@ async def search_subscriptions(
         repository=repository,
         direct_organization=direct_organization,
         subscription_tier_id=subscription_tier_id,
+        subscriber_user_id=subscriber_user_id,
         pagination=pagination,
         sorting=sorting,
     )

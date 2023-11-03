@@ -98,10 +98,6 @@ export class FundingApi extends runtime.BaseAPI {
 
         const queryParameters: any = {};
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
-        }
-
         if (requestParameters.repositoryName !== undefined) {
             queryParameters['repository_name'] = requestParameters.repositoryName;
         }
@@ -118,16 +114,20 @@ export class FundingApi extends runtime.BaseAPI {
             queryParameters['sorting'] = requestParameters.sorting;
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
-        }
-
         if (requestParameters.page !== undefined) {
             queryParameters['page'] = requestParameters.page;
         }
 
         if (requestParameters.limit !== undefined) {
             queryParameters['limit'] = requestParameters.limit;
+        }
+
+        if (requestParameters.organizationName !== undefined) {
+            queryParameters['organization_name'] = requestParameters.organizationName;
+        }
+
+        if (requestParameters.platform !== undefined) {
+            queryParameters['platform'] = requestParameters.platform;
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

@@ -61,10 +61,10 @@ export interface SubscriptionsApiGetSubscribeSessionRequest {
 }
 
 export interface SubscriptionsApiGetSubscriptionsSummaryRequest {
-    organizationName: string;
-    platform: Platforms;
     startDate: string;
     endDate: string;
+    organizationName: string;
+    platform: Platforms;
     repositoryName?: string;
     directOrganization?: boolean;
     type?: SubscriptionTierType;
@@ -101,15 +101,16 @@ export interface SubscriptionsApiSearchSubscriptionTiersRequest {
 }
 
 export interface SubscriptionsApiSearchSubscriptionsRequest {
-    organizationName: string;
-    platform: Platforms;
     repositoryName?: string;
     directOrganization?: boolean;
     type?: SubscriptionTierType;
     subscriptionTierId?: string;
+    subscriberUserId?: string;
     page?: number;
     limit?: number;
     sorting?: Array<string>;
+    organizationName?: string;
+    platform?: Platforms;
 }
 
 export interface SubscriptionsApiUpdateSubscriptionBenefitRequest {
@@ -372,14 +373,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Get Subscriptions Summary
      */
     async getSubscriptionsSummaryRaw(requestParameters: SubscriptionsApiGetSubscriptionsSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionsSummary>> {
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling getSubscriptionsSummary.');
-        }
-
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling getSubscriptionsSummary.');
-        }
-
         if (requestParameters.startDate === null || requestParameters.startDate === undefined) {
             throw new runtime.RequiredError('startDate','Required parameter requestParameters.startDate was null or undefined when calling getSubscriptionsSummary.');
         }
@@ -388,18 +381,18 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             throw new runtime.RequiredError('endDate','Required parameter requestParameters.endDate was null or undefined when calling getSubscriptionsSummary.');
         }
 
-        const queryParameters: any = {};
-
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
+        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
+            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling getSubscriptionsSummary.');
         }
+
+        if (requestParameters.platform === null || requestParameters.platform === undefined) {
+            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling getSubscriptionsSummary.');
+        }
+
+        const queryParameters: any = {};
 
         if (requestParameters.repositoryName !== undefined) {
             queryParameters['repository_name'] = requestParameters.repositoryName;
-        }
-
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
         }
 
         if (requestParameters.startDate !== undefined) {
@@ -420,6 +413,14 @@ export class SubscriptionsApi extends runtime.BaseAPI {
 
         if (requestParameters.subscriptionTierId !== undefined) {
             queryParameters['subscription_tier_id'] = requestParameters.subscriptionTierId;
+        }
+
+        if (requestParameters.organizationName !== undefined) {
+            queryParameters['organization_name'] = requestParameters.organizationName;
+        }
+
+        if (requestParameters.platform !== undefined) {
+            queryParameters['platform'] = requestParameters.platform;
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -548,10 +549,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
 
         const queryParameters: any = {};
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
-        }
-
         if (requestParameters.repositoryName !== undefined) {
             queryParameters['repository_name'] = requestParameters.repositoryName;
         }
@@ -564,16 +561,20 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             queryParameters['type'] = requestParameters.type;
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
-        }
-
         if (requestParameters.page !== undefined) {
             queryParameters['page'] = requestParameters.page;
         }
 
         if (requestParameters.limit !== undefined) {
             queryParameters['limit'] = requestParameters.limit;
+        }
+
+        if (requestParameters.organizationName !== undefined) {
+            queryParameters['organization_name'] = requestParameters.organizationName;
+        }
+
+        if (requestParameters.platform !== undefined) {
+            queryParameters['platform'] = requestParameters.platform;
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -618,10 +619,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
 
         const queryParameters: any = {};
 
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
-        }
-
         if (requestParameters.repositoryName !== undefined) {
             queryParameters['repository_name'] = requestParameters.repositoryName;
         }
@@ -638,16 +635,20 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             queryParameters['type'] = requestParameters.type;
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
-        }
-
         if (requestParameters.page !== undefined) {
             queryParameters['page'] = requestParameters.page;
         }
 
         if (requestParameters.limit !== undefined) {
             queryParameters['limit'] = requestParameters.limit;
+        }
+
+        if (requestParameters.organizationName !== undefined) {
+            queryParameters['organization_name'] = requestParameters.organizationName;
+        }
+
+        if (requestParameters.platform !== undefined) {
+            queryParameters['platform'] = requestParameters.platform;
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -682,19 +683,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Search Subscriptions
      */
     async searchSubscriptionsRaw(requestParameters: SubscriptionsApiSearchSubscriptionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscription>> {
-        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling searchSubscriptions.');
-        }
-
-        if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling searchSubscriptions.');
-        }
-
         const queryParameters: any = {};
-
-        if (requestParameters.organizationName !== undefined) {
-            queryParameters['organization_name'] = requestParameters.organizationName;
-        }
 
         if (requestParameters.repositoryName !== undefined) {
             queryParameters['repository_name'] = requestParameters.repositoryName;
@@ -712,8 +701,8 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             queryParameters['subscription_tier_id'] = requestParameters.subscriptionTierId;
         }
 
-        if (requestParameters.platform !== undefined) {
-            queryParameters['platform'] = requestParameters.platform;
+        if (requestParameters.subscriberUserId !== undefined) {
+            queryParameters['subscriber_user_id'] = requestParameters.subscriberUserId;
         }
 
         if (requestParameters.page !== undefined) {
@@ -726,6 +715,14 @@ export class SubscriptionsApi extends runtime.BaseAPI {
 
         if (requestParameters.sorting) {
             queryParameters['sorting'] = requestParameters.sorting;
+        }
+
+        if (requestParameters.organizationName !== undefined) {
+            queryParameters['organization_name'] = requestParameters.organizationName;
+        }
+
+        if (requestParameters.platform !== undefined) {
+            queryParameters['platform'] = requestParameters.platform;
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -751,7 +748,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     /**
      * Search Subscriptions
      */
-    async searchSubscriptions(requestParameters: SubscriptionsApiSearchSubscriptionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscription> {
+    async searchSubscriptions(requestParameters: SubscriptionsApiSearchSubscriptionsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscription> {
         const response = await this.searchSubscriptionsRaw(requestParameters, initOverrides);
         return await response.value();
     }

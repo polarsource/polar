@@ -27,7 +27,7 @@ On subsequent executions the contents between the `POLAR` and `POLAR-END` tags w
 
 ## type=issues
 
-The (currently only) type is `issues` which renders issues and their current pledged amount as a list.
+`issues` renders issues and their current pledged amount as a list.
 
 ### Arguments
 
@@ -60,3 +60,38 @@ Rendered 👇
 * [#225 Integrate Stripe Revenue Recognition](https://github.com/polarsource/polar/issues/225)
 
 <!-- POLAR-END id=dzaalrfj -->
+
+
+
+## type=backers-avatars
+
+`backers-avatars` renders avatar images of backers and links to their GitHub profile
+
+### Arguments
+
+* `org` **(required)** – Organization to list pledges to
+
+
+### Example
+
+<code>&lt;!-- POLAR type=issues org=polarsource repo=polar limit=3 --&gt;</code>
+
+```md
+<!-- POLAR type=pledgers id=jqfqrilw org=polarsource -->
+<a href="https://github.com/birkjernstrom"><img src="https://avatars.githubusercontent.com/u/281715?v=4" width=100 height=100 /></a>
+<a href="https://github.com/drunkwcodes"><img src="https://avatars.githubusercontent.com/u/36228443?v=4" width=100 height=100 /></a>
+<a href="https://github.com/zegl"><img src="https://avatars.githubusercontent.com/u/47952?v=4" width=100 height=100 /></a>
+<a href="https://github.com/emilwidlund"><img src="https://avatars.githubusercontent.com/u/10053249?v=4" width=100 height=100 /></a>
+
+<!-- POLAR-END id=jqfqrilw -->
+```
+
+Rendered 👇
+
+<!-- POLAR type=pledgers id=jqfqrilw org=polarsource -->
+<a href="https://github.com/birkjernstrom"><img src="https://avatars.githubusercontent.com/u/281715?v=4" width=100 height=100 /></a>
+<a href="https://github.com/drunkwcodes"><img src="https://avatars.githubusercontent.com/u/36228443?v=4" width=100 height=100 /></a>
+<a href="https://github.com/zegl"><img src="https://avatars.githubusercontent.com/u/47952?v=4" width=100 height=100 /></a>
+<a href="https://github.com/emilwidlund"><img src="https://avatars.githubusercontent.com/u/10053249?v=4" width=100 height=100 /></a>
+
+<!-- POLAR-END id=jqfqrilw -->

@@ -324,12 +324,13 @@ class TestSearch:
         session: AsyncSession,
         organization: Organization,
         user: User,
+        user_second: User,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization,
-            user=user,
+            user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
@@ -346,7 +347,31 @@ class TestSearch:
         session: AsyncSession,
         organization: Organization,
         user: User,
+        user_second: User,
         user_organization: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user_second,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        results, count = await subscription_service.search(
+            session, user, organization=organization, pagination=PaginationParams(1, 10)
+        )
+
+        assert len(results) == 1
+        assert count == 1
+
+    async def test_own_subscription(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        user_second: User,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         await create_active_subscription(
@@ -356,9 +381,19 @@ class TestSearch:
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user_second,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
 
         results, count = await subscription_service.search(
-            session, user, organization=organization, pagination=PaginationParams(1, 10)
+            session,
+            user_second,
+            organization=organization,
+            pagination=PaginationParams(1, 10),
         )
 
         assert len(results) == 1
@@ -372,12 +407,13 @@ class TestGetSummary:
         session: AsyncSession,
         organization: Organization,
         user: User,
+        user_second: User,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization,
-            user=user,
+            user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
@@ -402,13 +438,14 @@ class TestGetSummary:
         session: AsyncSession,
         organization: Organization,
         user: User,
+        user_second: User,
         user_organization: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization,
-            user=user,
+            user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
@@ -440,6 +477,7 @@ class TestGetSummary:
         session: AsyncSession,
         organization: Organization,
         user: User,
+        user_second: User,
         user_organization: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
@@ -461,7 +499,7 @@ class TestGetSummary:
         await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization,
-            user=user,
+            user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
@@ -493,6 +531,7 @@ class TestGetSummary:
         session: AsyncSession,
         organization: Organization,
         user: User,
+        user_second: User,
         user_organization: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
         subscription_tier_repository: SubscriptionTier,
@@ -500,14 +539,14 @@ class TestGetSummary:
         await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization,
-            user=user,
+            user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
         await create_active_subscription(
             session,
             subscription_tier=subscription_tier_repository,
-            user=user,
+            user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
@@ -552,6 +591,7 @@ class TestGetSummary:
         session: AsyncSession,
         public_repository: Repository,
         user: User,
+        user_second: User,
         user_organization: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
         subscription_tier_repository: SubscriptionTier,
@@ -559,14 +599,14 @@ class TestGetSummary:
         await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization,
-            user=user,
+            user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
         await create_active_subscription(
             session,
             subscription_tier=subscription_tier_repository,
-            user=user,
+            user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
@@ -597,13 +637,14 @@ class TestGetSummary:
         self,
         session: AsyncSession,
         user: User,
+        user_second: User,
         user_organization: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
     ) -> None:
         await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization,
-            user=user,
+            user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
@@ -627,6 +668,7 @@ class TestGetSummary:
         self,
         session: AsyncSession,
         user: User,
+        user_second: User,
         user_organization: UserOrganization,
         subscription_tier_organization: SubscriptionTier,
         subscription_tier_repository: SubscriptionTier,
@@ -634,14 +676,14 @@ class TestGetSummary:
         await create_active_subscription(
             session,
             subscription_tier=subscription_tier_organization,
-            user=user,
+            user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
         await create_active_subscription(
             session,
             subscription_tier=subscription_tier_repository,
-            user=user,
+            user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )

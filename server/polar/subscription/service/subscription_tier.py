@@ -96,7 +96,7 @@ class SubscriptionTierService(
         organization: Organization | None = None,
         repository: Repository | None = None,
         direct_organization: bool = True,
-        show_archived: bool = False,
+        include_archived: bool = False,
         pagination: PaginationParams,
     ) -> tuple[Sequence[SubscriptionTier], int]:
         statement = self._get_readable_subscription_tier_statement(auth_subject)
@@ -113,7 +113,7 @@ class SubscriptionTierService(
         if repository is not None:
             statement = statement.where(SubscriptionTier.repository_id == repository.id)
 
-        if not show_archived:
+        if not include_archived:
             statement = statement.where(SubscriptionTier.is_archived.is_(False))
 
         statement = statement.order_by(

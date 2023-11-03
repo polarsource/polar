@@ -2,6 +2,7 @@
 
 import AccessTokensSettings from '@/components/Settings/AccessTokensSettings'
 import AuthenticationSettings from '@/components/Settings/AuthenticationSettings'
+import GeneralSettings from '@/components/Settings/GeneralSettings'
 import NotificationSettings from '@/components/Settings/NotificationSettings'
 import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
@@ -10,6 +11,11 @@ export default function Page() {
   return (
     <div className="relative z-0">
       <div className="dark:divide-polar-700 divide-y divide-gray-200">
+        <Section>
+          <SectionDescription title="General" description="" />
+          <GeneralSettings />
+        </Section>
+
         <Section>
           <SectionDescription title="Payment methods" />
           <PaymentMethodSettings />

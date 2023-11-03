@@ -22,7 +22,7 @@ class SubscriptionTaskError(PolarError):
 class SubscriptionDoesNotExist(PolarError):
     def __init__(self, subscription_id: uuid.UUID) -> None:
         self.subscription_id = subscription_id
-        message = f"The susbcription with id {subscription_id} does not exist."
+        message = f"The subscription with id {subscription_id} does not exist."
         super().__init__(message, 500)
 
 
@@ -30,7 +30,7 @@ class SubscriptionBenefitDoesNotExist(PolarError):
     def __init__(self, subscription_benefit_id: uuid.UUID) -> None:
         self.subscription_benefit_id = subscription_benefit_id
         message = (
-            f"The susbcription benefit with id {subscription_benefit_id} "
+            f"The subscription benefit with id {subscription_benefit_id} "
             "does not exist."
         )
         super().__init__(message, 500)
@@ -40,7 +40,7 @@ class SubscriptionBenefitGrantDoesNotExist(PolarError):
     def __init__(self, subscription_benefit_grant_id: uuid.UUID) -> None:
         self.subscription_benefit_grant_id = subscription_benefit_grant_id
         message = (
-            f"The susbcription benefit grant with id {subscription_benefit_grant_id} "
+            f"The subscription benefit grant with id {subscription_benefit_grant_id} "
             "does not exist."
         )
         super().__init__(message, 500)

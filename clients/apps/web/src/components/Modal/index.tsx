@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion'
 import React, { FunctionComponent, MouseEvent, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import FocusLock from 'react-focus-lock'
@@ -47,7 +48,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
           role="dialog"
         >
           <div
-            className="flex h-full w-full flex-col items-center  bg-black/50 py-2"
+            className="flex h-full w-full flex-col items-center bg-black/50 py-2"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -55,7 +56,13 @@ export const Modal: FunctionComponent<ModalProps> = ({
             }}
           >
             <div className="flex-shrink-1 block h-[20%] w-2"></div>
-            <div
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.15,
+                easings: 'easeInOut',
+              }}
               className={twMerge(
                 'h-content dark:bg-polar-800 z-10 min-w-[800px] flex-shrink-0 overflow-hidden rounded-2xl bg-white shadow',
                 className,
@@ -63,7 +70,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
               onClick={onInnerClick}
             >
               {modalContent}
-            </div>
+            </motion.div>
           </div>
         </div>
       </FocusLock>

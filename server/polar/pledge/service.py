@@ -987,7 +987,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         if by_organization_id:
             # will throw an error if this pledge is not allowed per the spending limits
-            await self.assert_spending_limits(
+            await self.assert_can_pledge_by_organization(
                 session, by_organization_id, authenticated_user, amount
             )
 
@@ -1308,7 +1308,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         return (start, end)
 
-    async def assert_spending_limits(
+    async def assert_can_pledge_by_organization(
         self,
         session: AsyncSession,
         organization_id: UUID,
@@ -1338,6 +1338,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
             # org has spent more than their limit
             if org_pre_spend + amount > org.total_monthly_spending_limit:
                 raise BadRequest("The team spending limit has been reached")
+
+        if not org.billing_email:
+            raise BadRequest("The team has no configured billing email")
 
         # limit is not reached
         return None

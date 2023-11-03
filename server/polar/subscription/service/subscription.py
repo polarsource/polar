@@ -78,6 +78,7 @@ class SearchSortProperty(StrEnum):
     status = "status"
     started_at = "started_at"
     current_period_end = "current_period_end"
+    price_amount = "price_amount"
     subscription_tier_type = "subscription_tier_type"
     subscription_tier = "subscription_tier"
 
@@ -133,6 +134,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 order_by_clauses.append(
                     clause_function(Subscription.current_period_end)
                 )
+            if criterion == SearchSortProperty.price_amount:
+                order_by_clauses.append(clause_function(Subscription.price_amount))
             if criterion == SearchSortProperty.subscription_tier_type:
                 order_by_clauses.append(clause_function(SubscriptionTier.type))
             if criterion == SearchSortProperty.subscription_tier:

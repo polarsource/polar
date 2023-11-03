@@ -769,7 +769,7 @@ const BranchCreatedIcon = () => {
 
 const Link = (props: { href: string; children: React.ReactElement }) => {
   return (
-    <a className="font-bold hover:underline" href={props.href}>
+    <a className="font-bold hover:underline" href={props.href} target="_blank">
       {props.children}
     </a>
   )

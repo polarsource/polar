@@ -6,6 +6,7 @@ import {
   PolarSubscriptionSchemasUser,
   Subscription,
   SubscriptionStatus,
+  SubscriptionTier,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
@@ -23,6 +24,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from 'polarkit/datatable'
+import { getCentsInDollarString } from 'polarkit/money'
 import React, { useEffect, useState } from 'react'
 import { subscriptionStatusDisplayNames, tiersTypeDisplayNames } from './utils'
 
@@ -143,6 +145,18 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
       ),
     },
     {
+      accessorKey: 'price_amount',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Monthly price" />
+      ),
+      cell: (props) => (
+        <>
+          ${getCentsInDollarString(props.getValue() as number, undefined, true)}
+        </>
+      ),
+    },
+    {
       accessorKey: 'subscription_tier.type',
       id: 'subscription_tier_type',
       enableSorting: true,
@@ -153,12 +167,25 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
         tiersTypeDisplayNames[props.getValue() as SubscriptionTierType],
     },
     {
-      accessorKey: 'subscription_tier.name',
+      accessorKey: 'subscription_tier',
       id: 'subscription_tier',
       enableSorting: true,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Tier" />
       ),
+      cell: (props) => {
+        const tier = props.getValue() as SubscriptionTier
+        return (
+          <>
+            {tier.name}
+            {tier.is_archived && (
+              <span className="ml-2 shrink-0 rounded-lg border border-yellow-200 bg-yellow-100 px-1.5 text-xs text-yellow-600 dark:border-yellow-600 dark:bg-yellow-700 dark:text-yellow-300">
+                Archived
+              </span>
+            )}
+          </>
+        )
+      },
     },
   ]
 

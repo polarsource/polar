@@ -442,6 +442,7 @@ async def test_create_pay_on_completion_total_monthly_spending_limit(
     session: AsyncSession,
 ) -> None:
     # configure org spending limit
+    organization.billing_email = "foo@polar.sh"
     organization.total_monthly_spending_limit = 10000
     await organization.save(session)
 
@@ -490,6 +491,7 @@ async def test_create_pay_on_completion_per_user_monthly_spending_limit(
     session: AsyncSession,
 ) -> None:
     # configure org spending limit
+    organization.billing_email = "foo@polar.sh"
     organization.per_user_monthly_spending_limit = 10000
     await organization.save(session)
 
@@ -529,6 +531,38 @@ async def test_create_pay_on_completion_per_user_monthly_spending_limit(
 
 
 @pytest.mark.asyncio
+async def test_no_billing_email(
+    organization: Organization,
+    repository: Repository,
+    issue: Issue,
+    auth_jwt: str,
+    client: AsyncClient,
+    session: AsyncSession,
+) -> None:
+    # configure org spending limit
+    organization.per_user_monthly_spending_limit = 10000
+    await organization.save(session)
+
+    # not OK, reached spending limit
+    create_pledge = await client.post(
+        "/api/v1/pledges/pay_on_completion",
+        json={
+            "issue_id": str(issue.id),
+            "amount": 6000,
+            "by_organization_id": str(organization.id),
+        },
+        cookies={settings.AUTH_COOKIE_KEY: auth_jwt},
+    )
+
+    assert create_pledge.status_code == 400
+
+    assert (
+        create_pledge.text
+        == '{"type":"BadRequest","detail":"The team has no configured billing email"}'
+    )
+
+
+@pytest.mark.asyncio
 async def test_spending(
     organization: Organization,
     repository: Repository,
@@ -538,6 +572,7 @@ async def test_spending(
     session: AsyncSession,
 ) -> None:
     # configure org spending limit
+    organization.billing_email = "foo@polar.sh"
     organization.per_user_monthly_spending_limit = 10000
     await organization.save(session)
 

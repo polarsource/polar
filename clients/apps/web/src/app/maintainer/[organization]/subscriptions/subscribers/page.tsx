@@ -1,6 +1,6 @@
 import SubscribersPage from '@/components/Subscriptions/SubscribersPage'
 import { getServerSideAPI } from '@/utils/api'
-import { Platforms } from '@polar-sh/sdk'
+import { Platforms, SubscriptionTierType } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
 import { DataTableSearchParams, parseSearchParams } from 'polarkit/datatable'
 
@@ -22,7 +22,10 @@ export default async function Page({
   searchParams,
 }: {
   params: { organization: string }
-  searchParams: DataTableSearchParams
+  searchParams: DataTableSearchParams & {
+    type?: SubscriptionTierType
+    subscription_tier_id?: string
+  }
 }) {
   const api = getServerSideAPI()
   const organization = await api.organizations.lookup({
@@ -39,6 +42,8 @@ export default async function Page({
       organization={organization}
       pagination={pagination}
       sorting={sorting}
+      subscriptionTierType={searchParams.type}
+      subscriptionTierId={searchParams.subscription_tier_id}
     />
   )
 }

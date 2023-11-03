@@ -1,6 +1,6 @@
 import OverviewPage from '@/components/Subscriptions/OverviewPage'
 import { getServerSideAPI } from '@/utils/api'
-import { Platforms } from '@polar-sh/sdk'
+import { Platforms, SubscriptionTierType } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
 
 export async function generateMetadata(
@@ -18,8 +18,10 @@ export async function generateMetadata(
 
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: { organization: string }
+  searchParams: { type?: SubscriptionTierType; subscription_tier_id?: string }
 }) {
   const api = getServerSideAPI()
   const organization = await api.organizations.lookup({
@@ -43,6 +45,8 @@ export default async function Page({
       organization={organization}
       startDate={startOfMonthOneYearAgo}
       endDate={startOfMonth}
+      subscriptionTierType={searchParams.type}
+      subscriptionTierId={searchParams.subscription_tier_id}
     />
   )
 }

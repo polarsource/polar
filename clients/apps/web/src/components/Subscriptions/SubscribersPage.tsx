@@ -24,21 +24,54 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from 'polarkit/datatable'
+import { useSubscriptionTiers } from 'polarkit/hooks'
 import { getCentsInDollarString } from 'polarkit/money'
-import React, { useEffect, useState } from 'react'
-import { subscriptionStatusDisplayNames, tiersTypeDisplayNames } from './utils'
+import React, { useEffect, useMemo, useState } from 'react'
+import SubscriptionTiersSelect from './SubscriptionTiersSelect'
+import {
+  getSubscriptionTiersByType,
+  subscriptionStatusDisplayNames,
+  tiersTypeDisplayNames,
+} from './utils'
 
 interface SubscribersPageProps {
   organization: Organization
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
+  subscriptionTierId?: string
+  subscriptionTierType?: SubscriptionTierType
 }
 
 const SubscribersPage: React.FC<SubscribersPageProps> = ({
   organization,
   pagination,
   sorting,
+  subscriptionTierId,
+  subscriptionTierType,
 }) => {
+  const subscriptionTiers = useSubscriptionTiers(organization.name)
+  const subscriptionTiersByType = useMemo(
+    () => getSubscriptionTiersByType(subscriptionTiers.data?.items ?? []),
+    [subscriptionTiers.data],
+  )
+
+  const filter = subscriptionTierType || subscriptionTierId || 'all'
+  const getSearchParams = (
+    pagination: DataTablePaginationState,
+    sorting: DataTableSortingState,
+    filter: string,
+  ) => {
+    const params = serializeSearchParams(pagination, sorting)
+    if (filter !== 'all') {
+      if (Object.values(SubscriptionTierType).includes(filter as any)) {
+        params.append('type', filter)
+      } else {
+        params.append('subscription_tier_id', filter)
+      }
+    }
+    return params
+  }
+
   const router = useRouter()
   const [subscriptions, setSubscriptions] = useState<
     Subscription[] | undefined
@@ -58,9 +91,10 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
     router.push(
       `/maintainer/${
         organization.name
-      }/subscriptions/subscribers?${serializeSearchParams(
+      }/subscriptions/subscribers?${getSearchParams(
         updatedPagination,
         sorting,
+        filter,
       )}`,
     )
   }
@@ -78,9 +112,22 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
     router.push(
       `/maintainer/${
         organization.name
-      }/subscriptions/subscribers?${serializeSearchParams(
+      }/subscriptions/subscribers?${getSearchParams(
         pagination,
         updatedSorting,
+        filter,
+      )}`,
+    )
+  }
+
+  const setFilter = (filter: string) => {
+    router.push(
+      `/maintainer/${
+        organization.name
+      }/subscriptions/subscribers?${getSearchParams(
+        pagination,
+        sorting,
+        filter,
       )}`,
     )
   }
@@ -91,12 +138,20 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
         platform: organization.platform,
         organizationName: organization.name,
         ...getAPIParams(pagination, sorting),
+        ...(subscriptionTierId ? { subscriptionTierId } : {}),
+        ...(subscriptionTierType ? { type: subscriptionTierType } : {}),
       })
       .then((subscriptions) => {
         setSubscriptions(subscriptions.items || [])
         setPageCount(subscriptions.pagination.max_page)
       })
-  }, [organization, pagination, sorting])
+  }, [
+    organization,
+    pagination,
+    sorting,
+    subscriptionTierId,
+    subscriptionTierType,
+  ])
 
   const columns: DataTableColumnDef<Subscription>[] = [
     {
@@ -191,17 +246,28 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
 
   return (
     <DashboardBody>
-      {subscriptions && pageCount !== undefined && (
-        <DataTable
-          columns={columns}
-          data={subscriptions}
-          pageCount={pageCount}
-          pagination={pagination}
-          onPaginationChange={setPagination}
-          sorting={sorting}
-          onSortingChange={setSorting}
-        />
-      )}
+      <div className="flex flex-col gap-8">
+        <div className="flex justify-end">
+          <div className="w-full md:w-1/6">
+            <SubscriptionTiersSelect
+              tiersByType={subscriptionTiersByType}
+              value={subscriptionTierType || subscriptionTierId || 'all'}
+              onChange={setFilter}
+            />
+          </div>
+        </div>
+        {subscriptions && pageCount !== undefined && (
+          <DataTable
+            columns={columns}
+            data={subscriptions}
+            pageCount={pageCount}
+            pagination={pagination}
+            onPaginationChange={setPagination}
+            sorting={sorting}
+            onSortingChange={setSorting}
+          />
+        )}
+      </div>
     </DashboardBody>
   )
 }

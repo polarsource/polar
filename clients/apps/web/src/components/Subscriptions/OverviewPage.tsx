@@ -1,7 +1,8 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/MaintainerLayout'
-import { Organization, Subscription } from '@polar-sh/sdk'
+import { Organization, Subscription, SubscriptionTierType } from '@polar-sh/sdk'
+import { useRouter } from 'next/navigation'
 import { api } from 'polarkit'
 import {
   Avatar,
@@ -11,8 +12,10 @@ import {
   FormattedDateTime,
 } from 'polarkit/components/ui/atoms'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
-import React, { useEffect, useMemo, useState } from 'react'
+import { useSubscriptionTiers } from 'polarkit/hooks'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import SubscriptionTierPill from './SubscriptionTierPill'
+import SubscriptionTiersSelect from './SubscriptionTiersSelect'
 import {
   MRRChart,
   ParsedSubscriptionsSummaryPeriod,
@@ -23,18 +26,54 @@ import {
   MRRMetric,
   SubscribersMetric,
 } from './SubscriptionsMetric'
+import { getSubscriptionTiersByType } from './utils'
 
 interface OverviewPageProps {
   organization: Organization
   startDate: Date
   endDate: Date
+  subscriptionTierId?: string
+  subscriptionTierType?: SubscriptionTierType
 }
 
 const OverviewPage: React.FC<OverviewPageProps> = ({
   organization,
   startDate,
   endDate,
+  subscriptionTierId,
+  subscriptionTierType,
 }) => {
+  const subscriptionTiers = useSubscriptionTiers(organization.name)
+  const subscriptionTiersByType = useMemo(
+    () => getSubscriptionTiersByType(subscriptionTiers.data?.items ?? []),
+    [subscriptionTiers.data],
+  )
+
+  const router = useRouter()
+  const onFilterChange = useCallback(
+    (value: string) => {
+      const params = new URLSearchParams()
+      if (value !== 'all') {
+        if (Object.values(SubscriptionTierType).includes(value as any)) {
+          params.append('type', value)
+        } else {
+          params.append('subscription_tier_id', value)
+        }
+      }
+      router.push(
+        `/maintainer/${organization.name}/subscriptions?${params.toString()}`,
+      )
+    },
+    [router, organization],
+  )
+
+  const apiQueryParams = useMemo(() => {
+    return {
+      ...(subscriptionTierId ? { subscriptionTierId } : {}),
+      ...(subscriptionTierType ? { type: subscriptionTierType } : {}),
+    }
+  }, [subscriptionTierId, subscriptionTierType])
+
   const [summaryPeriods, setSummaryPeriods] = useState<
     ParsedSubscriptionsSummaryPeriod[]
   >([])
@@ -65,12 +104,14 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
   >()
 
   useEffect(() => {
+    setSummaryPeriods([])
     api.subscriptions
       .getSubscriptionsSummary({
         startDate: startDate.toISOString().split('T')[0],
         endDate: endDate.toISOString().split('T')[0],
         platform: organization.platform,
         organizationName: organization.name,
+        ...apiQueryParams,
       })
       .then((summary) => {
         setSummaryPeriods(
@@ -80,21 +121,32 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
           })),
         )
       })
-  }, [startDate, endDate, organization])
+  }, [startDate, endDate, organization, apiQueryParams])
 
   useEffect(() => {
+    setLastSubscriptions(undefined)
     api.subscriptions
       .searchSubscriptions({
         platform: organization.platform,
         organizationName: organization.name,
         limit: 5,
+        ...apiQueryParams,
       })
       .then((subscriptions) => setLastSubscriptions(subscriptions.items || []))
-  }, [organization])
+  }, [organization, apiQueryParams])
 
   return (
     <DashboardBody>
       <div className="flex flex-col gap-8">
+        <div className="flex justify-end">
+          <div className="w-full md:w-1/6">
+            <SubscriptionTiersSelect
+              tiersByType={subscriptionTiersByType}
+              value={subscriptionTierType || subscriptionTierId || 'all'}
+              onChange={onFilterChange}
+            />
+          </div>
+        </div>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {displayedPeriod && (
             <>

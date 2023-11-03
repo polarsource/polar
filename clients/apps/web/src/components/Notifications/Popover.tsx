@@ -112,10 +112,6 @@ const Popover = ({ type = 'topbar' }: { type?: 'topbar' | 'dashboard' }) => {
           aria-live="assertive"
           className={notificationsContainerClassnames}
           ref={ref}
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-          }}
         >
           <List
             notifications={notifs.data.notifications}

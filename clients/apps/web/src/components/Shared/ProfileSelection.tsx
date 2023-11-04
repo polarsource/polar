@@ -63,8 +63,8 @@ const ProfileSelection = ({
         avatar_url: loggedUser.avatar_url,
       } as const)
 
-  const showConnectUsell = orgs && orgs.length === 0
-  const showAddOrganization = !showConnectUsell
+  const showConnectUpsell = orgs && orgs.length === 0
+  const showAddOrganization = !showConnectUpsell
 
   return (
     <>
@@ -136,7 +136,7 @@ const ProfileSelection = ({
                   </Link>
                 ))}
 
-              {showConnectUsell && (
+              {showConnectUpsell && (
                 <div className="dark:bg-polar-800 dark:text-polar-400 mx-4 my-4 flex flex-col rounded-lg border-blue-100 bg-blue-50 p-4 text-sm">
                   <h3>Get funding for your public repositories.</h3>
                   <Link

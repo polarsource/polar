@@ -21,18 +21,18 @@ const BackerLayout = (props: {
   disableOnboardingBanner?: boolean
 }) => {
   const { currentUser, hydrated } = useAuth()
-  const isBackerConnectUpsellSkiped = useStore(
+  const isBackerConnectUpsellSkipped = useStore(
     (store) => store.onboardingMaintainerConnectRepositoriesSkip,
   )
 
   const showBanner =
-    !isBackerConnectUpsellSkiped && !props.disableOnboardingBanner
+    !isBackerConnectUpsellSkipped && !props.disableOnboardingBanner
 
   const listOrganizationQuery = useListAdminOrganizations()
 
   const orgs = listOrganizationQuery?.data?.items
 
-  const showConnectUsell = orgs && orgs.length === 0
+  const showConnectUpsell = orgs && orgs.length === 0
 
   if (!hydrated) {
     return <></>
@@ -68,7 +68,7 @@ const BackerLayout = (props: {
         <div className="flex flex-col gap-y-2">
           <MetaNavigation />
 
-          {showConnectUsell ? (
+          {showConnectUpsell ? (
             <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 mx-4 mb-4 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm">
               <p className="mb-2">Get funding for your public repositories.</p>
               <Link

@@ -296,6 +296,11 @@ class Subscription(TimestampedSchema):
     subscription_tier: SubscriptionTier
 
 
+class SubscriptionSummary(Schema):
+    user: User
+    subscription_tier: SubscriptionTier
+
+
 class SubscriptionsStatisticsPeriod(Schema):
     start_date: date
     end_date: date

@@ -30,6 +30,7 @@ from .schemas import (
     SubscriptionBenefitCreate,
     SubscriptionBenefitUpdate,
     SubscriptionsStatistics,
+    SubscriptionSummary,
     SubscriptionTierBenefitsUpdate,
     SubscriptionTierCreate,
     SubscriptionTierUpdate,
@@ -472,6 +473,46 @@ async def search_subscriptions(
 
     return ListResource.from_paginated_results(
         [Subscription.from_orm(result) for result in results],
+        count,
+        pagination,
+    )
+
+
+@router.get(
+    "/subscriptions/summary",
+    response_model=ListResource[SubscriptionSummary],
+    tags=[Tags.PUBLIC],
+)
+async def search_subscriptions_summary(
+    pagination: PaginationParamsQuery,
+    organization_name_platform: OrganizationNamePlatform,
+    repository_name: OptionalRepositoryNameQuery = None,
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[SubscriptionSummary]:
+    organization_name, platform = organization_name_platform
+    organization = await organization_service.get_by_name(
+        session, platform, organization_name
+    )
+    if organization is None:
+        raise ResourceNotFound("Organization not found")
+
+    repository: Repository | None = None
+    if repository_name is not None:
+        repository = await repository_service.get_by_org_and_name(
+            session, organization.id, repository_name
+        )
+        if repository is None:
+            raise ResourceNotFound("Repository not found")
+
+    results, count = await subscription_service.search_summary(
+        session,
+        organization=organization,
+        repository=repository,
+        pagination=pagination,
+    )
+
+    return ListResource.from_paginated_results(
+        [SubscriptionSummary.from_orm(result) for result in results],
         count,
         pagination,
     )

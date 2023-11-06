@@ -72,7 +72,6 @@ export const Badge = ({
           overflow: 'hidden',
           backgroundColor: darkmode ? '#1B1D29' /*gray-700*/ : 'white',
           fontFamily: 'Inter',
-          // width: 'fit-content',
         }}
       >
         <div
@@ -370,6 +369,7 @@ export const Badge = ({
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
+              minWidth: '400px',
             }}
           >
             <Heart />

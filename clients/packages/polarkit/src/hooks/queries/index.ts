@@ -10,6 +10,7 @@ import { defaultRetry } from './retry'
 
 export * from './backoffice'
 export * from './dashboard'
+export * from './funding'
 export * from './issue'
 export * from './org'
 export * from './pledges'

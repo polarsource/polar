@@ -2,7 +2,6 @@ import {
   BusinessOutlined,
   EmailOutlined,
   LanguageOutlined,
-  SearchOutlined,
   ShortTextOutlined,
 } from '@mui/icons-material'
 import {
@@ -12,7 +11,7 @@ import {
   SubscriptionTier,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Avatar, Button, Input } from 'polarkit/components/ui/atoms'
+import { Avatar, Button } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import { twMerge } from 'tailwind-merge'
 import { externalURL, prettyURL } from '.'
@@ -202,19 +201,7 @@ const OrganizationPublicPage = ({
               </Button>
             </Link>
           </div>
-
-          <div>
-            <Input
-              preSlot={
-                <SearchOutlined className="h-5 w-5" fontSize="inherit" />
-              }
-              placeholder="Search Filter"
-            />
-          </div>
-
-          <div className="-mx-6">
-            <IssuesLookingForFunding issuesFunding={issuesFunding} />
-          </div>
+          <IssuesLookingForFunding organization={organization} />
         </div>
       </div>
 

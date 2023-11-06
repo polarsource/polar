@@ -145,13 +145,6 @@ class Issue(IssueFields, RecordModel):
             "idx_issues_pledged_amount_sum",
             "pledged_amount_sum",
         ),
-        # TODO: deprecated, remove when we've migrated to positive_reactions_count and
-        # total_engagement_count
-        Index(
-            "idx_issues_reactions_plus_one",
-            sqlalchemy.text("((reactions::jsonb ->> 'plus_one')::int)"),
-            postgresql_using="btree",
-        ),
         Index(
             "idx_issues_positive_reactions_count",
             "positive_reactions_count",

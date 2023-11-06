@@ -16,6 +16,7 @@ services:
     volumes:
       - ..:/workspace:cached
       - venv:/workspace/server/.venv:rw # do not mount from host
+      - node_modules:/workspace/clients/node_modules:rw # do not mount from host
 
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
@@ -53,3 +54,4 @@ services:
 volumes:
   postgres-data: {}
   venv: {}
+  node_modules: {}

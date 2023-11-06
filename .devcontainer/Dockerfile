@@ -18,4 +18,8 @@ RUN if [ "${NODE_VERSION}" != "none" ]; then su vscode -c "umask 0002 && . /usr/
 
 RUN pipx install poetry==1.6.1
 
+RUN npm install -g pnpm
+
+
+
 # RUN mkdir -p /workspace/server/.env

@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "compounds": [
         {
-            "name": "Polar",
+            "name": "Polar (Server)",
             "configurations": ["API", "Worker"],
             "stopAll": true
         }

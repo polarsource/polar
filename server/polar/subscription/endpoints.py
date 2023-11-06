@@ -6,12 +6,17 @@ from pydantic import UUID4
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import Authz
 from polar.enums import Platforms
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import BadRequest, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Repository, SubscriptionBenefit, SubscriptionTier
+from polar.models.organization import Organization
 from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTierType
-from polar.organization.dependencies import OrganizationNameQuery
+from polar.organization.dependencies import (
+    OptionalOrganizationNamePlatform,
+    OptionalOrganizationNameQuery,
+    OrganizationNameQuery,
+)
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
@@ -424,23 +429,29 @@ async def search_subscriptions(
     auth: UserRequiredAuth,
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
-    organization_name: OrganizationNameQuery,
+    organization_name_platform: OptionalOrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
     direct_organization: bool = Query(True),
     type: SubscriptionTierType | None = Query(None),
     subscription_tier_id: UUID4 | None = Query(None),
     subscriber_user_id: UUID4 | None = Query(None),
-    platform: Platforms = Query(...),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[Subscription]:
-    organization = await organization_service.get_by_name(
-        session, platform, organization_name
-    )
-    if organization is None:
-        raise ResourceNotFound("Organization not found")
+    organization: Organization | None = None
+    if organization_name_platform is not None:
+        organization_name, platform = organization_name_platform
+        organization = await organization_service.get_by_name(
+            session, platform, organization_name
+        )
+        if organization is None:
+            raise ResourceNotFound("Organization not found")
 
     repository: Repository | None = None
     if repository_name is not None:
+        if organization is None:
+            raise BadRequest(
+                "organization_name and platform are required when repository_name is set"
+            )
         repository = await repository_service.get_by_org_and_name(
             session, organization.id, repository_name
         )

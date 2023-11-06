@@ -29,7 +29,7 @@ from .schemas import (
     Subscription,
     SubscriptionBenefitCreate,
     SubscriptionBenefitUpdate,
-    SubscriptionsSummary,
+    SubscriptionsStatistics,
     SubscriptionTierBenefitsUpdate,
     SubscriptionTierCreate,
     SubscriptionTierUpdate,
@@ -375,9 +375,11 @@ async def get_subscribe_session(
 
 
 @router.get(
-    "/subscriptions/summary", response_model=SubscriptionsSummary, tags=[Tags.PUBLIC]
+    "/subscriptions/statistics",
+    response_model=SubscriptionsStatistics,
+    tags=[Tags.PUBLIC],
 )
-async def get_subscriptions_summary(
+async def get_subscriptions_statistics(
     auth: UserRequiredAuth,
     organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
@@ -387,7 +389,7 @@ async def get_subscriptions_summary(
     type: SubscriptionTierType | None = Query(None),
     subscription_tier_id: UUID4 | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionsSummary:
+) -> SubscriptionsStatistics:
     organization_name, platform = organization_name_platform
     organization = await organization_service.get_by_name(
         session, platform, organization_name
@@ -403,7 +405,7 @@ async def get_subscriptions_summary(
         if repository is None:
             raise ResourceNotFound("Repository not found")
 
-    periods = await subscription_service.get_periods_summary(
+    periods = await subscription_service.get_statistics_periods(
         session,
         auth.user,
         start_date=start_date,
@@ -414,7 +416,7 @@ async def get_subscriptions_summary(
         type=type,
         subscription_tier_id=subscription_tier_id,
     )
-    return SubscriptionsSummary(periods=periods)
+    return SubscriptionsStatistics(periods=periods)
 
 
 @router.get(

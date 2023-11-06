@@ -2,6 +2,7 @@ import {
   BusinessOutlined,
   EmailOutlined,
   LanguageOutlined,
+  SearchOutlined,
   ShortTextOutlined,
 } from '@mui/icons-material'
 import {
@@ -10,7 +11,8 @@ import {
   Repository,
   SubscriptionTier,
 } from '@polar-sh/sdk'
-import { Avatar } from 'polarkit/components/ui/atoms'
+import Link from 'next/link'
+import { Avatar, Button, Input } from 'polarkit/components/ui/atoms'
 import { Separator } from 'polarkit/components/ui/separator'
 import { twMerge } from 'tailwind-merge'
 import { externalURL, prettyURL } from '.'
@@ -110,14 +112,14 @@ const OrganizationPublicPage = ({
       <Separator />
 
       <div className="flex flex-row gap-x-20 pt-4">
-        <div className="flex w-80 flex-col gap-y-12">
+        <div className="flex w-80 flex-col gap-y-10">
           <div>
             <p className="dark:text-polar-500 text-sm leading-relaxed text-gray-400">
               Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
               eiusmod tempor incididunt ut labore et dolore magna aliqua.
             </p>
           </div>
-          <div className="flex flex-col gap-y-6">
+          <div className="flex flex-col gap-y-4">
             <div className="flex flex-row items-start justify-between">
               <h3>Subscribers</h3>
               <h3>15</h3>
@@ -131,13 +133,13 @@ const OrganizationPublicPage = ({
                   avatar_url="https://avatars.githubusercontent.com/u/10053249?v=4"
                 />
               ))}
-              <div className="dark:border-polar-600 dark:bg-polar-700 dark:text-polar-500 flex h-9 w-9 flex-col items-center justify-center rounded-full border border-blue-400 bg-blue-100 text-sm font-medium text-blue-500">
+              <div className="dark:border-polar-600 dark:text-polar-500 flex h-9 w-9 flex-col items-center justify-center rounded-full border border-blue-200 text-sm font-medium text-blue-400">
                 +6
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-y-6">
+          <div className="flex flex-col gap-y-4">
             <div className="flex flex-row items-start justify-between">
               <h3>Campaigns</h3>
               <h3>3</h3>
@@ -148,7 +150,7 @@ const OrganizationPublicPage = ({
                   key={i}
                   className={twMerge(
                     'dark:border-polar-700 flex flex-col gap-y-4 rounded-2xl border border-gray-200 p-4',
-                    i === 0 && 'dark:bg-polar-800 bg-gray-50',
+                    i === 0 && 'dark:bg-polar-800 border-blue-100 bg-blue-50',
                   )}
                 >
                   <h4 className="text-sm font-medium">Pydantic v{i + 1}</h4>
@@ -192,9 +194,23 @@ const OrganizationPublicPage = ({
             />
           )}
 
-          <h1 className="dark:text-polar-100 text-lg text-gray-800">
-            Issues looking for funding
-          </h1>
+          <div className="flex flex-row items-start justify-between">
+            <h2 className="text-lg">Issues looking for funding</h2>
+            <Link href={{ pathname: `/${organization.name}/issues` }}>
+              <Button variant="secondary" size="sm">
+                View all
+              </Button>
+            </Link>
+          </div>
+
+          <div>
+            <Input
+              preSlot={
+                <SearchOutlined className="h-5 w-5" fontSize="inherit" />
+              }
+              placeholder="Search Filter"
+            />
+          </div>
 
           <div className="-mx-6">
             <IssuesLookingForFunding issuesFunding={issuesFunding} />

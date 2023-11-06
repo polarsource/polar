@@ -5,7 +5,6 @@ from pydantic import UUID4
 
 from polar.auth.dependencies import Auth, UserRequiredAuth
 from polar.authz.service import Authz
-from polar.enums import Platforms
 from polar.exceptions import BadRequest, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Repository, SubscriptionBenefit, SubscriptionTier
@@ -14,8 +13,7 @@ from polar.models.subscription_benefit import SubscriptionBenefitType
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.organization.dependencies import (
     OptionalOrganizationNamePlatform,
-    OptionalOrganizationNameQuery,
-    OrganizationNameQuery,
+    OrganizationNamePlatform,
 )
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -39,7 +37,6 @@ from .schemas import (
 )
 from .schemas import SubscriptionBenefit as SubscriptionBenefitSchema
 from .schemas import SubscriptionTier as SubscriptionTierSchema
-from .service.subscription import SearchSortProperty
 from .service.subscription import subscription as subscription_service
 from .service.subscription_benefit import (
     subscription_benefit as subscription_benefit_service,
@@ -68,15 +65,15 @@ router = APIRouter(
 )
 async def search_subscription_tiers(
     pagination: PaginationParamsQuery,
-    organization_name: OrganizationNameQuery,
+    organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
     direct_organization: bool = Query(True),
     include_archived: bool = Query(False),
     type: SubscriptionTierType | None = Query(None),
-    platform: Platforms = Query(...),
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
 ) -> ListResource[SubscriptionTierSchema]:
+    organization_name, platform = organization_name_platform
     organization = await organization_service.get_by_name(
         session, platform, organization_name
     )
@@ -216,15 +213,15 @@ async def update_subscription_tier_benefits(
     tags=[Tags.PUBLIC],
 )
 async def search_subscription_benefits(
-    pagination: PaginationParamsQuery,
-    organization_name: OrganizationNameQuery,
     auth: UserRequiredAuth,
+    pagination: PaginationParamsQuery,
+    organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
     direct_organization: bool = Query(True),
     type: SubscriptionBenefitType | None = Query(None),
-    platform: Platforms = Query(...),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[SubscriptionBenefitSchema]:
+    organization_name, platform = organization_name_platform
     organization = await organization_service.get_by_name(
         session, platform, organization_name
     )
@@ -382,9 +379,8 @@ async def get_subscribe_session(
 )
 async def get_subscriptions_summary(
     auth: UserRequiredAuth,
-    organization_name: OrganizationNameQuery,
+    organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
-    platform: Platforms = Query(...),
     start_date: date = Query(...),
     end_date: date = Query(...),
     direct_organization: bool = Query(True),
@@ -392,6 +388,7 @@ async def get_subscriptions_summary(
     subscription_tier_id: UUID4 | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionsSummary:
+    organization_name, platform = organization_name_platform
     organization = await organization_service.get_by_name(
         session, platform, organization_name
     )

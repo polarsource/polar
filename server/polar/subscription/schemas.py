@@ -296,7 +296,7 @@ class Subscription(TimestampedSchema):
     subscription_tier: SubscriptionTier
 
 
-class SubscriptionsSummaryPeriod(Schema):
+class SubscriptionsStatisticsPeriod(Schema):
     start_date: date
     end_date: date
     subscribers: int
@@ -304,5 +304,5 @@ class SubscriptionsSummaryPeriod(Schema):
     cumulative: int
 
 
-class SubscriptionsSummary(Schema):
-    periods: list[SubscriptionsSummaryPeriod]
+class SubscriptionsStatistics(Schema):
+    periods: list[SubscriptionsStatisticsPeriod]

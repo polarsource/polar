@@ -27,7 +27,7 @@ from polar.models.subscription_tier import SubscriptionTierType
 from polar.user.service import user as user_service
 from polar.worker import enqueue_job
 
-from ..schemas import SubscriptionsSummaryPeriod
+from ..schemas import SubscriptionsStatisticsPeriod
 from .subscription_tier import subscription_tier as subscription_tier_service
 
 
@@ -256,7 +256,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 subscription_benefit_id=benefit.id,
             )
 
-    async def get_periods_summary(
+    async def get_statistics_periods(
         self,
         session: AsyncSession,
         user: User,
@@ -268,7 +268,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         direct_organization: bool = True,
         type: SubscriptionTierType | None = None,
         subscription_tier_id: uuid.UUID | None = None,
-    ) -> list[SubscriptionsSummaryPeriod]:
+    ) -> list[SubscriptionsStatisticsPeriod]:
         subscriptions_statement = self._get_readable_subscriptions_statement(user)
 
         if organization is not None:
@@ -348,7 +348,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         result = await session.execute(statement)
 
         return [
-            SubscriptionsSummaryPeriod(
+            SubscriptionsStatisticsPeriod(
                 start_date=start_date,
                 end_date=end_date,
                 subscribers=subscribers,

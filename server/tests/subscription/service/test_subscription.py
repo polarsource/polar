@@ -401,7 +401,7 @@ class TestSearch:
 
 
 @pytest.mark.asyncio
-class TestGetSummary:
+class TestGetStatisticsPeriods:
     async def test_not_organization_member(
         self,
         session: AsyncSession,
@@ -418,7 +418,7 @@ class TestGetSummary:
             ended_at=datetime(2023, 6, 15),
         )
 
-        results = await subscription_service.get_periods_summary(
+        results = await subscription_service.get_statistics_periods(
             session,
             user,
             start_date=date(2023, 1, 1),
@@ -450,7 +450,7 @@ class TestGetSummary:
             ended_at=datetime(2023, 6, 15),
         )
 
-        results = await subscription_service.get_periods_summary(
+        results = await subscription_service.get_statistics_periods(
             session,
             user,
             start_date=date(2023, 1, 1),
@@ -504,7 +504,7 @@ class TestGetSummary:
             ended_at=datetime(2023, 6, 15),
         )
 
-        results = await subscription_service.get_periods_summary(
+        results = await subscription_service.get_statistics_periods(
             session,
             user,
             start_date=date(2023, 1, 1),
@@ -551,7 +551,7 @@ class TestGetSummary:
             ended_at=datetime(2023, 6, 15),
         )
 
-        results = await subscription_service.get_periods_summary(
+        results = await subscription_service.get_statistics_periods(
             session,
             user,
             start_date=date(2023, 1, 1),
@@ -611,7 +611,7 @@ class TestGetSummary:
             ended_at=datetime(2023, 6, 15),
         )
 
-        results = await subscription_service.get_periods_summary(
+        results = await subscription_service.get_statistics_periods(
             session,
             user,
             start_date=date(2023, 1, 1),
@@ -649,7 +649,7 @@ class TestGetSummary:
             ended_at=datetime(2023, 6, 15),
         )
 
-        results = await subscription_service.get_periods_summary(
+        results = await subscription_service.get_statistics_periods(
             session,
             user,
             start_date=date(2023, 1, 1),
@@ -688,7 +688,7 @@ class TestGetSummary:
             ended_at=datetime(2023, 6, 15),
         )
 
-        results = await subscription_service.get_periods_summary(
+        results = await subscription_service.get_statistics_periods(
             session,
             user,
             start_date=date(2023, 1, 1),

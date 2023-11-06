@@ -1165,12 +1165,12 @@ class TestSearchSubscriptions:
 
 
 @pytest.mark.asyncio
-class TestGetSubscriptionsSummary:
+class TestGetSubscriptionsStatistics:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
     ) -> None:
         response = await client.get(
-            "/api/v1/subscriptions/subscriptions/summary",
+            "/api/v1/subscriptions/subscriptions/statistics",
             params={
                 "platform": "github",
                 "organization_name": organization.name,
@@ -1184,7 +1184,7 @@ class TestGetSubscriptionsSummary:
     @pytest.mark.authenticated
     async def test_not_existing_organization(self, client: AsyncClient) -> None:
         response = await client.get(
-            "/api/v1/subscriptions/subscriptions/summary",
+            "/api/v1/subscriptions/subscriptions/statistics",
             params={
                 "platform": "github",
                 "organization_name": "not_existing",
@@ -1200,7 +1200,7 @@ class TestGetSubscriptionsSummary:
         self, client: AsyncClient, organization: Organization
     ) -> None:
         response = await client.get(
-            "/api/v1/subscriptions/subscriptions/summary",
+            "/api/v1/subscriptions/subscriptions/statistics",
             params={
                 "platform": organization.platform.value,
                 "organization_name": organization.name,
@@ -1220,7 +1220,7 @@ class TestGetSubscriptionsSummary:
         subscription_tiers: list[SubscriptionTier],
     ) -> None:
         response = await client.get(
-            "/api/v1/subscriptions/subscriptions/summary",
+            "/api/v1/subscriptions/subscriptions/statistics",
             params={
                 "platform": organization.platform.value,
                 "organization_name": organization.name,

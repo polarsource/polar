@@ -246,3 +246,19 @@ export const useUserSubscriptions = (
       }),
     retry: defaultRetry,
   })
+
+export const useSubscriptionSummary = (
+  orgName: string,
+  limit = 20,
+  platform = Platforms.GITHUB,
+) =>
+  useQuery({
+    queryKey: ['subscriptionSummary', 'organization', orgName],
+    queryFn: () =>
+      api.subscriptions.searchSubscriptionsSummary({
+        organizationName: orgName,
+        platform,
+        limit,
+      }),
+    retry: defaultRetry,
+  })

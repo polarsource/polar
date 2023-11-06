@@ -5,6 +5,7 @@ import {
   EmailOutlined,
   HiveOutlined,
   HowToVoteOutlined,
+  LandscapeOutlined,
   LanguageOutlined,
   ShortTextOutlined,
 } from '@mui/icons-material'
@@ -12,6 +13,7 @@ import {
   IssueFunding,
   Organization,
   Repository,
+  SubscriptionSummary,
   SubscriptionTier,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -24,6 +26,7 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms'
+import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { externalURL, prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
@@ -31,18 +34,20 @@ import OrganizationSubscriptionsPublicPage from '../Subscriptions/OrganizationSu
 import PublicSubscriptionUpsell from '../Subscriptions/PublicSubscriptionUpsell'
 import Footer from './Footer'
 import IssuesLookingForFunding from './IssuesLookingForFunding'
+import { RepositoriesOverivew } from './RepositoriesOverview'
 
 const OrganizationPublicPage = ({
   organization,
   repositories,
   issuesFunding,
-  totalIssueCount,
   subscriptionTiers,
+  subscriptionSummary,
 }: {
   organization: Organization
   repositories: Repository[]
   issuesFunding: IssueFunding[]
   subscriptionTiers: SubscriptionTier[]
+  subscriptionSummary: SubscriptionSummary[]
   totalIssueCount: number
 }) => {
   const showMeta =
@@ -50,6 +55,16 @@ const OrganizationPublicPage = ({
     organization.company ||
     organization.email ||
     organization.twitter_username
+
+  const subscriberUsers = useMemo(
+    () => subscriptionSummary.slice(0, 9).map((summary) => summary.user),
+    [subscriptionSummary],
+  )
+
+  const subscribersHiddenCount = useMemo(
+    () => subscriptionSummary.slice(9).length,
+    [subscriptionSummary],
+  )
 
   return (
     <Tabs defaultValue="overview">
@@ -59,28 +74,34 @@ const OrganizationPublicPage = ({
         </a>
         <TabsList className="dark:border-polar-700 dark:border">
           <TabsTrigger value="overview" size="small">
-            <div className="text-[17px]">
+            <div className="text-[18px]">
               <DragIndicatorOutlined fontSize="inherit" />
             </div>
             <span>Overview</span>
           </TabsTrigger>
           <TabsTrigger value="repositories" size="small">
-            <div className="text-[17px]">
+            <div className="text-[18px]">
               <HiveOutlined fontSize="inherit" />
             </div>
             <span>Repositories</span>
           </TabsTrigger>
           <TabsTrigger value="issues" size="small">
-            <div className="text-[17px]">
+            <div className="text-[18px]">
               <HowToVoteOutlined fontSize="inherit" />
             </div>
             <span>Issues</span>
           </TabsTrigger>
           <TabsTrigger value="subscriptions" size="small">
-            <div className="text-[17px]">
+            <div className="text-[18px]">
               <Bolt fontSize="inherit" />
             </div>
             <span>Subscriptions</span>
+          </TabsTrigger>
+          <TabsTrigger value="campaigns" size="small">
+            <div className="text-[18px]">
+              <LandscapeOutlined fontSize="inherit" />
+            </div>
+            <span>Campaigns</span>
           </TabsTrigger>
         </TabsList>
       </div>
@@ -94,9 +115,11 @@ const OrganizationPublicPage = ({
                 name={organization.name}
                 avatar_url={organization.avatar_url}
               />
-              <h1 className="dark:text-polar-50 text-2xl font-normal text-gray-800">
-                {organization.pretty_name}
-              </h1>
+              {organization.pretty_name && (
+                <h1 className="dark:text-polar-50 text-2xl font-normal text-gray-800">
+                  {organization.pretty_name}
+                </h1>
+              )}
               <h3 className="dark:text-polar-500 text-md font-normal text-gray-600">
                 @{organization.name}
               </h3>
@@ -106,17 +129,21 @@ const OrganizationPublicPage = ({
                 {organization.bio}
               </p>
             )}
-            <div className="dark:text-polar-400 flex flex-col flex-wrap gap-y-6 text-sm text-gray-600">
-              <div className="flex flex-col gap-y-2 text-sm">
+            {showMeta && (
+              <div className="dark:text-polar-500 flex flex-col gap-y-2 text-sm">
                 {organization.company && (
                   <div className="flex flex-row items-center gap-x-3">
-                    <BusinessOutlined fontSize="inherit" />
+                    <span className="text-[17px]">
+                      <BusinessOutlined fontSize="inherit" />
+                    </span>
                     <span>{organization.company}</span>
                   </div>
                 )}
                 {organization.blog && (
                   <div className="flex flex-row items-center gap-x-3">
-                    <LanguageOutlined fontSize="inherit" />
+                    <span className="text-[17px]">
+                      <LanguageOutlined fontSize="inherit" />
+                    </span>
                     <a
                       className="text-blue-600 hover:text-blue-700"
                       href={externalURL(organization.blog)}
@@ -129,7 +156,9 @@ const OrganizationPublicPage = ({
 
                 {organization.email && (
                   <div className="flex flex-row items-center gap-x-3">
-                    <EmailOutlined fontSize="inherit" />
+                    <span className="text-[17px]">
+                      <EmailOutlined fontSize="inherit" />
+                    </span>
                     <a
                       className="text-blue-600 hover:text-blue-700"
                       href={`mailto:${organization.email}`}
@@ -141,7 +170,9 @@ const OrganizationPublicPage = ({
 
                 {organization.twitter_username && (
                   <div className="flex flex-row items-center gap-x-3">
-                    <ShortTextOutlined fontSize="inherit" />
+                    <span className="text-[17px]">
+                      <ShortTextOutlined fontSize="inherit" />
+                    </span>
                     <a
                       className="text-blue-600 hover:text-blue-700"
                       href={`https://twitter.com/${organization.twitter_username}`}
@@ -152,27 +183,31 @@ const OrganizationPublicPage = ({
                   </div>
                 )}
               </div>
-            </div>
+            )}
           </div>
-          <div className="flex flex-col gap-y-4">
-            <div className="flex flex-row items-start justify-between">
-              <h3>Subscribers</h3>
-              <h3>15</h3>
-            </div>
-            <div className="flex flex-row flex-wrap gap-3">
-              {Array.from({ length: 9 }).map((_, i) => (
-                <Avatar
-                  key={i}
-                  className="h-10 w-10"
-                  name="Emil Widlund"
-                  avatar_url="https://avatars.githubusercontent.com/u/10053249?v=4"
-                />
-              ))}
-              <div className="dark:border-polar-600 dark:text-polar-500 flex h-10 w-10 flex-col items-center justify-center rounded-full border border-blue-200 text-xs font-medium text-blue-400">
-                +6
+          {subscriberUsers.length > 0 && (
+            <div className="flex flex-col gap-y-4">
+              <div className="flex flex-row items-start justify-between">
+                <h3>Subscribers</h3>
+                <h3>15</h3>
+              </div>
+              <div className="flex flex-row flex-wrap gap-3">
+                {subscriberUsers.map((user) => (
+                  <Avatar
+                    key={user.username}
+                    className="h-10 w-10"
+                    name={user.username}
+                    avatar_url={user.avatar_url}
+                  />
+                ))}
+                {subscribersHiddenCount > 0 && (
+                  <div className="dark:border-polar-600 dark:text-polar-500 flex h-10 w-10 flex-col items-center justify-center rounded-full border border-blue-200 text-xs font-medium text-blue-400">
+                    {subscribersHiddenCount}
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          )}
 
           <div className="flex flex-col gap-y-4">
             <div className="flex flex-row items-start justify-between">
@@ -239,8 +274,14 @@ const OrganizationPublicPage = ({
             <IssuesLookingForFunding organization={organization} />
           </div>
         </TabsContent>
-        <TabsContent className="w-full" value="repositories"></TabsContent>
+        <TabsContent className="w-full" value="repositories">
+          <RepositoriesOverivew
+            organization={organization}
+            repositories={repositories}
+          />
+        </TabsContent>
         <TabsContent className="w-full" value="issues">
+          <h1 className="pb-8 text-lg">Issues looking for funding</h1>
           <IssuesLookingForFunding organization={organization} />
         </TabsContent>
         <TabsContent className="w-full" value="subscriptions">

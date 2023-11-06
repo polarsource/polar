@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   redis:
@@ -21,7 +21,16 @@ services:
       - ${POLAR_POSTGRES_PORT}
     restart: always
     healthcheck:
-      test: [ "CMD", "pg_isready", "-q", "-d", "${POLAR_POSTGRES_DATABASE}", "-U", "${POLAR_POSTGRES_USER}" ]
+      test:
+        [
+          "CMD",
+          "pg_isready",
+          "-q",
+          "-d",
+          "${POLAR_POSTGRES_DATABASE}",
+          "-U",
+          "${POLAR_POSTGRES_USER}",
+        ]
       timeout: 40s
       interval: 2s
       retries: 20

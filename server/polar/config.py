@@ -157,5 +157,15 @@ class Settings(BaseSettings):
 
 
 env = Environment(os.getenv("POLAR_ENV", Environment.development))
-env_file = ".env.testing" if env == Environment.testing else ".env"
+
+
+env_file = ".env"
+
+if env == Environment.testing:
+    env_file = ".env.testing"
+
+override_env_file = os.getenv("POLAR_ENV_FILE", None)
+if override_env_file:
+    env_file = override_env_file
+
 settings = Settings(_env_file=env_file, ENV=env)  # type: ignore

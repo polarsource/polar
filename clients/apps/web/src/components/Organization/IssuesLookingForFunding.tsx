@@ -96,7 +96,7 @@ const IssuesLookingForFunding = ({
   })
 
   return (
-    <>
+    <div className="flex flex-col gap-y-8">
       <div className="flex flex-row items-center">
         <IssuesFilter filters={filters} onSetFilters={setFilters} />
       </div>
@@ -134,7 +134,7 @@ const IssuesLookingForFunding = ({
           </div>
         ))}
       </div>
-    </>
+    </div>
   )
 }
 

@@ -27,7 +27,7 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
           </Button>
         </Link>
       </div>
-      <div className="flex h-fit flex-row gap-4 py-6">
+      <div className="flex h-fit flex-row gap-6 py-6">
         {subscriptionTiers
           .filter((tier) => tier.is_highlighted)
           .sort((a, b) => a.price_amount - b.price_amount)

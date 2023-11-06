@@ -23,9 +23,9 @@ const SubscriptionGroupPublic = ({
     <div className="flex flex-col gap-8">
       <div>
         <div className="flex items-center justify-between">
-          <h2 className="flex flex-row items-center text-2xl">
+          <h2 className="flex flex-row items-center text-xl">
             <SubscriptionGroupIcon type={type} className="!h-6 !w-6" />
-            <span className="dark:text-polar-50 ml-3">{title}</span>
+            <span className="dark:text-polar-50 ml-2">{title}</span>
           </h2>
         </div>
         <p className="dark:text-polar-500 mt-4 text-gray-400">{description}</p>
@@ -36,6 +36,7 @@ const SubscriptionGroupPublic = ({
             className="h-full"
             key={tier.id}
             subscriptionTier={tier}
+            variant="small"
           >
             <Link
               className="w-full"

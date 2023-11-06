@@ -236,3 +236,36 @@ export const LargeIssueNoReactions: Story = {
     )
   },
 }
+
+export const LargeIssueFundingGoal: Story = {
+  args: {
+    org_name: org.name,
+    issue_count: 0,
+    avatar: org.avatar_url,
+    issues: [
+      {
+        ...issue,
+        funding: {
+          funding_goal: { amount: 5000, currency: 'USD' },
+          pledges_sum: { amount: 2000, currency: 'USD' },
+        },
+      },
+    ],
+    largeIssue: true,
+  },
+  render: (args) => {
+    return (
+      <div
+        className="relative"
+        style={{
+          height: 630,
+          width: 1200,
+        }}
+      >
+        <div className="absolute">
+          <OpenGraphImage {...args} />
+        </div>
+      </div>
+    )
+  },
+}

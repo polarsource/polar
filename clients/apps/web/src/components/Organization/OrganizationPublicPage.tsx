@@ -109,8 +109,8 @@ const OrganizationPublicPage = ({
 
       <Separator />
 
-      <div className="flex flex-row gap-x-16 pt-4">
-        <div className="flex w-64 flex-col gap-y-12">
+      <div className="flex flex-row gap-x-20 pt-4">
+        <div className="flex w-80 flex-col gap-y-12">
           <div>
             <p className="dark:text-polar-500 text-sm leading-relaxed text-gray-400">
               Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
@@ -183,7 +183,7 @@ const OrganizationPublicPage = ({
             </div>
           </div>
         </div>
-        <div className="flex flex-col gap-y-8">
+        <div className="flex w-full flex-col gap-y-8">
           {subscriptionTiers.length > 0 && (
             <PublicSubscriptionUpsell
               organization={organization}
@@ -192,11 +192,13 @@ const OrganizationPublicPage = ({
             />
           )}
 
-          <h1 className="dark:text-polar-100 text-xl text-gray-800">
+          <h1 className="dark:text-polar-100 text-lg text-gray-800">
             Issues looking for funding
           </h1>
 
-          <IssuesLookingForFunding issuesFunding={issuesFunding} />
+          <div className="-mx-6">
+            <IssuesLookingForFunding issuesFunding={issuesFunding} />
+          </div>
         </div>
       </div>
 

@@ -20,6 +20,7 @@ interface SubscriptionTierCardProps {
   subscriptionTier: Partial<SubscriptionTier>
   children?: React.ReactNode
   className?: string
+  variant?: 'default' | 'small'
 }
 
 const hexToRGBA = (hex: string, opacity: number): string => {
@@ -36,6 +37,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   subscriptionTier,
   children,
   className,
+  variant = 'default',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const subscriptionColor = getSubscriptionColorByType(subscriptionTier.type)
@@ -74,11 +76,27 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   const benefitsToDisplay = (subscriptionTier.benefits ?? []).slice(0, 3)
   const additionalBenefits = (subscriptionTier.benefits ?? []).slice(3)
 
+  const variantStyles = {
+    default: {
+      name: 'text-lg',
+      card: 'p-8 min-w-[280px] max-w-[320px] rounded-3xl',
+      priceLabel: 'text-5xl !font-[200]',
+      description: 'text-sm',
+    },
+    small: {
+      name: 'text-md',
+      card: 'p-6 min-w-[220px] max-w-[280px] rounded-2xl',
+      priceLabel: 'text-4xl !font-[200]',
+      description: 'text-sm',
+    },
+  }
+
   return (
     <Card
       ref={containerRef}
       className={twMerge(
-        'dark:bg-polar-900 dark:border-polar-700 relative flex min-w-[280px] max-w-[320px] flex-col gap-y-6 overflow-hidden rounded-3xl border border-transparent bg-[--var-bg-color] p-8 dark:shadow-none',
+        'dark:bg-polar-900 dark:border-polar-700 relative flex flex-col gap-y-6 overflow-hidden border border-transparent bg-[--var-bg-color] dark:shadow-none',
+        variantStyles[variant]['card'],
         className,
       )}
       style={style}
@@ -89,7 +107,12 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
       <Shine active={shineActive} />
       <CardHeader className="grow gap-y-6 p-0">
         <div className="flex justify-between">
-          <h3 className="truncate text-lg font-medium">
+          <h3
+            className={twMerge(
+              'truncate font-medium',
+              variantStyles[variant]['name'],
+            )}
+          >
             {subscriptionTier.name ? (
               subscriptionTier.name
             ) : (
@@ -102,7 +125,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
           />
         </div>
         <div className="flex flex-col gap-y-8 text-[--var-fg-color] dark:text-[--var-dark-fg-color]">
-          <div className="text-5xl !font-[200]">
+          <div className={variantStyles[variant]['priceLabel']}>
             {
               <>
                 $
@@ -118,7 +141,12 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             </span>
           </div>
           {subscriptionTier.description ? (
-            <p className="text-sm leading-relaxed text-[--var-muted-color] dark:text-[--var-dark-muted-color]">
+            <p
+              className={twMerge(
+                'leading-loose text-[--var-muted-color] dark:text-[--var-dark-muted-color]',
+                variantStyles[variant].description,
+              )}
+            >
               {subscriptionTier.description}
             </p>
           ) : (

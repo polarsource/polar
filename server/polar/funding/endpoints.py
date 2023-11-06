@@ -3,12 +3,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 
 from polar.auth.dependencies import Auth
-from polar.authz.service import Authz
-from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
-from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Repository
-from polar.organization.dependencies import OrganizationNameQuery
+from polar.organization.dependencies import OrganizationNamePlatform
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.dependencies import OptionalRepositoryNameQuery
@@ -26,15 +24,15 @@ router = APIRouter(prefix="/funding", tags=["funding"])
 @router.get("/search", response_model=ListResource[IssueFunding], tags=[Tags.PUBLIC])
 async def search(
     pagination: PaginationParamsQuery,
-    organization_name: OrganizationNameQuery,
+    organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
     badged: bool | None = Query(None),
     closed: bool | None = Query(None),
     sorting: ListFundingSorting = [ListFundingSortBy.newest],
-    platform: Platforms = Query(...),
     session: AsyncSession = Depends(get_db_session),
     auth: Auth = Depends(Auth.optional_user),
 ) -> ListResource[IssueFunding]:
+    organization_name, platform = organization_name_platform
     organization = await organization_service.get_by_name(
         session, platform, organization_name
     )

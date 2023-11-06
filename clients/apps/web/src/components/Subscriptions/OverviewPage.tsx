@@ -18,7 +18,7 @@ import SubscriptionTierPill from './SubscriptionTierPill'
 import SubscriptionTiersSelect from './SubscriptionTiersSelect'
 import {
   MRRChart,
-  ParsedSubscriptionsSummaryPeriod,
+  ParsedSubscriptionsStatisticsPeriod,
   SubscribersChart,
 } from './SubscriptionsChart'
 import {
@@ -74,39 +74,39 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
     }
   }, [subscriptionTierId, subscriptionTierType])
 
-  const [summaryPeriods, setSummaryPeriods] = useState<
-    ParsedSubscriptionsSummaryPeriod[]
+  const [statisticsPeriods, setStatisticsPeriods] = useState<
+    ParsedSubscriptionsStatisticsPeriod[]
   >([])
   const [hoveredPeriodIndex, setHoveredPeriodIndex] = useState<
     number | undefined
   >()
   const displayedPeriod = useMemo(() => {
-    if (summaryPeriods.length === 0) {
+    if (statisticsPeriods.length === 0) {
       return undefined
     }
 
     if (hoveredPeriodIndex !== undefined) {
-      return summaryPeriods[hoveredPeriodIndex]
+      return statisticsPeriods[hoveredPeriodIndex]
     }
 
-    return summaryPeriods[summaryPeriods.length - 1]
-  }, [summaryPeriods, hoveredPeriodIndex])
+    return statisticsPeriods[statisticsPeriods.length - 1]
+  }, [statisticsPeriods, hoveredPeriodIndex])
   const previousPeriod = useMemo(() => {
-    if (summaryPeriods.length === 0) {
+    if (statisticsPeriods.length === 0) {
       return undefined
     }
 
-    return summaryPeriods[summaryPeriods.length - 2]
-  }, [summaryPeriods])
+    return statisticsPeriods[statisticsPeriods.length - 2]
+  }, [statisticsPeriods])
 
   const [lastSubscriptions, setLastSubscriptions] = useState<
     Subscription[] | undefined
   >()
 
   useEffect(() => {
-    setSummaryPeriods([])
+    setStatisticsPeriods([])
     api.subscriptions
-      .getSubscriptionsSummary({
+      .getSubscriptionsStatistics({
         startDate: startDate.toISOString().split('T')[0],
         endDate: endDate.toISOString().split('T')[0],
         platform: organization.platform,
@@ -114,7 +114,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
         ...apiQueryParams,
       })
       .then((summary) => {
-        setSummaryPeriods(
+        setStatisticsPeriods(
           summary.periods.map((period) => ({
             ...period,
             parsedStartDate: new Date(period.start_date),
@@ -193,7 +193,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
             ))}
         </div>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          {summaryPeriods.length > 0 && (
+          {statisticsPeriods.length > 0 && (
             <>
               <Card>
                 <CardHeader>
@@ -201,7 +201,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
                 </CardHeader>
                 <CardContent>
                   <SubscribersChart
-                    data={summaryPeriods}
+                    data={statisticsPeriods}
                     onDataIndexHover={setHoveredPeriodIndex}
                     hoveredIndex={hoveredPeriodIndex}
                   />
@@ -215,7 +215,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
                 </CardHeader>
                 <CardContent>
                   <MRRChart
-                    data={summaryPeriods}
+                    data={statisticsPeriods}
                     onDataIndexHover={setHoveredPeriodIndex}
                     hoveredIndex={hoveredPeriodIndex}
                   />
@@ -223,7 +223,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
               </Card>
             </>
           )}
-          {summaryPeriods.length === 0 &&
+          {statisticsPeriods.length === 0 &&
             [0, 1].map((i) => (
               <Card key={`chart-loading-${i}`}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0">

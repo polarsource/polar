@@ -1,6 +1,6 @@
 // @ts-ignore
 import * as Plot from '@observablehq/plot'
-import { SubscriptionsSummaryPeriod } from '@polar-sh/sdk'
+import { SubscriptionsStatisticsPeriod } from '@polar-sh/sdk'
 import { getCentsInDollarString } from 'polarkit/money'
 import { useEffect, useMemo, useRef } from 'react'
 
@@ -72,13 +72,13 @@ export class Callback extends Plot.Dot {
   }
 }
 
-export interface ParsedSubscriptionsSummaryPeriod
-  extends SubscriptionsSummaryPeriod {
+export interface ParsedSubscriptionsStatisticsPeriod
+  extends SubscriptionsStatisticsPeriod {
   parsedStartDate: Date
 }
 
 interface SubscriptionsChartProps {
-  data: ParsedSubscriptionsSummaryPeriod[]
+  data: ParsedSubscriptionsStatisticsPeriod[]
   y: 'mrr' | 'subscribers'
   axisYOptions: Plot.AxisYOptions
   onDataIndexHover?: (index: number | undefined) => void
@@ -170,7 +170,7 @@ export const SubscriptionsChart: React.FC<SubscriptionsChartProps> = ({
 }
 
 interface SubscribersChartProps {
-  data: ParsedSubscriptionsSummaryPeriod[]
+  data: ParsedSubscriptionsStatisticsPeriod[]
   onDataIndexHover?: (index: number | undefined) => void
   hoveredIndex?: number | undefined
 }
@@ -200,7 +200,7 @@ export const SubscribersChart: React.FC<SubscribersChartProps> = ({
 }
 
 interface MRRChartProps {
-  data: ParsedSubscriptionsSummaryPeriod[]
+  data: ParsedSubscriptionsStatisticsPeriod[]
   onDataIndexHover?: (index: number | undefined) => void
   hoveredIndex?: number | undefined
 }

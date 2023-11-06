@@ -127,3 +127,4 @@ dmypy.json
 playground.py
 
 .DS_Store
+.pnpm-store

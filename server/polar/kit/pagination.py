@@ -1,6 +1,6 @@
 import math
 from collections.abc import Sequence
-from typing import Annotated, Any, Generic, NamedTuple, Self, TypeVar
+from typing import Annotated, Any, Generic, NamedTuple, Self, TypeVar, overload
 
 from fastapi import Depends, Query
 from pydantic.generics import GenericModel
@@ -8,10 +8,12 @@ from sqlalchemy import Select, func, over
 from sqlalchemy.sql._typing import _ColumnsClauseArgument
 
 from polar.config import settings
+from polar.kit.db.models import RecordModel
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.schemas import Schema
 
 T = TypeVar("T", bound=Any)
+M = TypeVar("M", bound=RecordModel)
 
 
 class PaginationParams(NamedTuple):
@@ -19,6 +21,18 @@ class PaginationParams(NamedTuple):
     limit: int
 
 
+@overload
+async def paginate(
+    session: AsyncSession,
+    statement: Select[tuple[M]],
+    *,
+    pagination: PaginationParams,
+    count_clause: _ColumnsClauseArgument[Any] | None = None,
+) -> tuple[Sequence[M], int]:
+    ...
+
+
+@overload
 async def paginate(
     session: AsyncSession,
     statement: Select[T],
@@ -26,6 +40,16 @@ async def paginate(
     pagination: PaginationParams,
     count_clause: _ColumnsClauseArgument[Any] | None = None,
 ) -> tuple[Sequence[T], int]:
+    ...
+
+
+async def paginate(
+    session: AsyncSession,
+    statement: Select[Any],
+    *,
+    pagination: PaginationParams,
+    count_clause: _ColumnsClauseArgument[Any] | None = None,
+) -> tuple[Sequence[Any], int]:
     page, limit = pagination
     offset = limit * (page - 1)
     statement = statement.offset(offset).limit(limit)
@@ -37,7 +61,7 @@ async def paginate(
 
     result = await session.execute(statement)
 
-    results: list[T] = []
+    results: list[Any] = []
     count = 0
     for row in result.unique().all():
         (*queried_data, count) = row._tuple()

@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from decimal import Decimal
 from enum import StrEnum
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 from sqlalchemy import Select, UnaryExpression, and_, desc, func, or_, select, text
@@ -36,8 +36,9 @@ class FundingService:
         issue_ids: list[UUID] | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[FundingResultType], int]:
-        statement = self._get_readable_issues_statement(auth_subject)
-        statement = self._apply_pledges_summary_statement(statement)
+        statement = self._apply_pledges_summary_statement(
+            self._get_readable_issues_statement(auth_subject)
+        )
         count_statement = self._get_readable_issues_statement(
             auth_subject
         ).with_only_columns(func.count(Issue.id))
@@ -88,8 +89,9 @@ class FundingService:
     async def get_by_issue_id(
         self, session: AsyncSession, auth_subject: Subject, *, issue_id: UUID
     ) -> FundingResultType | None:
-        statement = self._get_readable_issues_statement(auth_subject)
-        statement = self._apply_pledges_summary_statement(statement)
+        statement = self._apply_pledges_summary_statement(
+            self._get_readable_issues_statement(auth_subject)
+        )
         statement = statement.where(Issue.id == issue_id)
         result = await session.execute(statement)
 
@@ -98,7 +100,9 @@ class FundingService:
             return row._tuple() if row is not None else None
         return row
 
-    def _get_readable_issues_statement(self, auth_subject: Subject) -> Select[Any]:
+    def _get_readable_issues_statement(
+        self, auth_subject: Subject
+    ) -> Select[tuple[Issue]]:
         statement = select(Issue).join(Issue.repository).join(Repository.organization)
         if isinstance(auth_subject, Anonymous):
             return statement.where(Repository.is_private.is_(False))
@@ -117,7 +121,9 @@ class FundingService:
             )
         )
 
-    def _apply_pledges_summary_statement(self, statement: Select[Any]) -> Select[Any]:
+    def _apply_pledges_summary_statement(
+        self, statement: Select[tuple[Issue]]
+    ) -> Select[FundingResultType]:
         issue_pledges_eager_loading_clause = contains_eager(Issue.pledges)
         total_column = func.coalesce(
             func.sum(Pledge.amount).over(partition_by=Issue.id),
@@ -159,7 +165,7 @@ class FundingService:
                 ).label(f"{pledge_type}_total"),
             )
 
-        return statement
+        return cast(Select[FundingResultType], statement)
 
 
 funding = FundingService()

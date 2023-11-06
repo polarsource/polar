@@ -33,7 +33,7 @@ import type {
   SubscriptionTierCreate,
   SubscriptionTierType,
   SubscriptionTierUpdate,
-  SubscriptionsSummary,
+  SubscriptionsStatistics,
 } from '../models/index';
 
 export interface SubscriptionsApiArchiveSubscriptionTierRequest {
@@ -60,7 +60,7 @@ export interface SubscriptionsApiGetSubscribeSessionRequest {
     id: string;
 }
 
-export interface SubscriptionsApiGetSubscriptionsSummaryRequest {
+export interface SubscriptionsApiGetSubscriptionsStatisticsRequest {
     startDate: string;
     endDate: string;
     organizationName: string;
@@ -370,23 +370,23 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get Subscriptions Summary
+     * Get Subscriptions Statistics
      */
-    async getSubscriptionsSummaryRaw(requestParameters: SubscriptionsApiGetSubscriptionsSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionsSummary>> {
+    async getSubscriptionsStatisticsRaw(requestParameters: SubscriptionsApiGetSubscriptionsStatisticsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionsStatistics>> {
         if (requestParameters.startDate === null || requestParameters.startDate === undefined) {
-            throw new runtime.RequiredError('startDate','Required parameter requestParameters.startDate was null or undefined when calling getSubscriptionsSummary.');
+            throw new runtime.RequiredError('startDate','Required parameter requestParameters.startDate was null or undefined when calling getSubscriptionsStatistics.');
         }
 
         if (requestParameters.endDate === null || requestParameters.endDate === undefined) {
-            throw new runtime.RequiredError('endDate','Required parameter requestParameters.endDate was null or undefined when calling getSubscriptionsSummary.');
+            throw new runtime.RequiredError('endDate','Required parameter requestParameters.endDate was null or undefined when calling getSubscriptionsStatistics.');
         }
 
         if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
-            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling getSubscriptionsSummary.');
+            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling getSubscriptionsStatistics.');
         }
 
         if (requestParameters.platform === null || requestParameters.platform === undefined) {
-            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling getSubscriptionsSummary.');
+            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling getSubscriptionsStatistics.');
         }
 
         const queryParameters: any = {};
@@ -434,7 +434,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/subscriptions/subscriptions/summary`,
+            path: `/api/v1/subscriptions/subscriptions/statistics`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -444,10 +444,10 @@ export class SubscriptionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get Subscriptions Summary
+     * Get Subscriptions Statistics
      */
-    async getSubscriptionsSummary(requestParameters: SubscriptionsApiGetSubscriptionsSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionsSummary> {
-        const response = await this.getSubscriptionsSummaryRaw(requestParameters, initOverrides);
+    async getSubscriptionsStatistics(requestParameters: SubscriptionsApiGetSubscriptionsStatisticsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionsStatistics> {
+        const response = await this.getSubscriptionsStatisticsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

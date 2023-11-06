@@ -24,13 +24,18 @@ import {
   ChangeEvent,
   Dispatch,
   SetStateAction,
+  useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react'
 import Spinner from '../Shared/Spinner'
-import { DefaultFilters, FundingFilters } from './filters'
+import {
+  DefaultFilters,
+  FundingFilters,
+  fundingSortingOptions,
+  getFundSortingTitle,
+} from './filters'
 
 const getSort = (sort: string[] | null): ListFundingSortBy[] => {
   const sorting: ListFundingSortBy[] = []
@@ -150,113 +155,100 @@ interface IssuesFilterProps {
   spinner?: boolean
 }
 
-export const IssuesFilter = (props: IssuesFilterProps) => {
+export const IssuesFilter = ({
+  filters,
+  onSetFilters,
+  totalCount,
+  spinner,
+}: IssuesFilterProps) => {
   const router = useRouter()
 
-  const navigate = (filters: FundingFilters) => {
-    const params = new URLSearchParams()
+  const navigate = useCallback(
+    (filters: FundingFilters) => {
+      const params = new URLSearchParams()
 
-    if (filters.q) {
-      params.set('q', filters.q)
-    }
-
-    if (filters.sort) {
-      params.set('sort', filters.sort.join(','))
-    }
-
-    if (filters.badged) {
-      params.set('badged', '1')
-    }
-
-    const url = new URL(window.location.href)
-    const newPath = `${url.pathname}?${params.toString()}`
-    router.replace(newPath, { scroll: false })
-  }
-
-  const getTitle = (sortBy: ListFundingSortBy[]): string => {
-    const [initial] = sortBy
-    let title = ''
-
-    if (initial === ListFundingSortBy.NEWEST) {
-      title = 'Newest'
-    }
-    if (initial === ListFundingSortBy.OLDEST) {
-      title = 'Oldest'
-    }
-    if (initial === ListFundingSortBy.MOST_ENGAGEMENT) {
-      title = 'Most engagement'
-    }
-    if (initial === ListFundingSortBy.MOST_FUNDED) {
-      title = 'Most funded'
-    }
-
-    return sortBy.length > 1 ? `${title}, +${sortBy.length - 1}` : title
-  }
-
-  const options: ListFundingSortBy[] = useMemo(() => {
-    return [
-      ListFundingSortBy.MOST_ENGAGEMENT,
-      ListFundingSortBy.MOST_FUNDED,
-      ListFundingSortBy.NEWEST,
-      ListFundingSortBy.OLDEST,
-    ]
-  }, [])
-
-  const onQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-
-    // if not set, set to newest
-    const sort = props.filters.sort || [ListFundingSortBy.NEWEST]
-    const f: FundingFilters = {
-      ...props.filters,
-      q: event.target.value,
-      sort,
-    }
-    props.onSetFilters(f)
-
-    navigate(f)
-  }
-
-  const onOnlyBadgedChanged = (value: boolean) => {
-    const f: FundingFilters = {
-      ...props.filters,
-      badged: value,
-    }
-
-    if (!value) {
-      delete f.badged
-    }
-
-    props.onSetFilters(f)
-    navigate(f)
-  }
-
-  const onSortingChanged = (value: ListFundingSortBy) => {
-    return (checked: boolean) => {
-      let sort = [...(props.filters.sort?.values() ?? [])]
-
-      if (checked) {
-        sort.push(value)
-      } else {
-        sort = sort.filter((v) => v !== value)
+      if (filters.q) {
+        params.set('q', filters.q)
       }
 
+      if (filters.sort) {
+        params.set('sort', filters.sort.join(','))
+      }
+
+      if (filters.badged) {
+        params.set('badged', '1')
+      }
+
+      const url = new URL(window.location.href)
+      const newPath = `${url.pathname}?${params.toString()}`
+      router.replace(newPath, { scroll: false })
+    },
+    [router],
+  )
+
+  const onQueryChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      event.preventDefault()
+      event.stopPropagation()
+
+      // if not set, set to newest
+      const sort = filters.sort || [ListFundingSortBy.NEWEST]
       const f: FundingFilters = {
-        ...props.filters,
-        sort: [...sort],
+        ...filters,
+        q: event.target.value,
+        sort,
       }
 
-      if (!f.sort?.length) {
-        delete f.sort
-      }
+      onSetFilters(f)
 
-      props.onSetFilters(f)
       navigate(f)
-    }
-  }
+    },
+    [navigate, filters, onSetFilters],
+  )
 
-  const canFilterByBadged = props.filters.tab === IssueListType.ISSUES
+  const onOnlyBadgedChanged = useCallback(
+    (value: boolean) => {
+      const f: FundingFilters = {
+        ...filters,
+        badged: value,
+      }
+
+      if (!value) {
+        delete f.badged
+      }
+
+      onSetFilters(f)
+      navigate(f)
+    },
+    [navigate, onSetFilters, filters],
+  )
+
+  const onSortingChanged = useCallback(
+    (value: ListFundingSortBy) => {
+      return (checked: boolean) => {
+        let sort = [...(filters.sort?.values() ?? [])]
+
+        if (checked) {
+          sort.push(value)
+        } else {
+          sort = sort.filter((v) => v !== value)
+        }
+
+        const f: FundingFilters = {
+          ...filters,
+          sort: [...sort],
+        }
+
+        if (!f.sort?.length) {
+          delete f.sort
+        }
+
+        onSetFilters(f)
+        navigate(f)
+      }
+    },
+    [navigate, filters, onSetFilters],
+  )
 
   return (
     <div className="flex w-full flex-row items-center justify-between gap-x-4">
@@ -267,9 +259,9 @@ export const IssuesFilter = (props: IssuesFilterProps) => {
         className="pl-11"
         placeholder="Search Filter"
         onChange={onQueryChange}
-        value={props.filters.q || ''}
+        value={filters.q || ''}
         preSlot={
-          props.spinner ? (
+          spinner ? (
             <span className="pl-2">
               <Spinner />
             </span>
@@ -279,38 +271,33 @@ export const IssuesFilter = (props: IssuesFilterProps) => {
         }
       />
 
-      {canFilterByBadged && (
-        <>
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="secondary">
-                <FunnelIcon className="dark:text-polar-300 mr-2 h-4 w-4" />
-                <span>Filter</span>
-              </Button>
-            </DropdownMenuTrigger>
+      <DropdownMenu>
+        <DropdownMenuTrigger>
+          <Button variant="secondary">
+            <FunnelIcon className="dark:text-polar-300 mr-2 h-4 w-4" />
+            <span>Filter</span>
+          </Button>
+        </DropdownMenuTrigger>
 
-            <DropdownMenuContent className="dark:bg-polar-700">
-              <DropdownMenuLabel>Filter</DropdownMenuLabel>
-              <DropdownMenuSeparator />
+        <DropdownMenuContent className="dark:bg-polar-700">
+          <DropdownMenuLabel>Filter</DropdownMenuLabel>
+          <DropdownMenuSeparator />
 
-              <DropdownMenuCheckboxItem
-                checked={props.filters.badged}
-                onCheckedChange={onOnlyBadgedChanged}
-              >
-                Badged Only
-              </DropdownMenuCheckboxItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </>
-      )}
-
+          <DropdownMenuCheckboxItem
+            checked={filters.badged}
+            onCheckedChange={onOnlyBadgedChanged}
+          >
+            Badged Only
+          </DropdownMenuCheckboxItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <DropdownMenu>
         <DropdownMenuTrigger>
           <Button variant="secondary">
             <ArrowsUpDownIcon className="dark:text-polar-300 mr-2 h-4 w-4" />
             <span>
-              {props.filters?.sort?.length
-                ? getTitle(props.filters?.sort)
+              {filters?.sort?.length
+                ? getFundSortingTitle(filters?.sort)
                 : 'Sort by'}
             </span>
           </Button>
@@ -320,13 +307,13 @@ export const IssuesFilter = (props: IssuesFilterProps) => {
           <DropdownMenuLabel>Sort issues by</DropdownMenuLabel>
           <DropdownMenuSeparator />
 
-          {options.map((v) => (
+          {fundingSortingOptions.map((v) => (
             <DropdownMenuCheckboxItem
               onCheckedChange={onSortingChanged(v)}
               key={v}
-              checked={props.filters.sort?.includes(v)}
+              checked={filters.sort?.includes(v)}
             >
-              {getTitle([v])}
+              {getFundSortingTitle([v])}
             </DropdownMenuCheckboxItem>
           ))}
         </DropdownMenuContent>

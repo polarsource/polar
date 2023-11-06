@@ -142,31 +142,28 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
               /mo
             </span>
           </div>
-          {variant !== 'small' &&
-            (subscriptionTier.description ? (
-              <p
-                className={twMerge(
-                  'leading-loose text-[--var-muted-color] dark:text-[--var-dark-muted-color]',
-                  variantStyles[variant].description,
-                )}
-              >
-                {subscriptionTier.description}
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <Skeleton className="inline-block h-2 w-full bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
-                <Skeleton className="inline-block h-2 w-full bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
-                <Skeleton className="inline-block h-2 w-full bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
-              </div>
-            ))}
+          {subscriptionTier.description ? (
+            <p
+              className={twMerge(
+                'leading-loose text-[--var-muted-color] dark:text-[--var-dark-muted-color]',
+                variantStyles[variant].description,
+              )}
+            >
+              {subscriptionTier.description}
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <Skeleton className="inline-block h-2 w-full bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
+              <Skeleton className="inline-block h-2 w-full bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
+              <Skeleton className="inline-block h-2 w-full bg-[var(--var-muted-color)] dark:bg-[var(--var-dark-muted-color)]" />
+            </div>
+          )}
         </div>
       </CardHeader>
-      {benefitsToDisplay.length > 0 &&
-        subscriptionTier.description &&
-        variant !== 'small' && (
-          <Separator className="bg-[--var-border-color] dark:bg-[--var-dark-border-color]" />
-        )}
-      <CardContent className="flex shrink flex-col gap-y-2 p-0">
+      {benefitsToDisplay.length > 0 && subscriptionTier.description && (
+        <Separator className="bg-[--var-border-color] dark:bg-[--var-dark-border-color]" />
+      )}
+      <CardContent className="flex h-full grow flex-col gap-y-2 p-0">
         {benefitsToDisplay.map((benefit) => (
           <div
             key={benefit.id}

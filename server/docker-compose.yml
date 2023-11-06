@@ -26,5 +26,12 @@ services:
       interval: 2s
       retries: 20
 
+  ingress:
+    image: caddy:2.7
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    ports:
+      - "6380:6380"
+
 volumes:
   postgres_data:

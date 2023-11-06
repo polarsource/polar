@@ -4,6 +4,7 @@ const Wrapper = (props: {
   isDarkmode: boolean
   amount: number
   fundingGoal: boolean
+  upfrontSplit: boolean
 }) => {
   let src = `http://localhost:3000/api/github/zegloforko/polarforkotest/issues/4/pledge-injected.svg?amount=${props.amount}`
   if (props.isDarkmode) {
@@ -11,6 +12,9 @@ const Wrapper = (props: {
   }
   if (props.fundingGoal) {
     src += '&fundingGoal=true'
+  }
+  if (props.upfrontSplit) {
+    src += '&upfrontSplit=true'
   }
 
   return (
@@ -70,5 +74,12 @@ export const FundingGoalDark: Story = {
   args: {
     fundingGoal: true,
     isDarkmode: true,
+  },
+}
+
+export const FundingGoalUpfront: Story = {
+  args: {
+    fundingGoal: true,
+    upfrontSplit: true,
   },
 }

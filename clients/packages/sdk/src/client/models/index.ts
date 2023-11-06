@@ -4294,50 +4294,50 @@ export interface SubscriptionTierUpdate {
 /**
  * 
  * @export
- * @interface SubscriptionsSummary
+ * @interface SubscriptionsStatistics
  */
-export interface SubscriptionsSummary {
+export interface SubscriptionsStatistics {
     /**
      * 
-     * @type {Array<SubscriptionsSummaryPeriod>}
-     * @memberof SubscriptionsSummary
+     * @type {Array<SubscriptionsStatisticsPeriod>}
+     * @memberof SubscriptionsStatistics
      */
-    periods: Array<SubscriptionsSummaryPeriod>;
+    periods: Array<SubscriptionsStatisticsPeriod>;
 }
 /**
  * 
  * @export
- * @interface SubscriptionsSummaryPeriod
+ * @interface SubscriptionsStatisticsPeriod
  */
-export interface SubscriptionsSummaryPeriod {
+export interface SubscriptionsStatisticsPeriod {
     /**
      * 
      * @type {string}
-     * @memberof SubscriptionsSummaryPeriod
+     * @memberof SubscriptionsStatisticsPeriod
      */
     start_date: string;
     /**
      * 
      * @type {string}
-     * @memberof SubscriptionsSummaryPeriod
+     * @memberof SubscriptionsStatisticsPeriod
      */
     end_date: string;
     /**
      * 
      * @type {number}
-     * @memberof SubscriptionsSummaryPeriod
+     * @memberof SubscriptionsStatisticsPeriod
      */
     subscribers: number;
     /**
      * 
      * @type {number}
-     * @memberof SubscriptionsSummaryPeriod
+     * @memberof SubscriptionsStatisticsPeriod
      */
     mrr: number;
     /**
      * 
      * @type {number}
-     * @memberof SubscriptionsSummaryPeriod
+     * @memberof SubscriptionsStatisticsPeriod
      */
     cumulative: number;
 }

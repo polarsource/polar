@@ -1472,6 +1472,25 @@ export interface ListResourceSubscription {
 /**
  * 
  * @export
+ * @interface ListResourceSubscriptionSummary
+ */
+export interface ListResourceSubscriptionSummary {
+    /**
+     * 
+     * @type {Array<SubscriptionSummary>}
+     * @memberof ListResourceSubscriptionSummary
+     */
+    items?: Array<SubscriptionSummary>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceSubscriptionSummary
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourceSubscriptionTier
  */
 export interface ListResourceSubscriptionTier {
@@ -4040,6 +4059,25 @@ export const SubscriptionStatus = {
 } as const;
 export type SubscriptionStatus = typeof SubscriptionStatus[keyof typeof SubscriptionStatus];
 
+/**
+ * 
+ * @export
+ * @interface SubscriptionSummary
+ */
+export interface SubscriptionSummary {
+    /**
+     * 
+     * @type {PolarSubscriptionSchemasUser}
+     * @memberof SubscriptionSummary
+     */
+    user: PolarSubscriptionSchemasUser;
+    /**
+     * 
+     * @type {SubscriptionTier}
+     * @memberof SubscriptionSummary
+     */
+    subscription_tier: SubscriptionTier;
+}
 /**
  * 
  * @export

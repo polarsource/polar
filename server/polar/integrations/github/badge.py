@@ -194,7 +194,6 @@ class GithubBadge:
         github.ensure_expected_response(updated)
         return updated.parsed_data
 
-    # TODO: Return bool and check using self.badge_is_embedded on response
     async def embed(self) -> None:
         client = github.get_app_installation_client(
             self.organization.safe_installation_id
@@ -212,7 +211,6 @@ class GithubBadge:
         log.info("github.badge.embed.embedded", issue_id=self.issue.id)
         return None
 
-    # TODO: Return bool and check using self.badge_is_embedded on response
     async def remove(self) -> None:
         client = github.get_app_installation_client(
             self.organization.safe_installation_id

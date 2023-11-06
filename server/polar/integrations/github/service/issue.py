@@ -194,7 +194,6 @@ class GithubIssueService(IssueService):
         badge = GithubBadge(
             organization=organization, repository=repository, issue=issue
         )
-        # TODO: Abort unless not successful
         await badge.embed()
 
         stmt = (
@@ -276,7 +275,6 @@ class GithubIssueService(IssueService):
         badge = GithubBadge(
             organization=organization, repository=repository, issue=issue
         )
-        # TODO: Abort unless not successful
         await badge.embed()
 
         stmt = (

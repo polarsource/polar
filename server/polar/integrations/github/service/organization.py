@@ -138,9 +138,6 @@ class GithubOrganizationService(OrganizationService):
         org.status = Organization.Status.SUSPENDED
         org.installation_suspended_by = suspended_by
 
-        # TODO: this never worked
-        # org.installation_suspender = external_user_id
-
         await org.save(session)
 
         return True
@@ -159,8 +156,6 @@ class GithubOrganizationService(OrganizationService):
         org.status = Organization.Status.ACTIVE
         org.installation_suspended_by = None
 
-        # TODO: this never worked
-        # org.installation_suspender=external_user_id
         await org.save(session)
 
         return True

@@ -55,13 +55,18 @@ class Organization(RecordModel):
         nullable=True,
         default=None,
     )
+
+    # This column is unused
     installation_suspended_by: Mapped[int | None] = mapped_column(
         Integer, nullable=True, default=None
     )
+
+    # This column is unused
     installation_suspender: Mapped[UUID | None] = mapped_column(
         PostgresUUID, nullable=True, default=None
     )
 
+    # This colunm is never read.
     status: Mapped[Status] = mapped_column(
         StringEnum(Status), nullable=False, default=Status.ACTIVE
     )

@@ -1,14 +1,6 @@
+import { getServerSideAPI } from '@/utils/api'
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client'
-import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { buildAPI } from 'polarkit/api'
-
-const authedApi = () => {
-  const cookieStore = cookies()
-  const polarCookie = cookieStore.get('polar_session')
-  const api = buildAPI({ token: polarCookie?.value })
-  return api
-}
 
 export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json()) as HandleUploadBody
@@ -21,7 +13,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         pathname: string,
         /* clientPayload?: string, */
       ) => {
-        const user = await authedApi().users.getAuthenticated()
+        const user = await getServerSideAPI().users.getAuthenticated()
         if (!user.id) {
           throw new Error('Unauthenticated')
         }

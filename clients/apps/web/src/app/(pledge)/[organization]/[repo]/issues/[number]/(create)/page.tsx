@@ -1,4 +1,5 @@
 import Pledge from '@/components/Pledge/Pledge'
+import { getServerSideAPI } from '@/utils/api'
 import {
   Issue,
   Pledger,
@@ -7,16 +8,7 @@ import {
   RewardsSummary,
 } from '@polar-sh/sdk'
 import { Metadata, ResolvingMetadata } from 'next'
-import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
-import { buildAPI } from 'polarkit/api'
-
-const authedApi = () => {
-  const cookieStore = cookies()
-  const polarCookie = cookieStore.get('polar_session')
-  const api = buildAPI({ token: polarCookie?.value })
-  return api
-}
 
 const cacheConfig = {
   cache: 'no-store',
@@ -33,7 +25,7 @@ export async function generateMetadata(
   let issue: Issue | undefined
 
   try {
-    issue = await authedApi().issues.lookup(
+    issue = await getServerSideAPI().issues.lookup(
       {
         externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
       },
@@ -90,7 +82,7 @@ export default async function Page({
   let pulls: PullRequest[] = []
 
   try {
-    const api = authedApi()
+    const api = getServerSideAPI()
     issue = await api.issues.lookup(
       {
         externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,

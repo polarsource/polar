@@ -1165,6 +1165,69 @@ class TestSearchSubscriptions:
 
 
 @pytest.mark.asyncio
+class TestSearchSubscriptionsSummary:
+    async def test_not_existing_organization(self, client: AsyncClient) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/subscriptions/summary",
+            params={"platform": "github", "organization_name": "not_existing"},
+        )
+
+        assert response.status_code == 404
+
+    async def test_not_existing_repository(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(
+            "/api/v1/subscriptions/subscriptions/summary",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+                "repository_name": "not_existing",
+            },
+        )
+
+        assert response.status_code == 404
+
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user: User,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        response = await client.get(
+            "/api/v1/subscriptions/subscriptions/summary",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+
+        assert json["pagination"]["total_count"] == 1
+        for item in json["items"]:
+            assert "user" in item
+            assert item["user"]["username"] == user.username
+            assert "subscription_tier" in item
+            assert item["subscription_tier"]["id"] == str(
+                subscription_tier_organization.id
+            )
+            assert "status" not in item
+            assert "price_amount" not in item
+
+
+@pytest.mark.asyncio
 class TestGetSubscriptionsStatistics:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization

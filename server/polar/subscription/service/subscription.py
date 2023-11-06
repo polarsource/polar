@@ -6,7 +6,7 @@ from typing import Any, overload
 
 import stripe as stripe_lib
 from sqlalchemy import Select, UnaryExpression, and_, asc, desc, func, or_, select, text
-from sqlalchemy.orm import aliased, contains_eager
+from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.enums import UserSignupType
 from polar.exceptions import PolarError
@@ -150,6 +150,31 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             contains_eager(Subscription.subscription_tier),
             contains_eager(Subscription.user),
         )
+
+        results, count = await paginate(session, statement, pagination=pagination)
+
+        return results, count
+
+    async def search_summary(
+        self,
+        session: AsyncSession,
+        *,
+        organization: Organization | None = None,
+        repository: Repository | None = None,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[Subscription], int]:
+        statement = select(Subscription).options(
+            joinedload(Subscription.user),
+            joinedload(Subscription.subscription_tier),
+        )
+
+        if organization is not None:
+            statement = statement.where(
+                SubscriptionTier.organization_id == organization.id
+            )
+
+        if repository is not None:
+            statement = statement.where(SubscriptionTier.repository_id == repository.id)
 
         results, count = await paginate(session, statement, pagination=pagination)
 

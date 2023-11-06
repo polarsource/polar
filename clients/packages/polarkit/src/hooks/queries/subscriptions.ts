@@ -228,3 +228,21 @@ export const useDeleteSubscriptionBenefit = (orgName?: string) =>
       })
     },
   })
+
+export const useUserSubscriptions = (
+  userId: string,
+  orgName: string,
+  limit = 30,
+  platform = Platforms.GITHUB,
+) =>
+  useQuery({
+    queryKey: ['userSubscriptions', 'organization', orgName, userId],
+    queryFn: () =>
+      api.subscriptions.searchSubscriptions({
+        organizationName: orgName,
+        limit,
+        platform,
+        subscriberUserId: userId,
+      }),
+    retry: defaultRetry,
+  })

@@ -258,7 +258,11 @@ const FundingGoal = ({
           <div className="dark:text-polar-300 text-lg text-gray-900">
             ${getCentsInDollarString(pledges_sum?.amount || 0, false, true)}{' '}
             <span className="dark:text-polar-400 text-gray-400">
-              {`/ ${getCentsInDollarString(funding_goal.amount, false, true)} funded`}
+              {`/ $${getCentsInDollarString(
+                funding_goal.amount,
+                false,
+                true,
+              )} funded`}
             </span>
           </div>
 

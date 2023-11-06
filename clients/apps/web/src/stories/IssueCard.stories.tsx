@@ -20,6 +20,19 @@ type Story = StoryObj<typeof IssueCard>
 
 export const Default: Story = {}
 
+export const FundingNoGoal: Story = {
+  ...Default,
+  args: {
+    ...Default.args,
+    issue: {
+      ...issue,
+      funding: {
+        pledges_sum: { currency: 'USD', amount: 5000 },
+      },
+    },
+  },
+}
+
 export const FundingGoal: Story = {
   ...Default,
   args: {

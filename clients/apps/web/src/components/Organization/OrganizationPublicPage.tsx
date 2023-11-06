@@ -12,7 +12,6 @@ import {
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Avatar, Button } from 'polarkit/components/ui/atoms'
-import { Separator } from 'polarkit/components/ui/separator'
 import { twMerge } from 'tailwind-merge'
 import { externalURL, prettyURL } from '.'
 import HowItWorks from '../Pledge/HowItWorks'
@@ -44,50 +43,41 @@ const OrganizationPublicPage = ({
     <>
       <Header organization={organization} repositories={repositories} />
 
-      <div className="flex flex-row items-center gap-x-8 py-4">
-        <Avatar
-          className="h-32 w-32"
-          name={organization.name}
-          avatar_url={organization.avatar_url}
-        />
-
-        <div className="flex flex-col items-start gap-y-4">
-          <h1 className="dark:text-polar-50 text-3xl font-normal text-gray-800">
-            {organization.name}
-          </h1>
-
-          {showMeta && (
-            <div className="flex w-full flex-col space-y-4">
-              <div className="dark:text-polar-400 flex w-full flex-wrap justify-center gap-8 text-sm text-gray-600">
-                {organization.company && (
-                  <div className="flex flex-row items-center gap-x-2">
-                    <BusinessOutlined fontSize="small" />
-                    <span>{organization.company}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <Separator />
-
       <div className="flex flex-row gap-x-20 pt-4">
-        <div className="flex w-80 flex-col gap-y-10">
+        <div className="flex w-80 flex-col gap-y-6">
+          <Avatar
+            className="h-52 w-52"
+            name={organization.name}
+            avatar_url={organization.avatar_url}
+          />
+          <div className="flex flex-col gap-y-2">
+            <h1 className="dark:text-polar-50 text-2xl font-normal text-gray-800">
+              {organization.pretty_name}
+            </h1>
+            <h3 className="dark:text-polar-500 text-md font-normal text-gray-600">
+              @{organization.name}
+            </h3>
+          </div>
+          {organization.bio && (
+            <p className="dark:text-polar-500 text-sm leading-relaxed text-gray-400">
+              {organization.bio}
+            </p>
+          )}
           <div className="dark:text-polar-400 flex flex-col flex-wrap gap-y-6 text-sm text-gray-600">
-            {organization.bio && (
-              <p className="dark:text-polar-500 text-sm leading-relaxed text-gray-400">
-                {organization.bio}
-              </p>
-            )}
             <div className="flex flex-col gap-y-2 text-sm">
+              {organization.company && (
+                <div className="flex flex-row items-center gap-x-3">
+                  <BusinessOutlined fontSize="inherit" />
+                  <span>{organization.company}</span>
+                </div>
+              )}
               {organization.blog && (
-                <div className="flex flex-row items-center gap-x-2">
+                <div className="flex flex-row items-center gap-x-3">
                   <LanguageOutlined fontSize="inherit" />
                   <a
                     className="text-blue-600 hover:text-blue-700"
                     href={externalURL(organization.blog)}
+                    target="_blank"
                   >
                     {prettyURL(organization.blog)}
                   </a>
@@ -95,7 +85,7 @@ const OrganizationPublicPage = ({
               )}
 
               {organization.email && (
-                <div className="flex flex-row items-center gap-x-2">
+                <div className="flex flex-row items-center gap-x-3">
                   <EmailOutlined fontSize="inherit" />
                   <a
                     className="text-blue-600 hover:text-blue-700"
@@ -107,11 +97,12 @@ const OrganizationPublicPage = ({
               )}
 
               {organization.twitter_username && (
-                <div className="flex flex-row items-center gap-x-2">
+                <div className="flex flex-row items-center gap-x-3">
                   <ShortTextOutlined fontSize="inherit" />
                   <a
                     className="text-blue-600 hover:text-blue-700"
                     href={`https://twitter.com/${organization.twitter_username}`}
+                    target="_blank"
                   >
                     @{organization.twitter_username}
                   </a>

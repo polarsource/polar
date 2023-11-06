@@ -1,17 +1,16 @@
 import { IssueListType, ListFundingSortBy } from '@polar-sh/sdk'
 
 export type FundingFilters = {
-  q: string
-  tab: IssueListType
+  q?: string
   badged?: boolean
   sort?: ListFundingSortBy[]
 }
 
 export const DefaultFilters: FundingFilters = {
   tab: IssueListType.ISSUES,
-  q: '',
+  q: undefined,
   sort: undefined,
-  badged: false,
+  badged: undefined,
 }
 
 export const fundingSortingOptions = [

@@ -56,7 +56,10 @@ const RepositoryPublicPage = ({
         </div>
       </div>
 
-      <IssuesLookingForFunding issuesFunding={issuesFunding} />
+      <IssuesLookingForFunding
+        organization={organization}
+        repository={repository}
+      />
 
       <HowItWorks />
 

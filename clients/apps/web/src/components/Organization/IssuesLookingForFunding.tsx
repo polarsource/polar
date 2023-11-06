@@ -2,7 +2,7 @@
 
 import { ArrowsUpDownIcon, FunnelIcon } from '@heroicons/react/24/outline'
 import { FavoriteBorderOutlined, SearchOutlined } from '@mui/icons-material'
-import { IssueListType, ListFundingSortBy, Organization } from '@polar-sh/sdk'
+import { ListFundingSortBy, Organization, Repository } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -25,8 +25,7 @@ import {
   Dispatch,
   SetStateAction,
   useCallback,
-  useEffect,
-  useRef,
+  useMemo,
   useState,
 } from 'react'
 import Spinner from '../Shared/Spinner'
@@ -57,50 +56,43 @@ const getSort = (sort: string[] | null): ListFundingSortBy[] => {
 }
 
 interface IssuesLookingForFundingProps {
+  repository?: Repository
   organization: Organization
 }
 
 const IssuesLookingForFunding = ({
   organization,
+  repository,
 }: IssuesLookingForFundingProps) => {
   const search = useSearchParams()
 
-  const initFilters = {
-    ...DefaultFilters,
-  }
+  const initialFilter = useMemo(() => {
+    const s = search
 
-  const didSetFiltersFromURL = useRef(false)
-
-  const [filters, setFilters] = useState<FundingFilters>(initFilters)
-
-  useEffect(() => {
-    // Parse URL and use it to populate filters
-    // TODO: can we do this on the initial load instead to avoid the effect / and ref
-    if (!didSetFiltersFromURL.current) {
-      didSetFiltersFromURL.current = true
-
-      const s = search
-
-      const f: FundingFilters = {
-        ...DefaultFilters,
-        q: s?.get('q') || '',
-        tab: IssueListType.ISSUES,
-      }
-      if (s?.has('sort')) {
-        f.sort = getSort(s.get('sort')?.split(',') ?? [])
-      }
-      if (s?.has('badged')) {
-        f.badged = true
-      }
-
-      setFilters(f)
+    const f: FundingFilters = {
+      ...DefaultFilters,
     }
-  }, [search])
+    if (s?.has('q')) {
+      f.q = s.get('q') || ''
+    }
+    if (s?.has('sort')) {
+      f.sort = getSort(s.get('sort')?.split(',') ?? [])
+    }
+    if (s?.has('badged')) {
+      f.badged = true
+    }
+
+    return f
+  }, [])
+
+  const [filters, setFilters] = useState<FundingFilters>(initialFilter)
 
   const fundedIssues = useSearchFundedIssues({
     organizationName: organization.name,
+    repositoryName: repository?.name,
     sort: filters.sort,
     badged: filters.badged,
+    q: filters.q,
   })
 
   return (
@@ -199,11 +191,15 @@ export const IssuesFilter = ({
         sort,
       }
 
+      if (!f.q?.length) {
+        delete f.q
+      }
+
       onSetFilters(f)
 
       navigate(f)
     },
-    [navigate, filters, onSetFilters],
+    [navigate, onSetFilters, filters],
   )
 
   const onOnlyBadgedChanged = useCallback(

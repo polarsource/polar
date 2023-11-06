@@ -83,37 +83,47 @@ export default async function Page({
   params: { organization: string }
 }) {
   const api = getServerSideAPI()
-  const organization = await api.organizations.lookup(
-    {
-      platform: Platforms.GITHUB,
-      organizationName: params.organization,
-    },
-    cacheConfig,
-  )
 
-  const repositories = await api.repositories.search(
-    {
-      platform: Platforms.GITHUB,
-      organizationName: params.organization,
-    },
-    cacheConfig,
-  )
-
-  const issuesFunding = await api.funding.search(
-    {
-      platform: Platforms.GITHUB,
-      organizationName: params.organization,
-      badged: true,
-      closed: false,
-      sorting: [
-        ListFundingSortBy.MOST_FUNDED,
-        ListFundingSortBy.MOST_ENGAGEMENT,
-        ListFundingSortBy.NEWEST,
-      ],
-      limit: 20,
-    },
-    cacheConfig,
-  )
+  const [organization, repositories, issuesFunding, subscriptionSummary] =
+    await Promise.all([
+      api.organizations.lookup(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+        },
+        cacheConfig,
+      ),
+      api.repositories.search(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+        },
+        cacheConfig,
+      ),
+      api.funding.search(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+          badged: true,
+          closed: false,
+          sorting: [
+            ListFundingSortBy.MOST_FUNDED,
+            ListFundingSortBy.MOST_ENGAGEMENT,
+            ListFundingSortBy.NEWEST,
+          ],
+          limit: 20,
+        },
+        cacheConfig,
+      ),
+      api.subscriptions.searchSubscriptionsSummary(
+        {
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+          limit: 20,
+        },
+        cacheConfig,
+      ),
+    ])
 
   const totalIssueCount = issuesFunding.pagination.total_count
 
@@ -145,6 +155,7 @@ export default async function Page({
         repositories={repositories.items || []}
         issuesFunding={issuesFunding.items || []}
         subscriptionTiers={subscriptionTiers}
+        subscriptionSummary={subscriptionSummary.items || []}
         totalIssueCount={totalIssueCount}
       />
     </>

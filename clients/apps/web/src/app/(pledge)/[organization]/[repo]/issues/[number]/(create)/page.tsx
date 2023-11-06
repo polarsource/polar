@@ -13,7 +13,7 @@ import { buildAPI } from 'polarkit/api'
 
 const authedApi = () => {
   const cookieStore = cookies()
-  const polarCookie = cookieStore.get('polar')
+  const polarCookie = cookieStore.get('polar_session')
   const api = buildAPI({ token: polarCookie?.value })
   return api
 }

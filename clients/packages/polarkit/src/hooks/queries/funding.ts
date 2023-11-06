@@ -10,11 +10,13 @@ import { defaultRetry } from './retry'
 export const useSearchFundedIssues: (v: {
   organizationName?: string
   repositoryName?: string
+  q?: string
   sort?: Array<ListFundingSortBy>
   badged?: boolean
 }) => UseQueryResult<ListResourceIssueFunding> = (v: {
   organizationName?: string
   repositoryName?: string
+  q?: string
   sort?: Array<ListFundingSortBy>
   badged?: boolean
 }) =>
@@ -23,6 +25,7 @@ export const useSearchFundedIssues: (v: {
       'funded_issues',
       v.organizationName,
       v.repositoryName,
+      v.q,
       JSON.stringify({
         sort: v.sort,
         badged: v.badged,
@@ -33,6 +36,7 @@ export const useSearchFundedIssues: (v: {
         platform: Platforms.GITHUB,
         organizationName: v.organizationName || '',
         repositoryName: v.repositoryName,
+        query: v.q,
         sorting: v.sort,
         badged: v.badged,
       }),

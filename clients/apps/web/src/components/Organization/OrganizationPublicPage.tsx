@@ -58,48 +58,11 @@ const OrganizationPublicPage = ({
 
           {showMeta && (
             <div className="flex w-full flex-col space-y-4">
-              {organization.bio && (
-                <div className="dark:text-polar-500 text-gray-500">
-                  {organization.bio}
-                </div>
-              )}
-
               <div className="dark:text-polar-400 flex w-full flex-wrap justify-center gap-8 text-sm text-gray-600">
                 {organization.company && (
                   <div className="flex flex-row items-center gap-x-2">
                     <BusinessOutlined fontSize="small" />
                     <span>{organization.company}</span>
-                  </div>
-                )}
-
-                {organization.blog && (
-                  <div className="flex flex-row items-center gap-x-2">
-                    <LanguageOutlined fontSize="small" />
-                    <a
-                      className="text-blue-600 hover:text-blue-700"
-                      href={externalURL(organization.blog)}
-                    >
-                      {prettyURL(organization.blog)}
-                    </a>
-                  </div>
-                )}
-
-                {organization.email && (
-                  <div className="flex flex-row items-center gap-x-2">
-                    <EmailOutlined fontSize="small" />
-                    <span>{organization.email}</span>
-                  </div>
-                )}
-
-                {organization.twitter_username && (
-                  <div className="flex flex-row items-center gap-x-2">
-                    <ShortTextOutlined fontSize="small" />
-                    <a
-                      className="text-blue-600 hover:text-blue-700"
-                      href={`https://twitter.com/${organization.twitter_username}`}
-                    >
-                      @{organization.twitter_username}
-                    </a>
                   </div>
                 )}
               </div>
@@ -112,11 +75,49 @@ const OrganizationPublicPage = ({
 
       <div className="flex flex-row gap-x-20 pt-4">
         <div className="flex w-80 flex-col gap-y-10">
-          <div>
-            <p className="dark:text-polar-500 text-sm leading-relaxed text-gray-400">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua.
-            </p>
+          <div className="dark:text-polar-400 flex flex-col flex-wrap gap-y-6 text-sm text-gray-600">
+            {organization.bio && (
+              <p className="dark:text-polar-500 text-sm leading-relaxed text-gray-400">
+                {organization.bio}
+              </p>
+            )}
+            <div className="flex flex-col gap-y-2 text-sm">
+              {organization.blog && (
+                <div className="flex flex-row items-center gap-x-2">
+                  <LanguageOutlined fontSize="inherit" />
+                  <a
+                    className="text-blue-600 hover:text-blue-700"
+                    href={externalURL(organization.blog)}
+                  >
+                    {prettyURL(organization.blog)}
+                  </a>
+                </div>
+              )}
+
+              {organization.email && (
+                <div className="flex flex-row items-center gap-x-2">
+                  <EmailOutlined fontSize="inherit" />
+                  <a
+                    className="text-blue-600 hover:text-blue-700"
+                    href={`mailto:${organization.email}`}
+                  >
+                    {organization.email}
+                  </a>
+                </div>
+              )}
+
+              {organization.twitter_username && (
+                <div className="flex flex-row items-center gap-x-2">
+                  <ShortTextOutlined fontSize="inherit" />
+                  <a
+                    className="text-blue-600 hover:text-blue-700"
+                    href={`https://twitter.com/${organization.twitter_username}`}
+                  >
+                    @{organization.twitter_username}
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex flex-col gap-y-4">
             <div className="flex flex-row items-start justify-between">
@@ -132,7 +133,7 @@ const OrganizationPublicPage = ({
                   avatar_url="https://avatars.githubusercontent.com/u/10053249?v=4"
                 />
               ))}
-              <div className="dark:border-polar-600 dark:text-polar-500 flex h-9 w-9 flex-col items-center justify-center rounded-full border border-blue-200 text-sm font-medium text-blue-400">
+              <div className="dark:border-polar-600 dark:text-polar-500 flex h-9 w-9 flex-col items-center justify-center rounded-full border border-blue-200 text-xs font-medium text-blue-400">
                 +6
               </div>
             </div>
@@ -196,9 +197,7 @@ const OrganizationPublicPage = ({
           <div className="flex flex-row items-start justify-between">
             <h2 className="text-lg">Issues looking for funding</h2>
             <Link href={{ pathname: `/${organization.name}/issues` }}>
-              <Button variant="secondary" size="sm">
-                View all
-              </Button>
+              <Button size="sm">View all</Button>
             </Link>
           </div>
           <IssuesLookingForFunding organization={organization} />

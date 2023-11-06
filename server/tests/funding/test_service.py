@@ -162,6 +162,31 @@ class TestListBy:
             issue, pledges = issues_pledges[i]
             issue_row_assertions(result, issue, pledges)
 
+    async def test_query(
+        self, issues_pledges: IssuesPledgesFixture, session: AsyncSession
+    ) -> None:
+        titles = [
+            "Bug during request",
+            "Improvement of the API",
+            "Documentation is wrong",
+        ]
+        for i, issue_pledge in enumerate(issues_pledges):
+            issue_pledge[0].title = titles[i]
+            session.add(issue_pledge[0])
+        await session.commit()
+
+        results, count = await funding_service.list_by(
+            session,
+            Anonymous(),
+            pagination=PaginationParams(1, 10),
+            query="documentation",
+        )
+
+        assert count == 1
+        assert len(results) == 1
+        issue, _ = issues_pledges[2]
+        assert results[0][0].id == issue.id
+
 
 @pytest.mark.asyncio
 class TestGetByIssueId:

@@ -26,6 +26,7 @@ async def search(
     pagination: PaginationParamsQuery,
     organization_name_platform: OrganizationNamePlatform,
     repository_name: OptionalRepositoryNameQuery = None,
+    query: str | None = Query(None),
     badged: bool | None = Query(None),
     closed: bool | None = Query(None),
     sorting: ListFundingSorting = [ListFundingSortBy.newest],
@@ -50,6 +51,7 @@ async def search(
     results, count = await funding_service.list_by(
         session,
         auth.subject,
+        query=query,
         organization=organization,
         repository=repository,
         badged=badged,

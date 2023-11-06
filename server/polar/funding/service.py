@@ -28,6 +28,7 @@ class FundingService:
         session: AsyncSession,
         auth_subject: Subject,
         *,
+        query: str | None = None,
         organization: Organization | None = None,
         repository: Repository | None = None,
         badged: bool | None = None,
@@ -42,6 +43,36 @@ class FundingService:
         count_statement = self._get_readable_issues_statement(
             auth_subject
         ).with_only_columns(func.count(Issue.id))
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+
+        if query is not None:
+            # Search in titles using the vector index
+            # https://www.postgresql.org/docs/current/textsearch-controls.html#TEXTSEARCH-PARSING-QUERIES
+            #
+            # The index supports fast matching of words and prefix-matching of words
+            #
+            # Here we're converting a user query like "feat cli" to
+            # "feat:* | cli:*"
+            words = query.split(" ")
+            # remove empty words
+            words = [w for w in words if len(w.strip()) > 0]
+            # convert all words to prefix matches
+            words = [f"{w}:*" for w in words]
+            # OR all words
+            search = " | ".join(words)
+
+            statement = statement.where(
+                Issue.title_tsv.bool_op("@@")(func.to_tsquery(search))
+            )
+            count_statement = count_statement.where(
+                Issue.title_tsv.bool_op("@@")(func.to_tsquery(search))
+            )
+
+            # No matter the sorting option, always add a relevance sort first
+            order_by_clauses.append(
+                desc(func.ts_rank_cd(Issue.title_tsv, func.to_tsquery(search)))
+            )
 
         if organization is not None:
             statement = statement.where(Organization.id == organization.id)
@@ -65,7 +96,6 @@ class FundingService:
             statement = statement.where(Issue.closed == closed)
             count_statement = count_statement.where(Issue.closed == closed)
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion in sorting:
             if criterion == ListFundingSortBy.oldest:
                 order_by_clauses.append(Issue.created_at.asc())

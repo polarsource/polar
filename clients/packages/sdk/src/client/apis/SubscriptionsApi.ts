@@ -17,6 +17,7 @@ import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
   ListResourceSubscription,
+  ListResourceSubscriptionSummary,
   ListResourceSubscriptionTier,
   ListResourceUnionSubscriptionBenefitBuiltinSubscriptionBenefitCustom,
   Platforms,
@@ -111,6 +112,14 @@ export interface SubscriptionsApiSearchSubscriptionsRequest {
     sorting?: Array<string>;
     organizationName?: string;
     platform?: Platforms;
+}
+
+export interface SubscriptionsApiSearchSubscriptionsSummaryRequest {
+    organizationName: string;
+    platform: Platforms;
+    repositoryName?: string;
+    page?: number;
+    limit?: number;
 }
 
 export interface SubscriptionsApiUpdateSubscriptionBenefitRequest {
@@ -750,6 +759,68 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async searchSubscriptions(requestParameters: SubscriptionsApiSearchSubscriptionsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscription> {
         const response = await this.searchSubscriptionsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Search Subscriptions Summary
+     */
+    async searchSubscriptionsSummaryRaw(requestParameters: SubscriptionsApiSearchSubscriptionsSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscriptionSummary>> {
+        if (requestParameters.organizationName === null || requestParameters.organizationName === undefined) {
+            throw new runtime.RequiredError('organizationName','Required parameter requestParameters.organizationName was null or undefined when calling searchSubscriptionsSummary.');
+        }
+
+        if (requestParameters.platform === null || requestParameters.platform === undefined) {
+            throw new runtime.RequiredError('platform','Required parameter requestParameters.platform was null or undefined when calling searchSubscriptionsSummary.');
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters.repositoryName !== undefined) {
+            queryParameters['repository_name'] = requestParameters.repositoryName;
+        }
+
+        if (requestParameters.page !== undefined) {
+            queryParameters['page'] = requestParameters.page;
+        }
+
+        if (requestParameters.limit !== undefined) {
+            queryParameters['limit'] = requestParameters.limit;
+        }
+
+        if (requestParameters.organizationName !== undefined) {
+            queryParameters['organization_name'] = requestParameters.organizationName;
+        }
+
+        if (requestParameters.platform !== undefined) {
+            queryParameters['platform'] = requestParameters.platform;
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/subscriptions/subscriptions/summary`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Search Subscriptions Summary
+     */
+    async searchSubscriptionsSummary(requestParameters: SubscriptionsApiSearchSubscriptionsSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscriptionSummary> {
+        const response = await this.searchSubscriptionsSummaryRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

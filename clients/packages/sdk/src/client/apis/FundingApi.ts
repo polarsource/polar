@@ -30,6 +30,7 @@ export interface FundingApiSearchRequest {
     organizationName: string;
     platform: Platforms;
     repositoryName?: string;
+    query?: string;
     badged?: boolean;
     closed?: boolean;
     sorting?: Array<ListFundingSortBy>;
@@ -100,6 +101,10 @@ export class FundingApi extends runtime.BaseAPI {
 
         if (requestParameters.repositoryName !== undefined) {
             queryParameters['repository_name'] = requestParameters.repositoryName;
+        }
+
+        if (requestParameters.query !== undefined) {
+            queryParameters['query'] = requestParameters.query;
         }
 
         if (requestParameters.badged !== undefined) {

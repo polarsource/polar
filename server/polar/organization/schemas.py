@@ -116,15 +116,8 @@ class CreditBalance(Schema):
 #
 
 
-# Internal model
-# TODO: Remove
-class OrganizationSettingsRead(Schema):
-    pledge_badge_show_amount: bool = True
-    billing_email: str | None = None
-
-
-# Internal model
-class OrganizationPrivateBase(Schema):
+# Private model
+class OrganizationCreate(Schema):
     platform: Platforms
     name: str
     avatar_url: str
@@ -135,12 +128,7 @@ class OrganizationPrivateBase(Schema):
     installation_updated_at: datetime | None = None
     installation_suspended_at: datetime | None = None
     onboarded_at: datetime | None = None
-    pledge_minimum_amount: int
     default_badge_custom_content: str | None = None
-
-
-# Private model
-class OrganizationCreate(OrganizationPrivateBase):
     pledge_minimum_amount: int = settings.MINIMUM_ORG_PLEDGE_AMOUNT
 
     @classmethod
@@ -226,14 +214,3 @@ class OrganizationBadgeSettingsRead(Schema):
     minimum_amount: int
     message: str | None
     repositories: Sequence[RepositoryBadgeSettingsRead]
-
-
-# Internal model
-class OrganizationSyncedRepositoryRead(Schema):
-    id: UUID
-    synced_issues_count: int
-
-
-# Internal model
-class OrganizationSyncedRead(Schema):
-    repos: list[OrganizationSyncedRepositoryRead]

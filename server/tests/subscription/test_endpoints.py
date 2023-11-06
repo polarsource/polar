@@ -1072,10 +1072,7 @@ class TestSearchSubscriptions:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
     ) -> None:
-        response = await client.get(
-            "/api/v1/subscriptions/subscriptions/search",
-            params={"platform": "github", "organization_name": organization.name},
-        )
+        response = await client.get("/api/v1/subscriptions/subscriptions/search")
 
         assert response.status_code == 401
 
@@ -1121,13 +1118,7 @@ class TestSearchSubscriptions:
             ended_at=datetime(2023, 6, 15),
         )
 
-        response = await client.get(
-            "/api/v1/subscriptions/subscriptions/search",
-            params={
-                "platform": organization.platform.value,
-                "organization_name": organization.name,
-            },
-        )
+        response = await client.get("/api/v1/subscriptions/subscriptions/search")
 
         assert response.status_code == 200
 
@@ -1140,6 +1131,37 @@ class TestSearchSubscriptions:
             assert item["subscription_tier"]["id"] == str(
                 subscription_tier_organization.id
             )
+
+    @pytest.mark.authenticated
+    async def test_valid_organization(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        subscription_tier_organization: SubscriptionTier,
+    ) -> None:
+        await create_active_subscription(
+            session,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        response = await client.get(
+            "/api/v1/subscriptions/subscriptions/search",
+            params={
+                "platform": organization.platform.value,
+                "organization_name": organization.name,
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
 
 
 @pytest.mark.asyncio

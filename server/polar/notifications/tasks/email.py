@@ -3,17 +3,8 @@ from uuid import UUID
 import structlog
 
 from polar.email.sender import get_email_sender
-from polar.models.notification import Notification
-from polar.models.user import User
-from polar.notifications.schemas import (
-    NotificationType,
-)
 from polar.notifications.service import notifications
-from polar.postgres import AsyncSession
 from polar.user.service import user as user_service
-from polar.user_organization.service import (
-    user_organization as user_organization_service,
-)
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 log = structlog.get_logger()

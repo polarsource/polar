@@ -7,7 +7,7 @@ from typing import Any, Literal
 from uuid import UUID
 
 import structlog
-from githubkit import GitHub, Paginator, Response
+from githubkit import GitHub, Paginator
 from githubkit.exception import RequestFailed
 from githubkit.rest.models import Issue as GitHubIssue
 from githubkit.rest.models import Label
@@ -20,7 +20,6 @@ from polar.dashboard.schemas import IssueSortBy
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
 from polar.integrations.github import client as github
-from polar.integrations.github.service.api import github_api
 from polar.integrations.loops.service import loops as loops_service
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.issue.schemas import IssueCreate, IssueUpdate

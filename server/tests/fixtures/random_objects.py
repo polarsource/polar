@@ -5,7 +5,6 @@ import uuid
 from datetime import datetime
 
 import pytest_asyncio
-from respx import add
 
 from polar.enums import Platforms
 from polar.integrations.github.service import (

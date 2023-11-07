@@ -1,7 +1,7 @@
 import asyncio
 import logging.config
 from functools import wraps
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 import typer

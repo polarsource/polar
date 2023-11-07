@@ -12,13 +12,12 @@ from sqlalchemy import (
     asc,
     desc,
     func,
-    not_,
     nullslast,
     or_,
 )
-from sqlalchemy.orm import InstrumentedAttribute, aliased, contains_eager, joinedload
+from sqlalchemy.orm import aliased, contains_eager, joinedload
 
-from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
+from polar.dashboard.schemas import IssueSortBy
 from polar.enums import Platforms
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now

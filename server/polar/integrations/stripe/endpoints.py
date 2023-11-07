@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from starlette.responses import RedirectResponse
 
-from polar.account.schemas import AccountUpdate
 from polar.account.service import account as account_service
 from polar.config import settings
 from polar.enums import AccountType

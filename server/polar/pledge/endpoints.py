@@ -1,7 +1,6 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import desc
 
 from polar import locker
 from polar.auth.dependencies import Auth, UserRequiredAuth

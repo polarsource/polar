@@ -11,7 +11,6 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
 from .schemas import Account, AccountCreate, AccountLink
-from .service import AccountServiceError
 from .service import account as account_service
 
 router = APIRouter(tags=["accounts"])

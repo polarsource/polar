@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import calendar
 import datetime
 from collections.abc import Awaitable, Callable, Sequence
 from datetime import timedelta

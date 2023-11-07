@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal
 from uuid import UUID
 
 from polar.kit.schemas import Schema

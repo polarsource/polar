@@ -2,7 +2,6 @@ from collections.abc import Sequence
 from uuid import UUID
 
 import structlog
-from sqlalchemy.orm import InstrumentedAttribute
 
 from polar.enums import Platforms
 from polar.kit.services import ResourceService

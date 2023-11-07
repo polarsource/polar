@@ -12,7 +12,6 @@ from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.notifications.notification import MaintainerPledgeCreatedNotification
-from polar.notifications.schemas import NotificationType
 from polar.notifications.service import NotificationsService, PartialNotification
 from polar.pledge.schemas import PledgeState, PledgeType
 from polar.pledge.service import pledge as pledge_service

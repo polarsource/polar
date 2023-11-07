@@ -12,8 +12,6 @@ from polar.models.pledge import Pledge
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
-from polar.pledge.schemas import PledgeState
-from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 
 

@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from citext import CIText

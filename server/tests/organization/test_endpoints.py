@@ -6,7 +6,6 @@ from httpx import AsyncClient
 
 from polar.config import settings
 from polar.models.organization import Organization
-from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.postgres import AsyncSession

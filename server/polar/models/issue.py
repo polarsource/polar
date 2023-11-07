@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar
 from uuid import UUID
 
-import sqlalchemy
 import sqlalchemy as sa
 from sqlalchemy import (
     TIMESTAMP,

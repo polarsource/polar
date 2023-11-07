@@ -9,9 +9,7 @@ from pytest_mock import MockerFixture
 from polar.enums import Platforms
 from polar.integrations.github import tasks
 from polar.integrations.github.tasks import webhook as webhook_tasks
-from polar.models.organization import Organization
 from polar.models.user import OAuthAccount, User
-from polar.models.user_organization import UserOrganization
 from polar.notifications.service import (
     notifications,
 )

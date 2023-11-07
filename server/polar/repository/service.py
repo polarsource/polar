@@ -3,7 +3,7 @@ from uuid import UUID
 
 import structlog
 from sqlalchemy import and_, distinct
-from sqlalchemy.orm import InstrumentedAttribute, joinedload
+from sqlalchemy.orm import joinedload
 
 from polar.kit.services import ResourceService
 from polar.models import Repository

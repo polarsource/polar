@@ -1,15 +1,11 @@
-import uuid
-
 import pytest
 from pydantic import parse_obj_as
 
 import polar.integrations.github.client as github
-from polar.enums import Platforms
 from polar.integrations.github.service.reference import (
     TimelineEventType,
     github_reference,
 )
-from polar.kit import utils
 from polar.models.issue import Issue
 from polar.models.issue_reference import ReferenceType
 from polar.models.organization import Organization

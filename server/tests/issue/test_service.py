@@ -4,13 +4,12 @@ from datetime import datetime
 
 import pytest
 
-from polar.dashboard.schemas import IssueListType, IssueSortBy, IssueStatus
+from polar.dashboard.schemas import IssueSortBy
 from polar.enums import Platforms
 from polar.integrations.github import client as github
 from polar.issue.service import issue as issue_service
 from polar.kit.utils import utc_now
 from polar.models.issue import Issue
-from polar.models.issue_dependency import IssueDependency
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.repository import Repository

@@ -2,7 +2,6 @@ import structlog
 from fastapi import APIRouter, Depends
 
 from polar.auth.dependencies import UserRequiredAuth
-from polar.exceptions import Unauthorized
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import ListResource, Pagination
 from polar.postgres import AsyncSession, get_db_session

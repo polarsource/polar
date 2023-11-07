@@ -53,13 +53,15 @@
 	"forwardPorts": [3000, 6006, 8000],
 	"portsAttributes": {
 		"3000": {
-			"label": "web"
+			"label": "web",
+			"onAutoForward": "notify"
 		},
 		"6006": {
-			"label": "storybook"
+			"label": "storybook",
+			"onAutoForward": "notify"
 		},
 		"8000": {
-			"label": "api"
+			"label": "api",
 		}
 	}
 }

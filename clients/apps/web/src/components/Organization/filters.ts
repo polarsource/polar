@@ -9,7 +9,7 @@ export type FundingFilters = {
 export const DefaultFilters: FundingFilters = {
   q: undefined,
   sort: undefined,
-  badged: undefined,
+  badged: true,
 }
 
 export const fundingSortingOptions = [

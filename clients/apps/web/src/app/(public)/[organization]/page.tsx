@@ -2,7 +2,6 @@ import OrganizationPublicPage from '@/components/Organization/OrganizationPublic
 import PageNotFound from '@/components/Shared/PageNotFound'
 import { getServerSideAPI } from '@/utils/api'
 import {
-  ListFundingSortBy,
   Organization,
   Platforms,
   ResponseError,
@@ -87,7 +86,7 @@ export default async function Page({
 }) {
   const api = getServerSideAPI()
 
-  const [organization, repositories, issuesFunding] = await Promise.all([
+  const [organization, repositories] = await Promise.all([
     api.organizations.lookup(
       {
         platform: Platforms.GITHUB,
@@ -99,21 +98,6 @@ export default async function Page({
       {
         platform: Platforms.GITHUB,
         organizationName: params.organization,
-      },
-      cacheConfig,
-    ),
-    api.funding.search(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-        badged: true,
-        closed: false,
-        sorting: [
-          ListFundingSortBy.MOST_FUNDED,
-          ListFundingSortBy.MOST_ENGAGEMENT,
-          ListFundingSortBy.NEWEST,
-        ],
-        limit: 20,
       },
       cacheConfig,
     ),
@@ -156,7 +140,6 @@ export default async function Page({
       <OrganizationPublicPage
         organization={organization}
         repositories={repositories.items || []}
-        issuesFunding={issuesFunding.items || []}
         subscriptionTiers={subscriptionTiers}
         subscriptionSummary={subscriptionsSummary}
         currentTab={currentTab}

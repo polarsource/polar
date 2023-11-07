@@ -16,7 +16,7 @@ from polar.kit.db.postgres import create_sessionmaker
 from polar.models import Issue, Organization, Repository
 from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import OrganizationCreate
-from polar.postgres import AsyncEngineLocal, AsyncSession, sql
+from polar.postgres import AsyncSession, create_engine, sql
 from polar.repository.schemas import RepositoryCreate
 from polar.user.service import user as user_service
 from polar.user_organization.service import user_organization
@@ -34,7 +34,8 @@ cli = typer.Typer()
 # Helpers
 ###############################################################################
 
-AsyncSessionLocal = create_sessionmaker(engine=AsyncEngineLocal)
+engine = create_engine("script")
+AsyncSessionLocal = create_sessionmaker(engine=engine)
 
 
 def typer_async(f):  # type: ignore

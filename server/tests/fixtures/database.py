@@ -25,7 +25,7 @@ class TestModel(Model):
 
 @pytest_asyncio.fixture(scope="session")
 async def engine() -> AsyncIterator[AsyncEngine]:
-    engine = create_engine()
+    engine = create_engine("app")
     yield engine
     await engine.dispose()
 

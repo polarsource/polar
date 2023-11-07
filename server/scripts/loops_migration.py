@@ -51,7 +51,7 @@ async def loops_migration(
     ),
 ) -> None:
     loops_client = LoopsClient(settings.LOOPS_API_KEY if not dry_run else None)
-    engine = create_engine()
+    engine = create_engine("script")
     sessionmaker = create_sessionmaker(engine)
     async with sessionmaker() as session:
         users_statement = (
@@ -131,7 +131,7 @@ async def personal_organization_name(
     ),
 ) -> None:
     loops_client = LoopsClient(settings.LOOPS_API_KEY if not dry_run else None)
-    engine = create_engine()
+    engine = create_engine("script")
     sessionmaker = create_sessionmaker(engine)
     async with sessionmaker() as session:
         users_statement = (

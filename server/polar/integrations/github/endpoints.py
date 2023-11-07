@@ -23,7 +23,6 @@ from polar.enums import UserSignupType
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.integrations.github import client as github
 from polar.kit import jwt
-from polar.models import Organization
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session

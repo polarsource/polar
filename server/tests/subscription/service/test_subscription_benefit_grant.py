@@ -1,4 +1,3 @@
-from re import S
 from unittest.mock import MagicMock
 
 import pytest

@@ -5,7 +5,6 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
-from unittest.mock import ANY
 
 import pytest
 from httpx import AsyncClient
@@ -13,12 +12,9 @@ from pytest_mock import MockerFixture
 
 from polar.config import settings
 from polar.enums import AccountType, Platforms
-from polar.eventstream.service import send
 from polar.exceptions import NotPermitted
-from polar.integrations.github.service.issue import github_issue as github_issue_service
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.issue.schemas import ConfirmIssueSplit
-from polar.issue.service import issue as issue_service
 from polar.kit.utils import utc_now
 from polar.models.account import Account
 from polar.models.issue import Issue
@@ -29,16 +25,11 @@ from polar.models.pledge_transaction import PledgeTransaction
 from polar.models.repository import Repository
 from polar.models.user import OAuthAccount, User
 from polar.models.user_organization import UserOrganization
-from polar.notifications.notification import (
-    MaintainerPledgeCreatedNotification,
-    MaintainerPledgedIssueConfirmationPendingNotification,
-)
 from polar.notifications.service import PartialNotification
 from polar.pledge.hooks import PledgeHook, pledge_created
 from polar.pledge.schemas import PledgeState, PledgeTransactionType, PledgeType
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
-from polar.receivers.pledges import issue_url
 from tests.fixtures.random_objects import (
     create_issue,
     create_organization,

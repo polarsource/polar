@@ -7,7 +7,6 @@ from polar.issue.schemas import IssueReferenceRead
 from polar.kit.schemas import Schema
 from polar.pledge.schemas import Pledge
 from polar.reward.schemas import Reward
-from polar.types import JSONAny
 
 
 class IssueListType(str, Enum):

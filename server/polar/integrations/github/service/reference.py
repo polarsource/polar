@@ -12,7 +12,6 @@ from pydantic import Field, ValidationError, parse_obj_as
 
 import polar.integrations.github.client as github
 from polar.exceptions import IntegrityError
-from polar.integrations.github.service.api import github_api
 from polar.integrations.github.service.issue import github_issue
 from polar.integrations.github.service.pull_request import github_pull_request
 from polar.issue.hooks import (

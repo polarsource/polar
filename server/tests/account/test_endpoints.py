@@ -17,7 +17,6 @@ from polar.integrations.open_collective.service import (
     OpenCollectiveServiceError,
     open_collective,
 )
-from polar.kit.schemas import Schema
 from polar.models.account import Account
 from polar.models.organization import Organization
 from polar.models.user import User

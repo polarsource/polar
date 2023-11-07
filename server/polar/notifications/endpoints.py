@@ -1,5 +1,5 @@
 import structlog
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from polar.auth.dependencies import UserRequiredAuth
 from polar.models.notification import Notification

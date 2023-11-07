@@ -1,5 +1,4 @@
 from typing import Literal, Self
-from uuid import UUID
 
 import stripe as stripe_lib
 

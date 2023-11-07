@@ -1,5 +1,5 @@
 import time
-from typing import Any, Union
+from typing import Any
 
 import structlog
 from fastapi.encoders import jsonable_encoder

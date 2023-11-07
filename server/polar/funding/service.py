@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from decimal import Decimal
 from enum import StrEnum
 from typing import Any, cast
 from uuid import UUID

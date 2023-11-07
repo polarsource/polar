@@ -2,15 +2,9 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Self
 
-from sqlalchemy import Column
-from sqlalchemy.orm import (
-    InstrumentedAttribute,
-)
-from sqlalchemy.orm.properties import MappedColumn
 from sqlalchemy.sql.selectable import FromClause
 
-from polar.kit.schemas import Schema
-from polar.postgres import AsyncSession, sql
+from polar.postgres import AsyncSession
 
 
 # Active Record-ish

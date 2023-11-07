@@ -13,7 +13,6 @@ from sentry_sdk.utils import Dsn
 
 from polar.auth.dependencies import Auth
 from polar.config import settings
-from polar.models import User
 from polar.posthog import posthog
 
 if TYPE_CHECKING:

@@ -6,7 +6,6 @@ from polar.postgres import AsyncSession
 
 from ...schemas import SubscriptionBenefitUpdate
 from .base import (
-    SB,
     SubscriptionBenefitPreconditionError,
     SubscriptionBenefitRetriableError,
     SubscriptionBenefitServiceError,

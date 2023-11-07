@@ -1,13 +1,10 @@
-from collections.abc import Sequence
 from uuid import UUID
 
 import structlog
 
-from polar.integrations.github import client as github
 from polar.integrations.github import service
-from polar.models import Issue, Organization, PullRequest, Repository
+from polar.models import Organization, Repository
 from polar.postgres import AsyncSession
-from polar.pull_request.schemas import FullPullRequestCreate
 
 log = structlog.get_logger()
 

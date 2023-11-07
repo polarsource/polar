@@ -29,7 +29,7 @@ from polar.models.issue_reference import (
 from polar.models.organization import Organization as OrganizationModel
 from polar.models.repository import Repository as RepositoryModel
 from polar.repository.schemas import Repository
-from polar.types import JSONAny, JSONDict
+from polar.types import JSONAny
 
 log = structlog.get_logger()
 

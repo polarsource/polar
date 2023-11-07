@@ -1,9 +1,7 @@
 from datetime import datetime
 from enum import Enum
-from typing import Self, Union
+from typing import Self
 from uuid import UUID
-
-from pydantic import Field
 
 from polar.kit.schemas import Schema
 from polar.notifications.notification import (

@@ -2,9 +2,7 @@ from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
-from pytest_mock import MockerFixture
 
-from polar.config import settings
 from polar.integrations.github.badge import GithubBadge
 from polar.integrations.github.service.issue import github_issue
 from polar.kit.utils import utc_now

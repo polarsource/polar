@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator
 from uuid import UUID
 
 import pytest_asyncio
-from sqlalchemy import Integer, String, null
+from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import text
 

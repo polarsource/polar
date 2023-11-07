@@ -15,7 +15,6 @@ from polar.models import (
     Repository,
     SubscriptionBenefit,
     SubscriptionTier,
-    SubscriptionTierBenefit,
     User,
     UserOrganization,
 )

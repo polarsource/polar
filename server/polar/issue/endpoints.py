@@ -23,7 +23,6 @@ from polar.postgres import (
     get_db_session,
     get_db_sessionmaker,
 )
-from polar.repository.schemas import Repository as RepositorySchema
 from polar.repository.service import repository as repository_service
 from polar.tags.api import Tags
 from polar.user_organization.service import (

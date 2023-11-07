@@ -7,6 +7,7 @@
     "eslint-config-next": "13.4.2",
     "eslint-config-prettier": "^8.3.0",
     "eslint-config-turbo": "^0.0.9",
+    "eslint-plugin-polar-rules": "workspace:^",
     "eslint-plugin-react": "7.28.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "typescript": "5.0.4"

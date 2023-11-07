@@ -13,12 +13,14 @@ export const useSearchFundedIssues: (v: {
   q?: string
   sort?: Array<ListFundingSortBy>
   badged?: boolean
+  limit?: number
 }) => UseQueryResult<ListResourceIssueFunding> = (v: {
   organizationName?: string
   repositoryName?: string
   q?: string
   sort?: Array<ListFundingSortBy>
   badged?: boolean
+  limit?: number
 }) =>
   useQuery({
     queryKey: [
@@ -39,6 +41,7 @@ export const useSearchFundedIssues: (v: {
         query: v.q,
         sorting: v.sort,
         badged: v.badged,
+        limit: v.limit || 100,
       }),
     retry: defaultRetry,
     enabled: !!v.organizationName,

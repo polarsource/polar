@@ -243,14 +243,12 @@ const OrganizationPublicPage = ({
                 repositories={repositories}
               />
             </TabsContent>
-            {isFeatureEnabled('subscriptions') && (
-              <TabsContent className="w-full" value="subscriptions">
-                <OrganizationSubscriptionsPublicPage
-                  organization={organization}
-                  subscriptionTiers={subscriptionTiers}
-                />
-              </TabsContent>
-            )}
+            <TabsContent className="w-full" value="subscriptions">
+              <OrganizationSubscriptionsPublicPage
+                organization={organization}
+                subscriptionTiers={subscriptionTiers}
+              />
+            </TabsContent>
           </div>
         </div>
       </div>

@@ -108,6 +108,7 @@ const OrganizationPublicPage = ({
                         className="text-blue-600 hover:text-blue-700"
                         href={externalURL(organization.blog)}
                         target="_blank"
+                        rel="noopener noreferrer"
                       >
                         {prettyURL(organization.blog)}
                       </a>
@@ -122,6 +123,7 @@ const OrganizationPublicPage = ({
                       <a
                         className="text-blue-600 hover:text-blue-700"
                         href={`mailto:${organization.email}`}
+                        rel="noopener noreferrer"
                       >
                         {organization.email}
                       </a>
@@ -137,6 +139,7 @@ const OrganizationPublicPage = ({
                         className="text-blue-600 hover:text-blue-700"
                         href={`https://twitter.com/${organization.twitter_username}`}
                         target="_blank"
+                        rel="noopener noreferrer"
                       >
                         @{organization.twitter_username}
                       </a>

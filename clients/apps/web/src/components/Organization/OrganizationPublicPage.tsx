@@ -6,15 +6,13 @@ import {
   ShortTextOutlined,
 } from '@mui/icons-material'
 import {
-  IssueFunding,
   Organization,
   Repository,
   SubscriptionSummary,
   SubscriptionTier,
 } from '@polar-sh/sdk'
-import Link from 'next/link'
 import { LogoType } from 'polarkit/components/brand'
-import { Avatar, Button, Tabs, TabsContent } from 'polarkit/components/ui/atoms'
+import { Avatar, Tabs, TabsContent } from 'polarkit/components/ui/atoms'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { externalURL, prettyURL } from '.'
@@ -29,14 +27,12 @@ import { RepositoriesOverivew } from './RepositoriesOverview'
 const OrganizationPublicPage = ({
   organization,
   repositories,
-  issuesFunding,
   subscriptionTiers,
   subscriptionSummary,
   currentTab,
 }: {
   organization: Organization
   repositories: Repository[]
-  issuesFunding: IssueFunding[]
   subscriptionTiers: SubscriptionTier[]
   subscriptionSummary: SubscriptionSummary[]
   currentTab?: string
@@ -58,202 +54,207 @@ const OrganizationPublicPage = ({
   )
 
   return (
-    <Tabs defaultValue={currentTab ?? 'overview'}>
-      <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-        <a href="/">
-          <LogoType />
-        </a>
-        <OrganizationPublicPageNav />
-      </div>
+    <Tabs
+      className="flex min-h-screen flex-col justify-between"
+      defaultValue={currentTab ?? 'overview'}
+    >
+      <div className="flex flex-col">
+        <div className="flex w-full flex-col items-center justify-between gap-6 px-4 md:flex-row md:justify-normal md:gap-24 md:px-0">
+          <div className="shrink-0 md:w-64">
+            <a href="/">
+              <LogoType />
+            </a>
+          </div>
+          <OrganizationPublicPageNav />
+        </div>
 
-      <div className="flex flex-row gap-x-24 py-16">
-        <div className="flex w-64 shrink-0 flex-col gap-y-10">
-          <div className="flex flex-col gap-y-6">
-            <div className="flex flex-col gap-y-2">
-              <Avatar
-                className="mb-6 h-60 w-60"
-                name={organization.name}
-                avatar_url={organization.avatar_url}
-              />
-              {
+        <div className="relative flex flex-col gap-x-24 px-4 py-16 md:flex-row md:px-0">
+          <div className="flex h-full w-full shrink-0 flex-col gap-y-10 md:w-64">
+            <div className="flex flex-col items-center gap-y-6 md:items-start">
+              <div className="flex flex-col items-center gap-y-2 md:items-start">
+                <Avatar
+                  className="mb-6 h-32 w-32 md:h-60 md:w-60"
+                  name={organization.name}
+                  avatar_url={organization.avatar_url}
+                />
                 <h1 className="dark:text-polar-50 text-2xl font-normal capitalize text-gray-800">
                   {organization.pretty_name ?? organization.name}
                 </h1>
-              }
-              <h3 className="dark:text-polar-500 text-md font-normal text-gray-600">
-                @{organization.name}
-              </h3>
-            </div>
-            {organization.bio && (
-              <p className="dark:text-polar-500 text-sm leading-relaxed text-gray-400">
-                {organization.bio}
-              </p>
-            )}
-            {showMeta && (
-              <div className="dark:text-polar-500 flex flex-col gap-y-2 text-sm">
-                {organization.company && (
-                  <div className="flex flex-row items-center gap-x-3">
-                    <span className="text-[17px]">
-                      <BusinessOutlined fontSize="inherit" />
-                    </span>
-                    <span>{organization.company}</span>
-                  </div>
-                )}
-                {organization.blog && (
-                  <div className="flex flex-row items-center gap-x-3">
-                    <span className="text-[17px]">
-                      <LanguageOutlined fontSize="inherit" />
-                    </span>
-                    <a
-                      className="text-blue-600 hover:text-blue-700"
-                      href={externalURL(organization.blog)}
-                      target="_blank"
-                    >
-                      {prettyURL(organization.blog)}
-                    </a>
-                  </div>
-                )}
-
-                {organization.email && (
-                  <div className="flex flex-row items-center gap-x-3">
-                    <span className="text-[17px]">
-                      <EmailOutlined fontSize="inherit" />
-                    </span>
-                    <a
-                      className="text-blue-600 hover:text-blue-700"
-                      href={`mailto:${organization.email}`}
-                    >
-                      {organization.email}
-                    </a>
-                  </div>
-                )}
-
-                {organization.twitter_username && (
-                  <div className="flex flex-row items-center gap-x-3">
-                    <span className="text-[17px]">
-                      <ShortTextOutlined fontSize="inherit" />
-                    </span>
-                    <a
-                      className="text-blue-600 hover:text-blue-700"
-                      href={`https://twitter.com/${organization.twitter_username}`}
-                      target="_blank"
-                    >
-                      @{organization.twitter_username}
-                    </a>
-                  </div>
-                )}
+                <h3 className="dark:text-polar-500 text-md font-normal text-gray-600">
+                  @{organization.name}
+                </h3>
               </div>
-            )}
-          </div>
-          {subscriberUsers.length > 0 && (
-            <div className="flex flex-col gap-y-4">
-              <div className="flex flex-row items-start justify-between">
-                <h3>Subscribers</h3>
-                <h3>15</h3>
-              </div>
-              <div className="flex flex-row flex-wrap gap-3">
-                {subscriberUsers.map((user) => (
-                  <Avatar
-                    key={user.username}
-                    className="h-10 w-10"
-                    name={user.username}
-                    avatar_url={user.avatar_url}
-                  />
-                ))}
-                {subscribersHiddenCount > 0 && (
-                  <div className="dark:border-polar-600 dark:text-polar-500 flex h-10 w-10 flex-col items-center justify-center rounded-full border border-blue-200 text-xs font-medium text-blue-400">
-                    {subscribersHiddenCount}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {isFeatureEnabled('subscriptions') && (
-            <div className="flex flex-col gap-y-4">
-              <div className="flex flex-row items-start justify-between">
-                <h3>Campaigns</h3>
-                <h3>3</h3>
-              </div>
-              <div className="flex flex-col flex-wrap gap-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={twMerge(
-                      'dark:border-polar-700 flex flex-col gap-y-4 rounded-2xl border border-gray-200 p-4',
-                      i === 0 && 'dark:bg-polar-800 border-blue-100 bg-blue-50',
-                    )}
-                  >
-                    <h4 className="text-sm font-medium">Pydantic v{i + 1}</h4>
-                    <div
-                      style={{
-                        display: 'flex',
-                        borderRadius: '2px',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: `${80 / (i * 2 + 1)}%`,
-                          height: '4px',
-                          backgroundColor: '#4667CA', // blue-600
-                          transitionProperty: 'all',
-                          transitionDuration: '200ms',
-                        }}
-                      />
-                      <div
-                        className="dark:bg-polar-700 bg-gray-200"
-                        style={{
-                          flexGrow: '1',
-                          height: '4px',
-                        }}
-                      ></div>
+              {organization.bio && (
+                <p className="dark:text-polar-500 text-center text-sm leading-relaxed text-gray-400 md:text-start">
+                  {organization.bio}
+                </p>
+              )}
+              {showMeta && (
+                <div className="dark:text-polar-500 flex flex-col gap-y-2 text-sm">
+                  {organization.company && (
+                    <div className="flex flex-row items-center gap-x-3">
+                      <span className="text-[17px]">
+                        <BusinessOutlined fontSize="inherit" />
+                      </span>
+                      <span>{organization.company}</span>
                     </div>
-                    <h4 className="text-xs text-blue-500">View Campaign</h4>
-                  </div>
-                ))}
-              </div>
+                  )}
+                  {organization.blog && (
+                    <div className="flex flex-row items-center gap-x-3">
+                      <span className="text-[17px]">
+                        <LanguageOutlined fontSize="inherit" />
+                      </span>
+                      <a
+                        className="text-blue-600 hover:text-blue-700"
+                        href={externalURL(organization.blog)}
+                        target="_blank"
+                      >
+                        {prettyURL(organization.blog)}
+                      </a>
+                    </div>
+                  )}
+
+                  {organization.email && (
+                    <div className="flex flex-row items-center gap-x-3">
+                      <span className="text-[17px]">
+                        <EmailOutlined fontSize="inherit" />
+                      </span>
+                      <a
+                        className="text-blue-600 hover:text-blue-700"
+                        href={`mailto:${organization.email}`}
+                      >
+                        {organization.email}
+                      </a>
+                    </div>
+                  )}
+
+                  {organization.twitter_username && (
+                    <div className="flex flex-row items-center gap-x-3">
+                      <span className="text-[17px]">
+                        <ShortTextOutlined fontSize="inherit" />
+                      </span>
+                      <a
+                        className="text-blue-600 hover:text-blue-700"
+                        href={`https://twitter.com/${organization.twitter_username}`}
+                        target="_blank"
+                      >
+                        @{organization.twitter_username}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <TabsContent className="w-full" value="overview">
-          <div className="flex w-full flex-col gap-y-8">
-            {subscriptionTiers.length > 0 && (
-              <PublicSubscriptionUpsell
-                organization={organization}
-                subscriptionTiers={subscriptionTiers}
-                subscribePath="/subscribe"
-              />
+            {subscriberUsers.length > 0 && (
+              <div className="flex flex-col gap-y-4">
+                <div className="flex flex-row items-start justify-between">
+                  <h3>Subscribers</h3>
+                  <h3>15</h3>
+                </div>
+                <div className="flex flex-row flex-wrap gap-3">
+                  {subscriberUsers.map((user) => (
+                    <Avatar
+                      key={user.username}
+                      className="h-10 w-10"
+                      name={user.username}
+                      avatar_url={user.avatar_url}
+                    />
+                  ))}
+                  {subscribersHiddenCount > 0 && (
+                    <div className="dark:border-polar-600 dark:text-polar-500 flex h-10 w-10 flex-col items-center justify-center rounded-full border border-blue-200 text-xs font-medium text-blue-400">
+                      {subscribersHiddenCount}
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
 
-            <div className="flex flex-row items-start justify-between">
-              <h2 className="text-lg">Issues looking for funding</h2>
-              <Link href={{ pathname: `/${organization.name}/issues` }}>
-                <Button size="sm">View all</Button>
-              </Link>
-            </div>
-            <IssuesLookingForFunding organization={organization} />
+            {isFeatureEnabled('subscriptions') && (
+              <div className="hidden flex-col gap-y-4 md:flex">
+                <div className="flex flex-row items-start justify-between">
+                  <h3>Campaigns</h3>
+                  <h3>3</h3>
+                </div>
+                <div className="flex flex-col flex-wrap gap-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={twMerge(
+                        'dark:border-polar-700 flex flex-col gap-y-4 rounded-2xl border border-gray-200 p-4',
+                        i === 0 &&
+                          'dark:bg-polar-800 border-blue-100 bg-blue-50',
+                      )}
+                    >
+                      <h4 className="text-sm font-medium">Campaign v{i + 1}</h4>
+                      <div
+                        style={{
+                          display: 'flex',
+                          borderRadius: '2px',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${80 / (i * 2 + 1)}%`,
+                            height: '4px',
+                            backgroundColor: '#4667CA', // blue-600
+                            transitionProperty: 'all',
+                            transitionDuration: '200ms',
+                          }}
+                        />
+                        <div
+                          className="dark:bg-polar-700 bg-gray-200"
+                          style={{
+                            flexGrow: '1',
+                            height: '4px',
+                          }}
+                        ></div>
+                      </div>
+                      <h4 className="text-xs text-blue-500">View Campaign</h4>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        </TabsContent>
-        <TabsContent className="w-full" value="repositories">
-          <RepositoriesOverivew
-            organization={organization}
-            repositories={repositories}
-          />
-        </TabsContent>
-        {isFeatureEnabled('subscriptions') && (
-          <TabsContent className="w-full" value="subscriptions">
-            <OrganizationSubscriptionsPublicPage
-              organization={organization}
-              subscriptionTiers={subscriptionTiers}
-            />
-          </TabsContent>
-        )}
+          <div className="mt-12 flex h-full w-full flex-col md:mt-0">
+            <TabsContent className="w-full" value="overview">
+              <div className="flex w-full flex-col gap-y-8">
+                {subscriptionTiers.length > 0 && (
+                  <PublicSubscriptionUpsell
+                    organization={organization}
+                    subscriptionTiers={subscriptionTiers}
+                    subscribePath="/subscribe"
+                  />
+                )}
+
+                <div className="flex flex-row items-start justify-between">
+                  <h2 className="text-lg">Issues looking for funding</h2>
+                </div>
+                <IssuesLookingForFunding organization={organization} />
+              </div>
+            </TabsContent>
+            <TabsContent className="w-full" value="repositories">
+              <RepositoriesOverivew
+                organization={organization}
+                repositories={repositories}
+              />
+            </TabsContent>
+            {isFeatureEnabled('subscriptions') && (
+              <TabsContent className="w-full" value="subscriptions">
+                <OrganizationSubscriptionsPublicPage
+                  organization={organization}
+                  subscriptionTiers={subscriptionTiers}
+                />
+              </TabsContent>
+            )}
+          </div>
+        </div>
       </div>
-
-      <HowItWorks />
-
-      <Footer />
+      <div>
+        <HowItWorks />
+        <Footer />
+      </div>
     </Tabs>
   )
 }

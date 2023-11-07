@@ -81,6 +81,7 @@
     "eslint": "8.40.0",
     "eslint-config-custom": "workspace:*",
     "eslint-config-next": "13.4.2",
+    "eslint-plugin-polar-rules": "workspace:^",
     "jest-environment-jsdom": "^29.6.2",
     "postcss": "^8.4.21",
     "prop-types": "^15.8.1",

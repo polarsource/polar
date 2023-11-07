@@ -1,6 +1,7 @@
 'use client'
 
 import { Organization, SubscriptionTier } from '@polar-sh/sdk'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { Button } from 'polarkit/components/ui/atoms'
 import SubscriptionTierCard from './SubscriptionTierCard'
@@ -21,25 +22,34 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
     <div className="flex flex-col">
       <div className="flex flex-row items-start justify-between">
         <h2 className="text-lg">Subscriptions</h2>
-        <Link href={{ pathname: `/${organization.name}/subscriptions` }}>
+        <Link
+          href={{
+            pathname: `/${organization.name}`,
+            query: { tab: 'subscriptions' },
+          }}
+        >
           <Button variant="secondary" size="sm">
             View all Tiers
           </Button>
         </Link>
       </div>
-      <div className="flex h-fit flex-row gap-6 py-6">
+      <motion.div
+        className="-mx-6 flex h-fit flex-row gap-6 overflow-x-auto px-6 py-6 md:mx-0 md:px-0"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
         {subscriptionTiers
           .filter((tier) => tier.is_highlighted)
           .sort((a, b) => a.price_amount - b.price_amount)
           .map((tier) => (
             <SubscriptionCard
-              key={tier.id}
               tier={tier}
               subscribePath={subscribePath}
               organization={organization}
             />
           ))}
-      </div>
+      </motion.div>
     </div>
   )
 }

@@ -1,8 +1,13 @@
 'use client'
 
 import { ArrowsUpDownIcon, FunnelIcon } from '@heroicons/react/24/outline'
-import { FavoriteBorderOutlined, SearchOutlined } from '@mui/icons-material'
+import {
+  FavoriteBorderOutlined,
+  HowToVoteOutlined,
+  SearchOutlined,
+} from '@mui/icons-material'
 import { ListFundingSortBy, Organization, Repository } from '@polar-sh/sdk'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -100,40 +105,55 @@ const IssuesLookingForFunding = ({
       <div className="flex flex-row items-center">
         <IssuesFilter filters={filters} onSetFilters={setFilters} />
       </div>
-      <div className="-mx-6">
-        {fundedIssues.data?.items?.map((i) => (
-          <div key={i.issue.id}>
-            <IssueSummary
-              issue={i.issue}
-              right={
-                <Link
-                  href={`/${i.issue.repository.organization.name}/${i.issue.repository.name}/issues/${i.issue.number}`}
-                  className="font-medium text-blue-600"
-                >
-                  <Button size="sm" variant="secondary">
-                    <FavoriteBorderOutlined fontSize="inherit" />
-                    <span className="ml-1.5">Fund</span>
-                  </Button>
-                </Link>
-              }
-            />
-            {(i.total.amount > 0 ||
-              !!i.funding_goal ||
-              !!i.issue.upfront_split_to_contributors) && (
-              <IssueActivityBox>
-                <div className="p-4">
-                  <IssueFundingDetails
-                    issue={i.issue}
-                    total={i.total}
-                    fundingGoal={i.funding_goal}
-                    pledgesSummaries={i.pledges_summaries}
-                  />
-                </div>
-              </IssueActivityBox>
-            )}
-          </div>
-        ))}
-      </div>
+      {(fundedIssues.data?.items?.length ?? 0) > 0 ? (
+        <motion.div
+          className="dark:divider-polar-700 -mx-6 divide-y md:divide-y-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          {fundedIssues.data?.items?.map((i) => (
+            <>
+              <IssueSummary
+                key={i.issue.id}
+                issue={i.issue}
+                right={
+                  <Link
+                    href={`/${i.issue.repository.organization.name}/${i.issue.repository.name}/issues/${i.issue.number}`}
+                    className="font-medium text-blue-600"
+                  >
+                    <Button size="sm" variant="secondary">
+                      <FavoriteBorderOutlined fontSize="inherit" />
+                      <span className="ml-1.5">Fund</span>
+                    </Button>
+                  </Link>
+                }
+              />
+              {(i.total.amount > 0 ||
+                !!i.funding_goal ||
+                !!i.issue.upfront_split_to_contributors) && (
+                <IssueActivityBox>
+                  <div className="p-4">
+                    <IssueFundingDetails
+                      issue={i.issue}
+                      total={i.total}
+                      fundingGoal={i.funding_goal}
+                      pledgesSummaries={i.pledges_summaries}
+                    />
+                  </div>
+                </IssueActivityBox>
+              )}
+            </>
+          ))}
+        </motion.div>
+      ) : (
+        <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
+          <span className="text-6xl">
+            <HowToVoteOutlined fontSize="inherit" />
+          </span>
+          <h2 className="text-lg">No funded issues found</h2>
+        </div>
+      )}
     </div>
   )
 }
@@ -247,73 +267,76 @@ export const IssuesFilter = ({
   )
 
   return (
-    <div className="flex w-full flex-row items-center justify-between gap-x-4">
-      <Input
-        type="text"
-        name="query"
-        id="query"
-        className="pl-11"
-        placeholder="Search Filter"
-        onChange={onQueryChange}
-        value={filters.q || ''}
-        preSlot={
-          spinner ? (
-            <span className="pl-2">
-              <Spinner />
-            </span>
-          ) : (
-            <SearchOutlined className="h-5 w-5" fontSize="inherit" />
-          )
-        }
-      />
+    <div className="flex w-full flex-col items-center gap-4 md:flex-row">
+      <div className="w-full grow md:w-auto">
+        <Input
+          type="text"
+          name="query"
+          id="query"
+          placeholder="Search Filter"
+          onChange={onQueryChange}
+          value={filters.q || ''}
+          preSlot={
+            spinner ? (
+              <span className="pl-2">
+                <Spinner />
+              </span>
+            ) : (
+              <SearchOutlined className="h-5 w-5" fontSize="inherit" />
+            )
+          }
+        />
+      </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger>
-          <Button variant="secondary">
-            <FunnelIcon className="dark:text-polar-300 mr-2 h-4 w-4" />
-            <span>Filter</span>
-          </Button>
-        </DropdownMenuTrigger>
+      <div className="flex w-full flex-row items-center gap-x-4 md:w-auto">
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            <Button variant="secondary">
+              <FunnelIcon className="dark:text-polar-300 mr-2 h-4 w-4" />
+              <span>Filter</span>
+            </Button>
+          </DropdownMenuTrigger>
 
-        <DropdownMenuContent className="dark:bg-polar-700">
-          <DropdownMenuLabel>Filter</DropdownMenuLabel>
-          <DropdownMenuSeparator />
+          <DropdownMenuContent className="dark:bg-polar-700">
+            <DropdownMenuLabel>Filter</DropdownMenuLabel>
+            <DropdownMenuSeparator />
 
-          <DropdownMenuCheckboxItem
-            checked={filters.badged}
-            onCheckedChange={onOnlyBadgedChanged}
-          >
-            Badged Only
-          </DropdownMenuCheckboxItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <DropdownMenu>
-        <DropdownMenuTrigger>
-          <Button variant="secondary">
-            <ArrowsUpDownIcon className="dark:text-polar-300 mr-2 h-4 w-4" />
-            <span>
-              {filters?.sort?.length
-                ? getFundSortingTitle(filters?.sort)
-                : 'Sort by'}
-            </span>
-          </Button>
-        </DropdownMenuTrigger>
-
-        <DropdownMenuContent className="dark:bg-polar-700">
-          <DropdownMenuLabel>Sort issues by</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-
-          {fundingSortingOptions.map((v) => (
             <DropdownMenuCheckboxItem
-              onCheckedChange={onSortingChanged(v)}
-              key={v}
-              checked={filters.sort?.includes(v)}
+              checked={filters.badged}
+              onCheckedChange={onOnlyBadgedChanged}
             >
-              {getFundSortingTitle([v])}
+              Badged Only
             </DropdownMenuCheckboxItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            <Button variant="secondary">
+              <ArrowsUpDownIcon className="dark:text-polar-300 mr-2 h-4 w-4" />
+              <span>
+                {filters?.sort?.length
+                  ? getFundSortingTitle(filters?.sort)
+                  : 'Sort by'}
+              </span>
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent className="dark:bg-polar-700">
+            <DropdownMenuLabel>Sort issues by</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+
+            {fundingSortingOptions.map((v) => (
+              <DropdownMenuCheckboxItem
+                onCheckedChange={onSortingChanged(v)}
+                key={v}
+                checked={filters.sort?.includes(v)}
+              >
+                {getFundSortingTitle([v])}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   )
 }

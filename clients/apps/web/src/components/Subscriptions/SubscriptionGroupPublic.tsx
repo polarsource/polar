@@ -30,10 +30,10 @@ const SubscriptionGroupPublic = ({
         </div>
         <p className="dark:text-polar-500 mt-4 text-gray-400">{description}</p>
       </div>
-      <div className="grid grid-cols-3 gap-6">
+      <div className="-mx-10 flex h-fit gap-6 overflow-x-auto px-10 py-6 md:mx-0 md:px-0">
         {tiers.map((tier) => (
           <SubscriptionTierCard
-            className="h-full"
+            className="h-full self-stretch"
             key={tier.id}
             subscriptionTier={tier}
             variant="small"

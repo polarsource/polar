@@ -86,10 +86,10 @@ export default function ClientPage() {
       <DashboardBody>
         <div className="space-y-4">
           <h2 className="dark:text-polar-100 text-lg text-gray-900">
-            Github Sponsors
+            GitHub Sponsors
           </h2>
           <p className="dark:text-polar-400 text-sm text-gray-500">
-            Make sure to link to your public funding page from Github&apos;s
+            Make sure to link to your public funding page from GitHub&apos;s
             Sponsor section.
           </p>
           <ShadowBox>

@@ -45,7 +45,7 @@ export default function ClientPage() {
         <div className="flex flex-col gap-y-2">
           <h2 className="text-xl font-medium">Members</h2>
           <p className="dark:text-polar-500 text-sm text-gray-400">
-            Members & their roles are synced from the underlying Github
+            Members & their roles are synced from the underlying GitHub
             organization
           </p>
         </div>

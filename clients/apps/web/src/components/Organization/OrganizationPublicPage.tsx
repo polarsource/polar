@@ -1,11 +1,7 @@
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import {
-  Bolt,
   BusinessOutlined,
-  DragIndicatorOutlined,
   EmailOutlined,
-  HiveOutlined,
-  HowToVoteOutlined,
-  LandscapeOutlined,
   LanguageOutlined,
   ShortTextOutlined,
 } from '@mui/icons-material'
@@ -18,14 +14,7 @@ import {
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { LogoType } from 'polarkit/components/brand'
-import {
-  Avatar,
-  Button,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from 'polarkit/components/ui/atoms'
+import { Avatar, Button, Tabs, TabsContent } from 'polarkit/components/ui/atoms'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { externalURL, prettyURL } from '.'
@@ -34,6 +23,7 @@ import OrganizationSubscriptionsPublicPage from '../Subscriptions/OrganizationSu
 import PublicSubscriptionUpsell from '../Subscriptions/PublicSubscriptionUpsell'
 import Footer from './Footer'
 import IssuesLookingForFunding from './IssuesLookingForFunding'
+import { OrganizationPublicPageNav } from './OrganizationPublicPageNav'
 import { RepositoriesOverivew } from './RepositoriesOverview'
 
 const OrganizationPublicPage = ({
@@ -42,13 +32,14 @@ const OrganizationPublicPage = ({
   issuesFunding,
   subscriptionTiers,
   subscriptionSummary,
+  currentTab,
 }: {
   organization: Organization
   repositories: Repository[]
   issuesFunding: IssueFunding[]
   subscriptionTiers: SubscriptionTier[]
   subscriptionSummary: SubscriptionSummary[]
-  totalIssueCount: number
+  currentTab?: string
 }) => {
   const showMeta =
     organization.bio ||
@@ -67,43 +58,12 @@ const OrganizationPublicPage = ({
   )
 
   return (
-    <Tabs defaultValue="overview">
+    <Tabs defaultValue={currentTab ?? 'overview'}>
       <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
         <a href="/">
           <LogoType />
         </a>
-        <TabsList className="dark:border-polar-700 dark:border">
-          <TabsTrigger value="overview" size="small">
-            <div className="text-[18px]">
-              <DragIndicatorOutlined fontSize="inherit" />
-            </div>
-            <span>Overview</span>
-          </TabsTrigger>
-          <TabsTrigger value="repositories" size="small">
-            <div className="text-[18px]">
-              <HiveOutlined fontSize="inherit" />
-            </div>
-            <span>Repositories</span>
-          </TabsTrigger>
-          <TabsTrigger value="issues" size="small">
-            <div className="text-[18px]">
-              <HowToVoteOutlined fontSize="inherit" />
-            </div>
-            <span>Issues</span>
-          </TabsTrigger>
-          <TabsTrigger value="subscriptions" size="small">
-            <div className="text-[18px]">
-              <Bolt fontSize="inherit" />
-            </div>
-            <span>Subscriptions</span>
-          </TabsTrigger>
-          <TabsTrigger value="campaigns" size="small">
-            <div className="text-[18px]">
-              <LandscapeOutlined fontSize="inherit" />
-            </div>
-            <span>Campaigns</span>
-          </TabsTrigger>
-        </TabsList>
+        <OrganizationPublicPageNav />
       </div>
 
       <div className="flex flex-row gap-x-24 py-16">
@@ -115,11 +75,11 @@ const OrganizationPublicPage = ({
                 name={organization.name}
                 avatar_url={organization.avatar_url}
               />
-              {organization.pretty_name && (
-                <h1 className="dark:text-polar-50 text-2xl font-normal text-gray-800">
-                  {organization.pretty_name}
+              {
+                <h1 className="dark:text-polar-50 text-2xl font-normal capitalize text-gray-800">
+                  {organization.pretty_name ?? organization.name}
                 </h1>
-              )}
+              }
               <h3 className="dark:text-polar-500 text-md font-normal text-gray-600">
                 @{organization.name}
               </h3>
@@ -209,51 +169,52 @@ const OrganizationPublicPage = ({
             </div>
           )}
 
-          <div className="flex flex-col gap-y-4">
-            <div className="flex flex-row items-start justify-between">
-              <h3>Campaigns</h3>
-              <h3>3</h3>
-            </div>
-            <div className="flex flex-col flex-wrap gap-4">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={twMerge(
-                    'dark:border-polar-700 flex flex-col gap-y-4 rounded-2xl border border-gray-200 p-4',
-                    i === 0 && 'dark:bg-polar-800 border-blue-100 bg-blue-50',
-                  )}
-                >
-                  <h4 className="text-sm font-medium">Pydantic v{i + 1}</h4>
+          {isFeatureEnabled('subscriptions') && (
+            <div className="flex flex-col gap-y-4">
+              <div className="flex flex-row items-start justify-between">
+                <h3>Campaigns</h3>
+                <h3>3</h3>
+              </div>
+              <div className="flex flex-col flex-wrap gap-4">
+                {Array.from({ length: 3 }).map((_, i) => (
                   <div
-                    style={{
-                      display: 'flex',
-                      borderRadius: '2px',
-                      overflow: 'hidden',
-                    }}
+                    key={i}
+                    className={twMerge(
+                      'dark:border-polar-700 flex flex-col gap-y-4 rounded-2xl border border-gray-200 p-4',
+                      i === 0 && 'dark:bg-polar-800 border-blue-100 bg-blue-50',
+                    )}
                   >
+                    <h4 className="text-sm font-medium">Pydantic v{i + 1}</h4>
                     <div
                       style={{
-                        width: `${80 / (i * 2 + 1)}%`,
-                        height: '4px',
-                        backgroundColor: '#4667CA', // blue-600
-
-                        transitionProperty: 'all',
-                        transitionDuration: '200ms',
+                        display: 'flex',
+                        borderRadius: '2px',
+                        overflow: 'hidden',
                       }}
-                    ></div>
-                    <div
-                      className="dark:bg-polar-700 bg-gray-200"
-                      style={{
-                        flexGrow: '1',
-                        height: '4px',
-                      }}
-                    ></div>
+                    >
+                      <div
+                        style={{
+                          width: `${80 / (i * 2 + 1)}%`,
+                          height: '4px',
+                          backgroundColor: '#4667CA', // blue-600
+                          transitionProperty: 'all',
+                          transitionDuration: '200ms',
+                        }}
+                      />
+                      <div
+                        className="dark:bg-polar-700 bg-gray-200"
+                        style={{
+                          flexGrow: '1',
+                          height: '4px',
+                        }}
+                      ></div>
+                    </div>
+                    <h4 className="text-xs text-blue-500">View Campaign</h4>
                   </div>
-                  <h4 className="text-xs text-blue-500">View Campaign</h4>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
         <TabsContent className="w-full" value="overview">
           <div className="flex w-full flex-col gap-y-8">
@@ -280,16 +241,14 @@ const OrganizationPublicPage = ({
             repositories={repositories}
           />
         </TabsContent>
-        <TabsContent className="w-full" value="issues">
-          <h1 className="pb-8 text-lg">Issues looking for funding</h1>
-          <IssuesLookingForFunding organization={organization} />
-        </TabsContent>
-        <TabsContent className="w-full" value="subscriptions">
-          <OrganizationSubscriptionsPublicPage
-            organization={organization}
-            subscriptionTiers={subscriptionTiers}
-          />
-        </TabsContent>
+        {isFeatureEnabled('subscriptions') && (
+          <TabsContent className="w-full" value="subscriptions">
+            <OrganizationSubscriptionsPublicPage
+              organization={organization}
+              subscriptionTiers={subscriptionTiers}
+            />
+          </TabsContent>
+        )}
       </div>
 
       <HowItWorks />

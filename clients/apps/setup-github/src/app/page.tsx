@@ -20,7 +20,7 @@ export default function Home() {
       {
         // Redirect URL in the github app manifest setup flow
         // Will not be a part of the app
-        redirect_url: `http://${window.location.host}/callback`,
+        redirect_url: `${host}:3001/callback`,
 
         name: `polar-${process.env.NEXT_PUBLIC_CODESPACE_NAME}`.substring(
           0,
@@ -40,7 +40,7 @@ export default function Home() {
           pull_requests: 'write',
           members: 'read',
           organization_events: 'read',
-          emails: "read",
+          emails: 'read',
         },
         default_events: [
           'issues',

@@ -57,7 +57,7 @@ class State(TypedDict):
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     async with worker.lifespan():
-        engine = create_engine()
+        engine = create_engine("app")
         sessionmaker = create_sessionmaker(engine)
 
         log.info("Polar API started")

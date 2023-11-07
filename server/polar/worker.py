@@ -89,7 +89,7 @@ class WorkerSettings:
             raise Exception("arq_pool already exists in startup")
         arq_pool = await create_pool()
 
-        engine = create_engine()
+        engine = create_engine("worker")
         sessionmaker = create_sessionmaker(engine)
         ctx.update({"engine": engine, "sessionmaker": sessionmaker})
 

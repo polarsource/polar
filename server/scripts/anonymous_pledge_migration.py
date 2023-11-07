@@ -46,7 +46,7 @@ async def anonymous_pledge_migration(
         False, help="If `True`, changes won't be commited to the database."
     ),
 ) -> None:
-    engine = create_engine()
+    engine = create_engine("script")
     async with engine.connect() as connection:
         async with connection.begin() as transaction:
             session = AsyncSession(

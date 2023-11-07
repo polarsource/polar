@@ -1,5 +1,3 @@
-from typing import Any
-
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -10,11 +8,16 @@ from sqlalchemy.ext.asyncio import (
 from ..extensions.sqlalchemy import sql
 
 
-def create_engine(*, dsn: str, debug: bool = False) -> AsyncEngine:
-    engine_options: dict[str, Any] = dict(
+def create_engine(
+    *, dsn: str, application_name: str | None = None, debug: bool = False
+) -> AsyncEngine:
+    return create_async_engine(
+        dsn,
         echo=debug,
+        connect_args={"server_settings": {"application_name": application_name}}
+        if application_name
+        else {},
     )
-    return create_async_engine(dsn, **engine_options)
 
 
 def create_sessionmaker(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:

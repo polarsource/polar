@@ -11,7 +11,7 @@ from polar.integrations.github.service import (
     github_repository,
 )
 from polar.kit.db.postgres import create_sessionmaker
-from polar.postgres import AsyncEngineLocal
+from polar.postgres import create_engine
 
 #
 # This file contains scripts ready that are safe to run in production
@@ -19,8 +19,8 @@ from polar.postgres import AsyncEngineLocal
 
 cli = typer.Typer()
 
-
-AsyncSessionLocal = create_sessionmaker(engine=AsyncEngineLocal)
+engine = create_engine("script")
+AsyncSessionLocal = create_sessionmaker(engine=engine)
 
 
 def typer_async(f):  # type: ignore

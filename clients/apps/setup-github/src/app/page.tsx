@@ -1,44 +1,51 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+
 export default function Home() {
-  const manifest = JSON.stringify(
-    {
-      // Redirect URL in the github app manifest setup flow
-      // Will not be a part of the app
-      redirect_url: `http://${window.location.host}/callback`,
+  const [manifest, setManifest] = useState<string>('')
 
-      name: 'My-Polar-Dev',
-      url: 'http://localhost',
-      hook_attributes: {
-        url: 'https://polarzegl.eu.ngrok.io/api/v1/integrations/github/webhook',
-      },
+  useEffect(() => {
+    const m = JSON.stringify(
+      {
+        // Redirect URL in the github app manifest setup flow
+        // Will not be a part of the app
+        redirect_url: `http://${window.location.host}/callback`,
 
-      setup_url:
-        'https://polarzegl.eu.ngrok.io/github/installation?provider=github',
-      setup_on_update: true,
-      callback_urls: ['https://polarzegl.eu.ngrok.io/github/session'],
-      public: true,
-      default_permissions: {
-        issues: 'write',
-        pull_requests: 'write',
-        members: 'read',
-        organization_events: 'read',
+        name: 'My-Polar-Dev',
+        url: 'http://localhost',
+        hook_attributes: {
+          url: 'https://polarzegl.eu.ngrok.io/api/v1/integrations/github/webhook',
+        },
+
+        setup_url:
+          'https://polarzegl.eu.ngrok.io/github/installation?provider=github',
+        setup_on_update: true,
+        callback_urls: ['https://polarzegl.eu.ngrok.io/github/session'],
+        public: true,
+        default_permissions: {
+          issues: 'write',
+          pull_requests: 'write',
+          members: 'read',
+          organization_events: 'read',
+        },
+        default_events: [
+          'issues',
+          'issue_comment',
+          'label',
+          'pull_request_review',
+          'pull_request_review_comment',
+          'pull_request_review_thread',
+          'public',
+          'repository',
+          'milestone',
+        ],
       },
-      default_events: [
-        'issues',
-        'issue_comment',
-        'label',
-        'pull_request_review',
-        'pull_request_review_comment',
-        'pull_request_review_thread',
-        'public',
-        'repository',
-        'milestone',
-      ],
-    },
-    null,
-    4,
-  )
+      null,
+      4,
+    )
+    setManifest(m)
+  }, [])
 
   return (
     <main className="flex min-h-screen flex-col  gap-12 p-24">

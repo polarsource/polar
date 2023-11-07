@@ -61,12 +61,24 @@
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// This can be used to network with other containers or the host.
-	// "forwardPorts": [5000, 5432],
+	"forwardPorts": [3000, 6006, 8000],
 	
 	"remoteUser": "vscode",
 	"postStartCommand": "bash /workspace/.devcontainer/post_start_command.sh",
 
 	"remoteEnv": {
 		"POLAR_ENV_FILE":".env.devcontainer"
+	},
+
+	"portsAttributes": {
+		"3000": {
+			"label": "web"
+		},
+		"6006": {
+			"label": "storybook"
+		},
+		"8000": {
+			"label": "api"
+		}
 	}
 }

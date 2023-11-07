@@ -79,14 +79,14 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   const variantStyles = {
     default: {
       name: 'text-lg',
-      card: 'p-8 min-w-[280px] max-w-[320px]',
+      card: 'p-8 md:min-w-[280px] md:max-w-[320px]',
       priceLabel: 'text-5xl !font-[200]',
       description: 'text-sm',
       footer: 'mt-4',
     },
     small: {
       name: 'text-md',
-      card: 'p-6 min-w-[230px] max-w-[300px]',
+      card: 'p-6 md:min-w-[230px] md:max-w-[300px] min-w-[260px] max-w-[260px]',
       priceLabel: 'text-4xl !font-[200]',
       description: 'text-sm',
       footer: 'mt-none',

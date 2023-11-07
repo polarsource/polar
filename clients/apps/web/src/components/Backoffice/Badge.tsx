@@ -40,7 +40,7 @@ const Badge = () => {
       {successURL && (
         <div className="bg-green-200 px-4 py-2">
           <strong>Success!</strong>{' '}
-          <a href={successURL} target="_blank">
+          <a href={successURL} target="_blank" rel="noopener noreferrer">
             {successURL}
           </a>
         </div>

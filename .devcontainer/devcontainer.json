@@ -4,21 +4,12 @@
 	"service": "app",
 	"workspaceFolder": "/workspace",
 
-
-	"features": {
-		// "ghcr.io/devcontainers-contrib/features/poetry:2" : {},
-		// "ghcr.io/devcontainers-contrib/features/pnpm:2": {}
-		// "ghcr.io/devcontainers/features/node:1": {},
-	},
-
 	// Configure tool-specific properties.
 	"customizations": {
-
+		
+		// Auto open these files whrn running on GitHub Codespaces
 		"codespaces": {
 			"openFiles": [
-			  //"README.md",
-			  //"scripts/tsconfig.json",
-			  //"docs/main/CODING_STANDARDS.md"
 			  ".devcontainer/README.md",
 			  "server/.env.devcontainer"
 			  
@@ -27,26 +18,15 @@
 
 		// Configure properties specific to VS Code.
 		"vscode": {
-			// Set *default* container specific settings.json values on container create.
 			"settings": {
 				"python.defaultInterpreterPath": "/usr/local/bin/python",
-				// 	"python.linting.enabled": true,
-				// 	"python.linting.pylintEnabled": true,
-				// 	"python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
-				// 	"python.formatting.blackPath": "/usr/local/py-utils/bin/black",
-				// 	"python.formatting.yapfPath": "/usr/local/py-utils/bin/yapf",
-				// 	"python.linting.banditPath": "/usr/local/py-utils/bin/bandit",
-				// 	"python.linting.flake8Path": "/usr/local/py-utils/bin/flake8",
-				// 	"python.linting.mypyPath": "/usr/local/py-utils/bin/mypy",
-				// 	"python.linting.pycodestylePath": "/usr/local/py-utils/bin/pycodestyle",
-				// 	"python.linting.pydocstylePath": "/usr/local/py-utils/bin/pydocstyle",
-				// 	"python.linting.pylintPath": "/usr/local/py-utils/bin/pylint",
-				// 	"python.testing.pytestPath": "/usr/local/py-utils/bin/pytest"
 
-				
+				// We're doing most of our configuration in the .code-workspace, instead of here.
+				// Try to auto-open the workspace
+
 				"autoOpenWorkspace.enableAutoOpenAlwaysFirst": true
 			},
-			// Add the IDs of extensions you want installed when the container is created.
+			// Extensions that are installed when the devcontainer is setup
 			"extensions": [
 				"ms-python.python",
 				"charliermarsh.ruff",
@@ -59,9 +39,7 @@
 		}
 	},
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// This can be used to network with other containers or the host.
-	"forwardPorts": [3000, 6006, 8000],
+	
 	
 	"remoteUser": "vscode",
 	"postStartCommand": "bash /workspace/.devcontainer/post_start_command.sh",
@@ -70,6 +48,9 @@
 		"POLAR_ENV_FILE":".env.devcontainer"
 	},
 
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// This can be used to network with other containers or the host.
+	"forwardPorts": [3000, 6006, 8000],
 	"portsAttributes": {
 		"3000": {
 			"label": "web"

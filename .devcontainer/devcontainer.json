@@ -13,11 +13,23 @@
 
 	// Configure tool-specific properties.
 	"customizations": {
+
+		"codespaces": {
+			"openFiles": [
+			  //"README.md",
+			  //"scripts/tsconfig.json",
+			  //"docs/main/CODING_STANDARDS.md"
+			  ".devcontainer/README.md",
+			  "server/.env.devcontainer"
+			  
+			]
+		},
+
 		// Configure properties specific to VS Code.
 		"vscode": {
 			// Set *default* container specific settings.json values on container create.
 			"settings": {
-				"python.defaultInterpreterPath": "/usr/local/bin/python"
+				"python.defaultInterpreterPath": "/usr/local/bin/python",
 				// 	"python.linting.enabled": true,
 				// 	"python.linting.pylintEnabled": true,
 				// 	"python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
@@ -30,6 +42,9 @@
 				// 	"python.linting.pydocstylePath": "/usr/local/py-utils/bin/pydocstyle",
 				// 	"python.linting.pylintPath": "/usr/local/py-utils/bin/pylint",
 				// 	"python.testing.pytestPath": "/usr/local/py-utils/bin/pytest"
+
+				
+				"autoOpenWorkspace.enableAutoOpenAlwaysFirst": true
 			},
 			// Add the IDs of extensions you want installed when the container is created.
 			"extensions": [
@@ -38,10 +53,12 @@
 				"ms-python.mypy-type-checker",
 				"littlefoxteam.vscode-python-test-adapter",
 				"esbenp.prettier-vscode",
-				"bradlc.vscode-tailwindcss"
+				"bradlc.vscode-tailwindcss",
+				"zoma.vscode-auto-open-workspace"
 			]
 		}
 	},
+
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// This can be used to network with other containers or the host.
 	// "forwardPorts": [5000, 5432],

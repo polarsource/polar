@@ -40,27 +40,6 @@ export default function Home() {
     4,
   )
 
-  // https://polarzegl.eu.ngrok.io/github/installation?code=8c630b4cef5467ea7bfa180332f175e09131cbf2&provider=github&state=abc123
-
-  // const createGitHubApp = () => {
-  //   input = document.getElementById('manifest')
-  //   input.value = JSON.stringify({
-  //     name: 'Octoapp',
-  //     url: 'https://www.example.com',
-  //     hook_attributes: {
-  //       url: 'https://example.com/github/events',
-  //     },
-  //     redirect_url: 'https://example.com/redirect',
-  //     callback_urls: ['https://example.com/callback'],
-  //     public: true,
-  //     default_permissions: {
-  //       issues: 'write',
-  //       checks: 'write',
-  //     },
-  //     default_events: ['issues', 'issue_comment', 'check_suite', 'check_run'],
-  //   })
-  // }
-
   return (
     <main className="flex min-h-screen flex-col  gap-12 p-24">
       <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">

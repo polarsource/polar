@@ -7,8 +7,8 @@ export default function Page() {
         </p>
       </div>
       <div className="text-gray-800">
-        BOOM! You're done! Updated .env files have been written to disk. You can
-        close this window.
+        BOOM! You&apos;re done! Updated .env files have been written to disk.
+        You can close this window.
       </div>
     </main>
   )

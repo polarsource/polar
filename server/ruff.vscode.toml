@@ -1,0 +1,7 @@
+# Specific Ruff overrides when running inside VS Code.
+
+extend = "./pyproject.toml"
+
+unfixable = [
+    "F401"  # Prevent to remove unused imports when saving file
+]

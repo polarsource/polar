@@ -41,4 +41,5 @@ StaggerReveal.Child = (props: HTMLMotionProps<'div'>) => {
   return <motion.div {...props} variants={revealVariants} />
 }
 
+/** @ts-ignore */
 StaggerReveal.Child.displayName = 'StaggerReveal.Child'

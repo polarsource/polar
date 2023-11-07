@@ -104,6 +104,7 @@ env.bak/
 venv.bak/
 !.env.template
 !.env.testing
+.env.devcontainer
 
 # Spyder project settings
 .spyderproject
@@ -117,7 +118,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-.dmypy.json
 dmypy.json
 
 # Pyre type checker

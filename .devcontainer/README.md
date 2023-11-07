@@ -22,7 +22,6 @@ Requires no configuration.
 
 Run the storybook in the terminal with `cd /workspace/clients && pnpm storybook`
 
-
 # Testing
 
 ## Testing the api

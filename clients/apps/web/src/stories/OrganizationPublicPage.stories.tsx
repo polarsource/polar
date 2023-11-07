@@ -2,7 +2,7 @@ import { PolarQueryClientProvider } from '@/app/providers'
 import PublicLayout from '@/components/Layout/PublicLayout'
 import OrganizationPublicPage from '@/components/Organization/OrganizationPublicPage'
 import type { Meta, StoryObj } from '@storybook/react'
-import { issueFunding, org, repo } from 'polarkit/testdata'
+import { org, repo } from 'polarkit/testdata'
 
 const meta: Meta<typeof OrganizationPublicPage> = {
   title: 'Pages/OrganizationPublicPage',
@@ -37,9 +37,9 @@ export const Default: Story = {
   args: {
     organization: orgWithBio,
     repositories: [repo],
-    totalIssueCount: 4,
-    issuesFunding: [issueFunding, issueFunding, issueFunding, issueFunding],
     subscriptionTiers: [],
+    subscriptionSummary: [],
+    currentTab: 'overview',
   },
   render: (args) => {
     return (

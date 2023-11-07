@@ -25,4 +25,5 @@
     },
     "editor.defaultFormatter": "charliermarsh.ruff"
   },
+  "ruff.lint.args": ["--config=ruff.vscode.toml"]
 }

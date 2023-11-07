@@ -35,6 +35,8 @@ export const StaggerReveal = ({ transition, ...props }: StaggerRevealProps) => {
   )
 }
 
+StaggerReveal.displayName = 'StaggerReveal'
+
 StaggerReveal.Child = (props: HTMLMotionProps<'div'>) => {
   return <motion.div {...props} variants={revealVariants} />
 }

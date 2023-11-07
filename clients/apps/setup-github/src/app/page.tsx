@@ -4,30 +4,43 @@ import { useEffect, useState } from 'react'
 
 export default function Home() {
   const [manifest, setManifest] = useState<string>('')
+  const [isGitHubCodespace, setIsGitHubCodespace] = useState(false)
 
   useEffect(() => {
+    let host = window.location.host
+
+    if (process.env.NEXT_PUBLIC_CODESPACE_NAME) {
+      host = `https://${process.env.NEXT_PUBLIC_CODESPACE_NAME}.${process.env.NEXT_PUBLIC_GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`
+      setIsGitHubCodespace(true)
+    } else {
+      setIsGitHubCodespace(false)
+    }
+
     const m = JSON.stringify(
       {
         // Redirect URL in the github app manifest setup flow
         // Will not be a part of the app
         redirect_url: `http://${window.location.host}/callback`,
 
-        name: 'My-Polar-Dev',
+        name: `polar-${process.env.NEXT_PUBLIC_CODESPACE_NAME}`.substring(
+          0,
+          32,
+        ),
         url: 'http://localhost',
         hook_attributes: {
-          url: 'https://polarzegl.eu.ngrok.io/api/v1/integrations/github/webhook',
+          url: `${host}:8000/api/v1/integrations/github/webhook`,
         },
 
-        setup_url:
-          'https://polarzegl.eu.ngrok.io/github/installation?provider=github',
+        setup_url: `${host}:3000/github/installation?provider=github`,
         setup_on_update: true,
-        callback_urls: ['https://polarzegl.eu.ngrok.io/github/session'],
+        callback_urls: [`${host}:3000/github/session`],
         public: true,
         default_permissions: {
           issues: 'write',
           pull_requests: 'write',
           members: 'read',
           organization_events: 'read',
+          emails: "read",
         },
         default_events: [
           'issues',
@@ -46,6 +59,12 @@ export default function Home() {
     )
     setManifest(m)
   }, [])
+
+  if (!manifest) {
+    return (
+      <main className="flex min-h-screen flex-col  gap-12 p-24">Loading..</main>
+    )
+  }
 
   return (
     <main className="flex min-h-screen flex-col  gap-12 p-24">
@@ -81,6 +100,17 @@ export default function Home() {
           &nbsp;👈👈
         </form>
       </div>
+      {isGitHubCodespace ? (
+        <div>
+          You&apos;re running on GitHub Codespace, this should work out of the
+          box!
+        </div>
+      ) : (
+        <div>
+          Warning: You&apos;re not running in a tested environment (like GitHub
+          Codespace), this might not work.
+        </div>
+      )}
       <div className="text-gray-600">
         <h3>Using the following Manifest</h3>
         <pre>

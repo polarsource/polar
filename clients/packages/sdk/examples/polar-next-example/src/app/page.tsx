@@ -60,6 +60,7 @@ export default async function Home() {
               target="_blank"
               className="text-md text-blue-500 underline"
               href={`https://github.com/${issue.repository.organization.name}/${issue.repository.name}/issues/${issue.number}`}
+              rel="noopener noreferrer"
             >
               {issue.title}
             </a>

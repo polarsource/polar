@@ -13,6 +13,7 @@ const MetaNavigation = () => {
             )}
             href={n.link}
             target="_blank"
+            rel="noopener noreferrer"
           >
             {'icon' in n && n.icon ? <span>{n.icon}</span> : undefined}
             <span className="text-sm">{n.title}</span>

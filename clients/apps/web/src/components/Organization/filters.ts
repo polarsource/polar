@@ -9,7 +9,7 @@ export type FundingFilters = {
 
 export const DefaultFilters: FundingFilters = {
   q: undefined,
-  sort: undefined,
+  sort: [ListFundingSortBy.MOST_RECENTLY_FUNDED],
   badged: undefined,
   closed: false,
 }

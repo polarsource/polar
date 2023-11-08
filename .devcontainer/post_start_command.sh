@@ -8,7 +8,6 @@ set -x
 sudo chown 1000:1000 /workspace/server/.venv/
 cd /workspace/server
 poetry install
-poetry run task db_migrate
 echo "🐻‍❄️✅ Server ready"
 
 # Clients setup

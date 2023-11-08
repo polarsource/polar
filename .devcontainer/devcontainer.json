@@ -4,6 +4,13 @@
 	"service": "app",
 	"workspaceFolder": "/workspace",
 
+	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker:1": {
+			"version": "latest",
+			"moby": true
+		}
+	},
+
 	// Configure tool-specific properties.
 	"customizations": {
 		
@@ -38,7 +45,6 @@
 			]
 		}
 	},
-
 	
 	
 	"remoteUser": "vscode",

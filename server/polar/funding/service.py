@@ -3,7 +3,17 @@ from enum import StrEnum
 from typing import Any, cast
 from uuid import UUID
 
-from sqlalchemy import Select, UnaryExpression, and_, desc, func, or_, select, text
+from sqlalchemy import (
+    Select,
+    UnaryExpression,
+    and_,
+    desc,
+    func,
+    nulls_last,
+    or_,
+    select,
+    text,
+)
 from sqlalchemy.orm import contains_eager
 
 from polar.authz.service import Anonymous, Subject
@@ -18,6 +28,7 @@ class ListFundingSortBy(StrEnum):
     oldest = "oldest"
     newest = "newest"
     most_funded = "most_funded"
+    most_recently_funded = "most_recently_funded"
     most_engagement = "most_engagement"
 
 
@@ -102,6 +113,8 @@ class FundingService:
                 order_by_clauses.append(Issue.created_at.desc())
             elif criterion == ListFundingSortBy.most_funded:
                 order_by_clauses.append(desc(text("total")))
+            elif criterion == ListFundingSortBy.most_recently_funded:
+                order_by_clauses.append(nulls_last(desc(text("last_pledged_at"))))
             elif criterion == ListFundingSortBy.most_engagement:
                 order_by_clauses.append(Issue.total_engagement_count.desc())
         statement = statement.order_by(*order_by_clauses)
@@ -158,6 +171,9 @@ class FundingService:
             func.sum(Pledge.amount).over(partition_by=Issue.id),
             0,
         ).label("total")
+        last_pledged_at_column = func.coalesce(
+            func.max(Pledge.created_at).over(partition_by=Issue.id)
+        ).label("last_pledged_at")
         statement = (
             statement.join(
                 Pledge,
@@ -179,7 +195,7 @@ class FundingService:
                     Pledge.on_behalf_of_organization
                 )
             )
-            .add_columns(total_column)
+            .add_columns(total_column, last_pledged_at_column)
         )
 
         for pledge_type in PledgeType:

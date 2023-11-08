@@ -163,9 +163,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         repository: Repository | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Subscription], int]:
-        statement = select(Subscription).options(
-            joinedload(Subscription.user),
-            joinedload(Subscription.subscription_tier),
+        statement = (
+            select(Subscription)
+            .join(Subscription.subscription_tier)
+            .options(
+                joinedload(Subscription.user),
+                contains_eager(Subscription.subscription_tier),
+            )
         )
 
         if organization is not None:

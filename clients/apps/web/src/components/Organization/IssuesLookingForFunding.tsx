@@ -126,7 +126,7 @@ const IssuesLookingForFunding = ({
                     href={`/${i.issue.repository.organization.name}/${i.issue.repository.name}/issues/${i.issue.number}`}
                     className="font-medium text-blue-600"
                   >
-                    <Button size="sm" variant="secondary">
+                    <Button size="sm" variant="secondary" asChild>
                       <FavoriteBorderOutlined fontSize="inherit" />
                       <span className="ml-1.5">Fund</span>
                     </Button>
@@ -310,7 +310,7 @@ export const IssuesFilter = ({
 
       <div className="flex w-full flex-row items-center gap-x-4 md:w-auto">
         <DropdownMenu>
-          <DropdownMenuTrigger>
+          <DropdownMenuTrigger className="outline-none">
             <Button variant="secondary" asChild>
               <FunnelIcon className="dark:text-polar-300 mr-2 h-4 w-4" />
               <span>Filter</span>
@@ -337,7 +337,7 @@ export const IssuesFilter = ({
           </DropdownMenuContent>
         </DropdownMenu>
         <DropdownMenu>
-          <DropdownMenuTrigger>
+          <DropdownMenuTrigger className="outline-none">
             <Button variant="secondary" asChild>
               <ArrowsUpDownIcon className="dark:text-polar-300 mr-2 h-4 w-4" />
               <span>

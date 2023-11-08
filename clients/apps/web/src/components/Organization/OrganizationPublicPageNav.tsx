@@ -75,8 +75,13 @@ export const OrganizationPublicPageNav = () => {
           </TabsTrigger>
         )}
       </TabsList>
-      <div className="z-50 w-full md:w-[300px]">
-        <ProfileSelection narrow showBackerLinks useOrgFromURL={false} />
+      <div className="z-50 w-full md:w-[280px]">
+        <ProfileSelection
+          narrow
+          showBackerLinks
+          useOrgFromURL={false}
+          className="border border-gray-100"
+        />
       </div>
     </div>
   )

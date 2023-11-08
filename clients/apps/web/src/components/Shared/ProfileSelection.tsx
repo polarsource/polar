@@ -72,7 +72,7 @@ const ProfileSelection = ({
         <div
           className={twMerge(
             'relative flex cursor-pointer flex-row items-center justify-between gap-x-2 px-4 transition-colors',
-            narrow ? 'py-2' : 'py-3',
+            narrow ? 'py-1.5' : 'py-3',
           )}
           onClick={() => setOpen(true)}
         >
@@ -89,7 +89,7 @@ const ProfileSelection = ({
             ref={ref}
             className={twMerge(
               'dark:bg-polar-800 dark:text-polar-400 absolute left-0 w-full overflow-hidden rounded-2xl bg-white py-2 shadow-xl',
-              narrow ? '-top-2' : '-top-1',
+              narrow ? '-top-2.5' : '-top-1',
             )}
           >
             <ul>
@@ -210,6 +210,7 @@ const Profile = (props: {
   name: string
   avatar_url: string | undefined
   type: 'backer' | 'maintainer'
+  narrow?: boolean
 }) => {
   return (
     <>

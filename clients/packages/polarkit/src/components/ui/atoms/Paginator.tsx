@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from '@mui/icons-material'
 import { useCallback, useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 import Button from './Button'
 
 interface PaginatorProps {
@@ -8,6 +9,7 @@ interface PaginatorProps {
   pageSize: number
   siblingCount?: number
   onPageChange: (page: number) => void
+  className?: string
 }
 
 const Paginator = ({
@@ -16,6 +18,7 @@ const Paginator = ({
   pageSize,
   siblingCount = 1,
   onPageChange,
+  className,
 }: PaginatorProps) => {
   const paginationRange = usePagination({
     totalCount,
@@ -40,7 +43,12 @@ const Paginator = ({
   const lastPage = paginationRange?.[paginationRange.length - 1]
 
   return (
-    <div className="flex flex-row items-center justify-center gap-x-2">
+    <div
+      className={twMerge(
+        'flex flex-row items-center justify-center gap-x-2',
+        className,
+      )}
+    >
       <Button
         variant="secondary"
         size="sm"

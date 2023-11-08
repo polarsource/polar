@@ -117,43 +117,45 @@ const IssuesLookingForFunding = ({
       </div>
       {(fundedIssues.data?.items?.length ?? 0) > 0 ? (
         <motion.div
-          className="dark:divider-polar-700 -mx-6 divide-y md:divide-y-0"
+          className="flex flex-col gap-y-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
-          {fundedIssues.data?.items?.map((i) => (
-            <Fragment key={i.issue.id}>
-              <IssueSummary
-                issue={i.issue}
-                right={
-                  <Link
-                    href={`/${i.issue.repository.organization.name}/${i.issue.repository.name}/issues/${i.issue.number}`}
-                    className="font-medium text-blue-600"
-                  >
-                    <Button size="sm" variant="secondary" asChild>
-                      <FavoriteBorderOutlined fontSize="inherit" />
-                      <span className="ml-1.5">Fund</span>
-                    </Button>
-                  </Link>
-                }
-              />
-              {(i.total.amount > 0 ||
-                !!i.funding_goal ||
-                !!i.issue.upfront_split_to_contributors) && (
-                <IssueActivityBox>
-                  <div className="p-4">
-                    <IssueFundingDetails
-                      issue={i.issue}
-                      total={i.total}
-                      fundingGoal={i.funding_goal}
-                      pledgesSummaries={i.pledges_summaries}
-                    />
-                  </div>
-                </IssueActivityBox>
-              )}
-            </Fragment>
-          ))}
+          <div className="dark:divider-polar-700 -mx-6 divide-y md:divide-y-0">
+            {fundedIssues.data?.items?.map((i) => (
+              <Fragment key={i.issue.id}>
+                <IssueSummary
+                  issue={i.issue}
+                  right={
+                    <Link
+                      href={`/${i.issue.repository.organization.name}/${i.issue.repository.name}/issues/${i.issue.number}`}
+                      className="font-medium text-blue-600"
+                    >
+                      <Button size="sm" variant="secondary" asChild>
+                        <FavoriteBorderOutlined fontSize="inherit" />
+                        <span className="ml-1.5">Fund</span>
+                      </Button>
+                    </Link>
+                  }
+                />
+                {(i.total.amount > 0 ||
+                  !!i.funding_goal ||
+                  !!i.issue.upfront_split_to_contributors) && (
+                  <IssueActivityBox>
+                    <div className="p-4">
+                      <IssueFundingDetails
+                        issue={i.issue}
+                        total={i.total}
+                        fundingGoal={i.funding_goal}
+                        pledgesSummaries={i.pledges_summaries}
+                      />
+                    </div>
+                  </IssueActivityBox>
+                )}
+              </Fragment>
+            ))}
+          </div>
           <Paginator
             totalCount={fundedIssues.data?.pagination.total_count ?? 0}
             currentPage={currentPage}

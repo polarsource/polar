@@ -86,6 +86,9 @@ const IssuesLookingForFunding = ({
     if (s?.has('badged')) {
       f.badged = true
     }
+    if (s?.has('showClosed')) {
+      f.closed = undefined // undefined to show both closed and open issues
+    }
 
     return f
   }, [])
@@ -98,6 +101,7 @@ const IssuesLookingForFunding = ({
     sort: filters.sort,
     badged: filters.badged,
     q: filters.q,
+    closed: filters.closed,
   })
 
   return (
@@ -191,6 +195,10 @@ export const IssuesFilter = ({
         params.set('badged', '1')
       }
 
+      if (filters.closed === undefined) {
+        params.set('showClosed', '1')
+      }
+
       const url = new URL(window.location.href)
       const newPath = `${url.pathname}?${params.toString()}`
       router.replace(newPath, { scroll: false })
@@ -233,6 +241,18 @@ export const IssuesFilter = ({
         delete f.badged
       }
 
+      onSetFilters(f)
+      navigate(f)
+    },
+    [navigate, onSetFilters, filters],
+  )
+
+  const onShowClosed = useCallback(
+    (value: boolean) => {
+      const f: FundingFilters = {
+        ...filters,
+        closed: value ? undefined : false,
+      }
       onSetFilters(f)
       navigate(f)
     },
@@ -306,6 +326,13 @@ export const IssuesFilter = ({
               onCheckedChange={onOnlyBadgedChanged}
             >
               Badged Only
+            </DropdownMenuCheckboxItem>
+
+            <DropdownMenuCheckboxItem
+              checked={filters.closed === undefined}
+              onCheckedChange={onShowClosed}
+            >
+              Show Closed
             </DropdownMenuCheckboxItem>
           </DropdownMenuContent>
         </DropdownMenu>

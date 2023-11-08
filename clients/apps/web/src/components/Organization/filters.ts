@@ -4,12 +4,14 @@ export type FundingFilters = {
   q?: string
   badged?: boolean
   sort?: ListFundingSortBy[]
+  closed?: boolean
 }
 
 export const DefaultFilters: FundingFilters = {
   q: undefined,
   sort: undefined,
-  badged: true,
+  badged: undefined,
+  closed: false,
 }
 
 export const fundingSortingOptions = [

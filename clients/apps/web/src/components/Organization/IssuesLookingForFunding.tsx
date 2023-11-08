@@ -311,7 +311,7 @@ export const IssuesFilter = ({
       <div className="flex w-full flex-row items-center gap-x-4 md:w-auto">
         <DropdownMenu>
           <DropdownMenuTrigger>
-            <Button variant="secondary">
+            <Button variant="secondary" asChild>
               <FunnelIcon className="dark:text-polar-300 mr-2 h-4 w-4" />
               <span>Filter</span>
             </Button>
@@ -338,7 +338,7 @@ export const IssuesFilter = ({
         </DropdownMenu>
         <DropdownMenu>
           <DropdownMenuTrigger>
-            <Button variant="secondary">
+            <Button variant="secondary" asChild>
               <ArrowsUpDownIcon className="dark:text-polar-300 mr-2 h-4 w-4" />
               <span>
                 {filters?.sort?.length

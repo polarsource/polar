@@ -20,7 +20,7 @@ Run the web in the terminal with `cd /workspace/clients && pnpm dev`
 
 ## Running the api
 
-The api server is configured from `server/.env.devcontainer`. You might need to change the `POLAR_GITHUB_` variables for the server to boot.
+The api server is configured from `server/.env`. You might need to change the `POLAR_GITHUB_` variables for the server to boot.
 
 Run the api in the terminal with `cd /workspace/server && poetry run task api`
 

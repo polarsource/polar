@@ -44,10 +44,6 @@
 	"remoteUser": "vscode",
 	"postStartCommand": "bash /workspace/.devcontainer/post_start_command.sh",
 
-	"remoteEnv": {
-		"POLAR_ENV_FILE":".env.devcontainer"
-	},
-
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// This can be used to network with other containers or the host.
 	"forwardPorts": [3000, 6006, 8000],

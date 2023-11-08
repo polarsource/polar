@@ -97,6 +97,9 @@ const getSort = (sort: string | null): IssueSortBy => {
   if (sort === 'most_engagement') {
     return IssueSortBy.MOST_ENGAGEMENT
   }
+  if (sort === 'most_recently_funded') {
+    return IssueSortBy.MOST_RECENTLY_FUNDED
+  }
   return IssueSortBy.NEWEST
 }
 

@@ -78,7 +78,7 @@ const IssuesLookingForFunding = ({
   pageSize = 20,
 }: IssuesLookingForFundingProps) => {
   const search = useSearchParams()
-  const [currentPage, setCurrentPage] = useState(1)
+  const router = useRouter()
 
   const initialFilter = useMemo(() => {
     const s = search
@@ -104,6 +104,20 @@ const IssuesLookingForFunding = ({
 
   const [filters, setFilters] = useState<FundingFilters>(initialFilter)
 
+  const handleSetCurrentPage = useCallback(
+    (page: number) => {
+      const params = new URLSearchParams(search)
+      params.set('page', page.toString())
+
+      const url = new URL(window.location.href)
+      const newPath = `${url.pathname}?${params.toString()}`
+      router.replace(newPath)
+    },
+    [router, search],
+  )
+
+  const currentPage = useMemo(() => Number(search.get('page') || '1'), [search])
+
   const fundedIssues = useSearchFundedIssues({
     organizationName: organization.name,
     repositoryName: repository?.name,
@@ -111,8 +125,8 @@ const IssuesLookingForFunding = ({
     badged: filters.badged,
     q: filters.q,
     closed: filters.closed,
-    limit: pageSize,
     page: currentPage,
+    limit: pageSize,
   })
 
   return (
@@ -165,7 +179,7 @@ const IssuesLookingForFunding = ({
             totalCount={fundedIssues.data?.pagination.total_count ?? 0}
             currentPage={currentPage}
             pageSize={pageSize}
-            onPageChange={setCurrentPage}
+            onPageChange={handleSetCurrentPage}
           />
         </motion.div>
       ) : (

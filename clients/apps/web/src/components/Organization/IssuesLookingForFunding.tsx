@@ -15,7 +15,7 @@ import {
   IssueFundingDetails,
   IssueSummary,
 } from 'polarkit/components/Issue'
-import { Button, Input } from 'polarkit/components/ui/atoms'
+import { Button, Input, Paginator } from 'polarkit/components/ui/atoms'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -64,13 +64,16 @@ const getSort = (sort: string[] | null): ListFundingSortBy[] => {
 interface IssuesLookingForFundingProps {
   repository?: Repository
   organization: Organization
+  pageSize?: number
 }
 
 const IssuesLookingForFunding = ({
   organization,
   repository,
+  pageSize = 20,
 }: IssuesLookingForFundingProps) => {
   const search = useSearchParams()
+  const [currentPage, setCurrentPage] = useState(1)
 
   const initialFilter = useMemo(() => {
     const s = search
@@ -103,6 +106,8 @@ const IssuesLookingForFunding = ({
     badged: filters.badged,
     q: filters.q,
     closed: filters.closed,
+    limit: pageSize,
+    page: currentPage,
   })
 
   return (
@@ -149,6 +154,12 @@ const IssuesLookingForFunding = ({
               )}
             </Fragment>
           ))}
+          <Paginator
+            totalCount={fundedIssues.data?.pagination.total_count ?? 0}
+            currentPage={currentPage}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+          />
         </motion.div>
       ) : (
         <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">

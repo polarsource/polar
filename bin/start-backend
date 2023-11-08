@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -euo pipefail
+
+SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+
+cd "${SCRIPTPATH}/../server"
+
+poetry run task db_migrate
+poetry run task api

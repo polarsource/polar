@@ -59,6 +59,9 @@ const getSort = (sort: string[] | null): ListFundingSortBy[] => {
   if (sort?.includes('most_funded')) {
     sorting.push(ListFundingSortBy.MOST_FUNDED)
   }
+  if (sort?.includes('most_recently_funded')) {
+    sorting.push(ListFundingSortBy.MOST_RECENTLY_FUNDED)
+  }
 
   return sorting
 }

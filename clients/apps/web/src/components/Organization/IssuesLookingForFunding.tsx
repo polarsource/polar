@@ -1,10 +1,11 @@
 'use client'
 
-import { ArrowsUpDownIcon, FunnelIcon } from '@heroicons/react/24/outline'
 import {
   FavoriteBorderOutlined,
+  FilterList,
   HowToVoteOutlined,
   SearchOutlined,
+  SwapVertOutlined,
 } from '@mui/icons-material'
 import { ListFundingSortBy, Organization, Repository } from '@polar-sh/sdk'
 import { motion } from 'framer-motion'
@@ -34,6 +35,7 @@ import {
   useMemo,
   useState,
 } from 'react'
+import { twMerge } from 'tailwind-merge'
 import Spinner from '../Shared/Spinner'
 import {
   DefaultFilters,
@@ -325,7 +327,13 @@ export const IssuesFilter = ({
         <DropdownMenu>
           <DropdownMenuTrigger className="outline-none">
             <Button variant="secondary" asChild>
-              <FunnelIcon className="dark:text-polar-300 mr-2 h-4 w-4" />
+              <FilterList
+                className={twMerge(
+                  'dark:text-polar-300 mr-2 h-5 w-5',
+                  (filters?.badged === true || filters?.closed === undefined) &&
+                    'text-blue-600 dark:text-blue-600',
+                )}
+              />
               <span>Filter</span>
             </Button>
           </DropdownMenuTrigger>
@@ -352,12 +360,14 @@ export const IssuesFilter = ({
         <DropdownMenu>
           <DropdownMenuTrigger className="outline-none">
             <Button variant="secondary" asChild>
-              <ArrowsUpDownIcon className="dark:text-polar-300 mr-2 h-4 w-4" />
-              <span>
-                {filters?.sort?.length
-                  ? getFundSortingTitle(filters?.sort)
-                  : 'Sort by'}
-              </span>
+              <SwapVertOutlined
+                className={twMerge(
+                  'dark:text-polar-300 mr-2 h-5 w-5',
+                  (filters?.sort?.length ?? 0) > 0 &&
+                    'text-blue-600 dark:text-blue-600',
+                )}
+              />
+              <span>Sort by</span>
             </Button>
           </DropdownMenuTrigger>
 

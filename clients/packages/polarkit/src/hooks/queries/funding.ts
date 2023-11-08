@@ -14,6 +14,7 @@ export const useSearchFundedIssues: (v: {
   sort?: Array<ListFundingSortBy>
   badged?: boolean
   limit?: number
+  closed?: boolean
 }) => UseQueryResult<ListResourceIssueFunding> = (v: {
   organizationName?: string
   repositoryName?: string
@@ -21,6 +22,7 @@ export const useSearchFundedIssues: (v: {
   sort?: Array<ListFundingSortBy>
   badged?: boolean
   limit?: number
+  closed?: boolean
 }) =>
   useQuery({
     queryKey: [
@@ -31,6 +33,8 @@ export const useSearchFundedIssues: (v: {
       JSON.stringify({
         sort: v.sort,
         badged: v.badged,
+        closed: v.closed,
+        limit: v.limit,
       }),
     ],
     queryFn: () =>
@@ -42,6 +46,7 @@ export const useSearchFundedIssues: (v: {
         sorting: v.sort,
         badged: v.badged,
         limit: v.limit || 100,
+        closed: v.closed,
       }),
     retry: defaultRetry,
     enabled: !!v.organizationName,

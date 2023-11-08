@@ -8,9 +8,11 @@ export default function Home() {
 
   useEffect(() => {
     let host = window.location.host
+    let ingressHost = window.location.host
 
     if (process.env.NEXT_PUBLIC_CODESPACE_NAME) {
       host = `https://${process.env.NEXT_PUBLIC_CODESPACE_NAME}.${process.env.NEXT_PUBLIC_GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`
+      ingressHost = `https://${process.env.NEXT_PUBLIC_CODESPACE_NAME}-8080.${process.env.NEXT_PUBLIC_GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`
       setIsGitHubCodespace(true)
     } else {
       setIsGitHubCodespace(false)
@@ -20,7 +22,7 @@ export default function Home() {
       {
         // Redirect URL in the github app manifest setup flow
         // Will not be a part of the app
-        redirect_url: `${host}:3001/callback`,
+        redirect_url: `${window.location.protocol}//${window.location.host}/callback`,
 
         name: `polar-${process.env.NEXT_PUBLIC_CODESPACE_NAME}`.substring(
           0,
@@ -28,12 +30,12 @@ export default function Home() {
         ),
         url: 'http://localhost',
         hook_attributes: {
-          url: `${host}:8000/api/v1/integrations/github/webhook`,
+          url: `${ingressHost}/api/v1/integrations/github/webhook`,
         },
 
-        setup_url: `${host}:3000/github/installation?provider=github`,
+        setup_url: `${ingressHost}/github/installation?provider=github`,
         setup_on_update: true,
-        callback_urls: [`${host}:3000/github/session`],
+        callback_urls: [`${ingressHost}/github/session`],
         public: true,
         default_permissions: {
           issues: 'write',
@@ -111,7 +113,7 @@ export default function Home() {
           Codespace), this might not work.
         </div>
       )}
-      <div className="text-gray-600">
+      <div className="text-xs text-gray-600">
         <h3>Using the following Manifest</h3>
         <pre>
           <code>{manifest}</code>

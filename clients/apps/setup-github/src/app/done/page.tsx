@@ -1,4 +1,20 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+
 export default function Page() {
+  const [link, setLink] = useState('')
+
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_CODESPACE_NAME) {
+      setLink(
+        `https://${process.env.NEXT_PUBLIC_CODESPACE_NAME}-8080.${process.env.NEXT_PUBLIC_GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}/login`,
+      )
+    } else {
+      setLink('')
+    }
+  })
+
   return (
     <main className="flex min-h-screen flex-col  gap-12 p-24">
       <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
@@ -10,6 +26,19 @@ export default function Page() {
         BOOM! You&apos;re done! Updated .env files have been written to disk.
         You can close this window.
       </div>
+      <div className="text-gray-800">
+        👉👉&nbsp;
+        <a
+          href={link}
+          type="submit"
+          className="rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+        >
+          Go To Polar App
+        </a>
+        &nbsp;👈👈
+      </div>
+
+      <pre className="text-xs text-gray-800">{link}</pre>
     </main>
   )
 }

@@ -16,14 +16,18 @@ const addEnv = (contents: string, key: string, value: any): string => {
   }
 }
 
-const serverEnv = async (
-  path: string,
-  host: string,
-  hostProto: string,
-  app: any,
-) => {
+const serverEnv = async ({
+  path,
+  ingressHost,
+  ingressHostProto,
+  app,
+}: {
+  path: string
+  ingressHost: string
+  ingressHostProto: string
+  app: any
+}) => {
   let file: string = ''
-
   try {
     file = await fs.readFile(path, 'utf8')
   } catch (e) {
@@ -35,15 +39,15 @@ const serverEnv = async (
     POLAR_POSTGRES_PWD: 'polar',
     POLAR_POSTGRES_DATABASE: 'polar',
     POLAR_POSTGRES_PORT: '5432',
-    POLAR_POSTGRES_HOST: 'db',
-    POLAR_REDIS_HOST: 'redis',
+    POLAR_POSTGRES_HOST: '127.0.0.1',
+    POLAR_REDIS_HOST: '127.0.0.1',
     POLAR_REDIS_PORT: '6379',
 
-    POLAR_CORS_ORIGINS: `["http://127.0.0.1:3000", "http://localhost:3000", "https://github.com", "${hostProto}:3000"]`,
-    POLAR_BASE_URL: `${hostProto}:8000/api/v1`,
-    POLAR_FRONTEND_BASE_URL: `${hostProto}:3000`,
-    POLAR_AUTH_COOKIE_DOMAIN: `${host}`,
-    POLAR_GITHUB_REDIRECT_URL: `${hostProto}:3000/github/session`,
+    POLAR_CORS_ORIGINS: `["http://127.0.0.1:3000", "http://localhost:3000", "https://github.com", "${ingressHostProto}"]`,
+    POLAR_BASE_URL: `${ingressHostProto}/api/v1`,
+    POLAR_FRONTEND_BASE_URL: `${ingressHostProto}`,
+    POLAR_AUTH_COOKIE_DOMAIN: `${ingressHost}`,
+    POLAR_GITHUB_REDIRECT_URL: `${ingressHostProto}/github/session`,
   }
 
   // Add GitHub Env vars
@@ -62,11 +66,24 @@ const serverEnv = async (
   return newFile
 }
 
-const webEnv = async (path: string, hostProto: string, app: any) => {
-  const file = await fs.readFile(path, 'utf8')
+const webEnv = async ({
+  path,
+  ingressHostProto,
+  app,
+}: {
+  path: string
+  ingressHostProto: string
+  app: any
+}) => {
+  let file: string = ''
+  try {
+    file = await fs.readFile(path, 'utf8')
+  } catch (e) {
+    // not exists
+  }
 
   const adds: Record<string, any> = {
-    NEXT_PUBLIC_API_URL: `${hostProto}:8000`,
+    NEXT_PUBLIC_API_URL: `${ingressHostProto}`,
   }
 
   if (app && app.id) {
@@ -85,6 +102,8 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const host = `${process.env.NEXT_PUBLIC_CODESPACE_NAME}.${process.env.NEXT_PUBLIC_GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`
   const hostProto = `https://${host}`
+  const ingressHost = `${process.env.NEXT_PUBLIC_CODESPACE_NAME}-8080.${process.env.NEXT_PUBLIC_GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`
+  const ingressHostProto = `https://${ingressHost}`
 
   try {
     const code = searchParams.get('code')
@@ -113,17 +132,24 @@ export async function GET(request: Request): Promise<NextResponse> {
 
     // Server .env
     const serverEnvPath = process.cwd() + '/../../../server/.env'
-    const newServerEnv = await serverEnv(serverEnvPath, host, hostProto, parsed)
+    const newServerEnv = await serverEnv({
+      path: serverEnvPath,
+      ingressHost,
+      ingressHostProto,
+      app: parsed,
+    })
     await fs.writeFile(serverEnvPath, newServerEnv)
 
     // Web .env
     const webEnvPath = process.cwd() + '/../../../clients/apps/web/.env'
-    const newWebEnv = await webEnv(webEnvPath, hostProto, parsed)
+    const newWebEnv = await webEnv({
+      path: webEnvPath,
+      ingressHostProto,
+      app: parsed,
+    })
     await fs.writeFile(webEnvPath, newWebEnv)
 
-    return NextResponse.json({ res: `${hostProto}:3001/done` })
-
-    //return NextResponse.redirect(new URL(`/done`, request.url))
+    return NextResponse.redirect(new URL(`${hostProto}:3001/done`))
   } catch (e) {
     console.error(e)
     if (e instanceof Error) {

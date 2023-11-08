@@ -17,6 +17,7 @@ services:
 
   redis:
     image: redis
+    network_mode: service:db
 
   db:
     image: postgres:15.1-bullseye
@@ -30,11 +31,11 @@ services:
 
   ingress:
     image: caddy:2.7
-    network_mode: "host"
+    network_mode: service:db
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
-    ports:
-      - "8080:8080"
+    # ports:
+    # - "8080:8080"
 
 volumes:
   postgres-data: {}

@@ -231,7 +231,7 @@ export const useDeleteSubscriptionBenefit = (orgName?: string) =>
 
 export const useUserSubscriptions = (
   userId: string,
-  orgName: string,
+  orgName?: string,
   limit = 30,
   platform = Platforms.GITHUB,
 ) =>

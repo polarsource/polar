@@ -48,7 +48,7 @@ export const usePagination = () => {
 
       const url = new URL(window.location.href)
       const newPath = `${url.pathname}?${params.toString()}`
-      router.replace(newPath)
+      router.replace(newPath, { scroll: false })
     },
     [router, search],
   )

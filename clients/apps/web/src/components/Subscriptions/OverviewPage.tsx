@@ -138,7 +138,8 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
   return (
     <DashboardBody>
       <div className="flex flex-col gap-8">
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl">Overview</h2>
           <div className="w-full md:w-1/6">
             <SubscriptionTiersSelect
               tiersByType={subscriptionTiersByType}

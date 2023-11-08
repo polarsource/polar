@@ -28,6 +28,7 @@ import { useSearchFundedIssues } from 'polarkit/hooks'
 import {
   ChangeEvent,
   Dispatch,
+  Fragment,
   SetStateAction,
   useCallback,
   useMemo,
@@ -117,9 +118,8 @@ const IssuesLookingForFunding = ({
           transition={{ duration: 0.5 }}
         >
           {fundedIssues.data?.items?.map((i) => (
-            <>
+            <Fragment key={i.issue.id}>
               <IssueSummary
-                key={i.issue.id}
                 issue={i.issue}
                 right={
                   <Link
@@ -147,7 +147,7 @@ const IssuesLookingForFunding = ({
                   </div>
                 </IssueActivityBox>
               )}
-            </>
+            </Fragment>
           ))}
         </motion.div>
       ) : (

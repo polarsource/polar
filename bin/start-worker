@@ -6,4 +6,4 @@ SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 cd "${SCRIPTPATH}/../server"
 
-poetry run task api
+poetry run task worker

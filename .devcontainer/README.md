@@ -4,25 +4,24 @@
 
 _This is a work in progress, as we improve on our automation to remove as many of these steps as possible._
 
+## Running
+
+To get started, run the start command in the terminal
+
+```bash
+./bin/start
+```
+
+
 ## Required: Setup a GitHub App
 
-If using GitHub Codespaces:
+If this is the first time you're setting up this Codespace, you'll need to setup a the development environment first.
 
-1. `cd /workspace/clients/apps/setup-github/ && pnpm dev` in the terminal.
-2. Open the page in the browser (click "Open in Browser" in the popup)
-3. Follow the on-screen instructions
+The first step is to setup a GitHub App.
 
-## Running the web
+With the app running (`./bin/start`), go to the app running on port 3001 in the browser, and follow the instructions for how to setup a GitHub App.
 
-The web can be configured from `clients/apps/web/.env`. The `$GITHUB_` variables will be automatically filled in if running on Codespaces.
-
-Run the web in the terminal with `cd /workspace/clients && pnpm dev`
-
-## Running the api
-
-The api server is configured from `server/.env`. You might need to change the `POLAR_GITHUB_` variables for the server to boot.
-
-Run the api in the terminal with `cd /workspace/server && poetry run task api`
+In VSCode (locally or in the browser), go to the "Ports" tab and click on the 🌐 (globe) icon next to the `setup-github` app that's running on port 3001.
 
 ## Running the storybook
 
@@ -35,3 +34,18 @@ Run the storybook in the terminal with `cd /workspace/clients && pnpm storybook`
 ## Testing the api
 
 Run the server tests in the terminal with `cd /workspace/server && poetry run task test`
+
+
+### Internal Docs: How the devcontainer works
+
+Note: This this devcontainer is built to work on GitHub Codespaces. Parts of it will work in local-vscode, but it will not work as well.
+
+**Networking**
+
+All incoming traffic is sent through a Caddy process listening on port 8080. It routes traffic to Next or to the Python API depending on the path. This is needed to make the API work with GitHubs authenticating proxy.
+
+When developing, you should use the URL that's on the format `https://$NAME-8080.app.github.dev/login`.
+
+**setup-github**
+
+The setup-github app is a way to automatically create a GitHub App and populate the appropriate .env files with URLs and metadata from the Codespaces environment. It's running on port 3001.

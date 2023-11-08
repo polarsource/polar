@@ -2,9 +2,14 @@
 
 set -e
 
+# Stop all child processes when this process exits
 trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 
+./bin/prepare-backend
+
+# Run in background
 ./bin/start-backend &
 ./bin/start-frontend &
+./bin/start-worker &
 
 wait

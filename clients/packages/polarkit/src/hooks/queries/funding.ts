@@ -37,6 +37,7 @@ export const useSearchFundedIssues: (v: {
         badged: v.badged,
         closed: v.closed,
         limit: v.limit,
+        page: v.page,
       }),
     ],
     queryFn: () =>

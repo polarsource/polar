@@ -86,7 +86,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     }
 
     // Server .env
-    const serverEnvPath = process.cwd() + '/../../../server/.env.devcontainer'
+    const serverEnvPath = process.cwd() + '/../../../server/.env'
     const newServerEnv = await serverEnv(serverEnvPath, parsed)
     await fs.writeFile(serverEnvPath, newServerEnv)
 

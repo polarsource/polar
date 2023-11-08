@@ -46,10 +46,14 @@
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// This can be used to network with other containers or the host.
-	"forwardPorts": [3000, 6006, 8000],
+	"forwardPorts": [3000, 3001, 6006, 8000, 8080],
 	"portsAttributes": {
 		"3000": {
 			"label": "web",
+			"onAutoForward": "ignore"
+		},
+		"3001": {
+			"label": "setup-github",
 			"onAutoForward": "notify"
 		},
 		"6006": {
@@ -58,6 +62,11 @@
 		},
 		"8000": {
 			"label": "api",
+			"onAutoForward": "ignore"
+		},
+		"8080": {
+			"label": "api",
+			"onAutoForward": "notify"
 		}
 	}
 }

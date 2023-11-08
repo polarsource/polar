@@ -21,6 +21,7 @@ def issue_row_assertions(
     (
         issue_object,
         total,
+        last_pledged_at,
         pay_upfront_total,
         pay_on_completion_total,
         pay_directly_total,
@@ -34,6 +35,11 @@ def issue_row_assertions(
     assert len(issue.pledges) == len(active_pledges)
 
     assert total == sum([pledge.amount for pledge in active_pledges])
+    assert last_pledged_at == (
+        max([pledge.created_at for pledge in active_pledges])
+        if len(active_pledges) > 0
+        else None
+    )
     assert pay_upfront_total == sum(
         [
             pledge.amount
@@ -91,6 +97,18 @@ class TestListBy:
             session,
             Anonymous(),
             sorting=[ListFundingSortBy.most_funded],
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert results[0][0].id == issues_pledges[0][0].id
+
+    async def test_sorting_most_recently_funded(
+        self, issues_pledges: IssuesPledgesFixture, session: AsyncSession
+    ) -> None:
+        results, _ = await funding_service.list_by(
+            session,
+            Anonymous(),
+            sorting=[ListFundingSortBy.most_recently_funded],
             pagination=PaginationParams(1, 10),
         )
 

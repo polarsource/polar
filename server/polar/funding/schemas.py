@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from typing import Self, cast
 
@@ -7,7 +8,9 @@ from polar.kit.schemas import Schema
 from polar.models import Issue as IssueModel
 from polar.pledge.schemas import Pledger, PledgeType
 
-FundingResultType = tuple[IssueModel, Decimal, Decimal, Decimal, Decimal]
+FundingResultType = tuple[
+    IssueModel, Decimal, datetime | None, Decimal, Decimal, Decimal
+]
 
 
 # Public API
@@ -33,6 +36,7 @@ class IssueFunding(Schema):
         (
             issue,
             total,
+            last_pledged_at,
             pay_upfront_total,
             pay_on_completion_total,
             pay_directly_total,

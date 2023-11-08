@@ -16,7 +16,7 @@ import {
   IssueFundingDetails,
   IssueSummary,
 } from 'polarkit/components/Issue'
-import { Button, Input, Paginator } from 'polarkit/components/ui/atoms'
+import { Button, Input } from 'polarkit/components/ui/atoms'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -36,6 +36,7 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import Pagination, { usePagination } from '../Shared/Pagination'
 import Spinner from '../Shared/Spinner'
 import {
   DefaultFilters,
@@ -102,23 +103,8 @@ const IssuesLookingForFunding = ({
     return f
   }, [])
 
-  const initialPage = useMemo(() => Number(search.get('page') || '1'), [])
-
-  const [currentPage, setCurrentPage] = useState<number>(initialPage)
   const [filters, setFilters] = useState<FundingFilters>(initialFilter)
-
-  const handleSetCurrentPage = useCallback(
-    (page: number) => {
-      setCurrentPage(page)
-      const params = new URLSearchParams(search)
-      params.set('page', page.toString())
-
-      const url = new URL(window.location.href)
-      const newPath = `${url.pathname}?${params.toString()}`
-      router.replace(newPath)
-    },
-    [router, search],
-  )
+  const { currentPage, setCurrentPage } = usePagination()
 
   const fundedIssues = useSearchFundedIssues({
     organizationName: organization.name,
@@ -137,13 +123,18 @@ const IssuesLookingForFunding = ({
         <IssuesFilter filters={filters} onSetFilters={setFilters} />
       </div>
       {(fundedIssues.data?.items?.length ?? 0) > 0 ? (
-        <motion.div
-          className="flex flex-col gap-y-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
+        <Pagination
+          pageSize={pageSize}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+          totalCount={fundedIssues.data?.pagination.total_count ?? 0}
         >
-          <div className="dark:divider-polar-700 -mx-6 divide-y md:divide-y-0">
+          <motion.div
+            className="dark:divider-polar-700 -mx-6 flex flex-col divide-y md:divide-y-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
             {fundedIssues.data?.items?.map((i) => (
               <Fragment key={i.issue.id}>
                 <IssueSummary
@@ -176,14 +167,8 @@ const IssuesLookingForFunding = ({
                 )}
               </Fragment>
             ))}
-          </div>
-          <Paginator
-            totalCount={fundedIssues.data?.pagination.total_count ?? 0}
-            currentPage={currentPage}
-            pageSize={pageSize}
-            onPageChange={handleSetCurrentPage}
-          />
-        </motion.div>
+          </motion.div>
+        </Pagination>
       ) : (
         <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-64 text-gray-400">
           <span className="text-6xl">

@@ -1,3 +1,5 @@
+'use client'
+
 import { ChevronLeft, ChevronRight } from '@mui/icons-material'
 import { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -5,8 +7,8 @@ import Button from './Button'
 
 interface PaginatorProps {
   totalCount: number
-  currentPage: number
   pageSize: number
+  currentPage: number
   siblingCount?: number
   onPageChange: (page: number) => void
   className?: string
@@ -14,8 +16,8 @@ interface PaginatorProps {
 
 const Paginator = ({
   totalCount,
-  currentPage,
   pageSize,
+  currentPage,
   siblingCount = 1,
   onPageChange,
   className,

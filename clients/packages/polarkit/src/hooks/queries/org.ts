@@ -169,3 +169,11 @@ export const useOrganizationCredits = (id?: string) =>
     retry: serverErrorRetry,
     enabled: !!id,
   })
+
+export const useOrganization = (id: string) =>
+  useQuery({
+    queryKey: ['organization', id],
+    queryFn: () => api.organizations.get({ id }),
+    retry: defaultRetry,
+    enabled: !!id,
+  })

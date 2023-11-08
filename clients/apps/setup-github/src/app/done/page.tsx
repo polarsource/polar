@@ -24,7 +24,8 @@ export default function Page() {
       </div>
       <div className="text-gray-800">
         BOOM! You&apos;re done! Updated .env files have been written to disk.
-        You can close this window.
+        <br />
+        Restart the `./bin/start` script to reload your configuration.
       </div>
       <div className="text-gray-800">
         👉👉&nbsp;

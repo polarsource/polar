@@ -28,6 +28,14 @@ services:
       POSTGRES_DB: polar
       POSTGRES_PASSWORD: polar
 
+  ingress:
+    image: caddy:2.7
+    network_mode: "host"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    ports:
+      - "8080:8080"
+
 volumes:
   postgres-data: {}
   venv: {}

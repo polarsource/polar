@@ -210,7 +210,6 @@ const Profile = (props: {
   name: string
   avatar_url: string | undefined
   type: 'backer' | 'maintainer'
-  narrow?: boolean
 }) => {
   return (
     <>

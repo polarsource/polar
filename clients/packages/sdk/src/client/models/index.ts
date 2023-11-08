@@ -1153,7 +1153,8 @@ export const IssueSortBy = {
     ISSUES_DEFAULT: 'issues_default',
     MOST_ENGAGEMENT: 'most_engagement',
     MOST_POSITIVE_REACTIONS: 'most_positive_reactions',
-    FUNDING_GOAL_DESC_AND_MOST_POSITIVE_REACTIONS: 'funding_goal_desc_and_most_positive_reactions'
+    FUNDING_GOAL_DESC_AND_MOST_POSITIVE_REACTIONS: 'funding_goal_desc_and_most_positive_reactions',
+    MOST_RECENTLY_FUNDED: 'most_recently_funded'
 } as const;
 export type IssueSortBy = typeof IssueSortBy[keyof typeof IssueSortBy];
 
@@ -1218,6 +1219,7 @@ export const ListFundingSortBy = {
     OLDEST: 'oldest',
     NEWEST: 'newest',
     MOST_FUNDED: 'most_funded',
+    MOST_RECENTLY_FUNDED: 'most_recently_funded',
     MOST_ENGAGEMENT: 'most_engagement'
 } as const;
 export type ListFundingSortBy = typeof ListFundingSortBy[keyof typeof ListFundingSortBy];

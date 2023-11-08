@@ -15,6 +15,7 @@ export const DefaultFilters: FundingFilters = {
 export const fundingSortingOptions = [
   ListFundingSortBy.MOST_ENGAGEMENT,
   ListFundingSortBy.MOST_FUNDED,
+  ListFundingSortBy.MOST_RECENTLY_FUNDED,
   ListFundingSortBy.NEWEST,
   ListFundingSortBy.OLDEST,
 ]
@@ -34,6 +35,9 @@ export const getFundSortingTitle = (sortBy: ListFundingSortBy[]): string => {
   }
   if (initial === ListFundingSortBy.MOST_FUNDED) {
     title = 'Most funded'
+  }
+  if (initial === ListFundingSortBy.MOST_RECENTLY_FUNDED) {
+    title = 'Recently pledged'
   }
 
   return sortBy.length > 1 ? `${title}, +${sortBy.length - 1}` : title

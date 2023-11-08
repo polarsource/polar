@@ -314,6 +314,8 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 desc(Issue.positive_reactions_count),
                 desc(Issue.issue_modified_at),
             )
+        elif sort_by == IssueSortBy.most_recently_funded:
+            statement = statement.order_by(nullslast(desc(Pledge.created_at)))
         else:
             raise Exception("unknown sort_by")
 

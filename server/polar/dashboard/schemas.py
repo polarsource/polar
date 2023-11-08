@@ -41,6 +41,7 @@ class IssueSortBy(str, Enum):
     funding_goal_desc_and_most_positive_reactions = (
         "funding_goal_desc_and_most_positive_reactions"
     )
+    most_recently_funded = "most_recently_funded"
 
 
 class Entry(Schema):

@@ -204,6 +204,9 @@ export const Header = (props: {
     if (sortBy == IssueSortBy.MOST_ENGAGEMENT) {
       return 'Most engagement'
     }
+    if (sortBy == IssueSortBy.MOST_RECENTLY_FUNDED) {
+      return 'Recently pledged'
+    }
     return 'Most wanted'
   }
 
@@ -224,6 +227,7 @@ export const Header = (props: {
         IssueSortBy.MOST_ENGAGEMENT,
         IssueSortBy.NEWEST,
         IssueSortBy.PLEDGED_AMOUNT_DESC,
+        IssueSortBy.MOST_RECENTLY_FUNDED,
         IssueSortBy.RELEVANCE,
       ],
     ]

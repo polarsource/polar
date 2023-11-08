@@ -330,10 +330,10 @@ export const IssuesFilter = ({
       <div className="flex w-full flex-row items-center gap-x-4 md:w-auto">
         <DropdownMenu>
           <DropdownMenuTrigger className="outline-none">
-            <Button variant="secondary" asChild>
+            <Button className="text-xs" variant="secondary" asChild>
               <FilterList
                 className={twMerge(
-                  'dark:text-polar-300 mr-2 h-5 w-5',
+                  'dark:text-polar-300 mr-2 h-4 w-4',
                   (filters?.badged === true || filters?.closed === undefined) &&
                     'text-blue-600 dark:text-blue-600',
                 )}
@@ -363,10 +363,10 @@ export const IssuesFilter = ({
         </DropdownMenu>
         <DropdownMenu>
           <DropdownMenuTrigger className="outline-none">
-            <Button variant="secondary" asChild>
+            <Button className="text-xs" variant="secondary" asChild>
               <SwapVertOutlined
                 className={twMerge(
-                  'dark:text-polar-300 mr-2 h-5 w-5',
+                  'dark:text-polar-300 mr-2 h-4 w-4',
                   (filters?.sort?.length ?? 0) > 0 &&
                     'text-blue-600 dark:text-blue-600',
                 )}

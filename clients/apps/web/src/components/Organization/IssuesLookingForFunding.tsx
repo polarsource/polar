@@ -102,10 +102,14 @@ const IssuesLookingForFunding = ({
     return f
   }, [])
 
+  const initialPage = useMemo(() => Number(search.get('page') || '1'), [])
+
+  const [currentPage, setCurrentPage] = useState<number>(initialPage)
   const [filters, setFilters] = useState<FundingFilters>(initialFilter)
 
   const handleSetCurrentPage = useCallback(
     (page: number) => {
+      setCurrentPage(page)
       const params = new URLSearchParams(search)
       params.set('page', page.toString())
 
@@ -115,8 +119,6 @@ const IssuesLookingForFunding = ({
     },
     [router, search],
   )
-
-  const currentPage = useMemo(() => Number(search.get('page') || '1'), [search])
 
   const fundedIssues = useSearchFundedIssues({
     organizationName: organization.name,

@@ -19,6 +19,7 @@ import IssueBodyRenderer from './IssueBodyRenderer'
 import LabeledRadioButton from './LabeledRadioButton'
 import LabeledSeparator from './LabeledSeparator'
 import MoneyInput from './MoneyInput'
+import Paginator from './Paginator'
 import Pill from './Pill'
 import PolarTimeAgo from './PolarTimeAgo'
 import {
@@ -78,4 +79,5 @@ export {
   TabsList,
   TabsTrigger,
   Switch,
+  Paginator,
 }

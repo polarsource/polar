@@ -65,6 +65,10 @@ const SubscriptionItem = ({ subscription }: SubscriptionItemProps) => {
     subscription.subscription_tier.organization_id ?? '',
   )
 
+  if (!organization) {
+    return null
+  }
+
   return (
     <ShadowListGroup.Item>
       <div className="flex flex-row items-center justify-between">

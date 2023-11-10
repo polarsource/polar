@@ -105,6 +105,7 @@ export default async function Page({
 
   let subscriptionTiers: SubscriptionTier[] = []
   let subscriptionsSummary: SubscriptionSummary[] = []
+  let subscribersCount = 0
   try {
     const subscriptionGroupsResponse =
       await api.subscriptions.searchSubscriptionTiers(
@@ -127,6 +128,7 @@ export default async function Page({
       )
 
     subscriptionsSummary = subscriptionSummaryResponse.items ?? []
+    subscribersCount = subscriptionSummaryResponse.pagination.total_count
   } catch (err) {}
 
   if (organization === undefined || repositories === undefined) {
@@ -142,6 +144,7 @@ export default async function Page({
         repositories={repositories.items || []}
         subscriptionTiers={subscriptionTiers}
         subscriptionSummary={subscriptionsSummary}
+        subscribersCount={subscribersCount}
         currentTab={currentTab}
       />
     </>

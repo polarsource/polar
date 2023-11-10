@@ -28,12 +28,14 @@ const OrganizationPublicPage = ({
   repositories,
   subscriptionTiers,
   subscriptionSummary,
+  subscribersCount,
   currentTab,
 }: {
   organization: Organization
   repositories: Repository[]
   subscriptionTiers: SubscriptionTier[]
   subscriptionSummary: SubscriptionSummary[]
+  subscribersCount: number
   currentTab?: string
 }) => {
   const showMeta =
@@ -151,7 +153,7 @@ const OrganizationPublicPage = ({
               <div className="flex flex-col gap-y-4">
                 <div className="flex flex-row items-start justify-between">
                   <h3>Subscribers</h3>
-                  <h3>15</h3>
+                  <h3>{subscribersCount}</h3>
                 </div>
                 <div className="flex flex-row flex-wrap gap-3">
                   {subscriberUsers.map((user) => (

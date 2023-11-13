@@ -17,6 +17,7 @@ from polar.models.user import OAuthAccount, User
 from polar.pledge.schemas import PledgeState
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
+from polar.reward.endpoints import to_resource
 from polar.reward.service import reward_service
 
 
@@ -187,3 +188,17 @@ async def test_list_rewards_to_user(
 
     assert rewards[1][0].amount == 2000
     assert rewards[1][1].user_id == user.id
+
+    # test get single reward
+    (f_pledge, f_issue_reward, f_pledge_tsx) = rewards[0]
+    assert to_resource(
+        f_pledge, f_issue_reward, f_pledge_tsx, include_admin_fields=False
+    )
+
+    s_single = await reward_service.get(session, f_pledge.id, f_issue_reward.id)
+    assert s_single is not None
+    (s_pledge, s_issue_reward, s_pledge_tsx) = s_single
+    assert s_pledge.id is f_pledge.id
+    assert to_resource(
+        s_pledge, s_issue_reward, s_pledge_tsx, include_admin_fields=False
+    )

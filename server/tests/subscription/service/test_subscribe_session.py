@@ -11,8 +11,10 @@ from polar.models import (
     SubscriptionTier,
     User,
 )
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.service.subscribe_session import (
+    AlreadySubscribed,
     ArchivedSubscriptionTier,
     NoAssociatedPayoutAccount,
     NotAddedToStripeSubscriptionTier,
@@ -21,7 +23,11 @@ from polar.subscription.service.subscribe_session import (
     subscribe_session as subscribe_session_service,
 )
 
-from ..conftest import add_subscription_benefits, create_subscription_benefit
+from ..conftest import (
+    add_subscription_benefits,
+    create_subscription,
+    create_subscription_benefit,
+)
 
 
 @pytest.mark.asyncio
@@ -65,6 +71,30 @@ class TestCreateSubscribeSession:
                 "SUCCESS_URL",
                 Anonymous(),
                 None,
+            )
+
+    async def test_already_subscribed(
+        self,
+        session: AsyncSession,
+        subscription_tier_organization: SubscriptionTier,
+        organization_account: Account,
+        user: User,
+    ) -> None:
+        subscription = await create_subscription(
+            session,
+            status=SubscriptionStatus.active,
+            subscription_tier=subscription_tier_organization,
+            user=user,
+        )
+        assert subscription.started_at is None
+
+        with pytest.raises(AlreadySubscribed):
+            await subscribe_session_service.create_subscribe_session(
+                session,
+                subscription_tier_organization,
+                "SUCCESS_URL",
+                user,
+                AuthMethod.COOKIE,
             )
 
     async def test_valid_anonymous(

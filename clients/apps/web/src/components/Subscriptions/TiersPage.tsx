@@ -29,7 +29,7 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
             <Bolt fontSize="inherit" />
           </span>
           <h2 className="text-lg">
-            You haven't configured any subscription tiers
+            You haven&apos;t configured any subscription tiers
           </h2>
         </div>
       </EmptyLayout>

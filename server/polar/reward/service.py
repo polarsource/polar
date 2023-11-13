@@ -121,7 +121,7 @@ class RewardService:
             joinedload(Pledge.by_organization),
             joinedload(Pledge.user),
             joinedload(Pledge.on_behalf_of_organization),
-            joinedload(Pledge.by_user_id),
+            joinedload(Pledge.created_by_user),
         )
 
         res = await session.execute(statement)

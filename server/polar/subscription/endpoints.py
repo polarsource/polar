@@ -38,6 +38,7 @@ from .schemas import (
 )
 from .schemas import SubscriptionBenefit as SubscriptionBenefitSchema
 from .schemas import SubscriptionTier as SubscriptionTierSchema
+from .service.subscribe_session import subscribe_session as subscribe_session_service
 from .service.subscription import subscription as subscription_service
 from .service.subscription_benefit import (
     subscription_benefit as subscription_benefit_service,
@@ -353,7 +354,7 @@ async def create_subscribe_session(
     if subscription_tier is None:
         raise ResourceNotFound()
 
-    return await subscription_tier_service.create_subscribe_session(
+    return await subscribe_session_service.create_subscribe_session(
         session,
         subscription_tier,
         session_create.success_url,
@@ -372,7 +373,7 @@ async def get_subscribe_session(
     id: str,
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscribeSession:
-    return await subscription_tier_service.get_subscribe_session(session, id)
+    return await subscribe_session_service.get_subscribe_session(session, id)
 
 
 @router.get(

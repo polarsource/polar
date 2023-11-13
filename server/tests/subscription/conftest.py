@@ -28,10 +28,14 @@ from polar.subscription.endpoints import is_feature_flag_enabled
 
 @pytest.fixture(autouse=True)
 def mock_stripe_service(mocker: MockerFixture) -> MagicMock:
-    return mocker.patch(
-        "polar.subscription.service.subscription_tier.stripe_service",
-        spec=StripeService,
+    mock = MagicMock(spec=StripeService)
+    mocker.patch(
+        "polar.subscription.service.subscription_tier.stripe_service", new=mock
     )
+    mocker.patch(
+        "polar.subscription.service.subscribe_session.stripe_service", new=mock
+    )
+    return mock
 
 
 @pytest.fixture(autouse=True, scope="package")

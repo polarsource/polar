@@ -57,7 +57,7 @@ const PledgeCheckoutFund = ({
                 value="fund_by_team"
                 icon={<BuildingOfficeIcon className="h-6 w-6" />}
                 title="Fund by team"
-                subtitle="Your boss will pay it."
+                subtitle="Pledges are paid by your employer."
               />
             )}
           </TabsList>

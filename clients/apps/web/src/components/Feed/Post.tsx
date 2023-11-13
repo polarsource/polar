@@ -86,22 +86,22 @@ const PostFooter = (props: FeedPost) => {
   return (
     <div className="flex flex-row items-center gap-x-4">
       <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-8 self-start rounded-full border border-gray-100 bg-white px-4 py-1.5 text-sm text-gray-400 shadow-lg">
-        <div className="flex flex-row items-center gap-x-2">
+        <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
           <FavoriteBorderOutlined fontSize="inherit" />
           <span>{props.likes.length}</span>
         </div>
-        <div className="flex flex-row items-center gap-x-2">
+        <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
           <ChatBubbleOutline fontSize="inherit" />
           <span>{props.likes.length}</span>
         </div>
-        <div className="flex flex-row items-center gap-x-2">
+        <div className="flex cursor-pointer flex-row items-center gap-x-2 hover:text-blue-500">
           <BookmarkBorderOutlined fontSize="inherit" />
           <span>{props.likes.length}</span>
         </div>
       </div>
 
       {props.visibility !== 'public' ? (
-        <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-1.5 self-start rounded-full border border-gray-100 bg-white px-3 py-1.5 text-sm text-gray-400 shadow-lg">
+        <div className="dark:text-polar-400 dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-x-1.5 self-start rounded-full border border-gray-100 bg-white px-4 py-1.5 text-sm text-gray-400 shadow-lg">
           <SubscriptionGroupIcon type={props.visibility} />
           <span className="capitalize">{props.visibility}</span>
         </div>
@@ -184,7 +184,7 @@ const PostMetaPoll = (post: PollPost) => {
 
   return (
     <div className="flex w-full flex-col">
-      <div className="dark:border-polar-800 flex flex-col gap-y-1 border-b border-gray-100 px-6 py-4">
+      <div className="dark:border-polar-700 flex flex-col gap-y-1 border-b border-gray-100 px-6 py-4">
         <h4 className="dark:text-polar-50 font-medium">{post.poll.question}</h4>
         <span className="text-xs">{post.poll.totalVotes} votes</span>
       </div>

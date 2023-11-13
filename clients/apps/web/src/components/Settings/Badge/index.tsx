@@ -344,7 +344,7 @@ const BadgeSetup = ({
             />
           </div>
 
-          <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-300 flex flex-row items-center rounded-b-xl border-t border-gray-200 bg-gray-100/50 px-4 py-3 text-gray-500">
+          <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-300 flex flex-row items-center rounded-b-xl border-t border-gray-200 bg-gray-50 px-4 py-3 text-gray-500">
             <InfoOutlined
               width={24}
               height={24}

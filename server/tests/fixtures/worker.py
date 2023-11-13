@@ -2,9 +2,11 @@ import contextlib
 from collections.abc import AsyncIterator
 from datetime import datetime
 from typing import cast
+from unittest.mock import MagicMock
 
 import pytest
 from arq import ArqRedis
+from pytest_mock import MockerFixture
 
 from polar.kit.db.postgres import AsyncEngine, AsyncSession, async_sessionmaker
 from polar.worker import JobContext, PolarWorkerContext
@@ -30,3 +32,8 @@ def job_context(engine: AsyncEngine, session: AsyncSession) -> JobContext:
 @pytest.fixture
 def polar_worker_context() -> PolarWorkerContext:
     return PolarWorkerContext()
+
+
+@pytest.fixture(autouse=True)
+def mock_enqueue_job(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.worker._enqueue_job")

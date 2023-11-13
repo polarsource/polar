@@ -4,16 +4,9 @@ import httpx
 import structlog
 
 from polar.config import settings
-from polar.exceptions import PolarError
 from polar.logging import Logger
 
 log: Logger = structlog.get_logger()
-
-
-class LoopsClientError(PolarError):
-    def __init__(self, message: str, response: httpx.Response) -> None:
-        self.response = response
-        super().__init__(message, 500)
 
 
 class Properties(TypedDict, total=False):
@@ -46,16 +39,6 @@ class LoopsClient:
             else None,
         )
 
-    async def create_contact(
-        self, email: str, id: str, **properties: Unpack[Properties]
-    ) -> None:
-        log.debug("create contact on Loops", email=email, id=id, **properties)
-
-        response = await self.client.post(
-            "/contacts/create", json={"email": email, "userId": id, **properties}
-        )
-        self._handle_response(response)
-
     async def update_contact(
         self, email: str, id: str, **properties: Unpack[Properties]
     ) -> None:
@@ -79,10 +62,7 @@ class LoopsClient:
         self._handle_response(response)
 
     def _handle_response(self, response: httpx.Response) -> httpx.Response:
-        try:
-            response.raise_for_status()
-        except httpx.HTTPStatusError as e:
-            raise LoopsClientError(str(e), e.response) from e
+        response.raise_for_status()
         return response
 
 

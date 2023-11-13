@@ -1,4 +1,5 @@
 from datetime import UTC, date, datetime, timedelta
+from typing import Any
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -8,6 +9,7 @@ from pytest_mock import MockerFixture
 from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
 from polar.models import (
+    Account,
     Organization,
     Subscription,
     SubscriptionBenefit,
@@ -39,6 +41,7 @@ def construct_stripe_subscription(
     customer_id: str = "CUSTOMER_ID",
     product_id: str = "PRODUCT_ID",
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
+    latest_invoice: stripe_lib.Invoice | None = None,
 ) -> stripe_lib.Subscription:
     now_timestamp = datetime.now(UTC).timestamp()
     return stripe_lib.Subscription.construct_from(
@@ -61,6 +64,7 @@ def construct_stripe_subscription(
             "current_period_end": now_timestamp + timedelta(days=30).seconds,
             "cancel_at_period_end": False,
             "ended_at": None,
+            "latest_invoice": latest_invoice,
         },
         None,
     )
@@ -73,6 +77,26 @@ def construct_stripe_customer(
         {
             "id": id,
             "email": email,
+        },
+        None,
+    )
+
+
+def construct_stripe_invoice(
+    *,
+    id: str = "INVOICE_ID",
+    total: int = 12000,
+    tax: int = 2000,
+    charge_id: str = "CHARGE_ID",
+    metadata: dict[str, Any] = {},
+) -> stripe_lib.Invoice:
+    return stripe_lib.Invoice.construct_from(
+        {
+            "id": id,
+            "total": total,
+            "tax": tax,
+            "charge": charge_id,
+            "metadata": metadata,
         },
         None,
     )
@@ -204,10 +228,75 @@ class TestUpdateSubscription:
         assert updated_subscription.status == SubscriptionStatus.active
         assert updated_subscription.started_at is not None
 
-        enqueue_job_mock.assert_awaited_once_with(
+        enqueue_job_mock.assert_any_await(
             "subscription.subscription.enqueue_benefits_grants",
             updated_subscription.id,
         )
+        enqueue_job_mock.assert_any_await(
+            "subscription.subscription.transfer_subscription_money",
+            updated_subscription.id,
+        )
+
+
+@pytest.mark.asyncio
+class TestTransferSubscriptionMoney:
+    async def test_no_associated_invoice(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> None:
+        stripe_subscription = construct_stripe_subscription()
+        stripe_service_mock = mocker.patch(
+            "polar.subscription.service.subscription.stripe_service", spec=StripeService
+        )
+        stripe_service_mock.get_subscription.return_value = stripe_subscription
+
+        await subscription_service.transfer_subscription_money(session, subscription)
+
+        stripe_service_mock.transfer.assert_not_called()
+
+    async def test_already_transferred(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> None:
+        stripe_invoice = construct_stripe_invoice(metadata={"transferred_at": 123})
+        stripe_subscription = construct_stripe_subscription(
+            latest_invoice=stripe_invoice
+        )
+        stripe_service_mock = mocker.patch(
+            "polar.subscription.service.subscription.stripe_service", spec=StripeService
+        )
+        stripe_service_mock.get_subscription.return_value = stripe_subscription
+
+        await subscription_service.transfer_subscription_money(session, subscription)
+
+        stripe_service_mock.transfer.assert_not_called()
+
+    async def test_stripe_transfer(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+        organization_account: Account,
+    ) -> None:
+        stripe_invoice = construct_stripe_invoice()
+        stripe_subscription = construct_stripe_subscription(
+            latest_invoice=stripe_invoice
+        )
+        stripe_service_mock = mocker.patch(
+            "polar.subscription.service.subscription.stripe_service", spec=StripeService
+        )
+        stripe_service_mock.get_subscription.return_value = stripe_subscription
+
+        await subscription_service.transfer_subscription_money(session, subscription)
+
+        stripe_service_mock.transfer.assert_called_once()
+        assert stripe_service_mock.transfer.call_args[1]["amount"] == 9000
+
+        stripe_service_mock.update_invoice.assert_called_once()
 
 
 @pytest.mark.asyncio

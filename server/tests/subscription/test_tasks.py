@@ -22,8 +22,39 @@ from polar.subscription.tasks import (  # type: ignore[attr-defined]
     subscription_benefit_revoke,
     subscription_benefit_update,
     subscription_service,
+    transfer_subscription_money,
 )
 from polar.worker import JobContext, PolarWorkerContext
+
+
+@pytest.mark.asyncio
+class TestTransferSubscriptionMoney:
+    async def test_not_existing_subscription(
+        self, job_context: JobContext, polar_worker_context: PolarWorkerContext
+    ) -> None:
+        with pytest.raises(SubscriptionDoesNotExist):
+            await transfer_subscription_money(
+                job_context, uuid.uuid4(), polar_worker_context
+            )
+
+    async def test_existing_subscription(
+        self,
+        mocker: MockerFixture,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        subscription: Subscription,
+    ) -> None:
+        transfer_subscription_money_mock = mocker.patch.object(
+            subscription_service,
+            "transfer_subscription_money",
+            spec=SubscriptionService.transfer_subscription_money,
+        )
+
+        await transfer_subscription_money(
+            job_context, subscription.id, polar_worker_context
+        )
+
+        transfer_subscription_money_mock.assert_called_once()
 
 
 @pytest.mark.asyncio

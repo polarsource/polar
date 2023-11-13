@@ -56,9 +56,6 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "127.0.0.1"
     REDIS_PORT: int = 6379
 
-    # Public API
-    API_PAGINATION_MAX_LIMIT: int = 100
-
     # Github App
     GITHUB_APP_IDENTIFIER: str = ""
     GITHUB_APP_WEBHOOK_SECRET: str = ""
@@ -82,7 +79,14 @@ class Settings(BaseSettings):
     # Discord
     DISCORD_WEBHOOK_URL: str | None = None
 
+    # Posthog
+    POSTHOG_PROJECT_API_KEY: str = ""
+
+    # Loops
+    LOOPS_API_KEY: str | None = None
+
     # Application behaviours
+    API_PAGINATION_MAX_LIMIT: int = 100
 
     GITHUB_BADGE_EMBED: bool = False
     GITHUB_BADGE_EMBED_DEFAULT_LABEL: str = "Fund"
@@ -90,9 +94,7 @@ class Settings(BaseSettings):
     EMAIL_SENDER: EmailSender = EmailSender.logger
     SENDGRID_API_KEY: str = ""
 
-    POSTHOG_PROJECT_API_KEY: str = ""
-
-    LOOPS_API_KEY: str | None = None
+    SUBSCRIPTION_FEE_PERCENT: int = 10
 
     # Default organization setting for minimum pledge amount ($20)
     MINIMUM_ORG_PLEDGE_AMOUNT: int = 2000

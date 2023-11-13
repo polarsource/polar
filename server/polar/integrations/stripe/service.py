@@ -173,13 +173,21 @@ class StripeService:
         return stripe_lib.Account.create_login_link(stripe_id)
 
     def transfer(
-        self, destination_stripe_id: str, amount: int, transfer_group: str
+        self,
+        destination_stripe_id: str,
+        amount: int,
+        transfer_group: str,
+        *,
+        source_transaction: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> stripe_lib.Transfer:
         return stripe_lib.Transfer.create(
             amount=amount,
             currency="usd",
             destination=destination_stripe_id,
             transfer_group=transfer_group,
+            source_transaction=source_transaction,
+            metadata=metadata,
         )
 
     def get_customer(self, customer_id: str) -> stripe_lib.Customer:
@@ -472,6 +480,14 @@ Thank you for your support!
 
     def get_checkout_session(self, id: str) -> stripe_lib.checkout.Session:
         return stripe_lib.checkout.Session.retrieve(id)
+
+    def get_subscription(self, id: str) -> stripe_lib.Subscription:
+        return stripe_lib.Subscription.retrieve(id, expand=["latest_invoice"])
+
+    def update_invoice(
+        self, id: str, *, metadata: dict[str, Any] | None = None
+    ) -> stripe_lib.Invoice:
+        return stripe_lib.Invoice.modify(id, metadata=metadata)
 
     def get_customer_credit_balance(self, customer_id: str) -> int:
         transactions = stripe_lib.Customer.list_balance_transactions(

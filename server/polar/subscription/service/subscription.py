@@ -26,6 +26,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_tier import SubscriptionTierType
 from polar.user.service import user as user_service
 from polar.worker import enqueue_job
@@ -191,6 +192,37 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self, session: AsyncSession, stripe_subscription_id: str
     ) -> Subscription | None:
         return await self.get_by(session, stripe_subscription_id=stripe_subscription_id)
+
+    async def get_active_user_subscriptions(
+        self,
+        session: AsyncSession,
+        user: User,
+        *,
+        organization: Organization | None = None,
+        repository: Repository | None = None,
+    ) -> list[Subscription]:
+        statement = (
+            select(Subscription)
+            .join(Subscription.subscription_tier)
+            .where(
+                Subscription.user_id == user.id,
+                Subscription.status.in_(
+                    [SubscriptionStatus.trialing, SubscriptionStatus.active]
+                ),
+            )
+        )
+
+        if organization is not None:
+            statement = statement.where(
+                SubscriptionTier.organization_id == organization.id
+            )
+
+        if repository is not None:
+            statement = statement.where(SubscriptionTier.repository_id == repository.id)
+
+        result = await session.execute(statement)
+
+        return list(result.scalars().all())
 
     async def create_subscription(
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription

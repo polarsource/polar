@@ -11,6 +11,7 @@ from polar.models import (
 )
 
 from ..schemas import SubscribeSession
+from .subscription import subscription as subscription_service
 from .subscription_tier import subscription_tier as subscription_tier_service
 
 
@@ -34,10 +35,28 @@ class NotAddedToStripeSubscriptionTier(SubscribeSessionError):
 
 class NoAssociatedPayoutAccount(SubscribeSessionError):
     def __init__(self, organization_id: uuid.UUID) -> None:
-        self.organization = organization_id
+        self.organization_id = organization_id
         message = (
             "A payout account should be configured for this organization "
             "before being able to accept subscriptions."
+        )
+        super().__init__(message, 400)
+
+
+class AlreadySubscribed(SubscribeSessionError):
+    def __init__(
+        self,
+        *,
+        user_id: uuid.UUID,
+        organization_id: uuid.UUID | None = None,
+        repository_id: uuid.UUID | None = None,
+    ) -> None:
+        self.user_id = user_id
+        self.organization_id = organization_id
+        self.repository_id = repository_id
+        message = (
+            "You're already subscribed to one of the tier "
+            "of this organization or repository."
         )
         super().__init__(message, 400)
 
@@ -70,6 +89,24 @@ class SubscribeSessionService:
         )
         if account is None:
             raise NoAssociatedPayoutAccount(subscription_tier.managing_organization_id)
+
+        # Prevent authenticated user to subscribe to another plan
+        # from the same organization/repository
+        if auth_method == AuthMethod.COOKIE and isinstance(auth_subject, User):
+            existing_subscriptions = (
+                await subscription_service.get_active_user_subscriptions(
+                    session,
+                    auth_subject,
+                    organization=subscription_tier.organization,
+                    repository=subscription_tier.repository,
+                )
+            )
+            if len(existing_subscriptions) > 0:
+                raise AlreadySubscribed(
+                    user_id=auth_subject.id,
+                    organization_id=subscription_tier.organization_id,
+                    repository_id=subscription_tier.repository_id,
+                )
 
         customer_options: dict[str, str] = {}
         # Set the customer only from a cookie-based authentication!

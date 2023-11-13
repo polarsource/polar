@@ -24,6 +24,10 @@ const SubscriptionGroup: React.FC<SubscriptionGroupProps> = ({
   tiers,
   organization,
 }) => {
+  if (tiers.length < 1) {
+    return null
+  }
+
   return (
     <div className="flex flex-col gap-8 py-8">
       <div>

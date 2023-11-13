@@ -206,7 +206,7 @@ async def test_should_add_badge_app_config_disabled(
 
 @pytest.mark.asyncio
 @patch("polar.config.settings.GITHUB_BADGE_EMBED", True)
-async def test_should_add_badge_org_not_onboarded(
+async def test_should_add_badge_org_not_installed(
     session: AsyncSession,
     organization: Organization,
     repository: Repository,
@@ -215,6 +215,9 @@ async def test_should_add_badge_org_not_onboarded(
     repository.pledge_badge_auto_embed = True
     await repository.save(session)
 
+    organization.installation_id = None
+    await organization.save(session)
+
     res = GithubBadge.should_add_badge(
         organization=organization,
         repository=repository,
@@ -222,7 +225,7 @@ async def test_should_add_badge_org_not_onboarded(
         triggered_from_label=False,
     )
 
-    assert res == (False, "org_not_onboarded")
+    assert res == (False, "org_not_installed")
 
 
 @pytest.mark.asyncio

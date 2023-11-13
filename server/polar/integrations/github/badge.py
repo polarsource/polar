@@ -37,8 +37,8 @@ class GithubBadge:
         if not settings.GITHUB_BADGE_EMBED:
             return (False, "app_badge_not_enabled")
 
-        if organization.onboarded_at is None:
-            return (False, "org_not_onboarded")
+        if organization.installation_id is None:
+            return (False, "org_not_installed")
 
         # Triggered by label
         if triggered_from_label:
@@ -64,8 +64,8 @@ class GithubBadge:
         if not settings.GITHUB_BADGE_EMBED:
             return (False, "app_badge_not_enabled")
 
-        if organization.onboarded_at is None:
-            return (False, "org_not_onboarded")
+        if organization.installation_id is None:
+            return (False, "org_not_installed")
 
         if triggered_from_label:
             return (True, "triggered_from_label")

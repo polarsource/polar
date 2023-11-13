@@ -81,12 +81,12 @@ const OrganizationPublicPage = ({
                 <h1 className="dark:text-polar-50 text-2xl font-normal capitalize text-gray-800">
                   {organization.pretty_name ?? organization.name}
                 </h1>
-                <h3 className="dark:text-polar-500 text-md font-normal text-gray-600">
+                <h3 className="text-md font-normal text-blue-500">
                   @{organization.name}
                 </h3>
               </div>
               {organization.bio && (
-                <p className="dark:text-polar-500 text-center text-sm leading-relaxed text-gray-400 md:text-start">
+                <p className="dark:text-polar-500 text-center text-sm leading-relaxed text-gray-500 md:text-start">
                   {organization.bio}
                 </p>
               )}

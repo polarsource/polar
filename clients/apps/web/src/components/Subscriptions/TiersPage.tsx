@@ -1,9 +1,11 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/MaintainerLayout'
+import { Bolt } from '@mui/icons-material'
 import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
 import { useSubscriptionTiers } from 'polarkit/hooks'
 import React, { useMemo } from 'react'
+import EmptyLayout from '../Layout/EmptyLayout'
 import SubscriptionGroup from './SubscriptionGroup'
 import { getSubscriptionTiersByType } from './utils'
 
@@ -18,6 +20,21 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
     () => getSubscriptionTiersByType(subscriptionTiers.data?.items ?? []),
     [subscriptionTiers.data],
   )
+
+  if (!subscriptionTiers.data?.items?.length) {
+    return (
+      <EmptyLayout>
+        <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-96 text-gray-400">
+          <span className="text-6xl">
+            <Bolt fontSize="inherit" />
+          </span>
+          <h2 className="text-lg">
+            You haven't configured any subscription tiers
+          </h2>
+        </div>
+      </EmptyLayout>
+    )
+  }
 
   return (
     <DashboardBody>

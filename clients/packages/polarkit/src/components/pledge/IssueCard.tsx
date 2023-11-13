@@ -136,7 +136,7 @@ const IssueCard = ({
       {/* Repository */}
       <div className="dark:text-polar-400 grid grid-cols-1 py-4 text-gray-600 sm:grid-cols-3">
         {/* Name/description */}
-        <div className="col-span-1 flex flex-row items-center gap-4 sm:col-span-2">
+        <div className="col-span-1 flex flex-row items-start gap-4 sm:col-span-2">
           <div className="min-w-max">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -145,8 +145,8 @@ const IssueCard = ({
               className="h-8 w-8 rounded-full"
             />
           </div>
-          <div className="dark:text-polar-500 flex flex-row items-center text-gray-500">
-            <div>
+          <div className="dark:text-polar-500 flex flex-col justify-center text-gray-500">
+            <div className="flex flex-row items-center">
               {organization.name}&nbsp;/&nbsp;
               <span className="dark:text-polar-200 font-medium text-gray-600">
                 {repository.name}

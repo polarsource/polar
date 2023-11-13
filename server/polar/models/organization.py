@@ -99,6 +99,8 @@ class Organization(RecordModel):
     # "Team" fields (org is pledger)
     #
 
+    is_teams_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+
     stripe_customer_id: Mapped[str | None] = mapped_column(
         String(length=50), nullable=True, unique=True, default=None
     )

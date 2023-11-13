@@ -45,6 +45,9 @@ class Organization(Schema):
     per_user_monthly_spending_limit: int | None = Field(
         description="Team members monthly spending limit, per calendar month. Only visible for members of the organization"
     )
+    is_teams_enabled: bool = Field(
+        description="Feature flag for if this organization is a team."
+    )
 
     @classmethod
     def from_db(
@@ -77,6 +80,7 @@ class Organization(Schema):
             per_user_monthly_spending_limit=o.per_user_monthly_spending_limit
             if include_member_fields
             else None,
+            is_teams_enabled=o.is_teams_enabled,
         )
 
 

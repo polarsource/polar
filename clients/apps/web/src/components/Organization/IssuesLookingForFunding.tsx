@@ -332,8 +332,9 @@ export const IssuesFilter = ({
           <DropdownMenuTrigger className="outline-none">
             <Button className="text-xs" variant="secondary" asChild>
               <FilterList
+                fontSize="small"
                 className={twMerge(
-                  'dark:text-polar-300 mr-2 h-4 w-4',
+                  'dark:text-polar-300 mr-2 h-4 w-4 text-blue-300',
                   (filters?.badged === true || filters?.closed === undefined) &&
                     'text-blue-600 dark:text-blue-600',
                 )}
@@ -365,8 +366,9 @@ export const IssuesFilter = ({
           <DropdownMenuTrigger className="outline-none">
             <Button className="text-xs" variant="secondary" asChild>
               <SwapVertOutlined
+                fontSize="small"
                 className={twMerge(
-                  'dark:text-polar-300 mr-2 h-4 w-4',
+                  'dark:text-polar-300 mr-2 h-4 w-4 text-blue-300',
                   (filters?.sort?.length ?? 0) > 0 &&
                     'text-blue-600 dark:text-blue-600',
                 )}

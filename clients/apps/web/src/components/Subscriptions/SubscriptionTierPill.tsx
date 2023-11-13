@@ -1,5 +1,6 @@
 import { SubscriptionTier } from '@polar-sh/sdk'
 import { getCentsInDollarString } from 'polarkit/money'
+import { getSubscriptionColorByType } from './utils'
 
 interface SubscriptionTierPillProps {
   subscriptionTier: SubscriptionTier
@@ -10,13 +11,16 @@ const SubscriptionTierPill: React.FC<SubscriptionTierPillProps> = ({
   subscriptionTier,
   amount,
 }) => {
+  const color = getSubscriptionColorByType(subscriptionTier.type)
   return (
-    <div className="dark:text-polar-50 flex items-center justify-between gap-2 whitespace-nowrap rounded-xl border border-blue-200 py-0.5 pl-2 pr-0.5 text-xs text-gray-900 dark:border-blue-800">
-      <div>{subscriptionTier.name}</div>
+    <div className="flex items-center justify-between gap-3">
       <div
-        className="rounded-xl bg-blue-100 px-1 dark:bg-blue-700"
-        style={{ fontSize: 10 }}
+        style={{ backgroundColor: color }}
+        className="dark:text-polar-950 whitespace-nowrap rounded-xl px-3 py-1 text-xs text-white"
       >
+        {subscriptionTier.name}
+      </div>
+      <div className="text-sm">
         ${getCentsInDollarString(amount, undefined, true)}
       </div>
     </div>

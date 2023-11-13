@@ -34,7 +34,7 @@ const PublicSubscriptionUpsell: React.FC<PublicSubscriptionUpsellProps> = ({
         </Link>
       </div>
       <motion.div
-        className="-mx-6 flex h-fit flex-row gap-6 overflow-x-auto px-6 py-6 md:mx-0 md:px-0"
+        className="-mx-6 flex h-fit flex-row gap-6 overflow-x-auto px-6 py-6 md:mx-0 md:overflow-x-visible md:px-0"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}

@@ -365,7 +365,7 @@ class SubscriptionTierService(
         if subscription_tier.stripe_price_id is None:
             raise NotAddedToStripeSubscriptionTier(subscription_tier.id)
 
-        account = await self._get_managing_organization_account(
+        account = await self.get_managing_organization_account(
             session, subscription_tier
         )
         if account is None:
@@ -471,7 +471,7 @@ class SubscriptionTierService(
             )
         )
 
-    async def _get_managing_organization_account(
+    async def get_managing_organization_account(
         self, session: AsyncSession, subscription_tier: SubscriptionTier
     ) -> Account | None:
         return await account_service.get_by_org(

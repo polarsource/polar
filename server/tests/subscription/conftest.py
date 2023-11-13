@@ -248,6 +248,7 @@ async def organization_account(
         is_details_submitted=True,
         is_charges_enabled=True,
         is_payouts_enabled=True,
+        stripe_id="STRIPE_ACCOUNT_ID",
     ).save(
         session,
     )

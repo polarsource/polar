@@ -1,3 +1,4 @@
+import math
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, date, datetime
@@ -8,13 +9,15 @@ import stripe as stripe_lib
 from sqlalchemy import Select, UnaryExpression, and_, asc, desc, func, or_, select, text
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
-from polar.enums import UserSignupType
+from polar.config import settings
+from polar.enums import AccountType, UserSignupType
 from polar.exceptions import PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
+from polar.kit.utils import utc_now
 from polar.models import (
     Organization,
     Repository,
@@ -264,7 +267,64 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             subscription.id,
         )
 
+        await enqueue_job(
+            "subscription.subscription.transfer_subscription_money",
+            subscription.id,
+        )
+
         return subscription
+
+    async def transfer_subscription_money(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        stripe_subscription = stripe_service.get_subscription(
+            subscription.stripe_subscription_id
+        )
+        invoice: stripe_lib.Invoice = stripe_subscription.latest_invoice
+
+        if invoice is None:
+            return
+
+        if invoice.metadata.get("transferred_at") is not None:
+            return
+
+        await session.refresh(subscription, {"subscription_tier"})
+        account = await subscription_tier_service.get_managing_organization_account(
+            session, subscription.subscription_tier
+        )
+        assert account is not None
+
+        transfer_amount = math.floor(
+            (invoice.total - invoice.tax)
+            * ((100 - settings.SUBSCRIPTION_FEE_PERCENT) / 100)
+        )
+        transfer_group = f"{subscription.id}.{invoice.stripe_id}"
+        transfer_metadata = {
+            "subscription_id": str(subscription.id),
+            "organization_id": str(account.organization_id),
+            "stripe_subscription_id": stripe_subscription.stripe_id,
+            "stripe_product_id": subscription.subscription_tier.stripe_product_id,
+        }
+
+        invoice_metadata: dict[str, Any] = {
+            "transferred_at": int(utc_now().timestamp())
+        }
+
+        if account.account_type == AccountType.stripe:
+            assert account.stripe_id is not None
+            transfer = stripe_service.transfer(
+                account.stripe_id,
+                amount=transfer_amount,
+                transfer_group=transfer_group,
+                source_transaction=invoice.charge,
+                metadata=transfer_metadata,
+            )
+            invoice_metadata["transfer_id"] = transfer.stripe_id
+        elif account.account_type == AccountType.open_collective:
+            # TODO: handle Open Collective
+            pass
+
+        stripe_service.update_invoice(invoice.stripe_id, metadata=invoice_metadata)
 
     async def enqueue_benefits_grants(
         self, session: AsyncSession, subscription: Subscription

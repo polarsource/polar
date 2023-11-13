@@ -6,13 +6,11 @@ import { api } from 'polarkit'
 import {
   Button,
   FormattedDateTime,
-  Pill,
   ShadowListGroup,
 } from 'polarkit/components/ui/atoms'
 import { useOrganization, useUser, useUserSubscriptions } from 'polarkit/hooks'
-import { formatCurrencyAndAmount } from 'polarkit/money'
 import { useCallback, useState } from 'react'
-import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
+import SubscriptionTierPill from '../Subscriptions/SubscriptionTierPill'
 
 export type Settings = {
   email_newsletters_and_changelogs?: boolean
@@ -73,30 +71,20 @@ const SubscriptionItem = ({ subscription }: SubscriptionItemProps) => {
     <ShadowListGroup.Item>
       <div className="flex flex-row items-center justify-between">
         <div className="flex flex-col gap-y-3">
-          <div className="flex flex-row items-center gap-x-4">
+          <Link
+            className="dark:text-polar-50 flex flex-row items-center gap-x-2 text-gray-950"
+            href={`/${organization.data?.name}`}
+          >
             <h3>{organization.data?.name}</h3>
-            <Pill className="px-2 py-1" color="blue">
-              {formatCurrencyAndAmount(
-                subscription.price_currency,
-                subscription.price_amount,
-                true,
-              )}
-            </Pill>
-          </div>
-          <div className="dark:text-polar-400 flex flex-row gap-x-2 text-sm text-gray-500">
-            <>
-              <Link
-                className="dark:text-polar-50 flex flex-row items-center gap-x-2 text-gray-950"
-                href={`/${organization.data?.name}`}
-              >
-                <SubscriptionGroupIcon
-                  className="h-2! w-2! text-lg"
-                  type={subscription.subscription_tier.type}
-                />
-                <h3>{subscription.subscription_tier.name}</h3>
-              </Link>
-              &middot;
-            </>
+          </Link>
+          <div className="dark:text-polar-400 flex flex-row items-center gap-x-3 text-sm text-gray-500">
+            <Link href={`/${organization.data?.name}?tab=subscriptions`}>
+              <SubscriptionTierPill
+                amount={subscription.subscription_tier.price_amount}
+                subscriptionTier={subscription.subscription_tier}
+              />
+            </Link>
+            &middot;
             <span
               className={
                 subscription.cancel_at_period_end ? 'text-red-500' : undefined
@@ -113,14 +101,6 @@ const SubscriptionItem = ({ subscription }: SubscriptionItemProps) => {
           </div>
         </div>
         <div className="flex flex-row gap-x-2">
-          <Link
-            className="text-blue-600 hover:text-blue-400"
-            href={`/${organization.data?.name}?tab=subscriptions`}
-          >
-            <Button className="text-sm" size="sm" variant="ghost">
-              View Benefits
-            </Button>
-          </Link>
           <Button
             className="text-sm"
             size="sm"

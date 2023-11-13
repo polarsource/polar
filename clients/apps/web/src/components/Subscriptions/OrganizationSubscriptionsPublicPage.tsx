@@ -6,7 +6,6 @@ import {
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { motion } from 'framer-motion'
-import { Separator } from 'polarkit/components/ui/separator'
 import React, { useMemo } from 'react'
 import SubscriptionGroupPublic from './SubscriptionGroupPublic'
 import { getSubscriptionTiersByType } from './utils'
@@ -38,7 +37,6 @@ const OrganizationSubscriptionsPublicPage: React.FC<
         tiers={subscriptionTiersByType.hobby}
         subscribePath="/subscribe"
       />
-      <Separator />
       <SubscriptionGroupPublic
         title="Pro"
         description="Tiers best suited for indie hackers & startups"
@@ -46,7 +44,6 @@ const OrganizationSubscriptionsPublicPage: React.FC<
         tiers={subscriptionTiersByType?.pro}
         subscribePath="/subscribe"
       />
-      <Separator />
       <SubscriptionGroupPublic
         title="Business"
         description="The most exclusive tiers for business customers"

@@ -46,6 +46,7 @@ export const org: Organization = {
   pledge_minimum_amount: 2000,
   pretty_name: 'Pydantic',
   pledge_badge_show_amount: true,
+  is_teams_enabled: false,
 }
 
 export const user: UserRead = {

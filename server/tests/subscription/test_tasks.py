@@ -15,25 +15,25 @@ from polar.subscription.tasks import (  # type: ignore[attr-defined]
     SubscriptionBenefitDoesNotExist,
     SubscriptionBenefitGrantDoesNotExist,
     SubscriptionDoesNotExist,
-    enqueue_benefits_grants,
     subscription_benefit_delete,
     subscription_benefit_grant,
     subscription_benefit_grant_service,
     subscription_benefit_revoke,
     subscription_benefit_update,
+    subscription_enqueue_benefits_grants,
     subscription_service,
-    transfer_subscription_money,
+    subscription_transfer_subscription_money,
 )
 from polar.worker import JobContext, PolarWorkerContext
 
 
 @pytest.mark.asyncio
-class TestTransferSubscriptionMoney:
+class TestSubscriptionTransferSubscriptionMoney:
     async def test_not_existing_subscription(
         self, job_context: JobContext, polar_worker_context: PolarWorkerContext
     ) -> None:
         with pytest.raises(SubscriptionDoesNotExist):
-            await transfer_subscription_money(
+            await subscription_transfer_subscription_money(
                 job_context, uuid.uuid4(), polar_worker_context
             )
 
@@ -50,7 +50,7 @@ class TestTransferSubscriptionMoney:
             spec=SubscriptionService.transfer_subscription_money,
         )
 
-        await transfer_subscription_money(
+        await subscription_transfer_subscription_money(
             job_context, subscription.id, polar_worker_context
         )
 
@@ -58,12 +58,12 @@ class TestTransferSubscriptionMoney:
 
 
 @pytest.mark.asyncio
-class TestEnqueueBenefitsGrants:
+class TestSubscriptionEnqueueBenefitsGrants:
     async def test_not_existing_subscription(
         self, job_context: JobContext, polar_worker_context: PolarWorkerContext
     ) -> None:
         with pytest.raises(SubscriptionDoesNotExist):
-            await enqueue_benefits_grants(
+            await subscription_enqueue_benefits_grants(
                 job_context, uuid.uuid4(), polar_worker_context
             )
 
@@ -80,7 +80,7 @@ class TestEnqueueBenefitsGrants:
             spec=SubscriptionService.enqueue_benefits_grants,
         )
 
-        await enqueue_benefits_grants(
+        await subscription_enqueue_benefits_grants(
             job_context, subscription.id, polar_worker_context
         )
 

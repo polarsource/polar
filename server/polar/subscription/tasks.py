@@ -47,7 +47,7 @@ class SubscriptionBenefitGrantDoesNotExist(PolarError):
 
 
 @task("subscription.subscription.transfer_subscription_money")
-async def transfer_subscription_money(
+async def subscription_transfer_subscription_money(
     ctx: JobContext, subscription_id: uuid.UUID, polar_context: PolarWorkerContext
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
@@ -59,7 +59,7 @@ async def transfer_subscription_money(
 
 
 @task("subscription.subscription.enqueue_benefits_grants")
-async def enqueue_benefits_grants(
+async def subscription_enqueue_benefits_grants(
     ctx: JobContext, subscription_id: uuid.UUID, polar_context: PolarWorkerContext
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:

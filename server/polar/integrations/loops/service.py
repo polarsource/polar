@@ -6,9 +6,9 @@ from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.worker import enqueue_job
 
 from .client import Properties
-from .client import client as loops_client
 
 
 class Loops:
@@ -32,10 +32,14 @@ class Loops:
             properties["isMaintainer"] = signup_type == UserSignupType.maintainer
             properties["isBacker"] = signup_type == UserSignupType.backer
 
-        await loops_client.send_event(user.email, "User Signed Up", **properties)
+        await enqueue_job(
+            "loops.send_event", user.email, "User Signed Up", **properties
+        )
 
     async def user_update(self, user: User, **properties: Unpack[Properties]) -> None:
-        await loops_client.update_contact(user.email, str(user.id), **properties)
+        await enqueue_job(
+            "loops.update_contact", user.email, str(user.id), **properties
+        )
 
     async def organization_installed(
         self, session: AsyncSession, *, user: User
@@ -43,7 +47,8 @@ class Loops:
         organization_users = await user_organization_service.list_by_user_id(
             session, user.id
         )
-        await loops_client.send_event(
+        await enqueue_job(
+            "loops.send_event",
             user.email,
             "Organization Installed",
             userId=str(user.id),
@@ -59,7 +64,8 @@ class Loops:
             session, organization.id
         ):
             user = organization_user.user
-            await loops_client.send_event(
+            await enqueue_job(
+                "loops.send_event",
                 user.email,
                 "Repository Installed",
                 userId=str(user.id),
@@ -73,7 +79,8 @@ class Loops:
             session, issue.organization_id
         ):
             user = organization_user.user
-            await loops_client.send_event(
+            await enqueue_job(
+                "loops.send_event",
                 user.email,
                 "Issue Badged",
                 userId=str(user.id),

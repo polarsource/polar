@@ -145,7 +145,7 @@ const IssueCard = ({
               className="h-8 w-8 rounded-full"
             />
           </div>
-          <div className="dark:text-polar-500 text-gray-500">
+          <div className="dark:text-polar-500 flex flex-row items-center text-gray-500">
             <div>
               {organization.name}&nbsp;/&nbsp;
               <span className="dark:text-polar-200 font-medium text-gray-600">
@@ -327,7 +327,7 @@ const Assignees = ({ assignees }: { assignees: Assignee[] }) => (
         <Avatar avatar_url={a.avatar_url} name={a.login} />
       ))}
     </div>
-    <span className="flex-shrink-0 whitespace-nowrap text-blue-600">
+    <span className="flex-shrink-0 whitespace-nowrap text-sm text-blue-600">
       Assigned
     </span>
   </div>

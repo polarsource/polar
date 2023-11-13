@@ -102,7 +102,7 @@ const DashboardTopbar = ({
 
   const className = twMerge(
     props.isFixed !== false ? 'fixed z-20 left-0 top-0 right-0' : '',
-    'flex h-20 w-full items-center justify-between space-x-4 bg-white dark:bg-polar-950 border-b border-gray-200 dark:border-polar-700',
+    'flex h-20 w-full items-center justify-between space-x-4 bg-white dark:bg-polar-950 border-b border-gray-100 dark:border-polar-700',
   )
 
   if (!hydrated) {

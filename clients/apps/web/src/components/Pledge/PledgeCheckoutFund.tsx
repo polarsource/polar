@@ -1,4 +1,4 @@
-import { isFeatureEnabled } from '@/utils/feature-flags'
+import { useListTeams } from '@/hooks'
 import {
   BuildingOfficeIcon,
   ClockIcon,
@@ -25,7 +25,8 @@ const PledgeCheckoutFund = ({
   gotoURL?: string
   onAmountChange?: (amount: number) => void
 }) => {
-  const teamsEnabled = isFeatureEnabled('teams')
+  const allTeams = useListTeams()
+  const teamsEnabled = allTeams.length > 0
 
   return (
     <div className="space-y-4 py-4">

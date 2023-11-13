@@ -11,6 +11,7 @@ import {
   Face,
   FavoriteBorderOutlined,
   HowToVoteOutlined,
+  StreamOutlined,
   TuneOutlined,
   WidthNormalOutlined,
   WifiTethering,
@@ -138,10 +139,14 @@ export const maintainerRoutes = (org: Organization): Route[] => [
 
 export const backerRoutes: Route[] = [
   {
-    id: 'funding',
-    title: 'Funding',
+    id: isFeatureEnabled('feed') ? 'feed' : 'funding',
+    title: isFeatureEnabled('feed') ? 'Feed' : 'Funding',
     link: `/feed`,
-    icon: <FavoriteBorderOutlined className="h-6 w-6" />,
+    icon: isFeatureEnabled('feed') ? (
+      <StreamOutlined className="h-6 w-6" />
+    ) : (
+      <FavoriteBorderOutlined className="h-6 w-6" />
+    ),
     postIcon: undefined,
     if: true,
     subs: undefined,

@@ -3,6 +3,8 @@
 import { DashboardBody } from '@/components/Layout/MaintainerLayout'
 import { Bolt } from '@mui/icons-material'
 import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
+import Link from 'next/link'
+import { Button } from 'polarkit/components/ui/atoms'
 import { useSubscriptionTiers } from 'polarkit/hooks'
 import React, { useMemo } from 'react'
 import EmptyLayout from '../Layout/EmptyLayout'
@@ -24,13 +26,18 @@ const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
   if (!subscriptionTiers.data?.items?.length) {
     return (
       <EmptyLayout>
-        <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-6 py-96 text-gray-400">
-          <span className="text-6xl">
+        <div className="dark:text-polar-600 flex flex-col items-center justify-center space-y-10 py-96 text-gray-400">
+          <span className="text-6xl text-blue-400">
             <Bolt fontSize="inherit" />
           </span>
           <h2 className="text-lg">
             You haven&apos;t configured any subscription tiers
           </h2>
+          <Link
+            href={`/maintainer/${organization.name}/subscriptions/tiers/new`}
+          >
+            <Button variant="secondary">Create Subscription Tier</Button>
+          </Link>
         </div>
       </EmptyLayout>
     )

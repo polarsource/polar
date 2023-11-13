@@ -65,7 +65,7 @@ const SubscriptionItem = ({ subscription }: SubscriptionItemProps) => {
     subscription.subscription_tier.organization_id ?? '',
   )
 
-  if (!organization) {
+  if (!organization.data) {
     return null
   }
 

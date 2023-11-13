@@ -97,7 +97,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
     <Card
       ref={containerRef}
       className={twMerge(
-        'dark:bg-polar-900 dark:border-polar-700 relative flex flex-col gap-y-6 overflow-hidden rounded-3xl border border-transparent bg-[--var-bg-color] dark:shadow-none',
+        'dark:bg-polar-900 dark:border-polar-700 relative flex flex-col gap-y-6 overflow-hidden rounded-3xl border border-transparent bg-white shadow-xl dark:shadow-none',
         variantStyles[variant]['card'],
         className,
       )}

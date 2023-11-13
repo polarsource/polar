@@ -49,7 +49,7 @@ export const RepositoriesOverivew = ({
               {repositoriesAsCards.map((repository) => (
                 <StaggerReveal.Child key={repository.id}>
                   <Link href={`/${organization.name}/${repository.name}`}>
-                    <Card className="dark:hover:bg-polar-800 dark:text-polar-500 dark:hover:text-polar-300 transition-color flex h-full flex-col rounded-2xl text-gray-500 duration-100 hover:border-blue-100 hover:bg-blue-50 hover:text-gray-600">
+                    <Card className="dark:hover:bg-polar-800 dark:text-polar-500 dark:hover:text-polar-300 transition-color flex h-full flex-col rounded-2xl text-gray-500 duration-100 hover:bg-gray-50 hover:text-gray-600">
                       <CardHeader className="flex flex-row justify-between p-6">
                         <div className="flex flex-row items-baseline gap-x-3">
                           <span className="text-[20px] text-blue-500">
@@ -87,14 +87,14 @@ export const RepositoriesOverivew = ({
             </StaggerReveal>
             {repositoriesAsList.length > 0 && (
               <motion.div
-                className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-200 overflow-hidden rounded-2xl border border-gray-200"
+                className="dark:border-polar-700 dark:divide-polar-700 dark:bg-polar-900 flex flex-col divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-100 bg-white"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
               >
                 {repositoriesAsList.map((repository) => (
                   <Link
-                    className="dark:hover:bg-polar-800 transition-colors duration-100 hover:bg-blue-50"
+                    className="dark:hover:bg-polar-800 transition-colors duration-100 hover:bg-gray-50"
                     key={repository.id}
                     href={`/${organization.name}/${repository.name}`}
                   >

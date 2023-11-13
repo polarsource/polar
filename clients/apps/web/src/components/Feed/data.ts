@@ -61,11 +61,11 @@ export interface Poll {
 }
 
 export enum PostType {
+  Text = 'Text',
   Video = 'Video',
   Audio = 'Audio',
   Code = 'Code',
   Poll = 'Poll',
-  Question = 'Question',
   Event = 'Event',
   Job = 'Job',
   Subscription = 'Subscription',
@@ -125,7 +125,7 @@ export const posts: Post[] = [
     It's essentially generated from our OpenAPI schema, and implements a wide array of different capabilities like listing issues looking for funding, embedding Polar badges on GitHub, etc.
     
     Learn more over at the README.`,
-    type: PostType.Video,
+    type: PostType.Text,
     visibility: 'public',
     author: {
       username: 'emilwidlund',
@@ -140,20 +140,14 @@ export const posts: Post[] = [
         },
       },
     ],
-    video: {
-      title: 'How to build a website',
-      description: 'This is a video description',
-      videoUrl: 'https://www.youtube.com/watch?v=6vMO3XmNXe4',
-      thumbnailUrl: 'https://i.ytimg.com/vi/6vMO3XmNXe4/maxresdefault.jpg',
-    },
     comments: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec, mattis tempus felis. Pellentesque ornare posuere velit, quis dictum ante facilisis vitae. Duis venenatis lectus non nunc efficitur tempor. Nulla lorem urna, feugiat efficitur nulla non, tempus commodo elit. ',
-    type: PostType.Audio,
-    visibility: 'public',
+    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec.',
+    type: PostType.Video,
+    visibility: 'pro',
     author: {
       username: 'SerenityOS',
       avatar_url: 'https://avatars.githubusercontent.com/u/50811782?v=4',
@@ -167,11 +161,12 @@ export const posts: Post[] = [
         },
       },
     ],
-    audio: {
-      title: 'How to build a website',
-      description: 'This is a video description',
-      audioUrl: 'https://www.youtube.com/watch?v=6vMO3XmNXe4',
-      thumbnailUrl: 'https://i.ytimg.com/vi/6vMO3XmNXe4/maxresdefault.jpg',
+    video: {
+      title: 'How I make code videos',
+      description: `A deepdive into my video production process, from recording to editing to publishing. I'll show you how I make my code videos, and how you can make your own!`,
+      videoUrl: 'https://www.youtube.com/watch?v=6vMO3XmNXe4',
+      thumbnailUrl:
+        'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR4D_ngl5BwztyS2CpZ2Dr6o_2iIB4mUXJtJ6GQ7iazkx3QMCl6cNmwp4E8VRf4PNv5skc&usqp=CAU',
     },
     comments: [],
     createdAt: new Date(),
@@ -225,12 +220,33 @@ export const posts: Post[] = [
     updatedAt: new Date(),
   },
   {
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec, mattis tempus felis. Pellentesque ornare posuere velit, quis dictum ante facilisis vitae. Duis venenatis lectus non nunc efficitur tempor. Nulla lorem urna, feugiat efficitur nulla non, tempus commodo elit. ',
-    type: PostType.Poll,
+    text: `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec.`,
     visibility: 'public',
     author: {
       username: 'emilwidlund',
       avatar_url: 'https://avatars.githubusercontent.com/u/10053249?v=4',
+    },
+    type: PostType.Text,
+    media: [],
+    likes: [
+      {
+        user: {
+          username: 'emilwidlund',
+          avatar_url: 'https://avatars.githubusercontent.com/u/10053249?v=4',
+        },
+      },
+    ],
+    comments: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec, mattis tempus felis. Pellentesque ornare posuere velit, quis dictum ante facilisis vitae. Duis venenatis lectus non nunc efficitur tempor. Nulla lorem urna, feugiat efficitur nulla non, tempus commodo elit. ',
+    type: PostType.Poll,
+    visibility: 'public',
+    author: {
+      username: 'trpc',
+      avatar_url: 'https://avatars.githubusercontent.com/u/78011399?v=4',
     },
     media: [],
     likes: [
@@ -264,61 +280,7 @@ export const posts: Post[] = [
     updatedAt: new Date(),
   },
   {
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec, mattis tempus felis. Pellentesque ornare posuere velit, quis dictum ante facilisis vitae. Duis venenatis lectus non nunc efficitur tempor. Nulla lorem urna, feugiat efficitur nulla non, tempus commodo elit. ',
-    type: PostType.Video,
-    visibility: 'public',
-    author: {
-      username: 'emilwidlund',
-      avatar_url: 'https://avatars.githubusercontent.com/u/10053249?v=4',
-    },
-    media: [],
-    likes: [
-      {
-        user: {
-          username: 'emilwidlund',
-          avatar_url: 'https://avatars.githubusercontent.com/u/10053249?v=4',
-        },
-      },
-    ],
-    video: {
-      title: 'How to build a website',
-      description: 'This is a video description',
-      videoUrl: 'https://www.youtube.com/watch?v=6vMO3XmNXe4',
-      thumbnailUrl: 'https://i.ytimg.com/vi/6vMO3XmNXe4/maxresdefault.jpg',
-    },
-    comments: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec, mattis tempus felis. Pellentesque ornare posuere velit, quis dictum ante facilisis vitae. Duis venenatis lectus non nunc efficitur tempor. Nulla lorem urna, feugiat efficitur nulla non, tempus commodo elit. ',
-    type: PostType.Audio,
-    visibility: 'public',
-    author: {
-      username: 'emilwidlund',
-      avatar_url: 'https://avatars.githubusercontent.com/u/10053249?v=4',
-    },
-    media: [],
-    likes: [
-      {
-        user: {
-          username: 'emilwidlund',
-          avatar_url: 'https://avatars.githubusercontent.com/u/10053249?v=4',
-        },
-      },
-    ],
-    audio: {
-      title: 'How to build a website',
-      description: 'This is a video description',
-      audioUrl: 'https://www.youtube.com/watch?v=6vMO3XmNXe4',
-      thumbnailUrl: 'https://i.ytimg.com/vi/6vMO3XmNXe4/maxresdefault.jpg',
-    },
-    comments: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec, mattis tempus felis. Pellentesque ornare posuere velit, quis dictum ante facilisis vitae. Duis venenatis lectus non nunc efficitur tempor. Nulla lorem urna, feugiat efficitur nulla non, tempus commodo elit. ',
+    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ipsum odio, tincidunt at dictum nec, mattis tempus felis. Pellentesque ornare posuere velit, quis dictum ante facilisis vitae. Duis venenatis lectus non nunc efficitur.',
     type: PostType.Code,
     visibility: 'public',
     author: {

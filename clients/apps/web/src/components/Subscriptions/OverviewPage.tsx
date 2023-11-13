@@ -257,11 +257,11 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
                         name={subscription.user.username}
                         className="h-8 w-8"
                       />
-                      <div className="text-sm">
-                        <div className="fw-medium">
+                      <div className="flex flex-col text-sm">
+                        <div className="font-medium">
                           {subscription.user.username}
                         </div>
-                        <div className="dark:text-polar-500 text-gray-400">
+                        <div className="dark:text-polar-500 text-xs text-gray-400">
                           <FormattedDateTime
                             datetime={subscription.started_at as string}
                           />

@@ -12,7 +12,13 @@ import { TabsList, TabsTrigger } from 'polarkit/components/ui/atoms'
 import { useCallback } from 'react'
 import ProfileSelection from '../Shared/ProfileSelection'
 
-export const OrganizationPublicPageNav = () => {
+interface OrganizationPublicPageNavProps {
+  shouldRenderSubscriptionsTab: boolean
+}
+
+export const OrganizationPublicPageNav = ({
+  shouldRenderSubscriptionsTab,
+}: OrganizationPublicPageNavProps) => {
   const router = useRouter()
 
   const search = useSearchParams()
@@ -50,7 +56,7 @@ export const OrganizationPublicPageNav = () => {
           </div>
           <span>Repositories</span>
         </TabsTrigger>
-        {isFeatureEnabled('subscriptions') && (
+        {isFeatureEnabled('subscriptions') && shouldRenderSubscriptionsTab && (
           <TabsTrigger
             value="subscriptions"
             size="small"

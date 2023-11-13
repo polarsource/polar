@@ -10,6 +10,7 @@ import {
   SubscriptionSummary,
   SubscriptionTier,
 } from '@polar-sh/sdk'
+import Link from 'next/link'
 import { LogoType } from 'polarkit/components/brand'
 import { Avatar, Tabs, TabsContent } from 'polarkit/components/ui/atoms'
 import { useMemo } from 'react'
@@ -66,7 +67,9 @@ const OrganizationPublicPage = ({
               <LogoType />
             </a>
           </div>
-          <OrganizationPublicPageNav />
+          <OrganizationPublicPageNav
+            shouldRenderSubscriptionsTab={subscriptionTiers.length > 0}
+          />
         </div>
 
         <div className="relative flex flex-col gap-x-24 px-4 py-16 md:flex-row md:px-0">
@@ -157,12 +160,17 @@ const OrganizationPublicPage = ({
                 </div>
                 <div className="flex flex-row flex-wrap gap-3">
                   {subscriberUsers.map((user) => (
-                    <Avatar
-                      key={user.username}
-                      className="h-10 w-10"
-                      name={user.username}
-                      avatar_url={user.avatar_url}
-                    />
+                    <Link
+                      href={`https://github.com/${user.username}`}
+                      target="_blank"
+                    >
+                      <Avatar
+                        key={user.username}
+                        className="h-10 w-10"
+                        name={user.username}
+                        avatar_url={user.avatar_url}
+                      />
+                    </Link>
                   ))}
                   {subscribersHiddenCount > 0 && (
                     <div className="dark:border-polar-600 dark:text-polar-500 flex h-10 w-10 flex-col items-center justify-center rounded-full border border-blue-200 text-xs font-medium text-blue-400">
@@ -197,12 +205,14 @@ const OrganizationPublicPage = ({
                 repositories={repositories}
               />
             </TabsContent>
-            <TabsContent className="w-full" value="subscriptions">
-              <OrganizationSubscriptionsPublicPage
-                organization={organization}
-                subscriptionTiers={subscriptionTiers}
-              />
-            </TabsContent>
+            {subscriptionTiers.length > 0 && (
+              <TabsContent className="w-full" value="subscriptions">
+                <OrganizationSubscriptionsPublicPage
+                  organization={organization}
+                  subscriptionTiers={subscriptionTiers}
+                />
+              </TabsContent>
+            )}
           </div>
         </div>
       </div>

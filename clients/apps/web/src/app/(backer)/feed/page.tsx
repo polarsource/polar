@@ -56,7 +56,7 @@ export default function Page() {
     accounts.data.items.length === 0
 
   return (
-    <div className="mt-2 space-y-10">
+    <div className="mb-24 mt-2 space-y-10">
       <div className="space-y-10">
         {showPendingRewardsBanner && (
           <Banner color="blue">
